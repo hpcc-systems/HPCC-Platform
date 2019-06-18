@@ -276,7 +276,7 @@ class Regression:
                                 else:
                                     # retry counter exhausted, give up and abort this test case if exists
                                     if 'W' in wuid['wuid']:
-                                        abortWorkunit(wuid['wuid'])
+                                        abortWorkunit(wuid['wuid'], self.taskParam[threadId]['taskId'], engine)
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
                                         query.setAborReason('Timeout and retry count exhausted!')
@@ -304,7 +304,7 @@ class Regression:
                                 self.loggermutex.release()
                             else:
                                 # Something wrong with this test case, abort it.
-                                abortWorkunit(wuid['wuid'])
+                                abortWorkunit(wuid['wuid'], self.taskParam[threadId]['taskId']+1, engine)
                                 self.loggermutex.acquire()
                                 query = suiteItems[self.taskParam[threadId]['taskId']]
                                 query.setAborReason('Timeout')
@@ -376,7 +376,7 @@ class Regression:
                 else:
                     # retry counter exhausted, give up and abort this test case if exists
                     logging.debug("%3d. Abort %s WUID:'%s'" % (cnt, query.ecl, str(wuid)),  extra={'taskId':cnt})
-                    abortWorkunit(wuid['wuid'])
+                    abortWorkunit(wuid['wuid'],  cnt, self.args.engine)
                     query.setAborReason('Timeout and retry count exhausted!')
                     self.loggermutex.acquire()
                     logging.error("%3d. Timeout occured for %s and no more attempt left. Force to abort... " % (cnt, query.ecl),  extra={'taskId':cnt})

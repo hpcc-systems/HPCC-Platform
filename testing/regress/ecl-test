@@ -226,6 +226,8 @@ class RegressMain:
                                 type=checkPqParam,  default = 1,   metavar="runcount")
         executionParser.add_argument('--excludeFile', '--ef', help="Exclude files of suite. Wildcard is enabled. Default value is 'none'",
                                 nargs=1,  default = ['none'],   metavar="filespec[,filespec,...]")
+        executionParser.add_argument('--generateStackTrace', help="Generate stack trace of Thor components before kill a timeouted test case. Trace files are stored into Regression Engine Log directory (see 'LogDir' in ecl-test.json file)",
+                                action = 'store_true')
 
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
@@ -327,6 +329,16 @@ class RegressMain:
         # There is no sense to clear disk cache if same test runnnig parallel by versioning
         if self.args.pq > 1:
             self.args.flushDiskCache = False
+
+        if self.args.generateStackTrace:
+            if isSudoer():
+                self.config.set('generateStackTrace', True)
+            else:
+                err = Error("7100")
+                logging.error("%s. Generate Stack Trace error:%s" % (-1,  err))
+                exit(err.getErrorCode())
+        else:
+            self.config.set('generateStackTrace', False)
 
         self.config.set('log',  self.log)
         setConfig(self.config)
