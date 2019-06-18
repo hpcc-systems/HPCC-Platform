@@ -2106,8 +2106,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             Owned<IPropertyTree> tgtcfg;
             Owned<IPropertyTree> tgtctx;
 
-            ns.clear();
-            generateNamespace(*ctx, request, srvdef->queryName(), mthdef->queryName(), ns);
+            // Echo back the reqeust namespace, don't generate it here
             getSchemaLocation(*ctx, request, schemaLocation);
 
             ctx->setESDLBindingID(m_bindingId.get());

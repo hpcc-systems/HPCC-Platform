@@ -1381,7 +1381,8 @@ void Esdl2Response::processChildNamedResponse(Esdl2TransformerContext &ctx, cons
                 if (ctx.do_output_ns)
                 {
                     ctx.writer->outputBeginNested(out_name, true);
-                    ctx.writer->outputXmlns(out_name, ctx.ns.str());
+                    // This ensures the namespace prefix is just 'xmlns'
+                    ctx.writer->outputXmlns("xmlns", ctx.ns.str());
                     ctx.do_output_ns=false;
                 }
                 else
