@@ -108,12 +108,8 @@ define([
         _onFileScopeDefaultPermissions: function () {
             var row = this.getRow("FileScope");
             if (row) {
-                var clean = row.basedn.split(/,(.+)?/)[1] //the request does not like the ou with prefix have to issue JIRA to fix this
-                var fileScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.basedn + "FileScope", {
-                    Basedn: clean,
-                    Rtype: "file",
-                    Rtitle: "",
-                    Name: "files",
+                var fileScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.Basedn + "FileScope", {
+                    Basedn: row.Basedn,
                     TabName: this.i18n.title_FileScopeDefaultPermissions,
                     DefaultPermissions: true
                 });
@@ -124,12 +120,8 @@ define([
         _onWorkunitScopeDefaultPermissions: function () {
             var row = this.getRow("WorkunitScope");
             if (row) {
-                var clean = row.basedn.split(/,(.+)?/)[1] //the request does not like the ou with prefix have to issue JIRA to fix this
-                var workunitScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.basedn + "WUScope", {
-                    Basedn: clean,
-                    Rtype: "workunit",
-                    Rtitle: "",
-                    Name: "workunits",
+                var workunitScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.Basedn + "WUScope", {
+                    Basedn: row.Basedn,
                     TabName: this.i18n.title_WorkunitScopeDefaultPermissions,
                     DefaultPermissions: true
                 });
@@ -140,10 +132,8 @@ define([
         _onPhysicalFiles: function () {
             var row = this.getRow("FileScope");
             if (row) {
-                var physicalPermissionsTab = this.ensurePermissionsPane(row.basedn + "PhysicalFiles", {
-                    Basedn: row.basedn,
-                    Rtype: "file",
-                    Rtitle: "FileScope",
+                var physicalPermissionsTab = this.ensurePermissionsPane(row.Basedn + "PhysicalFiles", {
+                    Basedn: row.Basedn,
                     Name: "file",
                     TabName: "Physical Files"
                 });
@@ -374,7 +364,8 @@ define([
         },
 
         _onAddPermissionSubmit: function (event) {
-            var selRow = this.addPermissionType.__hpcc_data[this.addPermissionType.get("value")];
+            var selRow = {}
+            selRow["BasednName"] = this.addPermissionType.get("value");
             if (selRow) {
                 var request = lang.mixin(selRow, domForm.toObject(this.id + "AddPermissionForm"));
                 var context = this;
@@ -433,11 +424,9 @@ define([
             }
         },
 
-        _onPermissionsRowDblClick: function (basedn, rtype, rtitle, name, description) {
+        _onPermissionsRowDblClick: function (basedn, name, description) {
             var permissionsTab = this.ensurePermissionsPane(name, {
                 Basedn: basedn,
-                Rtype: rtype,
-                Rtitle: rtitle,
                 Name: name,
                 Description: description
             });
@@ -719,9 +708,9 @@ define([
                     arrayUtil.forEach(response.BasednsResponse.Basedns.Basedn, function (item, idx) {
                         options.push({
                             label: item.name,
-                            value: item.basedn
+                            value: item.name
                         });
-                        optionMap[item.basedn] = item;
+                        optionMap[item.name] = item;
                     }, this);
                 }
                 this.addPermissionType.set("options", options);
@@ -776,13 +765,13 @@ define([
             this.permissionsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
-                    context._onPermissionsRowDblClick(item.__hpcc_parent.basedn, item.__hpcc_parent.rtype, item.__hpcc_parent.rtitle, item.name, item.DisplayName);
+                    context._onPermissionsRowDblClick(item.__hpcc_parent.name, item.name, item.DisplayName);
                 }
             });
             this.permissionsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
-                    context._onPermissionsRowDblClick(item.__hpcc_parent.basedn, item.__hpcc_parent.rtype, item.__hpcc_parent.rtitle, item.name, item.DisplayName);
+                    context._onPermissionsRowDblClick(item.__hpcc_parent.name, item.name, item.DisplayName);
                 }
             });
             this.permissionsGrid.onSelectionChanged(function (event) {
@@ -878,9 +867,7 @@ define([
                 var context = this;
                 WsAccess.Resources({
                     request: {
-                        basedn: event.rows[0].id,
-                        rtype: "file",
-                        rtitle: "FileScope"
+                        name: event.rows[0].data.Basedn
                     }
                 }).then(function (response) {
                     if (lang.exists("ResourcesResponse.scopeScansStatus", response)) {

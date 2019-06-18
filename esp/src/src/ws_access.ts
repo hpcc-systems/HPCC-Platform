@@ -58,9 +58,7 @@ var ResourcesStore = declare([Memory], {
         var request = {
             account_name: this.groupname ? this.groupname : this.username,
             account_type: this.groupname ? 1 : 0,
-            basedn: row.__hpcc_parent.basedn,
-            rtitle: row.__hpcc_parent.rtitle,
-            rtype: row.__hpcc_parent.rtype,
+            BasednName: row.__hpcc_parent.name,
             rname: row.name,
             action: "update"
         };
@@ -79,7 +77,7 @@ var ResourcesStore = declare([Memory], {
         ]).then(lang.hitch(this, function (response) {
             var accountPermissions = {};
             arrayUtil.forEach(response[1], function (item, idx) {
-                accountPermissions[item.PermissionName] = item;
+                accountPermissions[item.ResourceName] = item;
             }, this);
 
             var data = [];
@@ -111,9 +109,7 @@ var ResourcesStore = declare([Memory], {
     refreshResources: function (query) {
         return Resources({
             request: {
-                basedn: this.parentRow.basedn,
-                rtype: this.parentRow.rtype,
-                rtitle: this.parentRow.rtitle
+                name: this.parentRow.name
             }
         }).then(lang.hitch(this, function (response) {
             if (lang.exists("ResourcesResponse.Resources.Resource", response)) {
@@ -152,10 +148,8 @@ var InheritedPermissionStore = declare([Memory], {
         this.get(row.__hpcc_id);
         var retVal = inherited(arguments);
         var request = {
-            basedn: row.basedn,
-            rtype: row.rtype,
-            rname: row.rname,
-            rtitle: row.rtitle,
+            BasednName: row.BasednName,
+            rname: row.ResourceName,
             account_name: row.account_name,
             account_type: 0,
             action: "update"
@@ -174,13 +168,11 @@ var InheritedPermissionStore = declare([Memory], {
         ]).then(lang.hitch(this, function (response) {
             var accountPermissions = {};
             arrayUtil.forEach(response[0], function (item, idx) {
-                accountPermissions[item.PermissionName] = item;
+                accountPermissions[item.ResourceName] = item;
                 data.push(lang.mixin(item, {
                     __hpcc_type: "InheritedPermissions",
-                    __hpcc_id: this.TabName + CONCAT_SYMBOL + this.AccountName + CONCAT_SYMBOL + item.PermissionName + CONCAT_SYMBOL + idx,
-                    rname: item.PermissionName,
-                    rtype: item.RType,
-                    rtitle: item.ResourceName,
+                    __hpcc_id: this.TabName + CONCAT_SYMBOL + this.AccountName + CONCAT_SYMBOL + item.ResourceName + CONCAT_SYMBOL + idx,
+                    rname: item.ResourceName,
                     account_name: this.TabName,
                     allow_access: item ? item.allow_access : false,
                     allow_read: item ? item.allow_read : false,
@@ -234,12 +226,9 @@ var AccountResourcesStore = declare([Memory], {
         this.get(row.__hpcc_id);
         var retVal = inherited(arguments);
         var request = {
-            basedn: row.basedn,
-            rtype: row.rtype,
-            rname: row.rname,
-            rtitle: row.rtitle,
+            BasednName: row.BasednName,
+            rname: row.ResourceName,
             account_name: row.account_name,
-            account_type: 0,
             action: "update"
         };
         lang.mixin(request, row);
@@ -256,13 +245,11 @@ var AccountResourcesStore = declare([Memory], {
         ]).then(lang.hitch(this, function (response) {
             var accountPermissions = {};
             arrayUtil.forEach(response[0], function (item, idx) {
-                accountPermissions[item.PermissionName] = item;
+                accountPermissions[item.ResourceName] = item;
                 data.push(lang.mixin(item, {
                     __hpcc_type: "AccountPermissions",
-                    __hpcc_id: this.AccountName + CONCAT_SYMBOL + item.PermissionName + CONCAT_SYMBOL + idx,
-                    rname: item.PermissionName,
-                    rtype: item.RType,
-                    rtitle: item.ResourceName,
+                    __hpcc_id: this.AccountName + CONCAT_SYMBOL + item.ResourceName + CONCAT_SYMBOL + idx,
+                    rname: item.ResourceName,
                     account_name: this.AccountName,
                     allow_access: item ? item.allow_access : false,
                     allow_read: item ? item.allow_read : false,
@@ -310,10 +297,9 @@ var IndividualPermissionsStore = declare([Memory], {
         this.get(row.__hpcc_id);
         var retVal = inherited(arguments);
         var request = {
-            basedn: row.basedn,
-            rtype: row.rtype,
-            rtitle: row.rtitle,
-            rname: row.name,
+            BasednName: row.BasednName,
+            rname: row.rname,
+            account_name: row.account_name,
             action: "update"
         };
         lang.mixin(request, row);
@@ -334,9 +320,7 @@ var IndividualPermissionsStore = declare([Memory], {
                 data.push(lang.mixin(item, {
                     __hpcc_type: "IndividualPermissions",
                     __hpcc_id: this.name + CONCAT_SYMBOL + idx,
-                    basedn: this.basedn,
-                    rtype: this.rtype,
-                    rtitle: this.rtitle,
+                    BasednName: this.basedn,
                     rname: this.name,
                     account_name: item.account_name,
                     allow_access: item ? item.allow_access : false,
@@ -362,11 +346,8 @@ var IndividualPermissionsStore = declare([Memory], {
         }
         return ResourcePermissions({
             request: {
-                basedn: this.basedn,
-                rtype: this.rtype,
-                rtitle: this.rtitle,
-                name: this.name
-
+                name: this.name,
+                BasednName: this.basedn
             }
         }).then(lang.hitch(this, function (response) {
             if (lang.exists("ResourcePermissionsResponse.Permissions.Permission", response)) {
@@ -428,9 +409,11 @@ var PermissionsStore = declare([Memory], {
                         __hpcc_type: "Permission",
                         __hpcc_id: item.basedn,
                         DisplayName: item.name,
-                        children: lang.mixin(CreateResourcesStore(this.groupname, this.username, item.basedn), {
+                        Basedn: item.name,
+                        children: lang.mixin(CreateResourcesStore(this.groupname, this.username, item.name, item.rname), {
                             parent: this,
-                            parentRow: item
+                            parentRow: item,
+                            Basedn: item.name
                         })
                     }));
                 }, this);
@@ -551,7 +534,11 @@ export function ResourcePermissions(params) {
 }
 
 export function Resources(params) {
-    return _doCall("Resources", params);
+    return _doCall("Resources", {
+        request: {
+            BasednName: params.request.name
+        }
+    });
 }
 
 export function ResourceAdd(params) {
@@ -590,29 +577,6 @@ export function DisableScopeScans() {
     return _doCall("DisableScopeScans", {
         request: {
             action: "Disable Scope Scans"
-        }
-    });
-}
-
-export function DefaultPermissions() {
-    return _doCall("ResourcePermissions", {
-        request: {
-            basedn: "ou=ecl,dc=hpccdev,dc=local",
-            rtype: "file",
-            name: "files",
-            action: "Default Permissions"
-        }
-    });
-}
-
-export function PhysicalFiles() {
-    return _doCall("ResourcePermissions", {
-        request: {
-            basedn: "ou=files,ou=ecl,dc=hpccdev,dc=local",
-            rtype: "file",
-            rtitle: "FileScope",
-            name: "file",
-            action: "Physical Files"
         }
     });
 }
@@ -667,19 +631,18 @@ export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountNa
     return Observable(store);
 }
 
-export function CreateIndividualPermissionsStore(basedn, rtype, rtitle, name) {
+export function CreateIndividualPermissionsStore(basedn, name) {
     var store = new IndividualPermissionsStore();
     store.basedn = basedn;
-    store.rtype = rtype;
-    store.rtitle = rtitle;
     store.name = name;
     return Observable(store);
 }
 
-export function CreateResourcesStore(groupname, username, basedn) {
+export function CreateResourcesStore(groupname, username, basedn, name) {
     var store = new ResourcesStore();
     store.groupname = groupname;
     store.username = username;
     store.basedn = basedn;
+    store.name = name;
     return Observable(store);
 }
