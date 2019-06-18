@@ -819,6 +819,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKspillread:              return "Spill Read";
     case TAKspillwrite:             return "Spill Write";
     case TAKnwaydistribute:         return "Nway Distribute";
+    case TAKnewdiskread:            return "Disk Read";
     }
     throwUnexpected();
 }
@@ -2097,6 +2098,7 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
                 if (keyedTranslator && (sourceFormat != expectedFormat))
                 {
                     Owned<const IKeyTranslator> _keyedTranslator = createKeyTranslator(sourceFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true));
+                    //MORE: What happens if the key filters cannot be translated?
                     if (_keyedTranslator->needsTranslate())
                         keyedTranslator->swap(_keyedTranslator);
                 }

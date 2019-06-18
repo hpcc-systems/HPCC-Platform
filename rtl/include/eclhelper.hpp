@@ -1055,6 +1055,7 @@ enum ThorActivityKind
     TAKspillread,
     TAKspillwrite,
     TAKnwaydistribute,
+    TAKnewdiskread,  // This activity will eventually have a refactored interface, currently a placeholder
 
     TAKlast
 };
@@ -1122,6 +1123,7 @@ enum
     TDRkeyedlimitcreates= 0x00400000,
     TDRunfilteredcount  = 0x00800000,       // count/aggregegate doesn't have an additional filter
     TDRfilenamecallback = 0x01000000,
+    TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -2554,6 +2556,10 @@ struct IHThorXmlReadArg: public IHThorDiskReadBaseArg
     virtual unsigned __int64 getChooseNLimit() = 0;
     virtual unsigned __int64 getRowLimit() = 0;
     virtual void onLimitExceeded() = 0;
+};
+
+struct IHThorNewDiskReadArg: public IHThorDiskReadArg
+{
 };
 
 typedef unsigned thor_loop_counter_t;

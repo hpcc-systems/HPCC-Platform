@@ -661,7 +661,6 @@ public:
         monitorsForGrouping = false;
         useImplementationClass = false;
         isUnfilteredCount = false;
-        isVirtualLogicalFilenameUsed = false;
         requiresOrderedMerge = false;
         rootSelfRow = NULL;
         activityKind = TAKnone;
@@ -797,7 +796,9 @@ public:
     bool            generateUnfilteredTransform;
     bool            useImplementationClass;
     bool            isUnfilteredCount;
-    bool            isVirtualLogicalFilenameUsed;
+    bool            isVirtualLogicalFilenameUsed = false;
+    bool            transformUsesVirtualLogicalFilename = false;
+    bool            transformUsesVirtualFilePosition = false;
     bool            requiresOrderedMerge;
     bool            newInputMapping;
     bool            extractCanMatch = false;
@@ -806,22 +807,23 @@ protected:
 };
 
 
-struct HQLCPP_API HqlFilePositionDefinedValue : public HqlSimpleDefinedValue
+struct HQLCPP_API MonitoredDefinedValue : public HqlSimpleDefinedValue
 {
 public:
-    HqlFilePositionDefinedValue(SourceBuilder & _builder, IHqlExpression * _original, IHqlExpression * _expr) 
-    : HqlSimpleDefinedValue(_original, _expr), builder(_builder)
+    MonitoredDefinedValue(bool & _usedFlag, IHqlExpression * _original, IHqlExpression * _expr)
+    : HqlSimpleDefinedValue(_original, _expr), usedFlag(_usedFlag)
     { }
 
-    virtual IHqlExpression * queryExpr() const              
-    { 
-        builder.isVirtualLogicalFilenameUsed = true;
+    virtual IHqlExpression * queryExpr() const
+    {
+        usedFlag = true;
         return HqlSimpleDefinedValue::queryExpr();
     }
 
 public:
-    SourceBuilder & builder;
+    bool & usedFlag;
 };
+
 
 
 bool SourceBuilder::isSourceInvariant(IHqlExpression * dataset, IHqlExpression * expr)
@@ -1108,19 +1110,19 @@ void SourceBuilder::associateFilePositions(BuildCtx & ctx, const char * provider
     if (fpos)
     {
         Owned<IHqlExpression> fposExpr = createFileposCall(translator, getFilePositionId, provider, rowname);
-        ctx.associateExpr(fpos, fposExpr);
+        ctx.associateOwn(*new MonitoredDefinedValue(transformUsesVirtualFilePosition, fpos, fposExpr));
     }
 
     if (lfpos)
     {
         Owned<IHqlExpression> fposExpr = createFileposCall(translator, getLocalFilePositionId, provider, rowname);
-        ctx.associateExpr(lfpos, fposExpr);
+        ctx.associateOwn(*new MonitoredDefinedValue(transformUsesVirtualFilePosition, lfpos, fposExpr));
     }
 
     if (logicalFilenameMarker)
     {
         Owned<IHqlExpression> nameExpr = createFileposCall(translator, queryLogicalFilenameId, provider, rowname);
-        ctx.associateOwn(*new HqlFilePositionDefinedValue(*this, logicalFilenameMarker, nameExpr));
+        ctx.associateOwn(*new MonitoredDefinedValue(transformUsesVirtualLogicalFilename, logicalFilenameMarker, nameExpr));
     }
 }
 
@@ -1135,14 +1137,17 @@ void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset,
     {
         OwnedHqlExpr selector = createSelector(side, dataset, selSeq);
         OwnedHqlExpr selectorFpos = getFilepos(selector, isLocal);
-        ctx.associateExpr(selectorFpos, match->queryExpr());
+        ctx.associateOwn(*new MonitoredDefinedValue(transformUsesVirtualFilePosition, selectorFpos, match->queryExpr()));
     }
 }
 
 
 void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset, node_operator side, IHqlExpression * selSeq)
 {
-    bool savedIsVirtualLogicalFilenameUsed = isVirtualLogicalFilenameUsed;  // don't allow the rebinding to set the flag.
+    // don't allow the rebinding to modify these flags.
+    bool savedVirtualLogicalFilenameUsed = transformUsesVirtualLogicalFilename;
+    bool savedVirtualFilePositionUsed = transformUsesVirtualFilePosition;
+
     rebindFilepositons(ctx, dataset, side, selSeq, true);
     rebindFilepositons(ctx, dataset, side, selSeq, false);
     OwnedHqlExpr searchLogicalFilename = getFileLogicalName(dataset);
@@ -1151,9 +1156,10 @@ void SourceBuilder::rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset,
     {
         OwnedHqlExpr selector = createSelector(side, dataset, selSeq);
         OwnedHqlExpr selectorLogicalFilename = getFileLogicalName(dataset);
-        ctx.associateOwn(*new HqlFilePositionDefinedValue(*this, selectorLogicalFilename, match->queryExpr()));
+        ctx.associateOwn(*new MonitoredDefinedValue(transformUsesVirtualLogicalFilename, selectorLogicalFilename, match->queryExpr()));
     }
-    isVirtualLogicalFilenameUsed = savedIsVirtualLogicalFilenameUsed;
+    transformUsesVirtualLogicalFilename = savedVirtualLogicalFilenameUsed;
+    transformUsesVirtualFilePosition = savedVirtualFilePositionUsed;
 }
 
 
@@ -2953,7 +2959,10 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (!nameExpr->isConstant()) flags.append("|TDXvarfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TDXdynamicfilename");
     if (isUnfilteredCount) flags.append("|TDRunfilteredcount");
-    if (isVirtualLogicalFilenameUsed) flags.append("|TDRfilenamecallback");
+    if (isVirtualLogicalFilenameUsed || transformUsesVirtualLogicalFilename)
+        flags.append("|TDRfilenamecallback");
+    if (transformUsesVirtualFilePosition || transformUsesVirtualLogicalFilename)
+        flags.append("|TDRtransformvirtual");
     if (requiresOrderedMerge) flags.append("|TDRorderedmerge");
 
     if (flags.length())

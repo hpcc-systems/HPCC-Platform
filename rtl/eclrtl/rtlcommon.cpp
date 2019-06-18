@@ -53,18 +53,19 @@ CThorContiguousRowBuffer::CThorContiguousRowBuffer(ISerialStream * _in) : CConti
     readOffset = 0;
 }
 
-void CThorContiguousRowBuffer::doRead(size32_t len, void * ptr)
+
+size32_t CThorContiguousRowBuffer::doRead(size32_t len, void * ptr)
 {
     ensureAccessible(readOffset + len);
     memcpy(ptr, cur+readOffset, len);
     readOffset += len;
+    return len;
 }
 
 
 size32_t CThorContiguousRowBuffer::read(size32_t len, void * ptr)
 {
-    doRead(len, ptr);
-    return len;
+    return doRead(len, ptr);
 }
 
 size32_t CThorContiguousRowBuffer::readSize()
@@ -77,8 +78,7 @@ size32_t CThorContiguousRowBuffer::readSize()
 size32_t CThorContiguousRowBuffer::readPackedInt(void * ptr)
 {
     size32_t size = sizePackedInt();
-    doRead(size, ptr);
-    return size;
+    return doRead(size, ptr);
 }
 
 size32_t CThorContiguousRowBuffer::readUtf8(ARowBuilder & target, size32_t offset, size32_t fixedSize, size32_t len)
@@ -88,24 +88,21 @@ size32_t CThorContiguousRowBuffer::readUtf8(ARowBuilder & target, size32_t offse
 
     size32_t size = sizeUtf8(len);
     byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
+    return doRead(size, self+offset);
 }
 
 size32_t CThorContiguousRowBuffer::readVStr(ARowBuilder & target, size32_t offset, size32_t fixedSize)
 {
     size32_t size = sizeVStr();
     byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
+    return doRead(size, self+offset);
 }
 
 size32_t CThorContiguousRowBuffer::readVUni(ARowBuilder & target, size32_t offset, size32_t fixedSize)
 {
     size32_t size = sizeVUni();
     byte * self = target.ensureCapacity(fixedSize + size, NULL);
-    doRead(size, self+offset);
-    return size;
+    return doRead(size, self+offset);
 }
 
 

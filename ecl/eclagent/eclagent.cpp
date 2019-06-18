@@ -519,6 +519,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
 
     userid.set(wuRead->queryUser());
     useProductionLibraries = wuRead->getDebugValueBool("useProductionLibraries", false);
+    useNewDiskReadActivity = wuRead->getDebugValueBool("useNewDiskReadActivity", agentTopology->getPropBool("@useNewDiskReadActivity", true));
     clusterNames.append(wuRead->queryClusterName());
     clusterWidth = -1;
     abortmonitor = new cAbortMonitor(*this);

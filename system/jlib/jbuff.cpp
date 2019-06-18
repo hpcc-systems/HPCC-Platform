@@ -458,6 +458,13 @@ void MemoryBuffer::swapWith(MemoryBuffer & other)
     SWAP(swapEndian, other.swapEndian, bool);
 }
 
+bool MemoryBuffer::matches(const MemoryBuffer & other) const
+{
+    if (curLen != other.curLen)
+        return false;
+    return (memcmp(buffer, other.buffer, curLen) == 0);
+}
+
 //-----------------------------------------------------------------------
 
 
@@ -466,11 +473,6 @@ MemoryBuffer::MemoryBuffer(size_t initial)
     assertex((size32_t)initial == initial);
     init();
     _realloc((size32_t)initial);
-}
-
-MemoryBuffer::MemoryBuffer(MemoryBuffer & value __attribute__((unused)))
-{
-    assertex(!"This should never be used");
 }
 
 MemoryBuffer::MemoryBuffer(size_t len, const void * newBuffer)

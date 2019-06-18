@@ -73,7 +73,7 @@ public:
     void recalcFieldsRequired();
     void remove(unsigned idx);
     void clear();
-    void appendFilters(IConstArrayOf<IFieldFilter> &_filters);
+    void appendFilters(const IConstArrayOf<IFieldFilter> &_filters);
 protected:
     IConstArrayOf<IFieldFilter> filters;
     unsigned numFieldsRequired = 0;

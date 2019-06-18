@@ -2192,7 +2192,7 @@ bool RowFilter::matches(const RtlRow & row) const
     return true;
 }
 
-void RowFilter::appendFilters(IConstArrayOf<IFieldFilter> & _filters)
+void RowFilter::appendFilters(const IConstArrayOf<IFieldFilter> & _filters)
 {
     ForEachItemIn(i, _filters)
     {

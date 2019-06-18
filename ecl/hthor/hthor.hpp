@@ -172,6 +172,8 @@ extern HTHOR_API IHThorActivity *createDiskAggregateActivity(IAgentContext &_age
 extern HTHOR_API IHThorActivity *createDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &arg, ThorActivityKind kind, IPropertyTree *node);
 extern HTHOR_API IHThorActivity *createDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &arg, ThorActivityKind kind, IPropertyTree *node);
 
+extern HTHOR_API IHThorActivity *createNewDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &arg, ThorActivityKind kind, IPropertyTree *node);
+
 extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind kind, IPropertyTree *_node);
 extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind kind, IPropertyTree *_node);
