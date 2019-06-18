@@ -305,11 +305,13 @@ EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringl
  * 
  * @param _left         The first string to be compared.
  * @param _right        The second string to be compared.
- * @return              The minimum edit distance between the two strings.
+ * @param radius        The maximum edit distance that is acceptable, or 0 for no limit.  Defaults to 0.
+ * @return              The minimum edit distance between the two strings.  Edit distances above radius will
+                        return an arbitrary value larger than radius.
  */
 
-EXPORT UNSIGNED4 EditDistance(STRING _left, STRING _right) :=
-    lib_stringlib.StringLib.EditDistanceV2(_left, _right);
+EXPORT UNSIGNED4 EditDistance(STRING _left, STRING _right, UNSIGNED4 radius = 0) :=
+    lib_stringlib.StringLib.EditDistanceV3(_left, _right, radius);
 
 /**
  * Returns true if the minimum edit distance between the two strings is with a specific range.
@@ -317,7 +319,7 @@ EXPORT UNSIGNED4 EditDistance(STRING _left, STRING _right) :=
  * 
  * @param _left         The first string to be compared.
  * @param _right        The second string to be compared.
- * @param radius        The maximum edit distance that is accepable.
+ * @param radius        The maximum edit distance that is acceptable.
  * @return              Whether or not the two strings are within the given specified edit distance.
  */
 
