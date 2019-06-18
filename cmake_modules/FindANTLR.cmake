@@ -25,7 +25,7 @@ include(UseJava)
 
 set(ANTLR_BUILDTIME_DEP "antlr-3.4-complete" CACHE STRING "ANTLR buildtime jar file name.")
 set(ANTLR_RUNTIME_DEP "antlr-runtime-3.4" CACHE STRING "ANTLR runtime jar file name.")
-set(ANTLR_PATH "${HPCC_SOURCE_DIR}/esp/services/ws_sql/website-antlr3/download" CACHE PATH "Location of ANTLR jar files.")
+set(ANTLR_PATH "${HPCC_SOURCE_DIR}/esp/services/ws_sql/libantlr3c" CACHE PATH "Location of ANTLR jar files.")
 set(ANTLR_PKG_FIND_ERROR_MSG "Could not locate jars.\nPlease run `git submodule update --init --recursive`\n")
 
 
