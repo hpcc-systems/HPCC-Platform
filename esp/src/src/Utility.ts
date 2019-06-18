@@ -107,6 +107,17 @@ export function convertedSize(intsize: number): string {
     }
 }
 
+export function returnOSName(OS:number) {
+    switch (OS) {
+        case 0:
+            return "Windows"
+        case 1:
+            return "Solaris"
+        case 2:
+            return "Linux"
+    }
+}
+
 export function valueCleanUp(intsize): string {
     if (intsize === null || intsize === undefined) {
         return "";
@@ -555,6 +566,9 @@ export function resolve(hpccWidget, callback) {
         case "LZBrowseWidget":
             require(["hpcc/LZBrowseWidget"], doLoad);
             break;
+        case "MachineInformationWidget":
+            require(["hpcc/MachineInformationWidget"], doLoad);
+            break;
         case "MemberOfWidget":
             require(["hpcc/MemberOfWidget"], doLoad);
             break;
@@ -641,6 +655,9 @@ export function resolve(hpccWidget, callback) {
             break;
         case "SourceFilesWidget":
             require(["hpcc/SourceFilesWidget"], doLoad);
+            break;
+        case "TargetClustersQueryWidget":
+            require(["hpcc/TargetClustersQueryWidget"], doLoad);
             break;
         case "TargetComboBoxWidget":
             require(["hpcc/TargetComboBoxWidget"], doLoad);

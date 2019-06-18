@@ -56,7 +56,6 @@ define([
 
             calculateColumnWidth: function (grid) {
                 for (var key in grid.columns) {
-                    console.log(grid.columns[key].id)
                     if (grid.columns[key].label !== "Location" && grid.columns[key].label !== "Component") { //this needs improvement
                         var node = domConstruct.toDom('<div style="position:absolute;visibility:hidden">' + grid.columns[key].label + '</div>');
                         domConstruct.place(node, win.body());

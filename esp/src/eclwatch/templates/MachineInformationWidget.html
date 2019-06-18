@@ -1,0 +1,36 @@
+<span class="${baseClass}">
+    <div id="${id}MachineDropDown" data-dojo-type="dijit.form.DropDownButton">
+        <span id="${id}MachineLabel">${i18n.Preflight}</span>
+        <div class="toolTip" data-dojo-type="dijit.TooltipDialog">
+            <div id="${id}MachineForm" style="width:${_width}" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                <div id="${id}TableContainer" class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                    <select data-dojo-type="dijit.form.Select" title="${i18n.Action}:">
+                        <option id="${id}MachineInformation" name="GetMachineInfo" colspan="2" value="GetMachineInfo">${i18n.MachineInformation}</option>
+                    </select>
+                    <input id="${id}GetProcessorInfo" title="${i18n.ProcessorInformation}:" name="GetProcessorInfo" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}GetStorageInfo" title="${i18n.StorageInformation}:" name="GetStorageInfo" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}LocalFileSystemsOnly" title="${i18n.LocalFileSystemsOnly}:" name="LocalFileSystemsOnly" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}GetSoftwareInfo" title="${i18n.GetSoftwareInformation}:" name="GetSoftwareInfo" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}ApplyProcessFilter" title="${i18n.ShowProcessesUsingFilter}:" name="ApplyProcessFilter" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}AddProcessesToFilter" title="${i18n.AddtionalProcessesToFilter}:" name="AddProcessesToFilter" placeholder="${i18n.AnyAdditionalProcessesToFilter}" colspan="2" checked data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}AutoRefreshCB" title="${i18n.AutoRefresh}:" name="cbAutoRefresh" colspan="2" data-dojo-attach-event="onClick:_onListenAndDisable" checked data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}AutoRefresh" title="${i18n.AutoRefreshIncrement}:" name="AutoRefresh" placeholder="${i18n.AutoRefreshEvery}" colspan="2" value="5" checked data-dojo-type="dijit.form.NumberTextBox" />
+                    <input id="${id}CpuThreshold" title="${i18n.WarnIfCPUUsageIsOver}:" name="CpuThreshold"  placeholder="${i18n.EnterAPercentage}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
+                    <input id="${id}MemThreshold" title="${i18n.WarnIfAvailableMemoryIsUnder}:" name="MemThreshold"  placeholder="${i18n.EnterAPercentageOrMB}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
+                    <select data-dojo-type="dijit.form.Select" id="${id}MemThresholdType" class="miniSelect">
+                        <option colspan="1" value="0" selected="true">%</option>
+                        <option colspan="1" value="1" selected="true">MB</option>
+                    </select>
+                    <input id="${id}DiskThreshold" title="${i18n.WarnIfAvailableDiskSpaceIsUnder}:" name="DiskThreshold"  placeholder="${i18n.EnterAPercentageOrMB}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
+                    <select data-dojo-type="dijit.form.Select" id="${id}DiskThresholdType" class="miniSelect">
+                        <option colspan="1" value="0" selected="true">%</option>
+                        <option colspan="1" value="1" selected="true">MB</option>
+                    </select>
+                </div>
+                <div class="dijitDialogPaneActionBar">
+                    <button id="${id}MachineApply" type="submit" data-dojo-attach-event="onClick:_onMachineApply" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</span>

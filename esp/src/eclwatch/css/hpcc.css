@@ -441,6 +441,13 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.iconConfiguration{
+    background-image: url("../img/configuration.png");
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
 .iconWu{
     background-image: url("../img/WUCog.png");
     width: 32px;
