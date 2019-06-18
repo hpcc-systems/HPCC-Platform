@@ -400,6 +400,9 @@ export function resolve(hpccWidget, callback) {
         case "ActivityWidget":
             require(["hpcc/ActivityWidget"], doLoad);
             break;
+        case "ClusterProcessesQueryWidget":
+            require(["hpcc/ClusterProcessesQueryWidget"], doLoad);
+            break;
         case "CurrentUserDetailsWidget":
             require(["hpcc/CurrentUserDetailsWidget"], doLoad);
             break;
