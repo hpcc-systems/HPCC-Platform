@@ -1000,6 +1000,7 @@ interface IWuScopeVisitor
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) = 0;
     virtual void noteAttribute(WuAttr attr, const char * value) = 0;
     virtual void noteHint(const char * kind, const char * value) = 0;
+    virtual void noteException(IConstWUException & exception) = 0;
 };
 
 class WORKUNIT_API WuScopeVisitorBase : implements IWuScopeVisitor
@@ -1007,6 +1008,7 @@ class WORKUNIT_API WuScopeVisitorBase : implements IWuScopeVisitor
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override {}
     virtual void noteAttribute(WuAttr attr, const char * value) override {}
     virtual void noteHint(const char * kind, const char * value) override {}
+    virtual void noteException(IConstWUException & exception) override {}
 };
 
 /*
@@ -1019,6 +1021,7 @@ enum WuPropertyTypes : unsigned
     PTattributes            = 0x02,
     PThints                 = 0x04,
     PTscope                 = 0x08, // Just the existence of the scope is interesting
+    PTnotes                 = 0x10,
     PTall                   = 0xFF,
     PTunknown               = 0x80000000,
 };

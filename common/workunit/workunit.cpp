@@ -1023,6 +1023,151 @@ private:
 };
 
 
+int compareNoteScopeOrder(IConstWUException & left, IConstWUException & right)
+{
+    return compareScopeName(left.queryScope(), right.queryScope());
+}
+
+int compareNoteScopeOrder(IInterface * const * left, IInterface * const * right)
+{
+    return compareNoteScopeOrder(*static_cast<IConstWUException *>(*left), *static_cast<IConstWUException *>(*right));
+}
+
+class NotesIterator : public CInterfaceOf<IConstWUScopeIterator>
+{
+public:
+    NotesIterator(const IConstWorkUnit * wu, const ScopeFilter & _filter)
+    {
+        Owned<IConstWUExceptionIterator> exceptions = &wu->getExceptions();
+        ForEach(*exceptions)
+        {
+            IConstWUException & exception = exceptions->query();
+            if (exception.queryScope()!=nullptr)
+                notes.append(OLINK(exception));
+        }
+        notes.sort(compareNoteScopeOrder);
+    }
+
+    virtual bool first() override
+    {
+        baseIndex = 0;
+        return updateCurrent();
+    }
+
+    virtual bool next() override
+    {
+        baseIndex += numCurrentScope;
+        return updateCurrent();
+    }
+
+    virtual bool isValid() override
+    {
+        return notes.isItem(baseIndex);
+    }
+
+    virtual bool nextSibling() override
+    {
+        //Search until the current scope is not a child of the previous scope
+        StringBuffer savedScope(queryScope());
+        for (;;)
+        {
+            if (!next())
+                return false;
+
+            if (compareScopes(queryScope(), savedScope) != SCchild)
+                return true;
+        }
+    }
+
+    virtual bool nextParent() override
+    {
+        //Search until the current scope is not a child of the previous parent scope
+        StringBuffer parentScope;
+        if (getParentScope(parentScope, queryScope()))
+        {
+            for (;;)
+            {
+                if (!next())
+                    return false;
+
+                if (compareScopes(queryScope(), parentScope) != SCchild)
+                    return true;
+            }
+        }
+        else
+        {
+            finish();
+            return false;
+        }
+    }
+
+    virtual const char * queryScope() const  override
+    {
+        return notes.item(baseIndex).queryScope();
+    }
+
+    virtual StatisticScopeType getScopeType() const override
+    {
+        const char * tail = queryScopeTail(queryScope());
+        StatsScopeId id(tail);
+        return id.queryScopeType();
+    }
+
+    virtual void playProperties(IWuScopeVisitor & visitor, WuPropertyTypes whichProperties = PTall) override
+    {
+        if (whichProperties & PTnotes)
+        {
+            for (unsigned i=0; i < numCurrentScope; i++)
+            {
+                IConstWUException & cur = notes.item(baseIndex + i);
+                visitor.noteException(cur);
+            }
+        }
+    }
+
+    virtual bool getStat(StatisticKind kind, unsigned __int64 & value) const override
+    {
+        return false;
+    }
+
+    virtual const char * queryAttribute(WuAttr attr, StringBuffer & scratchpad) const override
+    {
+        return nullptr;
+    }
+
+    virtual const char * queryHint(const char * kind) const override
+    {
+        return nullptr;
+    }
+
+private:
+    bool updateCurrent()
+    {
+        if (!notes.isItem(baseIndex))
+            return false;
+
+        // set numCurrentScope to number of notes in the current scope
+        unsigned next = baseIndex+1;
+        while (next < notes.ordinality())
+        {
+            if (compareNoteScopeOrder(notes.item(baseIndex), notes.item(next)) != 0)
+                break;
+            next++;
+        }
+        numCurrentScope = (next - baseIndex);
+        return true;
+    }
+    void finish()
+    {
+        baseIndex = notes.ordinality();
+    }
+
+    unsigned baseIndex = 0;
+    unsigned numCurrentScope = 0;
+    IArrayOf<IConstWUException> notes;
+};
+
+
 int compareStatisticScopes(IConstWUStatistic & left, IConstWUStatistic & right)
 {
     return compareScopeName(left.queryScope(), right.queryScope());
@@ -1937,6 +2082,10 @@ class CompoundStatisticsScopeIterator : public CInterfaceOf<IConstWUScopeIterato
             if (filter.includeHint(kind))
                 visitor.noteHint(kind, value);
         }
+        virtual void noteException(IConstWUException & exception) override
+        {
+            visitor.noteException(exception);
+        }
 
     protected:
         const WuScopeFilter & filter;
@@ -2261,6 +2410,7 @@ public:
 
     virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
     virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
+    virtual void noteException(IConstWUException & exception) { throwUnexpected();}
 protected:
     AggregateFilter filter;
 };
@@ -2462,8 +2612,8 @@ static constexpr EnumMapping sourceMappings[] = {
         { SSFsearchGlobalStats, "global" }, { SSFsearchGraphStats, "stats" }, { SSFsearchGraphStats, "statistics" }, { SSFsearchGraph, "graph" }, { SSFsearchExceptions, "exception" }, { SSFsearchWorkflow, "workflow" },
         { (int)SSFsearchAll, "all" }, { 0, nullptr } };
 static constexpr EnumMapping propertyMappings[] = {
-        { PTstatistics, "stat" }, { PTstatistics, "statistic" }, { PTattributes, "attr" }, { PTattributes, "attribute" }, { PThints, "hint" },
-        { PTstatistics, "stats" }, { PTstatistics, "statistics" }, { PTattributes, "attrs" }, { PTattributes, "attributes" }, { PThints, "hints" },
+        { PTstatistics, "stat" }, { PTstatistics, "statistic" }, { PTattributes, "attr" }, { PTattributes, "attribute" }, { PThints, "hint" },{ PTnotes, "note" },
+        { PTstatistics, "stats" }, { PTstatistics, "statistics" }, { PTattributes, "attrs" }, { PTattributes, "attributes" }, { PThints, "hints" }, { PTnotes, "notes" },
         { PTnone, "none" }, { PTscope, "scope" }, { PTall, "all" }, { 0, nullptr } };
 
 
@@ -2917,6 +3067,9 @@ void WuScopeFilter::finishedFilter()
             if (!(properties & (PTattributes|PThints)))
                 sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
         }
+
+        if (!(properties & PTnotes))
+            sourceFlags &= ~SSFsearchExceptions;
     }
 
     //Optimize sources if they haven't been explicitly specified
@@ -3113,6 +3266,8 @@ StringBuffer & WuScopeFilter::describe(StringBuffer & out) const
                 props.append(",hint");
             if (properties & PTscope)
                 props.append(",scope");
+            if (properties & PTnotes)
+                props.append(",note");
         }
         out.append(",properties[").append(props.str()+1).append("]");
     }
@@ -8625,6 +8780,11 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
             Owned<IConstWUScopeIterator> workflowIter(new WorkflowStatisticsScopeIterator(iter));
             compoundIter->addIter(workflowIter);
         }
+    }
+    if (sources & SSFsearchExceptions)
+    {
+        Owned<IConstWUScopeIterator> notesIter(new NotesIterator(this,filter.queryIterFilter()));
+        compoundIter->addIter(notesIter);
     }
 
 

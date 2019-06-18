@@ -56,6 +56,16 @@
 #define LINUX_SIGNAL_EXCEPTION
 #endif
 
+const char * errorSeverityString[] = {"Information", "Warning", "Error", "Alert", "Ignore", "Fatal", "Unknown"};
+
+const char * querySeverityString(ErrorSeverity errorSeverity)
+{
+    if (errorSeverity<_elements_in(errorSeverityString))
+        return errorSeverityString[errorSeverity];
+    else
+        return errorSeverityString[SeverityUnknown];
+}
+
 class jlib_thrown_decl StringException: public IException, public CInterface
 {
 public:
