@@ -401,11 +401,16 @@ public:
         if (!islocal && TAG_NULL != mpTagRPC)
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
-    void kill()
+    virtual void kill() override
     {
         sorter.clear();
         leftInput.clear();
         rightInput.clear();
+        if (portbase)
+        {
+            freePort(portbase, NUMSLAVEPORTS);
+            portbase = 0;
+        }
         CSlaveActivity::kill();
     }
 
