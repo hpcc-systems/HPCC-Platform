@@ -1477,7 +1477,8 @@ class CWhiteListHandler
                 }
             }
         }
-        IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("WhiteList");
+        // only ever expecting 1 DaliServerProcess and 1 WhiteList
+        IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
         if (whiteListTree)
         {
             enabled = whiteListTree->getPropBool("@enabled", true); // on by default
