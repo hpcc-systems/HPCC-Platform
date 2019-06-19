@@ -6621,6 +6621,8 @@ CHqlDataset::CHqlDataset(node_operator _op, ITypeInfo *_type, HqlExprArray &_own
 CHqlDataset::~CHqlDataset()
 {
     ::Release(container);
+    IInterface * meta = metaProperty.load(std::memory_order_acquire);
+    ::Release(meta);
 }
 
 bool CHqlDataset::equals(const IHqlExpression & r) const

@@ -3964,8 +3964,7 @@ double queryActivityLikelihood(IHqlExpression * expr)
 IInterface * CHqlRealExpression::queryExistingProperty(ExprPropKind propKind) const
 {
     //If this was used significantly in a multi threaded environment then reduce the work in the spinblock
-    SpinBlock block(*propertyLock);
-    CHqlDynamicProperty * cur = attributes;
+    CHqlDynamicProperty * cur = attributes.load(std::memory_order_acquire);
     while (cur)
     {
         if (cur->kind == propKind)
@@ -3989,8 +3988,8 @@ void CHqlRealExpression::addProperty(ExprPropKind kind, IInterface * value)
     SpinBlock block(*propertyLock);
     //theoretically we should test if the attribute has already been added by another thread, but in practice there is no
     //problem if the attribute is present twice.
-    attr->next = attributes;
-    attributes = attr;
+    attr->next = attributes.load(std::memory_order_acquire);
+    attributes.store(attr, std::memory_order_release);
 }
 
 
@@ -4003,8 +4002,11 @@ void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
     {
         SpinBlock block(*propertyLock);
         //ensure once meta is set it is never modified
-        if (!metaProperty)
-            metaProperty.set(value);
+        if (!metaProperty.load(std::memory_order_acquire))
+        {
+            LINK(value);
+            metaProperty.store(value, std::memory_order_release);
+        }
     }
     else
         CHqlRealExpression::addProperty(kind, value);
@@ -4014,10 +4016,7 @@ void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
 IInterface * CHqlDataset::queryExistingProperty(ExprPropKind kind) const
 {
     if (kind == EPmeta)
-    {
-        SpinBlock block(*propertyLock);
-        return metaProperty;
-    }
+        return metaProperty.load(std::memory_order_acquire);
 
     return CHqlRealExpression::queryExistingProperty(kind);
 }
