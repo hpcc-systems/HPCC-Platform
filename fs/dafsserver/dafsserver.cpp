@@ -1542,28 +1542,28 @@ class CRemoteCsvReadActivity : public CRemoteExternalFormatReadActivity
 public:
     CRemoteCsvReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
-        maxRowSize = config.getPropInt64("maxRowSize", defaultMaxCsvRowSize) * 1024 * 1024;
-        preserveWhitespace = config.getPropBool("preserveWhitespace");
+        maxRowSize = config.getPropInt64("ActivityOptions/maxRowSize", defaultMaxCsvRowSize) * 1024 * 1024;
+        preserveWhitespace = config.getPropBool("ActivityOptions/preserveWhitespace");
 
-        if (!config.getProp("csvQuote", csvQuote))
+        if (!config.getProp("ActivityOptions/csvQuote", csvQuote))
         {
             if (!fileDesc->queryProperties().getProp("@csvQuote", csvQuote))
                 csvQuote.append("\"");
         }
-        if (!config.getProp("csvSeparate", csvSeparate))
+        if (!config.getProp("ActivityOptions/csvSeparate", csvSeparate))
         {
             if (!fileDesc->queryProperties().getProp("@csvSeparate", csvSeparate))
                 csvSeparate.append("\\,");
         }
-        if (!config.getProp("csvTerminate", csvTerminate))
+        if (!config.getProp("ActivityOptions/csvTerminate", csvTerminate))
         {
             if (!fileDesc->queryProperties().getProp("@csvTerminate", csvTerminate))
                 csvTerminate.append("\\n,\\r\\n");
         }
-        if (!config.getProp("csvEscape", csvEscape))
+        if (!config.getProp("ActivityOptions/csvEscape", csvEscape))
             fileDesc->queryProperties().getProp("@csvEscape", csvEscape);
 
-        headerLines = config.getPropInt64("headerLines"); // really this should be a published attribute too
+        headerLines = config.getPropInt64("ActivityOptions/headerLines"); // really this should be a published attribute too
     }
     virtual StringBuffer &getInfoStr(StringBuffer &out) const override
     {
@@ -1615,7 +1615,6 @@ class CRemoteMarkupReadActivity : public CRemoteExternalFormatReadActivity, impl
     Linked<IColumnProvider> lastMatch;
     Owned<IXMLParse> xmlParser;
 
-    StringBuffer xpath;
     bool noRoot = false;
     bool useXmlContents = false;
 
@@ -1820,12 +1819,15 @@ class CRemoteMarkupReadActivity : public CRemoteExternalFormatReadActivity, impl
 
         return true;
     }
+protected:
+    StringBuffer xpath;
+    StringBuffer customRowTag;
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
     CRemoteMarkupReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc, ThorActivityKind _kind) : PARENT(config, fileDesc), kind(_kind)
     {
-        config.getProp("xpath", xpath);
+        config.getProp("ActivityOptions/rowTag", customRowTag);
         noRoot = config.getPropBool("noRoot");
     }
     IColumnProvider *queryMatch() const { return lastMatch; }
@@ -1882,6 +1884,11 @@ class CRemoteXmlReadActivity : public CRemoteMarkupReadActivity
 public:
     CRemoteXmlReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKxmlread)
     {
+        xpath.set("/Dataset/");
+        if (customRowTag.isEmpty()) // no override
+            fileDesc->queryProperties().getProp("@rowTag", xpath);
+        else
+            xpath.append(customRowTag);
     }
 };
 
@@ -1892,6 +1899,11 @@ class CRemoteJsonReadActivity : public CRemoteMarkupReadActivity
 public:
     CRemoteJsonReadActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc, TAKjsonread)
     {
+        xpath.set("/");
+        if (customRowTag.isEmpty()) // no override
+            fileDesc->queryProperties().getProp("@rowTag", xpath);
+        else
+            xpath.append(customRowTag);
     }
 };
 
@@ -4308,7 +4320,46 @@ public:
          *    "f1" : "real"
          *   }
          *  }
-         * }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "node" : {
+         *   "kind" : "xmlread",
+         *   "fileName": "examplefilename",
+         *   "keyFilter" : "f1='1    '",
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *   "output" : {
+         *    "f2" : "string",
+         *    "f1" : "real"
+         *   }
+         *   "ActivityOptions" : { // usually not required, options here may override file meta info.
+         *    "rowTag" : "/Dataset/OtherRow"
+         *   }
+         *  }
+         * OR
+         * {
+         *  "format" : "xml",
+         *  "node" : {
+         *   "kind" : "csvread",
+         *   "fileName": "examplefilename",
+         *   "keyFilter" : "f1='1    '",
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   },
+         *   "output" : {
+         *    "f2" : "string",
+         *    "f1" : "real"
+         *   }
+         *   "ActivityOptions" : { // usually not required, options here may override file meta info.
+         *    "csvQuote" : "\"",
+         *    "csvSeparate" : ","
+         *    "csvTerminate" : "\\n,\\r\\n",
+         *   }
+         *  }
          * OR
          * {
          *  "format" : "xml",

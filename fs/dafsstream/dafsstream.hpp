@@ -120,6 +120,7 @@ interface DAFSCLIENT_API IDFUFileAccess : extends IInterface
 // NB: these changes effect future creation of IDFUFilePartReader or IDFUFilePartWriter instances
     virtual void setStreamReplyLimitK(unsigned k) = 0;
     virtual void setExpirySecs(unsigned secs) = 0;
+    virtual void setOption(const char *key, const char *value) = 0;
 
 // NB: the intention is for a IDFUFileAccess to be used to create instances for multiple parts, but not to mix types.
     virtual IDFUFilePartReader *createFilePartReader(unsigned p, unsigned copy=0, IOutputMetaData *outMeta=nullptr, bool preserveGrouping=false) = 0;
