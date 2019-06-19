@@ -2079,9 +2079,18 @@ public:
             resultDistStream = new CKeyLocalLookup(*this, helper->queryIndexRecordSize()->queryRecordAccessor(true));
         }
     }
-    virtual void abort()
+    virtual void kill() override
     {
-        CSlaveActivity::abort();
+        if (portbase)
+        {
+            freePort(portbase, NUMSLAVEPORTS);
+            portbase = 0;
+        }
+        PARENT::kill();
+    }
+    virtual void abort() override
+    {
+        PARENT::abort();
         if (resultDistStream)
             resultDistStream->stop();
         pendingGroupSem.signal();

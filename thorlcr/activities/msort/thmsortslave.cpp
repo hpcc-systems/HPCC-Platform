@@ -172,7 +172,7 @@ public:
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
-    void kill()
+    virtual void kill() override
     {
         ActPrintLog("MSortSlaveActivity::kill");
 
@@ -181,10 +181,14 @@ public:
             mergeStats(spillStats, sorter);
             sorter.clear();
         }
-
-        CSlaveActivity::kill();
+        if (portbase)
+        {
+            freePort(portbase, NUMSLAVEPORTS);
+            portbase = 0;
+        }
+        PARENT::kill();
     }
-    void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
         CSlaveActivity::serializeStats(mb);
 
