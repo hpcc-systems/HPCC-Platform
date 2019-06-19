@@ -29,9 +29,11 @@ enum class SpecialRow : memsize_t
     //more: We could have eogs == eog|eos, but simpler for the callers if they come through separately.
     max
 };
-constexpr static const byte * eofRow = (const byte * )(memsize_t)SpecialRow::eof;
-constexpr static byte const * eogRow = (const byte * )(memsize_t)SpecialRow::eog;
-constexpr static const byte * eosRow = (const byte * )(memsize_t)SpecialRow::eos;
+
+//These would be cleaner defined as constexpr, but c++x does not allow reinterpret_cast class in a constexpr
+#define eofRow ((const byte * )(memsize_t)SpecialRow::eof)
+#define eogRow ((const byte * )(memsize_t)SpecialRow::eog)
+#define eosRow ((const byte * )(memsize_t)SpecialRow::eos)
 
 inline bool isSpecialRow(const void * row) { return unlikely((memsize_t)row < (memsize_t)SpecialRow::max); }
 inline bool isEndOfFile(const void * row) { return unlikely((memsize_t)row == (memsize_t)SpecialRow::eof); }       // checking row against null is also valid
