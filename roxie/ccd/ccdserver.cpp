@@ -27530,9 +27530,28 @@ public:
             }
             for (unsigned i = 0; i < sinks.ordinality()-1; i++)
                 threads.item(i).start(parentExtractSize, parentExtract);
-            sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+            try
+            {
+                sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+            }
+            catch (IException *E)
+            {
+                noteException(E);
+                E->Release();
+            }
             for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                threads.item(i).join();
+            {
+                try
+                {
+                    threads.item(i).join();
+                }
+                catch (IException *E)
+                {
+                    noteException(E);
+                    E->Release();
+                }
+            }
+            checkAbort();
  #else
             class casyncfor: public CAsyncFor
             {
