@@ -500,6 +500,22 @@ public:
             }
         }
     }
+    IPropertyTree *findPartElement(IPropertyTree &depTree, IPropertyTree *parent, const char *name)
+    {
+        VStringBuffer xpath("EsdlElement[@name='%s']", name);
+        IPropertyTree *partElement = parent->queryPropTree(xpath);
+        if (partElement)
+            return partElement;
+        const char *base_type = parent->queryProp("@base_type");
+        if (base_type && *base_type)
+        {
+            VStringBuffer baseXPath("EsdlStruct[@name='%s']", base_type);
+            IPropertyTree *structType = depTree.queryPropTree(baseXPath);
+            if (structType)
+                return findPartElement(depTree, structType, name);
+        }
+        return nullptr;
+    }
     void addDiffIdPartToMap(IPropertyTree &depTree, IPropertyTree *parent, IPropertyTree *map, const char *id)
     {
         StringBuffer part;
@@ -519,8 +535,7 @@ public:
         }
         else
         {
-            VStringBuffer xpath("EsdlElement[@name='%s']", part.str());
-            IPropertyTree *partElement = parent->queryPropTree(xpath);
+            IPropertyTree *partElement = findPartElement(depTree, parent, part.str());
             if (!partElement)
             {
                 StringBuffer idpath(id);
@@ -564,7 +579,7 @@ public:
                 }
                 else
                 {
-                    xpath.setf("EsdlStruct[@name='%s']", partElement->queryProp("@complex_type"));
+                    VStringBuffer xpath("EsdlStruct[@name='%s']", partElement->queryProp("@complex_type"));
                     IPropertyTree *structType = depTree.queryPropTree(xpath);
                     if (!structType)
                     {

@@ -99,4 +99,18 @@
       </Addresses>
     </Guest>
   </Guests>
+  <KeyDates>
+    <KeyDate>
+      <Year>2010</Year>
+      <Month>1</Month>
+      <Day>1</Day>
+      <Descr>Founded</Descr>
+    </KeyDate>
+    <KeyDate>
+      <Year>2015</Year>
+      <Month>1</Month>
+      <Day>1</Day>
+      <Descr>Reboot</Descr>
+    </KeyDate>
+  </KeyDates>
 </OrganizationInfoResponse>
