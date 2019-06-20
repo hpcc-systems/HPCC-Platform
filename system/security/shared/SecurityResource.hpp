@@ -132,8 +132,10 @@ public:
         if(!from)
             return;
 
+        setResourceType(from->getResourceType());
         setDescription(from->getDescription());
         setValue(from->getValue());
+        setRequiredAccessFlags(from->getRequiredAccessFlags());
         setAccessFlags(from->getAccessFlags());
 
         // The destination properties are reset to an empty default state so the
