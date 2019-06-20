@@ -140,7 +140,7 @@ void SubStringInfo::bindToFrom(HqlCppTranslator & translator, BuildCtx & ctx)
 
 //---------------------------------------------------------------------------
 
-WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_function), workflowOp(no_funcdef)
+WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(999999999), function(_function), workflowOp(no_funcdef)
 {
     IHqlExpression * body = function->queryChild(0);
     assertex(body->getOperator() == no_outofline);

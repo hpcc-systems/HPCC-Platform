@@ -1280,7 +1280,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
 
     virtual WUGraphState queryGraphState(const char *graphName) const = 0;
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
-    virtual void setGraphState(const char *graphName, WUGraphState state) const = 0;
+    virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const = 0;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const = 0;
     virtual void clearGraphProgress() const = 0;

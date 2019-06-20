@@ -5963,9 +5963,11 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
                 WorkflowItem & cur = workflow.item(i);
                 if (!cur.isFunction())
                 {
-                    assertex(!graph);
                     HqlExprArray & exprs = cur.queryExprs();
+                    assertex(!graph);
                     assertex(exprs.ordinality() == 1);
+
+                    curWfid = cur.queryWfid();
                     graph.set(&exprs.item(0));
                     assertex(graph->getOperator() == no_thor);
                 }
@@ -18541,6 +18543,7 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
         if (!isEmpty)
         {
+            curWfid = wfid;
             if (action.isFunction())
             {
                 OwnedHqlExpr function = action.getFunction();
@@ -18551,7 +18554,6 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 OwnedHqlExpr expr = createActionList(action.queryExprs());
 
                 IHqlExpression * persistAttr = expr->queryAttribute(_workflowPersist_Atom);
-                curWfid = wfid;
                 if (persistAttr)
                 {
                     if (!options.freezePersists)
@@ -18564,8 +18566,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
                 }
                 else
                     buildWorkflowItem(switchctx, switchStmt, wfid, expr);
-                curWfid = 0;
             }
+            curWfid = 0;
         }
     }
 

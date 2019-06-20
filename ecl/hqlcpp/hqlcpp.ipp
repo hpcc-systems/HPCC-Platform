@@ -2016,6 +2016,8 @@ public:
     inline unsigned curGraphSequence() const { return activeGraph ? graphSeqNumber : 0; }
     UniqueSequenceCounter & querySpillSequence() { return spillSequence; }
     unsigned nextLibrarySequence() { return librarySequence++; }
+    unsigned queryMaxWfid() { return maxWfid; }
+    void setMaxWfid(unsigned wfid) { maxWfid = wfid; }
 
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
@@ -2046,6 +2048,7 @@ protected:
     HqlCppDerived       derived;
     unsigned            activitiesThisCpp;
     unsigned            curCppFile;
+    unsigned            maxWfid = 0;
     Linked<ICodegenContextCallback> ctxCallback;
     ClusterType         targetClusterType;
     bool contextAvailable;

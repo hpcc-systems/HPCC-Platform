@@ -1246,7 +1246,7 @@ protected:
         ASSERT(wu->queryGraphState("graph1")==WUGraphUnknown);
         ASSERT(wu->queryNodeState("graph1", 1)==WUGraphUnknown);
 
-        wu->setGraphState("graph1",WUGraphRunning);
+        wu->setGraphState("graph1",1,WUGraphRunning);
         ASSERT(wu->queryGraphState("graph1")==WUGraphRunning);
 
         wu->setNodeState("graph1", 1, WUGraphRunning);
@@ -1261,7 +1261,7 @@ protected:
         ret = wu->getRunningGraph(s, subid);
         ASSERT(!ret);
 
-        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 0, 1);
+        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1, 1);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         {
             StatsSubgraphScope subgraph(stats, 1);
