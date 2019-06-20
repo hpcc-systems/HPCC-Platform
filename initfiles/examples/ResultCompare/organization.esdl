@@ -32,6 +32,18 @@ ESPStruct NameInfo
     ESParray<string, Alias> Aliases;
 };
 
+ESPStruct Date
+{
+    short Year;
+    short Month;
+    short Day;
+};
+
+ESPStruct DateInfo : Date
+{
+    string Descr;
+};
+
 ESPStruct AddressInfo
 {
     ESPenum AddressType type("Home");
@@ -60,6 +72,7 @@ ESPResponse OrganizationInfoResponse
     ESPstruct AddressInfo Address;
     ESParray<ESPstruct PersonInfo, Member> Members;
     ESParray<ESPstruct PersonInfo, Guest> Guests;
+    ESParray<ESPstruct DateInfo, KeyDate> KeyDates;
 };
 
 ESPservice [version("0.01")] Organizations
