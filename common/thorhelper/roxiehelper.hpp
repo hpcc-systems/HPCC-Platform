@@ -366,7 +366,7 @@ interface SafeSocket : extends IInterface
     virtual bool checkConnection() const = 0;
     virtual void sendException(const char *source, unsigned code, const char *message, bool isBlocked, const IContextLogger &logctx) = 0;
 
-    // TO be removed and replaced with better mechanism when SafeSocket merged with tht new output sequencer...
+    // To be removed and replaced with better mechanism when SafeSocket merged with the new output sequencer...
     // until then you may need to lock using this if you are making multiple calls and they need to stay together in the output
     virtual CriticalSection &queryCrit() = 0;
 

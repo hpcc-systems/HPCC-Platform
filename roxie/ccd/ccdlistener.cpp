@@ -23,6 +23,8 @@
 #include "wujobq.hpp"
 #include "thorplugin.hpp"
 
+#include "udptopo.hpp"
+
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
 #include "ccdlistener.hpp"
@@ -65,6 +67,8 @@ class CascadeManager : public CInterface
     StringBuffer errors;
 
     IArrayOf<ISocket> activeChildren;
+    Owned<const ITopologyServer> topology;
+    const SocketEndpointArray &servers;
     UnsignedArray activeIdxes;
     bool entered;
     bool connected;
@@ -113,9 +117,9 @@ class CascadeManager : public CInterface
 
     void connectChild(unsigned idx)
     {
-        if (idx < getNumNodes())
+        if (idx < servers.ordinality())
         {
-            SocketEndpoint ep(roxiePort, getNodeAddress(idx));
+            const SocketEndpoint &ep = servers.item(idx);
             try
             {
                 if (traceLevel)
@@ -284,7 +288,7 @@ private:
 
 
 public:
-    CascadeManager(const IRoxieContextLogger &_logctx) : logctx(_logctx)
+    CascadeManager(const IRoxieContextLogger &_logctx, const ITopologyServer *_topology) : topology(_topology), servers(_topology->queryServers(roxiePort)), logctx(_logctx)
     {
         entered = false;
         connected = false;
@@ -384,11 +388,11 @@ public:
         if (traceLevel > 5)
             DBGLOG("doLockGlobal got %d locks", locksGot);
         reply.append("<Lock>").append(locksGot).append("</Lock>");
-        reply.append("<NumServers>").append(getNumNodes()).append("</NumServers>");
+        reply.append("<NumServers>").append(servers.ordinality()).append("</NumServers>");
         if (lockAll)
-            return locksGot == getNumNodes();
+            return locksGot == servers.ordinality();
         else
-            return locksGot > getNumNodes()/2;
+            return locksGot > servers.ordinality()/2;
     }
 
     enum CascadeMergeType { CascadeMergeNone, CascadeMergeStats, CascadeMergeQueries };
@@ -798,14 +802,6 @@ public:
             else
                 throw MakeStringException(errorCode, "Access to %s : %s from host %s is not allowed %s", queryName, qText.str(), peerStr.str(), errText.str());
         }
-    }
-
-    virtual bool suspend(bool suspendIt)
-    {
-        CriticalBlock b(activeCrit);
-        bool ret = suspended;
-        suspended = suspendIt;
-        return ret;
     }
 
     virtual void addAccess(bool allow, bool allowBlind, const char *ip, const char *mask, const char *query, const char *errorMsg, int errorCode)
@@ -1421,7 +1417,7 @@ public:
     inline CascadeManager &ensureCascadeManager()
     {
         if (!cascade)
-            cascade.setown(new CascadeManager(ensureContextLogger()));
+            cascade.setown(new CascadeManager(ensureContextLogger(), getTopology()));
         return *cascade;
     }
 
@@ -1652,13 +1648,6 @@ public:
     virtual void decActiveThreadCount()
     {
         threadsActive--;
-    }
-    virtual bool suspend(bool suspendIt)
-    {
-        CriticalBlock b(activeCrit);
-        bool ret = suspended;
-        suspended = suspendIt;
-        return ret;
     }
     virtual void addAccess(bool allow, bool allowBlind, const char *ip, const char *mask, const char *query, const char *errorMsg, int errorCode)
     {
@@ -1941,17 +1930,6 @@ IHpccProtocolListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspe
     if (traceLevel)
         DBGLOG("Creating Roxie workunit listener, pool size %d%s", poolSize, suspended?" SUSPENDED":"");
     return new RoxieWorkUnitListener(poolSize, suspended);
-}
-
-bool suspendRoxieListener(unsigned port, bool suspended)
-{
-    ForEachItemIn(idx, socketListeners)
-    {
-        IHpccProtocolListener &listener = socketListeners.item(idx);
-        if (listener.queryPort()==port)
-            return listener.suspend(suspended);
-    }
-    throw MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown port %u specified in suspendRoxieListener", port);
 }
 
 //================================================================================================================================

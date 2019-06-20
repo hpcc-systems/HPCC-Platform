@@ -38,12 +38,47 @@ typedef unsigned ruid_t;   // at 1000/sec recycle every 49 days
 typedef unsigned RecordLengthType;
 #define MAX_RECORD_LENGTH 0xffffffff
 
+extern UDPLIB_API bool useDynamicServers;
+
+class UDPLIB_API ServerIdentifier
+{
+private:
+    IpAddress serverIp;  // MORE - should really be an endpoint?
+public:
+    ServerIdentifier() : serverIp() { }
+    ServerIdentifier(const ServerIdentifier &from) : serverIp(from.serverIp) { }
+    ServerIdentifier(const IpAddress &from) : serverIp(from) { }
+    const IpAddress &getNodeAddress() const;
+    const ServerIdentifier & operator=(const ServerIdentifier &from)
+    {
+        serverIp = from.serverIp;
+        return *this;
+    }
+    bool operator==(const ServerIdentifier &from) const
+    {
+        return serverIp.ipequals(from.serverIp);
+    }
+    unsigned hash() const
+    {
+        return serverIp.iphash(0);
+    }
+    inline void setIp(const IpAddress &_ip)
+    {
+        serverIp = _ip;
+    }
+    StringBuffer &getTraceText(StringBuffer &s) const
+    {
+        return serverIp.getIpText(s);
+    }
+};
+
+extern UDPLIB_API ServerIdentifier myNode;
+
 interface IMessagePacker : extends IInterface
 {
     virtual void *getBuffer(unsigned len, bool variable) = 0;
     virtual void putBuffer(const void *buf, unsigned len, bool variable) = 0;
-    virtual void flush(bool last_message = false) = 0;
-    virtual bool dataQueued() = 0;
+    virtual void flush() = 0;
     virtual void sendMetaInfo(const void *buf, unsigned len) = 0;
 
     virtual unsigned size() const = 0;  // Total amount written via putBuffer plus any overhead from record length prefixes
@@ -82,33 +117,33 @@ interface IMessageCollator : extends IInterface
     virtual void interrupt(IException *E = NULL) = 0;
     virtual ruid_t queryRUID() const = 0;
     virtual unsigned queryBytesReceived() const = 0;
-
-    virtual bool add_package(roxiemem::DataBuffer *dataBuff) = 0;
 };
 
 interface IReceiveManager : extends IInterface 
 {
     virtual IMessageCollator *createMessageCollator(roxiemem::IRowManager *rowManager, ruid_t ruid) = 0;
     virtual void detachCollator(const IMessageCollator *collator) = 0;
-    virtual void setDefaultCollator(IMessageCollator *collator) = 0;
+};
+
+// Opaque data structure that SendManager gives to message packer describing how to talk to a particular target node
+interface IUdpReceiverEntry
+{
 };
 
 interface ISendManager : extends IInterface 
 {
-    virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, unsigned destNodeIndex, int queue) = 0;
-    virtual bool dataQueued(ruid_t ruid, unsigned sequence, unsigned destNodeIndex) = 0;
-    virtual bool abortData(ruid_t ruid, unsigned sequence, unsigned destNodeIndex) = 0;
+    virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) = 0;
+    virtual void writeOwn(IUdpReceiverEntry &receiver, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;
+    virtual bool dataQueued(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
+    virtual bool abortData(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
     virtual bool allDone() = 0;
-    virtual void writeOwn(unsigned destNodeIndex, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;  // NOTE: takes ownership of the DataBuffer
 };
 
-extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, unsigned myNodeIndex);
-extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, unsigned myNodeIndex);
-extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, unsigned _destNode, unsigned _sourceNode, unsigned _msgSeq, unsigned _queue);
+extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender);
+extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter);
 
-extern UDPLIB_API const IpAddress &getNodeAddress(unsigned index);
-extern UDPLIB_API unsigned addRoxieNode(const char *ipString);
-extern UDPLIB_API unsigned getNumNodes();
+extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep);
+extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP);
 
 extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
 
@@ -119,7 +154,7 @@ extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);
 
 extern UDPLIB_API unsigned multicastTTL;
 
-#ifdef __linux__
+#if defined( __linux__) || defined(__APPLE__)
 extern UDPLIB_API void setLinuxThreadPriority(int level);
 #endif
 
@@ -127,11 +162,13 @@ extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
 extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;
 extern UDPLIB_API unsigned udpRequestToSendTimeout;
+extern UDPLIB_API unsigned udpRequestToSendAckTimeout;
+
 extern UDPLIB_API unsigned udpRetryBusySenders;
-extern UDPLIB_API unsigned udpInlineCollationPacketLimit;
-extern UDPLIB_API bool udpInlineCollation;
 extern UDPLIB_API bool udpSnifferEnabled;
 extern UDPLIB_API unsigned udpSnifferReadThreadPriority;
 extern UDPLIB_API unsigned udpSnifferSendThreadPriority;
+
+extern UDPLIB_API void stopAeronDriver();
 
 #endif

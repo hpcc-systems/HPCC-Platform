@@ -2494,17 +2494,17 @@ public:
     bool isOpt; // MORE - this is not very good. Needs some thought unless you cache opt / nonOpt separately which seems wasteful
     bool isLocal;
     unsigned channel;
-    unsigned serverIdx;
+    ServerIdentifier serverId;
 
 public:
     CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverIdx(header->serverIdx)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
         try
         {
-            RoxiePacketHeader newHeader(*header, ROXIE_FILECALLBACK);
+            RoxiePacketHeader newHeader(*header, ROXIE_FILECALLBACK, 0);  // subchannel not relevant
             bool ok = false;
             for (unsigned i = 0; i < callbackRetries; i++)
             {
@@ -2515,7 +2515,7 @@ public:
                 buf[1] = isLocal;
                 strcpy(buf+2, lfn.get());
                 output->putBuffer(buf, len, true);
-                output->flush(true);
+                output->flush();
                 output.clear();
                 if (callback->wait(callbackTimeout))
                 {
@@ -2647,7 +2647,7 @@ public:
             while (files.isItem(idx))
             {
                 CSlaveDynamicFile &f = files.item(idx);
-                if (f.channel==header->channel && f.serverIdx==header->serverIdx && stricmp(f.queryFileName(), lfn)==0)
+                if (f.channel==header->channel && f.serverId==header->serverId && stricmp(f.queryFileName(), lfn)==0)
                 {
                     if (!cacheDate.equals(f.queryTimeStamp()) || checksum != f.queryCheckSum())
                     {
@@ -2802,19 +2802,6 @@ private:
         rfn.getLocalPath(physicalName);
         splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
         rdn.setLocalPath(physicalDir.str());
-        if (localCluster && getNumNodes() > 1)
-        {
-            unsigned buddy = myNodeIndex+1;
-            if (buddy >= getNumNodes())
-                buddy = 0;
-            SocketEndpoint buddyNode(0, getNodeAddress(buddy));
-            rdn.setEp(buddyNode);
-            rfn.setEp(buddyNode);
-            Owned<IFile> targetdir = createIFile(rdn);
-            Owned<IFile> target = createIFile(rfn);
-            targetdir->createDirectory();
-            copyFile(target, localFile);
-        }
         if (remoteNodes.length())
         {
             ForEachItemIn(idx, remoteNodes)
@@ -2902,16 +2889,8 @@ private:
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
                         cluster, dFile->queryLogicalName());
             SocketEndpointArray eps;
-            SocketEndpoint me(0, getNodeAddress(myNodeIndex));
+            SocketEndpoint me(0, myNode.getNodeAddress());
             eps.append(me);
-            if (getNumNodes() > 1)
-            {
-                unsigned buddy = myNodeIndex+1;
-                if (buddy >= getNumNodes())
-                    buddy = 0;
-                SocketEndpoint buddyNode(0, getNodeAddress(buddy));
-                eps.append(buddyNode);
-            }
             localCluster.setown(createIGroup(eps));
             StringBuffer clusterName;
             localClusterName.set(eps.getText(clusterName));

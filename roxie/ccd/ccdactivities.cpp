@@ -409,7 +409,7 @@ public:
     {
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
         doCheck(output);
-        output->flush(true);
+        output->flush();
         return true;
     }
 
@@ -449,7 +449,7 @@ public:
         logctx.CTXLOG("%sLIMIT EXCEEDED: %s", keyed ? "KEYED " : "", header.toString(s).str());
         header.activityId = keyed ? ROXIE_KEYEDLIMIT_EXCEEDED : ROXIE_LIMIT_EXCEEDED;
         Owned<IMessagePacker> output = ROQ->createOutputStream(header, false, logctx);
-        output->flush(true);
+        output->flush();
         aborted = true;
         logctx.abort();
     }
@@ -1912,7 +1912,7 @@ public:
                     {
                         CDummyMessagePacker d;
                         parts.item(i).doProcess(&d);
-                        d.flush(true);
+                        d.flush();
                         parent.processRow(d);
                     }
                     catch (IException *)

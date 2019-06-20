@@ -90,7 +90,6 @@ interface IHpccProtocolMsgSink : extends IInterface
     virtual void setMaxActiveThreads(unsigned val) = 0;
     virtual void incActiveThreadCount() = 0;
     virtual void decActiveThreadCount() = 0;
-    virtual bool suspend(bool suspendIt) = 0;
 
     virtual void addAccess(bool allow, bool allowBlind, const char *ip, const char *mask, const char *query, const char *errorMsg, int errorCode) = 0;
     virtual void checkAccess(IpAddress &peer, const char *queryName, const char *queryText, bool isBlind) = 0;
@@ -114,7 +113,6 @@ interface IHpccProtocolListener : extends IInterface
     virtual bool stop(unsigned timeout) = 0;
     virtual void stopListening() = 0;
     virtual void disconnectQueue() = 0;
-    virtual bool suspend(bool suspendIt) = 0;
 
     virtual void runOnce(const char *query) = 0;
 };

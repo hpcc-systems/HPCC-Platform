@@ -22,4 +22,3 @@
      handle client termination better.
 */
 
-extern IMessageCollator *createCMessageCollator(roxiemem::IRowManager *rowManager, ruid_t ruid);

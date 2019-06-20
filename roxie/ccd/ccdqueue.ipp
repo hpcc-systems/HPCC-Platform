@@ -36,14 +36,12 @@ interface IPendingCallback : public IInterface
 interface IRoxieOutputQueueManager : public IInterface
 {
     virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx) = 0;
-    virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
+    virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) = 0;
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) = 0;
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IRoxieContextLogger &logctx) = 0;
     virtual bool replyPending(RoxiePacketHeader &x) = 0;
     virtual bool abortCompleted(RoxiePacketHeader &x) = 0;
-    virtual bool suspendChannel(unsigned channel, bool suspend, const IRoxieContextLogger &logctx) = 0;
-    virtual bool checkSuspended(const RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
 
     virtual unsigned getHeadRegionSize() const = 0;
     virtual void setHeadRegionSize(unsigned newsize) = 0;
@@ -71,13 +69,7 @@ public:
         lastput = 0;
     }
 
-    virtual bool dataQueued() 
-    {
-        return false;
-    }
-
-
-    virtual void *getBuffer(unsigned len, bool variable)
+    virtual void *getBuffer(unsigned len, bool variable) override
     {
         if (variable)
         {
@@ -90,7 +82,7 @@ public:
         }
     }
 
-    virtual void putBuffer(const void *buf, unsigned len, bool variable)
+    virtual void putBuffer(const void *buf, unsigned len, bool variable) override
     {
         if (variable)
         {
@@ -102,9 +94,9 @@ public:
         lastput += len;
     }
 
-    virtual void flush(bool last_message) { }
-    virtual void sendMetaInfo(const void *buf, unsigned len) { throwUnexpected(); }
-    virtual unsigned size() const { return lastput; }
+    virtual void flush() override { }
+    virtual void sendMetaInfo(const void *buf, unsigned len) override { throwUnexpected(); }
+    virtual unsigned size() const override { return lastput; }
 };
 
 interface IPacketDiscarder : public IInterface
@@ -122,8 +114,6 @@ extern void stopPingTimer();
 extern void closeMulticastSockets();
 extern void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx);
 
-extern void addSlaveChannel(unsigned channel, unsigned level);
-extern void addChannel(unsigned nodeNumber, unsigned channel, unsigned level);
 extern unsigned getReplicationLevel(unsigned channel);
 
 #endif

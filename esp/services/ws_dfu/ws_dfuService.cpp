@@ -41,7 +41,6 @@
 #include "TpWrapper.hpp"
 #include "WUWrapper.hpp"
 #include "portlist.h"
-#include "roxiecommlib.hpp"
 #include "dfuwu.hpp"
 #include "fverror.hpp"
 #include "nbcd.hpp"

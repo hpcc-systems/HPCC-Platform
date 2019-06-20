@@ -111,7 +111,7 @@ public:
         IPendingCallback *callback = ROQ->notePendingCallback(header, debugIdString.str()); // note that we register before the send to avoid a race.
         try
         {
-            RoxiePacketHeader newHeader(header, ROXIE_DEBUGCALLBACK);
+            RoxiePacketHeader newHeader(header, ROXIE_DEBUGCALLBACK, 0);  // subchannel not relevant
             for (;;) // retry indefinitely, as more than likely Roxie server is waiting for user input ...
             {
                 Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
@@ -140,7 +140,7 @@ public:
                 char *buf = (char *) output->getBuffer(debugInfo.length(), true);
                 memcpy(buf, debugInfo.toByteArray(), debugInfo.length());
                 output->putBuffer(buf, debugInfo.length(), true);
-                output->flush(true);
+                output->flush();
                 output.clear();
                 if (callback->wait(5000))
                     break;
@@ -2786,16 +2786,16 @@ protected:
 
     void initDebugMode(bool breakAtStart, const char *debugUID)
     {
-        if (!debugPermitted || !ownEP.port || nativeProtocol)
+        if (!debugPermitted || !debugEndpoint.port || nativeProtocol)
             throw MakeStringException(ROXIE_ACCESS_ERROR, "Debug query not permitted here");
         debugContext.setown(new CRoxieServerDebugContext(this, logctx, factory->cloneQueryXGMML()));
         debugContext->debugInitialize(debugUID, factory->queryQueryName(), breakAtStart);
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
-            wu->setDebugAgentListenerPort(ownEP.port); //tells debugger what port to write commands to
+            wu->setDebugAgentListenerPort(debugEndpoint.port); //tells debugger what port to write commands to
             StringBuffer sb;
-            ownEP.getIpText(sb);
+            debugEndpoint.getIpText(sb);
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
         }
         options.timeLimit = 0;

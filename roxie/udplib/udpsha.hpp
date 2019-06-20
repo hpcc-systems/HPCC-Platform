@@ -22,12 +22,10 @@
 #include "roxiemem.hpp"
 #include "jcrc.hpp"
 
-//#define CRC_MESSAGES
 extern roxiemem::IDataBufferManager *bufferManager;
 
-typedef bool (*PKT_CMP_FUN) (void *pkData, void *key);
+typedef bool (*PKT_CMP_FUN) (const void *pkData, const void *key);
 
-#define UDP_SEQUENCE_COMPLETE 0x80000000
 
 // Flag bits in pktSeq field
 #define UDP_PACKET_COMPLETE           0x80000000  // Packet completes a single slave request
@@ -38,10 +36,9 @@ struct UdpPacketHeader
 {
     unsigned short length;      // total length of packet including the header, data, and meta
     unsigned short metalength;  // length of metadata (comes after header and data)
-    unsigned       nodeIndex;   // Node this message came from
+    ServerIdentifier  node;        // Node this message came from
     unsigned       msgSeq;      // sequence number of messages ever sent from given node, used with ruid to tell which packets are from same message
     unsigned       pktSeq;      // sequence number of this packet within the message (top bit signifies final packet)
-    unsigned       udpSequence; // Top bits used for flow control info
     // information below is duplicated in the Roxie packet header - we could remove? However, would make aborts harder, and at least ruid is needed at receive end
     ruid_t         ruid;        // The uid allocated by the server to this slave transaction
     unsigned       msgId;       // sub-id allocated by the server to this request within the transaction
@@ -63,8 +60,8 @@ class queue_t
     queue_element   *elements;
     unsigned int    element_count;
     
-    int             first;
-    int             last;
+    unsigned        first;
+    unsigned        last;
     CriticalSection c_region;
     int             active_buffers;
     int             queue_size;
@@ -80,13 +77,14 @@ public:
     void pushOwn(roxiemem::DataBuffer *buffer);
     roxiemem::DataBuffer *pop();
     bool empty() ;
-    bool dataQueued(void *key, PKT_CMP_FUN pkCmpFn);
-    bool removeData(void *key, PKT_CMP_FUN pkCmpFn);
+    bool dataQueued(const void *key, PKT_CMP_FUN pkCmpFn);
+    bool removeData(const void *key, PKT_CMP_FUN pkCmpFn);
     int  free_slots(); //block if no free slots
     void set_queue_size(unsigned int queue_size); //must be called immediately after constructor if default constructor is used
     queue_t(unsigned int queue_size);
     queue_t();
     ~queue_t();
+    inline int capacity() const { return queue_size; }
 };
 
 
@@ -176,70 +174,52 @@ public:
 #define HANDLE_PRAGMA_PACK_PUSH_POP
 #endif
 
+class flow_t {
+public:
+    enum flowmsg_t : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more };
+    static const char *name(flowmsg_t m)
+    {
+        switch (m)
+        {
+        case ok_to_send: return "ok_to_send";
+        case request_received: return "request_received";
+        case request_to_send: return "request_to_send";
+        case send_completed: return "send_completed";
+        case request_to_send_more: return "request_to_send_more";
+        default:
+            assert(false);
+            return "??";
+        }
+    };
+
+};
+
+class sniff_t {
+public:
+    enum sniffmsg_t : unsigned short { busy, idle };
+};
+
 #pragma pack(push,1)
 struct UdpPermitToSendMsg
 {
-    // New static fields must be included inside this block, so that
-    // size calculations work correctly
-    unsigned short  length;
-    unsigned short  cmd;
-    unsigned short  destNodeIndex;
-    unsigned short  max_data;
-#ifdef CRC_MESSAGES
-    unsigned        crc;
-#endif
-
-#ifdef CRC_MESSAGES
-    unsigned calcCRC()
-    {
-        size_t len = sizeof(UdpPermitToSendMsg) - sizeof(crc);
-        unsigned expectedCRC = crc32((const char *) this, len, 0);
-        return expectedCRC;
-    }
-#endif
-
-    UdpPermitToSendMsg()
-    {
-        length = cmd = destNodeIndex = max_data = 0;
-#ifdef CRC_MESSAGES
-        crc = calcCRC();
-#endif
-    }
-
-    UdpPermitToSendMsg(const UdpPermitToSendMsg &from)
-    {
-        length = from.length;
-        cmd = from.cmd;
-        destNodeIndex = from.destNodeIndex;
-        max_data = from.max_data;
-#ifdef CRC_MESSAGES
-        crc = from.crc;
-#endif
-    }
+    flow_t::flowmsg_t cmd;
+    unsigned short max_data;
+    ServerIdentifier destNode;
 };
 
 struct UdpRequestToSendMsg
 {
-    unsigned short  length;
-    unsigned short  cmd;
-    unsigned short  sourceNodeIndex;
-    unsigned short  max_data; // Not filled in or used at present
-    unsigned        firstSequenceAvailable;
-    unsigned        lastSequenceAvailable;
+    flow_t::flowmsg_t cmd;
+    unsigned short packets;
+    ServerIdentifier sourceNode;
 };
 
-struct sniff_msg 
+struct sniff_msg
 {
-    unsigned short length;
-    unsigned short cmd;
-    unsigned short nodeIndex;
+    sniff_t::sniffmsg_t cmd;
+    ServerIdentifier nodeIp;
 };
 #pragma pack(pop)
-
-class flow_t {
-public:
-    enum flowmsg_t { ok_to_send, request_to_send, send_completed, request_to_send_more, busy, idle };
-};
 
 int check_max_socket_read_buffer(int size);
 int check_max_socket_write_buffer(int size);
