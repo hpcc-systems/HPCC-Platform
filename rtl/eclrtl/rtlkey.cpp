@@ -300,7 +300,7 @@ public:
         if (type.isNumeric())
             return out.append(size, text.getstr());
         else
-            return out.appendf("'%*s'", size, text.getstr());
+            return out.appendf("'%.*s'", size, text.getstr());
     }
 };
 
