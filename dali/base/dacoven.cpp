@@ -321,6 +321,11 @@ public:
         if (comm)
             comm->cancel(srcrank,tag);
     }
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    {
+        assertex(comm);
+        return comm->queryChannelPeerEndpoint(sender);
+    }
 };
 
 
