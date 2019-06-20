@@ -21,6 +21,7 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/Toolbar",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
