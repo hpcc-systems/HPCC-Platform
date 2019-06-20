@@ -1139,6 +1139,7 @@ protected:
     bool eofSeen = false;
     const RtlRecord *record = nullptr;
     RowFilter filters;
+    RtlDynRow *filterRow = nullptr;
     // virtual field values
     StringAttr logicalFilename;
 
@@ -1150,16 +1151,35 @@ protected:
 
         record = &inMeta->queryRecordAccessor(true);
         translator.setown(createRecordTranslator(outMeta->queryRecordAccessor(true), *record));
-        Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
-        ForEach(*filterIter)
-            filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+
+        if (config.hasProp("keyFilter"))
+        {
+            filterRow = new RtlDynRow(*record);
+            Owned<IPropertyTreeIterator> filterIter = config.getElements("keyFilter");
+            ForEach(*filterIter)
+                filters.addFilter(*record, filterIter->query().queryProp(nullptr));
+        }
         logicalFilename.set(config.queryProp("virtualFields/logicalFilename"));
+    }
+    inline bool fieldFilterMatch(const void * buffer)
+    {
+        if (filters.numFilterFields())
+        {
+            filterRow->setRow(buffer, 0);
+            return filters.matches(*filterRow);
+        }
+        else
+            return true;
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CRemoteActivityBase)
 
     CRemoteDiskBaseActivity(IPropertyTree &config)
     {
+    }
+    ~CRemoteDiskBaseActivity()
+    {
+        delete filterRow;
     }
 // IRemoteReadActivity impl.
     virtual unsigned __int64 queryProcessed() const override
@@ -1277,16 +1297,6 @@ class CRemoteDiskReadActivity : public CRemoteDiskBaseActivity
         opened = false;
         eofSeen = true;
     }
-    inline bool fieldFilterMatch(const void * buffer)
-    {
-        if (filters.numFilterFields())
-        {
-            filterRow->setRow(buffer, 0);
-            return filters.matches(*filterRow);
-        }
-        else
-            return true;
-    }
 public:
     CRemoteDiskReadActivity(IPropertyTree &config) : PARENT(config), prefetchBuffer(nullptr)
     {
@@ -1305,12 +1315,6 @@ public:
         baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
 
         initCommon(config);
-        if (config.hasProp("keyFilter"))
-            filterRow = new RtlDynRow(*record);
-    }
-    ~CRemoteDiskReadActivity()
-    {
-        delete filterRow;
     }
 // IRemoteReadActivity impl.
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
@@ -1488,13 +1492,16 @@ public:
                 while (keyManager->lookup(true))
                 {
                     const byte *keyRow = keyManager->queryKeyBuffer();
-                    retSz = translator->translate(outBuilder, *this, keyRow);
-                    if (retSz)
+                    if (fieldFilterMatch(keyRow))
                     {
-                        const void *ret = outBuilder.getSelf();
-                        outBuilder.finishRow(retSz);
-                        ++processed;
-                        return ret;
+                        retSz = translator->translate(outBuilder, *this, keyRow);
+                        if (retSz)
+                        {
+                            const void *ret = outBuilder.getSelf();
+                            outBuilder.finishRow(retSz);
+                            ++processed;
+                            return ret;
+                        }
                     }
                 }
                 retSz = 0;
