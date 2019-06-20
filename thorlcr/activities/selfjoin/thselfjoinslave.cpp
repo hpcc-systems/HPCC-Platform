@@ -57,7 +57,6 @@ private:
         return false;
     }
 
-    
     IRowStream * doLocalSelfJoin()
     {
 #if THOR_TRACE_LEVEL > 5
@@ -142,10 +141,15 @@ public:
         if (!isLocal && TAG_NULL != mpTagRPC)
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
     }
-    virtual void kill()
+    virtual void kill() override
     {
         sorter.clear();
-        CSlaveActivity::kill();
+        if (portbase)
+        {
+            freePort(portbase, NUMSLAVEPORTS);
+            portbase = 0;
+        }
+        PARENT::kill();
     }
 
 // IThorDataLink
@@ -179,7 +183,7 @@ public:
         joinhelper->init(strm, NULL, ::queryRowAllocator(queryInput(0)), ::queryRowAllocator(queryInput(0)), ::queryRowMetaData(queryInput(0)));
     }
 
-    virtual void abort()
+    virtual void abort() override
     {
         CSlaveActivity::abort();
         if (joinhelper)
@@ -228,7 +232,7 @@ public:
         info.buffersInput = true; 
         info.unknownRowsOutput = true;
     }
-    virtual void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
         CSlaveActivity::serializeStats(mb);
         CriticalBlock b(joinHelperCrit);

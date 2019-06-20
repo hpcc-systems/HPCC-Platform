@@ -565,7 +565,8 @@ public:
                         INode *na = queryNullNode();
                         Owned<IGroup> dummyCoven = createIGroup(1, &na);
                         dummyCoven->serialize(mb);
-                        Owned<IException> e = makeStringException(666, "Access denied!");
+                        const char *roleName = queryRoleName((DaliClientRole)role);
+                        Owned<IException> e = makeStringExceptionV(-1, "Access denied! [role=%s]", roleName);
                         serializeException(e, mb);
                         coven.reply(mb);
                         MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
@@ -1354,14 +1355,14 @@ class CWhiteListHandler
             machineMap.insert({name, host});
         }
     }
-    const char *resolveComputer(const char *compName, StringBuffer &result) const
+    const char *resolveComputer(const char *compName, const char *defaultValue, StringBuffer &result) const
     {
         const auto &it = machineMap.find(compName);
         if (it == machineMap.end())
-            return nullptr;
+            return defaultValue;
         IpAddress ip(it->second.c_str());
         if (ip.isNull())
-            return nullptr;
+            return defaultValue;
         return ip.getIpText(result);
     }
     void addRoles(const IPropertyTree &component, const std::vector<DaliClientRole> &roles)
@@ -1371,7 +1372,7 @@ class CWhiteListHandler
         {
             const char *compName = instanceIter->query().queryProp("@computer");
             StringBuffer ipSB;
-            const char *ip = resolveComputer(compName, ipSB);
+            const char *ip = resolveComputer(compName, component.queryProp("@netAddress"), ipSB);
             if (ip)
             {
                 for (auto &role: roles)
@@ -1427,9 +1428,10 @@ class CWhiteListHandler
                         Owned<IPropertyTreeIterator> serverIter = component.getElements("RoxieServerProcess");
                         ForEach(*serverIter)
                         {
-                            const char *serverCompName = serverIter->query().queryProp("@name");
+                            const IPropertyTree &server = serverIter->query();
+                            const char *serverCompName = server.queryProp("@computer");
                             StringBuffer ipSB;
-                            const char *ip = resolveComputer(serverCompName, ipSB);
+                            const char *ip = resolveComputer(serverCompName, server.queryProp("@netAddress"), ipSB);
                             if (ip)
                                 whiteList.insert({ ip, DCR_RoxyMaster });
                         }
@@ -1439,7 +1441,7 @@ class CWhiteListHandler
                     {
                         const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
                         StringBuffer ipSB;
-                        const char *ip = resolveComputer(masterCompName, ipSB);
+                        const char *ip = resolveComputer(masterCompName, component.queryProp("@netAddress"), ipSB);
                         if (ip)
                         {
                             whiteList.insert({ ip, DCR_ThorMaster });

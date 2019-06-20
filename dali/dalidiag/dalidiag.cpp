@@ -514,26 +514,17 @@ int main(int _argc, char* argv[])
             break;
     }
 
-    if (!epa.ordinality())
+    if (argc<2 || !epa.ordinality())
     {
         usage(argv[0]);
         return 0;
     }
-    Owned<IGroup> group = createIGroup(epa); 
-    assertex(group);
-    //CSystemCapability capability(DCR_DaliDiag, "DALIDIAG");
-    //capability.secure((byte *)CLIENT_ENCRYPT_KEY, strlen(CLIENT_ENCRYPT_KEY));
-    assertex(group);
-    initClientProcess(group, DCR_DaliDiag, 0, NULL, NULL, MP_WAIT_FOREVER);
-
-    if (argc<2)
-    {
-        usage(argv[0]);
-        return 0;
-    }
-
 
     try {
+        Owned<IGroup> group = createIGroup(epa);
+        assertex(group);
+        initClientProcess(group, DCR_DaliDiag, 0, NULL, NULL, MP_WAIT_FOREVER);
+
         i++;
         for (; i <argc; i++)
         {
