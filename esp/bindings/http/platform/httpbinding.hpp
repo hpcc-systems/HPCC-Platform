@@ -374,6 +374,9 @@ public:
         if (found && *found)
             return true;
 
+        if (strieq(resource, "/esp/files/stub.htm"))
+            return false;
+
         ForEachItemIn(i, domainAuthResourcesWildMatch)
         {
             const char* wildResourcePath = domainAuthResourcesWildMatch.item(i);
