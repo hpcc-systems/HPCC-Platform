@@ -73,6 +73,7 @@ static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
     { "Testing", DCR_Testing },
     { "XRef", DCR_XRef },
     { "EclMinus", DCR_EclMinus },
+    { "Monitoring", DCR_Monitoring },
 };
 
 const char *queryRoleName(DaliClientRole role)
@@ -104,6 +105,7 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_Testing: return "Testing";
     case DCR_XRef: return "XRef";
     case DCR_EclMinus: return "EclMinus";
+    case DCR_Monitoring: return "Monitoring";
     }
     return "Unknown";
 }
@@ -1474,7 +1476,7 @@ class CWhiteListHandler
                         addRoles(component, { DCR_BackupGen, DCR_DaliAdmin });
                         break;
                     case DaliServerProcess:
-                        addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin });
+                        addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin, DCR_Monitoring });
                         break;
                 }
             }
