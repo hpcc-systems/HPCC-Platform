@@ -543,7 +543,7 @@ export function maximizeWidget(widget: any, max: boolean, prev?: IMaximizeState)
             var retVal: IMaximizeState = {
                 parentNode: widget.domNode.parentNode,
                 nextElementSibling: widget.domNode.nextElementSibling,
-                stylePosition: domStyle.set(widget.domNode, "position"),
+                stylePosition: domStyle.get(widget.domNode, "position"),
                 stubResize: stub.resize,
                 widgetResize: widget.resize
             };
@@ -566,7 +566,11 @@ export function maximizeWidget(widget: any, max: boolean, prev?: IMaximizeState)
             widget.resize = prev.widgetResize;
             stub.resize = prev.stubResize;
 
-            prev.parentNode.insertBefore(widget.domNode, prev.nextElementSibling);
+            if (prev.nextElementSibling) {
+                prev.parentNode.insertBefore(widget.domNode, prev.nextElementSibling);
+            } else {
+                prev.parentNode.appendChild(widget.domNode);
+            }
             domStyle.set(widget.domNode, "position", prev.stylePosition);
 
             stub.resize();
