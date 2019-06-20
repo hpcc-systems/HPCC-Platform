@@ -139,11 +139,6 @@ public:
         return pool->joinAll(false, timeout);
     }
 
-    virtual bool suspend(bool suspendIt)
-    {
-        return sink->suspend(suspendIt);
-    }
-
     void setThreadAffinity(int numCores)
     {
 #ifdef CPU_ZERO

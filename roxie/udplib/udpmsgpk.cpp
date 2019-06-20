@@ -31,7 +31,9 @@
 #include "udplib.hpp"
 #include "udptrr.hpp"
 #include "udptrs.hpp"
+#include "udpmsgpk.hpp"
 #include "roxiemem.hpp"
+#include "roxie.hpp"
 
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
@@ -104,9 +106,10 @@ public:
         {
             if (ret)
             {
+                StringBuffer s;
                 UdpPacketHeader *pktHdr = (UdpPacketHeader*) ret->data;
-                DBGLOG("UdpCollator: PackageSequencer::next returns ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
-                        pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, ret, this);
+                DBGLOG("UdpCollator: PackageSequencer::next returns ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuffer=%p this=%p",
+                        pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str(), ret, this);
             }
             else
                 DBGLOG("UdpCollator: PackageSequencer::next returns NULL this=%p", this);
@@ -122,8 +125,9 @@ public:
 
         if (checkTraceLevel(TRACE_MSGPACK, 5))
         {
-            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuffer=%p this=%p", 
-                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, dataBuff, this);
+            StringBuffer s;
+            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuffer=%p this=%p",
+                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str(), dataBuff, this);
         }
 
         DataBuffer *finger;
@@ -181,7 +185,8 @@ public:
             unsigned prevseq;
             if (lastContiguousPacket)
             {
-                prevseq = ((UdpPacketHeader*) lastContiguousPacket->data)->pktSeq & UDP_PACKET_SEQUENCE_MASK;
+                UdpPacketHeader *lastHdr  = (UdpPacketHeader*) lastContiguousPacket->data;
+                prevseq = lastHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK;
                 finger = lastContiguousPacket->msgNext;
             }
             else
@@ -247,14 +252,6 @@ public:
 
 };
 
-typedef std::queue<PackageSequencer*> seq_map_que;
-typedef std::queue<void*> ptr_que;
-
-
-typedef unsigned __int64 PUID;
-typedef MapXToMyClass<PUID, PUID, PackageSequencer> msg_map;
-
-
 // MessageResult ====================================================================================
 //
 class CMessageUnpackCursor: implements IMessageUnpackCursor, public CInterface
@@ -317,13 +314,13 @@ public:
             if (checkTraceLevel(TRACE_MSGPACK, 4))
             {
                 StringBuffer s;
-                DBGLOG("UdpCollator: CMessageUnpackCursor::getNext(%u) pos=%u pktLength=%u metaLen=%u ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u dataBuff=%p this=%p", 
+                DBGLOG("UdpCollator: CMessageUnpackCursor::getNext(%u) pos=%u pktLength=%u metaLen=%u ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuff=%p this=%p",
                     length, current_pos, pktHdr->length, pktHdr->metalength,
                     pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, 
-                    pktHdr->nodeIndex, dataBuff, this);
+                    pktHdr->node.getTraceText(s).str(), dataBuff, this);
             }
             unsigned packetDataLimit = pktHdr->length - pktHdr->metalength;
-            if ((packetDataLimit  - current_pos) >= length) 
+            if ((packetDataLimit  - current_pos) >= (unsigned) length)
             {
                 // Simple case - no need to copy
                 res = &dataBuff->data[current_pos];
@@ -348,9 +345,8 @@ public:
             while (length && dataBuff) 
             {
                 // Spans more than one block - allocate and copy
-                assert(dataBuff);
                 unsigned cpyLen = packetDataLimit - current_pos;
-                if (cpyLen > length) cpyLen = length;
+                if (cpyLen > (unsigned) length) cpyLen = length;
                 memcpy(currResLoc, &dataBuff->data[current_pos], cpyLen);
                 length -= cpyLen;
                 currResLoc += cpyLen;
@@ -439,145 +435,149 @@ public:
 PUID GETPUID(DataBuffer *dataBuff)
 {
     UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-    return (((PUID) pktHdr->nodeIndex) << 32) | (PUID) pktHdr->msgSeq;
+    unsigned ip4;
+    if (pktHdr->node.getNodeAddress().getNetAddress(sizeof(ip4), &ip4) != sizeof(ip4))
+        throw makeStringException(ROXIE_INTERNAL_ERROR, "IPv6 not supported in roxie"); // MORE - do we ever care about ipv6?
+    return (((PUID) ip4) << 32) | (PUID) pktHdr->msgSeq;
 }
 
-class CMessageCollator : implements IMessageCollator, public CInterface
+CMessageCollator::CMessageCollator(IRowManager *_rowMgr, unsigned _ruid) : rowMgr(_rowMgr), ruid(_ruid)
 {
-    seq_map_que         queue;
-    msg_map             mapping;
-    bool                activity;
-    bool                memLimitExceeded;
-    CriticalSection     queueCrit;
-    CriticalSection     mapCrit;
-    InterruptableSemaphore sem;
-    Linked<IRowManager> rowMgr;
-    ruid_t ruid;
-    unsigned totalBytesReceived;
+    if (checkTraceLevel(TRACE_MSGPACK, 3))
+        DBGLOG("UdpCollator: CMessageCollator::CMessageCollator rowMgr=%p this=%p ruid=" RUIDF "", _rowMgr, this, ruid);
+    memLimitExceeded = false;
+    activity = false;
+    totalBytesReceived = 0;
+}
 
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CMessageCollator(IRowManager *_rowMgr, unsigned _ruid) : rowMgr(_rowMgr), ruid(_ruid)
+CMessageCollator::~CMessageCollator()
+{
+    if (checkTraceLevel(TRACE_MSGPACK, 3))
+        DBGLOG("UdpCollator: CMessageCollator::~CMessageCollator ruid=" RUIDF ", this=%p", ruid, this);
+    while (!queue.empty())
     {
-        if (checkTraceLevel(TRACE_MSGPACK, 3))
-            DBGLOG("UdpCollator: CMessageCollator::CMessageCollator rowMgr=%p this=%p ruid=" RUIDF "", _rowMgr, this, ruid);
-        memLimitExceeded = false;
-        activity = false; // w/o it there is a race condition
-        totalBytesReceived = 0;
+        PackageSequencer *pkSqncr = queue.front();
+        queue.pop();
+        pkSqncr->Release();
     }
+}
 
-    virtual ~CMessageCollator() 
+unsigned CMessageCollator::queryBytesReceived() const
+{
+    return totalBytesReceived; // Arguably should lock, but can't be bothered. Never going to cause an issue in practice.
+}
+
+bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
+{
+    activity = true;
+    if (memLimitExceeded || roxiemem::memPoolExhausted())
     {
-        if (checkTraceLevel(TRACE_MSGPACK, 3))
-            DBGLOG("UdpCollator: CMessageCollator::~CMessageCollator ruid=" RUIDF ", this=%p", ruid, this);
-        while (!queue.empty())
-        {
-            PackageSequencer *pkSqncr = queue.front();
-            queue.pop();
-            pkSqncr->Release();
-        }
+        DBGLOG("UdpCollator: mem limit exceeded");
+        return false;
     }
-
-    virtual ruid_t queryRUID() const
+    if (!dataBuff->attachToRowMgr(rowMgr))
     {
-        return ruid;
+        memLimitExceeded = true;
+        DBGLOG("UdpCollator: mem limit exceeded");
+        return(false);
     }
+    collate(dataBuff);
+    return true;
+}
 
-    virtual unsigned queryBytesReceived() const
+bool CMessageCollator::attach_data(const void *data, unsigned len)
+{
+    // Simple code can allocate databuffer, copy data in, then call attach_databuffer
+    // MORE - we can attach as we create may be more sensible (and simplify roxiemem rather if it was the ONLY way)
+    activity = true;
+    if (memLimitExceeded || roxiemem::memPoolExhausted())
     {
-        return totalBytesReceived; // Arguably should lock, but can't be bothered. Never going to cause an issue in practice.
+        DBGLOG("UdpCollator: mem limit exceeded");
+        return false;
     }
-
-    virtual bool add_package(DataBuffer *dataBuff) 
+    DataBuffer *dataBuff = bufferManager->allocate();
+    assertex(len <= DATA_PAYLOAD);
+    memcpy(dataBuff->data, data, len);
+    if (!dataBuff->attachToRowMgr(rowMgr))
     {
-        UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-        if (checkTraceLevel(TRACE_MSGPACK, 4))
-        {
-            DBGLOG("UdpCollator: CMessageCollator::add_package memLimitEx=%d ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%u udpSequence=%u rowMgr=%p this=%p", 
-                memLimitExceeded, pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->nodeIndex, pktHdr->udpSequence, (void*)rowMgr, this);
-        }
-
-        if (memLimitExceeded || roxiemem::memPoolExhausted()) 
-        {
-            DBGLOG("UdpCollator: mem limit exceeded");
-            return false;
-        }
-        if (!dataBuff->attachToRowMgr(rowMgr)) 
-        {
-            memLimitExceeded = true;
-            DBGLOG("UdpCollator: mem limit exceeded");
-            return(false);
-        }
-        activity = true;
-        totalBytesReceived += pktHdr->length;
-        PUID puid = GETPUID(dataBuff);
-        // MORE - I think we leak a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
-        CriticalBlock b(mapCrit);
-        PackageSequencer *pkSqncr = mapping.getValue(puid);
-        bool isComplete = false;
-        if (!pkSqncr) 
-        {
-            pkSqncr = new PackageSequencer;
-            mapping.setValue(puid, pkSqncr);
-            pkSqncr->Release();
-        }
-        isComplete = pkSqncr->insert(dataBuff);
-        if (isComplete)
-        {
-            queueCrit.enter();
-            pkSqncr->Link();
-            queue.push(pkSqncr);
-            sem.signal();
-            queueCrit.leave();
-            mapping.remove(puid);
-        }
-        return(true);
+        memLimitExceeded = true;
+        DBGLOG("UdpCollator: mem limit exceeded");
+        dataBuff->Release();
+        return(false);
     }
+    collate(dataBuff);
+    return true;
+}
 
-    virtual IMessageResult *getNextResult(unsigned time_out, bool &anyActivity) 
+void CMessageCollator::collate(DataBuffer *dataBuff)
+{
+    UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
+    totalBytesReceived += pktHdr->length;
+
+    PUID puid = GETPUID(dataBuff);
+    // MORE - I think we leak a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
+    PackageSequencer *pkSqncr = mapping.getValue(puid);
+    if (!pkSqncr)
     {
-        if (checkTraceLevel(TRACE_MSGPACK, 3))
-            DBGLOG("UdpCollator: CMessageCollator::getNextResult() timeout=%.8X ruid=%u rowMgr=%p this=%p", time_out, ruid, (void*) rowMgr, this);
-        
-        if (memLimitExceeded) 
-        {
-            DBGLOG("UdpCollator: CMessageCollator::getNextResult() throwing memory limit exceeded exception - rowMgr=%p this=%p", (void*) rowMgr, this);
-            throw MakeStringException(0, "memory limit exceeded");
-        }
-        else if (roxiemem::memPoolExhausted()) 
-        { 
-            DBGLOG("UdpCollator: CMessageCollator::getNextResult() throwing memory pool exhausted exception - rowMgr=%p this=%p", (void*)rowMgr, this);
-            throw MakeStringException(0, "memory pool exhausted");
-        }
-        if (sem.wait(time_out)) 
-        {
-            queueCrit.enter();
-            PackageSequencer *pkSqncr = queue.front();
-            queue.pop();
-            queueCrit.leave();
-            anyActivity = true;
-            activity = false;
-            return new CMessageResult(pkSqncr);
-        }
-        anyActivity = activity;
-        activity = false; 
-        if (!anyActivity && ruid>=RUID_FIRST && checkTraceLevel(TRACE_MSGPACK, 1)) // suppress the tracing for pings where we expect the timeout...
-        {
-            DBGLOG("UdpCollator: CMessageCollator::GetNextResult timeout, %d partial results",  mapping.count());
-        }
-        return 0;
+        pkSqncr = new PackageSequencer;
+        mapping.setValue(puid, pkSqncr);
+        pkSqncr->Release();
     }
+    bool isComplete = pkSqncr->insert(dataBuff);
+    if (isComplete)
+    {
+        pkSqncr->Link();
+        mapping.remove(puid);
+        queueCrit.enter();
+        queue.push(pkSqncr);
+        sem.signal();
+        queueCrit.leave();
+    }
+}
 
-    virtual void interrupt(IException *E) {
-        sem.interrupt(E);
+IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActivity)
+{
+    if (checkTraceLevel(TRACE_MSGPACK, 3))
+        DBGLOG("UdpCollator: CMessageCollator::getNextResult() timeout=%.8X ruid=%u rowMgr=%p this=%p", time_out, ruid, (void*) rowMgr, this);
+
+    if (memLimitExceeded)
+    {
+        DBGLOG("UdpCollator: CMessageCollator::getNextResult() throwing memory limit exceeded exception - rowMgr=%p this=%p", (void*) rowMgr, this);
+        throw MakeStringException(0, "memory limit exceeded");
     }
-};
+    else if (roxiemem::memPoolExhausted())
+    {
+        DBGLOG("UdpCollator: CMessageCollator::getNextResult() throwing memory pool exhausted exception - rowMgr=%p this=%p", (void*)rowMgr, this);
+        throw MakeStringException(0, "memory pool exhausted");
+    }
+    if (sem.wait(time_out))
+    {
+        queueCrit.enter();
+        PackageSequencer *pkSqncr = queue.front();
+        queue.pop();
+        queueCrit.leave();
+        anyActivity = true;
+        activity = false;
+        return new CMessageResult(pkSqncr);
+    }
+    anyActivity = activity;
+    activity = false;
+    if (!anyActivity && ruid>=RUID_FIRST && checkTraceLevel(TRACE_MSGPACK, 1)) // suppress the tracing for pings where we expect the timeout...
+    {
+        DBGLOG("UdpCollator: CMessageCollator::GetNextResult timeout");
+    }
+    return 0;
+}
+
+void CMessageCollator::interrupt(IException *E)
+{
+    sem.interrupt(E);
+}
 
 // ====================================================================================
 //
 
-extern IMessageCollator *createCMessageCollator(IRowManager *rowManager, ruid_t ruid)
+extern CMessageCollator *createCMessageCollator(IRowManager *rowManager, ruid_t ruid)
 {
     return new CMessageCollator(rowManager, ruid);
 }

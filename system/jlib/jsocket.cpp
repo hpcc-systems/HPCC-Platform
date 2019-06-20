@@ -94,7 +94,15 @@
 
 #define DEFAULT_CONNECT_TIME    (100*1000)      // for connect_wait
 
+#ifdef _DEBUG
+//  #define SIMULATE_LOST_UDP_PACKETS
+#endif
 
+
+#ifdef SIMULATE_LOST_UDP_PACKETS
+  static const int dropThreshold = 10000;
+  static int dropCounter = 0;
+#endif
 
 #ifndef _WIN32 
 #define BLOCK_POLLED_SINGLE_CONNECTS  // NB this is much slower in windows
@@ -136,7 +144,7 @@
 #endif
 
 JSocketStatistics STATS;
-static bool IP4only=false;              // slighly faster if we know no IPv6
+static const bool IP4only=false;        // slighly faster if we know no IPv6
 static bool IP6preferred=false;         // e.g. for DNS and socket create
 
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
@@ -1984,6 +1992,14 @@ EintrRetry:
             socklen_t  ul = setSockAddr(u,returnep,returnep.port);
             rc = sendto(sock, (char*)buf, size, 0, &u.sa, ul);
         }
+#ifdef SIMULATE_LOST_UDP_PACKETS
+        else if (sockmode==sm_udp && size <= 24 && dropCounter++ >= dropThreshold)
+        {
+            DBGLOG("Drop size %d cmd %d", size, *(unsigned short *)buf);
+            dropCounter = 0;
+            rc = size;
+        }
+#endif
         else {
             rc = send(sock, (char*)buf, size, SEND_FLAGS);
         }
@@ -3167,6 +3183,14 @@ int  IpAddress::ipcompare(const IpAddress & other) const
 unsigned IpAddress::iphash(unsigned prev) const
 {
     return hashc((const byte *)&netaddr,sizeof(netaddr),prev);
+}
+
+unsigned IpAddress::fasthash() const
+{
+    if (IP4only || isIp4())
+        return netaddr[3] >> 24;
+    else
+        return iphash(0) >> 24;
 }
 
 bool IpAddress::isHost() const

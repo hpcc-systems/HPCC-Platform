@@ -1403,7 +1403,7 @@ public:
 
 extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
-    RoxiePacketHeader newHeader(packet->queryHeader(), ROXIE_DEBUGREQUEST);
+    RoxiePacketHeader newHeader(packet->queryHeader(), ROXIE_DEBUGREQUEST, 0);  // subchannel not relevant
     Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
     unsigned contextLength = packet->getContextLength();
     Owned<DebugRequestBase> request;
@@ -1443,7 +1443,7 @@ extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger 
     void *ret = output->getBuffer(xml.length()+1, true);
     memcpy(ret, xml.str(), xml.length()+1);
     output->putBuffer(ret, xml.length()+1, true);
-    output->flush(true);
+    output->flush();
 }
 
 class CProxyDebugContext : public CInterface

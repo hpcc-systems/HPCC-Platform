@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,48 +14,45 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: udptransport 
+
+# Component: toposerver
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for udptransport
+#    Cmake Input File for toposerver
 #####################################################
 
 
-project( udptransport ) 
+project( toposerver ) 
 
-set (    SRCS 
-         uttest.cpp 
+set (   SRCS 
+        toposerver.cpp 
     )
 
 include_directories ( 
-         ./../../roxie/roxiemem 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../system/aeron/aeron-client/src/main/cpp 
-         ./../../system/aeron/aeron-driver/src/main/c/
-         ./../../system/aeron/aeron-samples/src/main/cpp  # temporary
-         ./../../roxie/ccd 
+         .
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/include
     )
 
-ADD_DEFINITIONS ( -D_CONSOLE )
-if (NOT WIN32)
-  ADD_DEFINITIONS ( -Wno-format-nonliteral )
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter")
 endif()
 
-HPCC_ADD_EXECUTABLE ( udptransport ${SRCS} )
-#install ( TARGETS udptransport RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( udptransport 
-         jlib
-         roxiemem
-         udplib 
-    )
-
-if (USE_AERON)
-  target_link_libraries ( udptransport 
-         aeron_client
-         aeron_driver
-    )
+if (CMAKE_COMPILER_IS_CLANGXX)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=reorder")
 endif()
 
+ADD_DEFINITIONS( -D_CONSOLE )
+
+if (WIN32)
+    set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
+
+HPCC_ADD_EXECUTABLE ( toposerver ${SRCS} )
+install ( TARGETS toposerver RUNTIME DESTINATION ${EXEC_DIR} )
+
+target_link_libraries ( toposerver
+         jlib 
+    )

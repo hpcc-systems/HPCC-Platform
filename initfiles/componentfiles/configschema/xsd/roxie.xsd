@@ -229,6 +229,9 @@
                     <xs:attribute name="useRemoteResources" type="xs:boolean" hpcc:displayName="Use Remote Resources"
                                   hpcc:presetValue="true"
                                   hpcc:tooltip="Reads any missing data files/keys from the position they were in when deployed"/>
+                    <xs:attribute name="useDynamicServers" type="xs:boolean" hpcc:displayName="Dynamic Servers"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Support dynamic addition of server nodes"/>
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="redundancy" hpcc:groupByName="Redundancy">
@@ -323,8 +326,11 @@
                     <xs:attribute name="udpQueueSize" type="xs:nonNegativeInteger" hpcc:displayName="UDP Queue Size"
                                   hpcc:presetValue="100" hpcc:tooltip="UDP transport layer receive queue size"/>
                     <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Request To Send Timeout (units?)" hpcc:presetValue="0"
+                                  hpcc:displayName="UDP Request To Send Timeout (ms)" hpcc:presetValue="0"
                                   hpcc:tooltip="Controls the timeout value agent udp will wait for permission to send from a Roxie server, in milliseconds. Specify 0 to calcuate automatically"/>
+                    <xs:attribute name="udpRequestToSendAckTimeout" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Request To Send Ack Timeout (ms)" hpcc:presetValue="100"
+                                  hpcc:tooltip="Controls the timeout value agent udp will wait for acknowledgement of a request to send from a Roxie server, in milliseconds"/>
                     <xs:attribute name="udpResendEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Resend"
                                   hpcc:presetValue="false" hpcc:tooltip="UDP transport layer packet resend ability"/>
                     <xs:attribute name="udpRetryBusySenders" type="xs:nonNegativeInteger"
@@ -342,6 +348,9 @@
                     <xs:attribute name="udpSnifferSendThreadPriority" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Sniffer Send Thread Priority" hpcc:presetValue="3"
                                   hpcc:tooltip="If non-zero, run the sniffer send thread at elevated priority level"/>
+                    <xs:attribute name="useAeron" type="xs:boolean" hpcc:displayName="Use Aeron"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Use Aeron for slave->server communication"/>
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="cache" hpcc:groupByName="Cache">

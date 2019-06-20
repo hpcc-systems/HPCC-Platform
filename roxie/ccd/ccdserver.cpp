@@ -4981,7 +4981,7 @@ public:
 
                             MemoryBuffer nextQuery;
                             nextQuery.append(sizeof(RoxiePacketHeader), &header);
-                            nextQuery.append(metaLen, metaData); 
+                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getTraceLength(), op->queryTraceInfo());
                             nextQuery.append(op->getContextLength(), op->queryContextData());
                             if (resendSequence == CONTINUESEQUENCE_MAX)
@@ -4996,7 +4996,7 @@ public:
                             newHeader->retries &= ~ROXIE_RETRIES_MASK;
                             IRoxieQueryPacket *resend = createRoxiePacket(nextQuery);
                             CRoxieServerQueryPacket *fqp = new CRoxieServerQueryPacket(resend);
-                            fqp->setSequence(original->getSequence()); 
+                            fqp->setSequence(original->getSequence());
                             pending.add(*fqp, idx+1); // note that pending takes ownership. sendPacket does not release.
                             original->setContinuation(LINK(fqp));
                             if (mergeOrder)
