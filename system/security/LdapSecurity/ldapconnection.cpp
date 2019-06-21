@@ -250,7 +250,7 @@ private:
 
     int                  m_ldapport;
     int                  m_ldap_secure_port;
-    StringBuffer         m_adminGroupName;
+    StringBuffer         m_adminGroupDN;//fully qualified DN of the HPCC administrator
     StringBuffer         m_protocol;
     StringBuffer         m_basedn;
     StringBuffer         m_domain;
@@ -395,11 +395,6 @@ public:
             throw MakeStringException(-1, "getServerInfo error - %s", ldap_err2string(rc));
         }
 
-        m_adminGroupName.clear();
-        cfg->getProp(".//@adminGroupName", m_adminGroupName);
-        if(m_adminGroupName.isEmpty())
-            m_adminGroupName.set(m_serverType == ACTIVE_DIRECTORY ? "Administrators" : "Directory Administrators");
-
         const char* basedn = cfg->queryProp(".//@commonBasedn");
         if(basedn == NULL || *basedn == '\0')
         {
@@ -422,6 +417,36 @@ public:
             throw MakeStringException(-1, "groups basedn not found in config");
         }
         LdapUtils::normalizeDn(group_basedn.str(), m_basedn.str(), m_group_basedn);
+
+        StringBuffer admin;
+        cfg->getProp(".//@adminGroupName", admin);
+        if(admin.isEmpty())
+        {
+            admin.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
+        }
+        else if (0 == stricmp("Administrators", admin.str()))
+        {
+            admin.set("cn=Administrators,cn=Builtin");//Active Directory
+        }
+        else if (0 == stricmp("Directory Administrators", admin.str()))
+        {
+            admin.set("cn=Directory Administrators");//389 DirectoryServer
+        }
+        else if (nullptr == strstr(admin.str(), "CN=") && nullptr == strstr(admin.str(), "cn="))
+        {
+            //Group name only. Add group OU
+            StringBuffer sb;
+            sb.appendf("cn=%s,%s", admin.str(), group_basedn.str());
+            admin.set(sb);
+        }
+        else
+        {
+            //Fully qualified group name. No changes necessary
+        }
+        if (nullptr == strstr(admin.str(), "DC=") && nullptr == strstr(admin.str(), "dc="))
+            admin.appendf(",%s", m_basedn.str());//add DC (Domain Component)
+        LdapUtils::cleanupDn(admin, m_adminGroupDN);
+        DBGLOG("adminGroupName '%s'", m_adminGroupDN.str());
 
         StringBuffer dnbuf;
         cfg->getProp(".//@modulesBasedn", dnbuf);
@@ -538,9 +563,9 @@ public:
             m_sdfieldname.append("aci");
     }
 
-    virtual const char * getAdminGroupName()
+    virtual const char * getAdminGroupDN()
     {
-        return m_adminGroupName.str();
+        return m_adminGroupDN.str();
     }
 
     virtual LdapServerType getServerType()
@@ -4547,10 +4572,10 @@ public:
         const char* sysuser = m_ldapconfig->getSysUser();
         if(sysuser != NULL && stricmp(sysuser, username) == 0)
             return true;
-        StringBuffer userdn, admingrpdn;
+
+        StringBuffer userdn;
         getUserDN(username, userdn);
-        getAdminGroupDN(admingrpdn);
-        return userInGroup(userdn.str(), admingrpdn.str());
+        return userInGroup(userdn.str(), m_ldapconfig->getAdminGroupDN());
     }
 
     virtual ILdapConfig* queryConfig()
@@ -4861,23 +4886,6 @@ private:
         {
             groupbasedn.append(groupBaseDN==nullptr ? m_ldapconfig->getGroupBasedn() : groupBaseDN);
         }
-    }
-
-    virtual void getAdminGroupDN(StringBuffer& groupdn)
-    {
-        LdapServerType stype = m_ldapconfig->getServerType();
-        if(stype == ACTIVE_DIRECTORY)
-        {
-            if (0 == stricmp(m_ldapconfig->getAdminGroupName(), "Administrators"))
-                groupdn.append("cn=Administrators,cn=Builtin,").append(m_ldapconfig->getBasedn());
-            else
-                groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getGroupBasedn());
-        }
-        else if(stype == IPLANET || stype == OPEN_LDAP)
-        {
-            groupdn.appendf("cn=%s,%s", m_ldapconfig->getAdminGroupName(), m_ldapconfig->getBasedn());
-        }
-
     }
 
     virtual void changeUserMemberOf(const char* action, const char* userdn, const char* groupdn)
