@@ -6083,14 +6083,17 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
         else
         {
             const char *kindStr = queryFileKind(fileDesc);
-            if (streq("flat", kindStr))
-                kind = CDFUFileType_Flat;
-            else if (streq("csv", kindStr))
-                kind = CDFUFileType_Csv;
-            else if (streq("xml", kindStr))
-                kind = CDFUFileType_Xml;
-            else if (streq("json", kindStr))
-                kind = CDFUFileType_Json;
+            if (!isEmptyString(kindStr))
+            {
+                if (streq("flat", kindStr))
+                    kind = CDFUFileType_Flat;
+                else if (streq("csv", kindStr))
+                    kind = CDFUFileType_Csv;
+                else if (streq("xml", kindStr))
+                    kind = CDFUFileType_Xml;
+                else if (streq("json", kindStr))
+                    kind = CDFUFileType_Json;
+            }
         }
         resp.setType(kind);
     }
