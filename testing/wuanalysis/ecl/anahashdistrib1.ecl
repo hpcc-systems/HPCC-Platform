@@ -22,6 +22,7 @@
 //nokey
 //noroxie
 //nohthor
+//nooutput
 
 IMPORT $.common.Files as Files;
 IMPORT $.common.Helper as Helper;

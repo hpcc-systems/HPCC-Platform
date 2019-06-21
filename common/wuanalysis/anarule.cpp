@@ -75,7 +75,100 @@ protected:
     static const stat_type rowsThreshold = 100;                // avg rows per node.
 };
 
+class IoSkewRule : public AActivityRule
+{
+public:
+    IoSkewRule(StatisticKind _stat, const char * _category) : stat(_stat), category(_category)
+    {
+        assertex((stat==StTimeDiskReadIO)||(stat==StTimeDiskWriteIO)||(stat==StTimeSpillElapsed));
+    }
+
+    virtual bool isCandidate(IWuActivity & activity) const override
+    {
+        if (stat == StTimeDiskReadIO)
+        {
+            switch(activity.getAttr(WaKind))
+            {
+                case TAKdiskread:
+                case TAKspillread:
+                case TAKdisknormalize:
+                case TAKdiskaggregate:
+                case TAKdiskcount:
+                case TAKdiskgroupaggregate:
+                case TAKindexread:
+                case TAKindexnormalize:
+                case TAKindexaggregate:
+                case TAKindexcount:
+                case TAKindexgroupaggregate:
+                case TAKcsvread:
+                    return true;
+            }
+        }
+        else if (stat == StTimeDiskWriteIO)
+        {
+            switch(activity.getAttr(WaKind))
+            {
+                case TAKdiskwrite:
+                case TAKspillwrite:
+                case TAKindexwrite:
+                case TAKcsvwrite:
+                    return true;
+            }
+        }
+        else if (stat == StTimeSpillElapsed)
+        {
+            switch(activity.getAttr(WaKind))
+            {
+                case TAKspillread:
+                case TAKspillwrite:
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    virtual bool check(PerformanceIssue & results, IWuActivity & activity, const WuAnalyseOptions & options) override
+    {
+        stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
+        stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
+
+        if (ioMaxSkew > options.skewThreshold)
+        {
+            stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
+            stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
+
+            stat_type cost;
+            //If one node didn't spill then it is possible the skew caused all the lost time
+            unsigned actkind = activity.getAttr(WaKind);
+            if ((actkind==TAKspillread||actkind==TAKspillwrite) && activity.getStatRaw(stat, StMinX) == 0)
+                cost = timeMaxLocalExecute;
+            else
+                cost = (timeMaxLocalExecute - timeAvgLocalExecute);
+            IWuEdge * edge = activity.queryInput(0);
+            if (!edge)
+                edge = activity.queryOutput(0);
+            auto edgeMaxSkew = edge ? edge->getStatRaw(StNumRowsProcessed, StSkewMax) : 0;
+            // If difference between ioSkew and edgeMaxSkew > 0.05%, then child record likely to have caused skew
+            if (ioMaxSkew > edgeMaxSkew && (ioMaxSkew-edgeMaxSkew) > ioMaxSkew/200)
+                results.set(cost, "Significant skew in child records causes uneven %s time (%s)", category, activity.queryName());
+            else
+                results.set(cost, "Significant skew in records causes uneven %s time (%s)", category, activity.queryName());
+            return true;
+        }
+        return false;
+    }
+
+protected:
+    StatisticKind stat;
+    const char * category;
+};
+
+
 void gatherRules(CIArrayOf<AActivityRule> & rules)
 {
     rules.append(*new DistributeSkewRule);
+    rules.append(*new IoSkewRule(StTimeDiskReadIO, "disk read"));
+    rules.append(*new IoSkewRule(StTimeDiskWriteIO, "disk write"));
+    rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
 }

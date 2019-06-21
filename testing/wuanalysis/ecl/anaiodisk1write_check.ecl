@@ -15,19 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-EXPORT files := Module
-    EXPORT layout_visits := RECORD
-        STRING20 User;
-        STRING30 url;
-        INTEGER8 timestamp;
-    END;
-    EXPORT layout_visits_var := RECORD
-        STRING User;
-        STRING url;
-        INTEGER timestamp;
-    END;
-    EXPORT testfile1 := 'regress::wuanalysis::largedata1';
-    EXPORT testfile2 := 'regress::wuanalysis::largedata2';
-    EXPORT testfile3 := 'regress::wuanalysis::largedata3';
-END;
+//noroxie
+//nohthor
+
+IMPORT $.common.Helper as Helper;
+
+OUTPUT(Helper.getMessages('iodiskwrite'));
 
