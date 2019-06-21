@@ -17,7 +17,6 @@
 
 //nohthor
 //nothor
-//nothorlcr
 //The library is defined and built in aaalibrary6.ecl
 
 namesRecord :=

@@ -337,7 +337,7 @@ class ECLFile:
         retVal = False
         eclText = open(self.getEcl(), 'rb')
         for line in eclText:
-            if tag in line.lower():
+            if re.search(tag+r'[^\w]', line, re.IGNORECASE):
                 retVal = True
                 break
         logging.debug("%3d.__checkTag() returns with %s", self.taskId,  retVal)
