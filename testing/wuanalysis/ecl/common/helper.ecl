@@ -15,13 +15,29 @@
     limitations under the License.
 ############################################################################## */
 
-Export common := Module
-    export layout_visits := RECORD
-        STRING20 User;
-        STRING30 url;
-        INTEGER8 timestamp;
-    END;
-    export testfile1 := 'regress::wuanalysis::largedata1';
-    export testfile2 := 'regress::wuanalysis::largedata2';
-End;
+IMPORT Std;
 
+getWUFilename(string queryName) := Function
+  return 'regress::tmp::'+queryName;
+END;
+
+EXPORT helper := MODULE
+
+  EXPORT saveWUID(String queryName) := Function
+    return OUTPUT(DATASET([{WORKUNIT}], {string wuid}), ,getWUFilename(queryName), OVERWRITE);
+  END;
+
+  EXPORT getMessages(String queryName) := Function
+    querywuid := DATASET(getWUFilename(queryName), {string wuid}, THOR)[1].wuid;
+    wumessages := NOTHOR(STD.System.Workunit.WorkunitMessages(querywuid));
+
+    layout_newWUMessage := RECORD
+      UNSIGNED4 severity;
+      INTEGER4 code;
+      STRING16 source;
+      STRING message{MAXLENGTH(1024)};
+    END;
+
+    return PROJECT(wumessages, layout_newWUMessage);
+  END;
+END;
