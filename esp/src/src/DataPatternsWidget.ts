@@ -113,7 +113,6 @@ export class DataPatternsWidget {
             .baseUrl("")
             ;
         this.dpReport = new Report();
-
     }
 
     startup(args) {
@@ -234,6 +233,7 @@ export class DataPatternsWidget {
                     this._wu.watchUntilComplete(changes => {
                         if (this._wu && this._wu.isComplete()) {
                             this.dpReport
+                                .visible(true)
                                 .wu(this._dpWu)
                                 .render(w => {
                                     w
@@ -244,6 +244,11 @@ export class DataPatternsWidget {
                         }
                         this.refreshActionState();
                     });
+                } else {
+                    this.dpReport
+                        .visible(false)
+                        .render()
+                        ;
                 }
             }
             this.refreshActionState();
@@ -270,6 +275,23 @@ export class DataPatternsWidget {
         domClass.add(this.id + "StateIdImage", stateIconClass);
 
         d3Select(`#${this.id}WU`).style("display", isComplete ? "none" : null);
-        d3Select(`#${this.id}DPReport`).style("display", isComplete ? null : "none");
+
+        const msg = [];
+        if (!this._wu) {
+            msg.push(this.i18n.DataPatternsNotStarted);
+        } else if (!this._wu.isComplete()) {
+            msg.push(this.i18n.DataPatternsStarted);
+        }
+
+        const dpMessage = d3Select(`#${this.id + "DPReport"}`).selectAll(".DPMessage").data(msg);
+        dpMessage.enter().insert("p", ":first-child")
+            .attr("class", "DPMessage")
+            .style("text-align", "center")
+            .merge(dpMessage as any)
+            .text(d => d)
+            ;
+        dpMessage.exit()
+            .remove()
+            ;
     }
 }
