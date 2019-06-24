@@ -29,7 +29,6 @@ public:
     virtual timestamp_type getTimeStamp() const = 0;
     virtual IEclSource * queryOriginal() const = 0;
     virtual bool isUpToDate(hash64_t optionHash) const = 0;
-    virtual IFileContents * querySimplifiedEcl() const = 0;
     virtual void queryDependencies(StringArray & values) const = 0;
     virtual bool hasKnownDependents() const = 0;
 };
@@ -69,15 +68,6 @@ extern HQL_API IEclCachedDefinitionCollection * createEclFileCachedDefinitionCol
  */
 extern HQL_API void convertSelectsToPath(StringBuffer & filename, const char * eclPath);
 
-
-/*
- * Attempt to produce a simple expression which can be parsed quickly (because it has few dependencies), and can be
- * used for syntax checking in place of the original expression.
- *
- * @param definition    The expression to simplify.
- * @return              A simplified expression, or nullptr if no simplified value can be created
- */
-extern HQL_API IHqlExpression * createSimplifiedDefinition(IHqlExpression * definition);
 
 /*
  * Create an archive directly from the cached information about the attributes (and the source files).

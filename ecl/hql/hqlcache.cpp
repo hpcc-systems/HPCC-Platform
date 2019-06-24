@@ -116,7 +116,6 @@ public:
     : EclCachedDefinition(_collection, _definition), cacheTree(_cacheTree) {}
 
     virtual timestamp_type getTimeStamp() const override;
-    virtual IFileContents * querySimplifiedEcl() const override;
     virtual void queryDependencies(StringArray & values) const override;
     virtual bool hasKnownDependents() const override
     {
@@ -137,7 +136,6 @@ protected:
 
 private:
     Linked<IPropertyTree> cacheTree;
-    mutable Owned<IFileContents> simplified;
 };
 
 timestamp_type EclXmlCachedDefinition::getTimeStamp() const
@@ -145,19 +143,6 @@ timestamp_type EclXmlCachedDefinition::getTimeStamp() const
     if (!cacheTree)
         return 0;
     return cacheTree->getPropInt64("@ts");
-}
-
-IFileContents * EclXmlCachedDefinition::querySimplifiedEcl() const
-{
-    if (!cacheTree)
-        return nullptr;
-    if (simplified)
-        return simplified;
-    const char * ecl = cacheTree->queryProp("Simplified");
-    if (!ecl)
-        return nullptr;
-    simplified.setown(createFileContentsFromText(ecl, NULL, false, NULL, 0));
-    return simplified;
 }
 
 void EclXmlCachedDefinition::queryDependencies(StringArray & values) const
@@ -339,117 +324,6 @@ void convertSelectsToPath(StringBuffer & filename, const char * eclPath)
     filename.appendLower(eclPath);
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-
-static IHqlExpression * createSimplifiedDefinitionFromType(ITypeInfo * type)
-{
-    switch (type->getTypeCode())
-    {
-    case type_scope: // These may be possible - if the scope is not a forward scope or derived from another scope
-        return nullptr;
-    case type_pattern:
-    case type_rule:
-    case type_token:
-        //Possible, but the default testing code doesn't work
-        return nullptr;
-    case type_utf8:
-    case type_string:
-    case type_real:
-    case type_decimal:
-    case type_int:
-        {
-            return createValue(no_simplified, LINK(type));
-        }
-    }
-
-    return nullptr;
-}
-
-static IHqlExpression * createSimplifiedBodyDefinition(IHqlExpression * expr)
-{
-    if (expr->isFunction())
-    {
-        if (!expr->isFunctionDefinition())
-            return nullptr;
-        OwnedHqlExpr newBody = createSimplifiedBodyDefinition(expr->queryChild(0)->queryBody());
-        if (!newBody)
-            return nullptr;
-
-        IHqlExpression * params = expr->queryChild(1);
-        HqlExprArray funcArgs;
-        HqlExprArray dummyAttrs;
-        ForEachChild(i, params)
-        {
-            IHqlExpression * param = params->queryChild(i)->queryBody();
-            type_t tc = param->queryType()->getTypeCode();
-
-            switch (tc)
-            {
-            case type_scope:
-            case type_table:
-            case type_row:
-            case type_set:
-            case type_record:
-            case type_enumerated:
-            case type_groupedtable:
-            case type_dictionary:
-                return nullptr;
-            }
-            funcArgs.append(*createParameter(param->queryId(),(unsigned)expr->querySequenceExtra(), getFullyUnqualifiedType(param->queryType()), dummyAttrs));
-        }
-
-        OwnedHqlExpr formals = createSortList(funcArgs);
-
-        IHqlExpression * origDefaults = expr->queryChild(2);
-        OwnedHqlExpr newDefaults;
-        if (origDefaults && origDefaults->numChildren())
-        {
-            HqlExprArray newDefaultsArray;
-            ForEachChild(idx, origDefaults)
-            {
-                IHqlExpression * defaultValue = origDefaults->queryChild(idx);
-                if (defaultValue->getOperator() == no_omitted)
-                    newDefaultsArray.append(*(LINK(defaultValue)));
-                else
-                {
-                    OwnedHqlExpr newDefault = createSimplifiedBodyDefinition(defaultValue->queryBody());
-                    if (!newDefault)
-                        return nullptr;
-                    newDefaultsArray.append(*(newDefault.getClear()));
-                }
-            }
-            newDefaults.setown(createSortList(newDefaultsArray));
-        }
-        return createFunctionDefinition(expr->queryId(), newBody.getClear(), formals.getClear(), newDefaults.getClear(), nullptr);
-    }
-    switch (expr->getOperator())
-    {
-    case no_typedef:
-    case no_enum:
-    case no_macro:
-        return nullptr;
-    }
-    Owned<ITypeInfo> type = getFullyUnqualifiedType(expr->queryType());
-    if (!type)
-        return nullptr;
-
-    return createSimplifiedDefinitionFromType(type);
-}
-
-IHqlExpression * createSimplifiedDefinition(IHqlExpression * expr)
-{
-    if (!expr)
-        return nullptr;
-    OwnedHqlExpr simple = createSimplifiedBodyDefinition(expr);
-    if (simple)
-    {
-        if (simple==expr)
-            return nullptr;
-        OwnedHqlExpr newexpr =  expr->cloneAnnotation(simple);
-        return newexpr.getClear();
-    }
-    return nullptr;
-}
 //---------------------------------------------------------------------------------------------------------------------
 
 /*
