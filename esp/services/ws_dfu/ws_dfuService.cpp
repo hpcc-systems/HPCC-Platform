@@ -6400,7 +6400,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
             case CDFUFileType_Index:
                 fileDesc->queryProperties().setProp("@kind", "key");
             default:
-                break; // unknown
+                throw makeStringExceptionV(ECLWATCH_MISSING_FILETYPE, "DFUFileCreateV2: File type not provided");
         }
 
         MemoryBuffer layoutBin;
