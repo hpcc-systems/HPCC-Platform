@@ -8799,15 +8799,23 @@ int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right
     {
         IHqlExpression *lfield = lrecord->queryChild(idx);
         IHqlExpression *rfield = rrecord->queryChild(idx);
+        assertex(lfield);
+        assertex(rfield);
+
         if (lfield->isAttribute() || rfield->isAttribute())
         {
             if (lfield != rfield)
                 reportError(ERR_TYPEMISMATCH_DATASET, errPos, "Record attributes differ: %d vs %d", lnumChildren, rnumChildren);
         }
         
-        assertex(lfield);
-        assertex(rfield);
-        
+        IAtom * leftName = lfield->queryName();
+        IAtom * rightName = rfield->queryName();
+        if (leftName != rightName)
+        {
+            //This should really be an error, but it would break too many examples
+            reportWarning(CategoryMistake, SeverityWarning, ERR_TYPEMISMATCH_DATASET, errPos, "Name mismatch for corresponding fields %s vs %s",str(leftName), str(rightName));
+        }
+
         ITypeInfo * lchildrectype = lfield->queryRecordType();
         ITypeInfo * rchildrectype = rfield->queryRecordType();
         
