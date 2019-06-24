@@ -418,35 +418,33 @@ public:
         }
         LdapUtils::normalizeDn(group_basedn.str(), m_basedn.str(), m_group_basedn);
 
-        StringBuffer admin;
-        cfg->getProp(".//@adminGroupName", admin);
-        if(admin.isEmpty())
+        StringBuffer adminGrp;
+        cfg->getProp(".//@adminGroupName", adminGrp);
+        if(adminGrp.isEmpty())
         {
-            admin.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
+            adminGrp.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
         }
-        else if (0 == stricmp("Administrators", admin.str()))
+        else if (0 == stricmp("Administrators", adminGrp.str()))
         {
-            admin.set("cn=Administrators,cn=Builtin");//Active Directory
+            adminGrp.set("cn=Administrators,cn=Builtin");//Active Directory
         }
-        else if (0 == stricmp("Directory Administrators", admin.str()))
+        else if (0 == stricmp("Directory Administrators", adminGrp.str()))
         {
-            admin.set("cn=Directory Administrators");//389 DirectoryServer
+            adminGrp.set("cn=Directory Administrators");//389 DirectoryServer
         }
-        else if (nullptr == strstr(admin.str(), "CN=") && nullptr == strstr(admin.str(), "cn="))
+        else if (nullptr == strstr(adminGrp.str(), "CN=") && nullptr == strstr(adminGrp.str(), "cn="))
         {
             //Group name only. Add group OU
             StringBuffer sb;
-            sb.appendf("cn=%s,%s", admin.str(), group_basedn.str());
-            admin.set(sb);
+            sb.appendf("cn=%s,%s", adminGrp.str(), group_basedn.str());
+            adminGrp.set(sb);
         }
-        else
-        {
-            //Fully qualified group name. No changes necessary
-        }
-        if (nullptr == strstr(admin.str(), "DC=") && nullptr == strstr(admin.str(), "dc="))
-            admin.appendf(",%s", m_basedn.str());//add DC (Domain Component)
-        LdapUtils::cleanupDn(admin, m_adminGroupDN);
-        DBGLOG("adminGroupName '%s'", m_adminGroupDN.str());
+        //If fully qualified group OU name entered, no changes necessary
+
+        if (nullptr == strstr(adminGrp.str(), "DC=") && nullptr == strstr(adminGrp.str(), "dc="))
+            adminGrp.appendf(",%s", m_basedn.str());//add DC (Domain Component)
+        LdapUtils::cleanupDn(adminGrp, m_adminGroupDN);
+        PROGLOG("adminGroupName '%s'", m_adminGroupDN.str());
 
         StringBuffer dnbuf;
         cfg->getProp(".//@modulesBasedn", dnbuf);
