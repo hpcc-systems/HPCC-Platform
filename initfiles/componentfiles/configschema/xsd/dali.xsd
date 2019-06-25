@@ -80,7 +80,7 @@
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="ldap" hpcc:groupByName="LDAP" hpcc:docid="da.t4">
-                    <xs:attribute name="ldapServer" type="xs:string" hpcc:diaplayName="LDAP Server"
+                    <xs:attribute name="ldapServer" type="xs:string" hpcc:displayName="LDAP Server"
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:requiredIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:tooltip="The LDAPserver to be used for authentication"/>
@@ -115,7 +115,7 @@
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:tooltip="The default password for filesDefaultUser"/>
                     <xs:attribute name="reqSignatureExpiry" type="xs:string"
-                                  hpcc:diaplsyName="Signature Expiration (minutes)" hpcc:presetValue="10"
+                                  hpcc:displayName="Signature Expiration (minutes)" hpcc:presetValue="10"
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:tooltip="Lifetime in minutes of a permissions request digital signature"/>
                     <xs:attribute name="checkScopeScans" type="xs:boolean" hpcc:displayName="Check Scope Scans"
