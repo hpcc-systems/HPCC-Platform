@@ -709,7 +709,7 @@ enum node_operator : unsigned short {
         no_sectioninput,
         no_forcegraph,
         no_eventextra,
-        no_simplified,
+    no_unused81,
         no_related,
         no_executewhen,
         no_definesideeffect,
@@ -919,7 +919,7 @@ public:
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
     void beginMetaScope(FileParseMeta & active) { metaStack.append(OLINK(active)); }
     void endMetaScope() { metaStack.pop(); }
-    bool createCache(const char * simplifiedEcl, bool isMacro);
+    bool createCache(bool isMacro);
     inline FileParseMeta & curMeta() { return metaStack.tos(); }
     inline bool hasCacheLocation( ) const { return !metaOptions.cacheLocation.isEmpty();}
 public:
@@ -1026,7 +1026,7 @@ public:
     inline bool checkSimpleDef() const { return parseCtx.checkSimpleDef; }
     inline bool ignoreCache() const { return parseCtx.ignoreCache; }
     inline bool ignoreSimplified() const { return parseCtx.ignoreSimplified; }
-    inline bool createCache(const char * simplifiedEcl, bool isMacro) { return parseCtx.createCache(simplifiedEcl, isMacro); }
+    inline bool createCache(bool isMacro) { return parseCtx.createCache(isMacro); }
     void reportTiming(const char * name);
     inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }
     inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }

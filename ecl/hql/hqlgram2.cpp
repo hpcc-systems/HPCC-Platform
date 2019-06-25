@@ -11414,7 +11414,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case SERVICE: msg.append("SERVICE"); break;
     case SET: msg.append("SET"); break;
     case SHARED: msg.append("SHARED"); break;
-    case __SIMPLIFIED__: msg.append("__SIMPLIFIED__"); break;
     case SIN: msg.append("SIN"); break;
     case SINGLE: msg.append("SINGLE"); break;
     case SINH: msg.append("SINH"); break;
@@ -11643,7 +11642,7 @@ void HqlGram::simplifyExpected(int *expected)
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
                        KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
-                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, __SIMPLIFIED__, 0);
+                       TOXML, TOJSON, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, LIKELY, UNLIKELY, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
@@ -12478,7 +12477,7 @@ extern HQL_API void parseModule(IHqlScope *scope, IFileContents * contents, HqlL
         E->Release();
     }
     if (ctx.hasCacheLocation())
-        moduleCtx.createCache(nullptr, false);
+        moduleCtx.createCache(false);
 
     moduleCtx.noteEndModule(success);
 }
@@ -12508,13 +12507,10 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 }
 
 // If ctx.hasCacheLocation() then the cache entry is always updated with the dependency information (unless it is unavailable i.e. a forward scope)
-// If ctx.ignoreSimplified() then the expressions are never simplified and the parsing behaves the same way as 6.x
 // if ctx.ignoreCache() then the contents of the cache are not used, but the cache is still updated
 // if ctx.regenerateCache() then the contents of the cache are not used and the cache is forced to be updated
-// if ctx.checkSimpleDef() then simplified definitions are created and checked - even if there is no cache configured.
 void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name, const char * fullName)
 {
-    bool usingSimplifiedFromCache = false;
     bool cacheUptoDate = false;
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
@@ -12528,19 +12524,6 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
         HqlParseContext & parseContext = ctx.queryParseContext();
         Owned<IEclCachedDefinition> cached = parseContext.cache->getDefinition(fullName);
         cacheUptoDate = cached->isUpToDate(parseContext.optionHash);
-        if (cacheUptoDate && !ctx.ignoreSimplified() && !ctx.ignoreCache())
-        {
-            usingSimplifiedFromCache = true;
-            if (ctx.syntaxChecking())
-            {
-                IFileContents * cachecontents = cached->querySimplifiedEcl();
-                if (cachecontents)
-                {
-                    contents = cachecontents;
-                    ctx.incrementAttribsFromCache();
-                }
-            }
-        }
     }
 
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
@@ -12564,7 +12547,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
     OwnedHqlExpr parsed = scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
     ctx.incrementAttribsProcessed();
 
-    if (parsed && !usingSimplifiedFromCache)
+    if (parsed)
     {
         //Forward scopes cannot be cached because the dependencies are not known as it is parsed
         const bool canCache = parsed->getOperator() != no_forwardscope;
@@ -12572,56 +12555,8 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
         {
             const bool isMacro = parsed->isMacro();
             const bool updateCache = ctx.hasCacheLocation() && (!cacheUptoDate || ctx.regenerateCache());
-            const bool useSimplified = ctx.syntaxChecking() && !ctx.ignoreSimplified();
-
-            OwnedHqlExpr simplified;
-            StringBuffer simplifiedEcl;
-            // Simplified expression will be generated when
-            // - Not a macro and ignoreSimplified == false
-            // - And simplifiedExpression is required because cache is no up to date, verify option is used or syntaxChecking
-            // - And attribute has not been specifically excluded with the neverSimplify option
-            if (!isMacro && !ctx.ignoreSimplified() &&
-                (updateCache || ctx.checkSimpleDef() || useSimplified) && !ctx.neverSimplify(fullName))
-                simplified.setown(createSimplifiedDefinition(parsed));
-
-            // If plain text ecl representation of the simplified expression is needed for some reason
-            // (i.e. to update cache or verify simplified expression)
-            // And the simplified expression is less complex than the original expression
-            // Then a plain text ecl representation of the simplified expression is produced here
-            if (simplified && (updateCache||ctx.checkSimpleDef()))
-            {
-                regenerateDefinition(simplified, simplifiedEcl);
-                // Ensure the simplified expression is less complex
-                if (simplifiedEcl.length()<contents->length())
-                {
-                    if (ctx.checkSimpleDef())
-                    {
-                        simplifiedEcl.append("\n/* Simplified expression expression tree:\n");
-                        EclIR::getIRText(simplifiedEcl, 0, queryLocationIndependent(simplified));
-                        simplifiedEcl.append("*/\n");
-                    }
-                }
-                else
-                {
-                    // Simplified expr is more complex, so blank out plain text ecl string
-                    // to ensure it's not written to cache or used for verifying
-                    simplifiedEcl.clear();
-                    simplified.clear();
-                    ctx.incrementSimplifiedTooComplex();
-                }
-            }
             if (updateCache)
-                attrCtx.createCache(simplifiedEcl, isMacro);
-            if (simplified)
-            {
-                ctx.incrementAttribsSimplified();
-
-                if (ctx.checkSimpleDef())
-                    verifySimplifiedDefinition(parsed, simplified, simplifiedEcl, attrCtx);
-
-                if (simplified != parsed && useSimplified)
-                    scope->defineSymbol(LINK(simplified));
-            }
+                attrCtx.createCache(isMacro);
         }
     }
 
@@ -12653,53 +12588,6 @@ IHqlExpression * parseDefinition(const char * ecl, IIdAtom * name, MultiErrorRec
     ::Release(parser.yyParse(false, false));
     return scope->lookupSymbol(name, LSFsharedOK|LSFnoreport, ctx);
 }
-
-bool verifySimplifiedDefinition(IHqlExpression *origExpr, IHqlExpression *simplifiedDefinition, const char * simplifiedEcl, HqlLookupContext & ctx)
-{
-    MultiErrorReceiver errors;
-
-    OwnedHqlExpr parsed = parseDefinition(simplifiedEcl, simplifiedDefinition->queryId(), errors);
-    if (!parsed)
-    {
-#ifdef _DEBUG
-        DBGLOG("Failed to parse simplified definition");
-        StringBuffer orig;
-        EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
-        DBGLOG("Original:\n%s\n", orig.str());
-        StringBuffer t1;
-        EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
-        DBGLOG("Simplified:\n%s\n", t1.str());
-        DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
-#endif
-        ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed to parse simplified definition",0,0,0,0);
-        return false;
-    }
-    else
-    {
-        StringBuffer t1, t2;
-        EclIR::getIRText(t1, 0, queryLocationIndependent(simplifiedDefinition));
-        EclIR::getIRText(t2, 0, queryLocationIndependent(parsed));
-
-        if (!streq(t1, t2))
-        {
-#ifdef _DEBUG
-            StringBuffer orig;
-            EclIR::getIRText(orig, 0, queryLocationIndependent(origExpr));
-            DBGLOG("Original:\n%s\n", orig.str());
-#endif
-            DBGLOG("Simplified:\n%s\n", t1.str());
-#ifdef _DEBUG
-            DBGLOG("Regenerated:\n---\n%s\n---\n", simplifiedEcl);
-            DBGLOG("Parsed:\n%s", t2.str());
-#endif
-
-            ctx.errs->reportError(ERR_INTERNALEXCEPTION, "Failed verification of simplified definition",0,0,0,0);
-            return false;
-        }
-    }
-    return true;
-}
-
 
 int testHqlInternals()
 {

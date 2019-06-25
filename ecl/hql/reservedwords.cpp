@@ -391,7 +391,6 @@ static const char * eclReserved12[] = {//Attributes
     "rule",
     "scan",
     "self",
-    "__simplified__",
     "smart",
     "sql",
     "streamed",
