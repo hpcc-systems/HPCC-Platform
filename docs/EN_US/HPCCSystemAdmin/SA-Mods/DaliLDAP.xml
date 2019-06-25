@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Dali-LDAP">
-  <title>Dali and LDAP</title>
+  <title>Dali and Security</title>
 
-  <para>This section contains additional information about Dali and LDAP
-  security settings.</para>
+  <para>This section contains additional information about Dali and security
+  settings.</para>
 
   <sect2 id="LDAP-Dali">
     <title>LDAP and Dali Security settings</title>
@@ -95,6 +95,244 @@
       LDAP call to check every level in the scope, from the top to the bottom,
       that the depth of file scopes can have a performance cost in systems
       with File Scope Security enabled.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="WhitelistInDali" role="brk">
+    <title>Whitelist in Dali</title>
+
+    <para>The Dali server has the ability to restrict access to only those
+    nodes that are associated with a role in the environment definition
+    (environment.xml) or explicitly added to the
+    <emphasis>Whitelist</emphasis> in Dali's configuration. The Whitelist is
+    implicitly populated with the server components and their roles as defined
+    in the environment. You can explicitly add additional nodes and their
+    approved role(s) to a supplementary Whitelist in the environment.xml file
+    as shown in the following example:</para>
+
+    <para><programlisting>&lt;Environment&gt;
+...
+ &lt;Software&gt;
+ ...
+   &lt;DaliServerProcess&gt;
+     &lt;WhiteList&gt;
+      &lt;Entry hosts="adminnode1,192.168.0.101" roles="DaliDiag,DaliAdmin"/&gt;
+      &lt;Entry hosts="adminnode3" roles="DaliDiag"/&gt;
+     &lt;/WhiteList&gt;
+   ...
+   &lt;/DaliServerProcess&gt;
+ ...
+ &lt;/Software&gt;
+...
+&lt;/Environment&gt;
+</programlisting></para>
+
+    <para>Hosts can be specified by hostname or IP address.</para>
+
+    <para>Roles must be one of the following supported roles:</para>
+
+    <para><simplelist columns="3" type="vert">
+        <member>ThorMaster</member>
+
+        <member>EclCCServer</member>
+
+        <member>EclCC</member>
+
+        <member>EclServer</member>
+
+        <member>EclScheduler</member>
+
+        <member>EclAgent</member>
+
+        <member>AgentExec</member>
+
+        <member>DaliServer</member>
+
+        <member>SashaServer</member>
+
+        <member>DfuServer</member>
+
+        <member>EspServer</member>
+
+        <member>Config</member>
+
+        <member>SchedulerAdmin</member>
+
+        <member>RoxieMaster</member>
+
+        <member>BackupGen</member>
+
+        <member>DaFsControl</member>
+
+        <member>SwapNode</member>
+
+        <member>DaliAdmin</member>
+
+        <member>UpdateEnv</member>
+
+        <member>TreeView</member>
+
+        <member>DaliDiag</member>
+
+        <member>Testing</member>
+
+        <member>XRef</member>
+
+        <member>Monitoring</member>
+      </simplelist></para>
+
+    <para><simplelist columns="3" type="vert">
+        <member></member>
+      </simplelist></para>
+
+    <para></para>
+
+    <para>An entry can have one or more nodes, specified in a comma separated
+    list.</para>
+
+    <para>Nodes can have one or more roles, specified in a comma separated
+    list.</para>
+
+    <para>It should never be necessary to explicitly add the following roles :
+    </para>
+
+    <para><programlisting>AgentExec, DaliServer, EclAgent, EclCC, EclCCServer, EclServer, EspServer, 
+SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
+
+    <para>These roles correspond to components in the environment, which
+    should always be implicitly whitelisted by inclusion in the
+    environment.</para>
+
+    <para>In addition, the Dali server automatically whitelists these
+    roles:</para>
+
+    <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, ScheduleAdmin, SwapNode, Testing, 
+TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
+
+    <?hard-pagebreak ?>
+
+    <para>The only roles that are likely to be added are administrative tools
+    and utilities that are not defined components, for example:</para>
+
+    <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, SchedulerAdmin, SwapNode, Testing, 
+TreeView, UpdateEnv, XRef</programlisting></para>
+
+    <para>To disable the Whitelist feature entirely, you can add:</para>
+
+    <para><programlisting>&lt;WhiteList enabled="false"&gt;</programlisting><emphasis
+    role="bold">This is not recommended for production
+    environments.</emphasis></para>
+
+    <para></para>
+
+    <sect3>
+      <title>Retrieve the Whitelist</title>
+
+      <para>To retrieve the entire whitelist (implicit and explicit), use the
+      <emphasis role="bold">dalidiag</emphasis> command line tool (found in
+      /opt/HPCCSystems/bin/.)</para>
+
+      <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+    </sect3>
+
+    <sect3 role="brk">
+      <title>Use envmod to add or remove entries in the supplementary
+      Whitelist</title>
+
+      <para>We recommend using the <emphasis role="bold">envmod</emphasis>
+      command line tool to add Whitelist entries to your environment.xml file.
+      The envmod utility can be found in /opt/HPCCSystems/bin/.</para>
+
+      <para>Use a template file such as the following example:</para>
+
+      <para><programlisting>{
+    "name" : "AddWhiteList",
+    "description" : "Add whilelist to environment",
+    "type" : "modification",
+    "operations" : [
+        {
+            "action" : "find",
+            "target_path" : "/Environment/Software/DaliServerProcess/Whitelist",
+            "data" : {
+                "create_if_not_found" : true,
+                "save" : {
+                    "name" : "whiteListNodeId"
+                }
+            }
+        },
+        {
+            "action" : "create",
+            "target_nodeid" : "{{whiteListNodeId}}",
+            "data" : {
+                "node_type" : "Entry",
+                "attributes" : [
+                    {
+                        "name" : "hosts",
+                        "value" : "adminnode1,192.168.0.101"
+                    },
+                    {
+                        "name" : "roles",
+                        "value" : "DaliDiag,DailAdmin"
+                    }
+                ]
+            }
+        },
+{
+            "action" : "create",
+            "target_nodeid" : "{{whiteListNodeId}}",
+            "data" : {
+                "node_type" : "Entry",
+                "attributes" : [
+                    {
+                        "name" : "hosts",
+                        "value" : "adminnode3"
+                    },
+                    {
+                        "name" : "roles",
+                        "value" : "DaliDiag"
+                    }
+                ]
+            }
+        }
+    ]
+}</programlisting>This example adds the DaliDiag and DaliAdmin roles to two
+      nodes. One node is specified using its hostname (adminnode1). The other
+      is referenced by IP address. It adds the DaliDiag role to the
+      adminnode3. The result matches the example XML shown earlier.</para>
+
+      <para>Sample command line:</para>
+
+      <programlisting>sudo /opt/HPCCSystems/bin/envmod \
+     -t myWhitelistTemplate.json \
+     -e /etc/HPCCSystems/source/environment.xml \
+     -d /opt/HPCCSystems/componentfiles/configschema/xsd \
+     -o /etc/HPCCSystems/source/environmentWithWhitelist.xml</programlisting>
+
+      <para>The -t (or --template) parameter is the location of the
+      template.</para>
+
+      <para>The -e (or --env) parameter is the location of the environment
+      file. If omitted, the action validates the template.</para>
+
+      <para>The -d (or --schema-dir) parameter is the location of the schema
+      files.</para>
+
+      <para>The -o (or --output) parameter is the location of the output file.
+      If you specify -o without a full path to a file, it overwrites the input
+      file.</para>
+
+      <para><emphasis role="bold">Once you have modified your environment, you
+      MUST copy environment.xml to every node. </emphasis></para>
+
+      <para><emphasis role="bold"></emphasis></para>
+
+      <para>To remove an entry, use a template like the following:</para>
+
+      <para><programlisting>{
+    “action” : “delete”,
+    “target_path” : “/Environment/Software/DaliServerProcess/Whitelist/Entry[@hosts=’adminnode3’]”
+}
+</programlisting></para>
     </sect3>
   </sect2>
 </sect1>

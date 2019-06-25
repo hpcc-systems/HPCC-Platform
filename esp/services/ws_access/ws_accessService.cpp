@@ -1137,6 +1137,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                 ForEachItemIn(y, m_basedns)
                 {
                     IEspDnStruct* curbasedn = &(m_basedns.item(y));
+                    const char *basednName = curbasedn->getName();
                     const char *aBasedn = curbasedn->getBasedn();
                     const char *aRtype = curbasedn->getRtype();
                     if (!aBasedn || !*aBasedn ||!aRtype || !*aRtype)
@@ -1190,21 +1191,15 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                     ForEachItemIn(y2, ResourceArray)
                     {
                         IEspResource& r = ResourceArray.item(y2);
-                        const char* rname = r.getName();
+                        const char* resourceName = r.getName();
                         const char* bnname = r.getDescription();
-                        if(rname == NULL || *rname == '\0')
-                            continue;
-
-
-                        StringBuffer namebuf(rname);
-                        //const char* prefix = req.getPrefix();
-                        //if(prefix && *prefix)
-                        //  namebuf.insert(0, prefix);
+                        if (isEmptyString(resourceName))
+                            continue; 
 
                         try
                         {
                             IArrayOf<CPermission> permissions;
-                            ldapsecmgr->getPermissionsArray(bnname, rtype, namebuf.str(), permissions);
+                            ldapsecmgr->getPermissionsArray(bnname, rtype, resourceName, permissions);
                             ForEachItemIn(x, permissions)
                             {
                                 CPermission& perm = permissions.item(x);
@@ -1223,9 +1218,16 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                                         if (!bDeletePermission)
                                         {
                                             Owned<IEspAccountPermission> onepermission = createAccountPermission();
-                                            onepermission->setBasedn(bnname);
-                                            onepermission->setRType(aRtype);
-                                            onepermission->setResourceName(namebuf.str());
+                                            if (version < 1.15)
+                                            {
+                                                onepermission->setBasedn(bnname);
+                                                onepermission->setRType(aRtype);
+                                            }
+                                            else
+                                            {
+                                                onepermission->setBasednName(basednName);
+                                            }
+                                            onepermission->setResourceName(resourceName);
                                             onepermission->setPermissionName(groupname);
                                             accountPermissions.append(*onepermission.getLink());
                                         }
@@ -1234,7 +1236,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                                             CPermissionAction paction;
                                             paction.m_basedn.append(bnname);
                                             paction.m_rtype = rtype;
-                                            paction.m_rname.append(namebuf.str());
+                                            paction.m_rname.append(resourceName);
                                             paction.m_account_name.append(actname);
                                             paction.m_account_type = (ACT_TYPE) accountType;
                                             paction.m_allows = perm.getAllows();
@@ -4044,20 +4046,15 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             ForEachItemIn(y2, ResourceArray)
             {
                 IEspResource& r = ResourceArray.item(y2);
-                const char* rname = r.getName();
+                const char* resourceName = r.getName();
                 const char* dnname = r.getDescription();
-                if(rname == NULL || *rname == '\0')
+                if (isEmptyString(resourceName))
                     continue;
-
-                StringBuffer namebuf(rname);
-                //const char* prefix = req.getPrefix();
-                //if(prefix && *prefix)
-                //  namebuf.insert(0, prefix);
 
                 try
                 {
                     IArrayOf<CPermission> permissions;
-                    ldapsecmgr->getPermissionsArray(dnname, rtype, namebuf.str(), permissions);
+                    ldapsecmgr->getPermissionsArray(dnname, rtype, resourceName, permissions);
                     ForEachItemIn(x, permissions)
                     {
                         CPermission& perm = permissions.item(x);
@@ -4095,10 +4092,18 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
                         }
 
                         Owned<IEspAccountPermission> onepermission = createAccountPermission();
-                        onepermission->setBasedn(dnname);
-                        onepermission->setRType(aRtype);
-                        onepermission->setResourceName(aRtitle);
-                        onepermission->setPermissionName(namebuf.str());
+                        if (version < 1.15)
+                        {
+                            onepermission->setBasedn(dnname);
+                            onepermission->setRType(aRtype);
+                            onepermission->setResourceName(aRtitle);
+                            onepermission->setPermissionName(resourceName);
+                        }
+                        else
+                        {
+                            onepermission->setBasednName(aName);
+                            onepermission->setResourceName(resourceName);
+                        }
 
                         int allows = perm.getAllows();
                         int denies = perm.getDenies();

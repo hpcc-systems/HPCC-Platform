@@ -725,7 +725,7 @@ class CMPChannel: public CInterface
     IArrayOf<ISocket> keptsockets;
     CriticalSection attachsect;
     unsigned __int64 attachaddrval = 0;
-    SocketEndpoint attachep;
+    SocketEndpoint attachep, attachPeerEp;
     atomic_t attachchk;
 
 protected: friend class CMPServer;
@@ -1153,6 +1153,7 @@ public:
                 CriticalBlock block(attachsect);
                 attachaddrval = 0;
                 attachep.set(nullptr);
+                attachPeerEp.set(nullptr);
                 atomic_set(&attachchk, 0);
             }
             if (!keepsocket) {
@@ -1212,6 +1213,8 @@ public:
     {
         return !closed&&(channelsock!=NULL);
     }
+
+    const SocketEndpoint &queryPeerEp() const { return attachPeerEp; }
 };
 
 // Message Handlers (not done as interfaces for speed reasons
@@ -1615,6 +1618,7 @@ void CMPChannel::reset()
     sendwaiting = 0;
     attachaddrval = 0;
     attachep.set(nullptr);
+    attachPeerEp.set(nullptr);
     atomic_set(&attachchk, 0);
     lastxfer = msTick();
 }
@@ -1644,6 +1648,8 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         CriticalBlock block(attachsect);
         attachaddrval = addrval;
         attachep = _remoteep;
+        if (newsock)
+            newsock->getPeerEndpoint(attachPeerEp);
         atomic_inc(&attachchk);
     }
 
@@ -2250,7 +2256,7 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
         bool notify(CMessageBuffer *msg)
         {
             if ((tag==TAG_ALL)||(tag==msg->getTag())) {
-                SocketEndpoint senderep = msg->getSender();
+                const SocketEndpoint &senderep = msg->getSender();
                 if ((ep==NULL)||ep->equals(senderep)||senderep.isNull()) {
                     if (msg->getReplyTag()==TAG_CANCEL)
                         delete msg;
@@ -2981,6 +2987,13 @@ public:
         parent->removeChannel(channel);
     }
 
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    {
+        Owned<CMPChannel> channel = parent->lookup(sender);
+        assertex(channel);
+        return channel->queryPeerEp();
+    }
+
     CCommunicator(CMPServer *_parent,IGroup *_group, bool _outer)
     {
         outer = _outer;
@@ -2992,7 +3005,6 @@ public:
     {
         group->Release();
     }
-
 };
 
 
