@@ -138,6 +138,7 @@ class CDFUFile : public CSimpleInterfaceOf<IDFUFileAccess>, implements IDFUFileA
     DFUFileOption fileOptions = defaultFileOptions;
     StringAttr commCompType = defaultCompCompression;
     unsigned rowStreamReplyLimitKb = 1024; // 1MB
+    Owned<IPropertyTree> options;
 
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
@@ -302,6 +303,10 @@ public:
     {
         return rowStreamReplyLimitKb;
     }
+    const IPropertyTree *queryOptions() const
+    {
+        return options;
+    }
 // IDFUFileAccessExt
     virtual IOutputMetaData *queryMeta() const override
     {
@@ -465,6 +470,12 @@ public:
     {
         expirySecs = secs;
     }
+    virtual void setOption(const char *key, const char *value) override
+    {
+        if (!options)
+            options.setown(createPTree());
+        options->setProp(key, value);
+    }
 // NB: the intention is for a IDFUFileAccess to be used to create instances for multiple parts, but not to mix types.
     virtual IDFUFilePartReader *createFilePartReader(unsigned p, unsigned copy, IOutputMetaData *outMeta, bool preserveGrouping) override;
     virtual IDFUFilePartWriter *createFilePartWriter(unsigned p) override;
@@ -597,7 +608,6 @@ public:
             requestTree->setProp("commCompression", file->queryCommCompressionType());
         requestNode = requestTree->setPropTree("node");
 
-
         // NB: these are 1 based
         requestNode->setPropInt("filePart", part+1);
         requestNode->setPropInt("filePartCopy", copy+1);
@@ -606,6 +616,9 @@ public:
         JBASE64_Encode(binLayout.toByteArray(), binLayout.length(), typeInfoStr, false);
         requestNode->setProp("inputBin", typeInfoStr.str()); // on disk meta
         requestNode->setProp("metaInfo", file->queryMetaInfoBlob());
+        const IPropertyTree *options = file->queryOptions();
+        if (options)
+            requestNode->addPropTree("ActivityOptions", createPTreeFromIPT(options));
     }
     virtual void beforeDispose() override
     {
@@ -888,16 +901,6 @@ public:
             requestNode->setPropBool("outputGrouped", preserveGrouping);
         }
 
-        // JCSMORE these are defaults, but should be picked up from file->queryFileDescriptor()
-        switch (file->queryType())
-        {
-            case dft_xml:
-                requestNode->setProp("xpath", "/Dataset/Row");
-                break;
-            case dft_json:
-                requestNode->setProp("xpath", "/Row");
-                break;
-        }
         switch (file->queryType())
         {
             case dft_xml:
