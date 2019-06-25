@@ -1261,12 +1261,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
 
-        //Create signature
-        CDateTime now;
-        StringBuffer b64sig;
-        createDaliSignature(scopename, user, now, b64sig);
-
-        perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags, b64sig.str(), now);
+        perms = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
         if (perms<0) {
             if (perms == SecAccess_Unavailable) {
                 scopePermissionsAvail=false;

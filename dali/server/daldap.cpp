@@ -126,7 +126,7 @@ public:
     }
 
 
-    SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags,const char * reqSignature, CDateTime & reqUTCTimestamp)
+    SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
     {
         if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
             return SecAccess_Full;
@@ -147,80 +147,10 @@ public:
             username.append(filesdefaultuser);
             decrypt(password, filesdefaultpassword);
             OWARNLOG("Missing credentials, injecting deprecated filesdefaultuser");
-            reqSignature = nullptr;
         }
 
         Owned<ISecUser> user = ldapsecurity->createUser(username);
-        user->credentials().setPassword(password);
-
-        //Check that the digital signature provided by the caller (signature of
-        //caller's "scope;username;timeStamp") matches what we expect it to be
-        if (!isEmptyString(reqSignature))
-        {
-            if (nullptr == pDSM)
-                pDSM = queryDigitalSignatureManagerInstanceFromEnv();
-            if (pDSM && pDSM->isDigiVerifierConfigured())
-            {
-                StringBuffer requestTimestamp;
-                reqUTCTimestamp.getString(requestTimestamp, false);//extract timestamp string from Dali request
-
-                CDateTime now;
-                now.setNow();
-                CDateTime daliTime(now);
-                if (requestSignatureAllowedClockVarianceSeconds)//allow for clock variance between machines
-                    daliTime.adjustTimeSecs(requestSignatureAllowedClockVarianceSeconds);
-
-                if (daliTime.compare(reqUTCTimestamp, false) < 0)//timestamp from the future?
-                {
-                    StringBuffer localDaliTimeUTC;
-                    now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Request digital signature UTC timestamp %s from the future (Dali UTC time %s)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str());
-                    return SecAccess_None;//deny
-                }
-
-                CDateTime expiry(now);
-                expiry.adjustTime(-1 * requestSignatureExpiryMinutes);//compute expiration timestamp
-                if (requestSignatureAllowedClockVarianceSeconds)//allow for clock variance between machines
-                    expiry.adjustTimeSecs(-1 * requestSignatureAllowedClockVarianceSeconds);
-
-                if (reqUTCTimestamp.compare(expiry, false) < 0)//timestamp too far in the past?
-                {
-                    StringBuffer localDaliTimeUTC;
-                    now.getString(localDaliTimeUTC, false);//get UTC timestamp
-                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Expired request digital signature UTC timestamp %s (Dali UTC time %s, configured expiry %d minutes)",key?key:"NULL",obj?obj:"NULL",username.str(), requestTimestamp.str(), localDaliTimeUTC.str(), requestSignatureExpiryMinutes);
-                    return SecAccess_None;//deny
-                }
-
-                VStringBuffer expectedStr("%s;%s;%s", obj, username.str(), requestTimestamp.str());
-                StringBuffer b64Signature(reqSignature);// signature of scope;user;timestamp
-
-                if (!pDSM->digiVerify(b64Signature, expectedStr))//does the digital signature match what we expect?
-                {
-                    OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails digital signature verification",key?key:"NULL",obj?obj:"NULL",username.str());
-                    return SecAccess_None;//deny
-                }
-
-                //Mark user as authenticated. The call below to authenticateUser
-                //will add this user to the LDAP cache
-                user->setAuthenticateStatus(AS_AUTHENTICATED);
-            }
-            else
-                OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s Dali received signed request, however Dali is not configured to verify digital signatures",key?key:"NULL",obj?obj:"NULL",username.str());
-        }
-
-        if (!isEmptyString(user->credentials().getPassword()) && !isWorkunitDAToken(user->credentials().getPassword()))
-        {
-            if (!ldapsecurity->authenticateUser(*user, NULL))
-            {
-                const char * extra = "";
-                if (isEmptyString(reqSignature))
-                    extra = " (Password or Dali Signature not provided)";
-                OERRLOG("LDAP: getPermissions(%s) scope=%s user=%s fails LDAP authentication%s",key?key:"NULL",obj?obj:"NULL",username.str(), extra);
-                return SecAccess_None;//deny
-            }
-        }
-        else
-            user->setAuthenticateStatus(AS_AUTHENTICATED);
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
 
         bool filescope = stricmp(key,"Scope")==0;
         bool wuscope = stricmp(key,"workunit")==0;

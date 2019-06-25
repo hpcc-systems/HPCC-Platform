@@ -219,12 +219,7 @@ static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
     SecAccessFlags perm = SecAccess_Full;
     if (scopename && *scopename)
     {
-        //Create signature
-        CDateTime now;
-        StringBuffer b64sig;
-        createDaliSignature(scopename, user, now, b64sig);
-
-        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags, b64sig.str(), now);
+        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0)
         {
             if (perm == SecAccess_Unavailable)
