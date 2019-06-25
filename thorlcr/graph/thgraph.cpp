@@ -1462,12 +1462,29 @@ bool CGraphBase::prepare(size32_t parentExtractSz, const byte *parentExtract, bo
 void CGraphBase::done()
 {
     if (aborted) return; // activity done methods only called on success
-    Owned<IThorActivityIterator> iter = getConnectedIterator();
-    ForEach (*iter)
+
+    if (isLocalChild()) // CQ master activities are created on demand, call done() on any created
     {
-        CGraphElementBase &element = iter->query();
-        element.queryActivity()->done();
+        Owned<IThorActivityIterator> iter = getIterator();
+        ForEach(*iter)
+        {
+            CGraphElementBase &element = iter->query();
+            if (element.queryActivity())
+                element.queryActivity()->done();
+        }
     }
+    else
+    {
+        Owned<IThorActivityIterator> iter = getConnectedIterator();
+        ForEach (*iter)
+        {
+            CGraphElementBase &element = iter->query();
+            element.queryActivity()->done();
+        }
+    }
+    Owned<IThorGraphIterator> childIter = getChildGraphIterator();
+    ForEach(*childIter)
+        childIter->query().done();
 }
 
 unsigned CGraphBase::queryJobChannelNumber() const

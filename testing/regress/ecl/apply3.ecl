@@ -32,8 +32,13 @@ namesTable := dataset([
 
 f := namesTable.ids(id & 1 = 1);
 
-apply(namesTable,
-    output(PROJECT(f, TRANSFORM(o, SELF.id := LEFT.id; SELF.forename := namesTable.forename)),named('Result'),EXTEND),
-    output(PROJECT(f, TRANSFORM(o, SELF.id := LEFT.id * 3; SELF.forename := namesTable.forename)),named('Result'),EXTEND)
-    );
+ORDERED(
+ apply(namesTable,
+       output(PROJECT(f, TRANSFORM(o, SELF.id := LEFT.id; SELF.forename := namesTable.forename)),named('Result'),EXTEND)
+      );
+
+ apply(namesTable,
+       output(PROJECT(f, TRANSFORM(o, SELF.id := LEFT.id * 3; SELF.forename := namesTable.forename)),named('Result'),EXTEND)
+      );
+);
 
