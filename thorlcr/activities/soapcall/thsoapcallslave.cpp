@@ -51,7 +51,7 @@ public:
     }
 
     // IThorDataLink methods
-    virtual void start()
+    virtual void start() override
     {
         ActivityTimer s(totalCycles, timeActivities);
         PARENT::start();
@@ -72,7 +72,7 @@ public:
             wscHelper->start();
         }
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (wscHelper)
         {
@@ -97,7 +97,7 @@ public:
         return NULL;
     }
     virtual bool isGrouped() const override { return false; }
-    virtual void abort()
+    virtual void abort() override
     {
         CSlaveActivity::abort();
         if (wscHelper)
@@ -110,16 +110,16 @@ public:
     }
 
     // IWSCRowProvider
-    virtual IHThorWebServiceCallActionArg * queryActionHelper()
+    virtual IHThorWebServiceCallActionArg * queryActionHelper() override
     {
         return (static_cast <IHThorWebServiceCallActionArg *> (queryHelper()));
     }
-    virtual IHThorWebServiceCallArg * queryCallHelper()
+    virtual IHThorWebServiceCallArg * queryCallHelper() override
     {
         return (static_cast <IHThorWebServiceCallArg *> (queryHelper()));
     }
-    virtual const void * getNextRow() { return NULL; }
-    virtual void releaseRow(const void *r) { }
+    virtual const void * getNextRow() override { return NULL; }
+    virtual void releaseRow(const void *r) override { }
 };
 
 //---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ public:
     }
 
     // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
     }
@@ -185,7 +185,8 @@ public:
     virtual void abort() override
     {
         CSlaveActivity::abort();
-        wscHelper->abort();
+        if (wscHelper)
+            wscHelper->abort();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
@@ -194,22 +195,22 @@ public:
     }
 
     // IWSCRowProvider
-    virtual IHThorWebServiceCallActionArg * queryActionHelper()
+    virtual IHThorWebServiceCallActionArg * queryActionHelper() override
     {
         return (static_cast <IHThorWebServiceCallActionArg *> (queryHelper()));
     }
-    virtual IHThorWebServiceCallArg * queryCallHelper()
+    virtual IHThorWebServiceCallArg * queryCallHelper() override
     {
         return (static_cast <IHThorWebServiceCallArg *> (queryHelper()));
     }
-    virtual const void * getNextRow()
+    virtual const void * getNextRow() override
     {
         CriticalBlock b(crit);
         if (eof)
             return NULL;
         return inputStream->nextRow();
     }
-    virtual void releaseRow(const void *r)
+    virtual void releaseRow(const void *r) override
     {
         ReleaseThorRow(r);
     }
@@ -232,13 +233,13 @@ public:
     }
 
     // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
     }
 
     // IThorSlaveProcess overloaded methods
-    virtual void process()
+    virtual void process() override
     {
         if (container.queryLocalOrGrouped() || firstNode())
         {
@@ -250,8 +251,8 @@ public:
                 throw e;
         }
     }
-    virtual void endProcess() { }
-    virtual void abort()
+    virtual void endProcess() override { }
+    virtual void abort() override
     {
         ProcessSlaveActivity::abort();
         if (wscHelper)
@@ -259,13 +260,13 @@ public:
     }
 
     // IWSCRowProvider
-    virtual IHThorWebServiceCallActionArg * queryActionHelper()
+    virtual IHThorWebServiceCallActionArg * queryActionHelper() override
     {
         return (static_cast <IHThorWebServiceCallActionArg *> (queryHelper()));
     }
-    virtual IHThorWebServiceCallArg * queryCallHelper() { return NULL; }
-    virtual const void * getNextRow() { return NULL; }
-    virtual void releaseRow(const void *r) { }
+    virtual IHThorWebServiceCallArg * queryCallHelper() override { return NULL; }
+    virtual const void * getNextRow() override { return NULL; }
+    virtual void releaseRow(const void *r) override { }
 };
 
 //---------------------------------------------------------------------------
@@ -287,13 +288,13 @@ public:
     }
 
     // IThorSlaveActivity overloaded methods
-    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
     }
 
     // IThorSlaveProcess overloaded methods
-    virtual void process()
+    virtual void process() override
     {
         start();
         processed = 0;
@@ -307,7 +308,7 @@ public:
         if (e)
             throw e;
     }
-    virtual void endProcess()
+    virtual void endProcess() override
     {
         if (processed & THORDATALINK_STARTED)
         {
@@ -315,7 +316,7 @@ public:
             processed |= THORDATALINK_STOPPED;
         }
     }
-    virtual void abort()
+    virtual void abort() override
     {
         ProcessSlaveActivity::abort();
         if (wscHelper)
@@ -323,12 +324,12 @@ public:
     }
 
     // IWSCRowProvider
-    virtual IHThorWebServiceCallActionArg * queryActionHelper()
+    virtual IHThorWebServiceCallActionArg * queryActionHelper() override
     {
         return (static_cast <IHThorWebServiceCallActionArg *> (queryHelper()));
     }
-    virtual IHThorWebServiceCallArg * queryCallHelper() { return NULL; }
-    virtual const void * getNextRow()
+    virtual IHThorWebServiceCallArg * queryCallHelper() override { return NULL; }
+    virtual const void * getNextRow() override
     {
         CriticalBlock b(crit);
 
@@ -340,7 +341,7 @@ public:
         processed++;
         return row;
     }
-    virtual void releaseRow(const void *r) 
+    virtual void releaseRow(const void *r) override
     {
         ReleaseThorRow(r);
     }

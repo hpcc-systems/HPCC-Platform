@@ -159,7 +159,7 @@ public:
         CMessageBuffer msg;
         msg.append((unsigned)0);
         unsigned numGot;
-        do
+        while (!abortSoon)
         {
             numGot = 0;
             try
@@ -174,29 +174,28 @@ public:
                 ActPrintLog("WORKUNITWRITE: exception");
                 throw;
             }
-            if (numGot || totalNum)
+            if (!numGot)
+                break;
+            if (!queryJobChannel().queryJobComm().send(reqMsg, 0, container.queryJob().querySlaveMpTag(), MEDIUMTIMEOUT))
+                throwUnexpected();
+            bool got = false;
+            for (;;)
             {
-                if (!queryJobChannel().queryJobComm().send(reqMsg, 0, container.queryJob().querySlaveMpTag(), MEDIUMTIMEOUT))
-                    throwUnexpected();
-                bool got = false;
-                for (;;)
+                CMessageBuffer replyMsg;
+                if (receiveMsg(replyMsg, 0, replyTag, NULL, MEDIUMTIMEOUT))
                 {
-                    CMessageBuffer replyMsg;
-                    if (receiveMsg(replyMsg, 0, replyTag, NULL, MEDIUMTIMEOUT))
-                    {
-                        msg.setReplyTag(replyTag);
-                        if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT))
-                            throwUnexpected();
-                        if (!receiveMsg(replyMsg, 0, replyTag, NULL, LONGTIMEOUT))
-                            throwUnexpected();
-                        got = true;
-                    }
-                    if (got || abortSoon)
-                        break;
-                    ActPrintLog("Blocked (child workunitwrite) sending request to master");
+                    msg.setReplyTag(replyTag);
+                    if (!queryJobChannel().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT))
+                        throwUnexpected();
+                    if (!receiveMsg(replyMsg, 0, replyTag, NULL, LONGTIMEOUT))
+                        throwUnexpected();
+                    got = true;
                 }
+                if (got || abortSoon)
+                    break;
+                ActPrintLog("Blocked (child workunitwrite) sending request to master");
             }
-        } while (!abortSoon && numGot);
+        }
     }
     virtual void abort() override
     {
@@ -219,7 +218,7 @@ public:
 
 CActivityBase *createWorkUnitWriteSlave(CGraphElementBase *container)
 {
-    if (container->queryLocalOrGrouped())
+    if (container->queryOwner().isLocalChild())
         return new CWorkUnitWriteLocalSlaveActivity(container);
     else
         return new CWorkUnitWriteGlobalSlaveActivity(container);

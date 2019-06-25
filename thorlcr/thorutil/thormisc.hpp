@@ -527,7 +527,7 @@ extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBas
 extern graph_decl RecordTranslationMode getTranslationMode(CActivityBase &activity);
 extern graph_decl void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat);
 extern graph_decl const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &partDesc, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat);
-extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath);
+extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn);
 
 extern graph_decl void checkAndDumpAbortInfo(const char *cmd);
 
