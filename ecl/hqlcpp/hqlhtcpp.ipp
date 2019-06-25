@@ -284,6 +284,7 @@ public:
     virtual void set(BuildCtx & ctx, IHqlExpression * expr);
     virtual void setRow(BuildCtx & ctx, IReferenceSelector * rhs);
     virtual IReferenceSelector * select(BuildCtx & ctx, IHqlExpression * selectExpr);
+    virtual IReferenceSelector * selectActiveRow();
 
     virtual void buildDeserialize(BuildCtx & ctx, IHqlExpression * helper, IAtom * serializeForm);
     virtual void buildSerialize(BuildCtx & ctx, IHqlExpression * helper, IAtom * serializeForm);

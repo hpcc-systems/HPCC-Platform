@@ -2668,9 +2668,17 @@ size32_t DatasetSelector::getContainerTrailingFixed()
 
 void DatasetSelector::getSize(BuildCtx & ctx, CHqlBoundExpr & bound)
 {
-    //OwnedHqlExpr mapped = row->getMappedSelector(ctx, this);
-    assertex(!row->isNonLocal());
-    column->buildSizeOf(translator, ctx, this, bound);
+    OwnedHqlExpr mapped = row->getMappedSelector(ctx, this);
+    if (mapped)
+    {
+        OwnedHqlExpr sizeOfExpr = createValue(no_sizeof, makeIntType(4, false), mapped.getClear());
+        translator.buildCachedExpr(ctx, sizeOfExpr, bound);
+    }
+    else
+    {
+        assertex(!row->isNonLocal());
+        column->buildSizeOf(translator, ctx, this, bound);
+    }
 }
 
 bool DatasetSelector::isDataset()
@@ -2876,6 +2884,12 @@ IReferenceSelector * DatasetSelector::select(BuildCtx & ctx, IHqlExpression * se
     }
 
     return createChild(row, newColumn, selected);
+}
+
+IReferenceSelector * DatasetSelector::selectActiveRow()
+{
+    OwnedHqlExpr activePath = createRow(no_activerow, LINK(path));
+    return new DatasetSelector(translator, row, activePath);
 }
 
 BoundRow * DatasetSelector::getRow(BuildCtx & ctx)

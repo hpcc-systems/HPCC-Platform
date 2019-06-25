@@ -355,6 +355,7 @@ public:
     virtual IHqlExpression * queryExpr() = 0;
     virtual ITypeInfo * queryType() = 0;
     virtual IReferenceSelector * select(BuildCtx & ctx, IHqlExpression * selectExpr) = 0;
+    virtual IReferenceSelector * selectActiveRow() = 0;
     virtual BoundRow * getRow(BuildCtx & ctx) = 0;
 };
 

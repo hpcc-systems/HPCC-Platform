@@ -467,7 +467,10 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     switch (op)
     {
     case no_activerow:
-        return buildActiveRow(ctx, expr->queryChild(0));
+    {
+        Owned<IReferenceSelector> active = buildActiveRow(ctx, expr->queryChild(0));
+        return active->selectActiveRow();
+    }
     case no_if:
         return doBuildRowIf(ctx, expr);
     case no_case:
