@@ -372,7 +372,7 @@ protected:
 protected:
     unsigned cachedCRC;
     unsigned infoFlags;
-    CHqlDynamicProperty * attributes = nullptr;
+    std::atomic<CHqlDynamicProperty *> attributes = { nullptr };
 };
 
 //The following couple of classes are here primarily to save memory.  
@@ -1837,7 +1837,7 @@ protected:
     IHqlDataset *rootTable;
     IHqlExpression * container;
     OwnedHqlExpr normalized;
-    Owned<IInterface> metaProperty;
+    std::atomic<IInterface *> metaProperty = { nullptr };
 
     void cacheParent();
 
