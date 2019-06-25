@@ -65,10 +65,11 @@ ESPstruct GroupInfo
 
 ESPstruct AccountPermission
 {
-    string basedn;
-        string RType;
+    [min_ver("1.15")] string BasednName;
+    [depr_ver("1.15")] string basedn;
+    [depr_ver("1.15")] string RType;
     string rname;
-    string rtitle;
+    [depr_ver("1.15")] string rtitle;
     string prefix;
     string ResourceName;
     string PermissionName;
@@ -985,7 +986,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.14"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.15"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);

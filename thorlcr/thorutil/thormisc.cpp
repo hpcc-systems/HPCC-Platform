@@ -1471,15 +1471,16 @@ const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &part
     return getTranslators(fname, expectedFormatCrc, expectedFormat, publishedFormatCrc, actualFormat, projectedFormatCrc, projectedFormat, translationMode);
 }
 
-// NB: If returns true, localPath contains the local path of rfn
-bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn, StringBuffer &localPath)
+bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn)
 {
     if (!activity.getOptBool(THOROPT_FORCE_REMOTE_DISABLED))
     {
-        rfn.getLocalPath(localPath);
-        if (!rfn.isLocal() || activity.getOptBool(THOROPT_FORCE_REMOTE_READ, testForceRemote(localPath)))
+        if (!rfn.isLocal())
             return true;
-        localPath.clear();
+        StringBuffer localPath;
+        rfn.getLocalPath(localPath);
+        if (activity.getOptBool(THOROPT_FORCE_REMOTE_READ, testForceRemote(localPath)))
+            return true;
     }
     return false;
 }

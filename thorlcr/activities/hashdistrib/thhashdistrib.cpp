@@ -139,7 +139,7 @@ public:
         unsigned location;
         OwnedIFile iFile;
         StringBuffer filePath;
-        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath))
+        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath, this))
             throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", file->queryLogicalName());
         OwnedIFileIO iFileIO = iFile->open(IFOread);
         assertex(iFileIO);

@@ -347,19 +347,31 @@ public:
     {
         synchronized procedure(safeCache);
         ensureClusterGroupKeyMap();
-        return keyGroupMap[group].c_str();
+        auto it = keyGroupMap.find(group);
+        if (it == keyGroupMap.end())
+            return nullptr;
+        else
+            return it->second.c_str();
     }
     virtual const char *getPublicKeyPath(const char *keyPairName) const override
     {
         synchronized procedure(safeCache);
         ensureClusterGroupKeyMap();
-        return keyPairMap[keyPairName].publicKey.c_str();
+        auto it = keyPairMap.find(keyPairName);
+        if (it == keyPairMap.end())
+            return nullptr;
+        else
+            return it->second.publicKey.c_str();
     }
     virtual const char *getPrivateKeyPath(const char *keyPairName) const override
     {
         synchronized procedure(safeCache);
         ensureClusterGroupKeyMap();
-        return keyPairMap[keyPairName].privateKey.c_str();
+        auto it = keyPairMap.find(keyPairName);
+        if (it == keyPairMap.end())
+            return nullptr;
+        else
+            return it->second.privateKey.c_str();
     }
     virtual const char *getFileAccessUrl() const
     {

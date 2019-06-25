@@ -281,10 +281,11 @@ void CDiskRecordPartHandler::open()
         {
             RemoteFilename rfn;
             partDesc->getFilename(copy, rfn);
-            StringBuffer localPath;
-            if (!isRemoteReadCandidate(activity, rfn, localPath))
+            if (!isRemoteReadCandidate(activity, rfn))
             {
-                Owned<IFile> iFile = createIFile(localPath.str());
+                StringBuffer path;
+                rfn.getPath(path);
+                Owned<IFile> iFile = createIFile(path);
                 try
                 {
                     if (iFile->exists())
@@ -330,7 +331,7 @@ void CDiskRecordPartHandler::open()
                 iRemoteFileIO->addVirtualFieldMapping("logicalFilename", logicalFilename.get());
                 iRemoteFileIO->addVirtualFieldMapping("baseFpos", tmp.clear().append(fileBaseOffset).str());
                 iRemoteFileIO->addVirtualFieldMapping("partNum", tmp.clear().append(partDesc->queryPartIndex()).str());
-                rfn.getPath(path);
+                rfn.getPath(path.clear());
                 filename.set(path);
                 checkFileCrc = false;
 
@@ -348,13 +349,13 @@ void CDiskRecordPartHandler::open()
                     else
                     {
                         remoteReadException.setown(e);
-                        remoteReadExceptionPath.set(path);
+                        remoteReadExceptionPath.set(filename);
                     }
                     e->Release();
                     continue; // try next copy and ultimately failover to local when no more copies
                 }
                 partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
-                ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, path.str(), activity.logicalFilename.get());
+                ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, filename.get(), activity.logicalFilename.get());
                 break;
             }
         }

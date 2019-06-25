@@ -206,7 +206,7 @@ public:
                         StringBuffer filePath;
                         Owned<IFileDescriptor> fileDesc = f->getFileDescriptor();
                         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
-                        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath))
+                        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath, this))
                             throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", f->queryLogicalName());
                         OwnedIFileIO iFileIO = iFile->open(IFOread);
                         assertex(iFileIO);

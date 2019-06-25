@@ -125,7 +125,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
     virtual void setLDAPconnection(IDaliLdapConnection *_ldapconn) = 0;
-    virtual bool authorizeConnection(const INode *client, DaliClientRole role) = 0;
+    virtual bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role) = 0;
     virtual void start() = 0;
     virtual void ready() = 0;
     virtual void stop() = 0;
@@ -554,11 +554,12 @@ public:
                 acceptConnections.wait();
                 acceptConnections.signal();
                 Owned<INode> node(deserializeINode(mb));
+                const SocketEndpoint &peerIP = coven.queryComm().queryChannelPeerEndpoint(mb.getSender());
                 Owned<INode> servernode(deserializeINode(mb));  // hopefully me, but not if forwarded
                 int role=0;
                 if (mb.length()-mb.getPos()>=sizeof(role)) { // a capability block present
                     mb.read(role);
-                    if (!manager.authorizeConnection(node, (DaliClientRole) role))
+                    if (!manager.authorizeConnection(peerIP, (DaliClientRole) role))
                     {
                         MilliSleep(2000); // Delay makes rapid probing of all possible roles slightly more painful.
                         SocketEndpoint sender = mb.getSender();
@@ -568,7 +569,10 @@ public:
                         Owned<IGroup> dummyCoven = createIGroup(1, &na);
                         dummyCoven->serialize(mb);
                         const char *roleName = queryRoleName((DaliClientRole)role);
-                        Owned<IException> e = makeStringExceptionV(-1, "Access denied! [role=%s]", roleName);
+                        StringBuffer ipStr;
+                        peerIP.getIpText(ipStr);
+                        Owned<IException> e = makeStringExceptionV(-1, "Access denied! [client ip=%s, role=%s]", ipStr.str(), roleName);
+                        EXCLOG(e, nullptr);
                         serializeException(e, mb);
                         coven.reply(mb);
                         MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
@@ -1912,10 +1916,10 @@ public:
     }
 
 
-    bool authorizeConnection(const INode *client, DaliClientRole role)
+    bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role)
     {
         StringBuffer ipStr;
-        client->endpoint().getIpText(ipStr);
+        clientIP.getIpText(ipStr);
         return whiteListHandler.isWhiteListed(ipStr, role);
     }
 
