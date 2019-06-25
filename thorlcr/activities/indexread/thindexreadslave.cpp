@@ -175,10 +175,11 @@ public:
                     {
                         RemoteFilename rfn;
                         part.getFilename(copy, rfn);
-                        StringBuffer localPath;
-                        if (!isRemoteReadCandidate(*this, rfn, localPath))
+                        if (!isRemoteReadCandidate(*this, rfn))
                         {
-                            Owned<IFile> iFile = createIFile(localPath.str());
+                            StringBuffer path;
+                            rfn.getPath(path);
+                            Owned<IFile> iFile = createIFile(path);
                             try
                             {
                                 if (iFile->exists())
