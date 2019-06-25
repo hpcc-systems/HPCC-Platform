@@ -534,8 +534,10 @@ public:
     {
         const char * curScope = cur.queryScope();
         const char * kindName = queryStatisticName(kind);
-        assertex(kindName && memicmp(kindName, "when", 4) == 0);
-        kindName += 4;
+        assertex(kindName);
+        ///The following will be true on workunits >= 7.0, but may not be for 6.4 and earlier
+        if (memicmp(kindName, "when", 4) == 0)
+            kindName += 4;
 
         StringBuffer formattedTime;
         convertTimestampToStr(value, formattedTime, true);
