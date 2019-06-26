@@ -21,7 +21,6 @@
 // we simply fake the expected output.
 
 //nothor
-//nothorlcr
 //nohthor
 
 import Std.Str;
