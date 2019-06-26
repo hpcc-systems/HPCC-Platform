@@ -263,6 +263,9 @@
             <xsl:attribute name="serverType">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@serverType"/>
             </xsl:attribute>
+            <xsl:attribute name="adminGroupName">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@adminGroupName"/>
+            </xsl:attribute>
             <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]"/>
             <xsl:if test="not($ldapServerNode)">
               <xsl:message terminate="yes">
