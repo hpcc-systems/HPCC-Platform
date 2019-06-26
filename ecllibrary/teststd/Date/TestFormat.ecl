@@ -77,6 +77,11 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.DateToString(19700101, '%d/%m/%y') = '01/01/70');
     ASSERT(Date.DateToString(20110302, '%d %b %Y') = '02 Mar 2011');
     ASSERT(Date.DateToString(20111202, '%d %B %Y') = '02 December 2011');
+#IF(__OS__ = 'macos')
+    ASSERT(Date.DateToString(110131, '%Y-%m-%d') = '0011-01-31');
+#ELSE
+    ASSERT(Date.DateToString(110131, '%Y-%m-%d') = '11-01-31');
+#END
 
     ASSERT(Date.MatchTimeString('123456',TimeFormats) = 123456);
     ASSERT(Date.MatchTimeString('12:34:56',TimeFormats) = 123456);
@@ -96,7 +101,11 @@ EXPORT TestFormat := MODULE
 
     ASSERT(Date.ConvertDateFormatMultiple('1/31/2011',DateFormats,'%Y-%m-%d') = '2011-01-31');
     ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats2Y,'%Y-%m-%d') = '2011-01-31');
+#IF(__OS__ = 'macos')
+    ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats,'%Y-%m-%d') = '0011-01-31');
+#ELSE
     ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats,'%Y-%m-%d') = '11-01-31');
+#END
     ASSERT(Date.ConvertDateFormatMultiple('1/31/11',DateFormats2Y,'%Y-%m-%d') = '2011-01-31');
     ASSERT(Date.ConvertDateFormatMultiple('',DateFormats,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
     ASSERT(Date.ConvertDateFormatMultiple('',DateFormats2Y,'%Y-%m-%d') = ''); // HPCC-16780; Invalid input date
