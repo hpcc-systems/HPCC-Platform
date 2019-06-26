@@ -87,10 +87,10 @@
 
             <entry>A RECORD structure containing the input field definitions
             from which the XML input to the SOAP service is constructed. The
-            name of the tags in the XML are derived from the names of the
-            fields in the input record; this can be overridden by placing an
-            xpath on the field ( {xpath('tagname')} -- see the XPATH Support
-            section of the RECORD Structure discussion). If the
+            name of the tags in the XML are derived from the lowercase names
+            of the fields in the input record; this can be overridden by
+            placing an xpath on the field ( {xpath('tagname')} -- see the
+            XPATH Support section of the RECORD Structure discussion). If the
             <emphasis>recset</emphasis> parameter is not present, each field
             definition must contain a default value that will constitute the
             single input record. If the <emphasis>recset</emphasis> parameter
@@ -405,7 +405,7 @@
 
             <entry>Specifies header information to be passed to the service.
             SOAPCALL supports multiple instances of the HTTPHEADER option if
-            you need to specify multiple key/value header strings. </entry>
+            you need to specify multiple key/value header strings.</entry>
           </row>
         </tbody>
       </tgroup>
