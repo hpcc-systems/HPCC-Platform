@@ -150,8 +150,6 @@ extern da_decl ISessionManager &querySessionManager();
 
 #define myProcessSession() (querySessionManager().lookupProcessSession())
 
-extern da_decl bool createDaliSignature(const char * scope, IUserDescriptor *udesc, CDateTime &now, StringBuffer &b64sig);
-
 interface IMessageWrapper
 {
 public:

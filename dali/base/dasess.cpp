@@ -488,24 +488,6 @@ public:
     }
 };
 
-bool createDaliSignature(const char * scope, IUserDescriptor *udesc, CDateTime &now, StringBuffer &b64sig)
-{
-    IDigitalSignatureManager * pDSM = queryDigitalSignatureManagerInstanceFromEnv();
-    if (pDSM && pDSM->isDigiSignerConfigured())
-    {
-        StringBuffer username;
-        udesc->getUserName(username);
-        StringBuffer timeStr;
-        now.setNow();
-        now.getString(timeStr, false);//get UTC timestamp
-        VStringBuffer toSign("%s;%s;%s", scope, username.str(), timeStr.str());
-
-        pDSM->digiSign(b64sig, toSign);//Sign "scope;username;timeStamp"
-        return true;
-    }
-    return false;
-}
-
 class CSessionRequestServer: public Thread
 {
     bool stopped;
