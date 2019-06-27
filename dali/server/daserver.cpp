@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <unordered_map>
+#include <string>
+
 #include "build-config.h"
 #include "platform.h"
 #include "thirdparty.h"
@@ -135,6 +138,199 @@ void usage(void)
     printf("--port|-p <value>\t: server port only effective if --server set\n");
     printf("--daemon|-d <instanceName>\t: run daemon as instance\n");
 }
+
+/* NB: Ideally this belongs within common/environment,
+ * however, that would introduce a circular dependency.
+ */
+static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
+    assertex(conn);
+
+    // only ever expecting 1 DaliServerProcess and 1 WhiteList
+    const IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
+    if (whiteListTree)
+    {
+        if (!whiteListTree->getPropBool("@enabled", true)) // on by default
+            return false;
+        // Default for now is to allow clients that send no role (legacy) to connect if their IP is whitelisted.
+        writer.setAllowAnonRoles(whiteListTree->getPropBool("@allowAnonRoles", true));
+    }
+
+    std::unordered_map<std::string, std::string> machineMap;
+
+    auto populateMachineMap = [&machineMap](const IPropertyTree &environment)
+    {
+        Owned<IPropertyTreeIterator> machineIter = environment.getElements("Hardware/Computer");
+        ForEach(*machineIter)
+        {
+            const IPropertyTree &machine = machineIter->query();
+            const char *name = machine.queryProp("@name");
+            const char *host = machine.queryProp("@netAddress");
+            machineMap.insert({name, host});
+        }
+    };
+    auto resolveComputer = [&machineMap](const char *compName, const char *defaultValue, StringBuffer &result) -> const char *
+    {
+        const auto &it = machineMap.find(compName);
+        if (it == machineMap.end())
+            return defaultValue;
+        IpAddress ip(it->second.c_str());
+        if (ip.isNull())
+            return defaultValue;
+        return ip.getIpText(result);
+    };
+    auto addRoles = [&writer, &resolveComputer](const IPropertyTree &component, const std::initializer_list<unsigned __int64> &roles)
+    {
+        Owned<IPropertyTreeIterator> instanceIter = component.getElements("Instance");
+        ForEach(*instanceIter)
+        {
+            const char *compName = instanceIter->query().queryProp("@computer");
+            StringBuffer ipSB;
+            const char *ip = resolveComputer(compName, component.queryProp("@netAddress"), ipSB);
+            if (ip)
+            {
+                for (const auto &role: roles)
+                    writer.add(ip, role);
+            }
+        }
+    };
+
+    populateMachineMap(*conn->queryRoot());
+    enum SoftwareComponentType
+    {
+        RoxieCluster,
+        ThorCluster,
+        EclAgentProcess,
+        DfuServerProcess,
+        EclCCServerProcess,
+        EspProcess,
+        SashaServerProcess,
+        EclSchedulerProcess,
+        DaliServerProcess,
+        BackupNodeProcess,
+        EclServerProcess,
+    };
+    std::unordered_map<std::string, SoftwareComponentType> softwareTypeRoleMap = {
+            { "RoxieCluster", RoxieCluster },
+            { "ThorCluster", ThorCluster },
+            { "EclAgentProcess", EclAgentProcess },
+            { "DfuServerProcess", DfuServerProcess },
+            { "EclCCServerProcess", EclCCServerProcess },
+            { "EspProcess", EspProcess },
+            { "SashaServerProcess", SashaServerProcess },
+            { "EclSchedulerProcess", EclSchedulerProcess },
+            { "DaliServerProcess", DaliServerProcess },
+            { "BackupNodeProcess", BackupNodeProcess },
+            { "EclServerProcess", EclServerProcess },
+    };
+
+    Owned<IPropertyTreeIterator> softwareIter = conn->queryRoot()->getElements("Software/*");
+    ForEach(*softwareIter)
+    {
+        const IPropertyTree &component = softwareIter->query();
+        const char *compProcess = component.queryName();
+        const auto &it = softwareTypeRoleMap.find(compProcess);
+        if (it != softwareTypeRoleMap.end())
+        {
+            switch (it->second)
+            {
+                case RoxieCluster:
+                {
+                    Owned<IPropertyTreeIterator> serverIter = component.getElements("RoxieServerProcess");
+                    ForEach(*serverIter)
+                    {
+                        const IPropertyTree &server = serverIter->query();
+                        const char *serverCompName = server.queryProp("@computer");
+                        StringBuffer ipSB;
+                        const char *ip = resolveComputer(serverCompName, server.queryProp("@netAddress"), ipSB);
+                        if (ip)
+                            writer.add(ip, DCR_RoxyMaster);
+                    }
+                    break;
+                }
+                case ThorCluster:
+                {
+                    const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
+                    StringBuffer ipSB;
+                    const char *ip = resolveComputer(masterCompName, component.queryProp("@netAddress"), ipSB);
+                    if (ip)
+                    {
+                        writer.add(ip, DCR_ThorMaster);
+                        writer.add(ip, DCR_DaliAdmin);
+                    }
+                    break;
+                }
+                case EclAgentProcess:
+                    addRoles(component, { DCR_EclAgent, DCR_AgentExec });
+                    break;
+                case DfuServerProcess:
+                    addRoles(component, { DCR_DfuServer });
+                    break;
+                case EclCCServerProcess:
+                    addRoles(component, { DCR_EclCCServer, DCR_EclCC });
+                    break;
+                case EclServerProcess:
+                    addRoles(component, { DCR_EclServer, DCR_EclCC });
+                    break;
+                case EspProcess:
+                    addRoles(component, { DCR_EspServer });
+                    break;
+                case SashaServerProcess:
+                    addRoles(component, { DCR_SashaServer, DCR_XRef });
+                    break;
+                case EclSchedulerProcess:
+                    addRoles(component, { DCR_EclScheduler });
+                    break;
+                case BackupNodeProcess:
+                    addRoles(component, { DCR_BackupGen, DCR_DaliAdmin });
+                    break;
+                case DaliServerProcess:
+                    addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin, DCR_Monitoring, DCR_DaliStop });
+                    break;
+            }
+        }
+    }
+
+    if (whiteListTree)
+    {
+        Owned<IPropertyTreeIterator> whiteListIter = whiteListTree->getElements("Entry");
+        ForEach(*whiteListIter)
+        {
+            const IPropertyTree &entry = whiteListIter->query();
+            StringArray hosts, roles;
+            hosts.appendListUniq(entry.queryProp("@hosts"), ",");
+            roles.appendListUniq(entry.queryProp("@roles"), ",");
+            ForEachItemIn(h, hosts)
+            {
+                IpAddress ip(hosts.item(h));
+                if (!ip.isNull())
+                {
+                    StringBuffer ipStr;
+                    ip.getIpText(ipStr);
+                    ForEachItemIn(r, roles)
+                    {
+                        const char *roleStr = roles.item(r);
+
+                        char *endPtr;
+                        long numericRole = strtol(roleStr, &endPtr, 10);
+                        if (endPtr != roleStr && (numericRole>0 && numericRole<DCR_Max)) // in case legacy role needs adding
+                            writer.add(ipStr.str(), numericRole);
+                        else
+                            writer.add(ipStr.str(), queryRole(roleStr));
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
+static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
+{
+    return out.append(queryRoleName((DaliClientRole)role));
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -362,7 +558,11 @@ int main(int argc, char* argv[])
         }
 
         unsigned short myport = epa.item(myrank).port;
-        startMPServer(myport,true);
+        startMPServer(DCR_DaliServer, myport, true);
+        Owned<IMPServer> mpServer = getMPServer();
+        Owned<IWhiteListHandler> whiteListHandler = createWhiteListHandler(populateWhiteListFromEnvironment, formatDaliRole);
+        mpServer->installWhiteListCallback(whiteListHandler);
+
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();
@@ -433,7 +633,7 @@ int main(int argc, char* argv[])
             throw;
         }
         PROGLOG("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
-        startMPServer(myport,false);
+        startMPServer(DCR_DaliServer, myport,false);
         bool ok = true;
         ForEachItemIn(i2,servers)
         {

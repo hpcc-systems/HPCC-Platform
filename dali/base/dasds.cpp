@@ -6480,7 +6480,10 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
 
         if (startsWith(path, "/Environment") || (streq(path, "/") && changeTree.hasProp("*[@name=\"Environment\"]")))
         {
-            querySessionManager().refreshWhiteList();
+            Owned<IMPServer> mpServer = getMPServer();
+            IWhiteListHandler *whiteListHandler = mpServer->queryWhiteListCallback();
+            if (whiteListHandler)
+                whiteListHandler->refresh();
             PROGLOG("Dali Environment updated, path = %s", path);
             return;
         }

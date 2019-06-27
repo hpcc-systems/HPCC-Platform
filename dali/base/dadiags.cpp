@@ -257,7 +257,10 @@ public:
                     mb.append(success).append(reply);
                 }
                 else if (0 == stricmp(id, "whitelist")) {
-                    mb.append(querySessionManager().getWhiteList(buf).str());
+                    Owned<IMPServer> mpServer = getMPServer();
+                    IWhiteListHandler *whiteListHandler = mpServer->queryWhiteListCallback();
+                    if (whiteListHandler)
+                        mb.append(whiteListHandler->getWhiteList(buf).str());
                 }
                 else
                     mb.append(StringBuffer("UNKNOWN OPTION: ").append(id).str());

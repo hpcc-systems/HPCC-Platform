@@ -438,7 +438,9 @@ class CMPConnectThread: public Thread
     CMPServer *parent;
     int mpSoMaxConn;
     unsigned mpTraceLevel;
+    Owned<IWhiteListHandler> whiteListCallback;
     void checkSelfDestruct(void *p,size32_t sz);
+
 public:
     CMPConnectThread(CMPServer *_parent, unsigned port);
     ~CMPConnectThread()
@@ -455,6 +457,14 @@ public:
             if (!join(1000*60*5))   // should be pretty instant
                 printf("CMPConnectThread::stop timed out\n");
         }
+    }
+    void installWhiteListCallback(IWhiteListHandler *_whiteListCallback)
+    {
+        whiteListCallback.set(_whiteListCallback);
+    }
+    IWhiteListHandler *queryWhiteListCallback() const
+    {
+        return whiteListCallback;
     }
 };
 
@@ -570,6 +580,14 @@ public:
                 // ignore
                 break;
         }
+    }
+    virtual void installWhiteListCallback(IWhiteListHandler *whiteListCallback) override
+    {
+        connectthread->installWhiteListCallback(whiteListCallback);
+    }
+    virtual IWhiteListHandler *queryWhiteListCallback() const override
+    {
+        return connectthread->queryWhiteListCallback();
     }
 };
 
@@ -1738,7 +1756,6 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
             FLLOG(MCoperatorWarning, unknownJob, e,"MP attachsocket(2)");
             e->Release();
         }
-
     }
 
     if (confirm)
@@ -2009,14 +2026,18 @@ int CMPConnectThread::run()
 #ifdef _TRACE
     LOG(MCdebugInfo(100), unknownJob, "MP: Connect Thread Starting - accept loop");
 #endif
-    while (running) {
+    while (running)
+    {
         ISocket *sock=NULL;
-        try {
-            sock=listensock->accept(true);
+        SocketEndpoint peerEp;
+        try
+        {
+            sock=listensock->accept(true, &peerEp);
 #ifdef _FULLTRACE       
             StringBuffer s;
             SocketEndpoint ep1;
-            if (sock) {
+            if (sock)
+            {
                 sock->getPeerEndpoint(ep1);
                 PROGLOG("MP: Connect Thread: socket accepted from %s",ep1.getUrlStr(s).str());
             }
@@ -2027,13 +2048,16 @@ int CMPConnectThread::run()
             LOG(MCdebugInfo, unknownJob, e,"MP accept failed");
             throw; // error handling TBD
         }
-        if (sock) {
-            try {
+        if (sock)
+        {
+            try
+            {
                 sock->set_keep_alive(true);
                 size32_t rd;
                 SocketEndpoint _remoteep;
                 SocketEndpoint hostep;
                 ConnectHdr connectHdr;
+                bool legacyClient = false;
 
                 // NB: min size is ConnectHdr.id for legacy clients, can thus distinguish old from new
                 traceSlowReadTms("MP: initial accept packet from", sock, &connectHdr, sizeof(connectHdr.id), sizeof(connectHdr), rd, CONFIRM_TIMEOUT, CONFIRM_TIMEOUT_INTERVAL);
@@ -2051,21 +2075,58 @@ int CMPConnectThread::run()
                 }
                 else
                 {
-                    if (rd == sizeof(connectHdr.id)) // legacy client
+                    if (rd == sizeof(connectHdr.id))
+                    {
+                        legacyClient = true;
                         connectHdr.role = 0; // unknown
+                    }
                     else if (rd < sizeof(connectHdr.id) || rd > sizeof(connectHdr))
                     {
                         // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
-                        SocketEndpoint ep;
-                        sock->getPeerEndpoint(ep);
                         StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
-                        ep.getUrlStr(errMsg);
+                        peerEp.getUrlStr(errMsg);
                         FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                         sock->close();
                         sock->Release();
                         continue;
                     }
                 }
+
+                if (whiteListCallback)
+                {
+                    StringBuffer ipStr;
+                    peerEp.getIpText(ipStr);
+                    StringBuffer responseText; // filled if denied
+                    if (!whiteListCallback->isWhiteListed(ipStr, connectHdr.role, &responseText))
+                    {
+                        Owned<IException> e = makeStringException(-1, responseText);
+                        OWARNLOG(e, nullptr);
+                        MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
+
+                        if (legacyClient)
+                        {
+                            /* NB: legacy client can't handle exception response
+                             * Acknowledge legacy connection, then close socket
+                             * The effect will be the client sees an MPERR_link_closed
+                             */
+                            size32_t reply = sizeof(connectHdr.id);
+                            sock->write(&reply, sizeof(reply));
+                        }
+                        else
+                        {
+                            MemoryBuffer mb;
+                            DelayedSizeMarker marker(mb);
+                            serializeException(e, mb);
+                            marker.write();
+                            sock->write(mb.toByteArray(), mb.length());
+                        }
+
+                        sock->close();
+                        sock->Release();
+                        continue;
+                    }
+                }
+
                 connectHdr.id[0].get(_remoteep);
                 connectHdr.id[1].get(hostep);
 
@@ -2076,8 +2137,6 @@ int CMPConnectThread::run()
 
                 if (_remoteep.isNull() || hostep.isNull())
                 {
-                    SocketEndpoint ep;
-                    sock->getPeerEndpoint(ep);
                     StringBuffer errMsg;
                     SocketEndpointV4 zeroTest[2];
                     memset(zeroTest, 0x0, sizeof(zeroTest));
@@ -2085,14 +2144,14 @@ int CMPConnectThread::run()
                     {
                         // JCSMORE, I think _remoteep really must/should match a IP of this local host
                         errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
-                        ep.getUrlStr(errMsg);
+                        peerEp.getUrlStr(errMsg);
                         FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     }
                     else if (mpTraceLevel > 1)
                     {
                         // all zeros msg received
                         errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
-                        ep.getUrlStr(errMsg);
+                        peerEp.getUrlStr(errMsg);
                         PROGLOG("%s", errMsg.str());
                     }
                     sock->close();
@@ -2108,12 +2167,14 @@ int CMPConnectThread::run()
 #endif
                 checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
                 Owned<CMPChannel> channel = parent->lookup(_remoteep);
-                if (!channel->attachSocket(sock,_remoteep,hostep,false,&rd,addrval)) {
+                if (!channel->attachSocket(sock,_remoteep,hostep,false,&rd,addrval))
+                {
 #ifdef _FULLTRACE       
                     PROGLOG("MP Connect Thread: lookup failed");
 #endif
                 }
-                else {
+                else
+                {
 #ifdef _TRACE
                     StringBuffer str1;
                     StringBuffer str2;
@@ -2130,7 +2191,8 @@ int CMPConnectThread::run()
                 sock->close();
                 e->Release();
             }
-            try {
+            try
+            {
                 sock->Release();
             }
             catch (IException *e)
@@ -2139,7 +2201,8 @@ int CMPConnectThread::run()
                 e->Release();
             }
         }
-        else {
+        else
+        {
             if (running)
                 LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread accept returned NULL");
         }
@@ -3027,7 +3090,7 @@ public:
         parent->removeChannel(channel);
     }
 
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const override
     {
         Owned<CMPChannel> channel = parent->lookup(sender);
         assertex(channel);

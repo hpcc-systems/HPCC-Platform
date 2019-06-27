@@ -57,7 +57,7 @@ interface ICommunicator: extends IInterface
     virtual bool verifyAll(bool duplex=false, unsigned timeout=1000*60*30) = 0;
     virtual void disconnect(INode *node) = 0;
     virtual void barrier() = 0;
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) = 0;
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const = 0;
 };
 
 interface IInterCommunicator: extends IInterface
@@ -100,6 +100,8 @@ interface IMPServer : extends IInterface
     virtual void stop() = 0;
     virtual INode *queryMyNode() = 0;
     virtual void setOpt(MPServerOpts opt, const char *value) = 0;
+    virtual void installWhiteListCallback(IWhiteListHandler *whiteListCallback) = 0;
+    virtual IWhiteListHandler *queryWhiteListCallback() const = 0;
 };
 
 extern mp_decl void startMPServer(unsigned port, bool paused=false);

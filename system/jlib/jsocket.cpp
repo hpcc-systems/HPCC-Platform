@@ -24,6 +24,9 @@
     look at loopback
 */
 
+#include <unordered_set>
+#include <functional>
+
 #include "platform.h"
 #ifdef _VER_C5
 #include <clwclib.h>
@@ -417,7 +420,7 @@ public:
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
 
-    ISocket*    accept(bool allowcancel);
+    ISocket*    accept(bool allowcancel, SocketEndpoint *peerEp=nullptr);
     int         wait_read(unsigned timeout);
     int         logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
@@ -1010,7 +1013,7 @@ ErrPortInUse:
 
 
 
-ISocket* CSocket::accept(bool allowcancel)
+ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
 {
     if ((accept_cancel_state!=accept_not_cancelled) && allowcancel) {
         accept_cancel_state=accept_cancelled;
@@ -1023,10 +1026,14 @@ ISocket* CSocket::accept(bool allowcancel)
     if (connectionless()) {
         THROWJSOCKEXCEPTION(JSOCKERR_connectionless_socket);
     }
+
+    DEFINE_SOCKADDR(peerSockAddr);      // used if peerIp
+    socklen_t peerSockAddrLen = sizeof(peerSockAddr);
+
     T_SOCKET newsock;
     for (;;) {
         in_accept = true;
-        newsock = (sock!=INVALID_SOCKET)?::accept(sock, NULL, NULL):INVALID_SOCKET;
+        newsock = (sock!=INVALID_SOCKET)?::accept(sock, &peerSockAddr.sa, &peerSockAddrLen):INVALID_SOCKET;
         in_accept = false;
     #ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: accept created socket %x %d (%p)", newsock,newsock,this);
@@ -1061,6 +1068,10 @@ ISocket* CSocket::accept(bool allowcancel)
             return NULL;
         THROWJSOCKEXCEPTION(JSOCKERR_cancel_accept);
     }
+
+    if (peerEp)
+        getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
+
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
     ret->set_inherit(false);
     return ret;
@@ -6794,3 +6805,140 @@ int wait_write_multiple(UnsignedArray &socks,       //IN   sockets to be checked
 {
     return wait_multiple(false, socks, timeoutMS, readySocks);
 }
+
+
+class CWhiteListHandler : public CSimpleInterfaceOf<IWhiteListHandler>, implements IWhiteListWriter
+{
+    typedef CSimpleInterfaceOf<IWhiteListHandler> PARENT;
+
+    struct PairHasher
+    {
+        template <class T1, class T2>
+        std::size_t operator () (std::pair<T1, T2> const &pair) const
+        {
+            std::size_t h1 = std::hash<T1>()(pair.first);
+            std::size_t h2 = std::hash<T2>()(pair.second);
+            return h1 ^ h2;
+        }
+    };
+
+    using WhiteListHT = std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher>;
+    WhiteListPopulateFunction populateFunc;
+    WhiteListFormatFunction roleFormatFunc;
+    std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher> whiteList;
+    std::unordered_set<std::string> IPOnlyWhiteList;
+    bool allowAnonRoles = false;
+    mutable CriticalSection populatedCrit;
+    mutable bool populated = false;
+    mutable bool enabled = true;
+
+    void ensurePopulated() const
+    {
+        // should be called within CS
+        if (populated)
+            return;
+        // NB: want to keep this method const, as used by isXX functions that are const, but if need to refresh it's effectively mutable
+        enabled = populateFunc(* const_cast<IWhiteListWriter *>((const IWhiteListWriter *)this));
+        populated = true;
+    }
+public:
+    IMPLEMENT_IINTERFACE_O_USING(PARENT);
+
+    CWhiteListHandler(WhiteListPopulateFunction _populateFunc, WhiteListFormatFunction _roleFormatFunc) : populateFunc(_populateFunc), roleFormatFunc(_roleFormatFunc)
+    {
+    }
+// IWhiteListHandler impl.
+    virtual bool isWhiteListed(const char *ip, unsigned __int64 role, StringBuffer *responseText) const override
+    {
+        CriticalBlock block(populatedCrit);
+        ensurePopulated();
+        if (0 == role) // unknown, can only check ip
+        {
+            if (allowAnonRoles)
+            {
+                const auto &it = IPOnlyWhiteList.find(ip);
+                if (it != IPOnlyWhiteList.end())
+                    return true;
+            }
+        }
+        else
+        {
+            const auto &it = whiteList.find({ip, role});
+            if (it != whiteList.end())
+                return true;
+        }
+
+        // if !enabled and no responseText supplied, generate response and warn that disabled
+        StringBuffer disabledResponseText;
+        if (!enabled && !responseText)
+            responseText = &disabledResponseText;
+
+        if (responseText)
+        {
+            responseText->append("Access denied! [client ip=");
+            responseText->append(ip);
+            if (role)
+            {
+                responseText->append(", role=");
+                if (roleFormatFunc)
+                    roleFormatFunc(*responseText, role);
+                else
+                    responseText->append(role);
+            }
+            responseText->append("] not whitelisted");
+        }
+
+        if (enabled)
+            return false;
+        else
+        {
+            OWARNLOG("WhiteListing is disabled, ignoring: %s", responseText->str());
+            return true;
+        }
+    }
+    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
+    {
+        CriticalBlock block(populatedCrit);
+        ensurePopulated();
+        for (const auto &it: whiteList)
+        {
+            out.append(it.first.c_str()).append(", ");
+            if (roleFormatFunc)
+                roleFormatFunc(out, it.second);
+            else
+                out.append(it.second);
+            out.newline();
+        }
+        return out;
+    }
+    virtual void refresh() override
+    {
+        /* NB: clear only, so that next usage will re-populated
+         * Do not want to repopulate now, because refresh() is likely called within a update write transaction
+         */
+        CriticalBlock block(populatedCrit);
+        enabled = true;
+        whiteList.clear();
+        IPOnlyWhiteList.clear();
+        populated = false;
+    }
+// IWhiteListWriter impl.
+    virtual void add(const char *ip, unsigned __int64 role) override
+    {
+        // NB: called via populateFunc, which is called whilst populatedCrit is locked.
+        whiteList.insert({ ip, role });
+        if (allowAnonRoles)
+            IPOnlyWhiteList.insert(ip);
+    }
+    virtual void setAllowAnonRoles(bool tf) override
+    {
+        allowAnonRoles = tf;
+        refresh();
+    }
+};
+
+IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc, WhiteListFormatFunction roleFormatFunc)
+{
+    return new CWhiteListHandler(populateFunc, roleFormatFunc);
+}
+
