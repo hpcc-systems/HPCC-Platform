@@ -129,11 +129,25 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.getImageHTML("configuration.png", context.i18n.Configuration);
                         },
-                        width: 10,
+                        width: 8,
                         sortable: false,
                         formatter: function (configuration) {
                             if (configuration === true) {
                                 return "<a href='#' />" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
+                            }
+                            return "";
+                        }
+                    },
+                    DaliServer: {
+                        label: this.i18n.Dali,
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = Utility.getImageHTML("server.png", context.i18n.Dali);
+                        },
+                        width: 8,
+                        sortable: false,
+                        formatter: function (dali) {
+                            if (dali === true) {
+                                return Utility.getImageHTML("server.png", context.i18n.Dali);
                             }
                             return "";
                         }
@@ -150,7 +164,6 @@ define([
                         expand: true,
                         label: this.i18n.Name,
                         collapseOnRefresh: false,
-                        sortable: true,
                         width: 150,
                         shouldExpand: function (clusterProcess) {
                             if (clusterProcess.data.type === "targetClusterProcess") {
@@ -244,7 +257,7 @@ define([
         _onRowDblClick: function (item) {
             var nodeTab = this.ensureLogsPane(item.Name, {
                 params: item,
-                LogDirectory: item.LogDirectory,
+                LogDirectory: item.LogDirectory !== undefined ? item.LogDirectory : item.LogDir, // in the case of dali nested log
                 NetAddress: item.Netaddress,
                 OS: item.OS,
                 newPreflight: true
