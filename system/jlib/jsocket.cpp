@@ -417,7 +417,7 @@ public:
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
 
-    ISocket*    accept(bool allowcancel);
+    ISocket*    accept(bool allowcancel, SocketEndpoint *peerEp=nullptr);
     int         wait_read(unsigned timeout);
     int         logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
@@ -1010,7 +1010,7 @@ ErrPortInUse:
 
 
 
-ISocket* CSocket::accept(bool allowcancel)
+ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
 {
     if ((accept_cancel_state!=accept_not_cancelled) && allowcancel) {
         accept_cancel_state=accept_cancelled;
@@ -1023,10 +1023,14 @@ ISocket* CSocket::accept(bool allowcancel)
     if (connectionless()) {
         THROWJSOCKEXCEPTION(JSOCKERR_connectionless_socket);
     }
+
+    DEFINE_SOCKADDR(peerSockAddr);      // used if peerIp
+    socklen_t peerSockAddrLen = sizeof(peerSockAddr);
+
     T_SOCKET newsock;
     for (;;) {
         in_accept = true;
-        newsock = (sock!=INVALID_SOCKET)?::accept(sock, NULL, NULL):INVALID_SOCKET;
+        newsock = (sock!=INVALID_SOCKET)?::accept(sock, &peerSockAddr.sa, &peerSockAddrLen):INVALID_SOCKET;
         in_accept = false;
     #ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: accept created socket %x %d (%p)", newsock,newsock,this);
@@ -1061,6 +1065,10 @@ ISocket* CSocket::accept(bool allowcancel)
             return NULL;
         THROWJSOCKEXCEPTION(JSOCKERR_cancel_accept);
     }
+
+    if (peerEp)
+        getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
+
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
     ret->set_inherit(false);
     return ret;

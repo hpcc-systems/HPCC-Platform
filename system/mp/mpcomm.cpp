@@ -134,7 +134,7 @@ public:
         size = _size;
         tag = _tag;
         sender.set(_sender);
-        target.set(_target);
+        dummy.set(_target);
         replytag = _replytag;
         flags = 0;
         version = MP_PROTOCOL_VERSION;
@@ -146,7 +146,7 @@ public:
     unsigned short  version;                                                // 8   protocol version
     unsigned short  flags;                                                  // 10   flags
     SocketEndpointV4  sender;                                               // 12   who sent
-    SocketEndpointV4  target;                                               // 18   who destined for
+    SocketEndpointV4  dummy;                                                // 18   who destined for
     mptag_t         replytag;                                               // 24   used for reply
     unsigned        sequence;                                               // 28   packet type dependant
                                                                             // Total 32
@@ -725,7 +725,7 @@ class CMPChannel: public CInterface
     IArrayOf<ISocket> keptsockets;
     CriticalSection attachsect;
     unsigned __int64 attachaddrval = 0;
-    SocketEndpoint attachep, attachPeerEp;
+    SocketEndpoint attachep;
     atomic_t attachchk;
 
 protected: friend class CMPServer;
@@ -1153,7 +1153,6 @@ public:
                 CriticalBlock block(attachsect);
                 attachaddrval = 0;
                 attachep.set(nullptr);
-                attachPeerEp.set(nullptr);
                 atomic_set(&attachchk, 0);
             }
             if (!keepsocket) {
@@ -1214,7 +1213,7 @@ public:
         return !closed&&(channelsock!=NULL);
     }
 
-    const SocketEndpoint &queryPeerEp() const { return attachPeerEp; }
+    const SocketEndpoint &queryPeerEp() const { return attachep; }
 };
 
 // Message Handlers (not done as interfaces for speed reasons
@@ -1441,6 +1440,8 @@ class CMPPacketReader: public ISocketSelectNotify, public CInterface
     size32_t remaining;
     CMPChannel *parent;
     CriticalSection sect;
+    unsigned __int64 packetsRead = 0;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1453,6 +1454,7 @@ public:
     {
         parent = _parent;
         activemsg = NULL;
+        packetsRead = 0;
     }
 
     void shutdown()
@@ -1528,7 +1530,12 @@ public:
                     remaining = hdr.size-sizeof(hdr);
                     activemsg = new CMessageBuffer(remaining); // will get from low level IO at some stage
                     activeptr = (byte *)activemsg->reserveTruncate(remaining);
-                    hdr.setMessageFields(*activemsg);
+
+                    activemsg->init(parent->queryPeerEp(), hdr.tag, hdr.replytag);
+
+                    if (0 == packetsRead)
+                        activemsg->setFirstMessage(); // mark message as 1st seen on this channel (to enable security check when message is handled)
+                    ++packetsRead;
                 }
                 
                 size32_t toread = sizeavail;
@@ -1618,7 +1625,6 @@ void CMPChannel::reset()
     sendwaiting = 0;
     attachaddrval = 0;
     attachep.set(nullptr);
-    attachPeerEp.set(nullptr);
     atomic_set(&attachchk, 0);
     lastxfer = msTick();
 }
@@ -1648,8 +1654,6 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         CriticalBlock block(attachsect);
         attachaddrval = addrval;
         attachep = _remoteep;
-        if (newsock)
-            newsock->getPeerEndpoint(attachPeerEp);
         atomic_inc(&attachchk);
     }
 
@@ -1706,7 +1710,6 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
             FLLOG(MCoperatorWarning, unknownJob, e,"MP attachsocket(2)");
             e->Release();
         }
-
     }
 
     if (confirm)
@@ -1979,8 +1982,9 @@ int CMPConnectThread::run()
 #endif
     while (running) {
         ISocket *sock=NULL;
+        SocketEndpoint peerEp;
         try {
-            sock=listensock->accept(true);
+            sock=listensock->accept(true, &peerEp);
 #ifdef _FULLTRACE       
             StringBuffer s;
             SocketEndpoint ep1;
@@ -2018,16 +2022,17 @@ int CMPConnectThread::run()
                 else if (rd != sizeof(id))
                 {
                     // not sure how to get here as this is not one of the possible outcomes of above: rd == 0 or rd == sizeof(id) or an exception
-                    SocketEndpoint ep;
-                    sock->getPeerEndpoint(ep);
                     StringBuffer errMsg("MP Connect Thread: invalid number of connection bytes serialized from ");
-                    ep.getUrlStr(errMsg);
+                    peerEp.getUrlStr(errMsg);
                     FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     sock->close();
                     sock->Release();
                     continue;
                 }
-                id[0].get(_remoteep);
+
+                // NB: ignore who client says they are, use peerEp, but use port sent by client to identify which client on peer.
+                //id[0].get(_remoteep);
+                _remoteep.set(id[0].port, peerEp);
                 id[1].get(hostep);
 
                 unsigned __int64 addrval = DIGIT1*id[0].ip[0] + DIGIT2*id[0].ip[1] + DIGIT3*id[0].ip[2] + DIGIT4*id[0].ip[3] + id[0].port;
@@ -2037,8 +2042,6 @@ int CMPConnectThread::run()
 
                 if (_remoteep.isNull() || hostep.isNull())
                 {
-                    SocketEndpoint ep;
-                    sock->getPeerEndpoint(ep);
                     StringBuffer errMsg;
                     SocketEndpointV4 zeroTest[2];
                     memset(zeroTest, 0x0, sizeof(zeroTest));
@@ -2046,14 +2049,14 @@ int CMPConnectThread::run()
                     {
                         // JCSMORE, I think _remoteep really must/should match a IP of this local host
                         errMsg.append("MP Connect Thread: invalid remote and/or host ep serialized from ");
-                        ep.getUrlStr(errMsg);
+                        peerEp.getUrlStr(errMsg);
                         FLLOG(MCoperatorWarning, unknownJob, "%s", errMsg.str());
                     }
                     else if (mpTraceLevel > 1)
                     {
                         // all zeros msg received
                         errMsg.append("MP Connect Thread: connect with empty msg received, assumed port monitor check from ");
-                        ep.getUrlStr(errMsg);
+                        peerEp.getUrlStr(errMsg);
                         PROGLOG("%s", errMsg.str());
                     }
                     sock->close();
@@ -2987,7 +2990,7 @@ public:
         parent->removeChannel(channel);
     }
 
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const override
     {
         Owned<CMPChannel> channel = parent->lookup(sender);
         assertex(channel);

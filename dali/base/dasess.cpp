@@ -74,6 +74,7 @@ static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
     { "XRef", DCR_XRef },
     { "EclMinus", DCR_EclMinus },
     { "Monitoring", DCR_Monitoring },
+    { "External", DCR_External },
 };
 
 const char *queryRoleName(DaliClientRole role)
@@ -106,6 +107,7 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_XRef: return "XRef";
     case DCR_EclMinus: return "EclMinus";
     case DCR_Monitoring: return "Monitoring";
+    case DCR_External: return "External";
     }
     return "Unknown";
 }
@@ -554,15 +556,13 @@ public:
                 acceptConnections.wait();
                 acceptConnections.signal();
                 Owned<INode> node(deserializeINode(mb));
-                const SocketEndpoint &peerIP = coven.queryComm().queryChannelPeerEndpoint(mb.getSender());
                 Owned<INode> servernode(deserializeINode(mb));  // hopefully me, but not if forwarded
                 int role=0;
                 if (mb.length()-mb.getPos()>=sizeof(role)) { // a capability block present
                     mb.read(role);
-                    if (!manager.authorizeConnection(peerIP, (DaliClientRole) role))
+                    if (!manager.authorizeConnection(mb.getSender(), (DaliClientRole) role))
                     {
                         MilliSleep(2000); // Delay makes rapid probing of all possible roles slightly more painful.
-                        SocketEndpoint sender = mb.getSender();
                         mb.clear();
                         mb.append((SessionId) 0);
                         INode *na = queryNullNode();
@@ -570,13 +570,13 @@ public:
                         dummyCoven->serialize(mb);
                         const char *roleName = queryRoleName((DaliClientRole)role);
                         StringBuffer ipStr;
-                        peerIP.getIpText(ipStr);
+                        mb.getSender().getIpText(ipStr);
                         Owned<IException> e = makeStringExceptionV(-1, "Access denied! [client ip=%s, role=%s]", ipStr.str(), roleName);
                         EXCLOG(e, nullptr);
                         serializeException(e, mb);
                         coven.reply(mb);
                         MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
-                        Owned<INode> node = createINode(sender);
+                        Owned<INode> node = createINode(mb.getSender());
                         coven.disconnect(node);
                         break;
                     }
@@ -905,8 +905,6 @@ public:
             servernotifys.item(i).doNotify(aborted);
         }
     }
-
-
 };
 
 
@@ -1220,6 +1218,11 @@ public:
         msg.append((int)MSR_IMPORT_CAPABILITIES);
         msg.append(mb.length(), mb.toByteArray());
         queryCoven().sendRecv(msg,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+    }
+
+    virtual bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role) override
+    {
+        throwUnexpectedX("authorizeConnection called on client");
     }
 };
 
@@ -1915,15 +1918,6 @@ public:
 #endif
     }
 
-
-    bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role)
-    {
-        StringBuffer ipStr;
-        clientIP.getIpText(ipStr);
-        return whiteListHandler.isWhiteListed(ipStr, role);
-    }
-
-
     SessionId startSession(SecurityToken tok, SessionId parentid)
     {
         return registerSession(tok,parentid);
@@ -2094,6 +2088,13 @@ protected:
     virtual StringBuffer &getWhiteList(StringBuffer &out) const override
     {
         return whiteListHandler.getWhiteList(out);
+    }
+
+    virtual bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role) override
+    {
+        StringBuffer ipStr;
+        clientIP.getIpText(ipStr);
+        return whiteListHandler.isWhiteListed(ipStr, role);
     }
 
     void onClose(SocketEndpoint &ep)

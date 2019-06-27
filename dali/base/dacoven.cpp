@@ -321,7 +321,7 @@ public:
         if (comm)
             comm->cancel(srcrank,tag);
     }
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const override
     {
         assertex(comm);
         return comm->queryChannelPeerEndpoint(sender);
@@ -727,13 +727,11 @@ public:
         return comm->send(mbuf,dstrank,tag,timeout);
     }
 
-
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(comm);
         return comm->sendRecv(mbuff,sendrank,sendtag,timeout);
     }
-
 
     virtual unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=0)
     {
@@ -742,10 +740,41 @@ public:
     
     virtual bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER)
     {
-        return comm->recv(mbuf,srcrank,tag,sender,timeout);
+        if (!comm->recv(mbuf, srcrank, tag, sender, timeout))
+            return false;
+
+        // if SESSION manager request, let it authorize since it will have more context (i.e. role)
+        if (tag == MPTAG_DALI_SESSION_REQUEST)
+            return true;
+
+        if (!mbuf.isFirstMessage()) // connection/stream has already been checked
+            return true;
+
+        // do not whitelist check packets from self
+        if (mbuf.getSender().ipequals(comm->queryGroup().queryNode(0).endpoint()))
+            return true;
+
+        // NB: will only get here if very 1st message from client
+
+        if (!querySessionManager().authorizeConnection(mbuf.getSender(), DCR_External))
+        {
+            MilliSleep(2000); // Delay makes rapid probing of all possible roles slightly more painful.
+            mbuf.clear();
+            mbuf.append((int)-1);
+            StringBuffer ipStr;
+            mbuf.getSender().getIpText(ipStr);
+            Owned<IException> e = makeStringExceptionV(-1, "Access denied! [client ip=%s] from non-registered client", ipStr.str());
+            EXCLOG(e, nullptr);
+            serializeException(e, mbuf);
+            reply(mbuf);
+            MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
+            Owned<INode> node = createINode(mbuf.getSender());
+            disconnect(node);
+        }
+        return true;
     }
 
-    virtual bool reply   (CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER)
+    virtual bool reply(CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(comm);
         return comm->reply(mbuff,timeout);
@@ -757,8 +786,6 @@ public:
         assertex(comm);
         comm->disconnect(node);
     }
-
-
 };
     
 #define CATCH_MPERR_link_closed \

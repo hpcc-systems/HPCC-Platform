@@ -34,6 +34,7 @@ class mp_decl CMessageBuffer: public MemoryBuffer
     SocketEndpoint  sender;
     mptag_t         tag;
     mptag_t         replytag;
+    bool firstMessage = false; // used by Dali to check authority on 1st message received
 
 public:
     CMessageBuffer() : MemoryBuffer() { init(); }
@@ -43,7 +44,9 @@ public:
     inline const SocketEndpoint &getSender() const  { return sender; }
     inline void setReplyTag(mptag_t tag)            { replytag = tag; }  // called prior to send (use cresteReplyTag to make tag)
     inline mptag_t getReplyTag()                    { return replytag; } // called after recv to determine tag to reply to
-    inline mptag_t getTag()                     { return tag; }      
+    inline mptag_t getTag()                         { return tag; }
+    inline void setFirstMessage()                   { firstMessage = true; }
+    inline bool isFirstMessage() const              { return firstMessage; }
 
     inline void init()             
     { 
@@ -65,6 +68,7 @@ public:
         tag = mb.tag;
         sender = mb.sender;
         replytag = mb.replytag;
+        firstMessage = mb.firstMessage;
         mb.clear();
     }
 

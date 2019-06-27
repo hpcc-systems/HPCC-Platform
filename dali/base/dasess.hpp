@@ -80,6 +80,7 @@ enum DaliClientRole // if changed must update queryRoleName()
     DCR_XRef,
     DCR_EclMinus,
     DCR_Monitoring,
+    DCR_External,
     DCR_Max
 };
 
@@ -135,6 +136,7 @@ interface ISessionManager: extends IInterface
     virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)=0;
     virtual void refreshWhiteList() = 0;
     virtual StringBuffer &getWhiteList(StringBuffer &out) const = 0;
+    virtual bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role) = 0;
 };
 
 // the following are getPermissionsLDAP input flags for audit reporting

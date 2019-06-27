@@ -57,7 +57,7 @@ interface ICommunicator: extends IInterface
     virtual bool verifyAll(bool duplex=false, unsigned timeout=1000*60*30) = 0;
     virtual void disconnect(INode *node) = 0;
     virtual void barrier() = 0;
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) = 0;
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const = 0;
 };
 
 interface IInterCommunicator: extends IInterface
