@@ -351,7 +351,6 @@ void CDiskRecordPartHandler::open()
                         remoteReadException.setown(e);
                         remoteReadExceptionPath.set(filename);
                     }
-                    e->Release();
                     continue; // try next copy and ultimately failover to local when no more copies
                 }
                 partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
