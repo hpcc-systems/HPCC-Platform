@@ -2198,17 +2198,33 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
         CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
 
         double version = context.getClientVersion();
+        SecResourceType rtype = str2type(basednReq->getRtype());
         const char* name = req.getName();
         StringBuffer namebuf(name);
-        if(str2type(basednReq->getRtype()) == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
+        if (rtype == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
             namebuf.insert(0, "repository.");
+
+        const char* basedn = basednReq->getBasedn();
+        if (isEmptyString(name) && (rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE))
+        {   //Since resource name is not specified, this is the request to check default resource permissions for file
+            //scope or workunit scope. We need to parse file scope basedn (example: ou=files,ou=ecl,dc=dev,dc=local)
+            //or workunit scope basedn (example: ou=workunits,ou=ecl,dc=dev,dc=local) to get the resource name
+            //(example: files or workunits) and its basedn (example: ou=ecl,dc=dev,dc=local).
+            const char* comma = strchr(basedn, ',');
+            const char* eqsign = strchr(basedn, '=');
+            if (!comma || !eqsign)
+                throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "Invalid basedn: %s", basedn);
+
+            namebuf.clear().append(comma - eqsign - 1, eqsign + 1);
+            basedn = comma + 1;
+        }
 
         const char* prefix = req.getPrefix();
         if(prefix && *prefix)
             namebuf.insert(0, prefix);
 
         IArrayOf<CPermission> permissions;
-        ldapsecmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
+        ldapsecmgr->getPermissionsArray(basedn, rtype, namebuf, permissions);
 
         IArrayOf<IEspResourcePermission> parray;
         ForEachItemIn(x, permissions)
