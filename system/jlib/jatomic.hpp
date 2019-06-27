@@ -108,8 +108,13 @@ private:
 //Currently compare_exchange_weak in gcc forces a write to memory which is painful in highly contended situations.  The
 //See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66867 for some details.  Marked as fixed for gcc 7.
 //The symbol HAS_EFFICIENT_CAS should be defined if this bug is fixed, and/or there is no fallback implementation (e.g., windows)
+//MCK verified gcc 7.1+ and all recent clang are ok
 #if defined(_WIN32)
-#define HAS_EFFICIENT_CAS
+# define HAS_EFFICIENT_CAS
+#elif defined(__GNUC__) && (__GNUC___ > 7 || (__GNUC__ == 7 && __GNUC_MINOR__ >= 1))
+# define HAS_EFFICIENT_CAS
+#elif defined(__clang__)
+# define HAS_EFFICIENT_CAS
 #endif
 
 #if defined(HAS_EFFICIENT_CAS)
