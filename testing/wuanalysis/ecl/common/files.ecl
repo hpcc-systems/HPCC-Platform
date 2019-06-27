@@ -15,20 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-// Analysis should show: Significant skew in DISTRIBUTE output
-//
-// NOTE: For faster nodes, it may be necessary to increase the size of testfile
-
-IMPORT * From common;
-
-visits := DATASET(testfile2, layout_visits, THOR);
-
-layout_visitCounts := RECORD
-  visits.url;
-  visits_cnt := COUNT(GROUP);
+EXPORT files := Module
+    EXPORT layout_visits := RECORD
+        STRING20 User;
+        STRING30 url;
+        INTEGER8 timestamp;
+    END;
+    EXPORT testfile1 := 'regress::wuanalysis::largedata1';
+    EXPORT testfile2 := 'regress::wuanalysis::largedata2';
 END;
-
-visitcounts := TABLE(DISTRIBUTE(visits,HASH32(timestamp%2)),
-                     layout_visitCounts,url,LOCAL);
-OUTPUT(visitcounts);
 

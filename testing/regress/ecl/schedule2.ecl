@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //nothor
-//nothorlcr
 
 
 ds := dataset(60, TRANSFORM({ unsigned id }, SELF.id := COUNTER));

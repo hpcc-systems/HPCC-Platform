@@ -1,5 +1,6 @@
 //This test really should work in thor, but there appear to be issues with the CATCH processing
-//nothorlcr
+
+//nothor
 
 namesRecord :=
             RECORD

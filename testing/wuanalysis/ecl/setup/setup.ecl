@@ -15,7 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-IMPORT * from common;
+
+IMPORT $.^.common.Files as Files;
+
+//nosetup_roxie
+//nokey
 
 // Generate Data
 layout_person := RECORD
@@ -31,7 +35,7 @@ persons := DATASET([{'Ned'},{'Robert'}, {'Jaime'}, {'Catelyn'}, {'Cersei'}, {'Da
                    
 sites := DATASET([{'www.yahoo.com'}, {'www.amazon.com'}, {'www.cnn.com'}, {'www.yahoo.com'}, {'www.bbc.co.uk'}], layout_sites);
 
-layout_visits f(layout_person l, layout_sites r) := TRANSFORM
+Files.layout_visits f(layout_person l, layout_sites r) := TRANSFORM
   SELF.user := l.user;
   SELF.url := r.url;
   SELF.timestamp := 0;
@@ -39,14 +43,14 @@ END;
 
 v := JOIN(persons, sites, true, f(LEFT,RIGHT), ALL);
 
-layout_visits addTime(layout_visits l, INTEGER c) := TRANSFORM
+Files.layout_visits addTime(Files.layout_visits l, INTEGER c) := TRANSFORM
   SELF.timestamp := RANDOM();
   SELF := L;
 END;
 
-visits1 := DISTRIBUTE(NORMALIZE(v, 60000, addTime(LEFT, COUNTER)), HASH32(timestamp));
-visits2 := DISTRIBUTE(NORMALIZE(v, 60000, addTime(LEFT, COUNTER)), HASH32(url));
+visits1 := DISTRIBUTE(NORMALIZE(v, 100000, addTime(LEFT, COUNTER)), HASH32(timestamp));
+visits2 := DISTRIBUTE(NORMALIZE(v, 100000, addTime(LEFT, COUNTER)), HASH32(url));
 
-OUTPUT(visits1, , testfile1, OVERWRITE);
-OUTPUT(visits2, , testfile2, OVERWRITE);
+OUTPUT(visits1, , Files.testfile1, OVERWRITE);
+OUTPUT(visits2, , Files.testfile2, OVERWRITE);
 
