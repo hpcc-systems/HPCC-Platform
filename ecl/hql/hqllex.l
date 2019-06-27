@@ -1043,6 +1043,8 @@ __OS__              {
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 #ifdef _WIN32
                         returnToken.setExpr(createConstant("windows"));
+#elif defined(__APPLE__)
+                        returnToken.setExpr(createConstant("macos"));
 #else
                         returnToken.setExpr(createConstant("linux"));
 #endif

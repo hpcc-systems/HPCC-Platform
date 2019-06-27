@@ -1090,10 +1090,6 @@ bool FilterExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_oper
     OwnedHqlExpr guard;
     ITypeInfo * guardCastType = NULL;
 
-    //Do not match implicit substring filters by default - because only a single substring range is supported
-    if (createValueSets && (keyedKind == KeyedNo))
-        return false;
-
     if ((left->getOperator() == no_cast) || (left->getOperator() == no_implicitcast))
     {
         //code is extracted and simplified from isKeyableFilter() above - should be commoned up.
@@ -1219,13 +1215,6 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
     Owned<KeyCondition> result;
     if (matchedSelector)
     {
-        //Do not match implicit substring filters by default - because only a single substring range is supported
-        if (createValueSets && isSubString(l) && (keyedKind == KeyedNo))
-        {
-            matches.appendPostFilter(expr);
-            return false;
-        }
-
         node_operator newOp = getModifiedOp(op, duplicate);
 
         if (newOp != no_none)
@@ -1240,13 +1229,6 @@ bool FilterExtractor::extractSimpleCompareFilter(KeyConditionInfo & matches, IHq
         matchedSelector = isKeyableFilter(r, l, duplicate, op, reasonr, keyedKind);
         if (matchedSelector)
         {
-            //Do not match implicit substring filters by default - because only a single substring range is supported
-            if (createValueSets && isSubString(r) && (keyedKind == KeyedNo))
-            {
-                matches.appendPostFilter(expr);
-                return false;
-            }
-
             node_operator newOp = getModifiedOp(getReverseOp(op), duplicate);
             if (newOp != no_none)
             {

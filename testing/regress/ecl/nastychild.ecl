@@ -18,7 +18,6 @@
 //Deliberately try and create a race condition between the two graph inputs, so that if the child queries are
 //accidentally shared you'll get complaints about results being used before they are defined
 //nothor
-//nothorlcr
 
 rtl := SERVICE
     unsigned4 sleep(unsigned4 dxelay) : eclrtl,library='eclrtl',entrypoint='rtlSleep';

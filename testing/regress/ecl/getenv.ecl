@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //nothor
-//nothorlcr
 //nohthor
 
 // hthor and thor should probably suppoty getEnv too but not immediately clear how to test them

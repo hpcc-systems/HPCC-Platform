@@ -17,7 +17,6 @@
 
 //currently roxie only query....
 //nothor
-//nothorlcr
 //nohthor
 
 #option ('recreateMapFromIf', true);

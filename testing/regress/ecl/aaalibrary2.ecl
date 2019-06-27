@@ -17,7 +17,6 @@
 
 //nohthor
 //nothor
-//nothorlcr
 //publish
 
 #option ('targetService', 'aaaLibrary2');

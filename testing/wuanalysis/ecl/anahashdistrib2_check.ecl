@@ -15,20 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-// Analysis should show: DISTRIBUTE output skew is worse than input skew
+// Analysis should show: Significant skew in DISTRIBUTE output
 //
 // NOTE: For faster nodes, it may be necessary to increase the size of testfile
 
-IMPORT * From common;
+//noroxie
+//nohthor
 
-visits := DATASET(testfile1, layout_visits, THOR);
+IMPORT $.common.Helper as Helper;
 
-layout_visitCounts := RECORD
-  visits.url;
-  visits_cnt := COUNT(GROUP);
-END;
-
-visitcounts := TABLE(DISTRIBUTE(visits,HASH32(url[1..3])),
-                     layout_visitCounts,url,LOCAL);
-OUTPUT(visitcounts);
+OUTPUT(Helper.getMessages('hashdistrib2'));
 

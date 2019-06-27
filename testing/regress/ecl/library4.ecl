@@ -17,7 +17,6 @@
 
 //nohthor
 //nothor
-//nothorlcr
 
 namesRecord := 
             RECORD

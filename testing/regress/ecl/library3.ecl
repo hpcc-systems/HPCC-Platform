@@ -17,7 +17,6 @@
 
 //nohthor
 //nothor
-//nothorlcr
 
 //Example of nested 
 namesRecord := 
