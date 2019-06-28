@@ -4726,13 +4726,21 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
             //producing poor code.
             if (!isVariableSizeRecord(expr->queryRecord()))
             {
-                OwnedHqlExpr foldedCond = foldHqlExpression(expr->queryChild(0));
-                BuildCtx condctx(ctx);
-                IHqlStmt * cond = buildFilterViaExpr(condctx, foldedCond);
+                OwnedHqlExpr converted = combineIfsToCase(expr);
+                if (converted)
+                {
+                    buildRowAssign(ctx, target, converted);
+                }
+                else
+                {
+                    OwnedHqlExpr foldedCond = foldHqlExpression(expr->queryChild(0));
+                    BuildCtx condctx(ctx);
+                    IHqlStmt * cond = buildFilterViaExpr(condctx, foldedCond);
 
-                buildRowAssign(condctx, target, expr->queryChild(1));
-                condctx.selectElse(cond);
-                buildRowAssign(condctx, target, expr->queryChild(2));
+                    buildRowAssign(condctx, target, expr->queryChild(1));
+                    condctx.selectElse(cond);
+                    buildRowAssign(condctx, target, expr->queryChild(2));
+                }
                 return;
             }
         }
