@@ -4054,7 +4054,7 @@ CHqlRealExpression::CHqlRealExpression(node_operator op) : CHqlExpression(op)
 
 CHqlRealExpression::~CHqlRealExpression()
 {
-    delete attributes;
+    delete attributes.load(std::memory_order_acquire);
 }
 
 IHqlExpression *CHqlRealExpression::closeExpr()
