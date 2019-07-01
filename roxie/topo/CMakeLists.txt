@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,41 +14,45 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: udplib 
+
+# Component: toposerver
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for udplib
+#    Cmake Input File for toposerver
 #####################################################
 
 
-project( udplib ) 
+project( toposerver ) 
 
-set (    SRCS 
-         udpmsgpk.cpp 
-         udpsha.cpp 
-         udptrr.cpp 
-         udptrs.cpp 
-         udptopo.cpp 
+set (   SRCS 
+        toposerver.cpp 
     )
 
 include_directories ( 
-         ./../../roxie/roxiemem 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../roxie/ccd
-         ./../../roxie/roxie
+         .
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/include
     )
 
-HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
-set_target_properties( udplib PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL UDPLIB_EXPORTS )
-install ( TARGETS udplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( udplib 
-         jlib
-         roxiemem 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-unused-parameter")
+endif()
+
+if (CMAKE_COMPILER_IS_CLANGXX)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=reorder")
+endif()
+
+ADD_DEFINITIONS( -D_CONSOLE )
+
+if (WIN32)
+    set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
+
+HPCC_ADD_EXECUTABLE ( toposerver ${SRCS} )
+install ( TARGETS toposerver RUNTIME DESTINATION ${EXEC_DIR} )
+
+target_link_libraries ( toposerver
+         jlib 
     )
-
-

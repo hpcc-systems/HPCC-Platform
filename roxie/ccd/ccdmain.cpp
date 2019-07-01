@@ -28,6 +28,7 @@
 #include <jencrypt.hpp>
 #include "jutil.hpp"
 #include <build-config.h>
+#include <udptopo.hpp>
 
 #include "rtlformat.hpp"
 
@@ -409,6 +410,9 @@ public:
     }
 };
 
+static SocketEndpointArray topologyServers;
+static std::vector<RoxieEndpointInfo> myRoles;
+
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
     for (unsigned i=0;i<(unsigned)argc;i++) {
@@ -508,6 +512,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
+
+        if (globals->hasProp("--topologyServer"))
+        {
+            topologyServers.append(SocketEndpoint(globals->queryProp("--topologyServer")));
+        }
 
         if (globals->hasProp("--topology"))
             globals->getProp("--topology", topologyFile);
@@ -955,7 +964,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             const char *iptext = roxieServer.queryProp("@netAddress");
             unsigned nodeIndex = addRoxieNode(iptext);
             if (getNodeAddress(nodeIndex).isLocal())
+            {
                 myNodeIndex = nodeIndex;
+                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, {0, getNodeAddress(nodeIndex)}};  // MORE - port
+                myRoles.push_back(me);
+            }
             if (traceLevel > 3)
                 DBGLOG("Roxie server %u is at %s", nodeIndex, iptext);
         }
@@ -1046,7 +1059,19 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
-        unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
+        unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
+        if (topologyServers.length())
+        {
+            Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
+            ForEach(*it)
+            {
+                unsigned channelNo = it->query().getPropInt("@channel", 0);
+                assertex(channelNo);
+                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieSlave, channelNo, {0, getNodeAddress(myNodeIndex)}};  // MORE - port?
+                myRoles.push_back(me);
+            }
+            startTopoThread(topologyServers, myRoles);
+        }
         ROQ = createOutputQueueManager(snifferChannel, numSlaveThreads);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();

@@ -95,6 +95,8 @@
 #define CCD_CLIENT_FLOW_PORT            9002
 #define CCD_SNIFFER_PORT                9003
 
+#define TOPO_SERVER_PORT                9004
+
 #define ROXIE_SERVER_PORT               9876
 #define ROXIE_SSL_SERVER_PORT           19876
 
