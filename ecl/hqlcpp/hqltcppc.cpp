@@ -805,11 +805,11 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
             OwnedHqlExpr call = translator.bindFunctionCall(ensureCapacityId, args2);
 
             bool combined = false;
+            IHqlExpression * marker = row->queryBuilderEnsureMarker();
+            HqlStmtExprAssociation * match = static_cast<HqlStmtExprAssociation *>(ctx.queryAssociation(marker, AssocStmt, NULL));
             if (bound.expr->isConstant())
             {
                 //Try and merge all calls to ensureCapacity with a constant value
-                IHqlExpression * marker = row->queryBuilderEnsureMarker();
-                HqlStmtExprAssociation * match = static_cast<HqlStmtExprAssociation *>(ctx.queryAssociation(marker, AssocStmt, NULL));
                 if (match)
                 {
                     //Check the previous call to ensureCapacity() wasn't outside of a condition
@@ -820,17 +820,23 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
                         combined = true;
                     }
                 }
-
-                if (!combined)
+            }
+            else
+            {
+                if (match)
                 {
-                    IHqlStmt * stmt = ctx.addExpr(call);
-                    ctx.associateOwn(* new HqlStmtExprAssociation(marker, stmt));
-                    combined = true;
+                    IHqlExpression * prevCall = match->stmt->queryExpr(0);
+                    //If the builder and the size are the same there is no need to call again (ignore the field name)
+                    if ((call->queryChild(1) == prevCall->queryChild(1)) && (call->queryChild(0) == prevCall->queryChild(0)))
+                        combined = true;
                 }
             }
             
             if (!combined)
-                ctx.addExpr(call);
+            {
+                IHqlStmt * stmt = ctx.addExpr(call);
+                ctx.associateOwn(* new HqlStmtExprAssociation(marker, stmt));
+            }
         }
         else
         {
