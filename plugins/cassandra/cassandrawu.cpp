@@ -2367,6 +2367,79 @@ public:
         dirtyPaths.kill();
         dirtyResults.kill();
     }
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
+    {
+        CPersistedWorkUnit::loadPTree(LINK(wuTree));
+
+        if (sessionCache->queryTraceLevel() >= 8)
+        {
+            StringBuffer s; toXML(wuTree, s); DBGLOG("CCassandraWorkUnit::import\n%s", s.str());
+        }
+
+        CIArrayOf<CassandraStatement> secondaryBatch;
+        CassandraBatch batch(CASS_BATCH_TYPE_UNLOGGED);
+        updateSecondaries(secondaryBatch);
+
+        // MORE can use the table?
+        childXMLtoCassandra(sessionCache, batch, wuGraphsMappings, wuTree, "Graphs/Graph", 0);
+        childXMLtoCassandra(sessionCache, batch, wuResultsMappings, wuTree, "Results/Result", "0");
+        childXMLtoCassandra(sessionCache, batch, wuVariablesMappings, wuTree, "Variables/Variable", "-1"); // ResultSequenceStored
+        childXMLtoCassandra(sessionCache, batch, wuTemporariesMappings, wuTree, "Temporaries/Variable", "-3"); // ResultSequenceInternal // NOTE - lookups may also request ResultSequenceOnce
+        childXMLtoCassandra(sessionCache, batch, wuExceptionsMappings, wuTree, "Exceptions/Exception", 0);
+        childXMLtoCassandra(sessionCache, batch, wuStatisticsMappings, wuTree, "Statistics/Statistic", 0);
+        childXMLtoCassandra(sessionCache, batch, wuFilesReadMappings, wuTree, "FilesRead/File", 0);
+        childXMLtoCassandra(sessionCache, batch, wuFilesWrittenMappings, wuTree, "Files/File", 0);
+        childXMLtoCassandra(sessionCache, batch, wuFieldUsageMappings, wuTree, "usedsources/datasource", 0);
+
+        IPTree *query = wuTree->queryPropTree("Query");
+        if (query)
+            childXMLRowtoCassandra(sessionCache, batch, wuQueryMappings, queryWuid(), *query, 0);
+
+        if (sessionCache->queryTraceLevel() > 1)
+            DBGLOG("Executing commit batches");
+
+        CassandraFuture futureBatch(cass_session_execute_batch(sessionCache->querySession(), batch));
+        futureBatch.wait("commit updates");
+        executeAsync(secondaryBatch, "commit");
+
+        if (!graphProgressTree)
+            return;
+
+        if (sessionCache->queryTraceLevel() >= 8)
+        {
+            StringBuffer s; toXML(graphProgressTree, s); DBGLOG("CCassandraWorkUnit::import\n%s", s.str());
+        }
+
+        Owned<IPTreeIterator> graphs = graphProgressTree->getElements("*");
+        ForEach(*graphs)
+        {
+            IPTree &graph = graphs->query();
+            const char *graphName = graph.queryName();
+            Owned<IPTreeIterator> subs = graph.getElements("*");
+            ForEach(*subs)
+            {
+                IPTree &sub = subs->query();
+                const char *name=sub.queryName();
+                if (name[0]=='s' && name[1]=='g')
+                {
+                    setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"));
+                }
+                else if (streq(name, "node"))
+                {
+                    unsigned subid = sub.getPropInt("@id");
+                    if (subid)
+                    {
+                        if (sub.hasChildren()) // Old format
+                            setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"));
+                        if (sub.hasProp("@_state"))
+                            setNodeState(graphName, subid, (WUGraphState) sub.getPropInt("@_state"));
+                    }
+                }
+            }
+            if (graph.hasProp("@_state"))
+                setGraphState(graphName, graph.getPropInt("@wfid"), (WUGraphState) graph.getPropInt("@_state"));
+        }
+    }
     virtual IConstWUGraph *getGraph(const char *qname) const
     {
         // Just because we read one graph, does not mean we are likely to read more. So don't cache this result.
@@ -2952,6 +3025,13 @@ protected:
             simpleXMLtoCassandra(sessionCache, batch, searchMappings, p, xpath);
     }
 
+    void updateSecondaryTable(const char *xpath, const char *wuid, CIArrayOf<CassandraStatement> &batch)
+    {
+        const char *value = p->queryProp(xpath);
+        if (value && *value)
+            simpleXMLtoCassandra(sessionCache, batch, searchMappings, p, xpath);
+    }
+
     void deleteAppSecondaries(IPTree &pt, const char *wuid, CIArrayOf<CassandraStatement> &batch)
     {
         Owned<IPTreeIterator> apps = pt.getElements("Application");
@@ -3006,6 +3086,41 @@ protected:
                 addUniqueValue(sessionCache, batch, *search, value);
         }
         deleteAppSecondaries(*prev, wuid, batch);
+        Owned<IConstWUAppValueIterator> appValues = &getApplicationValues();
+        ForEach(*appValues)
+        {
+            IConstWUAppValue& val=appValues->query();
+            addUniqueValue(sessionCache, batch, "Application", val.queryApplication());  // Used to populate droplists of applications
+            VStringBuffer key("@@%s", val.queryApplication());
+            addUniqueValue(sessionCache, batch, key, val.queryName());  // Used to populate droplists of value names for a given application
+            VStringBuffer xpath("Application/%s/%s", val.queryApplication(), val.queryName());
+            addUniqueValue(sessionCache, batch, xpath, val.queryValue());  // Used to get lists of values for a given app and name, and for filtering
+            simpleXMLtoCassandra(sessionCache, batch, searchMappings, p, xpath);
+        }
+        Owned<IPropertyTreeIterator> filesRead = &getFilesReadIterator();
+        ForEach(*filesRead)
+        {
+            addFileSearch(sessionCache, batch, filesRead->query().queryProp("@name"), true, wuid);
+        }
+        Owned<IPropertyTreeIterator> filesWritten = &getFileIterator();
+        ForEach(*filesWritten)
+        {
+            addFileSearch(sessionCache, batch, filesWritten->query().queryProp("@name"), false, wuid);
+        }
+    }
+
+    void updateSecondaries(CIArrayOf<CassandraStatement> &batch)
+    {
+        const char *wuid = queryWuid();
+        const char * const *search;
+        for (search = searchPaths; *search; search++)
+            updateSecondaryTable(*search, wuid, batch);
+        for (search = wildSearchPaths; *search; search++)
+        {
+            const char *value = p->queryProp(*search);
+            if (value && *value)
+                addUniqueValue(sessionCache, batch, *search, value);
+        }
         Owned<IConstWUAppValueIterator> appValues = &getApplicationValues();
         ForEach(*appValues)
         {

@@ -2041,19 +2041,17 @@ bool CHttpRequest::readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffe
     return (fileName.length() > 0);
 }
 
-IFile* CHttpRequest::createUploadFile(const char * netAddress, const char* filePath, StringBuffer& fileName)
+IFile* CHttpRequest::createUploadFile(const char * netAddress, const char* filePath, const char* fileName, StringBuffer& fileNameWithPath)
 {
-    StringBuffer name(fileName), tmpFileName;
-    char* str = (char*) name.reverse().str();
-    char* pStr = (char*) strchr(str, '\\');
-    if (!pStr)
-        pStr = strchr(str, '/');
-    if (pStr)
-    {
-        pStr[0] = 0;
-        fileName.clear().append(str).reverse();
-    }
-    tmpFileName.appendf("%s/%s.part", filePath, fileName.str());
+    StringBuffer tmpFileName(filePath);
+    addPathSepChar(tmpFileName);
+    tmpFileName.append(pathTail(fileName));
+    fileNameWithPath.set(tmpFileName);
+    tmpFileName.append(".part");
+
+    //If no netAddress is specified, create a local file.
+    if (isEmptyString(netAddress))
+        return createIFile(tmpFileName);
 
     RemoteFilename rfn;
     SocketEndpoint ep;
@@ -2125,7 +2123,8 @@ int CHttpRequest::readContentToFiles(const char * netAddress, const char * path,
         }
 
         fileNames.append(fileName);
-        Owned<IFile> file = createUploadFile(netAddress, path, fileName);
+        StringBuffer fileNameWithPath;
+        Owned<IFile> file = createUploadFile(netAddress, path, fileName, fileNameWithPath);
         if (!file)
         {
             UERRLOG("Uploaded file %s cannot be created", fileName.str());
@@ -2169,9 +2168,7 @@ int CHttpRequest::readContentToFiles(const char * netAddress, const char * path,
         if (writeError)
             break;
 
-        StringBuffer fileNameWithPath;
-        fileNameWithPath.appendf("%s/%s", path, fileName.str());
-        file->rename(fileNameWithPath.str());
+        file->rename(fileNameWithPath);
 
         if (!foundAnotherFile)
             break;
