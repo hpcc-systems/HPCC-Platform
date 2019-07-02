@@ -5058,6 +5058,118 @@ bool CWorkUnitFactory::restoreWorkUnit(const char *base, const char *wuid, bool 
     return true;
 }
 
+bool CWorkUnitFactory::importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
+    const char *importToIP, const char *importToPath, bool importQueryAssociatedFile)
+{
+    class CImportWorkUnitHelper : public CSimpleInterface
+    {
+        IPTree* wuTree;
+        StringAttr importToIP, importToPath;
+        StringBuffer importToPathWithIP;
+        void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress, const char *outFileName)
+        {
+            RemoteFilename rfn;
+            rfn.setRemotePath(sourceFileName);
+            SocketEndpoint ep(sourceIPAddress);
+            rfn.setIp(ep);
+
+            OwnedIFile srcFile = createIFile(rfn);
+            if (!srcFile)
+                throw MakeStringException(0, "Cannot open %s from %s.", sourceFileName, sourceIPAddress);
+
+            OwnedIFile dstFile = createIFile(outFileName);
+            if (!dstFile)
+                throw MakeStringException(0, "Cannot open %s.", outFileName);
+
+            copyFile(dstFile, srcFile);
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CImportWorkUnitHelper(IPTree *_wuTree, const char *_importToIP, const char *_importToPath)
+            : wuTree(_wuTree), importToIP(_importToIP), importToPath(_importToPath)
+        {
+            importToPathWithIP.set("//").append(importToIP).append(importToPath);
+        };
+
+        void resetWUProcessLogAttrs(const char* xpath)
+        { 
+            Owned<IPropertyTreeIterator> it = wuTree->getElements(xpath);
+            ForEach (*it)
+            {
+                StringBuffer name, log, newLogAttr;
+                IPropertyTree& proc = it->query();
+                proc.getName(name);
+                proc.getProp("@log", log);
+                if (name.isEmpty() || log.isEmpty())
+                    continue;
+
+                //Match the path and the name of the log files from ZAP report.
+                newLogAttr.set(importToPathWithIP).append(name).append('_').append(getFileNameOnly(log, false));
+                proc.setProp("@log", newLogAttr);
+            }
+        }
+
+        void importQueryAssociatedFiles()
+        {   //Copy Query Associated Files from original locations to the importToIP.
+            //Also update the WU xml.
+            Owned<IPropertyTreeIterator> it = wuTree->getElements("Query/Associated/File");
+            ForEach (*it)
+            {
+                IPropertyTree& file = it->query();
+                const char* sourceIP = file.queryProp("@ip");
+                const char* sourceName = file.queryProp("@filename");
+                const char pathSep = getPathSepChar(sourceName);
+                const char* namePtr = strrchr(sourceName, pathSep);
+                if (!namePtr || isEmptyString(namePtr + 1) || isEmptyString(sourceIP))
+                    continue;
+
+                StringBuffer fileNew;
+                fileNew.set(importToPath).append(namePtr + 1);
+                copyContentFromRemoteFile(sourceName, sourceIP, fileNew);
+
+                file.setProp("@filename", fileNew);
+                file.setProp("@ip", importToIP);
+            }
+        }
+    };
+
+    try
+    {
+        Owned<IPTree> pt = createPTreeFromXMLFile(xmlFile);
+        if (!pt)
+            throw MakeStringException(0, "Cannot read xml from %s.", xmlFile);
+
+        //Add @importDate and @zapName
+        CDateTime dt;
+        dt.setNow();
+        StringBuffer dts;
+        dt.getString(dts);
+        pt->setProp("Debug", "");
+        pt->setProp("Debug/importdate", dts.str());
+        if (!isEmptyString(zapName))
+            pt->setProp("Debug/zapname", zapName);
+    
+        Owned<CImportWorkUnitHelper> helper = new CImportWorkUnitHelper(pt, importToIP, importToPath);
+        helper->resetWUProcessLogAttrs("Process/EclAgent/*");
+        helper->resetWUProcessLogAttrs("Process/Thor/*");
+    
+        if (importQueryAssociatedFile)
+            helper->importQueryAssociatedFiles();
+    
+        if (!_restoreWorkUnit(pt.getClear(), wuid))
+            throw MakeStringException(0, "Failed in _restoreWorkUnit(): %s.", wuid);
+    }
+    catch (IException *e)
+    {
+        VStringBuffer msg("Failed to import workunit %s.", wuid);
+        EXCLOG(e, msg.str());
+        e->Release();
+        return false;
+    }
+    return true;
+}
 
 int CWorkUnitFactory::setTracingLevel(int newLevel)
 {
@@ -6065,6 +6177,11 @@ public:
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated)
     {
         return baseFactory->restoreWorkUnit(base, wuid, restoreAssociated);
+    }
+    virtual bool importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
+        const char *importToIP, const char *importToPath, bool importQueryAssociatedFiles)
+    {
+        return baseFactory->importWorkUnit(wuid, zapName, xmlFile, importToIP, importToPath, importQueryAssociatedFiles);
     }
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser)
     {

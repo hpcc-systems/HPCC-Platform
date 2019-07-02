@@ -1480,6 +1480,8 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociatedFiles) = 0;
+    virtual bool importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
+        const char *importToIP, const char *importToPath, bool importQueryAssociatedFiles) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;

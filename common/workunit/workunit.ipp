@@ -626,6 +626,8 @@ public:
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated);
+    virtual bool importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
+        const char *importToIP, const char *importToPath, bool importQueryAssociatedFiles);
     virtual int setTracingLevel(int newlevel);
     virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;

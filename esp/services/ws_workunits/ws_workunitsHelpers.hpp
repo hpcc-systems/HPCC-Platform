@@ -218,6 +218,10 @@ public:
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload, const char* outFile);
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount);
+    unsigned getZAPWorkunitThorLogInfo(const char* zapName, IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit& info, unsigned long flags, unsigned& helpersCount);
+    unsigned readZAPWUNumberOfSlaves(const char* zapWUFolderPath, const char* zapWUFolderName, Owned<IDirectoryIterator>& thorSlaveFiles);
+    void getZAPWorkunitThorSlaveLog(const char* zapName, const char* thor, const char* logDate, int slaveNum,
+        MemoryBuffer& buf, const char* outFile);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
 
     IPropertyTree* getWorkunitArchive();
@@ -626,6 +630,8 @@ class CWsWuFileHelper
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
+    int unzipZAPFile(const char* zapFileName, const char* password, StringBuffer& outFolder);
+    void importGraphProgress(const char* wuid, const char* zapFileName, const char* progressFileFolder);
 public:
     CWsWuFileHelper(IPropertyTree *_directories) : directories(_directories) {};
 
@@ -638,6 +644,7 @@ public:
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
+    void importWUZAPFile(const char* zapFileName, bool importQueryAssociatedFile, const char* password, const char* espName);
 };
 
 class CWsWuEmailHelper

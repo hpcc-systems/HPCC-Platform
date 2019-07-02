@@ -43,6 +43,9 @@ namespace ws_workunits {
 
 const char * const timerFilterText = "measure[time],source[global],depth[1,]"; // Does not include hthor subgraph timings
 const char* zipFolder = "tempzipfiles" PATHSEPSTR;
+const char* workunitFolder = "workunits" PATHSEPSTR;
+const char* zapReportPrefix = "ZAPReport_";
+const char* zapReportNumberOfThorSlaves = "NumberOfThorSlaves:";
 
 SecAccessFlags chooseWuAccessFlagsByOwnership(const char *user, const char *owner, SecAccessFlags accessOwn, SecAccessFlags accessOthers)
 {
@@ -562,7 +565,12 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                 getHelpFiles(query, (WUFileType) i, helpers, flags, helpersCount);
         }
 
-        getWorkunitThorLogInfo(helpers, info, flags, helpersCount);
+        SCMStringBuffer zapName;
+        cw->getDebugValue("zapname", zapName);
+        if (zapName.length())
+            getZAPWorkunitThorLogInfo(zapName.str(), helpers, info, flags, helpersCount);
+        else
+            getWorkunitThorLogInfo(helpers, info, flags, helpersCount);
 
         if (cw->getWuidVersion() > 0)
         {
@@ -1234,6 +1242,151 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     thorLogList.kill();
 
     return countThorLog;
+}
+
+unsigned WsWuInfo::getZAPWorkunitThorLogInfo(const char* zapName, IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit& info, unsigned long flags, unsigned& helpersCount)
+{
+    StringBuffer zapWUFolderPath, zapWUFolderName;
+    zapWUFolderName.append(strlen(zapName) - 4, zapName);//remove .zip from zapName.
+
+    zapWUFolderPath.set(workunitFolder).append(zapWUFolderName);
+    Owned<IFile> zapWUFolder = createIFile(zapWUFolderPath);
+    Owned<IDirectoryIterator> thorSlaveFiles = zapWUFolder->directoryFiles("*_thorslave.*");
+    bool hasSlaveLog = thorSlaveFiles->first();
+
+    unsigned numberOfSlaves = 0;
+    if (hasSlaveLog) //If no thor slave log in ZAP report, we do not need the numberOfSlaves.
+        numberOfSlaves = readZAPWUNumberOfSlaves(zapWUFolderPath, zapWUFolderName, thorSlaveFiles);
+
+    IArrayOf<IConstThorLogInfo> thorLogList;
+    unsigned countThorLog = 0;
+    BoolHash uniqueProcesses;
+    Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
+    ForEach (*thorInstances)
+    {
+        SCMStringBuffer processName;
+        thorInstances->str(processName);
+        if (processName.length() < 1)
+            continue;
+        bool* found = uniqueProcesses.getValue(processName.str());
+        if (found && *found)
+            continue;
+
+        uniqueProcesses.setValue(processName.str(), true);
+
+        Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
+        ForEach (*thorLogs)
+        {
+            SCMStringBuffer thorLogStr;
+            thorLogs->str(thorLogStr);
+            if (thorLogStr.length() < 1)
+                continue;
+
+            StringBuffer fileType;
+            fileType.set(File_ThorLog);
+            countThorLog++;
+            if (countThorLog > 1)
+                fileType.append(countThorLog);
+
+            helpersCount++;
+            if (flags & WUINFO_IncludeHelpers)
+            {
+                Owned<IEspECLHelpFile> h = createECLHelpFile();
+                h->setName(thorLogStr.str());
+                h->setDescription(processName.str());
+                h->setType(fileType);
+                if (version >= 1.43)
+                {
+                    offset_t fileSize;
+                    if (getFileSize(thorLogStr.str(), NULL, fileSize))
+                        h->setFileSize(fileSize);
+                }
+                helpers.append(*h.getLink());
+            }
+    
+            if ((version < 1.38) || !hasSlaveLog)
+                continue;
+
+            const char* pStr = strstr(thorLogStr.str(), "_thormaster.");
+            if (!pStr)
+            {
+                IWARNLOG("Invalid thorlog entry in workunit xml: %s", thorLogStr.str());
+                continue;
+            }
+
+            StringBuffer logDate(pStr +12);
+            logDate.setLength(10);
+    
+            Owned<IEspThorLogInfo> thorLog = createThorLogInfo();
+            thorLog->setProcessName(processName.str());
+            thorLog->setClusterGroup(processName.str());//Not in ZAP. We may add it if needed.
+            thorLog->setLogDate(logDate);
+            thorLog->setNumberSlaves(numberOfSlaves);
+            thorLogList.append(*thorLog.getLink());
+        }
+    }
+
+    if (thorLogList.length() > 0)
+        info.setThorLogList(thorLogList);
+    thorLogList.kill();
+    return countThorLog;
+}
+
+unsigned WsWuInfo::readZAPWUNumberOfSlaves(const char* zapWUFolderPath, const char* zapWUFolderName, Owned<IDirectoryIterator>& thorSlaveFiles)
+{
+    //Read NumberOfSlaves from ZAP Info file first. ZAP Info file: zapWUFolderName.txt.
+    StringBuffer zapInfoFileName;
+    zapInfoFileName.set(zapWUFolderPath).append(PATHSEPSTR).append(zapWUFolderName).append(".txt");
+    Owned<IFile> zapInfoFile = createIFile(zapInfoFileName);
+    if (!zapInfoFile->exists())
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to find out WU ZAP Info file: %s.", zapInfoFileName.str());
+
+    OwnedIFileIO rIO = zapInfoFile->openShared(IFOread, IFSHfull);
+    if (!rIO)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot open WU ZAP Info file: %s.", zapInfoFileName.str());
+
+    unsigned numberOfSlaves = 0;
+    StringBuffer line;
+    bool eof = false;
+    OwnedIFileIOStream ios = createIOStream(rIO);
+    Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
+    while (!eof)
+    {
+        eof = lineReader->readLine(line.clear());
+        if (!startsWith(line, zapReportNumberOfThorSlaves))
+            continue;
+
+        const char* ptr = line.str() + strlen(zapReportNumberOfThorSlaves);
+        while (ptr && (ptr[0] == ' '))
+            ptr++;
+
+        if (isEmptyString(ptr))
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Empty NumberOfThorSlaves in WU ZAP Info file: %s.", zapInfoFileName.str());
+        numberOfSlaves = atoi(ptr);
+        break;
+    }
+
+    if (numberOfSlaves > 0)
+        return numberOfSlaves;
+
+    //There is no NumberOfSlaves in legacy ZAP report.
+    //Find it from the file names of the slave logs.
+    //Ex. thor400_f_thorslave.73.2019_02_15.log
+    ForEach(*thorSlaveFiles)
+    {
+        const char* pStr = strstr(thorSlaveFiles->query().queryFilename(), "_thorslave.");
+        pStr += 11;
+        const char* slaveNumStrEnd = strchr(pStr, '.');
+        if (!slaveNumStrEnd)
+            continue;
+
+        StringBuffer slaveNumStr;
+        slaveNumStr.append(slaveNumStrEnd - pStr, pStr);
+        unsigned slaveNum = atoi(slaveNumStr);
+        if (slaveNum > numberOfSlaves)
+            numberOfSlaves = slaveNum;
+    }
+    return numberOfSlaves;
 }
 
 bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
@@ -2038,6 +2191,14 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
     const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
     MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
+    SCMStringBuffer zapName;
+    cw->getDebugValue("zapname", zapName);
+    if (zapName.length())
+    {
+        getZAPWorkunitThorSlaveLog(zapName.str(), process, logDate, slaveNum, buf, outFile);
+        return;
+    }
+
     StringBuffer logDir, groupName;
     getConfigurationDirectory(directories, "log", "thor", process, logDir);
     getClusterThorGroupName(groupName, instanceName);
@@ -2049,6 +2210,20 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
 
     getWorkunitThorSlaveLog(nodeGroup, ipAddress, logDate, logDir.str(), slaveNum, buf, outFile, forDownload);
+}
+
+void WsWuInfo::getZAPWorkunitThorSlaveLog(const char* zapName, const char* thor, const char* logDate, int slaveNum,
+    MemoryBuffer& buf, const char* outFile)
+{
+    StringBuffer zapWUFolder;
+    zapWUFolder.append(strlen(zapName) - 4, zapName);//remove .zip from zapName
+
+    VStringBuffer logFileName("%s%s%c%s_thorslave.%u.%s.log", workunitFolder, zapWUFolder.str(), PATHSEPCHAR, thor, slaveNum, logDate);
+    Owned<IFile> logfile = createIFile(logFileName);
+    if (!logfile)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", logFileName.str());
+
+    readWorkunitLog(logfile, buf, outFile);
 }
 
 void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char* outFile)
@@ -2984,6 +3159,7 @@ bool addToQueryString(StringBuffer &queryString, const char *name, const char *v
 int WUSchedule::run()
 {
     PROGLOG("ECLWorkunit WUSchedule Thread started.");
+
     unsigned int waitTimeMillies = 1000*60;
     while(!stopping)
     {
@@ -3534,7 +3710,13 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, cons
     if (!isEmptyString(url))
         sb.append("URL:          ").append(url).append("\r\n");
     if (!isEmptyString(thorIP))
+    {
         sb.append("Thor:         ").append(thorIP).append("\r\n");
+
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cwu->queryClusterName());
+        if (clusterInfo)
+            sb.append(zapReportNumberOfThorSlaves).append(clusterInfo->getNumberOfSlaveLogs()).append("\r\n");
+    }
     outFile->write(sb.length(), sb.str());
 
     //Exceptions/Warnings/Info
@@ -3972,6 +4154,100 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     default:
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
     }
+}
+
+void CWsWuFileHelper::importWUZAPFile(const char* zapFileName, bool importQueryAssociatedFile,
+    const char* password, const char* espName)
+{
+    if (isEmptyString(zapFileName))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty ZAP File name");
+    if (strlen(zapFileName) <= strlen(zapReportPrefix))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid ZAP File name: %s.", zapFileName);
+
+    //Read and check WUID
+    //zapFileName: ZAPReport_W20190723-113119_AUser
+    const char* wuidStart = zapFileName + strlen(zapReportPrefix);
+    const char* afterWUID = strchr(wuidStart, '_');
+    if (isEmptyString(afterWUID))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cannot read WUID from ZAP File name: %s.", zapFileName);
+
+    StringBuffer wuid;
+    wuid.append(afterWUID - wuidStart, wuidStart);
+    if (!looksLikeAWuid(wuid, 'W'))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID %s in ZAP File name %s", wuid.str(), zapFileName);
+
+    //Make sure the wu does not exist
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    factory->setTracingLevel(0);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+    if (cw)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "The workunit %s already exists.", wuid.str());
+
+    //Create a folder and unzip ZAP files to the folder.
+    StringBuffer unzipFolder;
+    if (unzipZAPFile(zapFileName, password, unzipFolder) != 0)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to upzip ZAP File: %s.", zapFileName);
+
+    //Find ESP's IP and working folder
+    StringBuffer localIP, importFilePath, wuxmlFile;
+    IpAddress ipaddr = queryHostIP();
+    ipaddr.getIpText(localIP);
+    getConfigurationDirectory(directories, "run", "esp", espName, importFilePath);
+
+    //importFilePath: absolute path for WU files
+    //wuxmlFile: relative path for WU XML file
+    importFilePath.append(PATHSEPSTR).append(unzipFolder).append(PATHSEPSTR);
+    wuxmlFile.set(unzipFolder).append(PATHSEPSTR);
+    wuxmlFile.append(strlen(zapFileName) - 3, zapFileName).append("xml");
+
+    //Add WU files and update dali
+    if (!factory->importWorkUnit(wuid, zapFileName, wuxmlFile, localIP, importFilePath, importQueryAssociatedFile))
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to import workunit from ZAP File: %s. Check ESP log for details.", zapFileName);
+
+    //Import GraphProgress
+    importGraphProgress(wuid, zapFileName, unzipFolder);
+}
+
+int CWsWuFileHelper::unzipZAPFile(const char* zapFileName, const char* password, StringBuffer& outFolder)
+{
+    //Set/check/clean the outFolder for unzip
+    //Each ZAP WU has its subfolder under the workunitFolder. Use the zapFileName to create the subfolder.
+    outFolder.set(workunitFolder);
+    outFolder.append(strlen(zapFileName) - 4, zapFileName); //remove .zip from the zapFileName
+    Owned<IFile> unzipFolder = createIFile(outFolder);
+    if (!unzipFolder->exists())
+        unzipFolder->createDirectory();
+    else
+        cleanFolder(unzipFolder, false);
+
+    //Unzip ZAP file
+    StringBuffer zipCommand;
+    if (!isEmptyString(password))
+        zipCommand.setf("unzip %s%s -P %s -d %s", zipFolder, zapFileName, password, outFolder.str());
+    else
+        zipCommand.setf("unzip %s%s -d %s", zipFolder, zapFileName, outFolder.str());
+    return (system(zipCommand.str()));
+}
+
+void CWsWuFileHelper::importGraphProgress(const char* wuid, const char* zapFileName, const char* progressFileFolder)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("/GraphProgress", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Failed to connect to Dali for GraphProgress.");
+
+    Owned<IPropertyTree> graphProgressRoot = conn->getRoot();
+    if (graphProgressRoot->queryBranch(wuid))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to import GraphProgress from %s: workunit %s alreasy exists.", zapFileName, wuid);
+
+    //Read the GraphProgress from the .graphprogress file inside the ZAP report.
+    StringBuffer graphProgressFile;
+    graphProgressFile.set(progressFileFolder).append(PATHSEPSTR);
+    graphProgressFile.append(strlen(zapFileName) - 3, zapFileName).append("graphprogress");
+    Owned<IPTree> pt = createPTreeFromXMLFile(graphProgressFile);
+    if (!pt)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cannot read graphprogress xml from %s", zapFileName);
+
+    graphProgressRoot->addPropTree(wuid, pt.getClear());
 }
 
 void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t lenAttachment, StringArray& warnings)

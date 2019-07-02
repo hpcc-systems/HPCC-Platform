@@ -1971,6 +1971,10 @@ IFile* CHttpRequest::createUploadFile(const char * netAddress, const char* fileP
     }
     tmpFileName.appendf("%s/%s.part", filePath, fileName.str());
 
+    //If no netAddress is specified, create a local file.
+    if (isEmptyString(netAddress))
+        return createIFile(tmpFileName);
+
     RemoteFilename rfn;
     SocketEndpoint ep;
     ep.set(netAddress);
