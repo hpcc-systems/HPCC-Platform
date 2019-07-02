@@ -502,7 +502,8 @@ ESPStruct WUFileOption
     string Name; //CPP, ThorLog, and EclAgentLog: required; XML: optional
     string IPAddress; //CPP/XML: required; ThorSlaveLog: required for legacy WU
     string Description; //CPP/XML: required
-    string Process; //EclAgentLog and ThorSlaveLog: optional
+    string Process; //EclAgentLog and ThorSlaveLog: optional -- process ID
+    [min_ver("1.78")] string ProcessName; //EclAgentLog and ThorLog: optional
     string LogDate; //ThorSlaveLog: required
     string ClusterGroup; //ThorSlaveLog: not required for legacy WU
     string PlainText; //XML: optional

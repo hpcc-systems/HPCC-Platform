@@ -392,7 +392,8 @@ ESPrequest WULogFileRequest
     [min_ver("1.32")] string Description;
     [min_ver("1.36")] string QuerySet;
     [min_ver("1.36")] string Query;
-    [min_ver("1.38")] string Process;
+    [min_ver("1.38")] string Process; //process ID
+    [min_ver("1.78")] string ProcessName;
     [min_ver("1.38")] string ClusterGroup;
     [min_ver("1.38")] string LogDate;
     [min_ver("1.38")] int SlaveNumber(1);

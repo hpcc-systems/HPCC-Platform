@@ -278,6 +278,10 @@ public:
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
+    virtual bool usingDedicatedLogFiles(const char* processType, const char* processName, const char* logSpec) const;
+    virtual StringBuffer &getSlaveLogFileName(const char *thorProcess, int slaveNum, const char *ipAddress, StringBuffer &logFileName, bool withPath) const;
+    virtual void getWUProcessLogInfo(const char *processType, const char *processName, IArrayOf<IConstWUProcessLogInfo> &processLogs) const;
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
 
     virtual const char *queryJobName() const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
@@ -353,7 +357,7 @@ public:
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();
-    void addProcess(const char *type, const char *instance, unsigned pid, const char *log);
+    void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
     void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);
@@ -624,6 +628,8 @@ public:
     // interface IWorkUnitFactory - some are left for derived classes
 
     virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
+    virtual void importWorkUnit(const char *zapReportFileName, const char *zapReportFilePath, const char *zapReportPassword,
+        const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser);
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);

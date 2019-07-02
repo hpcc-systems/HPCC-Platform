@@ -59,6 +59,7 @@
 #endif
 
 #define ESP_WORKUNIT_DIR "workunits/"
+static constexpr const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
 #define WU_SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
@@ -427,6 +428,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         tmpdir->createDirectory();
 
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
+
+    getConfigurationDirectory(directories, "data", "esp", process, dataDirectory);
+    wuFactory.setown(getWorkUnitFactory());
 
     m_sched.start();
     filesInUse.subscribe();
@@ -3053,18 +3057,17 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorLog(req.getName(), mb, nullptr);
+                winfo.getWorkunitThorLog(req.getName(), req.getProcessName(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                winfo.getWorkunitThorSlaveLog(directories, req.getProcess(), req.getClusterGroup(), req.getIPAddress(),
-                    req.getLogDate(), req.getSlaveNumber(), mb, nullptr, false);
+                winfo.getWorkunitThorSlaveLog(req.getProcess(), req.getIPAddress(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb, nullptr);
+                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), req.getProcessName(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
@@ -4469,6 +4472,49 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetNotFound(context, request, response, service);
+}
+
+int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    StringArray fileNames, files;
+    StringBuffer source;
+    Owned<IMultiException> me = MakeMultiException(source.setf("WsWorkunits::%s()", method).str());
+    try
+    {
+        if (strieq(method, "ImportWUZAPFile"))
+        {
+            SecAccessFlags accessOwn, accessOthers;
+            getUserWuAccessFlags(ctx, accessOwn, accessOthers, false);
+            if ((accessOwn != SecAccess_Full) || (accessOthers != SecAccess_Full))
+                throw MakeStringException(-1, "Permission denied.");
+    
+            StringBuffer password;
+            request->getParameter("Password", password);
+
+            request->readContentToFiles(nullptr, zipFolder, fileNames);
+            unsigned count = fileNames.ordinality();
+            if (count == 0)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to read upload content.");
+            //For now, we only support importing 1 ZAP report per ImportWUZAPFile request for a better response time.
+            //Some ZAP report could be very big. It may take a log time to import.
+            if (count > 1)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Only one WU ZAP report is allowed.");
+
+            wswService->queryWUFactory()->importWorkUnit(fileNames.item(0), zipFolder, password,
+                wswService->getDataDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+        }
+        else
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);
+    }
+    catch (IException* e)
+    {
+        me->append(*e);
+    }
+    catch (...)
+    {
+        me->append(*MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "Unknown Exception"));
+    }
+    return onFinishUpload(ctx, request, response, serv, method, fileNames, files, me);
 }
 
 bool isDeploymentTypeCompressed(const char *type)

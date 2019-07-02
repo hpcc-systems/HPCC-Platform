@@ -361,7 +361,7 @@ public:
 
     bool readContentToBuffer(MemoryBuffer& fileContent, __int64& bytesNotRead);
     bool readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffer& fileName, MemoryBuffer& contentBuffer, __int64& bytesNotRead);
-    IFile* createUploadFile(const char *netAddress, const char* filePath, StringBuffer& fileName);
+    IFile* createUploadFile(const char *netAddress, const char* filePath, const char* fileName, StringBuffer& fileNameWithPath);
     virtual int readContentToFiles(const char * netAddress, const char * path, StringArray& fileNames);
     virtual void readUploadFileContent(StringArray& fileNames, StringArray& files);
 };
