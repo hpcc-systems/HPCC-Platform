@@ -58,6 +58,7 @@
 #endif
 
 #define ESP_WORKUNIT_DIR "workunits/"
+const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
@@ -359,6 +360,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     setPasswordsFromSDS();
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
+    espName.set(process);
 
     checkUpdateQuerysetLibraries();
     refreshValidClusters();
@@ -4440,6 +4442,46 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetNotFound(context, request, response, service);
+}
+
+int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
+{
+    StringArray fileNames, files;
+    StringBuffer source;
+    Owned<IMultiException> me = MakeMultiException(source.setf("WsWorkunits::%s()", method).str());
+    try
+    {
+        if (strieq(method, "ImportWUZAPFile"))
+        {
+            SecAccessFlags accessOwn, accessOthers;
+            getUserWuAccessFlags(ctx, accessOwn, accessOthers, false);
+            if ((accessOwn != SecAccess_Full) || (accessOthers != SecAccess_Full))
+                throw MakeStringException(-1, "Permission denied.");
+    
+            StringBuffer password, importQueryAssociatedFiles;
+            request->getParameter("importQueryAssociatedFiles", importQueryAssociatedFiles);
+            request->getParameter("Password", password);
+
+            request->readContentToFiles(nullptr, zipFolder, fileNames);
+            if (!fileNames.ordinality())
+                throw MakeStringException(-1, "Failed to read upload content.");
+
+            Owned<IWorkUnit> wu = importWorkunitFromZAPFile(fileNames.item(0), zipFolder, password, "esp", espName, "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+            if (!wu)
+                throw MakeStringException(-1, "Failed to import WU ZAP report.");
+        }
+        else
+            throw MakeStringException(-1, "WsWorkunits::%s does not support the upload_ option.", method);
+    }
+    catch (IException* e)
+    {
+        me->append(*e);
+    }
+    catch (...)
+    {
+        me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
+    }
+    return onFinishUpload(ctx, request, response, serv, method, fileNames, files, me);
 }
 
 bool isDeploymentTypeCompressed(const char *type)

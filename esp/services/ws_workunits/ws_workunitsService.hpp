@@ -355,6 +355,7 @@ private:
     void readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
         bool all, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList);
 
+    StringAttr espName;
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringBuffer envLocalAddress;
@@ -398,6 +399,7 @@ public:
 
         xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
         thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
+        espName.set(process);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -416,6 +418,7 @@ public:
 
     int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
     int onGet(CHttpRequest* request, CHttpResponse* response);
+    int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method);
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {
@@ -426,6 +429,7 @@ public:
     }
 
 private:
+    StringAttr espName;
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
     Owned<IPropertyTree> directories;
