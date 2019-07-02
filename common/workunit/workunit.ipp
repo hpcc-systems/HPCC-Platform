@@ -278,6 +278,7 @@ public:
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
 
     virtual const char *queryJobName() const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
@@ -624,6 +625,8 @@ public:
     // interface IWorkUnitFactory - some are left for derived classes
 
     virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
+    virtual void importWorkUnit(const char *zapReportFileName, const char *zapReportPassword,
+        const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser);
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);

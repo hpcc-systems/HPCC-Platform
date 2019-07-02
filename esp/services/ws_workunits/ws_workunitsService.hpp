@@ -203,6 +203,8 @@ public:
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
+    IWorkUnitFactory *queryWUFactory() { return wuFactory; };
+    const char *getDataDirectory() const { return dataDirectory.str(); };
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest &req, IEspWULightWeightQueryResponse &resp);
@@ -374,6 +376,8 @@ private:
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
+    Owned<IWorkUnitFactory> wuFactory;
+    StringBuffer dataDirectory;
 
 public:
     QueryFilesInUse filesInUse;
@@ -417,6 +421,7 @@ public:
 
     int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
     int onGet(CHttpRequest* request, CHttpResponse* response);
+    int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method);
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {

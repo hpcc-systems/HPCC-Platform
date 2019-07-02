@@ -1345,6 +1345,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultBool(const char *name, unsigned sequence, bool val) = 0;
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree = nullptr) = 0;
 };
 
 
@@ -1446,6 +1447,8 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 interface IWorkUnitFactory : extends IPluggableFactory
 {
     virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual void importWorkUnit(const char *zapReportFileName, const char *zapReportPassword,
+        const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser) = 0;
     virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool deleteWorkUnitEx(const char *wuid, bool throwException, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
