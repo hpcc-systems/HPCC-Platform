@@ -6370,13 +6370,6 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         tempFileName.append(".").append(dfuCreateUniqId++); // avoid potential clash if >1 creating file. One will succeed at publish time.
         tempFileName.append(DFUFileCreate_FileNamePostfix);
 
-        //create FileId
-        StringBuffer fileId;
-        fileId.set(groupName).append(DFUFileIdSeparator).append(clusterName).append(DFUFileIdSeparator).append(tempFileName);
-        if (req.getCompressed())
-            fileId.append(DFUFileIdSeparator).append("true");
-        resp.setFileId(fileId.str());
-
         if (requestId.isEmpty())
             requestId.appendf("Create %s on %s", normalizedFileName.str(), clusterName);
 
@@ -6386,26 +6379,36 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
             fileDesc->queryProperties().setProp("@owner", userId);
         fileDesc->queryProperties().setProp("ECL", recordDefinition);
 
+        const char *fileType = nullptr;
         CDFUFileType kind = req.getType();
         switch (kind)
         {
             case CDFUFileType_Flat:
-                fileDesc->queryProperties().setProp("@kind", "flat");
+                fileType = "flat";
                 break;
             case CDFUFileType_Csv:
-                fileDesc->queryProperties().setProp("@kind", "csv");
+                fileType = "csv";
                 break;
             case CDFUFileType_Xml:
-                fileDesc->queryProperties().setProp("@kind", "xml");
+                fileType = "xml";
                 break;
             case CDFUFileType_Json:
-                fileDesc->queryProperties().setProp("@kind", "json");
+                fileType = "json";
                 break;
             case CDFUFileType_Index:
-                fileDesc->queryProperties().setProp("@kind", "key");
+                fileType = "key";
             default:
                 throw makeStringExceptionV(ECLWATCH_MISSING_FILETYPE, "DFUFileCreateV2: File type not provided");
         }
+        fileDesc->queryProperties().setProp("@kind", fileType);
+
+        //create FileId
+        StringBuffer fileId;
+        fileId.set(groupName).append(DFUFileIdSeparator).append(clusterName).append(DFUFileIdSeparator).append(tempFileName);
+        fileId.append(DFUFileIdSeparator).append(boolToStr(req.getCompressed()));
+        fileId.append(DFUFileIdSeparator).append(fileType);
+        resp.setFileId(fileId.str());
+
 
         MemoryBuffer layoutBin;
         exportRecordDefinitionBinaryType(recordDefinition, layoutBin);
@@ -6468,9 +6471,6 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         const char *groupName = fileIdItems.item(0);
         const char *clusterName = fileIdItems.item(1);
         const char *tempFileName = fileIdItems.item(2);
-        bool compressed = false;
-        if (fileIdItems.ordinality()>3)
-            compressed = strToBool(fileIdItems.item(3));
         if (isEmptyString(groupName))
              throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFilePublish: Invalid FileId: empty groupName.");
         if (isEmptyString(clusterName))
@@ -6507,8 +6507,14 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
                 throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed to find group %s.", groupName);
 
             fileDesc.setown(createFileDescriptor(normalizeTempFileName, clusterTypeEx, groupName, group));
-            if (compressed)
-                fileDesc->queryProperties().setPropBool("@blockCompressed", true);
+            if (fileIdItems.ordinality()>3) // compressed
+            {
+                bool compressed = strToBool(fileIdItems.item(3));
+                if (compressed)
+                    fileDesc->queryProperties().setPropBool("@blockCompressed", true);
+                if (fileIdItems.ordinality()>4) // fileType
+                    fileDesc->queryProperties().setProp("@kind", fileIdItems.item(4));
+            }
         }
 
         StringBuffer newFileName(normalizeTempFileName);
