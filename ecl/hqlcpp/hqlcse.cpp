@@ -1145,9 +1145,28 @@ IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit, bo
 
     //Transform conjunctions so they are (a AND (b AND (c AND d))) not (((a AND b) AND c) AND d)
     //so that alias scope can be introduced in a better place.
+    bool modified = false;
     {
         ConjunctionTransformer tr;
-        transformed.setown(tr.transformRoot(transformed));
+        OwnedHqlExpr result = tr.transformRoot(transformed);
+        if (result != transformed)
+            modified = true;
+        transformed.swap(result);
+    }
+
+    if (modified)
+    {
+        CseSpotter spotter(spotCseInIfDatasetConditions);
+        spotter.analyse(transformed, 0);
+        if (spotter.foundCandidates())
+        {
+            if (limit)
+                spotter.stopTransformation(limit);
+            transformed.setown(spotter.transformRoot(transformed));
+
+            if (spotter.createdNewAliases())
+                addedAliases = true;
+        }
     }
 
     if (!addedAliases)
