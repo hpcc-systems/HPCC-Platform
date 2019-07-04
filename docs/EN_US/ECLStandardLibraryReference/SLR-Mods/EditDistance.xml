@@ -10,15 +10,15 @@
       <primary>Str.EditDistance</primary>
     </indexterm><indexterm>
       <primary>EditDistance</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>string1, string2, radius</emphasis>
+  <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.EditDistance<indexterm>
       <primary>STD.Uni.EditDistance</primary>
     </indexterm><indexterm>
       <primary>Uni.EditDistance</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2, locale</emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>string1, string2, locale,
+  radius</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -48,6 +48,13 @@
         </row>
 
         <row>
+          <entry><emphasis>radius</emphasis></entry>
+
+          <entry>Optional. The maximum acceptable edit distance, or 0 for no
+          limit. Defaults to 0.</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>EditDistance returns an UNSIGNED4 value.</entry>
@@ -59,8 +66,13 @@
   <para>The <emphasis role="bold">EditDistance </emphasis>function returns a
   standard Levenshtein distance algorithm score for the edit distance between
   <emphasis>string1</emphasis> and <emphasis>string2</emphasis>. This score
-  i\reflects the minimum number of operations needed to transform
+  reflects the minimum number of operations needed to transform
   <emphasis>string1</emphasis> into <emphasis>string2</emphasis>.</para>
+
+  <para>If the edit distance is larger than the <emphasis>radius</emphasis> it
+  will return an arbitrary value &gt; <emphasis>radius</emphasis>, but it may
+  not be accurate. This allows the function to terminate faster if the strings
+  are significantly different.</para>
 
   <para>Example:</para>
 
@@ -68,5 +80,7 @@
 STD.Str.EditDistance('CAT','BAT');  //returns 1
 STD.Str.EditDistance('BAT','BAIT'); //returns 1
 STD.Str.EditDistance('CAT','BAIT'); //returns 2
+STD.Str.EditDistance('CARTMAN','BATMAN');   //returns 2
+STD.Str.EditDistance('CARTMAN','BATMAN',1); //returns arbitrary number &gt; 1
 </programlisting>
 </sect1>
