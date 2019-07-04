@@ -91,14 +91,14 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
+    if(fields & MSGFIELD_msgID)
+        out.appendf("id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         out.append("aud=").append(LogMsgAudienceToVarString(category.queryAudience())).append(' ');
     if(fields & MSGFIELD_class)
         out.append("cls=").append(LogMsgClassToVarString(category.queryClass())).append(' ');
     if(fields & MSGFIELD_detail)
         out.appendf("det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        out.appendf("id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -173,6 +173,8 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     out.append("<msg ");
+    if(fields & MSGFIELD_msgID)
+        out.append("MessageID=\"").append(sysInfo.queryMsgID()).append("\" ");
     if(fields & MSGFIELD_audience)
         out.append("Audience=\"").append(LogMsgAudienceToVarString(category.queryAudience())).append("\" ");
     if(fields & MSGFIELD_class)
@@ -182,8 +184,6 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allCategory) out.append("\n     ");
 #endif
-    if(fields & MSGFIELD_msgID)
-        out.append("MessageID=\"").append(sysInfo.queryMsgID()).append("\" ");
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -255,6 +255,8 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 
 StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        out.appendf("%8X ", sysInfo.queryMsgID());
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     if(fields & MSGFIELD_audience)
         out.append(LogMsgAudienceToFixString(category.queryAudience()));
@@ -262,8 +264,6 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         out.append(LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         out.appendf("%10d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        out.appendf("%8X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -338,14 +338,14 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 
 StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
 {
+    if(fields & MSGFIELD_msgID)
+        out.append("   MsgID ");
     if(fields & MSGFIELD_audience)
         out.append("Audience ");
     if(fields & MSGFIELD_class)
         out.append("Class    ");
     if(fields & MSGFIELD_detail)
         out.append("    Detail ");
-    if(fields & MSGFIELD_msgID)
-        out.append("   MsgID ");
     if(fields & MSGFIELD_date)
         out.append("      Date ");
     if(fields & (MSGFIELD_microTime | MSGFIELD_milliTime | MSGFIELD_time))
@@ -370,14 +370,14 @@ StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
 
 void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
         fprintf(handle, "cls=%s", LogMsgClassToVarString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         fprintf(handle, "det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -448,6 +448,8 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 {
     fprintf(handle, "<msg ");
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fprintf(handle, "Audience=\"%s\" ", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
@@ -457,8 +459,6 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allCategory) fprintf(handle, "\n     ");
 #endif
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -530,14 +530,14 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 
 void LogMsg::fprintTable(FILE * handle, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "%08X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fputs(LogMsgAudienceToFixString(category.queryAudience()), handle);
     if(fields & MSGFIELD_class)
         fputs(LogMsgClassToFixString(category.queryClass()), handle);
     if(fields & MSGFIELD_detail)
         fprintf(handle, "%10d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "%08X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -607,14 +607,14 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
 
 void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
 {
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "   MsgID ");
     if(fields & MSGFIELD_audience)
         fprintf(handle, "Audience ");
     if(fields & MSGFIELD_class)
         fprintf(handle, "Class    ");
     if(fields & MSGFIELD_detail)
         fprintf(handle, "    Detail ");
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "   MsgID ");
     if(fields & MSGFIELD_date)
         fprintf(handle, "      Date ");
     if(fields & MSGFIELD_time)
