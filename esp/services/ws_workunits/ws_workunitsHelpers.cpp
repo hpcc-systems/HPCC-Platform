@@ -2060,8 +2060,6 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     VStringBuffer startwuid("Started wuid=%s", wuid.str());
     VStringBuffer endwuid("Finished wuid=%s", wuid.str());
 
-    bool outputThisLine = false;
-    unsigned processID = 0;
     StringBuffer line;
 
     Owned<IFileIOStream> outIOS;
@@ -2072,47 +2070,59 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     }
 
     Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
-    while (!lineReader->readLine(line.clear()))
+
+    bool eof = lineReader->readLine(line.clear());
+    if (eof)
+        return;
+
+    // Process header for log file format
+    unsigned logfields = getMessageFieldsFromHeader(line);
+    if (logfields==0)   // No header line, so must be in legacy format
+        logfields = MSGFIELD_LEGACY;
+    else
+        eof = lineReader->readLine(line.clear());
+
+    const unsigned positionProcessId = getPositionOfField(logfields, MSGFIELD_process);
+    bool outputThisLine = false;
+    unsigned processID = 0;
+    bool foundEndWUID = false; 
+    while (!eof)
     {
+        if (line.length() > positionProcessId+1)
+        {
+            const char * lineStartingProcessId = line.str()+positionProcessId;
+            if (outputThisLine)
+            {
+                //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
+                //So, we should check whether the slave is restarting or not.
+                unsigned pID = 0;
+                foundEndWUID = parseLogLine(lineStartingProcessId, endwuid, pID);
+                if ((pID > 0) && (pID != processID))
+                    break;
+            }
+            else if (strstr(lineStartingProcessId, startwuid))
+            {
+                outputThisLine = true;
+                foundEndWUID = false;
+                if (processID == 0)
+                    parseLogLine(lineStartingProcessId, nullptr, processID);
+            }
+        }
         if (outputThisLine)
         {
-            //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
-            //So, we should check whether the slave is restarting or not.
-            unsigned pID = 0;
-            bool foundEndWUID = parseLogLine(line, endwuid, pID);
-            if ((pID > 0) && (pID != processID))
-                break;
-
             outputALine(line.length(), line.str(), buf, outIOS);
             if (foundEndWUID)
                 outputThisLine = false;
         }
-        else if (strstr(line, startwuid))
-        {
-            outputThisLine = true;
-            outputALine(line.length(), line.str(), buf, outIOS);
-            if (processID == 0)
-                parseLogLine(line, nullptr, processID);
-        }
+        eof = lineReader->readLine(line.clear());
     }
 }
 
-//the expected format for the log line is: 'LineID Date Time ProcessID ThreadID ...'.
 bool WsWuInfo::parseLogLine(const char* line, const char* endWUID, unsigned& processID)
 {
-    //Skip lineID, date and time
     const char* bptr = line;
-    for (unsigned i = 0; i < 3; i++)
-    {
-        bptr = strchr(bptr, ' ');
-        if (!bptr)
-            return false;
-        bptr++;
-    }
-
-    //Read ProcessID
     const char* eptr = bptr + 1;
-    while (*eptr && isdigit(*eptr))
+    while (*eptr && isdigit(*eptr))     //Read ProcessID
         eptr++;
 
     if (*eptr != ' ')

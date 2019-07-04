@@ -86,19 +86,115 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 #endif
 }
 
+class LoggingFieldColumns
+{
+    const EnumMapping MsgFieldMap[15] =
+    {
+        { MSGFIELD_msgID,     "MsgID    " },
+        { MSGFIELD_audience,  "Audience " },
+        { MSGFIELD_class,     "Class    " },
+        { MSGFIELD_detail,    "Detail     " },
+        { MSGFIELD_date,      "Date       " },
+        { MSGFIELD_microTime, "Time(micro)     " },
+        { MSGFIELD_milliTime, "Time(milli)  " },
+        { MSGFIELD_time,      "Time        " },
+        { MSGFIELD_process,   "PID   " },
+        { MSGFIELD_thread,    "TID   " },
+        { MSGFIELD_session,   "SessionID           " },
+        { MSGFIELD_node,      "Node                " },
+        { MSGFIELD_job,       "JobID  " },
+        { MSGFIELD_user,      "UserID  " },
+        { MSGFIELD_component, "Compo " }
+    };
+    const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
+public:
+    unsigned getMaxHeaderSize()
+    {
+        // Note: return length is slightly longer than necessary as only one time field is valid
+        // but the length of all time fields are added
+        unsigned size = 0;
+        for (unsigned i=0; i<sizeMsgFieldMap; ++i)
+            size += strlen(MsgFieldMap[i].str);
+        return size+2; // 2 extra characters for \r\n
+    }
+    unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
+    {
+        unsigned pos = 0;
+        for (unsigned i=0; i<sizeMsgFieldMap; ++i)
+        {
+            if (MsgFieldMap[i].val==MSGFIELD_time && (logfields & (MSGFIELD_microTime|MSGFIELD_milliTime)) )
+                continue;
+            if (MsgFieldMap[i].val & positionoffield)
+                return pos;
+            if (MsgFieldMap[i].val & logfields)
+                pos += strlen(MsgFieldMap[i].str);
+        }
+        return 0;
+    }
+    unsigned extractMessageFieldsFromHeader(const char *line, bool hashPrefixed)
+    {
+        unsigned fieldHeader = 0;
+
+        if (line && *line=='#')
+        {
+            ++line;
+            const unsigned sizeFieldMap = arraysize(MsgFieldMap);
+            for (unsigned i=0; i<sizeFieldMap; ++i)
+            {
+                const char * linep = line;
+                const char * fieldp = MsgFieldMap[i].str;
+                while( *fieldp && *linep==*fieldp)
+                {
+                    ++linep;
+                    ++fieldp;
+                }
+                if (*fieldp==0) // At the end of the field, so whole field matched
+                {
+                    fieldHeader |= MsgFieldMap[i].val;
+                    if (*linep==0 || *linep=='\n')
+                        break;
+                    line = linep;
+                }
+            }
+        }
+        if (fieldHeader & (MSGFIELD_microTime | MSGFIELD_milliTime))
+            fieldHeader |= MSGFIELD_time;
+        return fieldHeader;
+    }
+    StringBuffer & generateHeaderRow(StringBuffer & out, unsigned fields, bool prefixHash)
+    {
+        if (prefixHash)
+            out.append('#');
+        for (unsigned i=0; i<sizeMsgFieldMap; ++i)
+            if (fields & MsgFieldMap[i].val)
+            {
+                if (MsgFieldMap[i].val==MSGFIELD_time && (fields & (MSGFIELD_microTime|MSGFIELD_milliTime)) )
+                    continue;
+                out.append(MsgFieldMap[i].str);
+            }
+        return out;
+    }
+
+} loggingFieldColumns;
+
+unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
+{
+    return loggingFieldColumns.getPositionOfField(logfields, positionoffield);
+}
+
 // LogMsg
 
 StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
+    if(fields & MSGFIELD_msgID)
+        out.appendf("id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         out.append("aud=").append(LogMsgAudienceToVarString(category.queryAudience())).append(' ');
     if(fields & MSGFIELD_class)
         out.append("cls=").append(LogMsgClassToVarString(category.queryClass())).append(' ');
     if(fields & MSGFIELD_detail)
         out.appendf("det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        out.appendf("id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -173,6 +269,8 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     out.append("<msg ");
+    if(fields & MSGFIELD_msgID)
+        out.append("MessageID=\"").append(sysInfo.queryMsgID()).append("\" ");
     if(fields & MSGFIELD_audience)
         out.append("Audience=\"").append(LogMsgAudienceToVarString(category.queryAudience())).append("\" ");
     if(fields & MSGFIELD_class)
@@ -182,8 +280,6 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allCategory) out.append("\n     ");
 #endif
-    if(fields & MSGFIELD_msgID)
-        out.append("MessageID=\"").append(sysInfo.queryMsgID()).append("\" ");
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -255,6 +351,8 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 
 StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        out.appendf("%8X ", sysInfo.queryMsgID());
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     if(fields & MSGFIELD_audience)
         out.append(LogMsgAudienceToFixString(category.queryAudience()));
@@ -262,8 +360,6 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         out.append(LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         out.appendf("%10d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        out.appendf("%8X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -338,46 +434,20 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 
 StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
 {
-    if(fields & MSGFIELD_audience)
-        out.append("Audience ");
-    if(fields & MSGFIELD_class)
-        out.append("Class    ");
-    if(fields & MSGFIELD_detail)
-        out.append("    Detail ");
-    if(fields & MSGFIELD_msgID)
-        out.append("   MsgID ");
-    if(fields & MSGFIELD_date)
-        out.append("      Date ");
-    if(fields & (MSGFIELD_microTime | MSGFIELD_milliTime | MSGFIELD_time))
-        out.append("    Time ");
-    if(fields & MSGFIELD_process)
-        out.append("  PID ");
-    if(fields & MSGFIELD_thread)
-        out.append("  TID ");
-    if(fields & MSGFIELD_session)
-        out.append("      SessionID      ");
-    if(fields & MSGFIELD_node)
-        out.append("               Node ");
-    if(fields & MSGFIELD_job)
-        out.append("  JobID ");
-    if(fields & MSGFIELD_user)
-        out.append(" UserID ");
-    if(fields & MSGFIELD_component)
-        out.append(" Compo ");
-    out.append("\n\n");
+    loggingFieldColumns.generateHeaderRow(out, fields, false).append("\n\n");
     return out;
 }
 
 void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
         fprintf(handle, "cls=%s", LogMsgClassToVarString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         fprintf(handle, "det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -448,6 +518,8 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 {
     fprintf(handle, "<msg ");
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fprintf(handle, "Audience=\"%s\" ", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
@@ -457,8 +529,6 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allCategory) fprintf(handle, "\n     ");
 #endif
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -530,14 +600,14 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 
 void LogMsg::fprintTable(FILE * handle, unsigned fields) const
 {
+    if(fields & MSGFIELD_msgID)
+        fprintf(handle, "%08X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
         fputs(LogMsgAudienceToFixString(category.queryAudience()), handle);
     if(fields & MSGFIELD_class)
         fputs(LogMsgClassToFixString(category.queryClass()), handle);
     if(fields & MSGFIELD_detail)
         fprintf(handle, "%10d ", category.queryDetail());
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "%08X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -607,33 +677,38 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
 
 void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
 {
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "Audience ");
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "Class    ");
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "    Detail ");
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "   MsgID ");
-    if(fields & MSGFIELD_date)
-        fprintf(handle, "      Date ");
-    if(fields & MSGFIELD_time)
-        fprintf(handle, "    Time ");
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "  PID ");
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "  TID ");
-    if(fields & MSGFIELD_session)
-        fprintf(handle, "      SessionID      ");
-    if(fields & MSGFIELD_node)
-        fprintf(handle, "               Node ");
-    if(fields & MSGFIELD_job)
-        fprintf(handle, "  JobID ");
-    if(fields & MSGFIELD_user)
-        fprintf(handle, " UserID ");
-    if(fields & MSGFIELD_component)
-        fprintf(handle, " Compo ");
-    fprintf(handle, "\n\n");
+    StringBuffer  header;
+    loggingFieldColumns.generateHeaderRow(header, fields, true).append("\n");
+    fputs(header.str(), handle);
+}
+
+unsigned getMessageFieldsFromHeader(FILE *handle)
+{
+    unsigned currentFieldHeader = 0;
+    try
+    {
+        MemoryBuffer mb(loggingFieldColumns.getMaxHeaderSize());
+        fpos_t pos;
+        fgetpos (handle,&pos);
+        rewind (handle);
+
+        mb.reserve(loggingFieldColumns.getMaxHeaderSize());
+        const char * line = fgets (static_cast<char *>(mb.bufferBase()),  loggingFieldColumns.getMaxHeaderSize(), handle );
+        if (line && *line)
+            currentFieldHeader = loggingFieldColumns.extractMessageFieldsFromHeader(line, true);
+        fsetpos (handle, &pos);
+    }
+    catch (...)
+    {
+        currentFieldHeader = 0;
+    }
+    return currentFieldHeader;
+}
+
+unsigned getMessageFieldsFromHeader(const char * line)
+{
+    return loggingFieldColumns.extractMessageFieldsFromHeader(line, true);
+
 }
 
 // Implementations of ILogMsgFilter
@@ -971,7 +1046,7 @@ void RollingFileLogMsgHandler::addToPTree(IPropertyTree * tree) const
 
 #define ROLLOVER_PERIOD 86400
 
-void RollingFileLogMsgHandler::checkRollover() const
+void RollingFileLogMsgHandler::checkRollover()
 {
     time_t tNow;
     time(&tNow);
@@ -984,7 +1059,7 @@ void RollingFileLogMsgHandler::checkRollover() const
     }
 }
 
-void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName) const
+void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName)
 {
     CriticalBlock block(crit);
     closeAndDeleteEmpty(filename,handle);
@@ -999,27 +1074,46 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName) con
         filename.append(fileextn.get());
     }
     recursiveCreateDirectoryForFile(filename.str());
-    handle = fopen(filename.str(), append ? "a" : "w");
-    if (handle && alias && alias.length())
+    handle = fopen(filename.str(), append ? "a+" : "w");
+    printHeader = true;
+    currentLogFields = 0;
+    if (handle)
     {
-        fclose(handle);
-        handle = 0;
-        remove(alias);
-        try
+        if (append)
         {
-            createHardLink(alias, filename.str());
+            fseek(handle, 0, SEEK_END);
+            long pos = ftell(handle);
+            if (pos > 0 || (pos==-1 && errno==EOVERFLOW)) // If current file is not empty
+            {
+                printHeader = false;
+                unsigned logfields = getMessageFieldsFromHeader(handle);
+                if (logfields == 0) // No header file so write log lines legacy field format
+                    currentLogFields = MSGFIELD_LEGACY;
+                else if (logfields != messageFields) // Different log format from format in current log file
+                    currentLogFields = logfields;
+            }
         }
-        catch (IException *E)
+        if (alias && alias.length())
         {
-            recursiveCreateDirectoryForFile(filename.str());
-            handle = fopen(filename.str(), append ? "a" : "w");
-            EXCLOG(E);  // Log the fact that we could not create the alias - probably it is locked (tail a bit unfortunate on windows).
-            E->Release();
-        }
-        if (!handle)
-        {
-            recursiveCreateDirectoryForFile(filename.str());
-            handle = fopen(filename.str(), append ? "a" : "w");
+            fclose(handle);
+            handle = 0;
+            remove(alias);
+            try
+            {
+                createHardLink(alias, filename.str());
+            }
+            catch (IException *E)
+            {
+                recursiveCreateDirectoryForFile(filename.str());
+                handle = fopen(filename.str(), append ? "a" : "w");
+                EXCLOG(E);  // Log the fact that we could not create the alias - probably it is locked (tail a bit unfortunate on windows).
+                E->Release();
+            }
+            if (!handle)
+            {
+                recursiveCreateDirectoryForFile(filename.str());
+                handle = fopen(filename.str(), append ? "a" : "w");
+            }
         }
     }
     if(!handle) 
@@ -1054,7 +1148,7 @@ BinLogMsgHandler::~BinLogMsgHandler()
     file.clear();
 }
 
-void BinLogMsgHandler::handleMessage(const LogMsg & msg) const
+void BinLogMsgHandler::handleMessage(const LogMsg & msg)
 {
     CriticalBlock block(crit);
     mbuff.clear();
@@ -2501,7 +2595,7 @@ int CSysLogEventLogger::writeDataLog(size32_t datasize, byte const * data)
 
 #endif
 
-void SysLogMsgHandler::handleMessage(const LogMsg & msg) const
+void SysLogMsgHandler::handleMessage(const LogMsg & msg)
 {
     AuditType type = categoryToAuditType(msg.queryCategory());
     StringBuffer text;
