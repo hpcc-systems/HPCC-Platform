@@ -214,7 +214,7 @@ jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsi
     lf->setAppend(append);
     lf->setCompleteFilespec(filename);//user specified log filespec
     lf->setMaxDetail(detail ? detail : DefaultDetail);
-    lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
+    lf->setMsgFields(MSGFIELD_STANDARD);
     lf->beginLogging();
     resolvedFS.set(lf->queryLogFileSpec());
 }
