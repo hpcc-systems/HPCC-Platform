@@ -2929,7 +2929,8 @@ protected:
     {
         IDistributedFile * file;
         Owned<IOutputMetaData> actualMeta;
-        Owned<IPropertyTree> meta;
+        Owned<const IPropertyTree> formatOptions;
+        Owned<const IPropertyTree> meta;
         unsigned actualCrc;
     };
 
@@ -2949,7 +2950,7 @@ protected:
     IOutputMetaData *expectedDiskMeta = nullptr;
     IOutputMetaData *projectedDiskMeta = nullptr;
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
-    Owned<IPropertyTree> readerOptions;
+    Owned<IPropertyTree> formatOptions;
     unsigned partNum = 0;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     bool useRawStream = false; // Constant for the lifetime of the activity
@@ -3004,7 +3005,7 @@ public:
 protected:
     bool openFirstPart();
     void initStream(IDiskRowReader * reader, const char * filename);
-    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc);
+    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const IPropertyTree * curFormatOptions);
     bool openFilePart(const char * filename);
     bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
     void setEmptyStream();
@@ -3014,7 +3015,7 @@ protected:
     virtual void closepart();
 
     bool openNextPart(bool prevWasMissing);
-    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, IPropertyTree * options);
+    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * options);
 };
 
 

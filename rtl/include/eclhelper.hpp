@@ -1125,6 +1125,7 @@ enum
     TDRunfilteredcount  = 0x00800000,       // count/aggregegate doesn't have an additional filter
     TDRfilenamecallback = 0x01000000,
     TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
+    TDRdynformatoptions = 0x04000000,
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -2395,6 +2396,9 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
     virtual unsigned getProjectedFormatCrc() = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual void setCallback(IThorDiskCallback * callback) = 0;
+    virtual const char * queryFormat() = 0;
+    virtual void getFormatOptions(IXmlWriter & options) = 0;
+    virtual void getFormatDynOptions(IXmlWriter & options) = 0;
 
     inline bool hasSegmentMonitors()                        { return (getFlags() & TDRkeyed) != 0; }
 };

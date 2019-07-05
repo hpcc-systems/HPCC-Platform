@@ -72,7 +72,7 @@ public:
     void remapField(unsigned filterIdx, unsigned newFieldNum);
     void recalcFieldsRequired();
     void remove(unsigned idx);
-    void clear();
+    RowFilter & clear();
     void appendFilters(const IConstArrayOf<IFieldFilter> &_filters);
 protected:
     IConstArrayOf<IFieldFilter> filters;

@@ -1006,6 +1006,9 @@ class ECLRTL_API CThorDiskReadArg : public CThorArgOf<IHThorDiskReadArg>
 
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
@@ -1030,6 +1033,9 @@ class ECLRTL_API CThorDiskNormalizeArg : public CThorArgOf<IHThorDiskNormalizeAr
 
     virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
     virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
@@ -1045,6 +1051,9 @@ class ECLRTL_API CThorDiskAggregateArg : public CThorArgOf<IHThorDiskAggregateAr
     virtual bool hasMatchFilter() override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
@@ -1067,6 +1076,9 @@ class ECLRTL_API CThorDiskCountArg : public CThorArgOf<IHThorDiskCountArg>
     virtual bool hasFilter() override;
     virtual size32_t numValid(const void * src) override;
     virtual unsigned __int64 getChooseNLimit() override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
@@ -1086,6 +1098,9 @@ class ECLRTL_API CThorDiskGroupAggregateArg : public CThorArgOf<IHThorDiskGroupA
     virtual size32_t initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) override;
     virtual size32_t processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) override;
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 
 public:
     IThorDiskCallback * fpp;
@@ -1105,6 +1120,9 @@ class ECLRTL_API CThorCsvReadArg: public CThorArgOf<IHThorCsvReadArg>
     virtual bool canMatch(const void * row) override;
     virtual bool hasMatchFilter() override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 public:
     IThorDiskCallback * fpp;
 };
@@ -1123,6 +1141,9 @@ class ECLRTL_API CThorXmlReadArg: public CThorArgOf<IHThorXmlReadArg>
     virtual bool canMatch(const void * row) override;
     virtual bool hasMatchFilter() override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
 public:
     IThorDiskCallback * fpp;
 };

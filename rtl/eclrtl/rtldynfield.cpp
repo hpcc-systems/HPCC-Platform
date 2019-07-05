@@ -1025,8 +1025,8 @@ inline FieldMatchType &operator|=(FieldMatchType &a, FieldMatchType b) { return 
 class GeneralRecordTranslator : public CInterfaceOf<IDynamicTransform>
 {
 public:
-    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, bool _binarySource)
-        : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo), binarySource(_binarySource)
+    GeneralRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, bool _binarySource, type_vals _callbackRawType = type_any)
+        : destRecInfo(_destRecInfo), sourceRecInfo(_srcRecInfo), binarySource(_binarySource), callbackRawType(_callbackRawType)
     {
         matchInfo = new MatchInfo[destRecInfo.getNumFields()];
         createMatchInfo();
@@ -1065,7 +1065,7 @@ public:
     }
     virtual bool needsTranslate() const override
     {
-        return (matchFlags & ~(match_link|match_inifblock)) != 0;
+        return !binarySource || (matchFlags & ~(match_link|match_inifblock)) != 0;
     }
     virtual bool needsNonVirtualTranslate() const override
     {
@@ -1267,7 +1267,10 @@ private:
                     {
                         const IDynamicFieldValueFetcher &callbackRowHandler = *(const IDynamicFieldValueFetcher *)sourceRow;
                         source = callbackRowHandler.queryValue(matchField, copySize);
-                        offset = translateScalarFromUtf8(builder, offset, field, *type, *sourceType, (const char *)source, (size_t)copySize);
+                        if (callbackRawType == type_string)
+                            offset = translateScalarFromString(builder, offset, field, *type, *sourceType, (const char *)source, (size_t)copySize);
+                        else
+                            offset = translateScalarFromUtf8(builder, offset, field, *type, *sourceType, (const char *)source, (size_t)copySize);
                         break;
                     }
                     case match_link:
@@ -1457,6 +1460,7 @@ private:
     const RtlRecord &destRecInfo;
     const RtlRecord &sourceRecInfo;
     bool binarySource = true;
+    type_vals callbackRawType;
     unsigned fixedDelta = 0;  // total size of all fixed-size source fields that are not matched
     UnsignedArray allUnmatched;  // List of all source fields that are unmatched (so that we can trace them)
     UnsignedArray variableUnmatched;  // List of all variable-size source fields that are unmatched
@@ -1507,6 +1511,50 @@ private:
         {
             size32_t utf8chars = rtlUtf8Length(srcSize, source);
             offset = destType.buildUtf8(builder, offset, field, utf8chars, source);
+            break;
+        }
+        case type_set:
+        {
+            UNIMPLEMENTED; // JCS->GH - but perhaps can/should translate using iterator too?
+            break;
+        }
+        default:
+            throwUnexpected();
+        }
+        return offset;
+    }
+    static size32_t translateScalarFromString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, const RtlTypeInfo &destType, const RtlTypeInfo &sourceType, const char *source, size_t srcSize)
+    {
+        switch(destType.getType())
+        {
+        case type_boolean:
+        case type_int:
+        case type_swapint:
+        case type_packedint:
+        case type_filepos:
+        case type_keyedint:
+        {
+            __int64 res = rtlStrToInt8(srcSize, source);
+            offset = destType.buildInt(builder, offset, field, res);
+            break;
+        }
+        case type_real:
+        {
+            double res = rtlStrToReal(srcSize, source);
+            offset = destType.buildReal(builder, offset, field, res);
+            break;
+        }
+        case type_data:
+        case type_string:
+        case type_decimal:  // Go via string - not common enough to special-case
+        case type_varstring:
+        case type_qstring:
+        case type_utf8:
+            //MORE: Could special case casting from utf8 to utf8 similar to strings above
+        case type_unicode:
+        case type_varunicode:
+        {
+            offset = destType.buildString(builder, offset, field, srcSize, source);
             break;
         }
         case type_set:
@@ -1776,9 +1824,9 @@ extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecor
     return new GeneralRecordTranslator(destRecInfo, srcRecInfo, true);
 }
 
-extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo)
+extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &destRecInfo, const RtlRecord &srcRecInfo, type_vals rawType)
 {
-    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false);
+    return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false, rawType);
 }
 
 extern ECLRTL_API void throwTranslationError(const RtlRecord & destRecInfo, const RtlRecord & srcRecInfo, const char * filename)
