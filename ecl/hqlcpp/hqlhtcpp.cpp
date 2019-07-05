@@ -308,6 +308,13 @@ void MemberFunction::start(const char * text, unsigned _flags)
     stmt = ctx.addQuotedFunction(text, (flags & MFdynamicproto) != 0);
 }
 
+bool MemberFunction::isEmpty() const
+{
+    assertex(stmt);
+    return (stmt->numChildren() == 0);
+}
+
+
 //---------------------------------------------------------------------------
 
 static HqlTransformerInfo childDatasetSpotterInfo("ChildDatasetSpotter");

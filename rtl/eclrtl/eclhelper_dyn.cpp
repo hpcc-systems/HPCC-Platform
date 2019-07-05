@@ -159,6 +159,10 @@ public:
         filters.addFilter(in->queryRecordAccessor(true), filter);
         flags |= TDRkeyed;
     }
+    virtual const char * queryFormat() final { return "thor"; }
+    virtual void getFormatOptions(IXmlWriter & options) override { }
+    virtual void getFormatDynOptions(IXmlWriter & options) override { }
+
 private:
     StringAttr fileName;
     UnexpectedVirtualFieldCallback fieldCallback;

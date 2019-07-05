@@ -27,6 +27,43 @@
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
 
+//The following is constant for the life of a disk read activity
+interface IDiskReadOutputMapping : public IInterface
+{
+public:
+    virtual unsigned getExpectedCrc() const = 0;
+    virtual unsigned getProjectedCrc() const = 0;
+    virtual IOutputMetaData * queryExpectedMeta() const = 0;
+    virtual IOutputMetaData * queryProjectedMeta() const = 0;
+    virtual RecordTranslationMode queryTranslationMode() const = 0;
+    virtual bool matches(const IDiskReadOutputMapping * other) const = 0;
+};
+THORHELPER_API IDiskReadOutputMapping * createDiskReadOutputMapping(RecordTranslationMode mode, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected);
+
+interface IDiskReadMapping : public IInterface
+{
+public:
+    // Accessor functions to provide the basic information from the disk read
+    virtual const char * queryFormat() const = 0;
+    virtual unsigned getActualCrc() const = 0;
+    virtual unsigned getExpectedCrc() const = 0;
+    virtual unsigned getProjectedCrc() const = 0;
+    virtual IOutputMetaData * queryActualMeta() const = 0;
+    virtual IOutputMetaData * queryExpectedMeta() const = 0;
+    virtual IOutputMetaData * queryProjectedMeta() const = 0;
+    virtual const IPropertyTree * queryOptions() const = 0;
+    virtual RecordTranslationMode queryTranslationMode() const = 0;
+
+    virtual bool matches(const IDiskReadMapping * other) const = 0;
+    virtual bool expectedMatchesProjected() const = 0;
+
+    virtual const IDynamicTransform * queryTranslator() const = 0; // translates from actual to projected - null if no translation needed
+    virtual const IKeyTranslator *queryKeyedTranslator() const = 0; // translates from expected to actual
+};
+
+THORHELPER_API IDiskReadMapping * createDiskReadMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * options);
+
+
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
 interface IRowReader : extends IInterface
 {
@@ -39,7 +76,7 @@ interface ITranslator;
 interface IDiskRowReader : extends IRowReader
 {
 public:
-    virtual bool matches(const char * format, bool streamRemote, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, IOutputMetaData & _projected, unsigned _actualCrc, IOutputMetaData & _actual, const IPropertyTree * options) = 0;
+    virtual bool matches(const char * format, bool streamRemote, IDiskReadMapping * mapping) = 0;
 
     //Specify where the raw binary input for a particular file is coming from, together with its actual format.
     //Does this make sense, or should it be passed a filename?  an actual format?
@@ -49,20 +86,9 @@ public:
     virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * meta, const FieldFilterArray & expectedFilter) = 0;
 };
 
-//MORE: These functions have too many parameters - should probably move them into something like the following?:
-class TranslateOptions
-{
-    IOutputMetaData * expected;
-    IOutputMetaData * projected;
-    IOutputMetaData * actual;
-    unsigned expectedCrc;
-    unsigned projectedCrc;
-    unsigned actualCrc;
-};
-
 //Create a row reader for a thor binary file.  The expected, projected, actual and options never change.  The file providing the data can change.
-extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, IOutputMetaData & _projected, unsigned _actualCrc, IOutputMetaData & _actual, const IPropertyTree * options);
-extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, IOutputMetaData & _projected, unsigned _actualCrc, IOutputMetaData & _actual, const IPropertyTree * options);
-extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, unsigned _expectedCrc, IOutputMetaData & _expected, unsigned _projectedCrc, IOutputMetaData & _projected, unsigned _actualCrc, IOutputMetaData & _actual, const IPropertyTree * options);
+extern THORHELPER_API IDiskRowReader * createLocalDiskReader(const char * format, IDiskReadMapping * mapping);
+extern THORHELPER_API IDiskRowReader * createRemoteDiskReader(const char * format, IDiskReadMapping * mapping);
+extern THORHELPER_API IDiskRowReader * createDiskReader(const char * format, bool streamRemote, IDiskReadMapping * mapping);
 
 #endif

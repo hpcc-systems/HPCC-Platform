@@ -1855,6 +1855,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.checkDuplicateThreshold, "checkDuplicateThreshold", 0), // If non zero, create a warning if duplicates > this percentage increase
         DebugOption(options.checkDuplicateMinActivities, "checkDuplicateMinActivities", 100),
         DebugOption(options.diskReadsAreSimple, "diskReadsAreSimple", false), // Not yet enabled - needs filters to default to generating keyed info first
+        DebugOption(options.genericDiskReads, "genericDiskReads", true),
     };
 
     //get options values from workunit
@@ -1953,6 +1954,9 @@ void HqlCppTranslator::postProcessOptions()
         //Roxie doesn't gain from additional projects, hthor doesn't support split
         options.optimizeSpillProject = false;
     }
+
+    if (!targetHThor())
+        options.genericDiskReads = false;
 
     if (options.resourceSequential)
         options.resourceConditionalActions = true;

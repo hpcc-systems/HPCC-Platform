@@ -10438,14 +10438,16 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
-    readerOptions.setown(createPTree());
+    formatOptions.setown(createPTree());
     if (_node)
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
     }
-    readerOptions->setPropInt("translationMode", (int)getLayoutTranslationMode());
+
+    PropertyTreeXmlWriter writer(formatOptions);
+    helper.getFormatOptions(writer);
 }
 
 CHThorNewDiskReadBaseActivity::~CHThorNewDiskReadBaseActivity()
@@ -10493,7 +10495,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
 {
     //If in a child query, and the filenames haven't changed, the information about the resolved filenames will also not have changed
     //MORE: Is this ever untrue?
-    if (subfiles && !(helper.getFlags() & TDXvarfilename))
+    if (subfiles && !(helper.getFlags() & (TDXvarfilename|TDRdynformatoptions)))
         return;
 
     //Only clear these members if we are re-resolving the file - otherwise the previous entries are still valid
@@ -10501,6 +10503,16 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     tempFileName.clear();
     dfsParts.clear();
     subfiles.kill();
+
+    Owned<IPropertyTree> curFormatOptions;
+    if (helper.getFlags() & TDRdynformatoptions)
+    {
+        curFormatOptions.setown(createPTreeFromIPT(formatOptions));
+        PropertyTreeXmlWriter writer(curFormatOptions);
+        helper.getFormatDynOptions(writer);
+    }
+    else
+        curFormatOptions.set(formatOptions);
 
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
@@ -10511,7 +10523,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
         logicalFileName = tempFileName.str();
         gatherInfo(NULL);
-        subfiles.append(*extractFileInformation(nullptr));
+        subfiles.append(*extractFileInformation(nullptr, curFormatOptions));
     }
     else
     {
@@ -10538,22 +10550,22 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
                     for (; s<numsubs; s++)
                     {
                         IDistributedFile &subfile = super->querySubFile(s, true);
-                        subfiles.append(*extractFileInformation(&subfile));
+                        subfiles.append(*extractFileInformation(&subfile, curFormatOptions));
                     }
                     assertex(fdesc);
                     superfile.set(fdesc->querySuperFileDescriptor());
                 }
                 else
-                    subfiles.append(*extractFileInformation(dFile));
+                    subfiles.append(*extractFileInformation(dFile, curFormatOptions));
 
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
             }
             else
-                subfiles.append(*extractFileInformation(nullptr));
+                subfiles.append(*extractFileInformation(nullptr, curFormatOptions));
         }
         else
-            subfiles.append(*extractFileInformation(nullptr));
+            subfiles.append(*extractFileInformation(nullptr, curFormatOptions));
 
         if (!ldFile)
         {
@@ -10591,11 +10603,35 @@ void CHThorNewDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     }
 }
 
-CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile)
+static void queryInheritProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+{
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+        target.setProp(targetName, source.queryProp(sourceName));
+}
+
+static void queryInheritSeparatorProp(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+{
+    //Legacy - commas are quoted if they occur in a separator list, so need to remove the leading backslashes
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+    {
+        StringBuffer unquoted;
+        const char * text = source.queryProp(sourceName);
+        while (*text)
+        {
+            if ((text[0] == '\\') && (text[1] == ','))
+                text++;
+            unquoted.append(*text++);
+        }
+        target.setProp(targetName, unquoted);
+    }
+}
+
+CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::extractFileInformation(IDistributedFile * distributedFile, const IPropertyTree * curFormatOptions)
 {
     Owned<IPropertyTree> meta = createPTree();
     unsigned actualCrc = helper.getDiskFormatCrc();
     Linked<IOutputMetaData> actualDiskMeta = expectedDiskMeta;
+    Linked<const IPropertyTree> fileFormatOptions = curFormatOptions;
     bool compressed = false;
     bool blockcompressed = false;
 
@@ -10631,6 +10667,18 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
             blockcompressed = true;
             compressed = true;
         }
+
+        //MORE: There should probably be a generic way of storing and extracting format options for a file
+        IPropertyTree & options = distributedFile->queryAttributes();
+        Linked<IPropertyTree> tempOptions = createPTreeFromIPT(fileFormatOptions);
+        queryInheritProp(*tempOptions, "quote", options, "@csvQuote");
+        queryInheritSeparatorProp(*tempOptions, "separator", options, "@csvSeparate");
+        queryInheritProp(*tempOptions, "terminator", options, "@csvTerminate");
+        queryInheritProp(*tempOptions, "escape", options, "@csvEscape");
+        dbglogXML(fileFormatOptions);
+        dbglogXML(tempOptions);
+        if (!areMatchingPTrees(fileFormatOptions, tempOptions))
+            fileFormatOptions.setown(tempOptions.getClear());
     }
 
     meta->setPropBool("grouped", grouped);
@@ -10640,7 +10688,8 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
 
     InputFileInfo & target = * new InputFileInfo;
     target.file = distributedFile;
-    target.meta.swap(meta);
+    target.formatOptions.swap(fileFormatOptions);
+    target.meta.setown(meta.getClear());
     target.actualCrc = actualCrc;
     target.actualMeta.swap(actualDiskMeta);
     return &target;
@@ -10783,27 +10832,29 @@ void CHThorNewDiskReadBaseActivity::setEmptyStream()
     finishedParts = true;
 }
 
-IDiskRowReader * CHThorNewDiskReadBaseActivity::ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, IPropertyTree * options)
+IDiskRowReader * CHThorNewDiskReadBaseActivity::ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * options)
 {
+    Owned<IDiskReadMapping> mapping = createDiskReadMapping(getLayoutTranslationMode(), format, actualCrc, actual, expectedCrc, expected, projectedCrc, projected, options);
+
     ForEachItemIn(i, readers)
     {
         IDiskRowReader & cur = readers.item(i);
-        if (cur.matches(format, streamRemote, expectedCrc, expected, projectedCrc, projected, actualCrc, actual, options))
+        if (cur.matches(format, streamRemote, mapping))
             return &cur;
     }
-    IDiskRowReader * reader = createDiskReader(format, streamRemote, expectedCrc, expected, projectedCrc, projected, actualCrc, actual, options);
+    IDiskRowReader * reader = createDiskReader(format, streamRemote, mapping);
     readers.append(*reader);
     return reader;
 }
 
 bool CHThorNewDiskReadBaseActivity::openFilePart(const char * filename)
 {
-    const char * format = "thor";   // more - should extract from the current file (could even mix flat and csv...)
+    const char * format = helper.queryFormat();   // more - should extract from the current file (could even mix flat and csv...)
     InputFileInfo * fileInfo = &subfiles.item(0);
 
     unsigned expectedCrc = helper.getDiskFormatCrc();
     unsigned projectedCrc = helper.getProjectedFormatCrc();
-    IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, expectedCrc, *expectedDiskMeta, readerOptions);
+    IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, expectedCrc, *expectedDiskMeta, fileInfo->formatOptions);
     if (reader->setInputFile(filename, logicalFileName, 0, offsetOfPart, fileInfo->meta, fieldFilters))
     {
         initStream(reader, filename);
@@ -10814,6 +10865,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(const char * filename)
 
 bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart)
 {
+    IDistributedFile * distributedFile = localFile->queryDistributedFile();
     InputFileInfo * fileInfo = &subfiles.item(0);
     if (superfile && filePart)
     {
@@ -10822,7 +10874,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
         if (superfile->mapSubPart(partNum, subfile, lnum))
         {
             fileInfo = &subfiles.item(subfile);
-            IDistributedFile * distributedFile = fileInfo->file;
+            distributedFile = fileInfo->file;
             logicalFileName = distributedFile->queryLogicalName();
         }
     }
@@ -10835,12 +10887,13 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
     bool tryRemoteStream = actualDiskMeta->queryTypeInfo()->canInterpret() && actualDiskMeta->queryTypeInfo()->canSerialize() &&
                            projectedDiskMeta->queryTypeInfo()->canInterpret() && projectedDiskMeta->queryTypeInfo()->canSerialize();
 
+
     /*
      * If a file part can be accessed local, then read it locally
      * If a file part supports a remote stream, then use that
      * Otherwise failover to the legacy remote access.
      */
-    const char * format = "thor";   // more - should extract from the current file (could even mix flat and csv...)
+    const char * format = helper.queryFormat();   // more - should extract from the current file (could even mix flat and csv...)
     Owned<IException> saveOpenExc;
     StringBuffer filename, filenamelist;
     std::vector<unsigned> remoteCandidates;
@@ -10856,7 +10909,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
         {
             StringBuffer path;
             rfn.getPath(path);
-            IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, readerOptions);
+            IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
             if (reader->setInputFile(path.str(), logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
             {
                 initStream(reader, path.str());
@@ -10879,7 +10932,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             filenamelist.append('\n').append(filename);
             try
             {
-                IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, readerOptions);
+                IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
                 if (reader->setInputFile(rfilename, logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
                 {
                     initStream(reader, filename);

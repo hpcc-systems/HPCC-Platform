@@ -6062,7 +6062,7 @@ bool validateXMLParseXPath(const char *xpath, StringBuffer *error)
     return true;
 }
 
-bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right)
+bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree * right)
 {
     if (left == right)
         return true;

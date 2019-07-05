@@ -86,6 +86,16 @@ public:
         memcpy(rowBuilder.ensureCapacity(size, NULL), src, size);
         return size;
     }
+    virtual const char * queryFormat() override
+    {
+        return "thor";
+    }
+    virtual void getFormatOptions(IXmlWriter & options) override
+    {
+    }
+    virtual void getFormatDynOptions(IXmlWriter & options) override
+    {
+    }
 
 protected:
     StringAttr filename;

@@ -120,7 +120,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual bool hasChildren() const = 0;
     virtual unsigned numUniq() = 0;
     virtual unsigned numChildren() = 0;
-    virtual bool isCaseInsensitive() = 0;
+    virtual bool isCaseInsensitive() const = 0;
     virtual bool IsShared() const = 0;
     virtual void localizeElements(const char *xpath, bool allTail=false) = 0;
     virtual unsigned getCount(const char *xpath) = 0;
@@ -209,7 +209,7 @@ jlib_decl IPullPTreeReader *createPullJSONBufferReader(const void *buf, size32_t
 jlib_decl void mergePTree(IPropertyTree *target, IPropertyTree *toMerge);
 jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource=true, bool rootsMustMatch=true);
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
-jlib_decl bool areMatchingPTrees(IPropertyTree * left, IPropertyTree * right);
+jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree * right);
 
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
 

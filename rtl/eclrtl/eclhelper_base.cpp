@@ -768,6 +768,9 @@ void CThorDiskReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen =
 unsigned __int64 CThorDiskReadArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
 unsigned __int64 CThorDiskReadArg::getRowLimit()                  { return (unsigned __int64) -1; }
 void CThorDiskReadArg::onLimitExceeded()                          { }
+const char * CThorDiskReadArg::queryFormat()                      { return "thor"; }
+void CThorDiskReadArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorDiskReadArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 bool CThorDiskReadArg::needTransform() { return false; }
 bool CThorDiskReadArg::transformMayFilter() { return false; }
@@ -801,6 +804,9 @@ unsigned __int64 CThorDiskNormalizeArg::getKeyedLimit()                { return 
 void CThorDiskNormalizeArg::onKeyedLimitExceeded()                     { }
 size32_t CThorDiskNormalizeArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
 size32_t CThorDiskNormalizeArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
+const char * CThorDiskNormalizeArg::queryFormat()                      { return "thor"; }
+void CThorDiskNormalizeArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorDiskNormalizeArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 //CThorDiskAggregateArg
 
@@ -812,6 +818,9 @@ bool CThorDiskAggregateArg::canMatch(const void * row)                 { return 
 bool CThorDiskAggregateArg::hasMatchFilter()                           { return false; }
 void CThorDiskAggregateArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 size32_t CThorDiskAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
+const char * CThorDiskAggregateArg::queryFormat()                      { return "thor"; }
+void CThorDiskAggregateArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorDiskAggregateArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 //CThorDiskCountArg
 
@@ -822,6 +831,9 @@ void CThorDiskCountArg::createSegmentMonitors(IIndexReadContext *ctx) {}
 bool CThorDiskCountArg::canMatch(const void * row)                 { return true; }
 bool CThorDiskCountArg::hasMatchFilter()                           { return false; }
 void CThorDiskCountArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+const char * CThorDiskCountArg::queryFormat()                      { return "thor"; }
+void CThorDiskCountArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorDiskCountArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 unsigned __int64 CThorDiskCountArg::getRowLimit() { return (unsigned __int64) -1; }
 void CThorDiskCountArg::onLimitExceeded() { }
@@ -845,6 +857,9 @@ unsigned CThorDiskGroupAggregateArg::getGroupingMaxField() { return 0; }
 size32_t CThorDiskGroupAggregateArg::initialiseCountGrouping(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::processCountGrouping(ARowBuilder & rowBuilder, unsigned __int64 count) { rtlFailUnexpected(); return 0; }
 size32_t CThorDiskGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
+const char * CThorDiskGroupAggregateArg::queryFormat()                      { return "thor"; }
+void CThorDiskGroupAggregateArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorDiskGroupAggregateArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 //CThorCsvReadArg
 
@@ -860,6 +875,9 @@ void CThorCsvReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
 bool CThorCsvReadArg::canMatch(const void * row)                 { return true; }
 bool CThorCsvReadArg::hasMatchFilter()                           { return false; }
 void CThorCsvReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+const char * CThorCsvReadArg::queryFormat()                      { return "csv"; }
+void CThorCsvReadArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorCsvReadArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 //CThorXmlReadArg
 
@@ -875,6 +893,9 @@ void CThorXmlReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
 bool CThorXmlReadArg::canMatch(const void * row)                 { return true; }
 bool CThorXmlReadArg::hasMatchFilter()                           { return false; }
 void CThorXmlReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+const char * CThorXmlReadArg::queryFormat()                      { return "xml"; }
+void CThorXmlReadArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorXmlReadArg::getFormatDynOptions(IXmlWriter & options)  { }
 
 //CThorChildGroupAggregateArg
 
