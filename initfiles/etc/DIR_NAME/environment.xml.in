@@ -945,9 +945,9 @@
   <path>${INSTALL_DIR}</path>
   <Keys>
    <KeyPair name="mythor" publicKey="@HOME_DIR@/@RUNTIME_USER@/certificate/public.key.pem" privateKey="@HOME_DIR@/@RUNTIME_USER@/certificate/key.pem"/>
-   <Cluster name="mythor" keyPairName="mythor"/>
-   <Cluster name="myroxie" keyPairName="mythor"/>
-   <Cluster name="hthor__myeclagent" keyPairName="mythor"/>
+   <ClusterGroup name="mythor" keyPairName="mythor"/>
+   <ClusterGroup name="myroxie" keyPairName="mythor"/>
+   <ClusterGroup name="hthor__myeclagent" keyPairName="mythor"/>
   </Keys>
  </EnvSettings>
  <Programs>
