@@ -181,7 +181,7 @@ interface IDynamicTransformViaCallback : public IInterface
 };
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
-extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, type_vals rawType);
 extern ECLRTL_API void throwTranslationError(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, const char * filename);
 
 extern ECLRTL_API const IKeyTranslator *createKeyTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);

@@ -159,6 +159,7 @@ public:
         filters.addFilter(in->queryRecordAccessor(true), filter);
         flags |= TDRkeyed;
     }
+
 private:
     StringAttr fileName;
     UnexpectedVirtualFieldCallback fieldCallback;

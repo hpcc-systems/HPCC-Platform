@@ -71,9 +71,21 @@ void CSVSplitter::addTerminator(const char * text)
     matcher.addEntry(text, TERMINATOR);
 }
 
+void CSVSplitter::addItem(MatchItem item, const char * text)
+{
+    if (text)
+        matcher.addEntry(text, item);
+}
+
 void CSVSplitter::addEscape(const char * text)
 {
     matcher.queryAddEntry((size32_t)strlen(text), text, ESCAPE);
+}
+
+void CSVSplitter::addWhitespace()
+{
+    matcher.queryAddEntry(1, " ", WHITESPACE);
+    matcher.queryAddEntry(1, "\t", WHITESPACE);
 }
 
 void CSVSplitter::reset()
@@ -156,11 +168,9 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
 
     //MORE Should this be configurable??
     if (!(flags & ICsvParameters::preserveWhitespace))
-    {
-        matcher.queryAddEntry(1, " ", WHITESPACE);
-        matcher.queryAddEntry(1, "\t", WHITESPACE);
-    }
+        addWhitespace();
 }
+
 
 void CSVSplitter::init(unsigned _maxColumns, size32_t _maxCsvSize, const char *quotes, const char *separators, const char *terminators, const char *escapes, bool preserveWhitespace)
 {
@@ -181,11 +191,8 @@ void CSVSplitter::init(unsigned _maxColumns, size32_t _maxCsvSize, const char *q
     if (escapes)
         addActionList(matcher, escapes, ESCAPE);
 
-    if (preserveWhitespace)
-    {
-        matcher.queryAddEntry(1, " ", WHITESPACE);
-        matcher.queryAddEntry(1, "\t", WHITESPACE);
-    }
+    if (!preserveWhitespace)
+        addWhitespace();
 }
 
 void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape)

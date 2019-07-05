@@ -1127,6 +1127,42 @@ public:
     IThorDiskCallback * fpp;
 };
 
+class ECLRTL_API CThorNewDiskReadArg : public CThorArgOf<IHThorNewDiskReadArg>
+{
+    virtual unsigned getFlags() override;
+    virtual void setCallback(IThorDiskCallback * _tc) override;
+
+    virtual bool canMatchAny() override;
+    virtual void createSegmentMonitors(IIndexReadContext *ctx) override;
+    virtual bool canMatch(const void * row) override;
+    virtual bool hasMatchFilter() override;
+    virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
+
+    virtual unsigned __int64 getChooseNLimit() override;
+    virtual unsigned __int64 getRowLimit() override;
+    virtual void onLimitExceeded() override;
+
+    virtual bool needTransform() override;
+    virtual bool transformMayFilter() override;
+    virtual unsigned __int64 getKeyedLimit() override;
+    virtual void onKeyedLimitExceeded() override;
+    virtual ISteppingMeta * queryRawSteppingMeta() override;
+    virtual ISteppingMeta * queryProjectedSteppingMeta() override;
+    virtual void mapOutputToInput(ARowBuilder & rowBuilder, const void * projectedRow, unsigned numFields) override;
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * src) override;
+    virtual size32_t unfilteredTransform(ARowBuilder & rowBuilder, const void * src) override;
+
+    virtual size32_t transformOnLimitExceeded(ARowBuilder & rowBuilder) override;
+    virtual size32_t transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) override;
+    virtual const char * queryFormat() override;
+    virtual void getFormatOptions(IXmlWriter & options) override;
+    virtual void getFormatDynOptions(IXmlWriter & options) override;
+
+public:
+    IThorDiskCallback * fpp;
+};
+
+
 //Normalize
 class ECLRTL_API CThorChildNormalizeArg : public CThorArgOf<IHThorChildNormalizeArg>
 {
