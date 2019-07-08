@@ -132,6 +132,8 @@
     Dali: "Dali",
     DaliIP: "Dali IP Adresa",
     DataPatterns: "Uzorci podataka",
+    DataPatternsNotStarted: "Rezultati analize nisu pronađeni. Za početak nove analize pritisnite dugme Analiza.",
+    DataPatternsStarted: "Analiza je u toku. Po završetku kompletan izveštaj će biti ovdje prikazan.",
     dataset: ":=dataset*",
     Date: "Datum",
     Day: "Dan",

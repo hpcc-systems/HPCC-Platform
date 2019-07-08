@@ -132,6 +132,8 @@
     Dali: "Dali",
     DaliIP: "Dali IP",
     DataPatterns: "数据模式",
+    DataPatternsNotStarted: "分析无法找到。开始请按上面的分析键",
+    DataPatternsStarted: "正在分析。完成后报告会在这里显示。",
     dataset: ":=数据集*",
     Date: "日期",
     Day: "日",

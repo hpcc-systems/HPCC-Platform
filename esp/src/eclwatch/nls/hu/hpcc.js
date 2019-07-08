@@ -132,6 +132,8 @@ define(
     Dali: "Dali",
     DaliIP: "Dali IP címe",
     DataPatterns: "Adat minták",
+    DataPatternsNotStarted: "Az analízis eredménye nem található. Létrehozásához nyomja meg a fent lévő “Analízis” gombot.",
+    DataPatternsStarted: "Analizálás folyamatban. A folyamat végeztével az eredmény itt lesz látható.",
     dataset: ":=dataset*",
     Date: "Dátum",
     Day: "Nap",
