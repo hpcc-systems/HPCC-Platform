@@ -133,7 +133,8 @@ void Software::getSWCompName(const char *inputName, StringBuffer& out)
    {
       out.append("espsmc");
    }
-   else if (!stricmp(compNameLC, "esdl") || !stricmp(compNameLC, "DynamicESDL"))
+   else if (!stricmp(compNameLC, "esdl") || !stricmp(compNameLC, "DynamicESDL") ||
+            !stricmp(compNameLC, "DESDLBindingTemplate"))
    {
       out.append("DynamicESDL");
    }

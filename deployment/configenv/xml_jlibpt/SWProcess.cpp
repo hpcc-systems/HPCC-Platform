@@ -41,22 +41,25 @@ SWProcess::SWProcess(const char* name, EnvHelper * envHelper):SWComponentBase(na
 
 IPropertyTree * SWProcess::addComponent(IPropertyTree *params)
 {
+  IPropertyTree * pCompTree;
   const char* clone = params->queryProp("@clone");
   if (clone)
   {
-     return SWComponentBase::cloneComponent(params);
+     pCompTree = SWComponentBase::cloneComponent(params);
   }
-
-  IPropertyTree * pCompTree = SWComponentBase::addComponent(params);
-  if (pCompTree->hasProp("@daliServers") &&  !strcmp(pCompTree->queryProp("@daliServers"), ""))
+  else
   {
-     IPropertyTree * envTree = m_envHelper->getEnvTree();
-     StringBuffer xpath;
-     xpath.clear().appendf(XML_TAG_SOFTWARE "/DaliServerProcess/@name");
-     const char *daliName = envTree->queryProp(xpath.str());
-     if (daliName)
+     pCompTree = SWComponentBase::addComponent(params);
+     if (pCompTree->hasProp("@daliServers") &&  !strcmp(pCompTree->queryProp("@daliServers"), ""))
      {
-        pCompTree->setProp("@daliServers", daliName);
+        IPropertyTree * envTree = m_envHelper->getEnvTree();
+        StringBuffer xpath;
+        xpath.clear().appendf(XML_TAG_SOFTWARE "/DaliServerProcess/@name");
+        const char *daliName = envTree->queryProp(xpath.str());
+        if (daliName)
+        {
+           pCompTree->setProp("@daliServers", daliName);
+        }
      }
   }
 

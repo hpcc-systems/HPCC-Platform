@@ -31,6 +31,7 @@ public:
     virtual void addOtherSelector(IPropertyTree *compTree, IPropertyTree *params);
     //IPropertyTree * addComponent(IPropertyTree *params);
     void addBinding(IPropertyTree *parent, IPropertyTree * attrs);
+    IPropertyTree * addComponent(IPropertyTree *params);
 
 };
 
