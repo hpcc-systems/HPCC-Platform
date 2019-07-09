@@ -12704,6 +12704,11 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
     case no_matchutf8:
     case no_libraryinput:
         return false;
+    case no_skip:
+    case no_fail:
+        //This expression does not actually create a temporary variable.
+        //Possibly the if code should be checking if the expression has side-effects, in which case this could then return false
+        return true;
     case no_getresult:
     case no_getgraphresult:
     case no_workunit_dataset:
@@ -12718,6 +12723,10 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
                 return false;
             return true;
         }
+    case no_alias_scope:
+        if (includeChildren)
+            return true;
+        return requiresTemp(ctx, expr->queryChild(0), includeChildren);
     case no_select:
         {
             bool isNew;
