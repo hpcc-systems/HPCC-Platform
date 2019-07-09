@@ -11656,6 +11656,9 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
     if (expr->hasAttribute(groupedAtom) && (dataset->getOperator() != no_null))
         throwError1(HQLERR_NotSupportedInsideNoThor, "Grouped OUTPUT");
 
+    if (queryRealChild(expr, 1))
+        throwError1(HQLERR_NotSupportedInsideNoThor, "OUTPUT to file");
+
     LinkedHqlExpr seq = querySequence(expr);
     LinkedHqlExpr name = queryResultName(expr);
     assertex(seq != NULL);

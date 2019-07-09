@@ -3844,8 +3844,6 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
         doBuildStmtUpdate(ctx, expr);
         return;
     case no_output:
-        if (queryRealChild(expr, 1))
-            throwError1(HQLERR_NotSupportedInsideNoThor, "OUTPUT to file");
         doBuildStmtOutput(ctx, expr);
         return;
     case no_subgraph:
