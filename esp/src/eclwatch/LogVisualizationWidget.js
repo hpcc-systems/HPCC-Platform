@@ -21,7 +21,9 @@ define([
     "src/ESPUtil",
     "src/Utility",
 
-    "dojo/text!../templates/LogVisualizationWidget.html"
+    "dojo/text!../templates/LogVisualizationWidget.html",
+
+    "dijit/form/Button"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
     registry, ToggleButton, ToolbarSeparator,

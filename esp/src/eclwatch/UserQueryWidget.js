@@ -39,6 +39,7 @@ define([
     "dijit/Toolbar",
     "dijit/form/Form",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/DropDownButton",
     "dijit/form/ValidationTextBox",
     "dijit/ToolbarSeparator",

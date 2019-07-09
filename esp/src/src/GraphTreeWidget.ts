@@ -44,6 +44,8 @@ import "dijit/form/SimpleTextarea";
 import "dijit/form/NumberSpinner";
 import "dijit/form/DropDownButton";
 import "dijit/form/Select";
+import "dijit/form/Button";
+import "dijit/form/ToggleButton";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 

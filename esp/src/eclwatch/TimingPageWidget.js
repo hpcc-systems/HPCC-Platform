@@ -32,11 +32,11 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/Select",
     "dijit/form/MultiSelect",
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog"
-
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, Observable,
     registry, BorderContainer, TabContainer, ContentPane,
@@ -225,10 +225,10 @@ define([
                             ActivityId: ActivityId,
                             EdgeId: EdgeId
                         };
-                        for (var key in row){
+                        for (var key in row) {
                             dataRow[key] = row[key];
                         }
-                        cols.forEach(function(col) {
+                        cols.forEach(function (col) {
                             dataRow[col] = row[col];
                         });
                         return dataRow;
@@ -249,7 +249,7 @@ define([
                 }
             },
 
-            openGraph: function(graphName, subgraphID) {
+            openGraph: function (graphName, subgraphID) {
                 var tab = this.ensurePane(subgraphID + " - " + graphName, {
                     GraphName: graphName,
                     SubGraphId: subgraphID

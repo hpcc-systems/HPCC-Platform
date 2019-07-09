@@ -34,6 +34,7 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/Form",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton",
     "dijit/Fieldset"

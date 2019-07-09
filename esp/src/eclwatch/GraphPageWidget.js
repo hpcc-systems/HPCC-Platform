@@ -33,6 +33,8 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/Dialog",
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/TextBox",
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",

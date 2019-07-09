@@ -18,6 +18,7 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/Select",
     "dijit/form/TextBox",
     "dijit/form/DateTextBox",

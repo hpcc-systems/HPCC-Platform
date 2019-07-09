@@ -41,20 +41,23 @@ define([
                     case "COUNTRY":
                         this.chart = new hpccMap.ChoroplethCountries()
                             .target(_target.domNodeID)
+                            .autoScaleMode("data")
                             ;
                         deferred.resolve(this.chart);
                         break;
                     case "STATE":
-                        this.chart = new hpccMap.USStates()
+                        this.chart = new hpccMap.ChoroplethStates()
                             .target(_target.domNodeID)
-                            .mapType("AlbersPR")
+                            .projection("AlbersPR")
+                            .autoScaleMode("data")
                             ;
                         deferred.resolve(this.chart);
                         break;
                     case "COUNTY":
-                        this.chart = new hpccMap.USCounties()
+                        this.chart = new hpccMap.ChoroplethCounties()
                             .target(_target.domNodeID)
-                            .mapType("AlbersPR")
+                            .projection("AlbersPR")
+                            .autoScaleMode("data")
                             ;
                         deferred.resolve(this.chart);
                         break;

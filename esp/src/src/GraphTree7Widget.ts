@@ -30,6 +30,7 @@ import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
 import "dijit/layout/BorderContainer";
 import "dijit/layout/ContentPane";
 import "dijit/form/Button";
+import "dijit/form/ToggleButton";
 import "dijit/ToolbarSeparator";
 import "dijit/form/TextBox";
 import "dijit/form/DropDownButton";

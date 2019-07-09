@@ -23,6 +23,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/form/TextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/Toolbar"
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
     _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, Clippy, WsPackageMaps, template) {

@@ -29,6 +29,8 @@ define([
     "dojo/text!../templates/DFUWUDetailsWidget.html",
 
     "dijit/form/Select",
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/CheckBox",
     "dijit/ToolbarSeparator"
 

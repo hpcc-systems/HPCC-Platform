@@ -23,6 +23,7 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/Select",
     "dijit/form/TextBox",
     "dijit/form/DateTextBox",
@@ -91,7 +92,7 @@ define([
                                 domClass.add(node, "justify-right");
                                 node.innerText = value;
                             },
-                         },
+                        },
                         TotalSize: {
                             label: this.i18n.TotalSize, width: 125, sortable: true,
                             renderCell: function (object, value, node, options) {
@@ -115,7 +116,8 @@ define([
                                 node.innerText = value;
                             },
                         },
-                        NumOfFilesUnknown: { label: this.i18n.FilesWithUnknownSize, width: 160, sortable: true,
+                        NumOfFilesUnknown: {
+                            label: this.i18n.FilesWithUnknownSize, width: 160, sortable: true,
                             renderCell: function (object, value, node, options) {
                                 domClass.add(node, "justify-right");
                                 node.innerText = value;

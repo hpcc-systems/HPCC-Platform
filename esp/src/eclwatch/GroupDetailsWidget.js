@@ -24,6 +24,7 @@ define([
     "dijit/form/Textarea",
     "dijit/form/TextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane",
