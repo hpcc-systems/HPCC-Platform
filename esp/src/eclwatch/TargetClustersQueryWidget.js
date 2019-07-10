@@ -177,6 +177,11 @@ define([
                 }
             }, domID);
 
+            retVal.on(".dgrid-cell img:click", function (evt) {
+                var item = retVal.row(evt).data;
+                context._onOpenConfiguration(item);
+            });
+
             retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = retVal.row(evt).data;
@@ -211,34 +216,36 @@ define([
             });
         },
 
-        _onOpenConfiguration: function (event) {
+        _onOpenConfiguration: function (data) {
             var context = this;
             var selections = this.grid.getSelected();
             var firstTab = null;
-            for (var i = 0; i < selections.length; ++i) {
-                var data = this.grid.row(selections[i].hpcc_id).data;
-                WsTopology.TpGetComponentFile({
-                    request: {
-                        NetAddress: data.Netaddress,
-                        FileType: "cfg",
-                        Directory: data.Directory,
-                        CompType: data.Type,
-                        OsType: data.OS,
-                    }
-                }).then(function(response) {
-                    var tab = context.ensureConfigurationPane(data.Parent.Name + "-" + data.Type , {
-                        Component: data.Type,
-                        Name: data.Parent.Name,
-                        Usergenerated: response
-                    });
-                    if (i === 0) {
-                        firstTab = tab;
-                    }
+
+            if (!data) {
+                data = this.grid.row(selections[0].hpcc_id).data;
+            }
+
+            WsTopology.TpGetComponentFile({
+                request: {
+                    NetAddress: data.Netaddress,
+                    FileType: "cfg",
+                    Directory: data.Directory,
+                    CompType: data.Type,
+                    OsType: data.OS,
+                }
+            }).then(function(response) {
+                var tab = context.ensureConfigurationPane(data.Parent.Name + "-" + data.Type , {
+                    Component: data.Type,
+                    Name: data.Parent.Name,
+                    Usergenerated: response
                 });
-            }
-            if (firstTab) {
-                this.selectChild(firstTab);
-            }
+                if (firstTab === null) {
+                    firstTab = tab;
+                }
+                if (firstTab) {
+                    context.selectChild(firstTab);
+                }
+            });
         },
 
         _onRowDblClick: function (item) {
@@ -258,16 +265,24 @@ define([
             var isProcess = false;
 
             for (var i = 0; i < selection.length; ++i) {
-                if (selection[i] && selection[i].type === "targetClusterProcess") {
-                    isTarget = true;
-                    isProcess = false;
-
+                if (selection.length > 1) {
+                    if (!selection[i].type) { // is a process
+                        isTarget = false;
+                        isProcess = false;
+                    } else if (selection[i].type) {
+                        isTarget = true;
+                        isProcess = false;
+                    }    
                 } else {
-                    isTarget = false;
-                    isProcess = true;
+                    if (selection[i] && selection[i].type === "clusterProcess") {
+                        isTarget = true;
+                        isProcess = false;
+                    } else {
+                        isTarget = false;
+                        isProcess = true;
+                    }
                 }
             }
-
             this.machineFilter.disable(!isTarget);
             this.configurationButton.set("disabled", !isProcess);
         },

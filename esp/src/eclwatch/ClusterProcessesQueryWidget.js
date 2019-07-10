@@ -51,7 +51,7 @@ define([
             this.machineFilter = new MachineInformationWidget({});
 
             this.configurationButton = new Button({
-                label:  this.i18n.OpenConfiguration,
+                label: this.i18n.OpenConfiguration,
                 onClick: function(event) {
                     context._onOpenConfiguration()
                 }
@@ -197,6 +197,11 @@ define([
                 }
             }, domID);
 
+            retVal.on(".dgrid-cell img:click", function (evt) {
+                var item = retVal.row(evt).data;
+                context._onOpenConfiguration(item);
+            });
+
             retVal.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = retVal.row(evt).data;
@@ -225,27 +230,37 @@ define([
             return retVal;
         },
 
-        _onOpenConfiguration: function (event) {
+        _onOpenConfiguration: function (data) {
             var context = this;
             var selections = this.grid.getSelected();
             var firstTab = null;
-            for (var i = 0; i < selections.length; ++i) {
-                WsTopology.TpGetComponentFile({
-                    request: {
-                        FileType: "cfg",
-                        CompType: selections[i].Component,
-                        CompName: selections[i].Name,
-                        Directory: selections[i].Directory,
-                        OsType: selections[i].OS
-                    }
-                }).then(function(response){
-                    var tab = context.ensureConfigurationPane(selections[i].Component + "_" + selections[i].Name , {
-                        Component: selections[i].Component,
-                        Name: selections[i].Name,
-                        Usergenerated: response
-                    });
-                });
+
+            if (!data) {
+                data = this.grid.row(selections[0].hpcc_id).data;
             }
+
+            WsTopology.TpGetComponentFile({
+                request: {
+                    FileType: "cfg",
+                    CompType: data.Component,
+                    CompName: data.Name,
+                    Directory: data.Directory,
+                    OsType: data.OS
+                }
+            }).then(function(response) {
+                var tab = context.ensureConfigurationPane(data.Component + "_" + data.Name , {
+                    Component: data.Component,
+                    Name: data.Name,
+                    Usergenerated: response
+                });
+
+                if (firstTab === null) {
+                    firstTab = tab;
+                }
+                if (firstTab) {
+                    context.selectChild(firstTab);
+                }
+            });
         },
 
         _onRefresh: function () {
@@ -264,18 +279,26 @@ define([
             var isProcess = false;
 
             for (var i = 0; i < selection.length; ++i) {
-                if (selection[i] && selection[i].type === "clusterProcess") {
-                    isTarget = true;
-                    isProcess = false;
-
+                if (selection.length > 1) {
+                    if (selection[i].type) {
+                        isTarget = false;
+                        isProcess = false;
+                    } else if (!selection[i].type) {
+                        isTarget = true;
+                        isProcess = false;
+                    }    
                 } else {
-                    isTarget = false;
-                    isProcess = true;
+                    if (selection[i] && selection[i].type === "targetClusterProcess") {
+                        isTarget = true;
+                        isProcess = false;
+                    } else {
+                        isTarget = false;
+                        isProcess = true;
+                    }
                 }
             }
-
-            this.machineFilter.disable(!isProcess);
-            this.configurationButton.set("disabled", !isTarget);
+            this.machineFilter.disable(!isTarget);
+            this.configurationButton.set("disabled", !isProcess);
         },
 
         ensureConfigurationPane: function (id, params) {
