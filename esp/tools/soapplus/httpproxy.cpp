@@ -297,7 +297,6 @@ public:
             }
             else 
             {
-                m_w->shutdown();
                 m_w->close();
                 break;
             }
@@ -660,12 +659,11 @@ public:
             char peername[256];
             int clientport = m_client->peer_name(peername, 256);
 
-            char inbuf[1024];
-            char outbuf[1024];
-            memset(inbuf, 0, 1024);
-            memset(outbuf, 0, 1024);
+            char inbuf[8];
+            char outbuf[8];
+            memset(inbuf, 0, 8);
+            memset(outbuf, 0, 8);
 
-            unsigned int len = 0;
             unsigned int lenread = 0;
             m_client->read(inbuf, 8, 8, lenread);
             if(lenread != 8)
@@ -674,49 +672,49 @@ public:
                 return -1;
             }
 
-            len += lenread;
-            m_client->read(inbuf + len, 0, 1, lenread);
+            unsigned short* portptr = (unsigned short*)(inbuf+2);
+            unsigned port = ntohs(*portptr);
+
+            // TBD IPV6 (should use serialize/deserialize)
+
+            IpAddress ip;
+            ip.setNetAddress(4,inbuf+4);
+
+            StringBuffer ipstr;
+            ip.getIpText(ipstr);
+
+            char inbuf2[16];
+            m_client->read(inbuf2, 0, 16, lenread);
             StringBuffer username;
             while(lenread > 0)
             {
-                len += lenread;
-                if(len >= 1023)
+                bool done = false;
+                for (int i = lenread - 1; i >= 0; i--)
                 {
-                    len = 0;
+                    if (inbuf2[i] == '\0')
+                    {
+                        if (i > 0)
+                            username.append(i, inbuf2);
+                        done = true;
+                        break;
+                    }
                 }
-                if(inbuf[len - 1] == '\0')
-                {
+                if (done)
                     break;
-                }
-                char c = inbuf[len - 1];
-                username.append(c);
-                m_client->read(inbuf + len, 0, 1, lenread);
+                username.append(lenread, inbuf2);
+                m_client->read(inbuf2, 0, 16, lenread);
             }
-            
+
             if(http_tracelevel >= 5)
+            {
                 fprintf(m_ofile, "\n>>receivd SOCKS request from %s:%d, user %s\n", peername, clientport, username.str());
+                fprintf(m_ofile, "\n>>The request is for %s:%d\n", ipstr.str(), port);
+            }
 
             outbuf[0] = '\0';
             outbuf[1] = (char)0x5a;
 
             m_client->write(outbuf, 8);
-
-            char ubyte = inbuf[2];
-            char lbyte = inbuf[3];
-            unsigned short port = (unsigned short)ubyte;
-            port = port << 8;
-            port += lbyte;
-
-            // TBD IPV6 (should use serialize/deserialize)
-
-            IpAddress ip;
-            ip.setNetAddress(4,inbuf+4);        
-                                                
-
-            StringBuffer ipstr;
-            ip.getIpText(ipstr);
-            if(http_tracelevel >= 5)
-                fprintf(m_ofile, "\n>>The request is for %s:%d\n", ipstr.str(), port);      
 
             SocketEndpoint ep;
             ep.set(port, ip);
@@ -730,9 +728,7 @@ public:
             t2.start();
             t1.join();
             t2.join();
-            m_remotesocket->shutdown();
             m_remotesocket->close();
-            m_client->shutdown();
             m_client->close();
         }
         catch(IException *excpt)
