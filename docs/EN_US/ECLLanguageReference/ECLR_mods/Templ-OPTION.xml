@@ -647,6 +647,19 @@
               <entry>For Roxie queries. When true, generates a unique GlobalId
               if one is not provided.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>analyzeWorkunit</emphasis></entry>
+
+              <entry></entry>
+
+              <entry>Overrides the setting in ECL Agent to analyze workunits
+              after ECL queries are executed (Thor only). This allows a
+              workunit to be further analyzed to identify and display any
+              potential issues. These possible issues display in ECL Watch's
+              "Warnings &amp; Errors" area. The global setting defaults to
+              TRUE, but can be changed using Configuration Manager.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
