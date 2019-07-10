@@ -276,7 +276,7 @@ public:
     //
     // This method is called by server to accept client connection
     //
-    virtual ISocket* accept(bool allowcancel=false) = 0; // not needed for UDP
+    virtual ISocket* accept(bool allowcancel=false, SocketEndpoint *peerEp = nullptr) = 0; // not needed for UDP
 
     //
     // log poll() errors
@@ -628,6 +628,24 @@ extern jlib_decl int wait_write_multiple(UnsignedArray  &socks,     //IN   socke
 
 extern jlib_decl void throwJSocketException(int jsockErr);
 extern jlib_decl IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg);
+
+interface IWhiteListHandler : extends IInterface
+{
+    virtual bool isWhiteListed(const char *ip, unsigned __int64 role, StringBuffer *responseText=nullptr) const = 0;
+    virtual StringBuffer &getWhiteList(StringBuffer &out) const = 0;
+    virtual void refresh() = 0;
+};
+
+interface IWhiteListWriter : extends IInterface
+{
+    virtual void add(const char *ip, unsigned __int64 role) = 0;
+    virtual void setAllowAnonRoles(bool tf) = 0;
+};
+
+typedef std::function<bool(IWhiteListWriter &)> WhiteListPopulateFunction;
+typedef std::function<StringBuffer &(StringBuffer &, unsigned __int64)> WhiteListFormatFunction;
+extern jlib_decl IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc, WhiteListFormatFunction roleFormatFunc = {}); // format function optional
+
 
 #endif
 

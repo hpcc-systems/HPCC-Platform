@@ -321,7 +321,7 @@ public:
         if (comm)
             comm->cancel(srcrank,tag);
     }
-    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) override
+    virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const override
     {
         assertex(comm);
         return comm->queryChannelPeerEndpoint(sender);
@@ -727,13 +727,11 @@ public:
         return comm->send(mbuf,dstrank,tag,timeout);
     }
 
-
     bool sendRecv(CMessageBuffer &mbuff, rank_t sendrank, mptag_t sendtag, unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(comm);
         return comm->sendRecv(mbuff,sendrank,sendtag,timeout);
     }
-
 
     virtual unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=0)
     {
@@ -745,20 +743,17 @@ public:
         return comm->recv(mbuf,srcrank,tag,sender,timeout);
     }
 
-    virtual bool reply   (CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER)
+    virtual bool reply(CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(comm);
         return comm->reply(mbuff,timeout);
     }
-
 
     virtual void disconnect(INode *node)
     {
         assertex(comm);
         comm->disconnect(node);
     }
-
-
 };
     
 #define CATCH_MPERR_link_closed \

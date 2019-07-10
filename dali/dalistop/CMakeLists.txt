@@ -45,4 +45,5 @@ install ( TARGETS dalistop RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dalistop 
          jlib
          mp 
+         dalibase 
 )

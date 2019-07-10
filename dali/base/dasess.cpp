@@ -18,8 +18,6 @@
 #define da_decl DECL_EXPORT
 
 #include <unordered_map>
-#include <unordered_set>
-#include <string>
 
 #include "platform.h"
 #include "jlib.hpp"
@@ -74,7 +72,17 @@ static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
     { "XRef", DCR_XRef },
     { "EclMinus", DCR_EclMinus },
     { "Monitoring", DCR_Monitoring },
+    { "DaliStop", DCR_DaliStop },
 };
+
+DaliClientRole queryRole(const char *roleStr)
+{
+    const auto &it = daliClientRoleMap.find(roleStr);
+    if (it == daliClientRoleMap.end())
+        return DCR_Unknown;
+    return it->second;
+}
+
 
 const char *queryRoleName(DaliClientRole role)
 {
@@ -106,10 +114,10 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_XRef: return "XRef";
     case DCR_EclMinus: return "EclMinus";
     case DCR_Monitoring: return "Monitoring";
+    case DCR_DaliStop: return "DaliStop";
     }
     return "Unknown";
 }
-
 
 
 interface ISessionManagerServer: implements IConnectionMonitor
@@ -125,7 +133,6 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
     virtual void setLDAPconnection(IDaliLdapConnection *_ldapconn) = 0;
-    virtual bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role) = 0;
     virtual void start() = 0;
     virtual void ready() = 0;
     virtual void stop() = 0;
@@ -557,35 +564,8 @@ public:
                 const SocketEndpoint &peerIP = coven.queryComm().queryChannelPeerEndpoint(mb.getSender());
                 Owned<INode> servernode(deserializeINode(mb));  // hopefully me, but not if forwarded
                 int role=0;
-                if (mb.length()-mb.getPos()>=sizeof(role)) { // a capability block present
+                if (mb.length()-mb.getPos()>=sizeof(role)) // a capability block present
                     mb.read(role);
-                    if (!manager.authorizeConnection(peerIP, (DaliClientRole) role))
-                    {
-                        MilliSleep(2000); // Delay makes rapid probing of all possible roles slightly more painful.
-                        SocketEndpoint sender = mb.getSender();
-                        mb.clear();
-                        mb.append((SessionId) 0);
-                        INode *na = queryNullNode();
-                        Owned<IGroup> dummyCoven = createIGroup(1, &na);
-                        dummyCoven->serialize(mb);
-                        const char *roleName = queryRoleName((DaliClientRole)role);
-                        StringBuffer ipStr;
-                        peerIP.getIpText(ipStr);
-                        Owned<IException> e = makeStringExceptionV(-1, "Access denied! [client ip=%s, role=%s]", ipStr.str(), roleName);
-                        EXCLOG(e, nullptr);
-                        serializeException(e, mb);
-                        coven.reply(mb);
-                        MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
-                        Owned<INode> node = createINode(sender);
-                        coven.disconnect(node);
-                        break;
-                    }
-#ifdef _DEBUG
-                    StringBuffer eps;
-                    PROGLOG("Connection to %s at %s authorized",queryRoleName((DaliClientRole)role),mb.getSender().getUrlStr(eps).str());
-#endif
-                }
-                
                 IGroup *covengrp;
                 id = manager.registerClientProcess(node.get(),covengrp,(DaliClientRole)role);
                 mb.clear().append(id);
@@ -905,8 +885,6 @@ public:
             servernotifys.item(i).doNotify(aborted);
         }
     }
-
-
 };
 
 
@@ -1160,16 +1138,6 @@ public:
         queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
     }
 
-    virtual void refreshWhiteList() override
-    {
-        throwUnexpectedX("refreshWhiteList called on client");
-    }
-
-    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
-    {
-        throwUnexpectedX("getWhiteList called on client");
-    }
-
     void onClose(SocketEndpoint &ep)
     {
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
@@ -1319,249 +1287,6 @@ public:
 };
 
 
-// std::hash specialization for DaliClientRole, used in std::pair for whiteList
-namespace std {
-    template <>
-    struct hash<DaliClientRole> {
-        size_t operator ()(DaliClientRole value) const {
-            return static_cast<size_t>(value);
-        }
-    };
-}
-
-/* NB: Ideally this belongs within common/environment,
- * however, that would introduce a circular dependency.
- */
-class CWhiteListHandler
-{
-    struct PairHasher
-    {
-        template <class T1, class T2>
-        std::size_t operator () (std::pair<T1, T2> const &pair) const
-        {
-            std::size_t h1 = std::hash<T1>()(pair.first);
-            std::size_t h2 = std::hash<T2>()(pair.second);
-            return h1 ^ h2;
-        }
-    };
-    std::unordered_set<std::pair<std::string, DaliClientRole>, PairHasher> whiteList;
-    std::unordered_map<std::string, std::string> machineMap;
-    mutable CriticalSection populatedCrit;
-    bool populated = false;
-    bool enabled = true;
-
-    void populateMachineMap(IPropertyTree &environment)
-    {
-        Owned<IPropertyTreeIterator> machineIter = environment.getElements("Hardware/Computer");
-        ForEach(*machineIter)
-        {
-            const IPropertyTree &machine = machineIter->query();
-            const char *name = machine.queryProp("@name");
-            const char *host = machine.queryProp("@netAddress");
-            machineMap.insert({name, host});
-        }
-    }
-    const char *resolveComputer(const char *compName, const char *defaultValue, StringBuffer &result) const
-    {
-        const auto &it = machineMap.find(compName);
-        if (it == machineMap.end())
-            return defaultValue;
-        IpAddress ip(it->second.c_str());
-        if (ip.isNull())
-            return defaultValue;
-        return ip.getIpText(result);
-    }
-    void addRoles(const IPropertyTree &component, const std::vector<DaliClientRole> &roles)
-    {
-        Owned<IPropertyTreeIterator> instanceIter = component.getElements("Instance");
-        ForEach(*instanceIter)
-        {
-            const char *compName = instanceIter->query().queryProp("@computer");
-            StringBuffer ipSB;
-            const char *ip = resolveComputer(compName, component.queryProp("@netAddress"), ipSB);
-            if (ip)
-            {
-                for (auto &role: roles)
-                    whiteList.insert({ ip, role });
-            }
-        }
-    }
-    void populate()
-    {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
-        assertex(conn);
-        populateMachineMap(*conn->queryRoot());
-        enum SoftwareComponentType
-        {
-            RoxieCluster,
-            ThorCluster,
-            EclAgentProcess,
-            DfuServerProcess,
-            EclCCServerProcess,
-            EspProcess,
-            SashaServerProcess,
-            EclSchedulerProcess,
-            DaliServerProcess,
-            BackupNodeProcess,
-            EclServerProcess,
-        };
-        std::unordered_map<std::string, SoftwareComponentType> softwareTypeRoleMap = {
-                { "RoxieCluster", RoxieCluster },
-                { "ThorCluster", ThorCluster },
-                { "EclAgentProcess", EclAgentProcess },
-                { "DfuServerProcess", DfuServerProcess },
-                { "EclCCServerProcess", EclCCServerProcess },
-                { "EspProcess", EspProcess },
-                { "SashaServerProcess", SashaServerProcess },
-                { "EclSchedulerProcess", EclSchedulerProcess },
-                { "DaliServerProcess", DaliServerProcess },
-                { "BackupNodeProcess", BackupNodeProcess },
-                { "EclServerProcess", EclServerProcess },
-        };
-
-        Owned<IPropertyTreeIterator> softwareIter = conn->queryRoot()->getElements("Software/*");
-        ForEach(*softwareIter)
-        {
-            const IPropertyTree &component = softwareIter->query();
-            const char *compProcess = component.queryName();
-            const auto &it = softwareTypeRoleMap.find(compProcess);
-            if (it != softwareTypeRoleMap.end())
-            {
-                switch (it->second)
-                {
-                    case RoxieCluster:
-                    {
-                        Owned<IPropertyTreeIterator> serverIter = component.getElements("RoxieServerProcess");
-                        ForEach(*serverIter)
-                        {
-                            const IPropertyTree &server = serverIter->query();
-                            const char *serverCompName = server.queryProp("@computer");
-                            StringBuffer ipSB;
-                            const char *ip = resolveComputer(serverCompName, server.queryProp("@netAddress"), ipSB);
-                            if (ip)
-                                whiteList.insert({ ip, DCR_RoxyMaster });
-                        }
-                        break;
-                    }
-                    case ThorCluster:
-                    {
-                        const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
-                        StringBuffer ipSB;
-                        const char *ip = resolveComputer(masterCompName, component.queryProp("@netAddress"), ipSB);
-                        if (ip)
-                        {
-                            whiteList.insert({ ip, DCR_ThorMaster });
-                            whiteList.insert({ ip, DCR_DaliAdmin });
-                        }
-                        break;
-                    }
-                    case EclAgentProcess:
-                        addRoles(component, { DCR_EclAgent, DCR_AgentExec });
-                        break;
-                    case DfuServerProcess:
-                        addRoles(component, { DCR_DfuServer });
-                        break;
-                    case EclCCServerProcess:
-                        addRoles(component, { DCR_EclCCServer, DCR_EclCC });
-                        break;
-                    case EclServerProcess:
-                        addRoles(component, { DCR_EclServer, DCR_EclCC });
-                        break;
-                    case EspProcess:
-                        addRoles(component, { DCR_EspServer });
-                        break;
-                    case SashaServerProcess:
-                        addRoles(component, { DCR_SashaServer, DCR_XRef });
-                        break;
-                    case EclSchedulerProcess:
-                        addRoles(component, { DCR_EclScheduler });
-                        break;
-                    case BackupNodeProcess:
-                        addRoles(component, { DCR_BackupGen, DCR_DaliAdmin });
-                        break;
-                    case DaliServerProcess:
-                        addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin, DCR_Monitoring });
-                        break;
-                }
-            }
-        }
-        // only ever expecting 1 DaliServerProcess and 1 WhiteList
-        IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
-        if (whiteListTree)
-        {
-            enabled = whiteListTree->getPropBool("@enabled", true); // on by default
-            Owned<IPropertyTreeIterator> whiteListIter = whiteListTree->getElements("Entry");
-            ForEach(*whiteListIter)
-            {
-                const IPropertyTree &entry = whiteListIter->query();
-                StringArray hosts, roles;
-                hosts.appendListUniq(entry.queryProp("@hosts"), ",");
-                roles.appendListUniq(entry.queryProp("@roles"), ",");
-                ForEachItemIn(h, hosts)
-                {
-                    ForEachItemIn(r, roles)
-                    {
-                        const char *roleStr = roles.item(r);
-                        const auto &it = daliClientRoleMap.find(roleStr);
-                        if (it != daliClientRoleMap.end())
-                        {
-                            IpAddress ip(hosts.item(h));
-                            if (!ip.isNull())
-                            {
-                                StringBuffer ipStr;
-                                whiteList.insert({ ip.getIpText(ipStr).str(), it->second });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        populated = true;
-    }
-    void ensurePopulated() const
-    {
-        // should be called within CS
-        if (populated)
-            return;
-        (const_cast <CWhiteListHandler *> (this))->populate();
-    }
-public:
-    bool isWhiteListed(const char *ip, DaliClientRole role) const
-    {
-        CriticalBlock block(populatedCrit);
-        ensurePopulated();
-        const auto &it = whiteList.find({ip, role});
-        if (it != whiteList.end())
-            return true;
-        else if (enabled)
-            return false;
-        else
-        {
-            WARNLOG("Whitelist mechanism is currently disabled");
-            return true;
-        }
-    }
-    StringBuffer &getWhiteList(StringBuffer &out) const
-    {
-        CriticalBlock block(populatedCrit);
-        ensurePopulated();
-        for (auto &it: whiteList)
-            out.append(it.first.c_str()).append(", ").append(queryRoleName(it.second)).append("\n");
-        return out;
-    }
-    void refresh()
-    {
-        /* NB: clear only, so that next usage will re-populated
-         * Do not want to repopulate now, because refresh() is likely called within a update write transaction
-         */
-        CriticalBlock block(populatedCrit);
-        enabled = true;
-        whiteList.clear();
-        machineMap.clear();
-        populated = false;
-    }
-};
-
 class CCovenSessionManager: public CSessionManagerBase, implements ISessionManagerServer, implements ISubscriptionManager
 {
     CSessionRequestServer   sessionrequestserver;
@@ -1573,7 +1298,6 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
     atomic_t ldapwaiting;
     Semaphore workthreadsem;
     bool stopping;
-    CWhiteListHandler whiteListHandler;
 
     void remoteAddProcessSession(rank_t dst,SessionId id,INode *node, DaliClientRole role)
     {
@@ -1915,15 +1639,6 @@ public:
 #endif
     }
 
-
-    bool authorizeConnection(const IpAddress &clientIP, DaliClientRole role)
-    {
-        StringBuffer ipStr;
-        clientIP.getIpText(ipStr);
-        return whiteListHandler.isWhiteListed(ipStr, role);
-    }
-
-
     SessionId startSession(SecurityToken tok, SessionId parentid)
     {
         return registerSession(tok,parentid);
@@ -2084,16 +1799,6 @@ protected:
             }
             sessionstates.remove(id);
         }
-    }
-
-    virtual void refreshWhiteList() override
-    {
-        whiteListHandler.refresh();
-    }
-
-    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
-    {
-        return whiteListHandler.getWhiteList(out);
     }
 
     void onClose(SocketEndpoint &ep)
