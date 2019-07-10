@@ -102,7 +102,8 @@ interface IMPServer : extends IInterface
     virtual void setOpt(MPServerOpts opt, const char *value) = 0;
 };
 
-extern mp_decl void startMPServer(unsigned port,bool paused=false);
+extern mp_decl void startMPServer(unsigned port, bool paused=false);
+extern mp_decl void startMPServer(unsigned __int64 role, unsigned port, bool paused=false);
 extern mp_decl void stopMPServer();
 extern mp_decl IMPServer *getMPServer();
 extern mp_decl IMPServer *startNewMPServer(unsigned port);
