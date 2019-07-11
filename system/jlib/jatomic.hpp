@@ -111,7 +111,7 @@ private:
 //MCK verified gcc 7.1+ and all recent clang are ok
 #if defined(_WIN32)
 # define HAS_EFFICIENT_CAS
-#elif defined(__GNUC__) && (__GNUC___ > 7 || (__GNUC__ == 7 && __GNUC_MINOR__ >= 1))
+#elif defined(__GNUC__) && (__GNUC__ > 7 || (__GNUC__ == 7 && __GNUC_MINOR__ >= 1))
 # define HAS_EFFICIENT_CAS
 #elif defined(__clang__)
 # define HAS_EFFICIENT_CAS
