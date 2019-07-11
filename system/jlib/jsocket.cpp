@@ -6742,6 +6742,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _DEBUG
         DBGLOG("%s",dbgSB.str());
 #endif
+        res = readySocks.ordinality();
     }
     else if (res == SOCKET_ERROR)
     {
