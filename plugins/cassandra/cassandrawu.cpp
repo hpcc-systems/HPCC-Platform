@@ -2623,7 +2623,7 @@ public:
         else
             return WUGraphUnknown;
     }
-    void setGraphState(const char *graphName, WUGraphState state) const
+    void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const
     {
         setNodeState(graphName, 0, state);
     }
@@ -3324,7 +3324,7 @@ public:
                         }
                     }
                     if (graph.hasProp("@_state"))
-                        wu->setGraphState(graphName, (WUGraphState) graph.getPropInt("@_state"));
+                        wu->setGraphState(graphName, graph.getPropInt("@wfid"), (WUGraphState) graph.getPropInt("@_state"));
                 }
             }
             wu->commit();

@@ -7252,7 +7252,7 @@ void WorkflowTransformer::analyseAll(const HqlExprArray & in)
 
 void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray & out)
 {
-    wfidCount = 0;
+    wfidCount = translator.queryMaxWfid();
     HqlExprArray transformed;
     WorkflowTransformInfo globalInfo(NULL);
     ForEachItemIn(idx, in)
@@ -7316,6 +7316,7 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
 
     appendArray(out, workflow);
     appendArray(out, functions);
+    translator.setMaxWfid(wfidCount);
 }
 
 void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, WorkflowArray & out)
