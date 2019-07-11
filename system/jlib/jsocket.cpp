@@ -6757,7 +6757,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _USE_SELECT
             if (FD_ISSET(s, &fds))
 #else
-            if ( (fds[idx].revents) && (!(fds[idx].revents & POLLNVAL)) )
+            if (fds[idx].revents)
 #endif
             {
 #ifdef _DEBUG
@@ -6771,6 +6771,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
 #ifdef _DEBUG
         DBGLOG("%s",dbgSB.str());
 #endif
+        res = readySocks.ordinality();
     }
     else if (res == SOCKET_ERROR)
     {
