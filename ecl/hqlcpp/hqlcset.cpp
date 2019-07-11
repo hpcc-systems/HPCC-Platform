@@ -2229,7 +2229,6 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
                 {
                     //Need a subcontext otherwise sizeof(target-row) gets cached.
                     BuildCtx subctx(ctx);       
-                    subctx.addGroup();
                     Owned<IReferenceSelector> selector = builder->buildCreateElement(subctx);
                     selector->set(subctx, expr->queryChild(i));
                     builder->finishElement(subctx);
