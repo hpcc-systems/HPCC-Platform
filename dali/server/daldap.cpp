@@ -53,8 +53,6 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     StringAttr              filesdefaultuser;
     StringAttr              filesdefaultpassword;
     unsigned                ldapflags;
-    unsigned                requestSignatureExpiryMinutes;//Age at which a dali permissions request signature becomes invalid
-    unsigned                requestSignatureAllowedClockVarianceSeconds;//Number of seconds that timestamps can vary between nodes
     IDigitalSignatureManager * pDSM = nullptr;
 
     void createDefaultScopes()
@@ -86,8 +84,6 @@ public:
     {
         ldapflags = 0;
         if (ldapprops) {
-            requestSignatureExpiryMinutes = ldapprops->getPropInt("@reqSignatureExpiry", 10);
-            requestSignatureAllowedClockVarianceSeconds = ldapprops->getPropInt("@allowedClockVariance", 5);
             if (ldapprops->getPropBool("@checkScopeScans",true))
                 ldapflags |= DLF_SCOPESCANS;
             if (ldapprops->getPropBool("@safeLookup",true))

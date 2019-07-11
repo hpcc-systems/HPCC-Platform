@@ -970,7 +970,7 @@ public:
         {
             //Backwards compatibility in case another parameter is added later, otherwise could be removed
             CDateTime reqUTCTimestamp;
-            mb.append("");
+            mb.append(""); // previously a base64 encoded signature
             reqUTCTimestamp.serialize(mb);
         }
 
