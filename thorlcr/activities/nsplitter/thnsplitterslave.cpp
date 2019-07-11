@@ -247,9 +247,10 @@ public:
                 if (!spill)
                     writer.start(); // writer keeps writing ahead as much as possible, the readahead impl. will block when has too much
             }
-            catch (IException *)
+            catch (IException *e)
             {
                 eofHit = true;
+                writeAheadException.set(e);
                 throw;
             }
         }
