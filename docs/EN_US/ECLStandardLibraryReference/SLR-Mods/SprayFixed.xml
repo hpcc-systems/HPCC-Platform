@@ -25,6 +25,8 @@
   role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
   role="bold">] </emphasis>,<emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -49,6 +51,8 @@
   role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
   role="bold">]</emphasis>, <emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -155,6 +159,13 @@
           <entry>Optional. A integer value indicating the number of days
           before automatically removing the file. If omitted, the default is
           -1 (never expires).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuServerQueue</emphasis></entry>
+
+          <entry>Name of target DFU Server queue. Default is '' (empty) for
+          the first DFU queue in the environment.</entry>
         </row>
 
         <row>

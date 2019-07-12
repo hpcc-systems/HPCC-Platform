@@ -39,8 +39,11 @@
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
   <emphasis> quotedTerminator </emphasis> <emphasis role="bold">]</emphasis>,
   <emphasis role="bold"> [</emphasis> <emphasis> encoding </emphasis>
-  <emphasis role="bold">]</emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>expireDays</emphasis> <emphasis role="bold">])</emphasis></para>
+  <emphasis role="bold">]</emphasis><emphasis role="bold"> , [</emphasis>
+  <emphasis>expireDays</emphasis> <emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
+  role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -75,9 +78,11 @@
   role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
   recordStructurePresent </emphasis> <emphasis role="bold">]</emphasis>,
   <emphasis role="bold"> [</emphasis> <emphasis> quotedTerminator </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
+  <emphasis role="bold">]</emphasis> , <emphasis role="bold"> [</emphasis>
+  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> ,
+  <emphasis role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -238,6 +243,13 @@
           to one of the following: ascii, utf8, utf8n, utf16, utf16le,
           utf16be, utf32, utf32le,utf32be. If omitted, the default is
           ascii.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuServerQueue</emphasis></entry>
+
+          <entry>Name of target DFU Server queue. Default is '' (empty) for
+          the first DFU queue in the environment.</entry>
         </row>
 
         <row>
