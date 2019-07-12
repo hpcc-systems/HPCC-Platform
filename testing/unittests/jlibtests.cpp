@@ -1692,7 +1692,7 @@ public:
             {
                 const char *testTxt = " : Some random text for test line";
                 OwnedIFile iFile = createIFile("JlibIOTest.txt");
-                CRC32 writeCrc;
+                CRC32 writeCrc, readCrc;
                 {
                     OwnedIFileIO iFileIO = iFile->open(IFOcreate);
                     OwnedIFileIOStream stream = createIOStream(iFileIO);
@@ -1708,24 +1708,34 @@ public:
                     OwnedIFileIO iFileIO = iFile->open(IFOread);
                     OwnedIFileIOStream stream = createIOStream(iFileIO); // NB: unbuffered
                     Owned<IStreamLineReader> lineReader = createLineReader(stream, 0==pEol, strlen(testTxt)); // NB: deliberately make chunkSize small so will end up having to read more
-                    CRC32 crc;
                     while (true)
                     {
                         StringBuffer line;
-                        bool eos = lineReader->readLine(line);
-                        CPPUNIT_ASSERT(line.length() != 0);
+                        if (!lineReader->readLine(line))
+                        {
     #ifdef _DEBUG
-                        printf("%s\n", line.str());
+                            printf("JlibIOTest::test readLines");
+                            for(const char *p = line.str(); *p; ++p)
+                            {
+                                switch(*p)
+                                {
+                                case '\n': printf("\\n"); break;
+                                case '\t': printf("\\t"); break;
+                                case '\r': printf("\\r"); break;
+                                default: putchar(*p);break;
+                                }
+                            }
+                            putchar('\n');
     #endif
-                        if (pEol != 0)
-                            line.append(newlines[nl]);
-
-                        crc.tally(line.length(), line.str());
-                        if (eos)
+                            if (pEol==1)
+                                line.append(newlines[nl]);
+                            readCrc.tally(line.length(), line.str());
+                        }
+                        else 
                             break;
                     }
-                    CPPUNIT_ASSERT(writeCrc.get() == crc.get());
                 }
+                CPPUNIT_ASSERT(writeCrc.get() == readCrc.get());
             }
         }
     }

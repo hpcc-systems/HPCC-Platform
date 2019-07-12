@@ -1387,42 +1387,23 @@ public:
                 {
                     ++currentPtr;
                     out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
-                    if (currentPtr == endPtr)
-                        return !refill();
                     return false;
                 }
                 case '\r':
                 {
                     ++currentPtr;
-                    // check for \n
-                    if (currentPtr < endPtr)
-                    {
-                        if ('\n' == *currentPtr) // i.e. \r\n
-                        {
-                            ++currentPtr;
-                            out.append(currentPtr-startPtr-(preserveEols?0:2), startPtr);
-                        }
-                        else // i.e. \r only
-                            out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
-                        if (currentPtr == endPtr)
-                            return !refill();
-                        return false;
-                    }
-                    else // must output what we have and read 1 more byte to check for \n
-                    {
-                        out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
-                        if (!refill())
-                            return true;
-                        else if ('\n' != *currentPtr)
-                            return false;
-                        ++currentPtr;
+                    out.append(currentPtr-startPtr-(preserveEols?0:1), startPtr);
 
+                    // Check for '\n'
+                    if (currentPtr == endPtr)
+                        refill();
+                    if (currentPtr < endPtr && '\n' == *currentPtr)
+                    {
                         if (preserveEols)
                             out.append('\n');
-
-                        // it's possible that refill found 1 char (the \n), if so, we have now hit eos
-                        return currentPtr == endPtr; // condition is same as eos
+                        ++currentPtr;
                     }
+                    return false;
                 }
                 default:
                 {
@@ -1431,7 +1412,7 @@ public:
                     {
                         out.append(currentPtr-startPtr, startPtr); // output what we have so far
                         if (!refill())
-                            return true;
+                            return false;
                     }
                     break;
                 }
