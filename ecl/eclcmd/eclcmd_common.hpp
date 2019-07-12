@@ -117,6 +117,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PART_NAME "--part-name"
 #define ECLOPT_PROTECT "--protect"
 #define ECLOPT_USE_EXISTING "--use-existing"
+#define ECLOPT_IGNORE_WARNINGS "--ignore-warnings"
+#define ECLOPT_IGNORE_OPTIONAL "--ignore-optional"
+#define ECLOPT_IGNORE_QUERIES "--ignore-queries"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
