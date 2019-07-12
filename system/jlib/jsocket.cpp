@@ -24,6 +24,7 @@
     look at loopback
 */
 
+#include <string>
 #include <unordered_set>
 #include <functional>
 
