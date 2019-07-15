@@ -348,10 +348,6 @@ gpgcheck=0</programlisting></para>
                   <row>
                     <entry><itemizedlist>
                         <listitem>
-                          <para>Python : pyembed</para>
-                        </listitem>
-
-                        <listitem>
                           <para>JAVA : javaembed</para>
                         </listitem>
 
@@ -390,8 +386,8 @@ gpgcheck=0</programlisting></para>
               </tgroup>
             </informaltable></para>
 
-          <para>Some other technologies, such as Cassandra support are
-          included in the platform package.</para>
+          <para>Some other technologies, such as Python and Cassandra support
+          are included in the platform package.</para>
         </sect3>
       </sect2>
 
@@ -2187,7 +2183,7 @@ sudo /etc/init.d/hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>Python</para>
+          <para>Python (full support is already built-in)</para>
         </listitem>
 
         <listitem>
