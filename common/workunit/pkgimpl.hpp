@@ -457,8 +457,27 @@ public:
         }
     }
 
-    virtual bool validate(StringArray &queriesToCheck, StringArray &warn, StringArray &err, 
-        StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
+    bool checkIgnoreQuery(const StringArray &queriesToIgnore, const char *queryid) const
+    {
+        ForEachItemIn(i, queriesToIgnore)
+        {
+            const char *match = queriesToIgnore.item(i);
+            if (match && *match)
+            {
+                if (containsWildcard(match))
+                {
+                    if (WildMatch(queryid, match, true))
+                        return true;
+                }
+                else if (streq(match, queryid))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    virtual bool validate(const StringArray &queriesToCheck, const StringArray &queriesToIgnore, StringArray &warn, StringArray &err,
+        StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles, bool ignoreOptionalFiles) const
     {
         bool isValid = true;
         MapStringTo<bool> referencedPackages;
@@ -520,6 +539,8 @@ public:
             const char *queryid = queries->query().queryProp("@id");
             if (queryid && *queryid)
             {
+                if (checkIgnoreQuery(queriesToIgnore, queryid))
+                    continue;
                 Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, true, false);
                 Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"));
 
@@ -569,7 +590,11 @@ public:
                     }
                     VStringBuffer fullname("%s/%s", queryid, rf.getLogicalName());
                     if (!(flags & RefFileNotOptional))
+                    {
+                        if (ignoreOptionalFiles)
+                            continue;
                         fullname.append("/Optional");
+                    }
                     else if (isCompulsory)
                         fullname.append("/Compulsory");
                     unmatchedFiles.append(fullname);
