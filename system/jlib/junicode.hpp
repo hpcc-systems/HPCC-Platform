@@ -81,6 +81,10 @@ typedef MemoryBuffer & (*utfReplacementFunc)(MemoryBuffer & target, UTF32 match,
 extern jlib_decl bool replaceUtf(utfReplacementFunc func, MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source);
 extern jlib_decl bool appendUtfXmlName(MemoryBuffer & target, UtfReader::UtfFormat type, unsigned sourceLength, const void * source);
 
+//Does the string only contain characters < 128 (i.e. is identical when converted to utf8)
+extern jlib_decl bool containsOnlyAscii(const char * source);
+extern jlib_decl bool containsOnlyAscii(unsigned sourceLength, const char * source);
+
 inline StringBuffer &appendUtf8XmlName(StringBuffer & target, unsigned sourceLength, const void * source)
 {
     MemoryBuffer mb;

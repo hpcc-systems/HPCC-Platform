@@ -3652,6 +3652,22 @@ int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char co
     return static_cast<int>(trailbytes); //cast okay as is certainly 0--3
 }
 
+bool rtlCodepageToCodepage(StringBuffer & out, unsigned maxoutlen, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
+{
+    UConverter * inconv = queryRTLUnicodeConverter(incodepage)->query();
+    UConverter * outconv = queryRTLUnicodeConverter(outcodepage)->query();
+    UErrorCode err = U_ZERO_ERROR;
+
+    //GH->PG is there a better way of coding this with out temporary buffer?
+    size32_t oldLength = out.length();
+    char * tempBuffer = out.reserve(maxoutlen);
+    char * target = tempBuffer;
+    ucnv_convertEx(outconv, inconv, &target, tempBuffer+maxoutlen, &in, in+inlen, NULL, NULL, NULL, NULL, TRUE, TRUE, &err);
+    unsigned len = target - tempBuffer;
+    out.setLength(oldLength + len);
+    return U_SUCCESS(err) != FALSE;
+}
+
 #else
 void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in)
 {
@@ -3681,6 +3697,13 @@ int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char co
 {
     rtlThrowNoUnicode();
 }
+
+bool rtlCodepageToCodepage(StringBuffer & out, unsigned maxoutlen, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
+{
+    out.append(inlen, in);
+    return true;
+}
+
 
 #endif
 
@@ -5021,6 +5044,11 @@ void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char 
     memcpy(buffer, in, insize);
     outlen = inlen;
     out = buffer;
+}
+
+void rtlStringToUtf8(StringBuffer & out, unsigned inlen, char const * in)
+{
+    rtlCodepageToCodepage(out, inlen*UTF8_MAXSIZE, inlen, in, UTF8_CODEPAGE, ASCII_LIKE_CODEPAGE);
 }
 
 #ifdef _USE_ICU
