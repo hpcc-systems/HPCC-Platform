@@ -2067,6 +2067,7 @@ public:
         }
         return timer;
     }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { throwUnexpected(); }
 
 protected:
     mutable CriticalSection contextCrit;
@@ -3696,10 +3697,15 @@ public:
 
     virtual void addWuException(const char * text, unsigned code, unsigned _severity, const char * source)
     {
+        addWuExceptionEx(text, code, _severity, MSGAUD_operator, source);
+    }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned _severity, unsigned audience, const char * source)
+    {
         ErrorSeverity severity = (ErrorSeverity) _severity;
         CTXLOG("%s", text);
         if (severity > SeverityInformation)
-            OERRLOG("%d - %s", code, text);
+            LOG(mapToLogMsgCategory(severity, (MessageAudience)audience), "%d - %s", code, text);
+
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
@@ -3853,7 +3859,7 @@ public:
     }
     virtual void fail(int code, const char *text)
     {
-        addWuException(text, code, 2, "user");
+        addWuExceptionEx(text, code, 2, MSGAUD_user, "user");
     }
 
     virtual unsigned getWorkflowId() { return workflow->queryCurrentWfid(); }

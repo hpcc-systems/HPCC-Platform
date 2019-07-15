@@ -261,6 +261,8 @@ inline IError * createError(int errNo, const char *msg, const char *filename, in
 }
 
 extern jlib_decl const char * querySeverityString(ErrorSeverity errorSeverity);
+class LogMsgCategory;
+extern jlib_decl const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudience aud);
 
 #endif
 

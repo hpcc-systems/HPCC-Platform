@@ -1093,8 +1093,7 @@ extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, 
     {
         StringBuffer buff;
         buff.append("Skipping OPT index read of nonexistent file ").append(lfn);
-        UWARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
+        _agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, MSGAUD_user, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1276,8 +1275,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
     {
         StringBuffer buff;
         buff.append("Skipping OPT index normalize of nonexistent file ").append(lfn);
-        UWARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
+        _agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, MSGAUD_user, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1394,8 +1392,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
     {
         StringBuffer buff;
         buff.append("Skipping OPT index aggregate of nonexistent file ").append(lfn);
-        UWARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
+        _agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, MSGAUD_user, "hthor");
         return new CHThorNullAggregateActivity(_agent, _activityId, _subgraphId, arg, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1551,8 +1548,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
     {
         StringBuffer buff;
         buff.append("Skipping OPT index count of nonexistent file ").append(lfn);
-        UWARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
+        _agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, MSGAUD_user, "hthor");
         return new CHThorNullCountActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -1663,8 +1659,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
     {
         StringBuffer buff;
         buff.append("Skipping OPT index group aggregate of nonexistent file ").append(lfn);
-        UWARNLOG("%s", buff.str());
-        _agent.addWuException(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, "hthor");
+        _agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptIndex, SeverityInformation, MSGAUD_user, "hthor");
         return new CHThorNullActivity(_agent, _activityId, _subgraphId, arg, _kind);
     }
     _agent.logFileAccess(dFile, "HThor", "READ");
@@ -2282,8 +2277,7 @@ public:
             {
                 StringBuffer buff;
                 buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
-                UWARNLOG("%s", buff.str());
-                agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
+                agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
             }
         }
         inputThread.setown(new InputHandler(this));
@@ -2604,8 +2598,7 @@ public:
         {
             StringBuffer buff;
             buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
-            UWARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
+            agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
         }
             
         csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
@@ -4056,8 +4049,7 @@ public:
         {
             StringBuffer buff;
             buff.append("Skipping OPT keyed join against nonexistent file ").append(lfn);
-            UWARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
+            agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
         }
         CHThorThreadedActivityBase::start();
     }

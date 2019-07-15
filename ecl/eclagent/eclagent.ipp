@@ -242,6 +242,10 @@ public:
     {
         return ctx->forceNewDiskReadActivity();
     }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, char const * source) override
+    {
+        ctx->addWuExceptionEx(text, code, severity, audience, source);
+    }
 
 protected:
     IAgentContext * ctx;
@@ -495,6 +499,7 @@ public:
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source);
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, char const * source);
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort);
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
@@ -591,10 +596,11 @@ public:
     virtual void deleteFile(const char * logicalName);
 
     void addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
+    void addExceptionEx(ErrorSeverity severity, MessageAudience aud, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
     void logException(IException *e);  
     void logException(WorkflowException *e);  
     void logException(std::exception & e);
-    void logException(ErrorSeverity severity, unsigned code, const char * text, bool isAbort);
+    void logException(ErrorSeverity severity, MessageAudience aud, unsigned code, const char * text, bool isAbort);
 
     void doProcess();
     void runProcess(IEclProcess *process);

@@ -1737,5 +1737,58 @@ void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const
     report(warn);
 }
 
+const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudience aud)
+{
+    switch (severity)
+    {
+        case SeverityIgnore:
+        case SeverityInformation:
+        {
+            switch (aud)
+            {
+                case MSGAUD_operator:
+                    return MCoperatorInfo;
+                case MSGAUD_user:
+                    return MCuserInfo;
+                case MSGAUD_audit:
+                    return MCauditInfo;
+                default:
+                    return MCdebugInfo;
+            }
+        }
+        case SeverityAlert:
+        case SeverityWarning:
+        {
+            switch (aud)
+            {
+                case MSGAUD_operator:
+                    return MCoperatorWarning;
+                case MSGAUD_user:
+                    return MCuserWarning;
+                case MSGAUD_audit:
+                    return MCauditWarning;
+                default:
+                    return MCinternalWarning;
+            }
+        }
+        case SeverityFatal:
+        case SeverityError:
+        {
+            switch (aud)
+            {
+                case MSGAUD_operator:
+                    return MCoperatorError;
+                case MSGAUD_user:
+                    return MCuserError;
+                case MSGAUD_audit:
+                    return MCauditError;
+                default:
+                    return MCinternalError;
+            }
+        }
+    }
+    return MCdebugInfo;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 

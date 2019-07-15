@@ -1485,7 +1485,11 @@ public:
 
     virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {
-        DBGLOG("%s", text);
+        addWuExceptionEx(text, code, severity, MSGAUD_programmer, source);
+    }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned aud, const char * source)
+    {
+        LOG(mapToLogMsgCategory((ErrorSeverity)severity, (MessageAudience)aud), "%s", text);
         Owned<IThorException> e = MakeThorException(code, "%s", text);
         e->setOrigin(source);
         e->setAction(tea_warning);

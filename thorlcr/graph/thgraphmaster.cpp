@@ -1142,28 +1142,7 @@ public:
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) override
     {
-        DBGLOG("%s", text);
-        try
-        {
-            Owned<IWorkUnit> w = updateWorkUnit();
-            Owned<IWUException> we = w->createException();
-            we->setSeverity((ErrorSeverity)severity);
-            we->setExceptionMessage(text);
-            we->setExceptionSource(source);
-            if (code)
-                we->setExceptionCode(code);
-        }
-        catch (IException *E)
-        {
-            StringBuffer m;
-            E->errorMessage(m);
-            IERRLOG("Unable to record exception in workunit: %s", m.str());
-            E->Release();
-        }
-        catch (...)
-        {
-            IERRLOG("Unable to record exception in workunit: unknown exception");
-        }
+        addWuExceptionEx(text, code, severity, MSGAUD_programmer, source);
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) override
     {
@@ -1254,6 +1233,31 @@ public:
     virtual IWorkUnit *updateWorkUnit() const override
     {
         return &workunit->lock();
+    }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override
+    {
+        LOG(mapToLogMsgCategory((ErrorSeverity)severity, (MessageAudience)audience), "%s", text);
+        try
+        {
+            Owned<IWorkUnit> w = updateWorkUnit();
+            Owned<IWUException> we = w->createException();
+            we->setSeverity((ErrorSeverity)severity);
+            we->setExceptionMessage(text);
+            we->setExceptionSource(source);
+            if (code)
+                we->setExceptionCode(code);
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            E->errorMessage(m);
+            IERRLOG("Unable to record exception in workunit: %s", m.str());
+            E->Release();
+        }
+        catch (...)
+        {
+            IERRLOG("Unable to record exception in workunit: unknown exception");
+        }
     }
 };
 
