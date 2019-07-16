@@ -22,6 +22,7 @@
 #include "jhash.hpp"
 #include "jmisc.hpp"
 #include "jexcept.hpp"
+#include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jtime.hpp"
 #include <stdio.h>
@@ -4019,3 +4020,48 @@ jlib_decl IUserMetric *createUserMetric(const char *name, const char *matchStrin
 {
     return new UserMetricMsgHandler(name, matchString);
 }
+
+jlib_decl void printProcessHandles(pid_t pid)
+{
+#if defined(__linux__)
+    StringBuffer curFilePathSB("/proc/");
+    if (pid)
+        curFilePathSB.append(pid);
+    else
+        curFilePathSB.append("self");
+    curFilePathSB.append("/fd/");
+    size32_t tailPos = curFilePathSB.length();
+
+    Owned<IFile> fdDir = createIFile(curFilePathSB);
+    if (!fdDir)
+        WARNLOG("Failed to create IFile for %s", curFilePathSB.str());
+    Owned<IDirectoryIterator> dirIter = fdDir->directoryFiles();
+    StringBuffer linkedFileNameSB, curFileNameSB;
+    char *linkedFileName = linkedFileNameSB.reserveTruncate(PATH_MAX);
+    ForEach(*dirIter)
+    {
+        dirIter->getName(curFileNameSB.clear());
+        curFilePathSB.setLength(tailPos);
+        curFilePathSB.append(curFileNameSB);
+        struct stat st;
+        int err = lstat(curFilePathSB, &st);
+        if (0 == err)
+        {
+            ssize_t sz = readlink(curFilePathSB, linkedFileName, PATH_MAX-1);
+            if (-1 != sz)
+            {
+                linkedFileNameSB.setLength(sz);
+                PROGLOG("%s -> %s", curFileNameSB.str(), linkedFileNameSB.str());
+            }
+        }
+        else
+        {
+            Owned<IException> e = makeErrnoExceptionV(errno, "Failed: err=%d", err);
+            EXCLOG(e, nullptr);
+        }
+    }
+#else
+// JCSMORE - other OS implements
+#endif
+}
+
