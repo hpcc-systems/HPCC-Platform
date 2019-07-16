@@ -440,6 +440,8 @@ extern jlib_decl void clearAffinityCache(); // should be called whenever the pro
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);
 extern jlib_decl void PrintMemoryReport(bool full=true);
 extern jlib_decl void printAllocationSummary();
+extern jlib_decl bool printProcessHandles(pid_t pid=0); // returns false if fails
+extern jlib_decl bool printLsOf(pid_t pid=0); // returns false if fails
 extern jlib_decl bool areTransparentHugePagesEnabled(HugePageMode mode);
 extern jlib_decl HugePageMode queryTransparentHugePagesMode();
 extern jlib_decl memsize_t getHugePageSize();
