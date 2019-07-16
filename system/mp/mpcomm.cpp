@@ -728,10 +728,39 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     }
 }
 
+/* Legacy header sent id[2] only.
+ * To remain backward compatible (when new MP clients are connecting to old Dali),
+ * we send a regular empty PacketHeader as well that has the 'role' embedded within it,
+ * in unused fields. TAG_SYS_BCAST is used as the message tag, because it is an
+ * unused feature that all Dali's simply receive and delete.
+ */
 struct ConnectHdr
 {
+    ConnectHdr(const SocketEndpoint &hostEp, const SocketEndpoint &remoteEp, unsigned __int64 role)
+    {
+        id[0].set(hostEp);
+        id[1].set(remoteEp);
+
+        hdr.size = sizeof(PacketHeader);
+        hdr.tag = TAG_SYS_BCAST;
+        hdr.flags = 0;
+        hdr.version = MP_PROTOCOL_VERSION;
+        setRole(role);
+    }
+    ConnectHdr()
+    {
+    }
     SocketEndpointV4 id[2];
-    unsigned __int64 role;
+    PacketHeader hdr;
+    inline void setRole(unsigned __int64 role)
+    {
+        hdr.replytag = (mptag_t) (role >> 32);
+        hdr.sequence = (unsigned) (role & 0xffffffff);
+    }
+    inline unsigned __int64 getRole() const
+    {
+        return (((unsigned __int64)hdr.replytag)<<32) | ((unsigned __int64)hdr.sequence);
+    }
 };
 
 
@@ -812,12 +841,9 @@ protected: friend class CMPPacketReader;
                 LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket connect, retrycount = %d", retrycount);
 #endif
 
-                ConnectHdr connectHdr;
                 SocketEndpoint hostep;
                 hostep.setLocalHost(parent->getPort());
-                connectHdr.id[0].set(hostep);
-                connectHdr.id[1].set(remoteep);
-                connectHdr.role = parent->getRole();
+                ConnectHdr connectHdr(hostep, remoteep, parent->getRole());
 
                 unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
 #ifdef _TRACE
@@ -2075,10 +2101,10 @@ int CMPConnectThread::run()
                 }
                 else
                 {
-                    if (rd == sizeof(connectHdr.id))
+                    if (rd == sizeof(connectHdr.id)) // legacy client
                     {
                         legacyClient = true;
-                        connectHdr.role = 0; // unknown
+                        connectHdr.setRole(0); // unknown
                     }
                     else if (rd < sizeof(connectHdr.id) || rd > sizeof(connectHdr))
                     {
@@ -2097,11 +2123,10 @@ int CMPConnectThread::run()
                     StringBuffer ipStr;
                     peerEp.getIpText(ipStr);
                     StringBuffer responseText; // filled if denied
-                    if (!whiteListCallback->isWhiteListed(ipStr, connectHdr.role, &responseText))
+                    if (!whiteListCallback->isWhiteListed(ipStr, connectHdr.getRole(), &responseText))
                     {
                         Owned<IException> e = makeStringException(-1, responseText);
                         OWARNLOG(e, nullptr);
-                        MilliSleep(100+getRandom()%1000); // Causes client to 'work' for a short time.
 
                         if (legacyClient)
                         {
