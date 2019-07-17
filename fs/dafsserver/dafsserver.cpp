@@ -3207,7 +3207,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     CClientStatsTable clientStatsTable;
     atomic_t globallasttick;
     unsigned targetActiveThreads;
-    Owned<IPropertyTree> keyPairInfo;
+    Linked<IPropertyTree> keyPairInfo;
 
     int getNextHandle()
     {
@@ -4946,7 +4946,7 @@ public:
                     {
                         EXCLOG(e,"CRemoteFileServer");
                         e->Release();
-                        break;
+                        continue;
                     }
                 }
 

@@ -823,9 +823,9 @@ public:
     {
         return BASE::getPartIds();
     }
-    virtual bool validate(StringArray &queryids, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
+    virtual bool validate(const StringArray &queryids, const StringArray &queriesToIgnore, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles, bool ignoreOptionalFiles) const
     {
-        return BASE::validate(queryids, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
+        return BASE::validate(queryids, queriesToIgnore, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles, ignoreOptionalFiles);
     }
     virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
     {

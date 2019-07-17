@@ -189,8 +189,11 @@ ESPrequest ValidatePackageRequest
     string PMID;
     string QueryIdToVerify;
     ESParray<string> QueriesToVerify;
+    ESParray<string> QueriesToIgnore;
     bool CheckDFS;
     bool GlobalScope(0);
+    bool IgnoreWarnings(0);
+    bool IgnoreOptionalFiles(0);
 };
 
 ESPstruct ValidatePackageInfo

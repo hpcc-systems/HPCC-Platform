@@ -843,10 +843,19 @@ public:
                 continue;
             if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
                 continue;
+            if (iter.matchFlag(optIgnoreWarnings, ECLOPT_IGNORE_WARNINGS))
+                continue;
+            if (iter.matchFlag(optIgnoreOptionalFiles, ECLOPT_IGNORE_OPTIONAL))
+                continue;
             StringAttr queryIds;
             if (iter.matchOption(queryIds, ECLOPT_QUERYID))
             {
                 optQueryIds.appendList(queryIds.get(), ",");
+                continue;
+            }
+            if (iter.matchOption(queryIds, ECLOPT_IGNORE_QUERIES))
+            {
+                optIgnoreQueries.appendList(queryIds.get(), ",");
                 continue;
             }
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
@@ -928,8 +937,11 @@ public:
         request->setPMID(optPMID);
         request->setTarget(optTarget);
         request->setQueriesToVerify(optQueryIds);
+        request->setQueriesToIgnore(optIgnoreQueries);
         request->setCheckDFS(optCheckDFS);
         request->setGlobalScope(optGlobalScope);
+        request->setIgnoreWarnings(optIgnoreWarnings);
+        request->setIgnoreOptionalFiles(optIgnoreOptionalFiles);
 
         bool validateMessages = false;
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
@@ -1025,6 +1037,11 @@ public:
                     "   --queryid                   Query to verify against packagemap, multiple queries can be\n"
                     "                               specified using a comma separated list, or by using --queryid\n"
                     "                               more than once. Default is all queries in the target queryset\n"
+                    "   --ignore-queries            Queries to exclude from verification, multiple queries can be\n"
+                    "                               specified using wildcards, a comma separated list, or by using\n"
+                    "                               --ignore-queries more than once.\n"
+                    "   --ignore-optional           Doesn't warn when optional files are not defined in packagemap.\n"
+                    "   --ignore-warnings           Doesn't output general packagemap warnings.\n"
                     "   --global-scope              The specified packagemap can be shared across multiple targets\n",
                     stdout);
 
@@ -1032,12 +1049,15 @@ public:
     }
 private:
     StringArray optQueryIds;
+    StringArray optIgnoreQueries;
     StringAttr optFileName;
     StringAttr optTarget;
     StringAttr optPMID;
     bool optValidateActive;
     bool optCheckDFS;
     bool optGlobalScope;
+    bool optIgnoreWarnings = false;
+    bool optIgnoreOptionalFiles = false;
 };
 
 class EclCmdPackageQueryFiles : public EclCmdCommon
