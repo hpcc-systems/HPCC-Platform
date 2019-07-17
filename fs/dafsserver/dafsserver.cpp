@@ -4299,6 +4299,7 @@ public:
 
         selecthandler->start();
 
+        Owned<IException> exception;
         for (;;)
         {
             Owned<ISocket> sock;
@@ -4362,9 +4363,13 @@ public:
                     }
                     catch (IException *e)
                     {
-                        EXCLOG(e,"CRemoteFileServer");
-                        e->Release();
-                        continue;
+                        exception.setown(e);
+                    }
+                    if (exception)
+                    {
+                        EXCLOG(exception, "CRemoteFileServer");
+                        exception.clear();
+                        sockavail = false;
                     }
                 }
 
@@ -4393,21 +4398,18 @@ public:
                             sockSSL.setown(ssock.getLink());
                         }
                     }
-                    catch (IJSOCK_Exception *e)
+                    catch (IException *e)
                     {
-                        // accept failed ...
-                        EXCLOG(e,"CRemoteFileServer (secure)");
-                        e->Release();
-                        break;
+                        exception.setown(e);
                     }
-                    catch (IException *e) // IDAFS_Exception also ...
+                    if (exception)
                     {
-                        EXCLOG(e,"CRemoteFileServer1 (secure)");
-                        e->Release();
+                        EXCLOG(exception, "CRemoteFileServer (secure)");
                         cleanupDaFsSocket(sockSSL);
                         sockSSL.clear();
                         cleanupDaFsSocket(ssock);
                         ssock.clear();
+                        exception.clear();
                         securesockavail = false;
                     }
                 }
@@ -4430,21 +4432,18 @@ public:
                             acceptedRSSock.setown(ssock.getLink());
                         }
                     }
-                    catch (IJSOCK_Exception *e)
+                    catch (IException *e)
                     {
-                        // accept failed ...
-                        EXCLOG(e,"CRemoteFileServer (row service)");
-                        e->Release();
-                        break;
+                        exception.setown(e);
                     }
-                    catch (IException *e) // IDAFS_Exception also ...
+                    if (exception)
                     {
-                        EXCLOG(e,"CRemoteFileServer1 (row service)");
-                        e->Release();
+                        EXCLOG(exception, "CRemoteFileServer (row service)");
                         cleanupDaFsSocket(acceptedRSSock);
-                        sockSSL.clear();
+                        acceptedRSSock.clear();
                         cleanupDaFsSocket(ssock);
                         ssock.clear();
+                        exception.clear();
                         rowServiceSockAvail = false;
                     }
                 }
