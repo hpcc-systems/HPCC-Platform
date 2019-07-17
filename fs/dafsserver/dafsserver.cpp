@@ -4398,7 +4398,7 @@ public:
                         // accept failed ...
                         EXCLOG(e,"CRemoteFileServer (secure)");
                         e->Release();
-                        break;
+                        continue;
                     }
                     catch (IException *e) // IDAFS_Exception also ...
                     {
@@ -4435,7 +4435,7 @@ public:
                         // accept failed ...
                         EXCLOG(e,"CRemoteFileServer (row service)");
                         e->Release();
-                        break;
+                        continue;
                     }
                     catch (IException *e) // IDAFS_Exception also ...
                     {
