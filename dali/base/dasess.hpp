@@ -80,6 +80,7 @@ enum DaliClientRole // if changed must update queryRoleName()
     DCR_XRef,
     DCR_EclMinus,
     DCR_Monitoring,
+    DCR_DaliStop,
     DCR_Max
 };
 
@@ -133,8 +134,6 @@ interface ISessionManager: extends IInterface
     virtual bool clearPermissionsCache(IUserDescriptor *udesc)=0;
     virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)=0;
     virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)=0;
-    virtual void refreshWhiteList() = 0;
-    virtual StringBuffer &getWhiteList(StringBuffer &out) const = 0;
 };
 
 // the following are getPermissionsLDAP input flags for audit reporting
@@ -168,5 +167,7 @@ interface IDaliClientAuthConnection;
 extern da_decl IDaliServer *createDaliSessionServer(); // called for coven members
 extern da_decl void setLDAPconnection(IDaliLdapConnection *ldapconn); // called for coven members
 extern da_decl void setClientAuth(IDaliClientAuthConnection *authconn); // called for coven members
+extern da_decl const char *queryRoleName(DaliClientRole role);
+extern da_decl DaliClientRole queryRole(const char *roleStr);
 
 #endif

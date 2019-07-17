@@ -262,7 +262,7 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
       time(&amp;timeinsecs);  
       localtime_r(&amp;timeinsecs,&amp;localt);
       char temp[15];
-      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;localt); // Formats the localtime to YYYYMMDDhhmmss 
       strncpy(__result, temp, 14);
       ENDC++;
       RETURN fGetDimeTime();

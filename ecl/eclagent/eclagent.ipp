@@ -1115,8 +1115,8 @@ class EclGraph : public CInterface
     } graphCodeContext;
 
 public:
-    EclGraph(IAgentContext & _agent, const char *_graphName, IConstWorkUnit * _wu, bool _isLibrary, CHThorDebugContext * _debugContext, IProbeManager * _probeManager) :
-                            graphName(_graphName), wu(_wu), debugContext(_debugContext), probeManager(_probeManager)
+    EclGraph(IAgentContext & _agent, const char *_graphName, IConstWorkUnit * _wu, bool _isLibrary, CHThorDebugContext * _debugContext, IProbeManager * _probeManager, unsigned _wfid) :
+                            graphName(_graphName), wu(_wu), debugContext(_debugContext), probeManager(_probeManager), wfid(_wfid)
     {
         isLibrary = _isLibrary;
         graphCodeContext.set(_agent.queryCodeContext());
@@ -1145,7 +1145,8 @@ public:
 
     void associateSubGraph(EclSubGraph * subgraph);
 
-    inline bool queryLibrary() { return isLibrary; }
+    inline bool queryLibrary() const { return isLibrary; }
+    inline unsigned queryWfid() const { return wfid; }
 
 protected:
     IAgentContext * agent;
@@ -1157,6 +1158,7 @@ protected:
     bool isLibrary;
     CHThorDebugContext * debugContext;
     IProbeManager * probeManager;
+    unsigned wfid;
     bool aborted;
 };
 

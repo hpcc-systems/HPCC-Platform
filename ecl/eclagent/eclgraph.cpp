@@ -1211,7 +1211,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
 void EclGraph::execute(const byte * parentExtract)
 {
     if (agent->queryRemoteWorkunit())
-        wu->setGraphState(queryGraphName(), WUGraphRunning);
+        wu->setGraphState(queryGraphName(), wfid, WUGraphRunning);
 
     {
         Owned<IWorkUnit> wu(agent->updateWorkUnit());
@@ -1242,12 +1242,12 @@ void EclGraph::execute(const byte * parentExtract)
         }
 
         if (agent->queryRemoteWorkunit())
-            wu->setGraphState(queryGraphName(), WUGraphComplete);
+            wu->setGraphState(queryGraphName(), wfid, WUGraphComplete);
     }
     catch (...)
     {
         if (agent->queryRemoteWorkunit())
-            wu->setGraphState(queryGraphName(), WUGraphFailed);
+            wu->setGraphState(queryGraphName(), wfid, WUGraphFailed);
         throw;
     }
 }
@@ -1306,7 +1306,8 @@ void EclGraph::updateLibraryProgress()
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
-        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), agent->getWorkflowId(), cur.id);
+        unsigned wfid = cur.parent.queryWfid();
+        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, cur.id);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1447,9 +1448,9 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 //---------------------------------------------------------------------------
 
-IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph)
+IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, unsigned subgraph)
 {
-    return wu->updateStats (queryGraphName(), creatorType, creator, wfid, subgraph);
+    return wu->updateStats (queryGraphName(), creatorType, creator, activeWfid, subgraph);
 }
 
 void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
@@ -1501,7 +1502,7 @@ EclGraph * EclAgent::loadGraph(const char * graphName, IConstWorkUnit * wu, ILoa
 
     bool probeEnabled = wuRead->getDebugValueBool("_Probe", false);
 
-    Owned<EclGraph> eclGraph = new EclGraph(*this, graphName, wu, isLibrary, debugContext, probeManager);
+    Owned<EclGraph> eclGraph = new EclGraph(*this, graphName, wu, isLibrary, debugContext, probeManager, wuGraph->getWfid());
     eclGraph->createFromXGMML(dll, xgmml, probeEnabled);
     return eclGraph.getClear();
 }

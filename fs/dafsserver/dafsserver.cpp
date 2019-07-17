@@ -38,6 +38,8 @@
 #include "jset.hpp"
 #include "jhtree.hpp"
 
+#include "dadfs.hpp"
+
 #include "remoteerr.hpp"
 #include <atomic>
 #include <string>
@@ -2522,7 +2524,7 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                 else
                     activity.setown(new CRemoteIndexReadActivity(actNode, fileDesc));
             }
-            else // flat file
+            else
             {
                 if (!isEmptyString(action))
                 {
@@ -2532,7 +2534,19 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
                         throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown action '%s' on flat file '%s'", action, partFileName);
                 }
                 else
-                    activity.setown(new CRemoteDiskReadActivity(actNode, fileDesc));
+                {
+                    const char *kind = queryFileKind(fileDesc);
+                    if (isEmptyString(kind) || (streq("flat", kind)))
+                        activity.setown(new CRemoteDiskReadActivity(actNode, fileDesc));
+                    else if (streq("csv", kind))
+                        activity.setown(createConditionalProjectingActivity<CRemoteCsvReadActivity>(actNode, fileDesc));
+                    else if (streq("xml", kind))
+                        activity.setown(createConditionalProjectingActivity<CRemoteXmlReadActivity>(actNode, fileDesc));
+                    else if (streq("json", kind))
+                        activity.setown(createConditionalProjectingActivity<CRemoteJsonReadActivity>(actNode, fileDesc));
+                    else
+                        throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Unknown file kind '%s'", kind);
+                }
             }
             break;
         }
@@ -3193,7 +3207,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     CClientStatsTable clientStatsTable;
     atomic_t globallasttick;
     unsigned targetActiveThreads;
-    Owned<IPropertyTree> keyPairInfo;
+    Linked<IPropertyTree> keyPairInfo;
 
     int getNextHandle()
     {
@@ -4932,7 +4946,7 @@ public:
                     {
                         EXCLOG(e,"CRemoteFileServer");
                         e->Release();
-                        break;
+                        continue;
                     }
                 }
 

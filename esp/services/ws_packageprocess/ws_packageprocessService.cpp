@@ -1165,10 +1165,18 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
         if (queryid && *queryid)
             queriesToVerify.appendUniq(queryid);
     }
-    map->validate(queriesToVerify, warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles);
+    StringArray queriesToIgnore;
+    ForEachItemIn(i2, req.getQueriesToIgnore())
+    {
+        queryid = req.getQueriesToIgnore().item(i2);
+        if (queryid && *queryid)
+            queriesToIgnore.appendUniq(queryid);
+    }
+    map->validate(queriesToVerify, queriesToIgnore, warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles, req.getIgnoreOptionalFiles());
 
     resp.setPMID(map->queryPackageId());
-    resp.setWarnings(warnings);
+    if (!req.getIgnoreWarnings())
+        resp.setWarnings(warnings);
     resp.setErrors(errors);
     resp.updateQueries().setUnmatched(unmatchedQueries);
     resp.updatePackages().setUnmatched(unusedPackages);

@@ -272,7 +272,7 @@ public:
     virtual IConstWUGraph * getGraph(const char *name) const;
     virtual IConstWUGraphProgress * getGraphProgress(const char * name) const;
     virtual WUGraphState queryGraphState(const char *graphName) const;
-    virtual void setGraphState(const char *graphName, WUGraphState state) const;
+    virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const;
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;

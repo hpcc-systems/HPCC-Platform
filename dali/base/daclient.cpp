@@ -92,7 +92,7 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
 {
     assertex(servergrp);
     daliClientIsActive = true;
-    startMPServer(mpport);
+    startMPServer(role, mpport);
     Owned<ICommunicator> comm(createCommunicator(servergrp,true));
     IGroup * covengrp;
     if (!registerClientProcess(comm.get(),covengrp,timeout,role))

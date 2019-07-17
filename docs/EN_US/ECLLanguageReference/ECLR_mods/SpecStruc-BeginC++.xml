@@ -348,9 +348,10 @@ STREAMED DATASET(out1Rec) extractResult3(doneRec done) := BEGINC++
         }
         virtual void stop() {}
     private:
+        Linked&lt;IEngineRowAllocator&gt; allocator;
         unsigned id;
         unsigned idx;
-        Linked&lt;IEngineRowAllocator&gt; allocator;
+        
     };
     #body
     const unsigned id = *(unsigned *)done;

@@ -43,7 +43,7 @@ public:
     inline const SocketEndpoint &getSender() const  { return sender; }
     inline void setReplyTag(mptag_t tag)            { replytag = tag; }  // called prior to send (use cresteReplyTag to make tag)
     inline mptag_t getReplyTag()                    { return replytag; } // called after recv to determine tag to reply to
-    inline mptag_t getTag()                     { return tag; }      
+    inline mptag_t getTag()                         { return tag; }
 
     inline void init()             
     { 

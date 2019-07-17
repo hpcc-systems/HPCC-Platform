@@ -1774,7 +1774,7 @@ bool CJobMaster::go()
     try
     {
         startJob();
-        workunit->setGraphState(queryGraphName(), WUGraphRunning);
+        workunit->setGraphState(queryGraphName(), getWfid(), WUGraphRunning);
         Owned<IThorGraphIterator> iter = queryJobChannel(0).getSubGraphs();
         CICopyArrayOf<CMasterGraph> toRun;
         ForEach(*iter)
@@ -1807,7 +1807,7 @@ bool CJobMaster::go()
     }
     catch (IException *e) { fireException(e); e->Release(); }
     catch (CATCHALL) { Owned<IException> e = MakeThorException(0, "Unknown exception running sub graphs"); fireException(e); }
-    workunit->setGraphState(queryGraphName(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
+    workunit->setGraphState(queryGraphName(), getWfid(), aborted?WUGraphFailed:(allDone?WUGraphComplete:(pausing?WUGraphPaused:WUGraphComplete)));
 
     if (queryPausing())
         saveSpills();

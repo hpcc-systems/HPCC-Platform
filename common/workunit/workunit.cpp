@@ -178,16 +178,9 @@ CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _cre
     StatsScopeId graphScopeId;
     verifyex(graphScopeId.setScopeText(_rootScope));
 
-    if (wfid)
-    {
-        StatsScopeId rootScopeId(SSTworkflow,wfid);
-        collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
-        collector->beginScope(graphScopeId);
-    }
-    else
-    {
-        collector.setown(createStatisticsGatherer(_creatorType, _creator, graphScopeId));
-    }
+    StatsScopeId rootScopeId(SSTworkflow,wfid);
+    collector.setown(createStatisticsGatherer(_creatorType, _creator, rootScopeId));
+    collector->beginScope(graphScopeId);
 }
 
 void CWuGraphStats::beforeDispose()
@@ -207,7 +200,6 @@ void CWuGraphStats::beforeDispose()
 
     StringBuffer tag;
     tag.append("sg").append(id);
-
 
     //Replace the particular subgraph statistics added by this creator
     StringBuffer qualified(tag);
@@ -474,6 +466,11 @@ static int compareGraphNode(IInterface * const *ll, IInterface * const *rr)
 {
     IPropertyTree *l = (IPropertyTree *) *ll;
     IPropertyTree *r = (IPropertyTree *) *rr;
+    unsigned lwfid = l->getPropInt("@wfid");
+    unsigned rwfid = r->getPropInt("@wfid");
+    if (lwfid != rwfid)
+        return lwfid > rwfid ? +1 : -1;
+
     const char * lname = l->queryName();
     const char * rname = r->queryName();
     return compareScopeName(lname, rname);
@@ -3714,9 +3711,9 @@ public:
             }
         }
     }
-    virtual void setGraphState(const char *graphName, WUGraphState state) const
+    virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const
     {
-        Owned<IRemoteConnection> conn = getWritableProgressConnection(graphName);
+        Owned<IRemoteConnection> conn = getWritableProgressConnection(graphName, wfid);
         conn->queryRoot()->setPropInt("@_state", state);
     }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
@@ -3753,7 +3750,7 @@ public:
     }
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
     {
-        return new CDaliWuGraphStats(getWritableProgressConnection(graphName), creatorType, creator, _wfid, graphName, subgraph);
+        return new CDaliWuGraphStats(getWritableProgressConnection(graphName, _wfid), creatorType, creator, _wfid, graphName, subgraph);
     }
 
 protected:
@@ -3767,12 +3764,29 @@ protected:
         }
         return progressConnection.getLink();
     }
-    IRemoteConnection *getWritableProgressConnection(const char *graphName) const
+    IRemoteConnection *getWritableProgressConnection(const char *graphName, unsigned wfid) const
     {
         CriticalBlock block(crit);
         progressConnection.clear(); // Make sure subsequent reads from this workunit get the changes I am making
         VStringBuffer path("/GraphProgress/%s/%s", queryWuid(), graphName);
-        return querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+        Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+        IPropertyTree * root = conn->queryRoot();
+        assertex(wfid);
+
+        if (!root->hasProp("@wfid"))
+        {
+            root->setPropInt("@wfid", wfid);
+        }
+        else
+        {
+            //Ideally the following code would check that the wfids are passed consistently.
+            //However there is an obscure problem with out of line functions being called from multiple workflow
+            //ids, and possibly library graphs.
+            //Stats for library graphs should be nested below the library call activity
+            //assertex(root->getPropInt("@wfid", 0) == wfid); // check that wfid is passed consistently
+        }
+
+        return conn.getClear();
     }
     IPropertyTree *getGraphProgressTree() const
     {
@@ -4013,8 +4027,8 @@ public:
             { return c->queryGraphState(graphName); }
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const
             { return c->queryNodeState(graphName, nodeId); }
-    virtual void setGraphState(const char *graphName, WUGraphState state) const
-            { c->setGraphState(graphName, state); }
+    virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const
+            { c->setGraphState(graphName, wfid, state); }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
             { c->setNodeState(graphName, nodeId, state); }
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
@@ -9985,7 +9999,7 @@ WUGraphState CLocalWorkUnit::queryNodeState(const char *graphName, WUGraphIDType
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
-void CLocalWorkUnit::setGraphState(const char *graphName, WUGraphState state) const
+void CLocalWorkUnit::setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
