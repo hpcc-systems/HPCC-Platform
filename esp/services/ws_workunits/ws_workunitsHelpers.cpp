@@ -1910,7 +1910,6 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     }
 
     StringBuffer line;
-    bool eof = false;
     bool wuidFound = false;
 
     StringBuffer pidstr;
@@ -1931,10 +1930,8 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     char const * pidchars = pidstr.str();
     size32_t pidLen = pidstr.length();
     unsigned pidOffset = 0;//offset of PID in logfile entry
-    while(!eof)
+    while(!lineReader->readLine(line.clear()))
     {
-        eof = lineReader->readLine(line.clear());
-
         //Retain all rows that match a unique program instance - by retaining all rows that match a pid
         const char * pPid = strstr(line.str() + pidOffset, pidchars);
         if (pPid)
@@ -2063,7 +2060,6 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     VStringBuffer startwuid("Started wuid=%s", wuid.str());
     VStringBuffer endwuid("Finished wuid=%s", wuid.str());
 
-    bool eof = false;
     bool outputThisLine = false;
     unsigned processID = 0;
     StringBuffer line;
@@ -2076,9 +2072,8 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     }
 
     Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
-    while (!eof)
+    while (!lineReader->readLine(line.clear()))
     {
-        eof = lineReader->readLine(line.clear());
         if (outputThisLine)
         {
             //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
