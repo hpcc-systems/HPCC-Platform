@@ -15,4 +15,41 @@
     limitations under the License.
 ############################################################################## */
 
-// no longer used
+#include "roxiemem.hpp"
+#include <queue>
+
+class PackageSequencer;
+
+typedef unsigned __int64 PUID;
+typedef MapXToMyClass<PUID, PUID, PackageSequencer> msg_map;
+
+class CMessageCollator : public CInterfaceOf<IMessageCollator>
+{
+private:
+    std::queue<PackageSequencer*> queue;
+    msg_map             mapping;  // Note - only accessed from collator thread
+    RelaxedAtomic<bool> activity;
+    bool                memLimitExceeded;
+    CriticalSection     queueCrit;
+    InterruptableSemaphore sem;
+    Linked<roxiemem::IRowManager> rowMgr;
+    ruid_t ruid;
+    unsigned totalBytesReceived; // technically should be atomic
+
+    void collate(roxiemem::DataBuffer *dataBuff);
+public:
+    CMessageCollator(roxiemem::IRowManager *_rowMgr, unsigned _ruid);
+    virtual ~CMessageCollator();
+
+    virtual ruid_t queryRUID() const override
+    {
+        return ruid;
+    }
+
+    virtual unsigned queryBytesReceived() const override;
+    virtual IMessageResult *getNextResult(unsigned time_out, bool &anyActivity) override;
+    virtual void interrupt(IException *E) override;
+
+    bool attach_databuffer(roxiemem::DataBuffer *dataBuff);
+    bool attach_data(const void *data, unsigned len);
+};

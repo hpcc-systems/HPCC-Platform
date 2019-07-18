@@ -23,6 +23,7 @@
 #include "jsort.hpp"
 #include "jregexp.hpp"
 
+#include "udptopo.hpp"
 #include "ccd.hpp"
 #include "ccdquery.hpp"
 #include "ccdstate.hpp"
@@ -620,12 +621,11 @@ protected:
                         if (resolved)
                         {
                             files.append(*const_cast<IResolvedFile *>(resolved));
-                            Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
-                            ForEach(*it)
+                            Owned<const ITopologyServer> topology = getTopology();
+                            for (unsigned channel : topology->queryChannels())
                             {
-                                unsigned channelNo = it->query().getPropInt("@channel", 0);
-                                assertex(channelNo);
-                                doPreload(channelNo, resolved);
+                                assertex(channel);
+                                doPreload(channel, resolved);
                             }
                         }
                     }
@@ -1159,13 +1159,11 @@ public:
     CRoxieSlaveQuerySetManagerSet(unsigned _numChannels, const char *querySetName)
         : numChannels(_numChannels)
     {
-        CriticalBlock b(ccdChannelsCrit);
         managers = new CRoxieSlaveQuerySetManager *[numChannels];
         memset(managers, 0, sizeof(CRoxieSlaveQuerySetManager *) * numChannels);
-        Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
-        ForEach(*it)
+        Owned<const ITopologyServer> topology = getTopology();
+        for (unsigned channelNo : topology->queryChannels())
         {
-            unsigned channelNo = it->query().getPropInt("@channel", 0);
             assertex(channelNo>0 && channelNo<=numChannels);
             if (managers[channelNo-1] == NULL)
                 managers[channelNo-1] = new CRoxieSlaveQuerySetManager(channelNo, querySetName);
@@ -2658,76 +2656,6 @@ private:
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
                 steppingEnabled = control->getPropBool("@val", true);
-            }
-            else if (stricmp(queryName, "control:suspendChannel")==0)
-            {
-                if (control->hasProp("@channel") && control->hasProp("@suspend"))
-                {
-                    unsigned channel = control->getPropInt("@channel", 0);
-                    bool suspend = control->getPropBool("@suspend", true);
-                    CriticalBlock b(ccdChannelsCrit);
-                    if (channel)
-                    {
-                        StringBuffer xpath;
-                        IPropertyTree *slaveNode = ccdChannels->queryPropTree(xpath.appendf("RoxieSlaveProcess[@channel='%u']", channel).str());
-                        if (slaveNode)
-                        {
-                            ROQ->suspendChannel(channel, suspend, logctx);
-                            slaveNode->setPropBool("@suspended", suspend);
-                        }
-                        else
-                            throw MakeStringException(ROXIE_INVALID_INPUT, "Unknown channel %u", channel);
-                    }
-                    else
-                    {
-                        Owned<IPropertyTreeIterator> slaves = ccdChannels->getElements("RoxieSlaveProcess");
-                        ForEach(*slaves)
-                        {
-                            IPropertyTree &slaveNode = slaves->query();
-                            channel = slaveNode.getPropInt("@channel", 0);
-                            ROQ->suspendChannel(channel, suspend, logctx);
-                            slaveNode.setPropBool("@suspended", suspend);
-                        }
-                    }
-                    toXML(ccdChannels, reply);
-                }
-                else
-                    badFormat();
-            }
-            else if (stricmp(queryName, "control:suspendServer")==0)
-            {
-                if (control->hasProp("@port") && control->hasProp("@suspend"))
-                {
-                    unsigned port = control->getPropInt("@port", 0);
-                    bool suspend = control->getPropBool("@suspend", true);
-                    CriticalBlock b(ccdChannelsCrit);
-                    if (port)
-                    {
-                        StringBuffer xpath;
-                        IPropertyTree *serverNode = ccdChannels->queryPropTree(xpath.appendf("RoxieServerProcess[@port='%u']", port).str());
-                        if (serverNode)
-                        {
-                            suspendRoxieListener(port, suspend);
-                            serverNode->setPropBool("@suspended", suspend);
-                        }
-                        else
-                            throw MakeStringException(ROXIE_INVALID_INPUT, "Unknown Roxie server port %u", port);
-                    }
-                    else
-                    {
-                        Owned<IPropertyTreeIterator> servers = ccdChannels->getElements("RoxieServerProcess");
-                        ForEach(*servers)
-                        {
-                            IPropertyTree &serverNode = servers->query();
-                            port = serverNode.getPropInt("@port", 0);
-                            suspendRoxieListener(port, suspend);
-                            serverNode.setPropBool("@suspended", suspend);
-                        }
-                    }
-                    toXML(ccdChannels, reply);
-                }
-                else
-                    badFormat();
             }
             else if (stricmp(queryName, "control:systemMonitor")==0)
             {

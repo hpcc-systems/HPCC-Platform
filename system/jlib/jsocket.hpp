@@ -87,6 +87,7 @@ public:
     bool ipequals(const IpAddress & other) const;       
     int  ipcompare(const IpAddress & other) const;      // depreciated 
     unsigned iphash(unsigned prev=0) const;
+    unsigned fasthash() const;
     bool isNull() const;                                // is null
     bool isHost() const;                                // is primary host NIC ip
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
@@ -110,6 +111,15 @@ public:
         return *this;
     }
 
+};
+
+struct IpComparator
+{
+    bool operator()(const IpAddress &a, const IpAddress &b) const
+    {
+        // return true if the first argument goes before the second argument, and false otherwise
+        return a.ipcompare(b) < 0;
+    }
 };
 
 class jlib_decl IpAddressArray : public StructArrayOf<IpAddress>

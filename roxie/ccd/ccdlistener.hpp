@@ -24,7 +24,6 @@
 extern IHpccProtocolMsgSink *createRoxieProtocolMsgSink(const IpAddress &ip, unsigned short port, unsigned poolSize, bool suspended);
 
 extern IHpccProtocolListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended);
-extern bool suspendRoxieListener(unsigned port, bool suspended);
 
 extern MapStringToMyClass<SharedObject> protocolDlls;
 extern MapStringToMyClass<IHpccProtocolPlugin> protocolPlugins;

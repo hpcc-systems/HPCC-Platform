@@ -15,6 +15,7 @@
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (ccd)
 HPCC_ADD_SUBDIRECTORY (roxie "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (topo "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (roxiemem)
 HPCC_ADD_SUBDIRECTORY (roxiepipe "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (udplib)

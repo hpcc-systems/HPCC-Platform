@@ -52,14 +52,12 @@
 #define ROXIE_STATEFILE_VERSION 2
 
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
-extern Owned<ISocket> multicastSocket;
-extern size32_t channelWrite(unsigned channel, void const* buf, size32_t size);
-void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port);
 void openMulticastSocket();
-void joinMulticastChannel(unsigned channel);
+extern size32_t channelWrite(unsigned channel, void const* buf, size32_t size);
+
+void setMulticastEndpoints(unsigned numChannels);
 
 
-extern unsigned myNodeIndex;
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
 #define OVERFLOWSEQUENCE_MAX 0x7fffu        // Max value before we want to wrap (to avoid collision with flag)
 #define CONTINUE_SEQUENCE_SKIPTO  0x8000    // flag in continueSequence field indicating presence of skipTo data
@@ -153,23 +151,23 @@ public:
     hash64_t queryHash;             // identifies the query
 
     ruid_t uid;                     // unique id
-    unsigned serverIdx;             // final result (server) destination
+    ServerIdentifier serverId;
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
 
     RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
-    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId);
+    RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId, unsigned _subChannel);
 
-    static unsigned getSubChannelMask(unsigned channel);
+    static unsigned getSubChannelMask(unsigned subChannel);
     unsigned priorityHash() const;
     bool matchPacket(const RoxiePacketHeader &oh) const;
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     StringBuffer &toString(StringBuffer &ret) const;
     bool allChannelsFailed();
     bool retry();
-    void setException();
-    unsigned thisChannelRetries();
+    void setException(unsigned subChannel);
+    unsigned thisChannelRetries(unsigned subChannel);
 
     unsigned getRespondingSubChannel() const // NOTE - 0 based
     {
@@ -224,8 +222,6 @@ extern unsigned highTimeout;
 extern unsigned slaTimeout;
 extern unsigned headRegionSize;
 extern unsigned ccdMulticastPort;
-extern CriticalSection ccdChannelsCrit;
-extern IPropertyTree *ccdChannels;
 extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
@@ -240,10 +236,9 @@ extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
 extern bool localSlave;
+extern bool useAeron;
 extern bool ignoreOrphans;
 extern bool doIbytiDelay;
-extern unsigned initIbytiDelay;
-extern unsigned minIbytiDelay;
 extern bool copyResources;
 extern bool chunkingHeap;
 extern unsigned perChannelFlowLimit;
@@ -252,7 +247,7 @@ extern unsigned numServerThreads;
 extern unsigned numRequestArrayThreads;
 extern unsigned readTimeout;
 extern unsigned indexReadChunkSize;
-extern SocketEndpoint ownEP;
+extern SocketEndpoint debugEndpoint;
 extern unsigned maxBlockSize;
 extern unsigned maxLockAttempts;
 extern bool enableHeartBeat;
