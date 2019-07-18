@@ -3209,6 +3209,62 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     unsigned targetActiveThreads;
     Linked<IPropertyTree> keyPairInfo;
 
+    class CHandleTracer
+    {
+        CTimeMon timer;
+        CriticalSection crit;
+        Owned<IFile> stdIOIFile;
+        std::vector<Owned<IFileIO>> reservedHandles;
+        unsigned handlesToReserve = 3; // need a few for pipe process to succeed
+
+        void reserveHandles()
+        {
+            if (stdIOIFile)
+            {
+                for (unsigned r=0; r<handlesToReserve; r++)
+                {
+                    IFileIO *iFileIO = stdIOIFile->open(IFOread);
+                    if (iFileIO)
+                        reservedHandles.push_back(iFileIO);
+                }
+            }
+        }
+        void releaseHandles()
+        {
+            reservedHandles.clear();
+        }
+    public:
+        CHandleTracer()
+        {
+            /* Reserve handles, so that when we run out, we hope to release them
+             * and thereby have enough to use when reading current state.
+             */
+            stdIOIFile.setown(createIFile("stdout:"));
+            timer.reset(0);
+            reserveHandles();
+        }
+        void traceIfReady()
+        {
+            CriticalBlock b(crit);
+            if (timer.timedout())
+            {
+                DBGLOG("Open handles:");
+                releaseHandles();
+                /* NB: can't guarantee that handles will be available after releaseHandles(), if other threads have allocated them.
+                 * If printLsOf fails, mark timer to retry again on next event in shorter time period.
+                 */
+                if (!printLsOf())
+                {
+                    DBGLOG("Failed to run lsof");
+                    timer.reset(1000); // next attempt in >=1 second
+                }
+                else
+                    timer.reset(60*1000); // next trace in >=1 minute
+                reserveHandles();
+            }
+        }
+    } handleTracer;
+
     int getNextHandle()
     {
         // called in sect critical block
@@ -4766,8 +4822,10 @@ public:
         }
         catch (IException *e)
         {
+            checkOutOfHandles(e);
             reply.setWritePos(posOfErr);
             formatException(reply, e, cmd, testSocketFlag, 0, client);
+            e->Release();
         }
         return testSocketFlag;
     }
@@ -4775,6 +4833,12 @@ public:
     IPooledThread *createCommandProcessor()
     {
         return new cCommandProcessor();
+    }
+
+    void checkOutOfHandles(IException *exception)
+    {
+        if (EMFILE == exception->errorCode())
+            handleTracer.traceIfReady();
     }
 
     virtual void run(DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
@@ -4950,6 +5014,7 @@ public:
                     if (exception)
                     {
                         EXCLOG(exception, "CRemoteFileServer");
+                        checkOutOfHandles(exception);
                         exception.clear();
                         sockavail = false;
                     }
@@ -4991,6 +5056,7 @@ public:
                         sockSSL.clear();
                         cleanupDaFsSocket(ssock);
                         ssock.clear();
+                        checkOutOfHandles(exception);
                         exception.clear();
                         securesockavail = false;
                     }
@@ -5025,6 +5091,7 @@ public:
                         acceptedRSSock.clear();
                         cleanupDaFsSocket(ssock);
                         ssock.clear();
+                        checkOutOfHandles(exception);
                         exception.clear();
                         rowServiceSockAvail = false;
                     }
