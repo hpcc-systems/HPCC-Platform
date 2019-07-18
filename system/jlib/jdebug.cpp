@@ -2456,8 +2456,10 @@ public:
             fclose(netfp);
             return false;
         }
+        bool firstTime = false;
         if (!columnNames.length())
         {
+            firstTime = true;
             columnNames.appendList(ln, " ");
             ForEachItemInRev(idx, columnNames)
             {
@@ -2510,12 +2512,14 @@ public:
                     }
                     if (queue > ret->rx_queue)
                     {
-                        DBGLOG("UDP queue: new max rx_queue: port %d rx_queue=%u drops=%u", port, queue, drops);
+                        if (!firstTime)
+                            DBGLOG("UDP queue: new max rx_queue: port %d rx_queue=%u drops=%u", port, queue, drops);
                         ret->rx_queue = queue;
                     }
                     if (drops > ret->drops)
                     {
-                        LOG(MCoperatorError, unknownJob, "DROPPED UDP PACKETS: port %d rx_queue=%u (peak %u) drops=%u (total %i)", port, queue, ret->rx_queue, drops-ret->drops, drops);
+                        if (!firstTime)
+                            LOG(MCoperatorError, unknownJob, "DROPPED UDP PACKETS: port %d rx_queue=%u (peak %u) drops=%u (total %i)", port, queue, ret->rx_queue, drops-ret->drops, drops);
                         ret->drops = drops;
                     }
                 }
