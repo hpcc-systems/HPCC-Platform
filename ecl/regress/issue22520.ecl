@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,26 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#ifndef _SWESPPROCESS_HPP_
-#define _SWESPPROCESS_HPP_
 
-#include "EnvHelper.hpp"
-#include "SWProcess.hpp"
+generateOutput(msg) := MACRO
+    #EXPAND(msg)
+ENDMACRO;
 
-namespace ech
-{
+generateOutput('1');
+generateOutput('OUTPUT(\'\')');
+generateOutput('OUTPUT(\'!\')');
+generateOutput('OUTPUT(\'"\')');
 
-class SWEspProcess : public SWProcess
-{
-public:
-    SWEspProcess(const char* name, EnvHelper * envHelper);
-
-    virtual void addOtherSelector(IPropertyTree *compTree, IPropertyTree *params);
-    //IPropertyTree * addComponent(IPropertyTree *params);
-    void addBinding(IPropertyTree *parent, IPropertyTree * attrs);
-    IPropertyTree * addComponent(IPropertyTree *params);
-
-};
-
-}
-#endif
+generateOutput('OUTPUT(\'ê\')');
+generateOutput('OUTPUT([\'ê\',\',\'])');

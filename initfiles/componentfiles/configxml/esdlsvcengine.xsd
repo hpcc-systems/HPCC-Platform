@@ -24,6 +24,9 @@
                         <title>Dynamic ESDL Service Name</title>
                         <required>true</required>
                         <tooltip>Name for this Dynamic ESDL based web service interface.</tooltip>
+                        <autogenforwizard>1</autogenforwizard>
+                        <autogendefaultvalue>DESDLServiceTemplate</autogendefaultvalue>
+
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

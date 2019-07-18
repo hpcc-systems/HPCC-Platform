@@ -9065,10 +9065,19 @@ const void *CHThorDiskCountActivity::nextRow()
         resolve();
         if (segHelper.canMatchAny() && ldFile)
         {
-            unsigned __int64 size = ldFile->getFileSize();
-            if (size % fixedDiskRecordSize)
-                throw MakeStringException(0, "Physical file %s has size %" I64F "d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
-            totalCount = size / fixedDiskRecordSize;
+            try
+            {
+                unsigned __int64 size = ldFile->getFileSize();
+                if (size % fixedDiskRecordSize)
+                    throw MakeStringException(0, "Physical file %s has size %" I64F "d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, fixedDiskRecordSize);
+                totalCount = size / fixedDiskRecordSize;
+            }
+            catch (IException * e)
+            {
+                if (!(helper.getFlags() & TDRoptional) || (e->errorCode() != DFSERR_CannotFindPartFileSize))
+                    throw;
+                e->Release();
+            }
         }
     }
     else
@@ -10682,63 +10691,77 @@ bool CHThorNewDiskReadBaseActivity::openFirstPart()
     {
         if (dfsParts->first())
         {
-            openFilePart(ldFile, &dfsParts->query(), 0);
-            return true;
+            if (openFilePart(ldFile, &dfsParts->query(), 0))
+                return true;
+            return openNextPart(true);
         }
     }
     else if (ldFile)
     {
         if (ldFile->numParts() != 0)
         {
-            openFilePart(ldFile, nullptr, 0);
-            return true;
+            if (openFilePart(ldFile, nullptr, 0))
+                return true;
+            return openNextPart(true);
         }
     }
     else if (!tempFileName.isEmpty())
     {
-        openFilePart(tempFileName);
-        return true;
+        if (openFilePart(tempFileName))
+            return true;
     }
+
     setEmptyStream();
     return false;
 }
 
-bool CHThorNewDiskReadBaseActivity::openNextPart()
+bool CHThorNewDiskReadBaseActivity::openNextPart(bool prevWasMissing)
 {
     if (finishedParts)
         return false;
 
-    offset_t sizeFilePart = 0;
-    if (dfsParts)
-        sizeFilePart = dfsParts->query().getFileSize(true, false);
-    else if (ldFile)
-        sizeFilePart = ldFile->getPartFileSize(partNum);
-
-    offsetOfPart += sizeFilePart;
-    closepart();
-
-    partNum++;
-    if (dfsParts)
+    if (!prevWasMissing)
     {
-        if (dfsParts->next())
-        {
-            openFilePart(ldFile, &dfsParts->query(), partNum);
-            return true;
-        }
+        offset_t sizeFilePart = 0;
+        if (dfsParts)
+            sizeFilePart = dfsParts->query().getFileSize(true, false);
+        else if (ldFile)
+            sizeFilePart = ldFile->getPartFileSize(partNum);
+
+        offsetOfPart += sizeFilePart;
+        closepart();
     }
-    else if (ldFile)
+
+    for (;;)
     {
-        if (partNum < ldFile->numParts())
+        partNum++;
+        if (dfsParts)
         {
-            openFilePart(ldFile, nullptr, partNum);
-            return true;
+            if (dfsParts->next())
+            {
+                if (openFilePart(ldFile, &dfsParts->query(), partNum))
+                    return true;
+
+                continue; // try the next file part
+            }
         }
+        else if (ldFile)
+        {
+            if (partNum < ldFile->numParts())
+            {
+                if (openFilePart(ldFile, nullptr, partNum))
+                    return true;
+
+                continue; // try the next file part
+            }
+        }
+
+        setEmptyStream();
+        return false;
     }
-    setEmptyStream();
-    return false;
 }
 
-bool CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const char * filename)
+void CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const char * filename)
 {
     activeReader = reader;
     if (useRawStream)
@@ -10749,8 +10772,6 @@ bool CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const ch
     StringBuffer report("Reading file ");
     report.append(filename);
     agent.reportProgress(report.str());
-
-    return true;
 }
 
 void CHThorNewDiskReadBaseActivity::setEmptyStream()
@@ -10784,7 +10805,10 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(const char * filename)
     unsigned projectedCrc = helper.getProjectedFormatCrc();
     IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, expectedCrc, *expectedDiskMeta, readerOptions);
     if (reader->setInputFile(filename, logicalFileName, 0, offsetOfPart, fileInfo->meta, fieldFilters))
-        return initStream(reader, filename);
+    {
+        initStream(reader, filename);
+        return true;
+    }
     return false;
 }
 
@@ -10834,7 +10858,10 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             rfn.getPath(path);
             IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, readerOptions);
             if (reader->setInputFile(path.str(), logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
-                return initStream(reader, path.str());
+            {
+                initStream(reader, path.str());
+                return true;
+            }
         }
         else
             remoteCandidates.push_back(copy);
@@ -10854,7 +10881,10 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             {
                 IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, readerOptions);
                 if (reader->setInputFile(rfilename, logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
-                    return initStream(reader, filename);
+                {
+                    initStream(reader, filename);
+                    return true;
+                }
             }
             catch (IException *E)
             {
@@ -10897,7 +10927,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
 
 bool CHThorNewDiskReadBaseActivity::openNext()
 {
-    return openNextPart();
+    return openNextPart(false);
 }
 
 void CHThorNewDiskReadBaseActivity::open()

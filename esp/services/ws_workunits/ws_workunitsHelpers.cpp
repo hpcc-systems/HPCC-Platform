@@ -1932,6 +1932,8 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     unsigned pidOffset = 0;//offset of PID in logfile entry
     while(!lineReader->readLine(line.clear()))
     {
+        if (pidOffset > line.length())
+            continue;
         //Retain all rows that match a unique program instance - by retaining all rows that match a pid
         const char * pPid = strstr(line.str() + pidOffset, pidchars);
         if (pPid)

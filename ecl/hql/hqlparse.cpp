@@ -415,11 +415,8 @@ void HqlLex::setMacroParam(const attribute & errpos, IHqlExpression* funcdef, St
                 }
             }
         }
-        //DBGLOG("Set macro parm: %s", curParam.str());
-//      if (macroParms->queryProp(formal->queryName()))
-//          reportError(errpos, ERR_NAMED_ALREADY_HAS_VALUE, "Parameter %s already has a value supplied", argumentName->str());
-//      else
-            macroParms->setProp(str(formal->queryName()), curParam.str());
+
+        macroParms->setProp(str(formal->queryName()), curParam.str());
     }
     curParam.clear();
 }
@@ -913,7 +910,7 @@ void HqlLex::doExpand(attribute & returnToken)
     if (value)
     {
         StringBuffer buf;
-        value->getStringValue(buf);
+        value->getUTF8Value(buf);
         if (buf.length())
             pushText(buf.str());
     }

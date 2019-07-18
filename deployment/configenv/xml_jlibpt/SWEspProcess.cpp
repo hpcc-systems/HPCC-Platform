@@ -26,6 +26,64 @@ SWEspProcess::SWEspProcess(const char* name, EnvHelper * envHelper):SWProcess(na
 {
 }
 
+IPropertyTree * SWEspProcess::addComponent(IPropertyTree *params)
+{
+  IPropertyTree * pCompTree;
+  IPropertyTree * envTree = m_envHelper->getEnvTree();
+  const char* clone = params->queryProp("@clone");
+  if (clone)
+  {
+     pCompTree =  SWComponentBase::cloneComponent(params);
+  }
+  else
+  {
+     pCompTree = SWComponentBase::addComponent(params);
+     if (pCompTree->hasProp("@daliServers") &&  !strcmp(pCompTree->queryProp("@daliServers"), ""))
+     {
+        StringBuffer xpath;
+        xpath.clear().appendf(XML_TAG_SOFTWARE "/DaliServerProcess/@name");
+        const char *daliName = envTree->queryProp(xpath.str());
+        if (daliName)
+        {
+           pCompTree->setProp("@daliServers", daliName);
+        }
+     }
+  }
+  removeInstancesFromComponent(pCompTree);
+
+  IPropertyTree* pAttrs = params->queryPropTree("Attributes");
+  if (pAttrs)
+  {
+     // The default is to bind all Esp Services
+     // If "bindings" attribute set to "skip" user need to use "EspBinding" selector
+     // to add bindings
+     const char * bindings = pAttrs->queryProp("Attribute[@name='bindings']/@value");
+     if (bindings && !stricmp(bindings, "skip"))
+     {
+        return pCompTree;
+     }
+  }
+
+  StringBuffer xpath;
+  xpath.clear().appendf(XML_TAG_SOFTWARE "/" XML_TAG_ESPSERVICE);
+  Owned<IPropertyTreeIterator> espServiceIter = envTree->getElements(xpath.str());
+  ForEach (*espServiceIter)
+  {
+     IPropertyTree* pEspService = &espServiceIter->query();
+     if(pEspService)
+     {
+        const char* serviceName = pEspService->queryProp("@name");
+        xpath.clear().appendf("<Attributes><Attribute name=\"name\" value=\"my%s\"/>", serviceName);
+        xpath.appendf("<Attribute name=\"service\" value=\"%s\"/></Attributes>", serviceName);
+        Owned<IPropertyTree> pBindingAttrs = createPTreeFromXMLString(xpath.str());
+        addBinding(pCompTree, pBindingAttrs);
+
+     }
+  }
+  return pCompTree;
+}
+
+
 void SWEspProcess::addOtherSelector(IPropertyTree *compTree, IPropertyTree *params)
 {
    const char* selector = params->queryProp("@selector");
@@ -57,12 +115,7 @@ void SWEspProcess::addBinding(IPropertyTree *parent, IPropertyTree * attrs)
    IPropertyTree * pEspService = envTree->queryPropTree(xpath.str());
    if (!pEspService)
    {
-      const char* task="<Task category=\"Software\" component=\"esdl\" key=\"dynamicesdl\" operation=\"add\"/>";
-      Owned<IPropertyTree> taskPT = createPTreeFromXMLString(task);
-      ((SWEspService*)m_envHelper->getEnvSWComp("DynamicESDL"))->add(taskPT);
-      pEspService = envTree->queryPropTree(xpath.str());
-      assert(pEspService);
-      // throw MakeStringException(CfgEnvErrorCode::InvalidParams, "Can't find EspService with name %s.", serviceName);
+      throw MakeStringException(CfgEnvErrorCode::InvalidParams, "Can't find EspService with name %s.", serviceName);
    }
 
    IPropertyTree *pBinding = createPTree(XML_TAG_ESPBINDING);

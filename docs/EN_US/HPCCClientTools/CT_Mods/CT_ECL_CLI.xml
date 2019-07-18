@@ -3852,7 +3852,8 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <para>Examples:</para>
 
         <programlisting>ecl packagemap validate roxie mypackagemap.pkg
-ecl packagemap validate roxie --active</programlisting>
+ecl packagemap validate roxie --active
+ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, findByZip' </programlisting>
 
         <para>The packagemap validate command verifies that :</para>
 
@@ -3884,7 +3885,7 @@ ecl packagemap validate roxie --active</programlisting>
         to validate the files for a single query. <informaltable colsep="1"
             frame="all" rowsep="1">
             <tgroup cols="2">
-              <colspec align="left" colwidth="175.55pt" />
+              <colspec align="left" colwidth="155.55pt" />
 
               <colspec colwidth="384.85pt" />
 
@@ -3958,6 +3959,28 @@ ecl packagemap validate roxie --active</programlisting>
 
                   <entry>Validate the files for the given queryid if they are
                   mapped in the package map</entry>
+                </row>
+
+                <row>
+                  <entry>--ignore-optional</entry>
+
+                  <entry>Will not report optional files that are not defined
+                  in the packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--ignore-warnings</entry>
+
+                  <entry>Will not report general packagemap warnings</entry>
+                </row>
+
+                <row>
+                  <entry>--ignore-queries=&lt;setOfQueries&gt;</entry>
+
+                  <entry>Will not report on the queries which match the
+                  expression. The set of queries can be a comma-separated list
+                  or you can use the option once per entry. Wildcards are
+                  supported.</entry>
                 </row>
 
                 <row>
