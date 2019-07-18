@@ -171,7 +171,8 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
                 }
                 var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                 wu.updateData(lang.mixin({
-                    __hpcc_id: item.Wuid
+                    __hpcc_id: item.Wuid,
+                    component: "ActivityWidget"
                 }, item));
                 if (!wu.isComplete || !wu.isComplete()) {
                     queue.addChild(wu);

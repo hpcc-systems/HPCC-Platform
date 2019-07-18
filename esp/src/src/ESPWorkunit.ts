@@ -190,7 +190,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         if (justCompleted) {
             topic.publish("hpcc/ecl_wu_completed", this);
         }
-        if (!this.hasCompleted) {
+        if (!this.hasCompleted && this.component !== "ActivityWidget") {
             this.startMonitor();
         }
     },

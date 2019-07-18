@@ -293,15 +293,6 @@ define([
 
                 this.openButton = registry.byId(this.id + "Open");
                 this.refreshButton = registry.byId(this.id + "Refresh");
-                this.autoRefreshButton = new ToggleButton({
-                    id: this.id + "AutoRefresh",
-                    iconClass: 'iconAutoRefresh',
-                    showLabel: false,
-                    checked: false,
-                    onClick: function (event) {
-                        context._onAutoRefresh(event);
-                    }
-                }).placeAt(this.refreshButton.domNode, "before");
                 var tmpSplitter = new ToolbarSeparator().placeAt(this.refreshButton.domNode, "before");
                 this.clusterPauseButton = new Button({
                     id: this.id + "PauseButton",

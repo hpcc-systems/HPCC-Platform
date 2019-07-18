@@ -1988,15 +1988,14 @@ public:
         int inpipe[2];
         int outpipe[2];
         int errpipe[2];
-        if (hasinput)
-            if (::pipe(inpipe)==-1)
-                throw makeOsException(errno);
-        if (hasoutput)
-            if (::pipe(outpipe)==-1)
-                throw makeOsException(errno);
-        if (haserror)
-            if (::pipe(errpipe)==-1)
-                throw makeOsException(errno);
+        if ((hasinput && (::pipe(inpipe)==-1)) ||
+            (hasoutput && (::pipe(outpipe)==-1)) ||
+            (haserror && (::pipe(errpipe)==-1)))
+        {
+            retcode = START_FAILURE;
+            started.signal();
+            throw makeOsException(errno);
+        }
 
         /* NB: Important to call splitargs (which calls malloc) before the fork()
          * and not in the child process. Because performing malloc in the child
