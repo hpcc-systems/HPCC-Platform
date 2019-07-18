@@ -86,13 +86,26 @@ void CWizardInputs::setEnvironment()
   if(m_pXml->hasProp("@ipList"))
     formIPList(m_pXml->queryProp("@ipList"), m_ipaddress);
 
+  if(m_pXml->hasProp("@roxieNodes"))
+    m_roxieNodes = atoi(m_pXml->queryProp("@roxieNodes"));
+
+  if(m_pXml->hasProp("@thorNodes"))
+    m_thorNodes = atoi(m_pXml->queryProp("@thorNodes"));
+
+  m_espNodes = 1;
+  if(m_pXml->hasProp("@espNodes"))
+    m_espNodes = atoi(m_pXml->queryProp("@espNodes"));
+
   if(m_pXml->hasProp("@supportNodes"))
   {
     m_supportNodes = atoi(m_pXml->queryProp("@supportNodes"));
 
     if (m_supportNodes)
     {
-      if (m_ipaddress.length() > 0 && m_ipaddress.length() > m_supportNodes)
+      if (m_ipaddress.length() > 0 &&
+         ((m_ipaddress.length() > m_supportNodes) ||
+         ((m_ipaddress.length() == m_supportNodes) &&
+          (m_roxieNodes == 0) && (m_thorNodes == 0) && (m_espNodes == 0))))
       {
         for(unsigned i = 0; i < m_supportNodes; i++)
           m_ipaddressSupport.append(m_ipaddress.item(i));
@@ -104,15 +117,6 @@ void CWizardInputs::setEnvironment()
     }
   }
 
-  if(m_pXml->hasProp("@roxieNodes"))
-    m_roxieNodes = atoi(m_pXml->queryProp("@roxieNodes"));
-
-  if(m_pXml->hasProp("@thorNodes"))
-    m_thorNodes = atoi(m_pXml->queryProp("@thorNodes"));
-
-  m_espNodes = 1;
-  if(m_pXml->hasProp("@espNodes"))
-    m_espNodes = atoi(m_pXml->queryProp("@espNodes"));
 
 
   if(m_pXml->hasProp("@dbuser"))
@@ -278,6 +282,9 @@ void CWizardInputs::setWizardRules()
 
 CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* buildSetName,const IPropertyTree* pEnvTree, unsigned numOfNodes)
 {
+  if (numOfNodes == 0)
+    return NULL;
+
   StringBuffer xPath;
   xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]",buildSetName);
   IPropertyTree* pBuildSet = pEnvTree->queryPropTree(xPath.str());
@@ -296,7 +303,13 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
 
     if (m_ipaddress.ordinality() + m_supportNodes == 1 && instDetails == NULL && strcmp(buildSetName, "backupnode"))
     {
-      instDetails = new CInstDetails(compName, m_ipaddress.item(0));
+      if (m_ipaddress.ordinality() > 0)
+        instDetails = new CInstDetails(compName, m_ipaddress.item(0));
+      else if (m_ipaddressSupport.ordinality() > 0)
+        instDetails = new CInstDetails(compName, m_ipaddressSupport.item(0));
+      else
+        return instDetails;
+
       m_compIpMap.setValue(buildSetName,instDetails);
       return instDetails;
     }
