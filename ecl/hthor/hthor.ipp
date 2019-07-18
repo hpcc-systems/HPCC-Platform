@@ -3003,7 +3003,7 @@ public:
 
 protected:
     bool openFirstPart();
-    bool initStream(IDiskRowReader * reader, const char * filename);
+    void initStream(IDiskRowReader * reader, const char * filename);
     InputFileInfo * extractFileInformation(IDistributedFile * fileDesc);
     bool openFilePart(const char * filename);
     bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
@@ -3013,7 +3013,7 @@ protected:
     virtual bool openNext();
     virtual void closepart();
 
-    bool openNextPart();
+    bool openNextPart(bool prevWasMissing);
     IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, IPropertyTree * options);
 };
 
