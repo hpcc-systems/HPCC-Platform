@@ -713,3 +713,26 @@ extern jlib_decl bool appendUtfXmlName(MemoryBuffer & target, UtfReader::UtfForm
 {
     return replaceUtf(utfXmlNameReplacementFunc, target, type, sourceLength, source);
 }
+
+extern jlib_decl bool containsOnlyAscii(const char * source)
+{
+    for (;;)
+    {
+        byte next = *source++;
+        if (!next)
+            return true;
+        if (next >= 128)
+            return false;
+    }
+}
+
+extern jlib_decl bool containsOnlyAscii(size_t sourceLength, const char * source)
+{
+    for (size_t i=0; i < sourceLength; i++)
+    {
+        byte next = source[i];
+        if (next >= 128)
+            return false;
+    }
+    return true;
+}

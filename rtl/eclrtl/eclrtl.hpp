@@ -887,4 +887,7 @@ typedef IEmbedContext * (* GetEmbedContextFunction)();
 ECLRTL_API void rtlSubstituteEmbeddedScript(size32_t &__lenResult, char * &__result, size32_t scriptChars, const char *script, size32_t outFieldsChars, const char *outFields, size32_t searchChars, const char *search);
 ECLRTL_API void rtlSubstituteActivityContext(StringBuffer &, const IThorActivityContext *ctx, size32_t scriptChars, const char *script);
 
+//The following are not called from the generated code, but are useful helper functions for the test of the platform
+ECLRTL_API void rtlStringToUtf8(StringBuffer & out, unsigned inlen, char const * in);
+
 #endif
