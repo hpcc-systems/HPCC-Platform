@@ -3460,12 +3460,15 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             wuXML->kill();  // free up text as soon as possible.
         }
 
+        Owned<IConnectionMonitor> daliDownMonitor;
+
         Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers.length())
         {
+            SocketEndpoint daliEp(daliServers, DALI_SERVER_PORT);
             {
                 MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
-                Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
+                Owned<IGroup> serverGroup = createIGroup(1, &daliEp);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3473,6 +3476,38 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             serverstatus->queryProperties()->setPropInt("Pid", GetCurrentProcessId());
             serverstatus->commitProperties();
 #endif
+            class CDaliDownMonitor : public CSimpleInterfaceOf<IConnectionMonitor>
+            {
+                const SocketEndpoint &daliEp;
+                Semaphore sem;
+            public:
+                CDaliDownMonitor(const SocketEndpoint &_daliEp) : daliEp(_daliEp)
+                {
+                }
+                ~CDaliDownMonitor()
+                {
+                    removeMPConnectionMonitor(this);
+                    sem.signal();
+                }
+                virtual void onClose(SocketEndpoint &ep)
+                {
+                    if (ep.equals(daliEp))
+                    {
+                        WARNLOG("Dali has closed. Waiting 1 minute for process to exit gracefully before killing..");
+
+                        if (sem.wait(60000)) // see if process shutsdown gracefully before killing
+                            return;
+                        WARNLOG("Killing process");
+#ifdef _WIN32
+                        TerminateProcess(GetCurrentProcess(), 1);
+#else
+                        kill(getpid(), SIGKILL);
+#endif
+                    }
+                }
+            };
+            daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
+            addMPConnectionMonitor(daliDownMonitor);
 
             {
                 MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
