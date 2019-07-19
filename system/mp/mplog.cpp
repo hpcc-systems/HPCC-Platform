@@ -367,7 +367,7 @@ LinkToParentLogMsgHandler::~LinkToParentLogMsgHandler()
 }
 
 
-void LinkToParentLogMsgHandler::handleMessage(const LogMsg & msg) const
+void LinkToParentLogMsgHandler::handleMessage(const LogMsg & msg)
 {
     CMessageBuffer out;
     msg.serialize(out);

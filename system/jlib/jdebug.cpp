@@ -4000,7 +4000,7 @@ public:
     }
 
     // interface ILogMsgHandler
-    virtual void handleMessage(const LogMsg & msg __attribute__((unused))) const {  counter++; }
+    virtual void handleMessage(const LogMsg & msg __attribute__((unused))) { counter++; }
     virtual bool needsPrep() const { return false; }
     virtual void prep() {}
     virtual unsigned queryMessageFields() const { return MSGFIELD_detail; }

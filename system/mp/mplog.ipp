@@ -138,7 +138,7 @@ public:
     LinkToParentLogMsgHandler(MPLogId _cid, MPLogId _pid, INode * _parentNode, bool _connected) : parentNode(_parentNode), cid(_cid), pid(_pid), receiverThread(new LogMsgFilterReceiverThread(_pid, _parentNode)), connected(_connected) { receiverThread->setHandler(this); }
     ~LinkToParentLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(LogMsg const & msg) const;
+    void                      handleMessage(LogMsg const & msg);
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;

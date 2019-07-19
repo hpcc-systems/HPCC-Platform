@@ -517,7 +517,7 @@ class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
 public:
     HandleLogMsgHandlerXML(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); }
+    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); }
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -528,7 +528,7 @@ class HandleLogMsgHandlerTable : implements HandleLogMsgHandler, public CInterfa
 public:
     HandleLogMsgHandlerTable(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); }
+    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); }
     bool                      needsPrep() const { return !prepped; }
     void                      prep() { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
     void                      addToPTree(IPropertyTree * tree) const;
@@ -566,7 +566,7 @@ class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerXML(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); if(flushes) fflush(handle); }
+    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); if(flushes) fflush(handle); }
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -577,7 +577,7 @@ class FileLogMsgHandlerTable : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerTable(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); if(flushes) fflush(handle); }
+    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); if(flushes) fflush(handle); }
     bool                      needsPrep() const { return !prepped; }
     void                      prep() { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
     void                      addToPTree(IPropertyTree * tree) const;
@@ -591,11 +591,20 @@ public:
     RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false);
     virtual ~RollingFileLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const
+    void                      handleMessage(const LogMsg & msg)
     {
         CriticalBlock block(crit);
         checkRollover();
-        msg.fprintTable(handle, messageFields);
+        if (printHeader)
+        {
+            msg.fprintTableHead(handle, messageFields);
+            printHeader = false;
+        }
+        if (currentLogFields)  // If appending to existing log file, use same format as existing
+            msg.fprintTable(handle, currentLogFields);
+        else
+            msg.fprintTable(handle, messageFields);
+
         if(flushes) fflush(handle);
     }
     bool                      needsPrep() const { return false; }
@@ -609,11 +618,12 @@ public:
     bool                      getLogName(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
 protected:
-    void                      checkRollover() const;
-    void                      doRollover(bool daily, const char *forceName = NULL) const;
+    void                      checkRollover();
+    void                      doRollover(bool daily, const char *forceName = NULL);
 protected:
     mutable FILE *            handle;
     unsigned                  messageFields;
+    unsigned                  currentLogFields = 0; // When appending to log file, use that log files format (i.e. modifying during the day, doesn't cause immediate change...)
     StringAttr                alias;
     StringAttr                filebase;
     StringAttr                fileextn;
@@ -622,6 +632,7 @@ protected:
     bool                      flushes;
     mutable CriticalSection   crit;
     mutable struct tm         startTime;
+    bool printHeader = true;
 };
 
 // Implementation of handler which writes message to file in binary form
@@ -632,7 +643,7 @@ public:
     BinLogMsgHandler(const char * _filename, bool _append = false);
     virtual ~BinLogMsgHandler();
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const;
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -661,7 +672,7 @@ class SysLogMsgHandler : implements ILogMsgHandler, public CInterface
 public:
     SysLogMsgHandler(ISysLogEventLogger * _logger, unsigned _fields) : logger(_logger), fields(_fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) const;
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -683,7 +694,7 @@ class LogMsgMonitor : public CInterface
 {
 public:
     LogMsgMonitor(ILogMsgFilter * _filter, ILogMsgHandler * _handler) : filter(_filter), handler(_handler) {}
-    void                      processMessage(const LogMsg & msg) const { if(filter->includeMessage(msg)) handler->handleMessage(msg); }
+    void                      processMessage(const LogMsg & msg) { if(filter->includeMessage(msg)) handler->handleMessage(msg); }
     ILogMsgFilter *           queryFilter() const { return filter; }
     ILogMsgFilter *           getFilter() const { return LINK(filter); }
     ILogMsgHandler *          queryHandler() const { return handler; }
