@@ -2885,7 +2885,7 @@ public:
     void barrier(void)
     {
 #ifdef _TRACE
-        PrintLog("MP: barrier enter");
+        DBGLOG("MP: barrier enter");
 #endif
 
         /*
@@ -2907,7 +2907,7 @@ public:
             int src = (myrank - mask + numranks) % numranks;
 
 #ifdef _TRACE
-            PrintLog("MP: barrier: send to %d, recv from %d", dst, src);
+            DBGLOG("MP: barrier: send to %d, recv from %d", dst, src);
 #endif
 
             // NOTE: MPI method MUST use sendrecv so as to not send/recv deadlock ...
@@ -2920,7 +2920,7 @@ public:
 
             if (!oks && !okr)
             {
-                PrintLog("MP: barrier: Error sending or recving");
+                DBGLOG("MP: barrier: Error sending or recving");
                 break;
             }
 
@@ -2928,7 +2928,7 @@ public:
         }
 
 #ifdef _TRACE
-        PrintLog("MP: barrier leave");
+        DBGLOG("MP: barrier leave");
 #endif
     }
 

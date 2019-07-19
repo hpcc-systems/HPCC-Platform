@@ -311,7 +311,7 @@ void CJobManager::fatal(IException *e)
     {
         IERRLOG("Unknown exception in CJobManager::fatal");
     }
-    LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,exception",
+    LOG(MCauditInfo,",Progress,Thor,Terminate,%s,%s,%s,exception",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
             queryServerStatus().queryProperties()->queryProp("@queue"));
@@ -708,7 +708,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
     StringAttr user(workunit->queryUser());
 
     LOG(MCdebugInfo, thorJob, "Processing wuid=%s, graph=%s from agent: %s", wuid.str(), graphName, agentep.getUrlStr(s).str());
-    LOG(daliAuditLogCat,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
+    LOG(MCauditInfo,",Progress,Thor,Start,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             wuid.str(),
             graphName,
@@ -722,7 +722,7 @@ bool CJobManager::doit(IConstWorkUnit *workunit, const char *graphName, const So
         allDone = executeGraph(*workunit, graphName, agentep);
     }
     catch (IException *_e) { e.setown(_e); }
-    LOG(daliAuditLogCat,",Progress,Thor,Stop,%s,%s,%s,%s,%s,%s",
+    LOG(MCauditInfo,",Progress,Thor,Stop,%s,%s,%s,%s,%s,%s",
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             wuid.str(),
             graphName,

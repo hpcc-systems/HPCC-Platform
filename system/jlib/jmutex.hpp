@@ -66,7 +66,7 @@ public:
     ~Mutex()
     {
         if (owner != 0)
-            printf("Warning - Owned mutex destroyed"); // can't use PrintLog here!
+            printf("Warning - Owned mutex destroyed"); // can't use DBGLOG here!
         CloseHandle(mutex);
     }
     void lock()
@@ -419,7 +419,7 @@ public:
     ~SpinLock()             
     { 
         if (value)
-            printf("Warning - Owned Spinlock destroyed"); // can't use PrintLog here!
+            printf("Warning - Owned Spinlock destroyed"); // can't use DBGLOG here!
     }
 #endif
     inline void enter()       

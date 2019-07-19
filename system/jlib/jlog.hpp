@@ -130,8 +130,6 @@ inline const char * LogMsgAudienceToVarString(LogMsgAudience audience)
         return("User");
     case MSGAUD_programmer:
         return("Programmer");
-    case MSGAUD_legacy:
-        return("Legacy");
     case MSGAUD_audit:
         return("Audit");
     default:
@@ -149,8 +147,6 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
         return("User     ");
     case MSGAUD_programmer:
         return("Prog.    ");
-    case MSGAUD_legacy:
-        return("Legacy   ");
     case MSGAUD_audit:
         return("Audit    ");
     default:
@@ -738,14 +734,15 @@ constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error);
 constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
 constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
 constexpr LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
+constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning);
 constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
 constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
 constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
 constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information);
 constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
+constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information);
 constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
-constexpr LogMsgCategory MClegacy(MSGAUD_legacy, MSGCLS_legacy, DefaultDetail);
 
 inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error) { return LogMsgCategory((e)->errorAudience(),cls); }
 

@@ -3309,8 +3309,6 @@ void testMultiConnect()
 }
 
 #if 0
-LogMsgCategory const daliAuditLogCat(MSGAUD_audit, MSGCLS_information, DefaultDetail);
-
 void testDaliLog(bool listener)
 {
     startLogMsgChildReceiver();
@@ -3325,7 +3323,7 @@ void testDaliLog(bool listener)
     }
     else {
         connectLogMsgManagerToDali();
-        LOG(daliAuditLogCat, "W2134");
+        LOG(MCauditInfo, "W2134");
         disconnectLogMsgManagerFromDali();
     }
 }

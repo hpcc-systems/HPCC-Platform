@@ -302,7 +302,6 @@ const char* serializeMessageAudience(MessageAudience ma)
     case MSGAUD_operator:    ret = "operator";      break;
     case MSGAUD_user:        ret = "user";          break;
     case MSGAUD_programmer:  ret = "programmer";    break;
-    case MSGAUD_legacy:      ret = "legacy";        break;
     case MSGAUD_all:         ret = "all";           break;
     default:                 ret = "unknown";       break;
     }
@@ -320,8 +319,6 @@ MessageAudience deserializeMessageAudience(const char* text)
             ma = MSGAUD_user;
         else if (!strcmp(text, "programmer"))
             ma = MSGAUD_programmer;
-        else if (!strcmp(text, "legacy"))
-            ma = MSGAUD_legacy;
         else if (!strcmp(text, "all"))
             ma = MSGAUD_all;
     }

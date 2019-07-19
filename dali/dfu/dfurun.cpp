@@ -97,7 +97,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                 aln.append(',').append(lfn2);
             }
         }
-        LOG(daliAuditLogCat,"%s",aln.str());
+        LOG(MCauditInfo,"%s",aln.str());
     }
 
 
