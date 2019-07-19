@@ -4025,7 +4025,7 @@ jlib_decl IUserMetric *createUserMetric(const char *name, const char *matchStrin
     return new UserMetricMsgHandler(name, matchString);
 }
 
-jlib_decl bool printProcessHandles(pid_t pid)
+jlib_decl bool printProcessHandles(unsigned pid)
 {
 #if defined(__linux__)
     StringBuffer curFilePathSB("/proc/");
@@ -4073,7 +4073,7 @@ jlib_decl bool printProcessHandles(pid_t pid)
     return true;
 }
 
-jlib_decl bool printLsOf(pid_t pid)
+jlib_decl bool printLsOf(unsigned pid)
 {
 #if defined(__linux__)
     if (!pid)
