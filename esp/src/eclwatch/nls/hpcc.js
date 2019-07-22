@@ -133,7 +133,7 @@ define({root:
     DaliIP: "DaliIP",
     DataPatterns: "Data Patterns",
     DataPatternsNotStarted: "Analysis not found.  To start, press Analyze button above.",
-    DataPatternsStarted: "Analysing.  Once complete report will display here.",
+    DataPatternsStarted: "Analyzing.  Once complete report will display here.",
     dataset: ":=dataset*",
     Date: "Date",
     Day: "Day",
