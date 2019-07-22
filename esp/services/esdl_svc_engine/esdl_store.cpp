@@ -33,6 +33,8 @@
 static const char* ESDL_DEFS_ROOT_PATH="/ESDL/Definitions/";
 static const char* ESDL_DEF_PATH="/ESDL/Definitions/Definition";
 static const char* ESDL_DEF_ENTRY="Definition";
+static const char* ESDL_DEF_CONTENT_PTREE="esxdl";
+static const char* ESDL_DEF_CONTENT_STR="content";
 static const char* ESDL_BINDINGS_ROOT_PATH="/ESDL/Bindings/";
 static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
 static const char* ESDL_BINDING_ENTRY="Binding";
@@ -40,6 +42,75 @@ static const char* ESDL_CHANGE_PATH="/ESDL/Subscription/Change";
 static const char* ESDL_METHODS_ENTRY="Methods";
 
 extern bool trimXPathToParentSDSElement(const char *element, const char * xpath, StringBuffer & parentNodeXPath);
+
+class CEsdlDefinitionInfo : implements IEsdlDefinitionInfo, public CInterface
+{
+    friend class CEsdlSDSStore;
+
+private:
+    typedef MapStringTo<StringArray*> MapStringToStringArray;
+
+    MapStringToStringArray m_serviceMethodMap;
+    StringArray m_services;
+    Owned<IProperties> m_metadata = createProperties();
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    ~CEsdlDefinitionInfo()
+    {
+        HashIterator iter(m_serviceMethodMap);
+        ForEach(iter)
+        {
+            StringArray* arr = *m_serviceMethodMap.mapToValue(&iter.query());
+            delete arr;
+        }
+    }
+
+    virtual const IProperties& getMetadata() override
+    {
+        return *m_metadata;
+    }
+
+    virtual const StringArray& getServices() override
+    {
+        return m_services;
+    }
+
+    virtual const StringArray* queryMethods(const char* service) override
+    {
+        StringArray** methods = m_serviceMethodMap.getValue(service);
+        if( methods )
+            return *(methods);
+        else
+            return nullptr;
+    }
+
+private:
+    void setMetadataValue(const char* name, const char* value)
+    {
+        m_metadata->setProp(name, value);
+    }
+
+    void ensureServiceExists(const char* service)
+    {
+        if( m_services.contains(service) == false )
+            m_services.append(service);
+        if( m_serviceMethodMap.find(service) == NULL )
+            m_serviceMethodMap.setValue(service, new StringArray);
+    }
+
+    void ensureServiceMethod(const char* service, const char* method)
+    {
+        if( m_serviceMethodMap.find(service) == NULL )
+        {
+            ensureServiceExists(service);
+        }
+
+        StringArray* methods = *m_serviceMethodMap.getValue(service);
+        methods->append(method);
+    }
+};
 
 class CEsdlSDSStore : implements IEsdlStore, public CInterface
 {
@@ -86,50 +157,104 @@ public:
         throw MakeStringException(-1, "ESDS store is not attached to dali");
     }
 
-    virtual IPropertyTree* fetchDefinition(const char* definitionId) override
+
+    unsigned fetchLatestSeqForDefinitionName(const char* definitionName)
     {
+        unsigned latestSeq = 1;
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        if (!conn)
+            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+
+        IPropertyTree * esdlDefinitions = conn->queryRoot();
+
+        if (esdlDefinitions)
+        {
+            VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, definitionName);
+            Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
+            ForEach(*iter)
+            {
+                IPropertyTree &item = iter->query();
+                unsigned thisSeq = item.getPropInt("@seq");
+                if (thisSeq > latestSeq)
+                    latestSeq = thisSeq;
+            }
+        } else
+            throw MakeStringException(-1, "Unable to fetch ESDL definition '%s' from dali", definitionName);
+
+        return latestSeq;
+    }
+
+    void readServiceMethodInfo(CEsdlDefinitionInfo* defInfo, IPropertyTree* defTree)
+    {
+        Owned<IPropertyTreeIterator> serviceiter = defTree->getElements("EsdlService");
+        ForEach(*serviceiter)
+        {
+            IPropertyTree &curservice = serviceiter->query();
+            const char* serviceName = curservice.queryProp("@name");
+
+            Owned<IPropertyTreeIterator> methoditer = curservice.getElements("EsdlMethod");
+            ForEach(*methoditer)
+            {
+                IPropertyTree &item = methoditer->query();
+                defInfo->ensureServiceMethod(serviceName, item.queryProp("@name"));
+            }
+        }
+    }
+
+    virtual IEsdlDefinitionInfo* fetchDefinitionInfo(const char* definitionId) override
+    {
+        Owned<CEsdlDefinitionInfo> defInfo= new CEsdlDefinitionInfo();
+
         if (!definitionId || !*definitionId)
             throw MakeStringException(-1, "Unable to fetch ESDL Service definition information, definition id is not available");
 
+        StringBuffer targetId(definitionId);
+
         if (!strchr (definitionId, '.')) //no name.ver delimiter, find latest version of name
         {
-            Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-            if (!conn)
-                throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
+            unsigned latestSeq = fetchLatestSeqForDefinitionName(definitionId);
+            targetId.appendf(".%u", latestSeq);
+        }
 
-            IPropertyTree * esdlDefinitions = conn->queryRoot();
+        //There shouldn't be multiple entries here, but if so, we'll use the first one
+        VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_PATH, targetId.str());
+        Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        if (!conn)
+            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
 
-            if (esdlDefinitions)
-            {
-                VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, definitionId);
-                Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
+        IPropertyTree* defn = conn->queryRoot();
 
-                unsigned latestSeq = 1;
-                ForEach(*iter)
-                {
-                    IPropertyTree &item = iter->query();
-                    unsigned thisSeq = item.getPropInt("@seq");
-                    if (thisSeq > latestSeq)
-                        latestSeq = thisSeq;
-                }
-                xpath.setf("%s[@id='%s.%d'][1]", ESDL_DEF_ENTRY, definitionId, latestSeq);
-                DBGLOG("ESDL Binding: Fetching ESDL Definition '%s.%d' from Dali", definitionId, latestSeq);
-                return esdlDefinitions->getPropTree(xpath);
-            }
-            else
-                throw MakeStringException(-1, "Unable to fetch ESDL definition '%s' from dali", definitionId);
+        // Read the metadata - creation date, id, name, etc
+        Owned<IAttributeIterator> it = defn->getAttributes();
+        for (it->first(); it->isValid(); it->next())
+        {
+            const char* name = it->queryName();
+            const char* val = it->queryValue();
+            defInfo->setMetadataValue(name, val);
+        }
+
+        // Read the services and methods
+
+        // First get PTree for the definition
+        // In the future we may need to use an implementation that doesn't rely on
+        // PTree so we can keep the list of Services and Methods in lexical order
+        if( defn->hasProp(ESDL_DEF_CONTENT_STR) )
+        {
+            const char* defXML = defn->queryProp(ESDL_DEF_CONTENT_STR);
+            Owned<IPropertyTree> tmpTree= createPTreeFromXMLString(defXML, ipt_caseInsensitive|ipt_ordered);
+            readServiceMethodInfo(defInfo, tmpTree);
         }
         else
         {
-            //There shouldn't be multiple entries here, but if so, we'll use the first one
-            VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_PATH, definitionId);
-            Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
-            if (!conn)
-             throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
+            IPropertyTree* esxdlTree = defn->queryBranch(ESDL_DEF_CONTENT_PTREE);
+            if( esxdlTree != nullptr )
+                readServiceMethodInfo(defInfo, esxdlTree);
+            else
+                throw MakeStringException(-1, "Unable to retrieve ESDL Service definition %s interface", definitionId);
 
-             return createPTreeFromIPT(conn->queryRoot());
         }
-        return nullptr;
+
+        return defInfo.getLink();
     }
 
     virtual void fetchDefinitionXML(const char* definitionId, StringBuffer& esxdl) override
@@ -140,12 +265,18 @@ public:
         DBGLOG("ESDL Binding: Fetching ESDL Definition from Dali: %s ", definitionId);
 
         //There shouldn't be multiple entries here, but if so, we'll use the first one
-        VStringBuffer xpath("%s[@id='%s'][1]/esxdl", ESDL_DEF_PATH, definitionId);
+        VStringBuffer xpath("%s[@id='%s'][1]", ESDL_DEF_PATH, definitionId);
         Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", xpath.str());
 
-        toXML(conn->queryRoot(), esxdl, 0, 0);
+        IPropertyTree* defn = conn->queryRoot();
+        if( defn->hasProp(ESDL_DEF_CONTENT_STR))
+            esxdl.set(defn->queryProp(ESDL_DEF_CONTENT_STR));
+        else if( defn->hasProp(ESDL_DEF_CONTENT_PTREE))
+            toXML(defn->queryPropTree(ESDL_DEF_CONTENT_PTREE), esxdl, 0, 0);
+        else
+            throw MakeStringException(-1, "Unable to fetch ESDL Service definition contents for %s", definitionId);
     }
 
     virtual void fetchLatestDefinitionXML(const char* definitionName, StringBuffer& esxdl) override
@@ -160,23 +291,17 @@ public:
            throw MakeStringException(-1, "Unable to connect to ESDL Service definition information in dali '%s'", ESDL_DEFS_ROOT_PATH);
 
         IPropertyTree * esdlDefinitions = conn->queryRoot();
+        unsigned latestSeq = fetchLatestSeqForDefinitionName(definitionName);
 
-        VStringBuffer xpath("%s[@name='%s']", ESDL_DEF_ENTRY, definitionName);
-        Owned<IPropertyTreeIterator> iter = esdlDefinitions->getElements(xpath.str());
-
-        unsigned latestSeq = 1;
-        ForEach(*iter)
-        {
-            IPropertyTree &item = iter->query();
-            unsigned thisSeq = item.getPropInt("@seq");
-            if (thisSeq > latestSeq)
-                latestSeq = thisSeq;
-        }
-
-        xpath.setf("%s[@id='%s.%d'][1]/esxdl", ESDL_DEF_ENTRY, definitionName, latestSeq);
+        VStringBuffer xpath("%s[@id='%s.%u'][1]", ESDL_DEF_ENTRY, definitionName, latestSeq);
         Owned<IPropertyTree> deftree = esdlDefinitions->getPropTree(xpath);
         if (deftree)
-            toXML(deftree, esxdl, 0,0);
+            if( deftree->hasProp(ESDL_DEF_CONTENT_STR))
+                esxdl.set(deftree->queryProp(ESDL_DEF_CONTENT_STR));
+            else if( deftree->hasProp(ESDL_DEF_CONTENT_PTREE))
+                toXML(deftree->queryPropTree(ESDL_DEF_CONTENT_PTREE), esxdl, 0, 0);
+            else
+                throw MakeStringException(-1, "Unable to fetch ESDL Service definition contents for %s", definitionName);
         else
             throw MakeStringException(-1, "Unable to fetch ESDL Service definition from dali: '%s'", definitionName);
     }
@@ -239,7 +364,7 @@ public:
         return nullptr;
     }
 
-    virtual bool addDefinition(const char* definitionName, IPropertyTree* definitionInfo, StringBuffer& newId, unsigned& newSeq, const char* userid, bool deleteprev, StringBuffer & message) override
+    virtual bool addDefinition(const char* definitionName, const char* xmldef, StringBuffer& newId, unsigned& newSeq, const char* userid, bool deleteprev, StringBuffer & message) override
     {
         Owned<IRemoteConnection> conn = checkQuerySDS().connect(ESDL_DEFS_ROOT_PATH, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_DESDL);
         if (!conn)
@@ -300,6 +425,7 @@ public:
         CDateTime dt;
         dt.setNow();
         StringBuffer str;
+        Owned<IPropertyTree> definitionInfo = createPTree("Definition");
 
         newId.set(lcName).append(".").append(newSeq);
         definitionInfo->setProp("@name", lcName);
@@ -321,6 +447,9 @@ public:
         else
             definitionInfo->setProp("@created",dt.getString(str).str());
 
+        // ESDL_DEF_CONTENT_STR element contains this Definition is stored as serialized XML,
+        // not a pTree, to preserve element order
+        definitionInfo->addProp(ESDL_DEF_CONTENT_STR, xmldef);
         definitionRegistry->addPropTree(ESDL_DEF_ENTRY, LINK(definitionInfo));
         return true;
     }
@@ -346,38 +475,32 @@ public:
         if (!definitionId || !*definitionId)
             return false;
 
-        StringBuffer lcdefid (definitionId);
-        lcdefid.toLowerCase();
-        VStringBuffer xpath("%s[@id='%s']/esxdl", ESDL_DEF_PATH, lcdefid.str());
-        Owned<IRemoteConnection> globalLock = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
+        Owned<IEsdlDefinitionInfo> defInfo = fetchDefinitionInfo(definitionId);
+        const StringArray& services = defInfo->getServices();
 
-        if (globalLock)
+        // If there is only one service in the definition and an esdlServiceName was
+        // not passed in then search for the method in the single service.
+        // Otherwise search the service named by esdlServiceName for the method.
+        if( services.ordinality() == 1 && !esdlServiceName.length() )
         {
-            IPropertyTree * esxdl = globalLock->queryRoot();
-            Owned<IPropertyTreeIterator> it = esxdl->getElements("EsdlService");
-            int servicesCount = esxdl->getCount("EsdlService");
-
-            ForEach(*it)
+            const char* serviceName = services.item(0);
+            const StringArray* methods = defInfo->queryMethods(serviceName);
+            if( methods && methods->find(methodName) != NotFound )
             {
-                IPropertyTree* pCurrService = &it->query();
-                if ((servicesCount == 1 && !esdlServiceName.length()) || stricmp(pCurrService->queryProp("@name"), esdlServiceName.str())==0)
-                {
-                    Owned<IPropertyTreeIterator> it2 = pCurrService->getElements("EsdlMethod");
-                    ForEach(*it2)
-                    {
-                        IPropertyTree* pChildNode = &it2->query();
-                        if (stricmp(pChildNode->queryProp("@name"), methodName)==0)
-                        {
-                            if (!esdlServiceName.length())
-                                esdlServiceName.set(pCurrService->queryProp("@name"));
-                            return true;
-                        }
-                    }
-                }
+                esdlServiceName.set(serviceName);
+                return true;
+            }
+        } else if ( esdlServiceName.length() > 0 ){
+            const StringArray* methods = defInfo->queryMethods(esdlServiceName.str());
+            if( methods && methods->find(methodName) != NotFound )
+            {
+                return true;
             }
         }
+
         return false;
     }
+
     virtual int configureMethod(const char* bindingId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) override
     {
         if (!bindingId || !*bindingId)
@@ -1102,11 +1225,9 @@ private:
             return false;
         StringBuffer lcdefid (definitionId);
         lcdefid.toLowerCase();
-        Owned<IPTree> deftree = fetchDefinition(lcdefid.str());
-        if(!deftree)
-            return false;
-        VStringBuffer xpath("esxdl/EsdlService[@name='%s']", serviceName);
-        return deftree->hasProp(xpath.str());
+        Owned<IEsdlDefinitionInfo> defInfo = fetchDefinitionInfo(lcdefid.str());
+        const StringArray& services = defInfo->getServices();
+        return services.contains(serviceName);
     }
 
     int getIdFromProcBindingDef(const char* espProcName, const char* espBindingName, const char* definitionId, StringBuffer& bindingId, StringBuffer& message)

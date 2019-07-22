@@ -39,6 +39,10 @@ private:
     Owned<IEsdlStore> m_esdlStore;
     IPropertyTree * getEspProcessRegistry(const char * espprocname, const char * espbingingport, const char * servicename);
     int getBindingXML(const char * bindingId, StringBuffer & bindingXml, StringBuffer & msg);
+    void buildServiceMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspMethodConfig>& methodList, StringArray& serviceList, const char* svc = nullptr);
+    void buildServiceWithMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspESDLService>& serviceList, const char* svc = nullptr);
+    void wrapWithDefinitionElement(IEsdlDefinitionInfo* defInfo, StringBuffer& def);
+
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsESDLConfigEx(){};
@@ -58,6 +62,7 @@ public:
 
     bool addESDLBindingContentsHistory(IPropertyTree * publishedEntryTree, IEspESDLBindingContents& esdlbindingcontents);
     void addPublishHistory(IPropertyTree * publishedEntryTree, IEspPublishHistory &resp);
+    void addPublishHistoryFromMetadata(const IProperties &publishedMetadata, IEspPublishHistory &resp);
 
     bool attachServiceToDali() override
     {

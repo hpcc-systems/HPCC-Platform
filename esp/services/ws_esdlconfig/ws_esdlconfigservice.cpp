@@ -190,6 +190,89 @@ void CWsESDLConfigEx::init(IPropertyTree *cfg, const char *process, const char *
     m_esdlStore.setown(createEsdlCentralStore());
 }
 
+// Build two independent lists. First an array of IEspMethodConfig elements that lists
+// all methods defined across all services in the definition. Second is a StringArray
+// listing all the services defined in the definition.
+void CWsESDLConfigEx::buildServiceMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspMethodConfig>& methodList, StringArray& serviceList, const char* svc)
+{
+    const StringArray& services = defInfo->getServices();
+    ForEachItemIn(i, services)
+    {
+        const char* serviceName = services.item(i);
+
+        // If a service name is passed in, then only return info
+        // for that single service
+        if( isEmptyString(svc) || strcasecmp(svc, serviceName)==0 )
+        {
+            serviceList.append(serviceName);
+            const StringArray* methods = defInfo->queryMethods(serviceName);
+
+            if( methods )
+            {
+                ForEachItemIn(j, *methods)
+                {
+                    Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                    methodconfig->setName(methods->item(j));
+                    methodList.append(*methodconfig.getClear());
+                }
+            }
+        }
+    }
+}
+
+// Builds an array of IEspESDLService elements, one for earch service in the
+// definition. Each element contains an array of of IEspMethodConfig elements,
+// one for each method defined in that service.
+void CWsESDLConfigEx::buildServiceWithMethodsResponse(IEsdlDefinitionInfo* defInfo, IArrayOf<IEspESDLService>& serviceList, const char* svc)
+{
+    const StringArray& services = defInfo->getServices();
+    ForEachItemIn(i, services)
+    {
+        const char* serviceName = services.item(i);
+
+        // If a service name is passed in, then only return info
+        // for that single service
+        if( isEmptyString(svc) || strcasecmp(svc, serviceName)==0 )
+        {
+            Owned<IEspESDLService> esdlservice = createESDLService();
+            esdlservice->setName(serviceName);
+
+            IArrayOf<IEspMethodConfig> respmethodsarray;
+            const StringArray* methods = defInfo->queryMethods(serviceName);
+
+            if( methods )
+            {
+                ForEachItemIn(j, *methods)
+                {
+                    Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
+                    methodconfig->setName(methods->item(j));
+                    respmethodsarray.append(*methodconfig.getClear());
+                }
+            }
+            esdlservice->setMethods(respmethodsarray);
+            serviceList.append(*esdlservice.getClear());
+        }
+    }
+}
+
+// Here we construct the <Definition> root element from the definition metadata
+// and make it root around the provided definition XML
+void CWsESDLConfigEx::wrapWithDefinitionElement(IEsdlDefinitionInfo* defInfo, StringBuffer& def)
+{
+    StringBuffer definitionElement("<Definition");
+    const IProperties& metadata = defInfo->getMetadata();
+    Owned<IPropertyIterator> iter = metadata.getIterator();
+    ForEach(*iter)
+    {
+        const char* name = iter->getPropKey();
+        const char* val = metadata.queryProp(name);
+        // skip the leading @ in the property name
+        definitionElement.appendf(" %s=\"%s\"", &name[1], val);
+    }
+    definitionElement.appendf(">%s</Definition>", def.str());
+    def.swapWith(definitionElement);
+}
+
 bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishESDLDefinitionRequest & req, IEspPublishESDLDefinitionResponse & resp)
 {
     try
@@ -218,21 +301,17 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         if (!inxmldef || !*inxmldef)
             throw MakeStringException(-1, "Service definition (XML ESDL) is missing");
 
-        //much easier than creating a temp tree later on, just to add a root tag...
-        StringBuffer xmldefinition;
-        xmldefinition.appendf("<Definition>%s</Definition>", inxmldef);
-
-        Owned<IPropertyTree> serviceXMLTree = createPTreeFromXMLString(xmldefinition,ipt_caseInsensitive);
-
+        Owned<IPropertyTree> serviceXMLTree = createPTreeFromXMLString(inxmldef, ipt_caseInsensitive|ipt_ordered);
 #ifdef _DEBUG
-        StringBuffer xml;
-        toXML(serviceXMLTree, xml, 0,0);
-        fprintf(stderr, "incoming ESDL def: %s", xml.str());
+        fprintf(stderr, "incoming ESDL def: %s", inxmldef);
 #endif
 
+        // No Service name provided on input, so search the definition
+        // tree for any Services defined - at least one is required
+        // Use a concatenation of defined service names
         if (service.length() == 0)
         {
-            Owned<IPropertyTreeIterator> iter = serviceXMLTree->getElements("esxdl/EsdlService");
+            Owned<IPropertyTreeIterator> iter = serviceXMLTree->getElements("EsdlService");
             StringArray servicenames;
             ForEach (*iter)
             {
@@ -254,8 +333,9 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         }
         else
         {
+            // A service name was provided- ensure it's present in the definition
             StringBuffer serviceXpath;
-            serviceXpath.appendf("esxdl/EsdlService[@name=\"%s\"]", service.str());
+            serviceXpath.appendf("EsdlService[@name=\"%s\"]", service.str());
 
             if (!serviceXMLTree->hasProp(serviceXpath))
                 throw MakeStringException(-1, "Service \"%s\" definition not found in ESDL provided", service.str());
@@ -268,7 +348,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         unsigned newseq = 0;
         StringBuffer msg;
 
-        if (m_esdlStore->addDefinition(service.str(), serviceXMLTree.get(), newqueryid, newseq, user, deletePrevious, msg))
+        if (m_esdlStore->addDefinition(service.str(), inxmldef, newqueryid, newseq, user, deletePrevious, msg))
         {
             if (newseq)
                 resp.setEsdlVersion(newseq);
@@ -292,10 +372,9 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
 
                 try
                 {
-                    Owned<IPropertyTree> definitionTree;
-                    definitionTree.set(m_esdlStore->fetchDefinition(newqueryid.toLowerCase()));
-                    if(definitionTree)
-                        toXML(definitionTree, definitionxml);
+                    Owned<IEsdlDefinitionInfo> defInfo;
+                    defInfo.setown(m_esdlStore->fetchDefinitionInfo(newqueryid.toLowerCase()));
+                    m_esdlStore->fetchDefinitionXML(newqueryid.toLowerCase(), definitionxml);
 
                     msg.appendf("\nSuccessfully fetched ESDL Defintion: %s from Dali.", newqueryid.str());
 
@@ -306,74 +385,40 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
                     }
                     else
                     {
+                        wrapWithDefinitionElement(defInfo, definitionxml);
+
                         if (ver >= 1.4)
                             resp.updateDefinition().setInterface(definitionxml.str());
                         else
                             resp.setXMLDefinition(definitionxml.str());
 
-                        if (definitionTree)
+                        try
                         {
-                            try
+                            if (ver >= 1.4)
                             {
-                                if (ver >= 1.4)
-                                {
-                                    IEspPublishHistory& defhistory = resp.updateDefinition().updateHistory();
-                                    addPublishHistory(definitionTree, defhistory);
+                                IEspPublishHistory& defhistory = resp.updateDefinition().updateHistory();
+                                addPublishHistoryFromMetadata(defInfo->getMetadata(), defhistory);
+                                IArrayOf<IEspESDLService> respservicesresp;
 
-                                    IArrayOf<IEspESDLService> respservicesresp;
-                                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("esxdl/EsdlService");
-                                    ForEach(*serviceiter)
-                                    {
-                                        Owned<IEspESDLService> esdlservice = createESDLService("","");
-                                        IPropertyTree &curservice = serviceiter->query();
-                                        esdlservice->setName(curservice.queryProp("@name"));
-
-                                        Owned<IPropertyTreeIterator> methoditer = curservice.getElements("EsdlMethod");
-                                        IArrayOf<IEspMethodConfig> respmethodsarray;
-                                        ForEach(*methoditer)
-                                        {
-                                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                                            IPropertyTree &item = methoditer->query();
-                                            methodconfig->setName(item.queryProp("@name"));
-                                            respmethodsarray.append(*methodconfig.getClear());
-                                        }
-                                        esdlservice->setMethods(respmethodsarray);
-                                        respservicesresp.append(*esdlservice.getClear());
-                                    }
-
-                                    resp.updateDefinition().setServices(respservicesresp);
-                                }
-                                else
-                                {
-                                    StringArray esdlServices;
-                                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements("Exsdl/EsdlService");
-                                    ForEach(*serviceiter)
-                                    {
-                                        IPropertyTree &curservice = serviceiter->query();
-                                        esdlServices.append(curservice.queryProp("@name"));
-
-                                        Owned<IPropertyTreeIterator> iter = curservice.getElements("EsdlMethod");
-                                        IArrayOf<IEspMethodConfig> list;
-                                        ForEach(*iter)
-                                        {
-                                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                                            IPropertyTree &item = iter->query();
-                                            methodconfig->setName(item.queryProp("@name"));
-                                            list.append(*methodconfig.getClear());
-                                        }
-                                        resp.setMethods(list);
-                                    }
-                                    resp.setESDLServices(esdlServices);
-                                }
+                                buildServiceWithMethodsResponse(defInfo, respservicesresp);
+                                resp.updateDefinition().setServices(respservicesresp);
                             }
-                            catch (...)
+                            else
                             {
-                                msg.append("\nEncountered error while parsing fetching available methods");
-                            }
+                                // Note previous implementation quirk- only the methods for the
+                                // last-processed Service were listed in the response
+                                StringArray esdlServices;
+                                IArrayOf<IEspMethodConfig> respmethodsarray;
 
+                                buildServiceMethodsResponse(defInfo, respmethodsarray, esdlServices);
+                                resp.setMethods(respmethodsarray);
+                                resp.setESDLServices(esdlServices);
+                            }
                         }
-                        else
-                            msg.append("\nCould not fetch available methods");
+                        catch (...)
+                        {
+                            msg.append("\nEncountered error while fetching available methods");
+                        }
                     }
                 }
                 catch(IException* e)
@@ -1310,6 +1355,14 @@ bool CWsESDLConfigEx::onGetESDLBinding(IEspContext &context, IEspGetESDLBindingR
     return true;
 }
 
+void CWsESDLConfigEx::addPublishHistoryFromMetadata(const IProperties &publishedMetadata, IEspPublishHistory & history)
+{
+    history.setLastEditBy(publishedMetadata.queryProp("@lastEditedBy"));
+    history.setCreatedTime(publishedMetadata.queryProp("@created"));
+    history.setPublishBy(publishedMetadata.queryProp("@publishedBy"));
+    history.setLastEditTime(publishedMetadata.queryProp("@lastEdit"));
+}
+
 void CWsESDLConfigEx::addPublishHistory(IPropertyTree * publishedEntryTree, IEspPublishHistory & history)
 {
     if (publishedEntryTree)
@@ -1487,7 +1540,7 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
     StringBuffer message;
     int respcode = 0;
 
-    Owned<IPropertyTree> definitionTree;
+    Owned<IEsdlDefinitionInfo> defInfo;
     try
     {
         if (ver >= 1.3)
@@ -1507,22 +1560,16 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
         else
             resp.setId(id.str());
 
-        definitionTree.set(m_esdlStore->fetchDefinition(id.toLowerCase()));
+        m_esdlStore->fetchDefinitionXML(id.toLowerCase(), definition);
+        defInfo.setown(m_esdlStore->fetchDefinitionInfo(id.toLowerCase()));
 
-        if (definitionTree)
+        if (definition.length() == 0 )
         {
-            toXML(definitionTree, definition, 0,0);
-
-            if (definition.length() == 0 )
-            {
-                respcode = -1;
-                message.append("\nDefinition appears to be empty!");
-            }
-            else
-                message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
+            respcode = -1;
+            message.appendf("\nDefinition %s is empty!", id.str());
         }
         else
-            throw MakeStringException(-1, "Could not fetch ESDL definition '%s' from Dali.", id.str());
+            message.setf("Successfully fetched ESDL Defintion: %s from Dali.", id.str());
     }
     catch(IException* e)
     {
@@ -1542,12 +1589,16 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
 
     if (ver >= 1.2)
     {
+
+
+        wrapWithDefinitionElement(defInfo, definition);
+
         if(ver >= 1.4)
         {
             resp.updateDefinition().setInterface(definition.str());
 
             IEspPublishHistory& defhistory = resp.updateDefinition().updateHistory();
-            addPublishHistory(definitionTree, defhistory);
+            addPublishHistoryFromMetadata(defInfo->getMetadata(), defhistory);
         }
         else
             resp.setXMLDefinition(definition.str());
@@ -1558,80 +1609,37 @@ bool CWsESDLConfigEx::onGetESDLDefinition(IEspContext &context, IEspGetESDLDefin
             {
                 try
                 {
-                    VStringBuffer xpath("esxdl/EsdlService");
-                    if (serviceName && *serviceName)
-                        xpath.appendf("[@name='%s']", serviceName);
-
                     if ( ver >= 1.4)
                     {
-                        Owned<IPropertyTreeIterator> services = definitionTree->getElements(xpath.str());
                         IArrayOf<IEspESDLService> servicesarray;
-                        ForEach(*services)
-                        {
-                            IPropertyTree &curservice = services->query();
-                            Owned<IEspESDLService> esdlservice = createESDLService("","");
-                            esdlservice->setName(curservice.queryProp("@name"));
-
-                            Owned<IPropertyTreeIterator> methods = curservice.getElements("EsdlMethod");
-                            IArrayOf<IEspMethodConfig> methodsarray;
-                            ForEach(*methods)
-                            {
-                                Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                                IPropertyTree &method = methods->query();
-                                methodconfig->setName(method.queryProp("@name"));
-                                methodsarray.append(*methodconfig.getClear());
-                            }
-                            esdlservice->setMethods(methodsarray);
-                            servicesarray.append(*esdlservice.getClear());
-                        }
+                        buildServiceWithMethodsResponse(defInfo, servicesarray, serviceName);
                         resp.updateDefinition().setServices(servicesarray);
                     }
                     else
                     {
-                        xpath.append("/EsdlMethod");
-                        Owned<IPropertyTreeIterator> iter = definitionTree->getElements(xpath.str());
+                        StringArray esdlServices;
                         IArrayOf<IEspMethodConfig> list;
-                        ForEach(*iter)
-                        {
-                            Owned<IEspMethodConfig> methodconfig = createMethodConfig("","");
-                            IPropertyTree &item = iter->query();
-                            methodconfig->setName(item.queryProp("@name"));
-                            list.append(*methodconfig.getClear());
-                        }
-                        resp.setMethods(list);
-                    }
-                }
-                catch (...)
-                {
-                    message.append("\nEncountered error while parsing fetching available methods");
-                }
-            }
 
-            if (definitionTree)
-            {
-                try
-                {
-                    StringArray esdlServices;
-                    StringBuffer xpath;
-                    if (serviceName && *serviceName)
-                        xpath.appendf("EsdlService[@name='%s']", serviceName);
-                    else
-                        xpath.set("EsdlService");
-                    Owned<IPropertyTreeIterator> serviceiter = definitionTree->getElements(xpath.str());
-                    ForEach(*serviceiter)
-                    {
-                        IPropertyTree &item = serviceiter->query();
-                        esdlServices.append(item.queryProp("@name"));
+                        buildServiceMethodsResponse(defInfo, list, esdlServices, serviceName);
+                        resp.setMethods(list);
+
+                        // Historically this function has not returned a list of Services
+                        // although the onPublishEsdlDefinition response has, and they both
+                        // use the same structures. I've updated them both to behave the same
+                        resp.setESDLServices(esdlServices);
                     }
-                    resp.setESDLServices(esdlServices);
                 }
                 catch (...)
                 {
-                    message.append("\nEncountered error while parsing fetching EsdlServices");
+                    message.append("\nEncountered error while fetching available methods");
                 }
             }
-            else
-                message.append("\nCould not fetch ESDLServices");
+            // Previous code here removed as it was inconsistent or incorrect.
+            //   - It would overwrite how setESDLServices was called for client version >= 1.4.
+            //   - It would set the incorrect response type for version < 1.4, thought it might
+            //     have validated against the schema by luck.
+            // Instead services & methods response is handled above and behavior is now consistent across
+            // onGetESDLDefinition and onPublishESDLDefinition, since they use the same interface
         }
         else
             message.append("\nCould not fetch ESDL services definition details");

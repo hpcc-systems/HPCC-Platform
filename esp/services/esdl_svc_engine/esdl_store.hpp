@@ -28,16 +28,23 @@
  #define esdl_engine_decl DECL_IMPORT
 #endif
 
+interface IEsdlDefinitionInfo : public IInterface
+{
+    virtual const IProperties& getMetadata() = 0;
+    virtual const StringArray& getServices() = 0;
+    virtual const StringArray* queryMethods(const char* service) = 0;
+};
+
 interface IEsdlStore : public IInterface
 {
-    virtual IPropertyTree* fetchDefinition(const char* definitionId) = 0;
+    virtual IEsdlDefinitionInfo* fetchDefinitionInfo(const char* definitionId) = 0;
     virtual void fetchDefinitionXML(const char* definitionId, StringBuffer& esxdl) = 0;
     virtual void fetchLatestDefinitionXML(const char* definitionName, StringBuffer& esxdl) = 0;
     virtual IPropertyTree* fetchBinding(const char* espProcess, const char* espStaticBinding) = 0;
     virtual IPropertyTree* fetchBinding(const char* bindingId) = 0;
     virtual bool definitionExists(const char* definitionId) = 0;
     virtual bool isMethodDefined(const char* definitionId, StringBuffer & esdlServiceName, const char* methodName) = 0;
-    virtual bool addDefinition(const char* definitionName, IPropertyTree* definitionInfo, StringBuffer &newId, unsigned &newSeq, const char* userid, bool deleteprev, StringBuffer & message) = 0;
+    virtual bool addDefinition(const char* definitionName, const char* xmldef, StringBuffer &newId, unsigned &newSeq, const char* userid, bool deleteprev, StringBuffer & message) = 0;
     virtual int configureMethod(const char* bindingId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int configureMethod(const char* espProcName, const char* espBindingName, const char* definitionId, const char* methodName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
     virtual int configureLogTransform(const char* bindingId, const char* logTransformName, IPropertyTree* configTree, bool overwrite, StringBuffer& message) = 0;
