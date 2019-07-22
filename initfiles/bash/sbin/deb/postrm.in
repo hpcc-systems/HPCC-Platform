@@ -15,14 +15,12 @@
 #    limitations under the License.
 ################################################################################
 
-###<REPLACE>###
-
 # Restore install link if it was present
 #######################
 linkf=/tmp/.hpccinslink
 if [[ -f ${linkf} ]] ; then
-   if [[ -n ${INSTALL_DIR} ]] ; then
-      if [[ ! -d ${INSTALL_DIR} ]] ; then
+   if [[ -n @INSTALL_DIR@ ]] ; then
+      if [[ ! -d @INSTALL_DIR@ ]] ; then
          linkinfo=$(cat "${linkf}")
          if [[ -n ${linkinfo} ]] ; then
             ln -s ${linkinfo}
@@ -38,10 +36,10 @@ fi
 #
 # If the install dir is still present post-removal, must be an update
 
-if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
-    ${INSTALL_DIR}/etc/init.d/install-init
+if [ -f "@INSTALL_DIR@/etc/init.d/install-init" ]; then
+    @INSTALL_DIR@/etc/init.d/install-init
 else
-   [ -d ${INSTALL_DIR}/sbin ] && rm -rf  ${INSTALL_DIR}/sbin
-   [ -d ${INSTALL_DIR}/bin ] && rm -rf  ${INSTALL_DIR}/bin
+   [ -d @ADMIN_PATH@ ] && rm -rf  @ADMIN_PATH@
+   [ -d @EXEC_PATH@ ] && rm -rf  @EXEC_PATH@
    exit 0
 fi

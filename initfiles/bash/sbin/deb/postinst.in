@@ -15,8 +15,6 @@
 #    limitations under the License.
 ################################################################################
 
-###<REPLACE>###
-
-${INSTALL_DIR}/etc/init.d/install-init
+@INSTALL_DIR@/etc/init.d/install-init
 
 exit 0
