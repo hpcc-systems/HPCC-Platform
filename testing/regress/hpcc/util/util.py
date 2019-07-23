@@ -365,15 +365,26 @@ def isSudoer(testId = -1):
     retVal = False
     if 'linux' in sys.platform :
         tryCount = 5
+        cmd = "timeout -k 2 2 sudo id && echo Access granted || echo Access denied"
         while tryCount > 0:
-            myProc = subprocess.Popen(["timeout -k 2 2 sudo id && echo Access granted || echo Access denied"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            tryCount -= 1
+            
+            myProc = subprocess.Popen([cmd], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (myStdout,  myStderr) = myProc.communicate()
             result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
             logging.debug("%3d. isSudoer() result is: '%s' (try count is:%d)", testId, result, tryCount)
+            
+            if 'timeout: invalid option' in myStderr:
+                logging.debug("%3d. isSudoer() result is: '%s'", testId, result)
+                cmd = "timeout 2 sudo id && echo Access granted || echo Access denied"
+                logging.debug("%3d. try is without '-k 2' parameter: '%s'", testId, cmd)
+                continue
+                
             if 'Access denied' not in myStdout:
                 retVal = True
                 break
-            tryCount -= 1
+
+
 
         if retVal == False:
             logging.debug("%3d. isSudoer() result is: '%s'", testId, result)
