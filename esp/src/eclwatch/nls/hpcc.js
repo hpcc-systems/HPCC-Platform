@@ -610,7 +610,7 @@ define({root:
     Replicate: "Replicate",
     ReplicatedLost: "Replicated Lost",
     ReplicateOffset: "Replicate Offset",
-   Report: "Report",
+    Report: "Report",
     RepresentsASubset: "represent a subset of the total number of matches. Using a correct filter may reduce the number of matches.",
     RequestSchema: "Request Schema",
     RequiredForFixedSpray: "Required for fixed spray",
