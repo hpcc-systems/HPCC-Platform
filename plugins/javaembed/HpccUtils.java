@@ -30,8 +30,6 @@ public class HpccUtils  implements Iterator
         handle = _handle;
     }
     public native void remove();
-    {
-    }
     public boolean hasNext()
     {
         return _hasNext(handle);
@@ -43,4 +41,5 @@ public class HpccUtils  implements Iterator
            throw new NoSuchElementException();
         return ret;
     }
+    public native static void log(String msg);
 }
