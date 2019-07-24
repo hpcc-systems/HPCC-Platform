@@ -12,7 +12,7 @@
       <primary>RemoteDirectory</primary>
     </indexterm>(</emphasis> <emphasis> machineIP, directory </emphasis>
   <emphasis role="bold">[</emphasis> <emphasis>, mask </emphasis> <emphasis
-  role="bold">][</emphasis> <emphasis>, includesubs </emphasis> <emphasis
+  role="bold">][</emphasis> <emphasis>, recurse </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -47,7 +47,7 @@
         </row>
 
         <row>
-          <entry><emphasis>includesubdir</emphasis></entry>
+          <entry><emphasis>recurse</emphasis></entry>
 
           <entry>Optional. A boolean flag indicating whether to include files
           from sub-directories under the <emphasis>directory</emphasis>. If
@@ -73,14 +73,14 @@ END;</programlisting>
   <para>The <emphasis role="bold">RemoteDirectory </emphasis>function returns
   a list of files as a dataset in the format listed above from the specified
   <emphasis>machineIP</emphasis> and <emphasis>directory</emphasis>. If
-  <emphasis>includesubdir</emphasis> is set to TRUE, then the name field
-  contains the relative path to the file from the specified
+  <emphasis>recurse</emphasis> is set to TRUE, then the name field contains
+  the relative path to the file from the specified
   <emphasis>directory</emphasis>.</para>
 
   <para>The mask argument is a string that can include wildcard characters.
   Valid wildcard characters are '*' (to match zero or more characters) and '?'
   (to match exactly one character). Non-wild characters are matched exactly
-  and are case-sensitive. </para>
+  and are case-sensitive.</para>
 
   <para>Example:</para>
 
