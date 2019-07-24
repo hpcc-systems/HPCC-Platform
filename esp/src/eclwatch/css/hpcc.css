@@ -269,6 +269,10 @@ hr.dashedLine {
     text-align: right !important;
 }
 
+.centerInCell {
+    text-align: center !important; /*overwrite the default grid cell text-align */
+}
+
 .flat .hpccCentered { 
     text-align: center; 
 }

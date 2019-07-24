@@ -659,6 +659,9 @@ export function resolve(hpccWidget, callback) {
         case "SourceFilesWidget":
             require(["hpcc/SourceFilesWidget"], doLoad);
             break;
+        case "SystemServersQueryWidget":
+            require(["hpcc/SystemServersQueryWidget"], doLoad);
+            break;
         case "TargetClustersQueryWidget":
             require(["hpcc/TargetClustersQueryWidget"], doLoad);
             break;

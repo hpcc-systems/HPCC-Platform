@@ -239,18 +239,32 @@ define([
                             cbAutoRefresh: machineInformation.cbAutoRefresh
                         };
 
-                        arrayUtil.forEach(selection, function(item, idx){
+                        arrayUtil.forEach(selection, function(item, idx) {
                             MachineInformationCount++;
-                            request["Addresses." + idx] = item.Netaddress + "|:" + item.Type + ":" + item.Name + ":" + 2 + ":" + item.Parent.Directory + ":" + idx;
-                            request["Addresses.itemcount"] = MachineInformationCount;
+                            if (item.Component === "SystemServers") { //request params are unique for system servers vs cluster processes
+                                request["SystemServers"] = true;
+                                request["Addresses." + idx] = item.Netaddress + "|" + item.Netaddress + ":" + item.Type + ":" + item.Name + ":" + 2 + ":" + item.Directory;
+                                request["Addresses.itemcount"] = MachineInformationCount;
+
+                            } else {
+                                request["ClusterProcesses"] = true;
+                                request["Addresses." + idx] = item.Netaddress + "|:" + item.Type + ":" + item.Name + ":" + 2 + ":" + item.Parent.Directory + ":" + idx;
+                                request["Addresses.itemcount"] = MachineInformationCount;
+                            }
                         });
 
                         WsMachine.GetMachineInfo({
                             request: request
                         }).then(function(response){
-                            topic.publish("createClusterProcessPreflightTab", {
-                                response: response.GetMachineInfoResponse
-                            });
+                            if (request.ClusterProcesses) {
+                                topic.publish("createClusterProcessPreflightTab", {
+                                    response: response.GetMachineInfoResponse
+                                });
+                            } else {
+                                topic.publish("createSystemServersPreflightTab", {
+                                    response: response.GetMachineInfoResponse
+                                });
+                            }
                         });
                     } else if (type === "targets") {
                         var TargetClusterCount = 0;
