@@ -69,6 +69,7 @@ public class HpccClassLoader extends java.lang.ClassLoader
         bytecodeLen = _bytecodeLen;
         bytecode = _bytecode;
     }
+    @Override
     public synchronized Class<?> findClass(String className) throws ClassNotFoundException
     {
         String luName = className.replace(".","/");
@@ -84,6 +85,14 @@ public class HpccClassLoader extends java.lang.ClassLoader
             classes.put(luName, result);
         }
         return result; 
+    }
+    @Override
+    public URL getResource(String path)
+    {
+        URL ret = pathLoader.getResource(path);
+        if (ret == null)
+            ret = super.getResource(path);
+        return ret;
     }
     public static HpccClassLoader newInstance(String classPath, ClassLoader parent, int _bytecodeLen, long _bytecode, String dllname)
     {

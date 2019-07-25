@@ -36,8 +36,6 @@ public class HpccUtils  implements Iterator, ActivityContext
         handle = _handle;
     }
     public native void remove();
-    {
-    }
     public boolean hasNext()
     {
         return _hasNext(handle);
@@ -49,6 +47,7 @@ public class HpccUtils  implements Iterator, ActivityContext
            throw new NoSuchElementException();
         return ret;
     }
+    public native static void log(String msg);
     
     public boolean isLocal() { return _isLocal(handle); }
     public int numSlaves() { return _numSlaves(handle); }
