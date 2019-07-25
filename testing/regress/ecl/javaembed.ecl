@@ -27,10 +27,15 @@ string jcat(string a, string b) := EMBED(java)
 ENDEMBED;
 
 integer jadd(integer a, integer b) := EMBED(java)
+import com.HPCCSystems.HpccUtils;
+class MyClass
+{
   public static int jadd(int a, int b)
   {
+    HpccUtils.log("In jadd");
     return a + b;
   }
+}
 ENDEMBED;
 integer jaddL(integer a, integer b) := EMBED(java)
   public static long jaddL(int a, int b)
