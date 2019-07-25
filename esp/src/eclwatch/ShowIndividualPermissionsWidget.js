@@ -32,7 +32,7 @@ define([
             init: function (params) {
                 if (this.inherited(arguments))
                     return;
-                this.store = WsAccess.CreateIndividualPermissionsStore(params.Basedn, params.Rtype, params.Rtitle, params.Name);
+                this.store = WsAccess.CreateIndividualPermissionsStore(params.Basedn, params.Name);
                 this.grid.setStore(this.store);
                 this._refreshActionState();
             },

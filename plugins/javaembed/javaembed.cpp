@@ -86,6 +86,10 @@ static void UNSUPPORTED(const char *feature)
 namespace javaembed {
 
 static jmethodID throwable_toString;
+static jmethodID throwable_getStackTrace;
+static jmethodID throwable_getCause;
+static jmethodID frame_toString;
+
 
 static void forceGC(class CheckedJNIEnv* JNIenv);
 
@@ -120,12 +124,59 @@ public:
         }
         return ret;
     }
+
+    void checkUnexpectedException()
+    {
+        if (JNIEnv::ExceptionCheck())
+        {
+            DBGLOG("javaembed: Uunexpected java exception while processing exception");
+            JNIEnv::ExceptionDescribe();
+            JNIEnv::ExceptionClear();
+            throwUnexpected();
+        }
+    }
+
+    void traceException(jthrowable exception)
+    {
+        // Don't use auto-checking in here, as we are already inside exception-checking code
+        jstring msg = (jstring) JNIEnv::CallObjectMethod(exception, throwable_toString);
+        checkUnexpectedException();
+        const char *text = JNIEnv::GetStringUTFChars(msg, 0);
+        DBGLOG("javaembed: exception: %s", text);
+        JNIEnv::ReleaseStringUTFChars(msg, text);
+        checkUnexpectedException();
+        JNIEnv::DeleteLocalRef(msg);
+
+        jobjectArray frames = (jobjectArray) JNIEnv::CallObjectMethod(exception, throwable_getStackTrace);
+        checkUnexpectedException();
+        jsize length = JNIEnv::GetArrayLength(frames);
+        for (jsize i = 0; i < length; i++)
+        {
+            jobject frame = JNIEnv::GetObjectArrayElement(frames, i);
+            checkUnexpectedException();
+            msg = (jstring) JNIEnv::CallObjectMethod(frame, frame_toString);
+            text = JNIEnv::GetStringUTFChars(msg, 0);
+            DBGLOG("javaembed: exception: stack: %s", text);
+            JNIEnv::ReleaseStringUTFChars(msg, text);
+            checkUnexpectedException();
+            JNIEnv::DeleteLocalRef(msg);
+            JNIEnv::DeleteLocalRef(frame);
+        }
+        jthrowable cause = (jthrowable) JNIEnv::CallObjectMethod(exception, throwable_getCause);
+        if (cause && cause != exception)
+        {
+            DBGLOG("javaembed: exception: Caused by:");
+            traceException(cause);
+        }
+    }
+
     void checkException()
     {
         if (JNIEnv::ExceptionCheck())
         {
             jthrowable exception = JNIEnv::ExceptionOccurred();
             JNIEnv::ExceptionClear();
+            traceException(exception);
             jstring cause = (jstring) JNIEnv::CallObjectMethod(exception, throwable_toString);
             JNIEnv::ExceptionClear();
             const char *text = JNIEnv::GetStringUTFChars(cause, 0);
@@ -675,7 +726,8 @@ static jclass langStringClass;
 static jclass netURLClass;
 static jmethodID netURL_constructor;
 static jclass throwableClass;
-//static jmethodID throwable_toString;  declared above
+//static jmethodID throwable_toString; and others declared above
+static jclass stackTraceElementClass;
 static jclass langIllegalArgumentExceptionClass;
 
 static void forceGC(CheckedJNIEnv* JNIenv)
@@ -690,6 +742,10 @@ static void setupGlobals(CheckedJNIEnv *J)
         // Load this first as we can't report errors on the others sensibly if this one not loaded!
         throwableClass = J->FindGlobalClass("java/lang/Throwable");
         throwable_toString = J->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+        throwable_getStackTrace = J->GetMethodID(throwableClass, "getStackTrace", "()[Ljava/lang/StackTraceElement;");
+        throwable_getCause = J->GetMethodID(throwableClass, "getCause", "()Ljava/lang/Throwable;");
+        stackTraceElementClass = J->FindGlobalClass("java/lang/StackTraceElement");
+        frame_toString = J->GetMethodID(stackTraceElementClass, "toString", "()Ljava/lang/String;");
 
         systemClass = J->FindGlobalClass("java/lang/System");
         system_gc = J->GetStaticMethodID(systemClass, "gc", "()V");
@@ -4898,6 +4954,7 @@ extern "C" {
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *, jclass, jlong);
 JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *, jclass, jlong);
 JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbed(JNIEnv *env, jobject loader, jint bytecodeLen, jlong bytecode, jstring name);
+JNIEXPORT void JNICALL Java_com_HPCCSystems_HpccUtils_log(JNIEnv *JNIenv, jclass, jstring msg);
 
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1isLocal (JNIEnv *, jclass, jlong);
 JNIEXPORT jint JNICALL Java_com_HPCCSystems_HpccUtils__1numSlaves (JNIEnv *, jclass, jlong);
@@ -4969,6 +5026,16 @@ JNIEXPORT jclass JNICALL Java_com_HPCCSystems_HpccClassLoader_defineClassForEmbe
     env->ReleaseStringUTFChars(name, nameChars);
     return ret;
 
+}
+
+JNIEXPORT void JNICALL Java_com_HPCCSystems_HpccUtils_log(JNIEnv *JNIenv, jclass, jstring msg)
+{
+    if (msg)
+    {
+        const char *text = JNIenv->GetStringUTFChars(msg, 0);
+        DBGLOG("javaembed: user: %s", text);
+        JNIenv->ReleaseStringUTFChars(msg, text);
+    }
 }
 
 JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1isLocal(JNIEnv *JNIenv, jclass, jlong proxy)

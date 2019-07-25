@@ -1670,7 +1670,7 @@ int EspHttpBinding::getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CH
 
         if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
         {
-            response->setStatus(HTTP_STATUS_NOT_FOUND);
+            return onGetNotFound(context, request,  response, service);
         }
         else
         {

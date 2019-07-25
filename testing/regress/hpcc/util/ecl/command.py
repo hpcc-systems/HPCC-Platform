@@ -45,7 +45,6 @@ class ECLcmd(Shell):
         args.append('-fpickBestEngine=false')
         args.append('--target=' + engine)
         args.append('--cluster=' + cluster)
-        #args.append('--cluster=' + cluster + "_160")
         args.append('--port=' + self.config.espSocket)
         if self.config.useSsl.lower() == 'true':
             args.append('--ssl')
