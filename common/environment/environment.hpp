@@ -156,11 +156,11 @@ interface IConstSparkThorInfo : extends IConstEnvBase
     virtual IStringVal & getBuild(IStringVal & str) const = 0;
     virtual IStringVal & getThorClusterName(IStringVal & str) const = 0;
     virtual unsigned getSparkExecutorCores() const = 0;
-    virtual unsigned long getSparkExecutorMemory() const = 0;
+    virtual unsigned __int64 getSparkExecutorMemory() const = 0;
     virtual unsigned getSparkMasterPort() const = 0;
     virtual unsigned getSparkMasterWebUIPort() const = 0;
     virtual unsigned getSparkWorkerCores() const = 0;
-    virtual unsigned long getSparkWorkerMemory() const = 0;
+    virtual unsigned __int64 getSparkWorkerMemory() const = 0;
     virtual unsigned getSparkWorkerPort() const = 0;
     virtual IConstInstanceInfoIterator * getInstanceIterator() const = 0;
 };
@@ -227,7 +227,7 @@ class StringBuffer;
 extern "C" ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update);
 extern "C" ENVIRONMENT_API void closeEnvironment();
 
-extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const unsigned long defaultSize);
+extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, const unsigned long defaultSize);
 
 extern ENVIRONMENT_API unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list);
 

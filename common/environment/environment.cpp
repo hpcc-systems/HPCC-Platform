@@ -1241,7 +1241,7 @@ public:
     {
         return root->getPropInt("@SPARK_EXECUTOR_CORES", 0);
     }
-    virtual unsigned long getSparkExecutorMemory() const
+    virtual unsigned __int64 getSparkExecutorMemory() const
     {
         return readSizeSetting(root->queryProp("@SPARK_EXECUTOR_MEMORY"), 0);
     }
@@ -1257,7 +1257,7 @@ public:
     {
         return root->getPropInt("@SPARK_WORKER_CORES", 0);
     }
-    virtual unsigned long getSparkWorkerMemory() const
+    virtual unsigned __int64 getSparkWorkerMemory() const
     {
         return readSizeSetting(root->queryProp("@SPARK_WORKER_MEMORY"), 0);
     }
@@ -2493,7 +2493,7 @@ extern ENVIRONMENT_API void closeEnvironment()
     }
 }
 
-extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const unsigned long defaultSize)
+extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, const unsigned long defaultSize)
 {
     StringBuffer buf(sizeStr);
     buf.trim();
@@ -2515,7 +2515,7 @@ extern ENVIRONMENT_API unsigned long readSizeSetting(const char * sizeStr, const
 
     char c = ptr[0];
     buf.setLength(ptrAfterDigit - ptrStart);
-    unsigned long size = atol(buf);
+    unsigned __int64 size = atoll(buf);
     switch (c)
     {
     case 'k':
