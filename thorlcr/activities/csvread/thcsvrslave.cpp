@@ -169,8 +169,8 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         virtual void gatherStats(CRuntimeStatisticCollection & merged)
         {
             CriticalBlock block(statsCs);
+            mergeStats(fileStats, iFileIO);
             CDiskPartHandlerBase::gatherStats(merged);
-            mergeStats(merged, iFileIO);
         }
     };
 

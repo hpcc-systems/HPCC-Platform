@@ -188,8 +188,8 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged)
     {
         CriticalBlock block(statsCs);
+        mergeStats(fileStats, in);
         CDiskPartHandlerBase::gatherStats(merged);
-        mergeStats(merged, in);
     }
     virtual unsigned __int64 queryProgress() override
     {
