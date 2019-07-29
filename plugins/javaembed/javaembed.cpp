@@ -864,6 +864,21 @@ public:
 // EnableSEHtoExceptionMapping
 //
 
+static StringBuffer &appendClassPath(StringBuffer &classPath)
+{
+    const IProperties &conf = queryEnvironmentConf();
+    if (conf.hasProp("classpath"))
+    {
+        conf.getProp("classpath", classPath);
+        classPath.append(ENVSEPCHAR);
+    }
+    else
+    {
+        classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
+    }
+    return classPath;
+}
+
 static class JavaGlobalState
 {
 public:
@@ -879,19 +894,11 @@ public:
         {
             newPath.append(origPath).append(ENVSEPCHAR);
         }
-        const IProperties &conf = queryEnvironmentConf();
-        if (conf.hasProp("classpath"))
-        {
-            conf.getProp("classpath", newPath);
-            newPath.append(ENVSEPCHAR);
-        }
-        else
-        {
-            newPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
-        }
+        appendClassPath(newPath);
         newPath.append(".");
         optionStrings.append(newPath);
 
+        const IProperties &conf = queryEnvironmentConf();
         if (conf.hasProp("jvmlibpath"))
         {
             StringBuffer libPath;
@@ -4815,7 +4822,11 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
 
     MemoryBuffer result;
     Owned<IPipeProcess> pipe = createPipeProcess();
-    VStringBuffer javac("javac %s %s", isEmptyString(compilerOptions) ? "-g:none" : compilerOptions, javafile.str());
+    StringBuffer options(compilerOptions);
+    if (isEmptyString(compilerOptions))
+        options.append("-g:none");
+    appendClassPath(options.append(" -cp "));
+    VStringBuffer javac("javac %s %s", options.str(), javafile.str());
     if (!pipe->run("javac", javac, tmpDirName, false, false, true, 0, false))
     {
         throw makeStringException(0, "Failed to run javac");
