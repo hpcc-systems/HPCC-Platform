@@ -289,7 +289,7 @@
                     <para><emphasis role="bold">TCP ports 1-65535</emphasis>
                     (for internal access only)</para>
 
-                    <para>Type the Group ID for the HPCC group in the Source
+                    <para>Type the Group ID for the HPCC Systems group in the Source
                     text box.</para>
                   </listitem>
 
@@ -297,7 +297,7 @@
                     <para><emphasis role="bold">UDP ports 1-65535</emphasis>
                     (for internal access only)</para>
 
-                    <para>Type the Group ID for the HPCC group in the Source
+                    <para>Type the Group ID for the HPCC Systems group in the Source
                     text box.</para>
                   </listitem>
 
@@ -307,7 +307,7 @@
 
                     <para>Add a custon ICMP rule for Echo Request.</para>
 
-                    <para>Type the Group ID for the HPCC group in the Source
+                    <para>Type the Group ID for the HPCC Systems group in the Source
                     text box.</para>
                   </listitem>
 
@@ -317,7 +317,7 @@
 
                     <para>Add a custon ICMP rule for Echo Reply.</para>
 
-                    <para>Type the Group ID for the HPCC group in the Source
+                    <para>Type the Group ID for the HPCC Systems group in the Source
                     text box.</para>
                   </listitem>
                 </itemizedlist></para>
@@ -411,7 +411,7 @@
               </listitem>
 
               <listitem>
-                <para>Use the HPCC security group created earlier.</para>
+                <para>Use the HPCC Systems (HPCC) security group created earlier.</para>
               </listitem>
 
               <listitem>
@@ -669,7 +669,7 @@
             </listitem>
           </orderedlist>
 
-          <para>You are now ready to use your HPCC Thor platform. You can
+          <para>You are now ready to use your HPCC Systems Thor platform. You can
           follow the basic samples found later in this guide or try some of
           the suggestions in the <link linkend="NextSteps">Next Steps chapter.
           </link></para>
@@ -926,7 +926,7 @@
           </listitem>
 
           <listitem>
-            <para>Select the HPCC Security Group (if not already
+            <para>Select the HPCC Systems Security Group (if not already
             selected).</para>
 
             <para>You should see the details below. You may need to resize the
@@ -986,9 +986,9 @@
 
       <sect2 role="brk">
         <title>Open up additional TCP ports (8002, 8008, 8010, 8015, 8145,
-        8050, and 9876) for HPCC services</title>
+        8050, and 9876) for HPCC Systems services</title>
 
-        <para>This allows external access to HPCC services using a
+        <para>This allows external access to HPCC Systems services using a
         browser-based interface and the ECL IDE on your local machine.</para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -1421,7 +1421,7 @@
             <para><programlisting>http://s3.amazonaws.com/hpccsystems-installs/userdatascripts.html</programlisting></para>
 
             <para>The user-data script you choose will determine which version
-            of the HPCC platform to instantiate. Older versions will remain
+            of the HPCC Systems platform to instantiate. Older versions will remain
             available so you can recreate any version of a platform. This
             allows you to continue using the version you are familiar with and
             upgrade when you want to.</para>
@@ -1460,7 +1460,7 @@
                   </row>
 
                   <row>
-                    <entry>Installs the latest stable release of the HPCC
+                    <entry>Installs the latest stable release of the HPCC Systems
                     platform package</entry>
                   </row>
 
@@ -1475,7 +1475,7 @@
                   </row>
 
                   <row>
-                    <entry>Installs supplemental packages for HPCC</entry>
+                    <entry>Installs supplemental packages for HPCC Systems</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1570,7 +1570,7 @@
           </listitem>
         </orderedlist>
 
-        <para>You now have an un-configured cluster with the HPCC Platform
+        <para>You now have an un-configured cluster with the HPCC Systems platform
         software installed. Continue on to configure your cluster.</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -1619,7 +1619,7 @@
       <para>Note in the instance details (bottom frame) that each instance has
       a private and a public IP address that can be derived from the private
       and public DNS entries (your entries will be different). You will need
-      the private IPs later when using the HPCC Configuration Manager.</para>
+      the private IPs later when using the HPCC Systems Configuration Manager.</para>
 
       <para><figure>
           <title>Instance Details</title>
@@ -1659,7 +1659,7 @@
               <entry>Private IPs are for inter-node communications. Public DNS
               names are for communicating to a node from outside the cloud.
               <emphasis role="bold">You will need the private IPs later when
-              using the HPCC Configuration Manager. You will also need to know
+              using the HPCC Systems Configuration Manager. You will also need to know
               the public DNS name of your ESP node and your Landing Zone
               node.</emphasis></entry>
             </row>
@@ -1672,7 +1672,7 @@
       <title>Collect the Private IP addresses of your nodes.</title>
 
       <para>The EC2 instances are given random IP addresses and are usually
-      not contiguous. The HPCC Configuration Manager needs a list of IPs as
+      not contiguous. The HPCC Systems Configuration Manager needs a list of IPs as
       input criteria.</para>
 
       <para>If you have only a few nodes, you can collect this information
@@ -1735,7 +1735,7 @@
         </listitem>
 
         <listitem>
-          <para>Copy the list of IPs and later paste into the HPCC
+          <para>Copy the list of IPs and later paste into the HPCC Systems
           Configuration Manager (see the next section)</para>
         </listitem>
       </orderedlist>
@@ -1746,7 +1746,7 @@
 
       <para>At this point, your nodes are running and the HPCC Systems
       platform packages and all dependencies are installed. In this section,
-      you will use the HPCC's Configuration Manager to configure your HPCC
+      you will use the HPCC Systems Configuration Manager to configure your HPCC
       Systems Thor platform.</para>
 
       <para>If you are using PuTTY, you should use PuTTYgen to convert the
@@ -1804,7 +1804,7 @@
 
       <sect2>
         <title>Access the Configuration Manager's Wizard interface to generate
-        your HPCC environment configuration file</title>
+        your HPCC Systems environment configuration file</title>
 
         <orderedlist numeration="arabic">
           <listitem>
@@ -1842,7 +1842,7 @@
           <listitem>
             <para><emphasis role="bold">Leave the Roxie set to 0.</emphasis>
             For details on using a Roxie cluster, see the <emphasis>Installing
-            and Running the HPCC Platform</emphasis> manual. Details on
+            and Running the HPCC Systems platform</emphasis> manual. Details on
             running a Roxie cluster on AWS will appear in a future
             manual.</para>
           </listitem>
@@ -2108,14 +2108,14 @@
           role="bold">C</emphasis>ontrol <emphasis
           role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate HPCC (High
+          joins, sorts, and builds that truly differentiate HPCC Systems (High
           Performance Computing Cluster) from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote> code using either ECL IDE, the command line ECL compiler,
       or the ECLPlus tool.</para>
 
       <sect2>
-        <title>Install the ECL IDE and HPCC Client Tools</title>
+        <title>Install the ECL IDE and HPCC Systems Client Tools</title>
 
         <para>You only need to install the ECL IDE once. If you have already
         installed it, you can skip this section. .</para>
@@ -2168,7 +2168,7 @@
                   </mediaobject>
                 </figure></para>
 
-              <para>Follow the link to the HPCC System's portal.</para>
+              <para>Follow the link to the HPCC Systems portal.</para>
             </listitem>
 
             <listitem>
@@ -2304,7 +2304,7 @@
               target cluster.</para>
 
               <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-              component of your HPCC. It is a disk based massively parallel
+              component of your HPCC Systems. It is a disk based massively parallel
               computer cluster, optimized for sorting, manipulating, and
               transforming massive data.</para>
 
@@ -2395,7 +2395,7 @@
             <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
             <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
-            and login to your HPCC.</para>
+            and login to your HPCC Systems.</para>
           </listitem>
 
           <listitem>
@@ -2507,8 +2507,8 @@ OUTPUT(L);</programlisting></para>
         <title>Load the Dictionary File to your Landing Zone</title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC Thor cluster. A Landing Zone is a
-        storage location attached to your HPCC. It has a utility running to
+        which it can be sprayed to your HPCC Systems Thor cluster. A Landing Zone is a
+        storage location attached to your HPCC Systems. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
         <para>For smaller data files, maximum of 2GB, you can use the
@@ -2516,7 +2516,7 @@ OUTPUT(L);</programlisting></para>
         kb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC Thor cluster. The power of the HPCC comes from its ability
+        in the HPCC Systems Thor cluster. The power of the HPCC Systems comes from its ability
         to assign multiple processors to work on different portions of the
         data file in parallel. Even though the VM Edition only has a single
         node, the data must be sprayed to the cluster.</para>
@@ -2603,7 +2603,7 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Thor
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Thor system, we must "spray" it
+        <para>To use the data file in our HPCC Systems Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -3074,7 +3074,7 @@ s3cmd --configure
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold">HPCC Systems Data Tutorial</emphasis></para>
         </listitem>
 
         <listitem>
@@ -3084,7 +3084,7 @@ s3cmd --configure
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an HPCC platform using Advanced View.</para>
+          learn how to configure an HPCC Systems platform using Advanced View.</para>
         </listitem>
 
         <listitem>
@@ -3203,7 +3203,7 @@ s3cmd --configure
 
         <qandaentry>
           <question>
-            <para>Can I use a Mac workstation to access my HPCC Thor on
+            <para>Can I use a Mac workstation to access my HPCC Systems Thor on
             AWS?</para>
           </question>
 

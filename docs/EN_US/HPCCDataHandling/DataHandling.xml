@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>HPCC Data Handling</title>
+    <title>HPCC Systems<superscript>®</superscript> Data Handling</title>
 
     <mediaobject>
       <imageobject>
@@ -62,13 +62,13 @@
   </bookinfo>
 
   <chapter id="Data_Handling">
-    <title><emphasis>HPCC Data Handling</emphasis></title>
+    <title><emphasis>HPCC Systems<superscript>®</superscript> Data Handling</emphasis></title>
 
     <sect1 id="Introduction" role="nobrk">
       <title>Introduction</title>
 
       <para>There are a number of different ways in which data may be
-      transferred to, from, or within an HPCC system. For each of these data
+      transferred to, from, or within an HPCC Systems cluster. For each of these data
       transfers, there are a few key parameters that must be known.</para>
 
       <sect2 id="Prerequisites-for-most-file-movements">
@@ -148,7 +148,7 @@
   </chapter>
 
   <chapter id="HPCC_DataBackups">
-    <title><emphasis>HPCC Data Backups</emphasis></title>
+    <title><emphasis>HPCC Systems<superscript>®</superscript> Data Backups</emphasis></title>
 
     <sect1 id="Introduction2DataBackup" role="nobrk">
       <title>Introduction</title>

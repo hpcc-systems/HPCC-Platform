@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <bookinfo>
-    <title>Installing the HPCC Platform: Hardware Module</title>
+    <title>Installing the HPCC Systems<superscript>®</superscript> Platform: Hardware Module</title>
 
     <mediaobject>
       <imageobject>
@@ -78,10 +78,10 @@
     <title>Hardware and Software Requirements</title>
 
     <para>This section describes some hardware and software requirements or
-    recommendations in order to run the HPCC. Essentially the HPCC system is
+    recommendations in order to run HPCC Systems. Essentially the HPCC Systems platform is
     designed to run on commodity hardware, and would probably work well on
     almost any hardware. To really take advantage of the power of an HPCC
-    system you should deploy your HPCC system on more modern advanced
+    Systems platform you should deploy your system on more modern advanced
     hardware.</para>
 
     <para>Hardware and software technology are constantly changing and
@@ -97,7 +97,7 @@
       <title>Network Switch</title>
 
       <para>The network switch is a significant component of the HPCC
-      System.</para>
+      Systems platform.</para>
 
       <sect2 id="Switch-Requirements">
         <title>Switch requirements</title>
@@ -117,7 +117,7 @@
           </listitem>
         </itemizedlist>
 
-        <para>Ideally your HPCC system will perform better when each node is
+        <para>Ideally your HPCC Systems will perform better when each node is
         connected directly into a single switch. You should be able to provide
         a port for each node on a single switch to optimize system
         performance. Your switch size should correspond to the size of your
@@ -156,7 +156,7 @@
 
         <para>Generally, higher-end, higher throughput switches are also going
         to provide better performance. For larger systems, a high-capacity
-        managed switch that can be configured and tuned for HPCC efficiency is
+        managed switch that can be configured and tuned for HPCC Systems efficiency is
         the best choice.</para>
       </sect2>
     </sect1>
@@ -248,7 +248,7 @@
     <sect1 id="Nodes-Hardware">
       <title>Nodes-Hardware</title>
 
-      <para>An HPCC System can run as a single node system or a multi node
+      <para>An HPCC Systems platform can run as a single node system or a multi node
       system.</para>
 
       <para>These hardware recommendations are intended for a multi-node
@@ -360,8 +360,8 @@
         <title>Operating System Requirements</title>
 
         <para>Binary installation packages are available for many Linux
-        Operating systems. HPCC System platform requirements are readily
-        available on the HPCC Portal.</para>
+        Operating systems. HPCC Systems platform requirements are readily
+        available on the HPCC Systems<superscript>®</superscript> Portal.</para>
 
         <para><ulink
         url="https://hpccsystems.com/training/documentation/system-requirements">https://hpccsystems.com/training/documentation/system-requirements</ulink></para>
@@ -370,7 +370,7 @@
       <sect2 id="configuration-manager">
         <title>Dependencies</title>
 
-        <para>Installing HPCC on your system depends on having required
+        <para>Installing HPCC Systems on your system depends on having required
         component packages installed on the system. The required dependencies
         can vary depending on your platform. In some cases the dependencies
         are included in the installation packages. In other instances the
@@ -393,12 +393,12 @@
       <sect2 id="SSH_Keys" role="brk">
         <title>SSH Keys</title>
 
-        <para>The HPCC components use ssh keys to authenticate each other.
+        <para>The HPCC Systems components use ssh keys to authenticate each other.
         This is required for communication between nodes. A script to generate
         keys has been provided .You should run that script and distribute the
         public and private keys to all nodes after you have installed the
         packages on all nodes, but before you configure a multi-node
-        HPCC.</para>
+        HPCC Systems platform.</para>
 
         <para><itemizedlist spacing="compact">
             <listitem>
@@ -442,10 +442,10 @@
 
       <itemizedlist spacing="compact">
         <listitem>
-          <para>Running the HPCC platform requires communication from your
-          user workstation with a browser to the HPCC. You will use it to
-          access ECL Watch--a Web-based interface to your HPCC system. ECL
-          Watch enables you to examine and manage many aspects of the HPCC and
+          <para>Running the HPCC Systems platform requires communication from your
+          user workstation with a browser to the HPCC Systems platform. You will use it to
+          access ECL Watch--a Web-based interface to your HPCC Systems platform. ECL
+          Watch enables you to examine and manage many aspects of the HPCC Systems platform and
           allows you to see information about jobs you run, data files, and
           system metrics.</para>
 

@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>HPCC Data Tutorial</title>
+  <title>HPCC Systems<superscript>®</superscript> Data Tutorial</title>
 
   <bookinfo>
-    <title>HPCC Data Tutorial</title>
+    <title>HPCC Systems<superscript>®</superscript> Data Tutorial</title>
 
     <mediaobject>
       <imageobject>
@@ -79,11 +79,11 @@
 
       <para>This tutorial provides a walk-through of the development process,
       from beginning to end, and is designed to be an introduction to working
-      with data on any HPCCSystems HPCC<footnote>
+      with data on any HPCC Systems platform. HPCC<footnote>
           <para><emphasis role="bold">H</emphasis>igh <emphasis
           role="bold">P</emphasis>erformance <emphasis
           role="bold">C</emphasis>omputing <emphasis
-          role="bold">C</emphasis>luster (HPCC) is a massively parallel
+          role="bold">C</emphasis>luster (HPCC) Systems is a massively parallel
           processing computing platform that solves Big Data problems. See
           http://www.hpccsystems.com/Why-HPCC/How-it-works for more
           details.</para>
@@ -92,7 +92,7 @@
           role="bold">C</emphasis>ontrol <emphasis
           role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate HPCC (High
+          joins, sorts, and builds that truly differentiate HPCC Systems (High
           Performance Computing Cluster) from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote>to process our data and query it.</para>
@@ -101,8 +101,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>You have a running HPCC. This can be a VM Edition or a single
-          or multinode HPCC platform</para>
+          <para>You have a running HPCC Systems platform. This can be a VM Edition or a single
+          or multinode HPCC Systems platform</para>
         </listitem>
       </itemizedlist>
 
@@ -127,11 +127,11 @@
         </listitem>
 
         <listitem>
-          <para>Spray the file to a Data Refinery cluster HPCC clusters
+          <para>Spray the file to a Data Refinery cluster HPCC Systems clusters
           "spray" data into file parts on each node.</para>
 
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
-          the relocation of a data file from one location to an HPCC cluster.
+          the relocation of a data file from one location to an HPCC Systems cluster.
           The term spray was adopted due to the nature of the file movement --
           the file is partitioned across all nodes within a cluster.</para>
         </listitem>
@@ -172,7 +172,7 @@
       <title>The Original Data</title>
 
       <para>In this scenario, we receive a structured data file containing
-      records with people's names and addresses. The HPCC also supports
+      records with people's names and addresses. The HPCC Systems platform also supports
       unstructured data, but this example is simpler. This file is documented
       in the following table:</para>
 
@@ -270,7 +270,7 @@
         running on that server to enable file sprays and desprays.</para>
 
         <para>For smaller data files, you can use the upload/download file
-        utility in ECL Watch (a Web-based interface to your HPCC platform).
+        utility in ECL Watch (a Web-based interface to your HPCC Systems platform).
         The sample data file is ~100 mb.</para>
 
         <orderedlist>
@@ -295,7 +295,7 @@
             Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
             where nnn.nnn.nnn.nnn is your ESP<footnote>
                 <para>The ESP (Enterprise Services Platform) Server is the
-                communication layer server in you HPCC environment.</para>
+                communication layer server in you HPCC Systems environment.</para>
               </footnote> Server's IP address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -386,7 +386,7 @@
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
         <title>Spray the Data File to your Thor Cluster</title>
 
-        <para>To use the data file in our HPCC cluster, we must first "spray"
+        <para>To use the data file in our HPCC Systems cluster, we must first "spray"
         it to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the

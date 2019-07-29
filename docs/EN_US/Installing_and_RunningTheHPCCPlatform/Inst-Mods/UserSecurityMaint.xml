@@ -4,14 +4,14 @@
 <sect1 id="User_Security_Maint">
   <title>User Security Maintenance</title>
 
-  <para>Configuring an HPCC System to use Active Directory or LDAP-based
+  <para>Configuring an HPCC Systems<superscript>®</superscript> platform to use Active Directory or LDAP-based
   security allows you to set permissions to control access to Features, File
   Scopes, and Workunit Scopes.</para>
 
   <sect2 id="User_Security_Intro">
     <title>Introduction</title>
 
-    <para>HPCC systems<superscript>®</superscript> maintains security in a
+    <para>HPCC Systems<superscript>®</superscript> maintains security in a
     number of ways. HPCC Systems<superscript>®</superscript> can be configured
     to manage users' security rights by pointing either at Microsoft's Active
     Directory on a Windows system, or a 389Directory Server on Linux
@@ -24,7 +24,7 @@
     Dali server.</para>
 
     <para>Establish permissions by group or by user and define them by
-    association with a particular feature of the HPCC System. Permissions can
+    association with a particular feature of the HPCC Systems platform. Permissions can
     be defined for each unique combination of group and feature. Permissions
     are separated into the following categories:<informaltable frame="all">
         <tgroup cols="2" colsep="1">
@@ -123,8 +123,8 @@
 
       <listitem>
         <para><emphasis role="bold">Permissions</emphasis>. Shows the features
-        of the HPCC System where permissions may be set. Use this area to view
-        the permissions currently set for any area of the HPCC System, or to
+        of the HPCC Systems where permissions may be set. Use this area to view
+        the permissions currently set for any area of HPCC Systems, or to
         add groups and users and set/modify their permission for a specific
         feature</para>
       </listitem>
@@ -185,7 +185,7 @@
       <para>In a security-enabled environment, access to ECL Watch and its
       features is controlled using a login and password. The <emphasis
       role="bold">Users</emphasis> area enables you to control who has access
-      to ECL Watch and the features of your HPCC System to which they have
+      to ECL Watch and the features of your HPCC Systems to which they have
       access. Permissions can be set for users based on their individual needs
       and users can also be added to groups which have already been set up.
       Use the <emphasis role="bold">Users</emphasis> menu item to:</para>
@@ -412,9 +412,9 @@
         <title>To promote a user to an Administrator</title>
 
         <para>To modify a users credentials you must have Administrator level
-        access. You can designate the HPCC Administrator account to have
-        limited permissions only relating to HPCC elements and not LDAP
-        administrator's rights. To promote a user to an HPCC Administrator,
+        access. You can designate the HPCC Systems Administrator account to have
+        limited permissions only relating to HPCC Systems elements and not LDAP
+        administrator's rights. To promote a user to an HPCC Systems Administrator,
         add the user to the configured <emphasis
         role="bold">Administrators</emphasis> group.</para>
 
@@ -640,7 +640,7 @@
       <para>There may be occasions when you need to modify the permissions for
       individual users. For example, users may have individual security needs
       that are not completely covered in any group or, there may be occasions
-      when a user requires temporary access to an HPCC feature. Permissions
+      when a user requires temporary access to an HPCC Systems feature. Permissions
       set in this area of ECL Watch only affect the user you choose. Most
       individual permissions you set here overwrite ones set in any group to
       which the user belongs, except in the case of an explicit deny.</para>
@@ -750,7 +750,7 @@
 
       <para>Setting up groups ensures that all users with the same permission
       needs have the same permission settings. You can give users the access
-      they require to the feature areas of HPCC that they need. There is no
+      they require to the feature areas of HPCC Systems that they need. There is no
       limit to the number of groups you can create. You can create as many
       groups as you need to control access for all your users regardless of
       their tasks.</para>
@@ -1152,7 +1152,7 @@
     <title>Feature resources</title>
 
     <para>There are several features for which you can set up access control
-    in HPCC. Access to features of the HPCC system is controlled by via the
+    in HPCC Systems. Access to features of the HPCC Systems platform is controlled by via the
     <emphasis role="bold">ESP Features for SMC</emphasis> category. <graphic
     fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
 
@@ -1230,7 +1230,7 @@
       <title>SMC Feature Permissions</title>
 
       <para>The following table describes the level of access required to be
-      able to use these HPCC ECL Watch features.</para>
+      able to use these HPCC Systems ECL Watch features.</para>
 
       <para><informaltable>
           <tgroup cols="3">
@@ -1643,7 +1643,7 @@
   <sect2 id="FeaturePermissions_FileAccessControl">
     <title><emphasis role="bold">File Access Control</emphasis></title>
 
-    <para>The HPCC's LDAP <emphasis role="bold">Dali Server</emphasis>
+    <para>The HPCC Systems LDAP <emphasis role="bold">Dali Server</emphasis>
     technology provides the ability to set secure access permissions to data
     file folders (or file scopes). This is controlled by the use of file scope
     resources.</para>
@@ -1685,7 +1685,7 @@
     role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
     </emphasis></para>
 
-    <para>All HPCC components and tools respect LDAP file access security. The
+    <para>All HPCC Systems components and tools respect LDAP file access security. The
     following exceptions are assumed to be system level or for administrative
     users:</para>
 

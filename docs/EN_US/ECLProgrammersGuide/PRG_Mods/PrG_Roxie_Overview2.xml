@@ -49,21 +49,21 @@
             <entry>Thor</entry>
 
             <entry>The commonly used name for an instance of the Data Refinery
-            component of the HPCC platform.</entry>
+            component of the HPCC Systems platform.</entry>
           </row>
 
           <row>
             <entry>Roxie</entry>
 
             <entry>The commonly used name for an instance of the Rapid Data
-            Delivery Engine component of the HPCC platform.</entry>
+            Delivery Engine component of the HPCC Systems platform.</entry>
           </row>
 
           <row>
             <entry>hThor</entry>
 
             <entry>The commonly used name for an instance of the Data Delivery
-            Engine component of the HPCC platform.</entry>
+            Engine component of the HPCC Systems platform.</entry>
           </row>
         </tbody>
       </tgroup>

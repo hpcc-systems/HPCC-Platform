@@ -4,7 +4,7 @@
 <chapter id="VizIntro">
   <title><emphasis>Visualization Introduction</emphasis></title>
 
-  <para>The Visualization bundle is an open-source add-on to the HPCC platform
+  <para>The Visualization bundle is an open-source add-on to the HPCC Systems<superscript>®</superscript> platform
   to allow you to create visualizations from the results of queries written in
   ECL.</para>
 
@@ -18,7 +18,7 @@
   part of a solution; we must be able to make sense of the data, too. Data
   visualizations simplify the complex.</para>
 
-  <para>The Visualizer bundle extends the HPCC platform's functionality by
+  <para>The Visualizer bundle extends the HPCC Systems platform's functionality by
   allowing you to plot your data onto charts, graphs, and maps to add a visual
   representation that can be easily understood.</para>
 

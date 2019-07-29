@@ -106,7 +106,7 @@
 
       <itemizedlist>
         <listitem>
-          <para>Access to an HPCC Cluster (version 7.0 or later). This can be
+          <para>Access to an HPCC Systems Cluster (version 7.0 or later). This can be
           one running in a Virtual Machine.</para>
         </listitem>
       </itemizedlist>
@@ -134,7 +134,7 @@
 
       <para><emphasis role="bold">dESDL and LDAP Security</emphasis></para>
 
-      <para>If your HPCC platform is configured to use LDAP security, you must
+      <para>If your HPCC Systems platform is configured to use LDAP security, you must
       ensure any user who will be publishing ESDL Definitions has Access to
       <emphasis role="bold">ESDL configuration service</emphasis> set to
       <emphasis role="bold">Allow Full</emphasis>, as shown below.</para>

@@ -250,7 +250,7 @@
               <row>
                 <entry><emphasis>-cde </emphasis></entry>
 
-                <entry>Specifies the HPCC Component files directory (location
+                <entry>Specifies the HPCC Systems Component files directory (location
                 of xslt files).</entry>
               </row>
 

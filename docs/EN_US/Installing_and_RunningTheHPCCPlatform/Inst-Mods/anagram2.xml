@@ -44,8 +44,8 @@
     
 
     <para>In this step, you will copy the data files to a location from which
-    it can be sprayed to your HPCC cluster.
-    A Landing Zone is a storage location attached to your HPCC.
+    it can be sprayed to your HPCC Systems cluster.
+    A Landing Zone is a storage location attached to your HPCC Systems platform.
     It has a utility running to facilitate file spraying to a cluster.</para>
 
     <para>For smaller data files, maximum of 2GB,
@@ -53,7 +53,7 @@
     Watch. This data file is only ~400 kb.</para>
 
     <para>Next you will distribute (or Spray) the dataset to all the nodes in
-    the HPCC cluster. The power of the HPCC
+    the HPCC Systems cluster. The power of HPCC Systems 
     comes from its ability to assign multiple processors to work on different
     portions of the data file in parallel. Even though the VM
     Edition only has a single node, the data must be sprayed to the
@@ -150,7 +150,7 @@
     
 
     <para>To use the data file in our HPCC
-    system, we must "spray" it to all the nodes. A <emphasis>spray</emphasis>
+    Systems cluster, we must "spray" it to all the nodes. A <emphasis>spray</emphasis>
     or <emphasis>import</emphasis> is the relocation of a data file from one
     location (such as a Landing Zone) to multiple file parts on nodes in a
     cluster.</para>
@@ -583,7 +583,7 @@ OUTPUT(ValidWords)
 
     <para>Now that the query is published to a Roxie cluster, we can run it
     using the WsECL service. WsECL is a web-based interface to queries on an
-    HPCC platform. Use the following URL:</para>
+    HPCC Systems platform. Use the following URL:</para>
 
     <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
     nnn.nnn.nnn.nnn is your ESP Server's

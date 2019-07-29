@@ -202,7 +202,7 @@
               compiler matches each server you need to access. Check the
               <emphasis role="bold">Override Automatic Compiler
               Selection</emphasis> checkbox and specify the Complier that
-              matches your HPCC instance.</para>
+              matches your HPCC Systems instance.</para>
 
               <para><graphic fileref="../../images/CT03a.jpg" /></para>
             </listitem>
@@ -296,7 +296,7 @@
           to a new configuration file. All available configuration files are
           shown on the <emphasis role="bold">Configurations</emphasis> drop
           list when you log in and you simply select the one you want ECL IDE
-          to use to connect to an HPCC environment.</para>
+          to use to connect to an HPCC Systems environment.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -754,7 +754,7 @@
         displays.<itemizedlist>
             <listitem>
               <para>If you have created a configuration file to connect to the
-              desired HPCC environment, select it from the <emphasis
+              desired HPCC Systems environment, select it from the <emphasis
               role="bold">Configurations</emphasis> drop list. If not, press
               the <emphasis role="bold">Preferences</emphasis>button to create
               one.</para>
@@ -1266,7 +1266,7 @@
           <title>Error Log Toolbox</title>
 
           <para>The Error Log toolbox displays errors and warnings from the
-          HPCC system.</para>
+          HPCC Systems platform.</para>
 
           <para>For example, attempting to create an ECL file in a folder
           without WRITE permission will display an access denied error as

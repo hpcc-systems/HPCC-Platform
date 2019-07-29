@@ -16,17 +16,17 @@
           <row>
             <entry><emphasis role="bold">Thor</emphasis></entry>
 
-            <entry>An HPCC cluster specifically designed to perform massive
+            <entry>An HPCC Systems cluster specifically designed to perform massive
             data manipulation (ETL) processes. This is a back-office data
             preparation tool and not meant for end-user production-level
-            queries. See the HPCC operational manuals for complete
+            queries. See the HPCC Systems operational manuals for complete
             documentation.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">Roxie</emphasis></entry>
 
-            <entry>An HPCC cluster specifically designed to service standard
+            <entry>An HPCC Systems cluster specifically designed to service standard
             queries, providing a throughput rate of a thousand-plus responses
             per second (actual response rate for any given query is, of
             course, dependent on its complexity). This is a production-level
@@ -40,7 +40,7 @@
             <entry>An R&amp;D platform designed for iterative, interactive
             development and testing of Roxie queries. This is not a separate
             cluster, but a "piggyback" implementation of ECL Agent and Thor.
-            See the HPCC operational manuals for complete
+            See the HPCC Systems operational manuals for complete
             documentation.</entry>
           </row>
         </tbody>

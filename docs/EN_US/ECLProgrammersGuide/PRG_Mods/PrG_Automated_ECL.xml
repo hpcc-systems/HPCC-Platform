@@ -161,7 +161,7 @@ B        3
 
     <para>How you create this text file is up to you. To fully automate the
     process you may want to write a daemon application that watches a
-    directory (such as your HPCC environment's landing zone) to detect new
+    directory (such as your HPCC Systems environment's landing zone) to detect new
     files dropped in (by whatever means) and generate the appropriate ECL code
     file to process that new file in some standard fashion (typically using
     MACRO calls), then execute it from ECLplus command line as described

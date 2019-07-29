@@ -413,7 +413,7 @@
       <para></para>
 
       <para><emphasis role="bold">Note</emphasis>: These steps are explained
-      in detail in the HPCC Data Tutorial and the Programmer's Guide.</para>
+      in detail in the HPCC Systems Data Tutorial and the Programmer's Guide.</para>
     </sect1>
 
     <sect1 id="Methods-to-Submit-Jobs-to-a-Roxie-Cluster">
@@ -585,7 +585,7 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
       <orderedlist>
         <listitem>
           <para>Use ECL IDE to write your query and then compile it setting
-          the target as the roxie cluster in your HPCC environment.</para>
+          the target as the roxie cluster in your HPCC Systems environment.</para>
         </listitem>
 
         <listitem>
@@ -600,7 +600,7 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
       <title>Viewing Query Sets using ECL Watch</title>
 
       <para>Using ECL Watch, you can view the query for all clusters on your
-      HPCC. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
+      HPCC Systems platform. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
       menu item to see the clusters which are currently using Query Sets.
       Click on the <emphasis role="bold">myroxie</emphasis> link to view the
       list of queries currently available for roxie. Using this feature you
@@ -649,7 +649,7 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
     <sect1>
       <title>Using WsECL to run a roxie query</title>
 
-      <para>WsECL is the ECL Web Service interface that is provided with HPCC
+      <para>WsECL is the ECL Web Service interface that is provided with HPCC Systems
       and is available using the following URL: http://nnn.nnn.nnn.nnn:8002,
       where nnn.nnn.nnn.nnn is the IP address of your ESP.</para>
 
@@ -973,7 +973,7 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
 
     <para>This section contains information for performing preflight checks on
     a Roxie cluster. For details about other components, see the
-    <emphasis>HPCC System Administrator's Guide</emphasis>.</para>
+    <emphasis>HPCC Systems Administrator's Guide</emphasis>.</para>
 
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
                 xpointer="xpointer(//*[@id='Preflight_Roxie'])"

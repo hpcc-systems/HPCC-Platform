@@ -29,14 +29,14 @@
 
       <para>ECL Playground is a tool hosted on an ESP server. A page runs in
       your browser, allowing you to access and execute self-contained ECL code
-      on your HPCC system without the use of any other tools. The ECL
+      on your HPCC Systems platform without the use of any other tools. The ECL
       Playground then shows you the results and the graph in your browser. The
       view is very similar to what the ECL IDE displays.</para>
 
       <sect2 id="ECLPlayground_AccessingThePlayground">
         <title>Accessing ECL Playground</title>
 
-        <para>ECL Playground is installed with the HPCC platform. You can
+        <para>ECL Playground is installed with the HPCC Systems platform. You can
         access it through the ECL Watch page.</para>
 
         <para><orderedlist>

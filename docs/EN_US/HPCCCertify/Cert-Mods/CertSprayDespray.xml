@@ -204,7 +204,7 @@
     <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
       <title>Spray a Data File to your Thor Cluster</title>
 
-      <para>To use a data file in our HPCC cluster, we must first "spray" it
+      <para>To use a data file in our HPCC Systems cluster, we must first "spray" it
       to a Thor cluster. A <emphasis>spray</emphasis> or
       <emphasis>import</emphasis> is the relocation of a data file from one
       location to a Thor cluster. The term spray was adopted due to the nature

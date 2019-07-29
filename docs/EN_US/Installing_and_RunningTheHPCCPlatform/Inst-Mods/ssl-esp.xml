@@ -10,7 +10,7 @@
     <sect1 id="ssl4esp">
       <title>Configuring ESP Server to use HTTPS (SSL)</title>
 
-      <para>The HPCC Enterprise Services Platform server (ESP) supports Secure
+      <para>The HPCC Systems Enterprise Services Platform server (ESP) supports Secure
       Sockets Layer (SSL), a protocol used to send and receive private data or
       documents.</para>
 
@@ -19,7 +19,7 @@
       connection start with HTTPS instead of HTTP.</para>
 
       <para>The SSL option in the ESP Server allows secure and encrypted
-      communication between a browser or SOAP client application and the HPCC
+      communication between a browser or SOAP client application and the HPCC Systems
       platform.</para>
 
       <para>SSL capabilities are configured in the Configuration Manager, but
@@ -382,12 +382,12 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
 
             <para>You might prefer to use a script to automate this step,
             especially if you have many nodes. See the Example Scripts section
-            in the Appendix of the Installing and Running the HPCCPlatform
+            in the Appendix of the Installing and Running the HPCC Systems platform
             manual.</para>
           </listitem>
 
           <listitem>
-            <para>Restart the HPCC system and certify the components as
+            <para>Restart the HPCC Systems platform and certify the components as
             usual.</para>
           </listitem>
         </orderedlist>
