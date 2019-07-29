@@ -28,6 +28,12 @@
 
 int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
+    if (strieq(method, "DownloadFile"))
+    {
+        return downloadFile(context, request, response);
+    }
+
+    //The code below should be only for legacy ECLWatch.
     bool permission = true;
     bool bDownloadFile = false;
     bool bProcess;
@@ -84,15 +90,6 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         request->getParameter("sourceLogicalName", sourceLogicalFile);
         xsltFileName.append("fs_renameForm.xslt");
         methodbuf.append("Rename");
-        bProcess = true;
-    }
-    else if (stricmp(method, "DownloadFile") == 0)
-    {
-        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))
-            permission = false;
-
-        downloadFile(context, request, response);
-        bDownloadFile = true;
         bProcess = true;
     }
     else
@@ -385,10 +382,13 @@ void CFileSpraySoapBindingEx::xsltTransform(const char* xml, const char* sheet, 
     trans->transform(ret);
 }
 
-void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
+int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
 {
     try
     {
+        if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))
+            throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to download file. Permission denied.");
+
         StringBuffer netAddressStr, osStr, pathStr, nameStr;
         request->getParameter("NetAddress", netAddressStr);
         request->getParameter("OS", osStr);
@@ -458,10 +458,16 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
         response->send();
     }
     catch(IException* e)
-    {   
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    {
+        Owned<IXslProcessor> xslp = getXslProcessor();
+        if (!xslp)
+            throw e;
+
+        Owned<IMultiException> me = MakeMultiException();
+        me->append(*e);
+        response->handleExceptions(xslp, me, "FileSpray", "DownloadFile", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt"));
     }
-    return;
+    return 0;
 }
 
 int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me)
