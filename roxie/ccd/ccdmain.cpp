@@ -82,6 +82,7 @@ bool traceStartStop = false;
 bool traceServerSideCache = false;
 bool defaultTimeActivities = true;
 bool defaultTraceEnabled = false;
+bool traceTranslations = true;
 unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
@@ -847,6 +848,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
+        traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
         defaultTraceEnabled = topology->getPropBool("@traceEnabled", false);
         defaultTraceLimit = topology->getPropInt("@traceLimit", 10);
