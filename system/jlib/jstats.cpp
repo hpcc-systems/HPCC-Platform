@@ -2091,7 +2091,35 @@ protected:
 
 void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction mergeAction)
 {
-    value = mergeStatisticValue(value, otherValue, mergeAction);
+    switch (mergeAction)
+    {
+    case StatsMergeKeepNonZero:
+        if (otherValue && !value)
+        {
+            unsigned __int64 zero = 0;
+            value.compare_exchange_strong(zero, otherValue);
+        }
+        break;
+    case StatsMergeAppend:
+    case StatsMergeReplace:
+        value = otherValue;
+        break;
+    case StatsMergeSum:
+        addAtomic(otherValue);
+        break;
+    case StatsMergeMin:
+        value.store_min(otherValue);
+        break;
+    case StatsMergeMax:
+        value.store_max(otherValue);
+        break;
+    default:
+#ifdef _DEBUG
+        throwUnexpected();
+#else
+        value = otherValue;
+#endif
+    }
 }
 
 //--------------------------------------------------------------------------------------------------------------------
