@@ -66,7 +66,9 @@ LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId sessio
     processID = GetCurrentProcessId();
     threadID = threadLogID();
     sessionID = session;
+#ifdef INCLUDE_LOGMSGSYSINFO_NODE
     node.setLocalHost(port);
+#endif
 }
 
 void LogMsgSysInfo::serialize(MemoryBuffer & out) const
