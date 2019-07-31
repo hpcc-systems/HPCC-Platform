@@ -168,9 +168,9 @@ def createStackTrace(wuid, proc, taskId):
     binPath = proc['process']
     pid = proc['pid']
     outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '.trace'
-    logging.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'", taskId, proc['name'], proc['slaveNum'], pid, outFile)
+    logging.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'" % (taskId, proc['name'], proc['slaveNum'], pid, outFile), extra={'taskId':taskId})
     
-    cmd  = 'gdb --batch --quiet -ex "set interactive-mode off" '
+    cmd  = 'sudo gdb --batch --quiet -ex "set interactive-mode off" '
     cmd += '-ex "echo \nBacktrace for all threads\n==========================" -ex "thread apply all bt" '
     cmd += '-ex "echo \nRegisters:\n==========================\n" -ex "info reg" '
     cmd += '-ex "echo \nDisassembler:\n==========================\n" -ex "disas" '
