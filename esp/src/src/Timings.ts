@@ -24,10 +24,30 @@ class TimingColumn extends Column {
     }
 }
 
+export class WUTimelinePatched extends WUTimeline {
+
+    constructor() {
+        super();
+    }
+
+    data(): any;
+    data(_: any): this;
+    data(_?: any): any | this {
+        if (arguments.length === 0) return super.data();
+        super.data(_.map(row => {
+            if (row[2] === undefined || row[2] === null) {
+                row[2] = row[1];
+            }
+            return row;
+        }));
+        return this;
+    }
+}
+
 export class Timings {
     private wu: Workunit;
 
-    private timeline = new WUTimeline()
+    private timeline = new WUTimelinePatched()
         .maxZoom(Number.MAX_SAFE_INTEGER)
         .overlapTolerence(1)
         .baseUrl("")
