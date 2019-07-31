@@ -23,6 +23,9 @@ define([
 
     "dojo/text!../templates/ECLPlaygroundWidget.html",
 
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
+
     "hpcc/InfoGridWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,

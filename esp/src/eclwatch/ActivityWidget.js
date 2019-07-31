@@ -28,7 +28,6 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/BorderContainer",
     "dijit/Toolbar",
-    "dijit/form/Button",
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 

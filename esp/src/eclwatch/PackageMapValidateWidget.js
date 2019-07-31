@@ -19,6 +19,7 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/Select"
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
     _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {

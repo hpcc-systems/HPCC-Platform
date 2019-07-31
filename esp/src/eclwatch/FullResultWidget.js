@@ -27,6 +27,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
     registry,

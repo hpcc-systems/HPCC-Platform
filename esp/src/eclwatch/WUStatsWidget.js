@@ -23,6 +23,7 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/Select"
 ], function (declare, lang, i18n, nlsHPCC, on,
     registry,

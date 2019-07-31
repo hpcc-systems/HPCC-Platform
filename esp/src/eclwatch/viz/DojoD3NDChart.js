@@ -107,30 +107,22 @@ define([
                 this.chart
                     .columns(chartColumns)
                     .data(chartData)
-                    .render()
                     ;
+                if (!this.chart.isDOMHidden()) {
+                    this.chart
+                        .lazyRender()
+                        ;
+                }
                 return;
             },
 
             resize: function () {
-                var _debounce = function (fn, timeout) {
-                    var timeoutID = -1;
-                    return function () {
-                        if (timeoutID > -1) {
-                            window.clearTimeout(timeoutID);
-                        }
-                        timeoutID = window.setTimeout(fn, timeout);
-                    }
-                };
-
-                var _debounced_draw = _debounce(lang.hitch(this, function () {
+                if (!this.chart.isDOMHidden()) {
                     this.chart
                         .resize()
-                        .render()
+                        .lazyRender()
                         ;
-                }), 125);
-
-                _debounced_draw();
+                }
             },
 
             update: function (data) {

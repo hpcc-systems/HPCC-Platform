@@ -36,6 +36,7 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/Textarea",
@@ -145,7 +146,7 @@ define([
                             Overwrite: this.addProcessMapOverWrite.get('checked'),
                             DaliIp: this.addProcessMapDaliIp.get('value')
                         }
-                    }).then(function(response){
+                    }).then(function (response) {
                         if (lang.exists("AddPackageResponse.status", response)) {
                             if (response.AddPackageResponse.status.Code === 0) {
                                 context.refreshGrid();
@@ -171,7 +172,7 @@ define([
                                 Target: item.Target,
                                 Process: item.Process
                             }
-                        }).then(function(response){
+                        }).then(function (response) {
                             if (lang.exists("DeletePackageResponse.status", response)) {
                                 if (response.DeletePackageResponse.status.Code === 0) {
                                     context.refreshGrid();
@@ -194,7 +195,7 @@ define([
                         Process: selection[0].Process,
                         PackageMap: selection[0].Id
                     }
-                }).then(function (response){
+                }).then(function (response) {
                     if (lang.exists("ActivatePackageResponse.status", response)) {
                         if (response.ActivatePackageResponse.status.Code === 0) {
                             context.refreshGrid();
@@ -212,7 +213,7 @@ define([
                         Process: selection[0].Process,
                         PackageMap: selection[0].Id
                     }
-                }).then(function (response){
+                }).then(function (response) {
                     if (lang.exists("DeActivatePackageResponse.status", response)) {
                         if (response.DeActivatePackageResponse.status.Code === 0) {
                             context.refreshGrid();

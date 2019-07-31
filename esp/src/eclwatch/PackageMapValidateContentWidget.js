@@ -19,7 +19,9 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Select",
-    "dijit/form/Button"
+    "dijit/form/Button",
+    "dijit/form/ToggleButton"
+
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
     _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
         return declare("PackageMapValidateContentWidget", [_TabContainerWidget], {

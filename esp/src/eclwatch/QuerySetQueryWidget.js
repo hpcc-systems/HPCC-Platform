@@ -33,6 +33,7 @@ define([
     "dijit/Toolbar",
     "dijit/form/Form",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/CheckBox",
     "dijit/ToolbarSeparator",
     "dijit/form/TextBox",

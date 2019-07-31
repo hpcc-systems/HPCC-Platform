@@ -27,6 +27,7 @@ define([
     "dijit/form/Textarea",
     "dijit/form/TextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane",
@@ -89,7 +90,7 @@ define([
                                 newPassword: formInfo.newPassword,
                                 newPasswordRetype: formInfo.newPassword
                             }
-                        }).then(function(response){
+                        }).then(function (response) {
                             if (lang.exists("UserResetPassResponse", response)) {
                                 if (response.UserResetPassResponse.retcode === 0) {
                                     context.getLatestUserData(context.user);
@@ -112,7 +113,7 @@ define([
                     this.updateInput("Username", null, this.user);
                     this.updateInput("PasswordExpiration", null, params.Passwordexpiration);
 
-                   this.getLatestUserData(this.user);
+                    this.getLatestUserData(this.user);
                 }
             },
 
