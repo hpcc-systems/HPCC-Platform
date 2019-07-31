@@ -1,10 +1,10 @@
 <span class="${baseClass}">
     <div id="${id}UnlockDialog" class="unlockDialogToHide" title="${i18n.ReAuthenticate}" style="width: 480px; z-index: 9999;" data-dojo-props="closable:false, draggable: false, " data-dojo-type="dijit.Dialog">
-        <img src="${dojoConfig.urlInfo.resourcePath}/img/Loginlogo.png" class="lockLogo" alt="${i18n.HPCCSystems}"/>
-        <div id="${id}UnlockForm" style="width:${_width}"  onsubmit="return false;" data-dojo-type="dijit.form.Form">
+        <img src="${dojoConfig.urlInfo.resourcePath}/img/Loginlogo.png" class="lockLogo" alt="${i18n.HPCCSystems}" />
+        <div id="${id}UnlockForm" style="width:${_width}" onsubmit="return false;" data-dojo-type="dijit.form.Form">
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                 <input id="${id}UnlockUserName" title="${i18n.Username}:" name="username" colspan="2" style="width:90%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}UnlockPassword" type="password" title="${i18n.Password}:" name="password" colspan="2" style="width:90%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="dijit.form.ValidationTextBox" autofocus/>
+                <input id="${id}UnlockPassword" type="password" title="${i18n.Password}:" name="password" colspan="2" style="width:90%;" data-dojo-props="trim: true, readonly: false" data-dojo-type="dijit.form.ValidationTextBox" autofocus />
             </div>
             <p id="${id}UnlockStatus" class="unlockStatus"></p>
         </div>

@@ -565,7 +565,7 @@ export var Graph = declare([], {
         var retVal = this.getItem(docNode, id);
         arrayUtil.forEach(docNode.childNodes, function (childNode, idx) {
             switch (childNode.nodeType) {
-                case 1:     //	ELEMENT_NODE
+                case 1:     //    ELEMENT_NODE
                     switch (childNode.tagName) {
                         case "graph":
                             break;
@@ -631,17 +631,17 @@ export var Graph = declare([], {
                             break;
                     }
                     break;
-                case 2:     //	ATTRIBUTE_NODE
-                case 3:     //	TEXT_NODE
-                case 4:     //	CDATA_SECTION_NODE
-                case 5:     //	ENTITY_REFERENCE_NODE
-                case 6:     //	ENTITY_NODE
-                case 7:     //	PROCESSING_INSTRUCTION_NODE
-                case 8:     //	COMMENT_NODE
-                case 9:     //	DOCUMENT_NODE
-                case 10:    //	DOCUMENT_TYPE_NODE
-                case 11:    //	DOCUMENT_FRAGMENT_NODE
-                case 12:    //	NOTATION_NODE
+                case 2:     //    ATTRIBUTE_NODE
+                case 3:     //    TEXT_NODE
+                case 4:     //    CDATA_SECTION_NODE
+                case 5:     //    ENTITY_REFERENCE_NODE
+                case 6:     //    ENTITY_NODE
+                case 7:     //    PROCESSING_INSTRUCTION_NODE
+                case 8:     //    COMMENT_NODE
+                case 9:     //    DOCUMENT_NODE
+                case 10:    //    DOCUMENT_TYPE_NODE
+                case 11:    //    DOCUMENT_FRAGMENT_NODE
+                case 12:    //    NOTATION_NODE
                     break;
                 default:
                     break;

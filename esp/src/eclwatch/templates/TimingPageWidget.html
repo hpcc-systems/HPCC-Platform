@@ -24,12 +24,10 @@
                     <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>
-                <div id="${id}TimelinePane" style="height: 120px; padding:0px; overflow:hidden" data-dojo-props="splitter:true, region: 'top', minSize: 120"
-                    data-dojo-type="dijit.layout.ContentPane">
+                <div id="${id}TimelinePane" style="height: 120px; padding:0px; overflow:hidden" data-dojo-props="splitter:true, region: 'top', minSize: 120" data-dojo-type="dijit.layout.ContentPane">
                 </div>
                 <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.StackContainer">
-                    <div id="${id}TimingTab" style="padding: 0px; border:0px; border-color:none" data-dojo-props='title:"${i18n.Table}",iconClass:"iconFileList"'
-                        data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}TimingTab" style="padding: 0px; border:0px; border-color:none" data-dojo-props='title:"${i18n.Table}",iconClass:"iconFileList"' data-dojo-type="dijit.layout.ContentPane">
                         <div id="${id}Grid" style="padding: 0px; border:0px; border-color:none">
                         </div>
                     </div>

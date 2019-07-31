@@ -1,7 +1,7 @@
 import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
 import * as QueryResults from "dojo/store/util/QueryResults";
-import {UndefinedMemory} from "./ESPUtil";
+import { UndefinedMemory } from "./ESPUtil";
 
 export class GraphStore extends UndefinedMemory {
     idProperty: string;

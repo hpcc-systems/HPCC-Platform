@@ -6,7 +6,7 @@ import * as declare from "dojo/_base/declare";
  * hides away the `declare([], {})` boilerplate.
  */
 export function declareDecorator(classID: string, ...mixins: Object[]) {
-	return function (target: Function) {
-		return declare(classID, mixins, target.prototype);
-	};
+    return function (target: Function) {
+        return declare(classID, mixins, target.prototype);
+    };
 }

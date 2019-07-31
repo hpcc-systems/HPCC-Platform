@@ -1592,44 +1592,44 @@ margin-left:-20px;
 /* main classes for dojox.widget.Toaster */
 
 .dijitToasterContent {
-	padding:1em;
-	padding-top:0.25em;
-	background:#73c74a;
+    padding:1em;
+    padding-top:0.25em;
+    background:#73c74a;
 }
 
 .dijitToasterMessage{ 
-	color:#fff;
+    color:#fff;
 }
 
 .dijitToasterWarning,
 .dijitToasterError,
 .dijitToasterFatal{
-	font-weight:bold;
-	color:#fff;
+    font-weight:bold;
+    color:#fff;
 }
 
 .dijitToasterWarning .dijitToasterContent{
-	background:#d4d943;
+    background:#d4d943;
 } 
 
 .dijitToasterError .dijitToasterContent{
-	background:#c46600;
+    background:#c46600;
 }
 
 /* imported from dijit.css */
  
 .dijitToasterClip {
-	position: absolute;
-	z-index: 949;
-	overflow: hidden;
+    position: absolute;
+    z-index: 949;
+    overflow: hidden;
 }
 
 .dijitToasterContainer {
-	display: block;
-	position: absolute;
-	width: 17.5em;
-	margin: 0px;
-	font:0.75em;
+    display: block;
+    position: absolute;
+    width: 17.5em;
+    margin: 0px;
+    font:0.75em;
 }
 
 button.clippy img {

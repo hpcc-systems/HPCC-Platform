@@ -107,7 +107,7 @@ class RequestHelper {
             var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds, type: "jsonp" });
             retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
         } else {
-            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds});
+            var transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds });
             retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
         }
 

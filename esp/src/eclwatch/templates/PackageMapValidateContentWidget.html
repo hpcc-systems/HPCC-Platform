@@ -11,8 +11,8 @@
                         <div id="${id}ProcessSelect" name="ProcessSelect" style="width: 8em;" data-dojo-type="dijit.form.Select">
                         </div>
                         <button id="${id}LoadBtn" data-dojo-attach-event="onClick:_onLoadBtnClicked" data-dojo-type="dijit.form.Button">${i18n.LoadPackageFromFile}</button>
-                        <button id="${id}ValidateBtn" data-dojo-attach-event="onClick:_onValidate" data-dojo-type="dijit.form.Button">${i18n.Validate}</button>                
-                        <div style='height: 0px;width:0px; overflow:hidden;'><input id="${id}SelectFile" type="file"/></div>                
+                        <button id="${id}ValidateBtn" data-dojo-attach-event="onClick:_onValidate" data-dojo-type="dijit.form.Button">${i18n.Validate}</button>
+                        <div style='height: 0px;width:0px; overflow:hidden;'><input id="${id}SelectFile" type="file" /></div>
                     </div>
                     <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>

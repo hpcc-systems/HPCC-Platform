@@ -35,14 +35,14 @@ var SystemServersStore = declare([ESPRequest.Store], {
         var tempArr = [];
         for (var key in response.ServiceList) {
             for (var i in response.ServiceList[key]) {
-                response.ServiceList[key][i].map(function(item){
+                response.ServiceList[key][i].map(function (item) {
                     tempArr.push(item);
                 });
             }
         }
         return tempArr;
     },
-    
+
     mayHaveChildren: function (item) {
         return item.TpMachines;
     },
@@ -113,7 +113,7 @@ var ClusterTargetStore = declare([ESPRequest.Store], {
             if (typeof parent[key] === "object") {
                 for (var i in parent[key]) {
                     if (key !== "TpEclServers") {
-                        parent[key][i].map(function(item){
+                        parent[key][i].map(function (item) {
                             tempArr.push(item)
                         });
                     }
@@ -124,7 +124,7 @@ var ClusterTargetStore = declare([ESPRequest.Store], {
         arrayUtil.forEach(tempArr, function (item, idx) {
             children.push({
                 hpcc_id: parent.Name + "_" + item.Name,
-                Name: item.Type + " - " +  item.Name,
+                Name: item.Type + " - " + item.Name,
                 Type: item.Type,
                 DaliServer: item.DaliServer ? true : false,
                 Directory: item.TpMachines ? item.TpMachines.TpMachine[0].Directory : "",
@@ -256,7 +256,7 @@ var ClusterProcessesList = declare([ESPRequest.Store], {
     }
 });
 
-export function getCondition (int) {
+export function getCondition(int) {
     switch (int) {
         case 1:
             return i18n.Normal;
@@ -275,7 +275,7 @@ export function getCondition (int) {
     }
 }
 
-export function getState (int) {
+export function getState(int) {
     switch (int) {
         case 0:
             return i18n.Unknown;

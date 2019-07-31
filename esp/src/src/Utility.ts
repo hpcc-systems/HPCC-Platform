@@ -107,7 +107,7 @@ export function convertedSize(intsize: number): string {
     }
 }
 
-export function returnOSName(OS:number) {
+export function returnOSName(OS: number) {
     switch (OS) {
         case 0:
             return "Windows"
