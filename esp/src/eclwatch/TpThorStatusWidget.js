@@ -22,6 +22,7 @@ define([
     "dijit/form/Form",
     "dijit/form/Textarea",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator"
 ], function (declare, i18n, nlsHPCC, dom, domConstruct, on,

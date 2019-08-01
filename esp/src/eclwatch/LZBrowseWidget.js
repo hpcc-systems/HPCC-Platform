@@ -46,6 +46,7 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
@@ -711,7 +712,7 @@ define([
                             label: this.i18n.Size, width: 108, sortable: false,
                             renderCell: function (object, value, node, options) {
                                 domClass.add(node, "justify-right");
-                                if (value === -1){
+                                if (value === -1) {
                                     return ""
                                 }
                                 node.innerText = Utility.convertedSize(value);

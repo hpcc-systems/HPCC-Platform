@@ -30,6 +30,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/form/Textarea",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/CheckBox",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",

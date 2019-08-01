@@ -17,6 +17,8 @@ define([
     "dojo/text!../templates/HexViewWidget.html",
 
     "dijit/form/NumberSpinner",
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/CheckBox"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, iframe,

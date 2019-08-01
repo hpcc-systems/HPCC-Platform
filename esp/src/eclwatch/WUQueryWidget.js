@@ -36,6 +36,7 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/form/DropDownButton",

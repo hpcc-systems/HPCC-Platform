@@ -33,7 +33,7 @@ define([
             initTab: function () {
                 var currSel = this.getSelectedChild();
                 if (currSel && !currSel.initalized) {
-                    currSel.init(currSel.params);
+                    currSel.init(currSel.__play_params);
                 }
             },
 
@@ -45,13 +45,13 @@ define([
                         retVal = new ResultWidget({
                             id: id,
                             title: title,
-                            params: params
+                            __play_params: params
                         });
                     } else if (lang.exists("QuerySetId", params) && lang.exists("Id", params)) {
                         retVal = new FullResultWidget({
                             id: id,
                             title: title,
-                            params: params
+                            __play_params: params
                         });
                     }
                     this.addChild(retVal);

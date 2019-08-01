@@ -23,6 +23,9 @@ define([
 
     "dojo/text!../templates/ECLPlaygroundWidget.html",
 
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
+
     "hpcc/InfoGridWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
@@ -188,7 +191,7 @@ define([
                 var context = this;
                 this.watching = this.wu.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
-                    if (name === "Exceptions" && newValue) {
+                    if (name === "Exceptions" && newValue && newValue.ECLException && newValue.ECLException.length) {
                         context.stackContainer.selectChild(context.errWarnWidget);
                         context.errWarnWidget.set("disabled", false);
                         context.errWarnWidget.reset();

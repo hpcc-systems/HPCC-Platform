@@ -31,6 +31,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
 ], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery,
     registry, TextBox,
@@ -164,8 +165,8 @@ define([
                     this.initResult(null);
                 }
                 if (!this._logicalFile) {
-                    dojo.destroy(this.id + "DataPatterns");
-                    dojo.destroy(this.id + "DataPatternsSep");
+                    registry.byId(this.id + "DataPatterns").destroyRecursive();
+                    registry.byId(this.id + "DataPatternsSep").destroyRecursive();
                 }
                 this.refreshDataPatterns();
             },

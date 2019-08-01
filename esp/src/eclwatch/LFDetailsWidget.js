@@ -40,6 +40,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
     "dijit/form/ValidationTextBox",
+    "dijit/form/ToggleButton",
     "dijit/form/CheckBox",
     "dijit/form/NumberTextBox",
     "dijit/Fieldset",
