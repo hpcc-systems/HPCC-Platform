@@ -165,8 +165,8 @@ define([
                     this.initResult(null);
                 }
                 if (!this._logicalFile) {
-                    dojo.destroy(this.id + "DataPatterns");
-                    dojo.destroy(this.id + "DataPatternsSep");
+                    registry.byId(this.id + "DataPatterns").destroyRecursive();
+                    registry.byId(this.id + "DataPatternsSep").destroyRecursive();
                 }
                 this.refreshDataPatterns();
             },
