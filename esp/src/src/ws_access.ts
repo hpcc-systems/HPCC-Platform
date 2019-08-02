@@ -341,12 +341,9 @@ var IndividualPermissionsStore = declare([Memory], {
     },
 
     refreshAccountPermissions: function () {
-        if (!this.name) {
-            return [];
-        }
         return ResourcePermissions({
             request: {
-                name: this.name,
+                name: this.name ? this.name : "",
                 BasednName: this.basedn
             }
         }).then(lang.hitch(this, function (response) {
