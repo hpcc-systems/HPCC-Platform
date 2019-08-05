@@ -99,6 +99,7 @@ protected:
     EspAuthState authExistingSession(EspAuthRequest& req, unsigned sessionID);
     void logoutSession(EspAuthRequest& authReq, unsigned sessionID, IPropertyTree* domainSessions, bool lock);
     void askUserLogin(EspAuthRequest& authReq, const char* msg);
+    bool changeRedirectURL(EspAuthRequest& authReq);
     EspAuthState handleUserNameOnlyMode(EspAuthRequest& authReq);
     EspAuthState handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg);
     EspHttpBinding* getEspHttpBinding(EspAuthRequest& req);
