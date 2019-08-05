@@ -854,7 +854,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         useDynamicServers = topology->getPropBool("@useDynamicServers", topologyServers.length()>0);
         useAeron = topology->getPropBool("@useAeron", useDynamicServers);
         localSlave = topology->getPropBool("@localSlave", false);
-        numChannels = topology->getPropBool("@numChannels", 0);
+        numChannels = topology->getPropInt("@numChannels", 0);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
