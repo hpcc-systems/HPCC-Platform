@@ -320,6 +320,8 @@
                               hpcc:tooltip="Specifies the dali server to which this ESP is attached"/>
                 <xs:attribute name="enableSEHMapping" type="xs:boolean" hpcc:presetValue="true"
                               hpcc:displayName="Enable SEH Mapping" hpcc:tooltip="Enables SEH to exception mapping"/>
+                <xs:attribute name="enableSysLog" type="xs:boolean" hpcc:presetValue="false"
+                              hpcc:displayName="Enable SysLog logging" hpcc:tooltip="Enable SysLog logging"/>
                 <xs:attribute name="httpConfigAccess" type="xs:boolean" hpcc:presetValue="true"
                               hpcc:displayName="HTTP Config Access"
                               hpcc:tooltip="Allows esp config file to be viewed via a web browser"/>
