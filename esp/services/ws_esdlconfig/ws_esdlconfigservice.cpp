@@ -202,7 +202,7 @@ void CWsESDLConfigEx::buildServiceMethodsResponse(IEsdlDefinitionInfo* defInfo, 
 
         // If a service name is passed in, then only return info
         // for that single service
-        if( isEmptyString(svc) || strcasecmp(svc, serviceName)==0 )
+        if( isEmptyString(svc) || stricmp(svc, serviceName)==0 )
         {
             serviceList.append(serviceName);
             const StringArray* methods = defInfo->queryMethods(serviceName);
@@ -232,7 +232,7 @@ void CWsESDLConfigEx::buildServiceWithMethodsResponse(IEsdlDefinitionInfo* defIn
 
         // If a service name is passed in, then only return info
         // for that single service
-        if( isEmptyString(svc) || strcasecmp(svc, serviceName)==0 )
+        if( isEmptyString(svc) || stricmp(svc, serviceName)==0 )
         {
             Owned<IEspESDLService> esdlservice = createESDLService();
             esdlservice->setName(serviceName);
