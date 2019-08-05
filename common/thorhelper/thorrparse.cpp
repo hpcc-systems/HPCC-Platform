@@ -3410,8 +3410,6 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         size32_t maxSize = algo->maxLength*charWidth;
 
         const byte * start = (const byte *)data;
-        const byte * endData = start + len;
-        const byte * end = endData - algo->minPatternLength;
 
         RegexState state(cache, algo->kind, helper, this, algo->inputFormat, len, start);
         state.row = row;
@@ -3419,6 +3417,8 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         state.best = NULL;
         if (len >= algo->minPatternLength)
         {
+            const byte * endData = start + len;
+            const byte * end = endData - algo->minPatternLength;
             for (const byte * curScan = start; curScan <= end;)
             {
                 state.cur = curScan;

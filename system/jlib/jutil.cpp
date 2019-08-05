@@ -701,14 +701,14 @@ make_unumtostr(short);
 make_unumtostr(int);
 make_unumtostr(long);
 
-int numtostr(char *dst, __int64 _value)
+NO_SANITIZE("signed-integer-overflow") int numtostr(char *dst, __int64 _value)
 {
     int c;
     unsigned __int64 value;
     if (_value<0)
     {
         *(dst++) = '-';
-        value = (unsigned __int64) -_value;
+        value = (unsigned __int64) -_value;  // This can overflow and thus behaviour is theoretically undefined.
         c = 1;
     }
     else

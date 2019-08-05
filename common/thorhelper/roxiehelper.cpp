@@ -1959,7 +1959,6 @@ FlushingStringBuffer::FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, T
     isSoap = false;
     isEmpty = true;
     extend = false;
-    trim = false;
     emptyLength = 0;
     tagClosed = true;
 }

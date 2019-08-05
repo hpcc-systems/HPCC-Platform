@@ -1593,7 +1593,7 @@ void CColumnInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRef
             {
                 __int64 value = maxIntValue[type->getSize()];
                 if (direction == -1)
-                    value = 0-(value+1);
+                    value = -value-1;
                 null.setown(createConstant(type->castFrom(true, value)));
             }
             break;

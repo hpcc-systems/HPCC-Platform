@@ -60,7 +60,7 @@ int rtlReadInt3(const void * _data)
 { 
     const unsigned short * usdata = (const unsigned short *)_data;
     const signed char * scdata = (const signed char *)_data;
-    return ((int)scdata[2] << 16) | ((int)usdata[0]);
+    return ((unsigned)(int)scdata[2] << 16) | ((int)usdata[0]);
 }
 
 unsigned rtlReadUInt3(const void * _data)
@@ -177,14 +177,14 @@ __int64 rtlReadInt5(const void * _data)
 { 
     const unsigned * udata = (const unsigned *)_data;
     const signed char * scdata = (const signed char *)_data;
-    return ((__int64)scdata[4] << 32) | ((__int64)udata[0]);
+    return ((__uint64)(__int64)scdata[4] << 32) | ((__int64)udata[0]);
 }
 
 __int64 rtlReadInt6(const void * _data)     
 { 
     const unsigned * udata = (const unsigned *)_data;
     const signed short * ssdata = (const signed short *)_data;
-    return ((__int64)ssdata[2] << 32) | ((__int64)udata[0]);
+    return ((__uint64)(__int64)ssdata[2] << 32) | ((__int64)udata[0]);
 }
 
 __int64 rtlReadInt7(const void * _data)     
@@ -192,7 +192,7 @@ __int64 rtlReadInt7(const void * _data)
     const unsigned * udata = (const unsigned *)_data;
     const unsigned short * usdata = (const unsigned short *)_data;
     const signed char * scdata = (const signed char *)_data;
-    return ((__int64)scdata[6] << 48) | ((__int64)usdata[2] << 32) | ((__int64)udata[0]);
+    return ((__uint64)(__int64)scdata[6] << 48) | ((__int64)usdata[2] << 32) | ((__int64)udata[0]);
 }
 
 unsigned __int64 rtlReadUInt5(const void * _data)       
@@ -490,22 +490,22 @@ unsigned __int64 rtlCastUInt7(unsigned __int64 value)
 
 signed rtlCastInt3(signed value)
 {
-    return (value << 8) >> 8;
+    return ((signed) ((unsigned) value << 8)) >> 8;
 }
 
 __int64 rtlCastInt5(__int64 value)
 {
-    return (value << 24) >> 24;
+    return (__int64) ((__uint64) value << 24) >> 24;
 }
 
 __int64 rtlCastInt6(__int64 value)
 {
-    return (value << 16) >> 16;
+    return (__int64) ((__uint64) value << 16) >> 16;
 }
 
 __int64 rtlCastInt7(__int64 value)
 {
-    return (value << 8) >> 8;
+    return (__int64) ((__uint64) value << 8) >> 8;
 }
 
 

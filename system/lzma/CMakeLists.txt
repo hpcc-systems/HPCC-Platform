@@ -31,6 +31,10 @@ set ( SRCS
         LzmaEnc.cpp
 )
 
+include_directories ( 
+        ${HPCC_SOURCE_DIR}/system/include
+    )
+
 ADD_DEFINITIONS( -D_LIB )
 
 SET_SOURCE_FILES_PROPERTIES( ${SRCS} PROPERTIES LANGUAGE CXX )

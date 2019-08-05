@@ -2024,7 +2024,7 @@ extern DAFSCLIENT_API void installFileHooks(const char *hookFileSpec)
     }
 }
 
-typedef void *(HookInstallFunction)();
+typedef void (*HookInstallFunction)();
 
 static void installFileHook(const char *hookFile)
 {
@@ -2041,10 +2041,10 @@ static void installFileHook(const char *hookFile)
         }
         else if (file->isFile() == foundYes)
         {
-            HookInstallFunction *hookInstall;
+            HookInstallFunction hookInstall;
             SharedObject *so = new SharedObject(); // MORE - this leaks! Kind-of deliberate right now...
             if (so->load(file->queryFilename(), false) &&
-                (hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "installFileHook")) != NULL)
+                (hookInstall = (HookInstallFunction) GetSharedProcedure(so->getInstanceHandle(), "installFileHook")) != NULL)
             {
                 hookInstall();
                 hookDlls->append(so);
@@ -2082,7 +2082,7 @@ extern DAFSCLIENT_API void removeFileHooks()
         ForEachItemIn(idx, *hookDlls)
         {
             SharedObject *so = hookDlls->item(idx);
-            HookInstallFunction *hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "removeFileHook");
+            HookInstallFunction hookInstall = (HookInstallFunction) GetSharedProcedure(so->getInstanceHandle(), "removeFileHook");
             if (hookInstall)
                 hookInstall();
             delete so;

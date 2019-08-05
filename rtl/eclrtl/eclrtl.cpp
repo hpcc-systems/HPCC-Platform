@@ -547,7 +547,7 @@ static double powerOfTen(int x)
 
 
 static double kk = (1.0 / ((unsigned __int64)1<<53));
-__int64 rtlRound(double x)
+NO_SANITIZE("undefined") __int64 rtlRound(double x)
 {
     //a fudge to make numbers that are inexact after a division round up "correctly".
     //coded rather oddly as microsoft's optimizer has a habit of throwing it away otherwise...
@@ -577,14 +577,14 @@ double rtlRoundTo(const double x, int places)
     }
 }
 
-__int64 rtlRoundDown(double x)
+NO_SANITIZE("undefined") __int64 rtlRoundDown(double x)
 {
     if (x >= 0.0)
         return (__int64)floor(x);
     return (__int64)ceil(x);
 }
 
-__int64 rtlRoundUp(double x)
+NO_SANITIZE("undefined") __int64 rtlRoundUp(double x)
 {
     if (x >= 0.0)
         return (__int64)ceil(x);
@@ -1064,7 +1064,7 @@ __int64 rtlStrToInt8(size32_t l, const char * t)
 {
     bool negate = false;
     SkipSignSpaces(l, t, negate);
-    __int64 v = 0;
+    __uint64 v = 0;
     while (l--)
     {
         char c = *t++;
@@ -1073,7 +1073,7 @@ __int64 rtlStrToInt8(size32_t l, const char * t)
         else
             break;
     }
-    return negate ? -v : v;
+    return negate ? (__int64) (0-v) : (__int64) v;
 }
 
 __int64 rtlUnicodeToInt8(size32_t l, UChar const * t)

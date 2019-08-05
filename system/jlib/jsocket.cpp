@@ -2927,7 +2927,7 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
 #endif
 }
 
-bool getInterfaceIp(IpAddress &ip,const char *ifname)
+NO_SANITIZE("alignment") bool getInterfaceIp(IpAddress &ip,const char *ifname)
 {
 #if defined(_WIN32)
     return false;
@@ -3521,7 +3521,7 @@ unsigned IpAddress::ipsetrange( const char *text)  // e.g. 10.173.72.1-65  ('-' 
 }
 
 
-size32_t IpAddress::getNetAddress(size32_t maxsz,void *dst) const
+NO_SANITIZE("alignment") size32_t IpAddress::getNetAddress(size32_t maxsz,void *dst) const
 {
     if (maxsz==sizeof(unsigned)) {
         if (::isIp4(netaddr)) {
@@ -3536,7 +3536,7 @@ size32_t IpAddress::getNetAddress(size32_t maxsz,void *dst) const
     return 0;
 }
 
-void IpAddress::setNetAddress(size32_t sz,const void *src)
+NO_SANITIZE("alignment") void IpAddress::setNetAddress(size32_t sz,const void *src)
 {
     if (sz==sizeof(unsigned)) { // IPv4
         netaddr[0] = 0;

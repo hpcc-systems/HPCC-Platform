@@ -1945,8 +1945,8 @@ IValue *createBitfieldValue(__int64 val, ITypeInfo * type)
 {
 #ifdef _DEBUG
     size32_t bitsize = type->getBitSize();
-    if (bitsize != sizeof(__int64) * 8)
-        val = val & (((__int64)1 << bitsize)-1);
+    if (bitsize != sizeof(__uint64) * 8)
+        val = val & (((__uint64)1 << bitsize)-1);
 #endif
     return new BitfieldValue(val, type);
 }

@@ -1104,7 +1104,7 @@ static void throwSigSegV()
 }
 #endif
 
-void excsighandler(int signum, siginfo_t *info, void *extra) 
+NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *extra)
 {
     static byte nested=0;
     if (nested++)
@@ -1424,7 +1424,9 @@ void jlib_decl enableSEHtoExceptionMapping()
 #endif
     act.sa_sigaction = &excsighandler; 
     sigaction(SIGSEGV, &act, NULL);
+#ifndef _DEBUG
     sigaction(SIGILL, &act, NULL);
+#endif
     sigaction(SIGBUS, &act, NULL);
     sigaction(SIGFPE, &act, NULL);
     sigaction(SIGABRT, &act, NULL);
