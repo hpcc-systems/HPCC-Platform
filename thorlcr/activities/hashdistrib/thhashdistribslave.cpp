@@ -606,7 +606,6 @@ protected:
         }
         void closeWrite()
         {
-            unsigned i;
             CMessageBuffer nullMsg;
             for (unsigned dest=0; dest<owner.numnodes; dest++)
             {
