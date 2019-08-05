@@ -135,7 +135,10 @@ define([
                 columns: {
                     col1: selector({
                         width: 20,
-                        selectorType: 'checkbox'
+                        selectorType: 'checkbox',
+                        disabled: function (item) {
+                            return item.type === "clusterProcess";
+                        }
                     }),
                     Configuration: {
                         label: this.i18n.Configuration,
