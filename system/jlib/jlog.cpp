@@ -106,9 +106,10 @@ class LoggingFieldColumns
         { MSGFIELD_user,      "UserID  " },
         { MSGFIELD_component, "Compo " }
     };
-    const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
+    static const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
+
 public:
-    unsigned getMaxHeaderSize()
+    unsigned getMaxHeaderSize() const
     {
         // Note: return length is slightly longer than necessary as only one time field is valid
         // but the length of all time fields are added
@@ -117,7 +118,7 @@ public:
             size += strlen(MsgFieldMap[i].str);
         return size+2; // 2 extra characters for \r\n
     }
-    unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
+    unsigned getPositionOfField(unsigned logfields, unsigned positionoffield) const
     {
         unsigned pos = 0;
         for (unsigned i=0; i<sizeMsgFieldMap; ++i)
@@ -131,7 +132,7 @@ public:
         }
         return 0;
     }
-    unsigned extractMessageFieldsFromHeader(const char *line, bool hashPrefixed)
+    unsigned extractMessageFieldsFromHeader(const char *line, bool hashPrefixed) const
     {
         unsigned fieldHeader = 0;
 
@@ -161,7 +162,7 @@ public:
             fieldHeader |= MSGFIELD_time;
         return fieldHeader;
     }
-    StringBuffer & generateHeaderRow(StringBuffer & out, unsigned fields, bool prefixHash)
+    StringBuffer & generateHeaderRow(StringBuffer & out, unsigned fields, bool prefixHash) const
     {
         if (prefixHash)
             out.append('#');
@@ -183,75 +184,191 @@ unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
 }
 
 // LogMsg
+template<const EnumMapping msgFieldFormat[15], bool logMsgNewLine, const bool isFixedWidth>
+class LogFormatter
+{
+public:
+    constexpr static const char* getFormat(int field, unsigned currentField = 0)
+    {
+        return msgFieldFormat[currentField].val == field ?
+                        msgFieldFormat[currentField].str : getFormat(field, currentField + 1);
+    }
+    static inline void generateLogLine(const LogMsg &logMsg, StringBuffer &out, unsigned fields)
+    {
+        if (fields & MSGFIELD_msgID)
+            out.appendf(getFormat(MSGFIELD_msgID), logMsg.querySysInfo().queryMsgID());
+        if (isFixedWidth)  // Replace with constexpr(isFixedWidth) in C++17
+        {
+            if (fields & MSGFIELD_audience)
+                out.appendf(getFormat(MSGFIELD_audience), LogMsgAudienceToFixString(logMsg.queryCategory().queryAudience()));
+            if (fields & MSGFIELD_class)
+                out.appendf(getFormat(MSGFIELD_class), LogMsgClassToFixString(logMsg.queryCategory().queryClass()));
+        }
+        else
+        {
+            if (fields & MSGFIELD_audience)
+                out.appendf(getFormat(MSGFIELD_audience), LogMsgAudienceToVarString(logMsg.queryCategory().queryAudience()));
+            if (fields & MSGFIELD_class)
+                out.appendf(getFormat(MSGFIELD_class), LogMsgClassToVarString(logMsg.queryCategory().queryClass()));
+        }
+        if (fields & MSGFIELD_detail)
+            out.appendf(getFormat(MSGFIELD_detail), logMsg.queryCategory().queryDetail());
+        if (logMsgNewLine)
+            out.append("\n     ");
+        if (fields & MSGFIELD_timeDate)
+        {
+            time_t timeNum = logMsg.querySysInfo().queryTime();
+            struct tm timeStruct;
+            localtime_r(&timeNum, &timeStruct);
+            if (fields & MSGFIELD_date)
+            {
+                char timeString[12];
+                strftime(timeString, 12, "%Y-%m-%d", &timeStruct);
+                out.appendf(getFormat(MSGFIELD_date), timeString);
+            }
+            if (fields & MSGFIELD_microTime)
+            {
+                out.appendf(getFormat(MSGFIELD_microTime), timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec,
+                                logMsg.querySysInfo().queryUSecs());
+            }
+            else if (fields & MSGFIELD_milliTime)
+            {
+                out.appendf(getFormat(MSGFIELD_milliTime), timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec,
+                                logMsg.querySysInfo().queryUSecs() / 1000);
+            }
+            else if (fields & MSGFIELD_time)
+            {
+                char timeString[12];
+                strftime(timeString, 12, "%H:%M:%S", &timeStruct);
+                out.appendf(getFormat(MSGFIELD_time), timeString);
+            }
+        }
+        if (logMsgNewLine)
+            out.append("\n     ");
+        if (fields & MSGFIELD_process)
+            out.appendf(getFormat(MSGFIELD_process), logMsg.querySysInfo().queryProcessID());
+        if (fields & MSGFIELD_thread)
+            out.appendf(getFormat(MSGFIELD_thread), logMsg.querySysInfo().queryThreadID());
+        if (fields & MSGFIELD_session)
+        {
+            StringBuffer tmp;
+            if(logMsg.querySysInfo().querySessionID() == UnknownSession)
+                tmp.append("unknown");
+            else
+                tmp.appendf("%" I64F "u ", logMsg.querySysInfo().querySessionID());
+            out.appendf(getFormat(MSGFIELD_session), tmp.str());
+        }
+        if (fields & MSGFIELD_node)
+        {
+            StringBuffer node;
+            logMsg.querySysInfo().queryNode()->getUrlStr(node);
+            out.appendf(getFormat(MSGFIELD_node), node.str());
+        }
+        if (logMsgNewLine)
+            out.append("\n     ");
+        if (fields & MSGFIELD_job)
+        {
+            StringBuffer tmp;
+            if(logMsg.queryJobInfo().queryJobID() == UnknownJob)
+                tmp.append("unknown");
+            else
+                tmp.appendf("%" I64F "u ",logMsg.queryJobInfo().queryJobID());
+            out.appendf(getFormat(MSGFIELD_job), tmp.str());
+        }
+        if (fields & MSGFIELD_user)
+        {
+            StringBuffer tmp;
+			if(logMsg.queryJobInfo().queryUserID() == UnknownUser)
+                tmp.append("unknown");
+            else
+                tmp.appendf("%" I64F "u ", logMsg.queryJobInfo().queryUserID());
+            out.appendf(getFormat(MSGFIELD_user), tmp.str());
+        }
+        if (logMsgNewLine && (fields & MSGFIELD_allJobInfo))
+            out.append("\n     ");
+        if (fields & MSGFIELD_component)
+            out.appendf(getFormat(MSGFIELD_component), logMsg.queryComponent());
+    }
+
+    static inline void generateLogLine(const LogMsg &logMsg, FILE * handle, unsigned fields)
+    {
+        StringBuffer out;
+        generateLogLine(logMsg, out, fields);
+    }
+
+};
+
+constexpr EnumMapping msgFieldFormatStringPlain[15] =
+{
+   { MSGFIELD_msgID,     "id=%X " },
+   { MSGFIELD_audience,  "aud=%s " },
+   { MSGFIELD_class,     "cls=%s " },
+   { MSGFIELD_detail,    "det=%d " },
+   { MSGFIELD_date,      "date=%s " },
+   { MSGFIELD_microTime, "time=%02d:%02d:%02d.%06d " },
+   { MSGFIELD_milliTime, "time=%02d:%02d:%02d.%03d " },
+   { MSGFIELD_time,      "time=%s " },
+   { MSGFIELD_process,   "pid=%d " },
+   { MSGFIELD_thread,    "tid=%d " },
+   { MSGFIELD_session,   "sid=%s " },
+   { MSGFIELD_node,      "node=%s " },
+   { MSGFIELD_job,       "job=%s " },
+   { MSGFIELD_user,      "usr=%s " },
+   { MSGFIELD_component, "cmp=%u " }
+};
+
+constexpr EnumMapping msgFieldFormatXML[15] =
+{
+   { MSGFIELD_msgID,     "MessageID=\"%X\" " },
+   { MSGFIELD_audience,  "Audience=\"%s\" " },
+   { MSGFIELD_class,     "Class=\"%s\" " },
+   { MSGFIELD_detail,    "Detail=\"%d\" " },
+   { MSGFIELD_date,      "date=\"%s\" " },
+   { MSGFIELD_microTime, "time=\"%02d:%02d:%02d.%06d\" " },
+   { MSGFIELD_milliTime, "time=\"%02d:%02d:%02d.%03d\" " },
+   { MSGFIELD_time,      "time=\"%s\" " },
+   { MSGFIELD_process,   "PID=\"%d\" " },
+   { MSGFIELD_thread,    "TID=\"%d\" " },
+   { MSGFIELD_session,   "SessionID=\"%s\" " },
+   { MSGFIELD_node,      "Node=\"%s\" " },
+   { MSGFIELD_job,       "JobID=\"%s\" " },
+   { MSGFIELD_user,      "UserID=\"%s\" " },
+   { MSGFIELD_component, "Component=\"%u\" " }
+};
+
+constexpr EnumMapping msgFieldFormatStringTable[15] =
+{
+   { MSGFIELD_msgID,     "%8X " },
+   { MSGFIELD_audience,  "%s" },
+   { MSGFIELD_class,     "%s" },
+   { MSGFIELD_detail,    "%10d " },
+   { MSGFIELD_date,      "%12s " },
+   { MSGFIELD_microTime, "%02d:%02d:%02d.%06d " },
+   { MSGFIELD_milliTime, "%02d:%02d:%02d.%03d " },
+   { MSGFIELD_time,      "%12s" },
+   { MSGFIELD_process,   "%5d " },
+   { MSGFIELD_thread,    "%5d " },
+   { MSGFIELD_session,   "%20s " },
+   { MSGFIELD_node,      "%20s " },
+   { MSGFIELD_job,       "%7s " },
+   { MSGFIELD_user,      "%7s " },
+   { MSGFIELD_component, "%6u " }
+};
+
+LogFormatter <msgFieldFormatStringPlain, false, false> FormatterStringPlain;
+#ifdef LOG_MSG_NEWLINE
+LogFormatter <msgFieldFormatXML, true, false> FormatterXML;
+#else
+LogFormatter <msgFieldFormatXML, false, false> FormatterXML;
+#endif
+LogFormatter <msgFieldFormatStringTable, false, true> FormatterStringTable;
 
 StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
-    if(fields & MSGFIELD_msgID)
-        out.appendf("id=%X ", sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        out.append("aud=").append(LogMsgAudienceToVarString(category.queryAudience())).append(' ');
-    if(fields & MSGFIELD_class)
-        out.append("cls=").append(LogMsgClassToVarString(category.queryClass())).append(' ');
-    if(fields & MSGFIELD_detail)
-        out.appendf("det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            out.append(timeString);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            out.appendf("%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            out.appendf("%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            out.append(timeString);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        out.appendf("pid=%d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        out.appendf("tid=%d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            out.append("sid=unknown ");
-        else
-            out.appendf("sid=%" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        sysInfo.queryNode()->getUrlStr(out);
-        out.append(" ");
-    }
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("job=unknown ");
-        else
-            out.appendf("job=%" I64F "u ", jobInfo.queryJobID());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            out.append("usr=unknown ");
-        else
-            out.appendf("usr=%" I64F "u ", jobInfo.queryUserID());
-    }
-    if(fields & MSGFIELD_component)
-        out.appendf("cmp=%u ", component);
+
+    FormatterStringPlain.generateLogLine( (*this), out, fields);
+
     if (fields & MSGFIELD_quote)
         out.append('"');
     if (fields & MSGFIELD_prefix)
@@ -268,81 +385,10 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
 StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
+
     out.append("<msg ");
-    if(fields & MSGFIELD_msgID)
-        out.append("MessageID=\"").append(sysInfo.queryMsgID()).append("\" ");
-    if(fields & MSGFIELD_audience)
-        out.append("Audience=\"").append(LogMsgAudienceToVarString(category.queryAudience())).append("\" ");
-    if(fields & MSGFIELD_class)
-        out.append("Class=\"").append(LogMsgClassToVarString(category.queryClass())).append("\" ");
-    if(fields & MSGFIELD_detail)
-        out.append("Detail=\"").append(category.queryDetail()).append("\" ");
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allCategory) out.append("\n     ");
-#endif
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[20];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 20, "date=\"%Y-%m-%d\" ", &timeStruct);
-            out.append(timeString);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            out.appendf("time=\"%02d:%02d:%02d.%06d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            out.appendf("time=\"%02d:%02d:%02d.%03d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 20, "time=\"%H:%M:%S\" ", &timeStruct);
-            out.append(timeString);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        out.append("PID=\"").append(sysInfo.queryProcessID()).append("\" ");
-    if(fields & MSGFIELD_thread)
-        out.append("TID=\"").append(sysInfo.queryThreadID()).append("\" ");
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            out.append("SessionID=\"unknown\" ");
-        else
-            out.append("SessionID=\"").append(sysInfo.querySessionID()).append("\" ");
-    }
-    if(fields & MSGFIELD_node)
-    {
-        out.append("Node=\"");
-        sysInfo.queryNode()->getUrlStr(out);
-        out.append("\" ");
-    }
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allSysInfo) out.append("\n     ");
-#endif
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("JobID=\"unknown\" ");
-        else
-            out.append("JobID=\"").append(jobInfo.queryJobID()).append("\" ");
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            out.append("UserID=\"unknown\" ");
-        else
-            out.append("UserID=\"").append(jobInfo.queryUserID()).append("\" ");
-    }
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allJobInfo) out.append("\n     ");
-#endif
-    if(fields & MSGFIELD_component) out.append("Component=\"").append(component).append("\" ");
+    FormatterXML.generateLogLine( (*this), out, fields);
+
     if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
         out.append("code=\"").append(msgCode).append("\" ");
     out.append("text=\"").append(text.str()).append("\" />\n");
@@ -351,73 +397,10 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 
 StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 {
-    if(fields & MSGFIELD_msgID)
-        out.appendf("%8X ", sysInfo.queryMsgID());
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
-    if(fields & MSGFIELD_audience)
-        out.append(LogMsgAudienceToFixString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        out.append(LogMsgClassToFixString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        out.appendf("%10d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            out.append(timeString);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            out.appendf("%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            out.appendf("%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            out.append(timeString);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        out.appendf("%5d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        out.appendf("%5d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            out.append("      unknown        ");
-        else
-            out.appendf("%20" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        size32_t len = out.length();
-        sysInfo.queryNode()->getUrlStr(out);
-        out.appendN(20 + len - out.length(), ' ');
-    }
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("unknown ");
-        else
-            out.appendf("%7" I64F "u ", jobInfo.queryJobID());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            out.append("unknown ");
-        else
-            out.appendf("%7" I64F "u ", jobInfo.queryUserID());
-    }
-    if(fields & MSGFIELD_component)
-        out.appendf("%6u ", component);
+
+    FormatterStringTable.generateLogLine( (*this), out, fields);
+
     if (fields & MSGFIELD_quote)
         out.append('"');
     if (fields & MSGFIELD_prefix)
@@ -440,72 +423,7 @@ StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
 
 void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 {
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "cls=%s", LogMsgClassToVarString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "pid=%d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "tid=%d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "sid=unknown ");
-        else
-            fprintf(handle, "sid=%" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "%s ", buff.str());
-    }
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "job=unknown ");
-        else
-            fprintf(handle, "job=%" I64F "u ", jobInfo.queryJobID());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "usr=unknown ");
-        else
-            fprintf(handle, "usr=%" I64F "u ", jobInfo.queryUserID());
-    }
-    if(fields & MSGFIELD_component)
-        fprintf(handle, "cmp=%u ", component);
+    FormatterStringPlain.generateLogLine( (*this), handle, fields);
     
     const char * quote = (fields & MSGFIELD_quote) ? "\"" : "";
     const char * prefix = (fields & MSGFIELD_prefix) ? msgPrefix(category.queryClass()) : "";
@@ -518,81 +436,8 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
 void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 {
     fprintf(handle, "<msg ");
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "Audience=\"%s\" ", LogMsgAudienceToVarString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "Class=\"%s\" ", LogMsgClassToVarString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "Detail=\"%d\" ", category.queryDetail());
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allCategory) fprintf(handle, "\n     ");
-#endif
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[20];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 20, "date=\"%Y-%m-%d\" ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "time=\"%02d:%02d:%02d.%06d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "time=\"%02d:%02d:%02d.%03d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 20, "time=\"%H:%M:%S\" ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "PID=\"%d\" ", sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "TID=\"%d\" ", sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "SessionID=\"unknown\" ");
-        else
-            fprintf(handle, "SessionID=\"%" I64F "u\" ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "Node=\"%s\" ", buff.str());
-    }
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allSysInfo) fprintf(handle, "\n     ");
-#endif
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "JobID=\"unknown\" ");
-        else
-            fprintf(handle, "JobID=\"%" I64F "u\" ", jobInfo.queryJobID());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "UserID=\"unknown\" ");
-        else
-            fprintf(handle, "UserID=\"%" I64F "u\" ", jobInfo.queryUserID());
-    }
-    if(fields & MSGFIELD_component)
-        fprintf(handle, "Component=\"%6u\" ", component);
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allJobInfo) fprintf(handle, "\n     ");
-#endif
+    FormatterXML.generateLogLine( (*this), handle, fields);
+
     if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
         fprintf(handle, "code=\"%d\" ", msgCode);
     fprintf(handle, "text=\"%s\" />\n", text.str());
@@ -600,73 +445,8 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 
 void LogMsg::fprintTable(FILE * handle, unsigned fields) const
 {
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "%08X ", sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fputs(LogMsgAudienceToFixString(category.queryAudience()), handle);
-    if(fields & MSGFIELD_class)
-        fputs(LogMsgClassToFixString(category.queryClass()), handle);
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "%10d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "%5d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "%5d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "       unknown       ");
-        else
-            fprintf(handle, "%20" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        static const char * twenty_spaces = "                    ";
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "%s%s", buff.str(), (buff.length()<=20) ? twenty_spaces+buff.length() : "");
-    }
-    if(fields & MSGFIELD_job)
-    {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "unknown ");
-        else
-            fprintf(handle, "%7" I64F "u ", jobInfo.queryJobID());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "unknown ");
-        else
-            fprintf(handle, "%7" I64F "u ", jobInfo.queryUserID());
-    }
-    if(fields & MSGFIELD_component)
-        fprintf(handle, "%6u ", component);
+    FormatterStringTable.generateLogLine((*this), handle, fields);
+
     const char * quote = (fields & MSGFIELD_quote) ? "\"" : "";
     const char * prefix = (fields & MSGFIELD_prefix) ? msgPrefix(category.queryClass()) : "";
     if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
