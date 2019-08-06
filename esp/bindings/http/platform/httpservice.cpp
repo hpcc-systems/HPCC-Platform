@@ -2065,18 +2065,30 @@ void CEspHttpServer::askUserLogin(EspAuthRequest& authReq, const char* msg)
         StringBuffer sessionStartURL(authReq.httpPath);
         if (authReq.requestParams && authReq.requestParams->hasProp("__querystring"))
             sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
-        if (!sessionStartURL.isEmpty() && streq(sessionStartURL.str(), "/WsSMC/"))
+        if (sessionStartURL.isEmpty() || streq(sessionStartURL.str(), "/WsSMC/") || strieq(sessionStartURL, authReq.authBinding->queryLoginURL()))
             sessionStartURL.set("/");
 
-        const char* loginURL = authReq.authBinding->queryLoginURL();
-        if (strieq(loginURL, sessionStartURL))
-            sessionStartURL.set("/");
-
+        addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0, true); //time out when browser is closed
+    }
+    else if (changeRedirectURL(authReq))
+    {
+        StringBuffer sessionStartURL(authReq.httpPath);
+        if (authReq.requestParams && authReq.requestParams->hasProp("__querystring"))
+            sessionStartURL.append("?").append(authReq.requestParams->queryProp("__querystring"));
         addCookie(SESSION_START_URL_COOKIE, sessionStartURL.str(), 0, true); //time out when browser is closed
     }
     if (!isEmptyString(msg))
         addCookie(SESSION_AUTH_MSG_COOKIE, msg, 0, false); //time out when browser is closed
     m_response->redirect(*m_request, authReq.authBinding->queryLoginURL());
+}
+
+bool CEspHttpServer::changeRedirectURL(EspAuthRequest& authReq)
+{
+    if (authReq.httpPath.isEmpty())
+        return false;
+    if (strieq(authReq.httpPath.str(), ECLWATCH_STUB_REQ))
+        return true;
+    return false;
 }
 
 unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* sessionStartURL)
