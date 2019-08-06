@@ -131,15 +131,15 @@
       <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
       </emphasis></para>
 
-      <para>An RPM installation package is provided. Install RPM with the -Uvh
-      switch, the U or upgrade will perform an upgrade if a previous version
-      is already installed. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
+      <para>The following commands should be run before installation to
+      ensure the appropriate repositories are enabled</para>
 
-      <para>If you are using CentOS 6 you may need to run the following
-      command to properly enable the installation.</para>
+      <para><programlisting>sudo yum install centos-release-scl</programlisting></para>
 
-      <para><programlisting>sudo wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
+      <para><programlisting>sudo yum-config-manager --enable rhel-server-rhscl-7-rpms</programlisting></para>
 
+      <para>An RPM installation package is provided. <programlisting>sudo yum install &lt;rpm file name&gt;</programlisting></para>
+      
       <para><emphasis role="bold">Debian-Based Systems
       (Ubuntu):</emphasis></para>
 
