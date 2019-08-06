@@ -149,10 +149,10 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
 
     // only ever expecting 1 DaliServerProcess and 1 WhiteList
     const IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
+    bool enabled = true;
     if (whiteListTree)
     {
-        if (!whiteListTree->getPropBool("@enabled", true)) // on by default
-            return false;
+        enabled = whiteListTree->getPropBool("@enabled", true); // on by default
         // Default for now is to allow clients that send no role (legacy) to connect if their IP is whitelisted.
         writer.setAllowAnonRoles(whiteListTree->getPropBool("@allowAnonRoles", true));
     }
@@ -323,7 +323,7 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
             }
         }
     }
-    return true;
+    return enabled;
 }
 
 static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
