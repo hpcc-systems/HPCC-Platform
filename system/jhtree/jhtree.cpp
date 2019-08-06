@@ -530,7 +530,7 @@ public:
     {
         const byte *ret = keyCursor->loadBlob(blobid, blobsize);
         activeBlobs.append(ret);
-        return keyCursor->loadBlob(blobid, blobsize);
+        return ret;
     }
 
     virtual void releaseBlobs()
