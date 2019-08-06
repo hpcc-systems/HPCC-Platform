@@ -509,9 +509,9 @@ protected:
     bool                      remoteFlag;
 };
 
-unsigned getPositionOfField(unsigned logfields, unsigned positionoffield);
-unsigned getMessageFieldsFromHeader(const char * line);
-unsigned getMessageFieldsFromHeader(FILE *handle);
+jlib_decl unsigned getPositionOfField(unsigned logfields, unsigned positionoffield);
+jlib_decl unsigned getMessageFieldsFromHeader(const char * line);
+jlib_decl unsigned getMessageFieldsFromHeader(FILE *handle);
 
 // INTERFACES
 
