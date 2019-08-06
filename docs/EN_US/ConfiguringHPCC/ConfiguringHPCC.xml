@@ -1696,6 +1696,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
+          <?hard-pagebreak ?>
+
           <para>Additional information about the available Authentication
           methods:</para>
 
@@ -1711,13 +1713,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry>none</entry>
 
                     <entry>uses no authentication</entry>
-                  </row>
-
-                  <row>
-                    <entry>local</entry>
-
-                    <entry>uses the local credentials for the server running
-                    the ESP</entry>
                   </row>
 
                   <row>
