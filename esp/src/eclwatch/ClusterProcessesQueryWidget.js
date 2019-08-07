@@ -346,11 +346,11 @@ define([
                     style: "width: 100%",
                     params: params.params,
                     closable: true,
-                    title: params.params.Machines.MachineInfoEx[0].DisplayType
+                    title: this.i18n.MachineInformation
                 });
                 this._tabContainer.addChild(retVal, "last");
             }
             return retVal;
-        },
+        }
     });
 });

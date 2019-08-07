@@ -23,63 +23,72 @@ var SystemServersStore = declare([ESPRequest.Store], {
     },
     preProcessRow: function (row) {
         lang.mixin(row, {
-            Platform: this.getOS(row.OS),
-            calculatedID: row.Name,
-            Name: row.Name,
-            type: "parentcomponent",
-            Component: row.Type,
-            Configuration: true
+            Name: row.parent,
+            childName: row.Name,
+            hpcc_id: row.parent + "_" + row.Name
         });
     },
+
     preProcessResponse: function (response, request) {
-        var tempArr = [];
+        var results = [];
         for (var key in response.ServiceList) {
             for (var i in response.ServiceList[key]) {
-                response.ServiceList[key][i].map(function(item){
-                    tempArr.push(item);
-                });
+                if (key !== "TpEclServers") {
+                    response.ServiceList[key][i].map(function(item){
+                        var cleanKey = key.replace('Tp', '');
+                        results.push(item);
+                        lang.mixin(item, {
+                            parent: cleanKey
+                        });
+                    });
+                }
             }
         }
-        return tempArr;
+        response.ServiceList = results;
     },
-    
+
     mayHaveChildren: function (item) {
-        return item.TpMachines;
+        return item.TpMachines
     },
+
+    getMachineIP: function (item) {
+        if (item.TpMachines) {
+            return item.TpMachines.TpMachine[0].Netaddress
+        } else {
+            return ""
+        }
+    },
+
+    getMachinePort: function (port) {
+        if (port > 0) {
+            return ":" + port
+        }
+        return ""
+    },
+
     getChildren: function (parent, options) {
-        var store = Observable(new ClusterProcessesList({
-            parent: parent
-        }));
-        return store.query({
-            Type: this.getMachineType(parent.Type),
-            Parent: parent,
-            Cluster: parent.Name,
-            LogDirectory: parent.LogDirectory,
-            Path: parent.Path,
-            Directory: parent.Directory
+        var children = [];
+        var context = this;
+
+        arrayUtil.forEach(parent.TpMachines.TpMachine, function (item, idx) {
+            children.push({
+                hpcc_id: parent.childName + "_" + item.Name + "_" + idx,
+                Parent: parent,
+                Name: parent.childName,
+                Computer: item.Name,
+                Netaddress: item.Netaddress,
+                NetaddressWithPort: item.Netaddress + context.getMachinePort(item.Port),
+                OS: item.OS,
+                Directory: item.Directory,
+                Type: item.Type,
+                AuditLog: parent.AuditLogDirectory,
+                Log: parent.LogDirectory,
+                ChildQueue: parent.Queue,
+                Informational: item.Type,
+                Component: "SystemServers"
+            });
         });
-    },
-
-    getMachineType: function (type) {
-        switch (type) {
-            case "RoxieCluster":
-                return "ROXIEMACHINES"
-            case "ThorCluster":
-                return "THORMACHINES"
-        }
-    },
-
-    getOS: function (int) {
-        switch (int) {
-            case 0:
-                return "Windows"
-            case 1:
-                return "Solaris"
-            case 2:
-                return "Linux"
-            default:
-                return "Linux"
-        }
+        return QueryResults(children);
     }
 });
 
