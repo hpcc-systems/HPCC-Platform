@@ -200,12 +200,12 @@ public:
 
 
 protected:
-    offset_t getLocalOffset();
+    virtual offset_t getLocalOffset();
 
 protected:
     Owned<ISerialStream> inputStream;
     Owned<IFileIO> inputfileio;
-    CThorContiguousRowBuffer inputBuffer;
+    CThorContiguousRowBuffer inputBuffer;    // more: move to derived classes.
     Owned<IEngineRowAllocator> outputAllocator;
     RtlDynamicRowBuilder allocatedBuilder;
     const IDynamicTransform * translator;
@@ -711,7 +711,7 @@ public:
         projectedRecord = &mapping->queryProjectedMeta()->queryRecordAccessor(true);
     }
 
-    bool setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, const IPropertyTree * meta, const FieldFilterArray & _expectedFilter)
+    virtual bool setInputFile(IFile * inputFile, const char * _logicalFilename, unsigned _partNumber, offset_t _baseOffset, const IPropertyTree * meta, const FieldFilterArray & _expectedFilter) override
     {
         if (!LocalDiskRowReader::setInputFile(inputFile, _logicalFilename, _partNumber, _baseOffset, meta, _expectedFilter))
             return false;
@@ -719,7 +719,7 @@ public:
         projectedFilter.clear().appendFilters(_expectedFilter);
 
         //If the following is false then needs keyedTranslator code - but mapping from expected to PROJECTED
-        assertex(mapping->expectedMatchesProjected());
+        assertex(mapping->expectedMatchesProjected() || projectedFilter.numFilterFields() == 0);
         //if (keyedTranslator)
         //    keyedTranslator->translate(projectedFilter);
 
@@ -727,13 +727,13 @@ public:
     }
 
     //Common to IAllocRowStream and IRawRowStream
-    bool getCursor(MemoryBuffer & cursor)
+    virtual bool getCursor(MemoryBuffer & cursor) override
     {
         cursor.append(inputStream->tell());
         return true;
     }
 
-    void setCursor(MemoryBuffer & cursor)
+    virtual void setCursor(MemoryBuffer & cursor) override
     {
         unsigned __int64 startPos;
         cursor.read(startPos);
@@ -741,6 +741,10 @@ public:
             inputStream->reset(startPos);
     }
 
+    virtual offset_t getLocalOffset() override
+    {
+        return inputStream->tell();
+    }
 
 protected:
     virtual bool isBinary() const { return false; }

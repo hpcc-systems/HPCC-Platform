@@ -2838,7 +2838,7 @@ public:
         logicalFilenameMarker.setown(getFileLogicalName(tableExpr));
         mode = tableExpr->queryChild(2);
         modeOp = mode->getOperator();
-        includeFormatCrc = (modeOp != no_csv && modeOp != no_pipe) || genericDiskReads;
+        includeFormatCrc = ((modeOp != no_csv) || genericDiskReads) && (modeOp != no_pipe);
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -3177,10 +3177,17 @@ void DiskReadBuilder::buildFormatOption(BuildCtx & ctx, IHqlExpression * name, I
     }
     else if (value->isList())
     {
-        if (value->getOperator() == no_list)
+        node_operator op = value->getOperator();
+        if ((op == no_list) && value->numChildren())
         {
             ForEachChild(i, value)
                 buildFormatOption(ctx, name, value->queryChild(i));
+        }
+        else if ((op == no_list) || (op == no_null))
+        {
+            //MORE: There should be a better way of doing this!
+            translator.buildXmlSerializeBeginNested(ctx, name, false);
+            translator.buildXmlSerializeEndNested(ctx, name);
         }
     }
     else
@@ -3286,7 +3293,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     info.deduceDiskRecords();
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
-    if (info.newInputMapping && !((modeOp == no_csv) && options.genericDiskReads) && (modeOp != no_xml) && (modeOp != no_pipe))
+    if (info.newInputMapping && ((modeOp != no_csv) || options.genericDiskReads) && (modeOp != no_xml) && (modeOp != no_pipe))
     {
         //The projected disk information (which is passed to the transform) uses the in memory format IFF
         // - The disk read is a trivial slimming transform (so no transform needs calling on the projected disk format.

@@ -10629,12 +10629,15 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
     Linked<const IPropertyTree> fileFormatOptions = curFormatOptions;
     bool compressed = false;
     bool blockcompressed = false;
+    const char * readFormat = helper.queryFormat();
 
     if (distributedFile)
     {
         const char *kind = queryFileKind(distributedFile);
         //Do not use the field translation if the file was originally csv/xml - unless explicitly set
-        if (strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == getLayoutTranslationMode()))
+        if ((strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == getLayoutTranslationMode())) &&
+//            (strisame(readFormat, "thor") || strisame(kind, readFormat)))
+              (strisame(readFormat, "thor"))) // Not sure about this - only allow fixed source format if reading as flat
         {
             //Yuk this will be horrible - it needs to cache it for each distributed file
             //and also common them up if they are the same.
@@ -10905,7 +10908,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             StringBuffer path;
             rfn.getPath(path);
             IDiskRowReader * reader = ensureRowReader(format, false, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
-            if (reader->setInputFile(path.str(), logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
+            if (reader->setInputFile(path.str(), logicalFileName, whichPart, offsetOfPart, fileInfo->meta, fieldFilters))
             {
                 initStream(reader, path.str());
                 return true;
@@ -10928,7 +10931,7 @@ bool CHThorNewDiskReadBaseActivity::openFilePart(ILocalOrDistributedFile * local
             try
             {
                 IDiskRowReader * reader = ensureRowReader(format, tryRemoteStream, expectedCrc, *expectedDiskMeta, projectedCrc, *projectedDiskMeta, actualCrc, *actualDiskMeta, fileInfo->formatOptions);
-                if (reader->setInputFile(rfilename, logicalFileName, filePart->getPartIndex(), offsetOfPart, fileInfo->meta, fieldFilters))
+                if (reader->setInputFile(rfilename, logicalFileName, whichPart, offsetOfPart, fileInfo->meta, fieldFilters))
                 {
                     initStream(reader, filename);
                     return true;
