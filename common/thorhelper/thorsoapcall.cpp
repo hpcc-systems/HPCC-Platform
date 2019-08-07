@@ -170,6 +170,24 @@ private:
         return;
     }
 
+    void cleanPath(const char *src, StringBuffer &output)
+    {
+        const char *srcPtr = src;
+        char *dst = output.reserveTruncate(strlen(src));
+        char *dstPtr = dst;
+        while (*srcPtr)
+        {
+            *dstPtr++ = *srcPtr;
+            if ('/' == *srcPtr++)
+            {
+                while ('/' == *srcPtr)
+                    ++srcPtr;
+            }
+        }
+        *dstPtr = '\0';
+        output.setLength(dstPtr-dst);
+    }
+
 public:
     Url(char *urltext)
     {
@@ -206,7 +224,7 @@ public:
             host.set(urltext);
 
             if ((p = strchr(p, '/')) != NULL)
-                path.append(p);
+                cleanPath(p, path);
             else
                 path.append("/");
         }
@@ -223,10 +241,9 @@ public:
             if ((p = strchr(urltext, '/')) != NULL)
             {
                 *p = 0;
-                p++;
-
                 host.set(urltext);
-                path.append("/").append(p);
+                *p = '/';
+                cleanPath(p, path);
             }
             else
             {
