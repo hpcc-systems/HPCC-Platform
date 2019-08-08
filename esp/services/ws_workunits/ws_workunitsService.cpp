@@ -1550,6 +1550,46 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
 {
     try
     {
+        /*{
+           Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+           bool isDali = streq(factory->queryStoreType(), "Dali");
+           unsigned before = factory->numWorkUnits();
+           unsigned start = msTick();
+           unsigned numIterated = 0;
+           Owned<IConstWorkUnitIterator> wus;
+           // Test use of cache/page mechanism - sorted by totalThorTime, descending
+           start = msTick();
+           __int64 cachehint = 0;
+           numIterated = 0;
+           unsigned startRow = 0;
+           unsigned prevThorTime = 0;
+           for (;;)
+           {
+               wus.setown(factory->getWorkUnitsSorted((WUSortField)(WUSFtotalthortime|WUSFreverse), NULL, NULL, startRow, 1, &cachehint, NULL));
+               if (!wus->first())
+                   break;
+               IConstWorkUnitInfo &wu = wus->query();
+               if (numIterated)
+               {
+        //           ASSERT(wu.getTotalThorTime()<=prevThorTime);
+                   if (wu.getTotalThorTime()>prevThorTime)
+                       throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "ASSERT(wu.getTotalThorTime()<=prevThorTime)");
+               }
+               prevThorTime = wu.getTotalThorTime();
+               numIterated++;
+               bool nextSeen = wus->next();
+        //       ASSERT(!nextSeen);
+               if (nextSeen)
+                   throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "ASSERT(!nextSeen)");
+               wus.clear();
+               startRow++;
+           }
+           DBGLOG("%d workunits descending thortime, page by page in %d ms", numIterated, msTick()-start);
+        //   ASSERT_EQUAL(before, numIterated);
+           if (before != numIterated)
+               throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "ASSERT_EQUAL(before, numIterated)");
+        }*/
+
         StringBuffer wuid(req.getWuid());
         WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
 
@@ -1751,6 +1791,17 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
     return true;
 }
 
+bool addWUQueryFilterTotalClusterTime(WUSortField *filters, unsigned short &count, MemoryBuffer &filterBuf, unsigned milliseconds, WUSortField value)
+{
+    if (milliseconds == 0)
+        return false;
+
+    VStringBuffer vBuf("%u", milliseconds);
+    filters[count++] = value;
+    filterBuf.append(vBuf);
+    return true;
+}
+
 bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
 {
     if (isEmpty(appname))
@@ -1857,6 +1908,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
+
+    addWUQueryFilterTotalClusterTime(filters, filterCount, filterbuf, req.getTotalClusterTimeThresholdMilliSec(), WUSFtotalthortime);
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);

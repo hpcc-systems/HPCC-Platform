@@ -3554,6 +3554,7 @@ public:
                     merger->addResult(*new CassandraResult(fetchDataForWuid(workunitInfoMappings, value, true)));
                 }
             }
+            ///else if (sortByThorTime || !thorTimeThreshold.isEmpty())
             else if (sortByThorTime)
             {
                 merger->addPostFilters(goodFilters, 0);
@@ -4299,7 +4300,7 @@ private:
         getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
         VStringBuffer selectQuery("select %s from %s where xpath=? and fieldPrefix=?", names.str()+1, tableName.str());
         if (threshold && *threshold)
-            selectQuery.appendf(" where fieldValue >= ?");
+            selectQuery.appendf(" and fieldValue >= ?");
         if (descending)
             selectQuery.append(" ORDER BY fieldValue DESC, wuid ASC");
         else
