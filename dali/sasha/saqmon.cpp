@@ -248,7 +248,7 @@ public:
                         unsigned waiting=0;
                         queues.item(qi).getStats(connected,waiting,enqueued);
                         if (moninter==0)
-                            LOG(daliAuditLogCat,",ThorQueueMonitor,%s,%d,%d,%d,%d,%d,%s,%s",qname,wuids.ordinality(),enqueued,waiting,connected,qidlecount[qi],wuids.ordinality()>0?wuids.item(0):"---",wuids.ordinality()>1?wuids.item(1):"---");
+                            LOG(MCauditInfo,",ThorQueueMonitor,%s,%d,%d,%d,%d,%d,%s,%s",qname,wuids.ordinality(),enqueued,waiting,connected,qidlecount[qi],wuids.ordinality()>0?wuids.item(0):"---",wuids.ordinality()>1?wuids.item(1):"---");
                         if (waiting>0) 
                             qidlecount[qi]++;
                         else

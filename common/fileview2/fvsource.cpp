@@ -1244,7 +1244,7 @@ IHqlExpression * parseQuery(const char * text)
     for (unsigned i=0; i < errs.errCount(); i++)
     {
         StringBuffer msg;
-        PrintLog("%d %s", errs.item(i)->getLine(), errs.item(i)->errorMessage(msg).str());
+        UERRLOG("%d %s", errs.item(i)->getLine(), errs.item(i)->errorMessage(msg).str());
     }
     return NULL;
 }

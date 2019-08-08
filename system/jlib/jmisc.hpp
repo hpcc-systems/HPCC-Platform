@@ -61,17 +61,7 @@ jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept); // for custom t
 jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsigned detail = 0, bool enterQueueMode = true, bool append = false);
 
 #ifndef DISABLE_PRINTLOG
-jlib_decl void PrintLogDirect(const char *msg);
-jlib_decl int  PrintLog(const char *fmt, ...);
-jlib_decl void SPrintLog(const char *fmt,...); // not terminated by LF
 #define PrintExceptionLog(_e,_txt) EXCLOG(_e, _txt)
-
-#ifdef _DEBUG
-#define PrintLogDebug       PrintLog
-#else
-#define PrintLogDebug       1?0:PrintLog
-#endif
-
 #endif
 
 jlib_decl void PrintMemoryStatusLog();

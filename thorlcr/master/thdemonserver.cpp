@@ -88,7 +88,7 @@ private:
         {
             if (memcmp(graphname,"graph",5)==0)
                 graphname+=5;
-            LOG(daliAuditLogCat,",Timing,ThorGraph,%s,%s,%s,%u,1,%d,%s,%s,%s",
+            LOG(MCauditInfo,",Timing,ThorGraph,%s,%s,%s,%u,1,%d,%s,%s,%s",
                 queryServerStatus().queryProperties()->queryProp("@thorname"),
                 wu->queryWuid(),
                 graphname,
@@ -234,7 +234,7 @@ public:
         const char *graphname = graph->queryJob().queryGraphName();
         if (memcmp(graphname,"graph",5)==0)
             graphname+=5;
-        LOG(daliAuditLogCat,",Progress,Thor,StartSubgraph,%s,%s,%s,%u,%s,%s",
+        LOG(MCauditInfo,",Progress,Thor,StartSubgraph,%s,%s,%s,%u,%s,%s",
                 queryServerStatus().queryProperties()->queryProp("@thorname"),
                 graph->queryJob().queryWuid(),
                 graphname,

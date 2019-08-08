@@ -1332,7 +1332,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
             }
         }
         fdir.removeEntry(fn, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
-        LOG(daliAuditLogCat, "%s,%s", auditStr, fn);
+        LOG(MCauditInfo, "%s,%s", auditStr, fn);
         setDeleteFileResults(lfn, group, false, isSuper ? "Deleted Superfile" : "Deleted File", NULL, returnStr, actionResults);
     }
     catch(IException* e)
@@ -6098,7 +6098,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     }
     resp.setType(kind);
 
-    LOG(daliAuditLogCat,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
+    LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }
 
 // NB: deprecated from ver >= 1.50
@@ -6579,7 +6579,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
 
         newFile->rename(newFileName, userDesc);
 
-        LOG(daliAuditLogCat,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
+        LOG(MCauditInfo,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
     }
     catch (IException *e)
     {

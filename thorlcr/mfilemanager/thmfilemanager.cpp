@@ -306,7 +306,7 @@ public:
         ForEachItemIn(i,clusters) {
             outs.append(',').append(clusters.item(i));
         }
-        LOG(daliAuditLogCat,"%s",outs.str());
+        LOG(MCauditInfo,"%s",outs.str());
     }
 
     IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, unsigned timeout=INFINITE)
@@ -452,7 +452,7 @@ public:
                 {
                     ForEachItemIn(c, clusters)
                     {
-                        LOG(daliAuditLogCat,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%" I64F "d,%s",
+                        LOG(MCauditInfo,",FileAccess,Thor,DELETED,%s,%s,%s,%s,%s,%" I64F "d,%s",
                                         globals->queryProp("@name"),
                                         userStr.str(),
                                         logicalName,
@@ -582,7 +582,7 @@ public:
         {
             StringBuffer clusterName;
             fileDesc.getClusterGroupName(c, clusterName, &queryNamedGroupStore());
-            LOG(daliAuditLogCat,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%" I64F "d,%s",
+            LOG(MCauditInfo,",FileAccess,Thor,CREATED,%s,%s,%s,%s,%s,%" I64F "d,%s",
                             globals->queryProp("@nodeGroup"),
                             job.queryUser(),
                             file->queryLogicalName(),

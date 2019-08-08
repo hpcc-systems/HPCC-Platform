@@ -464,7 +464,7 @@ bool ControlHandler(ahType type)
             if (auditStartLogged)
             {
                 auditStartLogged = false;
-                LOG(daliAuditLogCat,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
+                LOG(MCauditInfo,",Progress,Thor,Terminate,%s,%s,%s,ctrlc",
                     queryServerStatus().queryProperties()->queryProp("@thorname"),
                     queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
                     queryServerStatus().queryProperties()->queryProp("@queue"));
@@ -821,7 +821,7 @@ int main( int argc, char *argv[]  )
             else
                 PROGLOG("verified mp connection to rest of cluster");
 
-            LOG(daliAuditLogCat, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
+            LOG(MCauditInfo, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
 
             writeSentinelFile(sentinelFile);
@@ -831,7 +831,7 @@ int main( int argc, char *argv[]  )
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
             thorMain(logHandler);
-            LOG(daliAuditLogCat, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
+            LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }
         else
             PROGLOG("Registration aborted");

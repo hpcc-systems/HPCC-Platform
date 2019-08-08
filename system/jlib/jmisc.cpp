@@ -219,28 +219,6 @@ jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsi
     resolvedFS.set(lf->queryLogFileSpec());
 }
 
-jlib_decl void PrintLogDirect(const char *msg)  // Legacy TODO: remove
-{
-    LOG(MClegacy, unknownJob, "%s", msg);
-}
-
-jlib_decl int PrintLog(const char *fmt, ...)  // Legacy TODO: remove
-{
-    va_list args;
-    va_start(args, fmt);
-    VALOG(MClegacy, unknownJob, fmt, args);
-    va_end(args);
-    return 0;
-}
-
-jlib_decl void SPrintLog(const char *fmt, ...)  // Legacy TODO: remove
-{
-    va_list args;
-    va_start(args, fmt);
-    VALOG(MClegacy, unknownJob, fmt, args);
-    va_end(args);
-}
-
 StringBuffer &addFileTimestamp(StringBuffer &fname, bool daily)
 {
     time_t tNow;

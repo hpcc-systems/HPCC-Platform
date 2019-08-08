@@ -1342,7 +1342,7 @@ char * EclAgent::resolveName(const char *in, char *out, unsigned outlen)
 void EclAgent::logFileAccess(IDistributedFile * file, char const * component, char const * type)
 {
     const char * cluster = clusterNames.item(clusterNames.length()-1);
-    LOG(daliAuditLogCat,
+    LOG(MCauditInfo,
         ",FileAccess,%s,%s,%s,%s,%s,%s,%s",
         component,
         type,
