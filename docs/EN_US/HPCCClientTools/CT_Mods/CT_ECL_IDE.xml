@@ -2333,16 +2333,8 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold"><emphasis role="bold">Insert
-                  Root Module</emphasis></emphasis></entry>
-
-                  <entry>Adds a new folder at the top most level of the
-                  repository tree</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">Insert
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
                   <entry>Adds a new 'nested' folder within the currently
                   selected folder</entry>
@@ -2350,23 +2342,23 @@
 
                 <row>
                   <entry><emphasis role="bold">Rename
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
-                  <entry>Renames the selected folder.</entry>
+                  <entry>Renames the selected folder</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Delete
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
-                  <entry>Deletes the selected folder.</entry>
+                  <entry>Deletes the selected folder</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Insert File</emphasis></entry>
 
                   <entry>Adds a new ECL file inside the selected
-                  folder.</entry>
+                  folder</entry>
                 </row>
 
                 <row>
@@ -2377,11 +2369,19 @@
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Change
+                  Type</emphasis></emphasis></entry>
+
+                  <entry>Displays a sub-menu of available file types you can
+                  choose to change</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Copy
                   File</emphasis></emphasis></entry>
 
                   <entry>Enables you to copy the selected ECL file so it can
-                  be pasted into a different folder.</entry>
+                  be pasted into a different folder</entry>
                 </row>
 
                 <row>
@@ -2399,7 +2399,15 @@
                   <entry>Moves the selected ECL file to the Trash folder on
                   your desktop. You can also press the <emphasis
                   role="bold">Delete</emphasis> key to access this
-                  functionality.</entry>
+                  functionality</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Create
+                  Mod File</emphasis></emphasis></entry>
+
+                  <entry>Combines the selected ECL files into a MOD
+                  file</entry>
                 </row>
 
                 <row>
@@ -2407,6 +2415,14 @@
                   role="bold">Refresh</emphasis></emphasis></entry>
 
                   <entry>Refreshes the repository folder display</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Collapse
+                  All </emphasis></emphasis></entry>
+
+                  <entry>Collapses all open repository files and
+                  folders</entry>
                 </row>
               </tbody>
             </tgroup>
