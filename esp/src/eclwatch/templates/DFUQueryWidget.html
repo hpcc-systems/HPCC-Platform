@@ -35,7 +35,7 @@
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Wrap}:" name="Wrap" data-dojo-type="dijit.form.CheckBox" />
-                                        <input id="${id}RemoteCopyReplicate"title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}RemoteCopyReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.RetainSuperfileStructure}:" name="superCopy" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
@@ -53,7 +53,7 @@
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
-                                        <input id="${id}CopyTargetSelect" title="${i18n.Group}:" name="destGroup" style="width:100%;" data-dojo-type="TargetSelectWidget" style="display: inline-block; vertical-align: middle" />
+                                        <input id="${id}CopyTargetSelect" title="${i18n.Group}:" name="destGroup" style="width:100%;display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget" />
                                     </div>
                                     <div id="${id}CopyGrid" data-dojo-type="SelectionGridWidget">
                                     </div>
@@ -101,13 +101,13 @@
                     <div id="${id}AddtoDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.AddToSuperfile}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}AddToSuperfileForm" style="width:680px" onsubmit="return false;" data-dojo-type="dijit.form.Form" >
+                            <div id="${id}AddToSuperfileForm" style="width:680px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Target}</legend>
                                     <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                                        <input id="${id}CreateNewSuperRadio" title="${i18n.CreateANewFile}" checked="true" data-dojo-type="dijit.form.RadioButton"></input>
+                                        <input id="${id}CreateNewSuperRadio" title="${i18n.CreateANewFile}" checked="true" data-dojo-type="dijit.form.RadioButton" />
                                         <input id="${id}AddToSuperfileTargetName" style="width:100%;" name="Superfile" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                                        <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="${i18n.AddToExistingSuperfile}" data-dojo-type="dijit.form.RadioButton"></input>
+                                        <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="${i18n.AddToExistingSuperfile}" data-dojo-type="dijit.form.RadioButton" />
                                     </div>
                                     <div id="${id}AddToSuperfileGrid" data-dojo-type="SelectionGridWidget"></div>
                                 </div>
@@ -177,10 +177,10 @@
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
                     <label for="Mine" class="bold" style="vertical-align: middle;">${i18n.Mine}</label>
-                    <input id="${id}Mine" name="Owner" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox"/>
+                    <input id="${id}Mine" name="Owner" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox" />
                     <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
-                     <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList" data-dojo-type="dijit.form.Button">
+                    <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList" data-dojo-type="dijit.form.Button">
                         <span>${i18n.DownloadToCSV}</span>
                     </div>
                 </div>
