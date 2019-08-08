@@ -3358,6 +3358,58 @@ protected:
         return parent->removePhysicalPartFiles(logicalName.get(), fileDesc, mexcept, numParallelDeletes);
     }
 
+    bool calculateSkew(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart)
+    {
+        unsigned np = numParts();
+        if (0 == np)
+            return false;
+
+        offset_t maxPartSz = 0, minPartSz = (offset_t)-1, totalPartSz = 0;
+
+        maxSkewPart = 0;
+        minSkewPart = 0;
+        for (unsigned p=0; p<np; p++)
+        {
+            IDistributedFilePart &part = queryPart(p);
+            offset_t size = part.getFileSize(true, false);
+            if (size > maxPartSz)
+            {
+                maxPartSz = size;
+                maxSkewPart = p;
+            }
+            if (size < minPartSz)
+            {
+                minPartSz = size;
+                minSkewPart = p;
+            }
+            totalPartSz += size;
+        }
+        offset_t avgPartSz = totalPartSz / np;
+
+        maxSkew = (unsigned)(10000.0 * (((double)maxPartSz-avgPartSz)/avgPartSz));
+        minSkew = (unsigned)(10000.0 * ((avgPartSz-(double)minPartSz)/avgPartSz));
+
+        return true;
+    }
+
+    void calculateSkew() // called when a logical file is attached
+    {
+        IPropertyTree &attrs = queryAttributes();
+        unsigned maxSkew, minSkew, maxSkewPart, minSkewPart;
+        if (!calculateSkew(maxSkew, minSkew, maxSkewPart, minSkewPart))
+        {
+            attrs.removeProp("@maxSkew");
+            attrs.removeProp("@minSkew");
+            attrs.removeProp("@maxSkewPart");
+            attrs.removeProp("@minSkewPart");
+            return;
+        }
+        attrs.setPropInt("@maxSkew", maxSkew);
+        attrs.setPropInt("@maxSkewPart", maxSkewPart);
+        attrs.setPropInt("@minSkew", minSkew);
+        attrs.setPropInt("@minSkewPart", minSkewPart);
+    }
+
 protected: friend class CDistributedFilePart;
     CDistributedFilePartArray &queryParts()
     {
@@ -3366,6 +3418,7 @@ protected: friend class CDistributedFilePart;
 public:
     IMPLEMENT_IINTERFACE_O;
 
+    // NB: this form is used for pre-existing file, by dolookup
     CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,IUserDescriptor *user) // takes ownership of conn
     {
         setUserDescriptor(udesc,user);
@@ -3389,6 +3442,7 @@ public:
         //shrinkFileTree(root); // enable when safe!
     }
 
+    // NB: this form is used for a new/unattached file
     CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, IUserDescriptor *user, bool _external)
     {
 #ifdef EXTRA_LOGGING
@@ -3928,6 +3982,7 @@ public:
         PROGLOG("CDistributedFile::attach(%s)",_logicalname);
         LOGPTREE("CDistributedFile::attach root.1",root);
 #endif
+        calculateSkew();
         parent->addEntry(logicalName,root.getClear(),false,false);
         killParts();
         clusters.kill();
@@ -4581,6 +4636,22 @@ public:
             const char * logicalName = queryLogicalName();
             throw MakeStringException(-1, "Some physical parts do not exists, for logical file : %s",(isEmptyString(logicalName) ? "[unattached]" : logicalName));
         }
+    }
+    virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override
+    {
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        if (attrs && attrs->hasProp("@maxSkew"))
+        {
+            maxSkew = attrs->getPropInt("@maxSkew");
+            minSkew = attrs->getPropInt("@minSkew");
+            maxSkewPart = attrs->getPropInt("@maxSkewPart");
+            minSkewPart = attrs->getPropInt("@minSkewPart");
+            return true;
+        }
+        else if (calculateIfMissing)
+            return calculateSkew(maxSkew, minSkew, maxSkewPart, minSkewPart);
+        else
+            return false;
     }
 };
 
@@ -5926,40 +5997,46 @@ public:
                 t->setProp("@description",desc.str());
             return;
         }
-        root->removeProp("Attr/@size");
-        root->removeProp("Attr/@compressedSize");
-        root->removeProp("Attr/@checkSum");
-        root->removeProp("Attr/@recordCount");   // recordCount not currently supported by superfiles
-        root->removeProp("Attr/@formatCrc");     // formatCrc set if all consistant
-        root->removeProp("Attr/@recordSize");    // record size set if all consistant
-        root->removeProp("Attr/_record_layout"); // legacy info - set if all consistent
-        root->removeProp("Attr/_rtlType");       // new info - set if all consistent
+        IPropertyTree &attrs = queryAttributes();
+        attrs.removeProp("@size");
+        attrs.removeProp("@compressedSize");
+        attrs.removeProp("@checkSum");
+        attrs.removeProp("@recordCount");   // recordCount not currently supported by superfiles
+        attrs.removeProp("@formatCrc");     // formatCrc set if all consistant
+        attrs.removeProp("@recordSize");    // record size set if all consistant
+        attrs.removeProp("_record_layout"); // legacy info - set if all consistent
+        attrs.removeProp("_rtlType");       // new info - set if all consistent
+        attrs.removeProp("@maxSkew");
+        attrs.removeProp("@minSkew");
+        attrs.removeProp("@maxSkewPart");
+        attrs.removeProp("@minSkewPart");
+
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)
-            root->setPropInt64("Attr/@size",fs);
+            attrs.setPropInt64("@size",fs);
         if (isCompressed(NULL))
         {
             fs = getDiskSize(false,false);
             if (fs!=-1)
-                root->setPropInt64("Attr/@compressedSize",fs);
+                attrs.setPropInt64("@compressedSize",fs);
         }
         unsigned checkSum;
         if (getFileCheckSum(checkSum))
-            root->setPropInt64("Attr/@checkSum", checkSum);
+            attrs.setPropInt64("@checkSum", checkSum);
         __int64 rc = getRecordCount();
         if (rc!=-1)
-            root->setPropInt64("Attr/@recordCount",rc);
+            attrs.setPropInt64("@recordCount",rc);
         unsigned fcrc;
         if (getFormatCrc(fcrc))
-            root->setPropInt("Attr/@formatCrc", fcrc);
+            attrs.setPropInt("@formatCrc", fcrc);
         size32_t rsz;
         if (getRecordSize(rsz))
-            root->setPropInt("Attr/@recordSize", rsz);
+            attrs.setPropInt("@recordSize", rsz);
         MemoryBuffer mb;
         if (getRecordLayout(mb, "_record_layout"))
-            root->setPropBin("Attr/_record_layout", mb.length(), mb.bufferBase());
+            attrs.setPropBin("_record_layout", mb.length(), mb.bufferBase());
         if (getRecordLayout(mb, "_rtlType"))
-            root->setPropBin("Attr/_rtlType", mb.length(), mb.bufferBase());
+            attrs.setPropBin("_rtlType", mb.length(), mb.bufferBase());
         const char *kind = nullptr;
         Owned<IDistributedFileIterator> subIter = getSubFileIterator(true);
         ForEach(*subIter)
@@ -5975,7 +6052,7 @@ public:
             }
         }
         if (kind)
-            root->setProp("Attr/@kind", kind);
+            attrs.setProp("@kind", kind);
     }
 
     void updateParentFileAttrs(IDistributedFileTransaction *transaction)
@@ -6489,6 +6566,11 @@ public:
                 f.setAccessedTime(dt);
             }
         }
+    }
+
+    virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override
+    {
+        return false;
     }
 };
 

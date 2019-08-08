@@ -1911,87 +1911,6 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
     return true;
 }
 
-void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
-    offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count)
-{
-    double version = context.getClientVersion();
-    IArrayOf<IConstDFUFilePartsOnCluster>& partsOnClusters = FileDetails.getDFUFilePartsOnClusters();
-    ForEachItemIn(i, clusters)
-    {
-        const char* clusterName = clusters.item(i);
-        if (!clusterName || !*clusterName || (clusterReq && *clusterReq && !strieq(clusterReq, clusterName)))
-            continue;
-
-        Owned<IEspDFUFilePartsOnCluster> partsOnCluster = createDFUFilePartsOnCluster("","");
-        partsOnCluster->setCluster(clusterName);
-        IArrayOf<IConstDFUPart>& filePartList = partsOnCluster->getDFUFileParts();
-
-        Owned<IFileDescriptor> fdesc = df->getFileDescriptor(clusterName);
-        Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
-        ForEach(*pi)
-        {
-            IPartDescriptor& part = pi->query();
-            unsigned partIndex = part.queryPartIndex();
-
-            __int64 size = -1;
-            StringBuffer partSizeStr;
-            IPropertyTree* partPropertyTree = &part.queryProperties();
-            if (!partPropertyTree)
-                partSizeStr.set("<N/A>");
-            else
-            {
-                size = partPropertyTree->getPropInt64("@size", -1);
-                comma c4(size);
-                partSizeStr<<c4;
-
-                count++;
-                sum+=size;
-                if(size>mx) mx=size;
-                if(size<mn) mn=size;
-            }
-
-            for (unsigned int i=0; i<part.numCopies(); i++)
-            {
-                StringBuffer b;
-                part.queryNode(i)->endpoint().getUrlStr(b);
-
-                Owned<IEspDFUPart> FilePart = createDFUPart("","");
-                FilePart->setId(partIndex+1);
-                FilePart->setPartsize(partSizeStr.str());
-                if (version >= 1.38)
-                    FilePart->setPartSizeInt64(size);
-                FilePart->setIp(b.str());
-                FilePart->setCopy(i+1);
-
-                filePartList.append(*FilePart.getClear());
-            }
-        }
-
-        if (version >= 1.31)
-        {
-            IClusterInfo* clusterInfo = fdesc->queryCluster(clusterName);
-            if (clusterInfo) //Should be valid. But, check it just in case.
-            {
-                partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
-                Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
-                if (nodeGroup)
-                    partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
-                const char* defaultDir = fdesc->queryDefaultDir();
-                if (defaultDir && *defaultDir)
-                {
-                    DFD_OS os = SepCharBaseOs(getPathSepChar(defaultDir));
-                    StringBuffer baseDir, repDir;
-                    clusterInfo->getBaseDir(baseDir, os);
-                    clusterInfo->getReplicateDir(repDir, os);
-                    partsOnCluster->setBaseDir(baseDir.str());
-                    partsOnCluster->setReplicateDir(baseDir.str());
-                }
-            }
-        }
-        partsOnClusters.append(*partsOnCluster.getClear());
-    }
-}
-
 void CWsDfuEx::parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray)
 {
     while (fieldMask > 0)
@@ -2350,85 +2269,25 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         }
     }
 
-    offset_t mn=LLC(0x7fffffffffffffff), mx=0, sum=0, count=0;
-    if (version >= 1.25)
-        getFilePartsOnClusters(context, cluster, clusters, df, FileDetails, mn, mx, sum, count);
-    else
-    {
-        FileDetails.setCluster(clusters.item(0));
-        IArrayOf<IConstDFUPart>& PartList = FileDetails.getDFUFileParts();
-
-        Owned<IDistributedFilePartIterator> pi = df->getIterator();
-        ForEach(*pi)
-        {
-            Owned<IDistributedFilePart> part = &pi->get();
-            for (unsigned int i=0; i<part->numCopies(); i++)
-            {
-                Owned<IEspDFUPart> FilePart = createDFUPart("","");
-
-                StringBuffer b;
-                part->queryNode(i)->endpoint().getUrlStr(b);
-
-                FilePart->setId(part->getPartIndex()+1);
-                FilePart->setCopy(i+1);
-                FilePart->setIp(b.str());
-                FilePart->setPartsize("<N/A>");
-
-               try
-                {
-                    offset_t size=queryDistributedFileSystem().getSize(part);
-                    if (version >= 1.38)
-                        FilePart->setPartSizeInt64(size);
-
-                    comma c4(size);
-                    tmpstr.clear();
-                    tmpstr<<c4;
-                    FilePart->setPartsize(tmpstr.str());
-
-                    if(size!=-1)
-                    {
-                        count+=1;
-                        sum+=size;
-                        if(size>mx) mx=size;
-                        if(size<mn) mn=size;
-                    }
-                }
-                catch(IException *e)
-                {
-                    StringBuffer msg;
-                    IERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
-                    e->Release();
-                }
-                catch(...)
-                {
-                    IERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
-                }
-
-                PartList.append(*FilePart.getClear());
-            }
-        }
-    }
-    if(count)
+    unsigned maxSkew, minSkew, maxSkewPart, minSkewPart;
+    if (df->getSkewInfo(maxSkew, minSkew, maxSkewPart, minSkewPart, true))
     {
         IEspDFUFileStat& Stat = FileDetails.updateStat();
-        offset_t avg=sum/count;
-        offset_t minSkew = avg-mn;
-        offset_t maxSkew = mx-avg;
         if (version >= 1.38)
         {
             Stat.setMinSkewInt64(minSkew);
             Stat.setMaxSkewInt64(maxSkew);
         }
+        if (version >= 1.52)
+        {
+            Stat.setMinSkewPart(minSkewPart);
+            Stat.setMaxSkewPart(maxSkewPart);
+        }
 
-        comma c5(minSkew);
-        tmpstr.clear();
-        tmpstr<<c5;
-        Stat.setMinSkew(tmpstr.str());
-
-        comma c6(maxSkew);
-        tmpstr.clear();
-        tmpstr<<c6;
-        Stat.setMaxSkew(tmpstr.str());
+        VStringBuffer minSkewString("%s%.2f", (minSkew>0) ? "-" : "", ((double)minSkew)/100);
+        Stat.setMinSkew(minSkewString.str());
+        VStringBuffer maxSkewString("%.2f", ((double)maxSkew)/100);
+        Stat.setMaxSkew(maxSkewString.str());
     }
 
     if (version > 1.06)

@@ -233,6 +233,8 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
     _StatSetter: function (Stat) {
         this.set("MinSkew", Stat.MinSkew);
         this.set("MaxSkew", Stat.MaxSkew);
+        this.set("MinSkewPart", Stat.MinSkewPart);
+        this.set("MaxSkewPart", Stat.MaxSkewPart);
     },
     constructor: function (args) {
         if (args) {
