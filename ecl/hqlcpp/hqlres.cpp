@@ -265,11 +265,11 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
             }
             else
             {
-                if (strieq(type, "jar") && !ctxCallback->allowAccess(type, isSigned))
+                if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
                     throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
                 MemoryBuffer content;
                 loadResource(resourceFilename, content);
-                addCompress(type, content.length(), content.toByteArray(), &item);
+                addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
             }
         }
     }
@@ -404,9 +404,9 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenCo
                     }
                     else
                     {
-                        if (strieq(type, "jar") && !ctxCallback->allowAccess(type, isSigned))
+                        if ((strieq(type, "jar") || strieq(type, "pyzip")) && !ctxCallback->allowAccess(type, isSigned))
                             throw makeStringExceptionV(0, "Embedded %s files via manifest file not allowed", type);
-                        addCompress(type, content.length(), content.toByteArray(), &item);
+                        addCompress(type, content.length(), content.toByteArray(), &item); // MORE - probably should not recompress files known to be compressed, like jar
                     }
                 }
             }

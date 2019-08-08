@@ -161,6 +161,7 @@ public:
 
 // There is a singleton PythonThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Python function efficiently.
+// Note that we assume that a thread is not shared between workunits/queries
 
 class PythonThreadContext
 {
@@ -180,7 +181,9 @@ public:
         lru.clear();
     }
 
-    inline PyObject * importFunction(size32_t lenChars, const char *utf)
+    void addManifestFiles(ICodeContext *codeCtx);
+
+    PyObject * importFunction(ICodeContext *codeCtx, size32_t lenChars, const char *utf)
     {
         size32_t bytes = rtlUtf8Size(lenChars, utf);
         StringBuffer text(bytes, utf);
@@ -191,24 +194,51 @@ public:
             const char *funcname = strrchr(text, '.');
             if (!funcname)
                 rtlFail(0, "pyembed: Expected module.function");
+            addManifestFiles(codeCtx);
             StringBuffer modname(funcname-text, text);
             funcname++;  // skip the '.'
-            // If the modname is preceded by a path, add it to the python path before importing
+            // If the modname is preceded by a path, add it temporarily to the Python path before importing
+            bool addedPath = false;
+            PyObject *sysPath = PySys_GetObject((char *) "path");
+            if (!sysPath)
+                rtlFail(0, "pyembed: sys.path returned null");
+            OwnedPyObject newpath;
             const char *pathsep = strrchr(modname, PATHSEPCHAR);
             if (pathsep)
             {
                 StringBuffer path(pathsep-modname, modname);
                 modname.remove(0, 1+pathsep-modname);
-                PyObject *sys_path = PySys_GetObject((char *) "path");
-                OwnedPyObject new_path = PyString_FromString(path);
-                if (sys_path)
+                newpath.setown(PyString_FromString(path));
+                Py_ssize_t found = PySequence_Index(sysPath, newpath);
+                if (found == (Py_ssize_t)-1)
                 {
-                    PyList_Insert(sys_path, 0, new_path);
-                    checkPythonError();
+                    PyErr_Clear();
+                    PyList_Insert(sysPath, 0, newpath);
+                    addedPath = true;
                 }
+                checkPythonError();
             }
             module.setown(PyImport_ImportModule(modname));
             checkPythonError();
+            if (pathsep)
+            {
+                // Immediately remove the temporary location from the path (if we added it),
+                // and the just-imported module from the system cache,
+                // otherwise other code that imports similar name from other location fails.
+                if (addedPath)
+                {
+                    Py_ssize_t found = PySequence_Index(sysPath, newpath);  // Very likely to be zero, but should we assume? You could argue we should restore path to state prior to import, whatever
+                    if (found != (Py_ssize_t)-1)
+                        PySequence_DelItem(sysPath, found);
+                    else
+                        PyErr_Clear();
+                }
+                PyObject *sysModules = PySys_GetObject((char *) "modules");
+                DBGLOG("Unloading module %s", modname.str());
+                OwnedPyObject pyMod = PyString_FromString(modname);
+                PyDict_DelItem(sysModules, pyMod);
+                checkPythonError();
+            }
             PyObject *dict = PyModule_GetDict(module);  // this is a borrowed reference and does not need to be released
             script.set(PyDict_GetItemString(dict, funcname));
             checkPythonError();
@@ -219,7 +249,7 @@ public:
         return script.getLink();
     }
 
-    PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf, const char *argstring);
+    PyObject *compileEmbeddedScript(ICodeContext *codeCtx, size32_t lenChars, const char *utf, const char *argstring);
     PyObject *getNamedTupleType(const RtlTypeInfo *type);
 private:
     GILstateWrapper GILState;
@@ -228,6 +258,7 @@ private:
     OwnedPyObject lru;
     const RtlTypeInfo *lrutype;
     StringAttr prevtext;
+    bool manifestAdded = false;
 };
 
 static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
@@ -504,6 +535,7 @@ public:
         }
     }
     static void unregister(const char *key);
+    static void removePath(const char *file);
 protected:
     static StringBuffer &wrapPythonText(StringBuffer &out, const char *in, const char *params, unsigned &leadingLines)
     {
@@ -582,6 +614,35 @@ static void checkThreadContext()
     }
 }
 
+void PythonThreadContext::addManifestFiles(ICodeContext *codeCtx)
+{
+    if (codeCtx && !manifestAdded) // MORE - this assumes we never reuse a thread for a different workunit, without the thread termination hooks having been called
+    {
+        manifestAdded = true;
+        IEngineContext *engine = codeCtx->queryEngineContext();
+        if (engine)
+        {
+            const StringArray &manifestModules = engine->queryManifestFiles("pyzip");
+            if (manifestModules.length())
+            {
+                PyObject *sysPath = PySys_GetObject((char *) "path");
+                if (!sysPath)
+                    rtlFail(0, "pyembed: sys.path returned null");
+                ForEachItemIn(idx, manifestModules)
+                {
+                    const char *path = manifestModules.item(idx);
+                    DBGLOG("Manifest zip %s", path);
+                    OwnedPyObject newPath = PyString_FromString(path);
+                    PyList_Insert(sysPath, 0, newPath);
+                    checkPythonError();
+                    engine->onTermination(Python27GlobalState::removePath, manifestModules.item(idx), true);
+                }
+            }
+        }
+    }
+}
+
+
 PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
 {
     if (!lru || (type!=lrutype))
@@ -592,7 +653,7 @@ PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
     return lru.getLink();
 }
 
-PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const char *utf, const char *argstring)
+PyObject *PythonThreadContext::compileEmbeddedScript(ICodeContext *codeCtx, size32_t lenChars, const char *utf, const char *argstring)
 {
     size32_t bytes = rtlUtf8Size(lenChars, utf);
     StringBuffer text(bytes, utf);
@@ -600,6 +661,7 @@ PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const ch
     {
         prevtext.clear();
         text.stripChar('\r');
+        addManifestFiles(codeCtx);
         script.setown(globalState.compileScript(text, argstring));
         prevtext.set(utf, bytes);
     }
@@ -1320,6 +1382,51 @@ void Python27GlobalState::unregister(const char *key)
     globalState.releaseNamedScope(key);
 }
 
+void Python27GlobalState::removePath(const char *path)
+{
+    checkThreadContext();
+    GILBlock b(threadContext->threadState);
+    // Remove a manifest file from the Python path, and remove from sys.modules any modules loaded from that location
+    PyObject *sysPath = PySys_GetObject((char *) "path");
+    if (sysPath)
+    {
+        OwnedPyObject newPath = PyString_FromString(path);
+        Py_ssize_t found = PySequence_Index(sysPath, newPath);
+        if (found != (Py_ssize_t)-1)
+        {
+            PySequence_DelItem(sysPath, found);
+            checkPythonError();
+        }
+        else
+            PyErr_Clear();
+        PyObject *sysModules = PySys_GetObject((char *) "modules");
+        checkPythonError();
+        OwnedPyObject values = PyDict_Values(sysModules);
+        checkPythonError();
+        Py_ssize_t len = PyList_Size(values);
+        size_t pathLen = strlen(path);
+        for (Py_ssize_t idx = 0; idx < len; idx++)
+        {
+            PyObject *module = PyList_GetItem(values, idx);
+            if (PyObject_HasAttrString(module, "__file__"))
+            {
+                OwnedPyObject file = PyObject_GetAttrString(module, "__file__");
+                if (file && PyString_Check(file))
+                {
+                    const char *fileName = PyString_AsString(file);
+                    if (strncmp(fileName, path, pathLen)==0)
+                    {
+                        OwnedPyObject modname = PyObject_GetAttrString(module, "__name__");
+                        DBGLOG("Unloading module %s", fileName);
+                        PyDict_DelItem(sysModules, modname);
+                    }
+                }
+            }
+            checkPythonError();
+        }
+    }
+}
+
 // A Python function that returns a dataset will return a PythonRowStream object that can be
 // interrogated to return each row of the result in turn
 
@@ -1380,8 +1487,8 @@ protected:
 class Python27EmbedContextBase : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    Python27EmbedContextBase(PythonThreadContext *_sharedCtx)
-    : sharedCtx(_sharedCtx)
+    Python27EmbedContextBase(PythonThreadContext *_sharedCtx, ICodeContext *_codeCtx)
+    : sharedCtx(_sharedCtx), codeCtx(_codeCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
     }
@@ -1688,7 +1795,8 @@ public:
 protected:
     virtual void addArg(const char *name, PyObject *arg) = 0;
 
-    PythonThreadContext *sharedCtx;
+    PythonThreadContext *sharedCtx = nullptr;
+    ICodeContext *codeCtx = nullptr;
     OwnedPyObject locals;
     OwnedPyObject globals;
     OwnedPyObject result;
@@ -1698,8 +1806,8 @@ protected:
 class Python27EmbedScriptContext : public Python27EmbedContextBase
 {
 public:
-    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx)
-    : Python27EmbedContextBase(_sharedCtx)
+    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx, ICodeContext *_codeCtx)
+    : Python27EmbedContextBase(_sharedCtx, _codeCtx)
     {
     }
     ~Python27EmbedScriptContext()
@@ -1722,7 +1830,7 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf, argstring));
+        script.setown(sharedCtx->compileEmbeddedScript(codeCtx, lenChars, utf, argstring));
     }
     virtual void loadCompiledScript(size32_t chars, const void *_script) override
     {
@@ -1771,8 +1879,8 @@ protected:
 class Python27EmbedImportContext : public Python27EmbedContextBase
 {
 public:
-    Python27EmbedImportContext(PythonThreadContext *_sharedCtx)
-    : Python27EmbedContextBase(_sharedCtx)
+    Python27EmbedImportContext(PythonThreadContext *_sharedCtx, ICodeContext *_codeCtx)
+    : Python27EmbedContextBase(_sharedCtx, _codeCtx)
     {
         argcount = 0;
     }
@@ -1790,10 +1898,9 @@ public:
     {
     }
 
-
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
-        script.setown(sharedCtx->importFunction(lenChars, utf));
+        script.setown(sharedCtx->importFunction(codeCtx, lenChars, utf));
     }
     virtual void compileEmbeddedScript(size32_t len, const char *text)
     {
@@ -1835,9 +1942,9 @@ public:
         checkThreadContext();
         Owned<Python27EmbedContextBase> ret;
         if (flags & EFimport)
-            ret.setown(new Python27EmbedImportContext(threadContext));
+            ret.setown(new Python27EmbedImportContext(threadContext, ctx));
         else
-            ret.setown(new Python27EmbedScriptContext(threadContext));
+            ret.setown(new Python27EmbedScriptContext(threadContext, ctx));
         ret->setScopes(ctx, options);
         if (activityCtx)
             ret->setActivityOptions(activityCtx);
@@ -1857,10 +1964,12 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
 extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
     StringBuffer result;
+    // NOTE - compilation of a script does not actually resolve imports - so the fact that the manifest is not on the path does not matter
+    // This does mean that many errors cannot be caught until runtime, but that's Python for you...
     try
     {
         checkThreadContext();
-        Owned<Python27EmbedScriptContext> ctx = new Python27EmbedScriptContext(threadContext);
+        Owned<Python27EmbedScriptContext> ctx = new Python27EmbedScriptContext(threadContext, nullptr);
         ctx->setargs(argNames);
         ctx->compileEmbeddedScript(charsBody, body);
     }
