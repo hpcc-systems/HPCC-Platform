@@ -5705,6 +5705,12 @@ public:
                         query.append("=?~\"").append(fv).append('\"');
                     query.append("]");
                 }
+                else if (subfmt==WUSFtotalthortime)
+                {
+                    query.append("[@totalThorTime>=\"");
+                    formatTimeCollatable(query, milliToNano(atoi(fv)), false);
+                    query.append("\"]");
+                }
                 else if (!*fv)
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
