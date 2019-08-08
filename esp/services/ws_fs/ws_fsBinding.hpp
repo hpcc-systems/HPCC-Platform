@@ -87,7 +87,7 @@ public:
 private:
     IPropertyTree* createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid);
     static void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret);
-    void downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
+    int downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
     void appendDropZones(double clientVersion, IConstEnvironment* env, const char* dfuwuidSourcePartIP, IPropertyTree* softwareTree);
 };
 
