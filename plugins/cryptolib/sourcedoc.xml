@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
@@ -13,27 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>plugins/cryptolib</title>
 
-add_subdirectory(DataPatterns)
-add_subdirectory(system)
-
-set(
-    SRCS
-    Audit.ecl
-    BLAS.ecl
-    BundleBase.ecl
-    Crypto.ecl
-    Date.ecl
-    File.ecl
-    Math.ecl
-    Metaphone3.ecl
-    Metaphone.ecl
-    Str.ecl
-    Uni.ecl
-)
-
-foreach(module ${SRCS})
-    SIGN_MODULE(${module})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
-endforeach()
-
+    <para>
+        The plugins/cryptolib directory contains the sources for the plugins/cryptolib library.
+    </para>
+</section>

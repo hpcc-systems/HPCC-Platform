@@ -14,26 +14,35 @@
 #    limitations under the License.
 ################################################################################
 
-add_subdirectory(DataPatterns)
-add_subdirectory(system)
 
-set(
-    SRCS
-    Audit.ecl
-    BLAS.ecl
-    BundleBase.ecl
-    Crypto.ecl
-    Date.ecl
-    File.ecl
-    Math.ecl
-    Metaphone3.ecl
-    Metaphone.ecl
-    Str.ecl
-    Uni.ecl
-)
+# Component: cryptolib
 
-foreach(module ${SRCS})
-    SIGN_MODULE(${module})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${module} DESTINATION share/ecllibrary/std COMPONENT Runtime)
-endforeach()
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for cryptolib
+#####################################################
 
+project( cryptolib )
+
+set (    SRCS
+         cryptolib.cpp
+    )
+
+include_directories (
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/system/security/cryptohelper
+         ${OPENSSL_INCLUDE_DIR}
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DCRYPTOLIB_EXPORTS )
+
+HPCC_ADD_LIBRARY( cryptolib SHARED ${SRCS} )
+install ( TARGETS cryptolib DESTINATION plugins )
+target_link_libraries ( 
+        cryptolib
+        jlib
+        ${ZLIB_LIBRARIES}
+    )
