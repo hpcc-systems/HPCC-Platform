@@ -54,6 +54,9 @@ struct ReadLog
     unsigned prevPage;
     unsigned nextPage;
     unsigned TotalPages;
+    unsigned logfields;
+    unsigned logDatePos;
+    unsigned logTimePos;
 };
 
 class CWsTopologySoapBindingEx : public CWsTopologySoapBinding
@@ -101,7 +104,7 @@ private:
     bool findTimestampAndLT(const char * logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
     unsigned findLineTerminator(const char* dataPtr, const size32_t dataSize);
     bool isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength);
-    char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator);
+    char* readALogLine(char* dataPtr, size32_t& dataSize, ReadLog& readLogReq, StringBuffer& logLine, bool& hasLineTerminator);
     void addALogLine(offset_t& readFrom, unsigned& locationFlag, const char *dataRow, ReadLog& readLogReq, StringArray& returnbuff);
     void readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq);
     void setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
@@ -112,6 +115,10 @@ private:
                                     bool& bThresholdIsPercentage);
 
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
+    void readLogMessageFields(char* contentPtr, size32_t bytesRemaining, ReadLog& readLogReq);
+    const char* readLogTimeFromDataBuffer(StringBuffer& content, ReadLog& readLogReq, CDateTime& latestLogTime);
+    bool readLastLogTime(const char *logName, IFileIO* rIO, size32_t fileSize, size32_t readSize, ReadLog& readLogReq, CDateTime& latestLogTime);
+
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsTopologyEx(){};

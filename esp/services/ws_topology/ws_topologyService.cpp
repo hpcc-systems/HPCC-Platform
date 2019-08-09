@@ -43,6 +43,7 @@ static const char* MACHINE_URL = "MachineInfoAccess";
 static const unsigned THORSTATUSDETAILS_REFRESH_MINS = 1;
 static const long LOGFILESIZELIMIT = 100000; //Limit page size to 100k
 static const long AVERAGELOGROWSIZE = 10000;
+static const unsigned LOG_DATE_TIME_LENGTH = 19;
 const char* TEMPZIPDIR = "tempzipfiles";
 
 void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -539,55 +540,109 @@ bool CWsTopologyEx::findTimestampAndLT(const char *logname, IFile* rFile, ReadLo
 
     char* pTr = (char*) dataBuffer.str();
     readLogReq.ltBytes = findLineTerminator(pTr, bytesRead);
+    readLogMessageFields(pTr, bytesRead, readLogReq);
 
-    if (rFile->size() < 28) //lineID + timestamp
+    if (rFile->size() < (readLogReq.logDatePos + LOG_DATE_TIME_LENGTH))
         return false;//no timestamp in this log
-    if (!readLogTime(pTr, 9, 19, latestLogTime))
-        return false;//no timestamp in this log
+    if ((readLogReq.logfields == 0) && !readLogTime(pTr, readLogReq.logDatePos, LOG_DATE_TIME_LENGTH, latestLogTime))
+        return false;//Only legacy log file (readLogReq.logfields = 0) may not have timestamp.
 
     if ((readLogReq.filterType != GLOLastNHours) && (readLogReq.filterType != GLOTimeRange))
         return true;//Not interested in the last timestamp this time
 
-    //Search the last chuck to find out the latest timestamp
-    if (readSize < fileSize)
-    {
-        bytesRead = rIO->read(fileSize - readSize, readSize, dataBuffer.clear().reserve(readSize));
-        if (bytesRead != readSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
-        pTr = (char*) dataBuffer.str();
-    }
-
-    //skip the first line which may not contain the entire log line
-    StringBuffer logLine;
-    size32_t bytesRemaining = bytesRead;
-    bool hasAnotherLine = false;
-    pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine, hasAnotherLine);
-    if (!hasAnotherLine || (bytesRemaining < 28))
-        return true;
-
-    //Find out the last timestamp
-    while (hasAnotherLine && bytesRemaining > 27)
-    {
-        CDateTime dt;
-        pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine, hasAnotherLine);
-        if ((logLine.length() > 27) && readLogTime((char*) logLine.str(), 9, 19, dt))
-            latestLogTime = dt;
-    }
-
-    return true;
+    return readLastLogTime(logname, rIO, fileSize, readSize, readLogReq, latestLogTime);
 }
 
-char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator)
+void CWsTopologyEx::readLogMessageFields(char* contentStart, size32_t bytesRemaining, ReadLog& readLogReq)
+{
+    //Find out the first log line
+    char* finger = contentStart;
+    while (bytesRemaining > 0)
+    {
+        if (isLineTerminator(finger, bytesRemaining, readLogReq.ltBytes))
+            break;
+
+        finger++;
+        bytesRemaining--;
+    }
+
+    if (finger > contentStart)
+    {//Try to read LogMessageFields from the first log line
+        StringBuffer logLine;
+        logLine.append(finger - contentStart, contentStart);
+        readLogReq.logfields = getMessageFieldsFromHeader(logLine);
+        if (readLogReq.logfields > 0)
+        {
+            readLogReq.logDatePos = getPositionOfField(readLogReq.logfields, MSGFIELD_date);
+            readLogReq.logTimePos = getPositionOfField(readLogReq.logfields, MSGFIELD_milliTime);
+        }
+    }
+}
+
+bool CWsTopologyEx::readLastLogTime(const char *logName, IFileIO* rIO, size32_t fileSize, size32_t readSize, ReadLog& readLogReq, CDateTime& latestLogTime)
+{
+    size32_t readFrom = 0;
+    if (readSize < fileSize)
+        readFrom = fileSize - readSize; //Search from the last chuck
+
+    StringBuffer contentBuffer, previousPartialLine;
+    while (1)
+    {
+        size32_t bytesRead = rIO->read(readFrom, readSize, contentBuffer.clear().reserve(readSize));
+        if (bytesRead != readSize)
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logName);
+            
+        if (!previousPartialLine.isEmpty())
+            contentBuffer.append(previousPartialLine); //Add the leftover from previous contentBuffer
+
+        const char* partialLineEndPtr = readLogTimeFromDataBuffer(contentBuffer, readLogReq, latestLogTime);
+        if (!partialLineEndPtr)
+            return true; //Found latestLogTime
+
+        if (readFrom == 0)
+            break;
+
+        previousPartialLine.clear().append(partialLineEndPtr - contentBuffer.str(), contentBuffer.str());
+        readFrom -= readSize;
+        if (readFrom < 0)
+            readFrom = 0;
+    }
+    return false;
+}
+
+const char* CWsTopologyEx::readLogTimeFromDataBuffer(StringBuffer& dataBuffer, ReadLog& readLogReq, CDateTime& latestLogTime)
+{
+    const char* startPtr = dataBuffer.str();
+    const char* lineEndPtr = startPtr + dataBuffer.length();
+    const char* finger = lineEndPtr - 1;
+    unsigned limit = readLogReq.logDatePos + LOG_DATE_TIME_LENGTH; 
+    while ((finger - startPtr) > limit)
+    {//Possible contains a log line with date and time 
+        if (isLineTerminator(finger, finger - lineEndPtr, readLogReq.ltBytes))
+        {
+            const char* lineStartPtr = finger + readLogReq.ltBytes;
+            if (((lineEndPtr - lineStartPtr) > limit) && readLogTime((char*) lineStartPtr, readLogReq.logDatePos, LOG_DATE_TIME_LENGTH, latestLogTime))
+                return nullptr; //Found log date and time
+
+            lineEndPtr = finger; //Switch to previous line
+        }
+        finger--;
+    }
+    return lineEndPtr;
+}
+
+char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, ReadLog& readLogReq, StringBuffer& logLine, bool& hasLineTerminator)
 {
     char* pTr = dataPtr;
 
     CDateTime dt;
     hasLineTerminator = false;
-    while(bytesRemaining > 0)
+    unsigned limit = readLogReq.ltBytes + readLogReq.logDatePos + LOG_DATE_TIME_LENGTH; 
+    while (bytesRemaining > 0)
     {
-        hasLineTerminator = isLineTerminator(pTr, bytesRemaining, ltLength);
-        if (hasLineTerminator && (bytesRemaining > ltLength + 27) && readLogTime(pTr+ltLength, 9, 19, dt))
-            break;
+        hasLineTerminator = isLineTerminator(pTr, bytesRemaining, readLogReq.ltBytes);
+        if (hasLineTerminator && (bytesRemaining >= limit) && readLogTime(pTr + readLogReq.ltBytes, readLogReq.logDatePos, LOG_DATE_TIME_LENGTH, dt))
+            break; //Found a new log line
 
         pTr++;
         bytesRemaining--;
@@ -595,8 +650,8 @@ char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsig
 
     if (hasLineTerminator && (bytesRemaining > 0))
     {
-        pTr += ltLength;
-        bytesRemaining -= ltLength;
+        pTr += readLogReq.ltBytes;
+        bytesRemaining -= readLogReq.ltBytes;
     }
 
     logLine.clear();
@@ -636,7 +691,7 @@ void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, cons
         }
 
         StringBuffer str;
-        str.append(dataRow, 20, 8); //Read time
+        str.append(dataRow, readLogReq.logTimePos, 8); //Read time
         if (readLogReq.endDate.length() > 0 && strcmp(str.str(), readLogReq.endDate.str()) > 0)
             locationFlag = 2; //out of the area to be retrieved
         else if (readLogReq.startDate.length() > 1 && strcmp(str.str(), readLogReq.startDate.str()) < 0)
@@ -711,7 +766,7 @@ void CWsTopologyEx::readLogFileToArray(const char *logname, OwnedIFileIO rIO, Re
         bool hasAnotherLine = true;
         while (hasAnotherLine && (bytesRemaining > 0) && (locationFlag < 2))
         {
-            pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine.clear(), hasAnotherLine);
+            pTr = readALogLine(pTr, bytesRemaining, readLogReq, logLine.clear(), hasAnotherLine);
             if (logLine.length() < 1)
                 continue;
             if (lastChuck || hasAnotherLine)
@@ -798,6 +853,9 @@ void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileN
     readLogReq.prevPage = -1;
     readLogReq.nextPage = -1;
     readLogReq.lastHours = 0;
+    readLogReq.logfields = 0;//legacy log format
+    readLogReq.logDatePos = 9;//legacy log format
+    readLogReq.logTimePos = 20;//legacy log format
 
     CDateTime latestLogTime;
     readLogReq.hasTimestamp = findTimestampAndLT(fileName, rFile, readLogReq, latestLogTime);
