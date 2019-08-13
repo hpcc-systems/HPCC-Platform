@@ -3061,10 +3061,12 @@ public:
 #endif
         bool superLocal = superProp.getPropBool("@local",false);
         bool subLocal = subProp.getPropBool("@local",false);
-        if (subLocal != superLocal)
+        if (subLocal != superLocal && sub->numParts()>1) // ignore if checking 1 part file, which can be flagged as local or non-local
+        {
             throw MakeStringException(-1,"%s: %s's local setting (%s) is different than %s's (%s)",
                     exprefix, sub->queryLogicalName(), (subLocal?"local":"global"),
                     queryLogicalName(), (superLocal?"local":"global"));
+        }
 
         int superRepO = superProp.getPropInt("@replicateOffset",1);
         int subRepO = subProp.getPropInt("@replicateOffset",1);
