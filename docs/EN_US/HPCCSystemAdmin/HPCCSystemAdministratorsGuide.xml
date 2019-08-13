@@ -39,7 +39,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -268,7 +268,7 @@
           <para>ECLCC Server uses a queue to convert workunits one at a time,
           however you can have ECLCC Servers deployed in the system to
           increase throughput and they will automatically load balance as
-          required.</para>
+          required. </para>
         </sect3>
 
         <sect3 id="SysAdm_ECLAgent">
@@ -280,6 +280,17 @@
           <para>ECL Agent is an execution engine that processes workunits by
           sending them to the appropriate cluster. ECL Agent processes are
           spawned on-demand when you submit a workunit.</para>
+        </sect3>
+
+        <sect3 id="ECLScheduler">
+          <title>ECL Scheduler</title>
+
+          <para>The ECL Scheduler provides a means of automating processes
+          within ECL code or to chain processes together to work in sequence.
+          ECL Scheduling is event-based. The ECL Scheduler monitors a Schedule
+          list containing registered Workunits and Events and executes any
+          Workunits associated with an Event when that Event is triggered.
+          </para>
         </sect3>
 
         <sect3 id="SysAdm_ESPServer">
@@ -1115,7 +1126,8 @@
     desired you can edit the environment files using any xml or text editor
     however the file structure must remain valid.</para>
 
-    <para><figure>
+    <para>
+      <figure>
         <title>Sample Production Configuration</title>
 
         <mediaobject>
@@ -1123,7 +1135,8 @@
             <imagedata fileref="images/SA008.jpg" />
           </imageobject>
         </mediaobject>
-      </figure></para>
+      </figure>
+    </para>
 
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
@@ -1169,7 +1182,9 @@
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/caution.png" /></entry>
+                <entry>
+                  <inlinegraphic fileref="images/caution.png" />
+                </entry>
 
                 <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
@@ -1199,7 +1214,8 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para><programlisting>## Default environment configuration file for OpenHPCC
+      <para>
+        <programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=/etc/HPCCSystems
@@ -1276,7 +1292,8 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
-</programlisting></para>
+</programlisting>
+      </para>
 
       <para>The default environment.conf file includes several comments and
       explanations for many of the values defined in it.</para>
@@ -1311,7 +1328,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>The <emphasis role="bold">logfields</emphasis> setting
           declares the fields to include in the component logs. You can
           customize which fields appear in your logs based on your business
-          needs. </para>
+          needs.</para>
 
           <para>The syntax to use for logfields is to include the desired
           columns with a plus (+) sign, and use the minus (-) to specify any
@@ -1446,7 +1463,8 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>The following are logfield macros which provide a bundled
           group of columns:</para>
 
-          <para><informaltable>
+          <para>
+            <informaltable>
               <tgroup cols="2">
                 <tbody>
                   <row>
@@ -1463,7 +1481,8 @@ lock=/var/lock/HPCCSystems</programlisting>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable></para>
+            </informaltable>
+          </para>
         </sect3>
       </sect2>
 
@@ -1734,8 +1753,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
                 xpointer="xpointer(//*[@id='wutool'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-				
-				
+
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
 
