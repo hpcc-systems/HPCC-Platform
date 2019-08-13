@@ -141,7 +141,7 @@ class WsWuInfo
     IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
     void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
     void outputALine(size32_t len, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS);
-    bool parseLogLine(const char* line, const char* endWUID, unsigned& processID);
+    bool parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID);
     void readWorkunitLog(IFile* ios, MemoryBuffer& buf, const char* outFile);
     void readFileContent(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);

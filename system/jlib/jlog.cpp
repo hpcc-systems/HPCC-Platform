@@ -127,11 +127,11 @@ public:
             if (MsgFieldMap[i].val==MSGFIELD_time && (logfields & (MSGFIELD_microTime|MSGFIELD_milliTime)) )
                 continue;
             if (MsgFieldMap[i].val & positionoffield)
-                return pos;
+                break;
             if (MsgFieldMap[i].val & logfields)
-                pos += strlen(MsgFieldMap[i].str);
+                ++pos;
         }
-        return 0;
+        return pos;
     }
     unsigned extractMessageFieldsFromHeader(const char *line, bool hashPrefixed)
     {
