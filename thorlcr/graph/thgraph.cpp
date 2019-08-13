@@ -26,6 +26,7 @@
 #include "thbufdef.hpp"
 #include "thmem.hpp"
 #include "rtlformat.hpp"
+#include "thorsoapcall.hpp"
 
 
 PointerArray createFuncs;
@@ -2689,6 +2690,7 @@ void CJobBase::init()
     sharedMemoryMB = globalMemoryMB*sharedMemoryLimitPercentage/100;
     failOnLeaks = getOptBool("failOnLeaks");
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
+    soapTraceLevel = getOptInt("soapTraceLevel", 1);
 
     PROGLOG("Global memory size = %d MB, shared memory = %d%%, memory spill at = %d%%", globalMemoryMB, sharedMemoryLimitPercentage, memorySpillAtPercentage);
     StringBuffer tracing("maxActivityCores = ");
