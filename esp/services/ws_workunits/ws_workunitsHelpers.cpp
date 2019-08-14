@@ -2084,45 +2084,46 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     else
         eof = lineReader->readLine(line.clear());
 
-    const unsigned positionProcessId = getPositionOfField(logfields, MSGFIELD_process);
+    const unsigned columnNumPID = getPositionOfField(logfields, MSGFIELD_process);
     bool outputThisLine = false;
     unsigned processID = 0;
     bool foundEndWUID = false; 
     while (!eof)
     {
-        if (line.length() > positionProcessId+1)
-        {
-            const char * lineStartingProcessId = line.str()+positionProcessId;
-            if (outputThisLine)
-            {
-                //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
-                //So, we should check whether the slave is restarting or not.
-                unsigned pID = 0;
-                foundEndWUID = parseLogLine(lineStartingProcessId, endwuid, pID);
-                if ((pID > 0) && (pID != processID))
-                    break;
-            }
-            else if (strstr(lineStartingProcessId, startwuid))
-            {
-                outputThisLine = true;
-                foundEndWUID = false;
-                if (processID == 0)
-                    parseLogLine(lineStartingProcessId, nullptr, processID);
-            }
-        }
         if (outputThisLine)
         {
+            //If the slave is restarted before WU is finished, we cannot find out the "Finished wuid=...".
+            //So, we should check whether the slave is restarting or not.
+            unsigned pID = 0;
+            foundEndWUID = parseLogLine(line.str(), endwuid, pID, columnNumPID);
+            if ((pID > 0) && (pID != processID))
+                break;
             outputALine(line.length(), line.str(), buf, outIOS);
             if (foundEndWUID)
                 outputThisLine = false;
+        }
+        else if (strstr(line.str(), startwuid))
+        {
+            outputThisLine = true;
+            foundEndWUID = false;
+            outputALine(line.length(), line.str(), buf, outIOS);
+            if (processID == 0)
+                parseLogLine(line.str(), nullptr, processID, columnNumPID);
         }
         eof = lineReader->readLine(line.clear());
     }
 }
 
-bool WsWuInfo::parseLogLine(const char* line, const char* endWUID, unsigned& processID)
+bool WsWuInfo::parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID)
 {
     const char* bptr = line;
+    for (unsigned cur=0;  cur < columnNumPID && *bptr; ++cur)
+    {
+        while(*bptr && *bptr!=' ') ++bptr;  // Skip field
+        while(*bptr && *bptr==' ') ++bptr;  // Skip spaces
+    }
+    if (!*bptr) return false;
+
     const char* eptr = bptr + 1;
     while (*eptr && isdigit(*eptr))     //Read ProcessID
         eptr++;
