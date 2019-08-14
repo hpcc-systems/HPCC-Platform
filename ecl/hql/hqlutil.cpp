@@ -4005,13 +4005,13 @@ IHqlExpression * convertRecordToTransform(IHqlExpression * record, bool canOmit)
 }
 
 
-IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value)
+IHqlExpression * createTransformForField(node_operator op, IHqlExpression * field, IHqlExpression * value)
 {
     OwnedHqlExpr record = createRecord(field);
     OwnedHqlExpr self = getSelf(record);
     OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(field));
     OwnedHqlExpr assign = createAssign(LINK(target), LINK(value));
-    return createValue(no_transform, makeTransformType(record->getType()), assign.getClear());
+    return createValue(op, makeTransformType(record->getType()), assign.getClear());
 }
 
 IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType)
@@ -4025,12 +4025,12 @@ IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldTyp
     OwnedHqlExpr attribute;
     if (splitResultValue(dataset, attribute, value))
     {
-        OwnedHqlExpr transform = createTransformForField(field, attribute);
+        OwnedHqlExpr transform = createTransformForField(no_newtransform, field, attribute);
         OwnedHqlExpr ds = createDataset(no_newusertable, LINK(dataset), createComma(LINK(record), LINK(transform)));
         return createRow(no_selectnth, LINK(ds), getSizetConstant(1));
     }
 
-    OwnedHqlExpr transform = createTransformForField(field, value);
+    OwnedHqlExpr transform = createTransformForField(no_transform, field, value);
     return createRow(no_createrow, transform.getClear());
 }
 
@@ -5775,7 +5775,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
     case 2:
         {
             OwnedHqlExpr field = createField(unnamedId, value->getType(), NULL);
-            OwnedHqlExpr transform = createTransformForField(field, value);
+            OwnedHqlExpr transform = createTransformForField(no_transform, field, value);
             OwnedHqlExpr combine = createDatasetF(no_combine, LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq), NULL);
             OwnedHqlExpr first = createRowF(no_selectnth, LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom), NULL);
             dataset.setown(createDatasetFromRow(first.getClear()));

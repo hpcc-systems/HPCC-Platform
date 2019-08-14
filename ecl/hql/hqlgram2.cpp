@@ -7113,7 +7113,17 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
     }
 
     if (sourceDataset)
+    {
         transform.setown(createDefaultAssignTransform(record, sourceDataset->queryNormalizedSelector(), indexAttr));
+        //The transform operator must be changed to no_newtransform since it will be an argument to no_newusertable
+        if (transform->getOperator() == no_transform)
+        {
+            HqlExprArray args;
+            unwindChildren(args, transform);
+            OwnedHqlExpr newTransform = createValue(no_newtransform, transform->getType(), args);
+            transform.swap(newTransform);
+        }
+    }
 
     //need to tag record scope in this case so it generates no_activetable as top selector
     OwnedHqlExpr distribution, hash;

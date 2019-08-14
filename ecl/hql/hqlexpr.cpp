@@ -4679,6 +4679,9 @@ switch (op)
     case no_countdict:
         assertex(queryChild(0)->isDictionary());
         break;
+    case no_newusertable:
+        assertex(queryChild(2)->getOperator() == no_newtransform);
+        break;
     }
 
 #ifdef _DEBUG

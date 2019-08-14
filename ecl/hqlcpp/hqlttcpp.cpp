@@ -9821,7 +9821,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::ensureInputSerialized(IHqlExpress
     //so create a mapping <unserialized> := f(serialized)
     //and then use it to expand references to the unserialized format
     IHqlExpression * selector = dataset->queryNormalizedSelector();
-    OwnedHqlExpr mapTransform = createRecordMappingTransform(no_transform, serializedRecord, selector);
+    OwnedHqlExpr mapTransform = createRecordMappingTransform(no_newtransform, serializedRecord, selector);
     OwnedHqlExpr newDataset = createDatasetF(no_newusertable, LINK(dataset), LINK(serializedRecord), LINK(mapTransform), LINK(selSeq), NULL);
 
     NewProjectMapper2 mapper;
