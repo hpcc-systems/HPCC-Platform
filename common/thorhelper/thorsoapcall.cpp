@@ -1568,7 +1568,7 @@ private:
             if (url.userPasswordPair.length() > 0)
             {
                 StringBuffer authToken;
-                JBASE64_Encode(url.userPasswordPair.str(), url.userPasswordPair.length(), authToken);
+                JBASE64_Encode(url.userPasswordPair.str(), url.userPasswordPair.length(), authToken, false);
                 request.append("Authorization: Basic ").append(authToken).append("\r\n");
             }
             else if (master->authToken.length() > 0)
