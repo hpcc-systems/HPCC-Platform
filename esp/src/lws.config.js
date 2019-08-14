@@ -16,7 +16,7 @@ let rewrite = [
     { from: "/esp/files/esp/logout", to: "http://" + debugServerIP + ":8010/esp/logout" },
     { from: "/ws_elk/*", to: "http://" + debugServerIP + ":8010/ws_elk/$1" },
     { from: "/esp/files/esp/reset_session_timeout", to: "http://" + debugServerIP + ":8010/esp/reset_session_timeout" },
-    { from: "/esp/files/node_modules/@hpcc-js/*/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" },
+    { from: "/esp/files/node_modules/@hpcc-js/*/dist/index.min.js", to: debugServerIP !== CLUSTER_GJS ? "/node_modules/@hpcc-js/$1/dist/index.js" : "/hpcc-js/$1/dist/index.js" },
     { from: "/esp/files/dist/*", to: "/build/dist/$1" },
     { from: "/esp/files/*", to: "/$1" },
     { from: "/ws_elk/*", to: "http://" + debugServerIP + ":8010/ws_elk/$1" },
