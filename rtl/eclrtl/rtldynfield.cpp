@@ -988,7 +988,7 @@ enum FieldMatchType {
     match_recurse     = 0x80,    // Use recursive translator for child records/datasets
     match_fail        = 0x100,   // no translation possible
     match_keychange   = 0x200,   // at least one affected field not marked as payload (set on translator)
-    match_virtual     = 0x800,   // at least one affected field not marked as payload (set on translator)
+    match_virtual     = 0x800,   // at least one affected field is a virtual field (set on translator)
 
     // This flag may be set in conjunction with the others
     match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
@@ -1078,6 +1078,8 @@ public:
 private:
     void doDescribe(unsigned indent) const
     {
+        unsigned perfect=0;
+        unsigned reported=0;
         for (unsigned idx = 0; idx <  destRecInfo.getNumFields(); idx++)
         {
             const char *source = destRecInfo.queryName(idx);
@@ -1088,17 +1090,41 @@ private:
                 DBGLOG("%*sUse virtual value for field %s", indent, "", source);
             else
             {
-                StringBuffer matchStr;
-                DBGLOG("%*sMatch (%s) to field %d for field %s (%x)", indent, "", describeFlags(matchStr, match.matchType).str(), match.matchIdx, source, destRecInfo.queryType(idx)->fieldType);
-                if (match.subTrans)
-                    match.subTrans->doDescribe(indent+2);
+                if (match.matchType != match_perfect)
+                {
+                    reported++;
+                    StringBuffer matchStr;
+                    DBGLOG("%*sMatch (%s) to field %d for field %s (typecode %x)", indent, "", describeFlags(matchStr, match.matchType).str(), match.matchIdx, source, destRecInfo.queryType(idx)->fieldType);
+                    if (match.subTrans)
+                        match.subTrans->doDescribe(indent+2);
+                }
+                else
+                    perfect++;
             }
+        }
+        if (allUnmatched.ordinality())
+        {
+            VStringBuffer msg("%*sDropped field", indent, "");
+            if (allUnmatched.ordinality()>1)
+                msg.append('s');
+            for (unsigned idx = 0; idx < allUnmatched.ordinality() && idx < 5; idx++)
+            {
+
+                if (idx)
+                    msg.append(',');
+                msg.appendf(" %s", sourceRecInfo.queryName(allUnmatched.item(idx)));
+            }
+            if (allUnmatched.ordinality() > 5)
+                msg.appendf(" and %u other fields", allUnmatched.ordinality() - 5);
+            DBGLOG("%s", msg.str());
         }
         if (!canTranslate())
             DBGLOG("%*sTranslation is NOT possible", indent, "");
         else if (needsTranslate())
         {
             StringBuffer matchStr;
+            if (perfect)
+                DBGLOG("%u %sfield%s matched perfectly", perfect, reported ? "other " : "", perfect==1 ? "" : "s");
             DBGLOG("%*sTranslation is possible (%s)", indent, "", describeFlags(matchStr, matchFlags).str());
         }
         else
@@ -1432,7 +1458,8 @@ private:
     const RtlRecord &sourceRecInfo;
     bool binarySource = true;
     unsigned fixedDelta = 0;  // total size of all fixed-size source fields that are not matched
-    UnsignedArray unmatched;  // List of all variable-size source fields that are unmatched
+    UnsignedArray allUnmatched;  // List of all source fields that are unmatched (so that we can trace them)
+    UnsignedArray variableUnmatched;  // List of all variable-size source fields that are unmatched
     FieldMatchType matchFlags = match_perfect;
 
     struct MatchInfo
@@ -1506,6 +1533,7 @@ private:
     }
     void createMatchInfo()
     {
+        unsigned defaulted = 0;
         for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
         {
             const RtlFieldInfo *field = destRecInfo.queryField(idx);
@@ -1520,6 +1548,7 @@ private:
                 fixedDelta -= defaultSize;
                 if ((field->flags & RFTMispayloadfield) == 0)
                     matchFlags |= match_keychange;
+                defaulted++;
                 //DBGLOG("Decreasing fixedDelta size by %d to %d for defaulted field %d (%s)", defaultSize, fixedDelta, idx, destRecInfo.queryName(idx));
             }
             else
@@ -1669,10 +1698,9 @@ private:
             }
             matchFlags |= info.matchType;
         }
-        if (sourceRecInfo.getNumFields() > destRecInfo.getNumFields())
-            matchFlags |= match_remove;
-        if (matchFlags && !destRecInfo.getFixedSize())
+        if (sourceRecInfo.getNumFields() > destRecInfo.getNumFields()-defaulted)
         {
+            matchFlags |= match_remove;
             for (unsigned idx = 0; idx < sourceRecInfo.getNumFields(); idx++)
             {
                 const RtlFieldInfo *field = sourceRecInfo.queryField(idx);
@@ -1691,8 +1719,9 @@ private:
                             fixedDelta += type->getMinSize();
                         }
                         else
-                            unmatched.append(idx);
+                            variableUnmatched.append(idx);
                     }
+                    allUnmatched.append(idx);
                 }
             }
             //DBGLOG("Source record contains %d bytes of omitted fixed size fields", fixedDelta);
@@ -1703,9 +1732,9 @@ private:
         //DBGLOG("Source record size is %d", (int) sourceRow.getRecordSize());
         size32_t expectedSize = sourceRow.getRecordSize() - fixedDelta;
         //DBGLOG("Source record size without omitted fixed size fields is %d", expectedSize);
-        ForEachItemIn(i, unmatched)
+        ForEachItemIn(i, variableUnmatched)
         {
-            unsigned fieldNo = unmatched.item(i);
+            unsigned fieldNo = variableUnmatched.item(i);
             expectedSize -= sourceRow.getSize(fieldNo);
             //DBGLOG("Reducing estimated size by %d to %d for omitted field %d (%s)", (int) sourceRow.getSize(fieldNo), expectedSize, fieldNo, sourceRecInfo.queryName(fieldNo));
         }

@@ -2141,8 +2141,11 @@ public:
                     else
                     {
                         translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
-                        if (traceLevel > 5)
+                        if (traceLevel>0 && traceTranslations)
+                        {
+                            DBGLOG("Record layout translator created for %s", subname);
                             translator->describe();
+                        }
                         if (!translator || !translator->canTranslate())
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                         else if (translator->needsTranslate())

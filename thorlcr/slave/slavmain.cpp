@@ -360,6 +360,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     if (!translator->canTranslate())
                         throw MakeStringException(0, "Untranslatable record layout mismatch detected for: %s", tracing);
                 }
+                DBGLOG("Record layout translator created for %s", tracing);
+                translator->describe();
                 dbgassertex(translator->canTranslate());
             }
             return translator;
