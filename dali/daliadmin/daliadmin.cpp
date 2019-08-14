@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <unordered_set>
+#include <string>
+
 #include "platform.h"
 #include "portlist.h"
 #include "jlib.hpp"
@@ -124,6 +127,7 @@ void usage(const char *exe)
   printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
+         "                [removeStaleLocations=<true|false>]"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
   printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
@@ -2794,7 +2798,7 @@ static void wuidCompress(const char *match, const char *type, bool compress)
     }
 }
 
-static void validateStore(bool fix, bool deleteFiles, bool verbose)
+static void validateStore(bool fix, bool deleteFiles, bool removeStaleLocations, bool verbose)
 {
     /*
      * Place holder for client-side dali store verification/validation. Currently performs:
@@ -2802,81 +2806,148 @@ static void validateStore(bool fix, bool deleteFiles, bool verbose)
      */
     CTimeMon totalTime, ts;
 
-    PROGLOG("Gathering list of workunits");
-    Owned<IRemoteConnection> conn = querySDS().connect("/WorkUnits", myProcessSession(), RTM_LOCK_READ, 10000);
-    if (!conn)
-        throw MakeStringException(0, "Failed to connect to /WorkUnits");
+    std::unordered_set<std::string> machineMap;
     AtomRefTable wuids;
-    Owned<IPropertyTreeIterator> wuidIter = conn->queryRoot()->getElements("*");
-    ForEach(*wuidIter)
-    {
-        IPropertyTree &wuid = wuidIter->query();
-        wuids.queryCreate(wuid.queryName());
-    }
-    PROGLOG("%d workunits gathered. Took %d ms", wuids.count(), ts.elapsed());
-    ts.reset(0);
 
-    StringArray uidsToDelete;
-    UnsignedArray indexToDelete;
+    {
+        PROGLOG("Gathering machines from environment");
+
+        ts.reset(0);
+        Owned<IRemoteConnection> envConn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, 10000);
+        if (!envConn)
+            throw MakeStringException(0, "Failed to connect to /Environment");
+
+        Owned<IPropertyTreeIterator> machineIter = envConn->queryRoot()->getElements("Hardware/Computer");
+        ForEach(*machineIter)
+        {
+            const IPropertyTree &machine = machineIter->query();
+            const char *host = machine.queryProp("@netAddress");
+            IpAddress ip(host);
+            StringBuffer ipStr;
+            ip.getIpText(ipStr);
+            machineMap.insert(ipStr.str());
+        }
+        PROGLOG("%u machines from environment gathered. Took %u ms", (unsigned)machineMap.size(), ts.elapsed());
+    }
+
+    {
+        PROGLOG("Gathering list of workunits");
+
+        ts.reset(0);
+        Owned<IRemoteConnection> workUnitConn = querySDS().connect("/WorkUnits", myProcessSession(), RTM_LOCK_READ, 10000);
+        if (!workUnitConn)
+        {
+            PROGLOG("Could not connect to /WorkUnits - missing?");
+            return;
+        }
+        Owned<IPropertyTreeIterator> wuidIter = workUnitConn->queryRoot()->getElements("*");
+        ForEach(*wuidIter)
+        {
+            IPropertyTree &wuid = wuidIter->query();
+            wuids.queryCreate(wuid.queryName());
+        }
+        PROGLOG("%u workunits gathered. Took %u ms", wuids.count(), ts.elapsed());
+    }
+
+    std::vector<IPropertyTree *> generateDllsToDelete;
 
     PROGLOG("Gathering associated files");
-    conn.setown(querySDS().connect("/GeneratedDlls", myProcessSession(), fix?RTM_LOCK_WRITE:RTM_LOCK_READ, 10000));
-    if (!conn)
+
+    ts.reset(0);
+    Owned<IRemoteConnection> generatedDllsConn = querySDS().connect("/GeneratedDlls", myProcessSession(), fix?RTM_LOCK_WRITE:RTM_LOCK_READ, 10000);
+    if (!generatedDllsConn)
     {
-        PROGLOG("No generated DLLs associated with any workunit.\nExit. Took %d ms", ts.elapsed());
+        PROGLOG("Could not connect to /GeneratedDlls - missing?");
         return;
     }
-    IPropertyTree *root = conn->queryRoot()->queryBranch(NULL); // force all to download
+    IPropertyTree *root = generatedDllsConn->queryRoot()->queryBranch(NULL); // force everything to be fetched
 
     Owned<IPropertyTreeIterator> gdIter = root->getElements("*");
     RegExpr RE("^.*{W2[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]{-[0-9]+}?}{[^0-9].*|}$");
 
-    unsigned index=1;
+    unsigned removedLocations = 0;
+    unsigned totalCount = 0;
     ForEach(*gdIter)
     {
+        ++totalCount;
         IPropertyTree &gd = gdIter->query();
-        const char *name = gd.queryProp("@name");
-        if (name && *name)
+        const char *eName = gd.queryName();
+        const char *name = nullptr;
+        if (streq(eName, "GeneratedDll")) // legacy format
         {
-            if (RE.find(name))
+            name = gd.queryProp("@name");
+            if (isEmptyString(name)) // would mean invalid entry if so
+                continue;
+        }
+        else if (startsWith(eName, "Dll")) // uniq entry name
+        {
+            name = gd.queryProp("@name");
+            if (isEmptyString(name)) // would mean invalid entry if so
+                continue;
+        }
+        else // unknown
+        {
+            continue;
+        }
+
+        bool associatedWithWuid = false;
+        bool entryRemoved = false;
+        if (RE.find(name)) // if it's a workunit associated dll/file
+        {
+            StringBuffer wuid;
+            RE.substitute(wuid,"#1");
+            const char *w = wuid.str();
+            associatedWithWuid = nullptr != wuids.find(*w);
+            if (!associatedWithWuid)
             {
-                StringBuffer wuid;
-                RE.substitute(wuid,"#1");
-                const char *w = wuid.str();
-                bool found = NULL != wuids.find(*w);
-                const char *uid = gd.queryProp("@uid");
-                if (!found)
-                {
-                    uidsToDelete.append(uid);
-                    indexToDelete.append(index);
-                }
+                generateDllsToDelete.push_back(&gd);
+                entryRemoved = true;
             }
         }
-        ++index;
-    }
-    PROGLOG("%d out of %d workunit files not associated with any workunit. Took %d ms", indexToDelete.ordinality(), index, ts.elapsed());
-    ts.reset(0);
 
+        if (!entryRemoved && removeStaleLocations)
+        {
+            std::vector<IPropertyTree *> locationsToRemove;
+            Owned<IPropertyTreeIterator> locationIter = gd.getElements("location");
+            ForEach(*locationIter)
+            {
+                IPropertyTree &location = locationIter->query();
+                const char *host = location.queryProp("@ip");
+                if (!isEmptyString(host))
+                {
+                    IpAddress ip(host);
+                    StringBuffer ipStr;
+                    ip.getIpText(ipStr);
+                    const auto &it = machineMap.find(ipStr.str());
+                    if (it == machineMap.end()) // not found, remove it.
+                    {
+                        if (verbose)
+                            PROGLOG("Removing stale for %s at location %s", name, host);
+                        locationsToRemove.push_back(&location);
+                        ++removedLocations;
+                    }
+                }
+            }
+            if (fix)
+            {
+                for (auto &location: locationsToRemove)
+                    gd.removeTree(location);
+            }
+        }
+    }
+    PROGLOG("%u out of %u generated dll entries not associated with any workunit, and %u stale locations found. Took %u ms", (unsigned)generateDllsToDelete.size(), totalCount, removedLocations, ts.elapsed());
+
+    ts.reset(0);
     IArrayOf<IDllEntry> removedEntries;
     unsigned numDeleted = 0;
-    ForEachItemInRev(d, indexToDelete)
+    for (auto &toDelete: generateDllsToDelete)
     {
-        const char *uid = uidsToDelete.item(d);
-        unsigned index = indexToDelete.item(d);
-        StringBuffer path("GeneratedDll[");
-        path.append(index).append("]");
-        IPropertyTree *gd = root->queryPropTree(path.str());
-        if (NULL == gd)
-            throwUnexpected();
-        const char *uidQuery = gd->queryProp("@uid");
-        if (0 != strcmp(uid, uidQuery))
-            throw MakeStringException(0, "Expecting uid=%s @ GeneratedDll[%d], but found uid=%s", uid, index, uidQuery);
         if (verbose)
-            PROGLOG("Removing: %s, uid=%s", path.str(), uid);
+            PROGLOG("Removing: %s", toDelete->queryProp("@name"));
         if (fix)
         {
-            Owned<IDllEntry> entry = queryDllServer().createEntry(root, gd);
-            entry->remove(false, false); // NB: This will remove child 'gd' element from root (GeneratedDlls)
+            Owned<IDllEntry> entry = queryDllServer().createEntry(root, toDelete);
+            entry->remove(false, false); // NB: this is equivalent to root->removeTree(&toDelete);
             if (deleteFiles) // delay until after meta info removed and /GeneratedDlls unlocked
                 removedEntries.append(*entry.getClear());
         }
@@ -2884,24 +2955,26 @@ static void validateStore(bool fix, bool deleteFiles, bool verbose)
     }
     if (fix)
     {
-        conn->commit();
-        PROGLOG("Removed %d unassociated file entries. Took %d ms", numDeleted, ts.elapsed());
-        ts.reset(0);
+        generatedDllsConn->commit();
+        PROGLOG("Removed %d unassociated file entries, and %u stale locations found. Took %u ms", numDeleted, removedLocations, ts.elapsed());
 
         if (deleteFiles)
         {
             PROGLOG("Deleting physical files..");
+
+            ts.reset(0);
             ForEachItemIn(r, removedEntries)
             {
                 IDllEntry &entry = removedEntries.item(r);
-                PROGLOG("Removing files for: %s", entry.queryName());
+                if (verbose)
+                    PROGLOG("Removing files for: %s", entry.queryName());
                 entry.remove(true, false);
             }
-            PROGLOG("Removed physical files. Took %d ms", ts.elapsed());
+            PROGLOG("Removed physical files. Took %u ms", ts.elapsed());
         }
     }
     else
-        PROGLOG("%d unassociated file entries to remove - use 'fix=true'", numDeleted);
+        PROGLOG("%d unassociated file entries to remove, and %u stale locations found. Took %u ms - use 'fix=true'", numDeleted, removedLocations, ts.elapsed());
     PROGLOG("Done time = %d secs", totalTime.elapsed()/1000);
 }
 
@@ -3255,6 +3328,7 @@ int main(int argc, char* argv[])
             (memcmp(param,"fix=",4)==0) ||
             (memcmp(param,"verbose=",8)==0) ||
             (memcmp(param,"deletefiles=",12)==0) ||
+            (memcmp(param,"removestalelocations=",21)==0) ||
             (memcmp(param,"timeout=",8)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
@@ -3581,7 +3655,8 @@ int main(int argc, char* argv[])
                         bool fix = props->getPropBool("fix");
                         bool verbose = props->getPropBool("verbose");
                         bool deleteFiles = props->getPropBool("deletefiles");
-                        validateStore(fix, deleteFiles, verbose);
+                        bool removeStaleLocations = props->getPropBool("removestalelocations");
+                        validateStore(fix, deleteFiles, removeStaleLocations, verbose);
                     }
                     else if (strieq(cmd, "workunit")) {
                         CHECKPARAMS(1,2);
