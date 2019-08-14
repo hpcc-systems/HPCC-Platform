@@ -490,6 +490,7 @@ public:
             rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest" TN "._1_of_1");
             fdesc->setPart(0,rfn);
             fdesc->endCluster(map);
+            fdesc->queryPart(0)->queryProperties().setPropInt64("@size", 123);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
             file->attach("test::ftest" TN,user);
 #undef TN
@@ -500,6 +501,7 @@ public:
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
             fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
             fdesc->setNumParts(1);
+            fdesc->queryPart(0)->queryProperties().setPropInt64("@size", 123);
             Owned<IGroup> grp = createIGroup("10.150.10.1");
             fdesc->addCluster(grp,map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
@@ -520,6 +522,8 @@ public:
             rfn.setRemotePath("//10.150.10.3/c$/thordata/test/ftest" TN "._3_of_3");
             fdesc->setPart(2,rfn);
             fdesc->endCluster(map);
+            for (unsigned p=0; p<fdesc->numParts(); p++)
+                fdesc->queryPart(p)->queryProperties().setPropInt64("@size", 10);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
             file->attach("test::ftest" TN,user);
 #undef TN
@@ -530,6 +534,8 @@ public:
             Owned<IFileDescriptor> fdesc = createFileDescriptor();
             fdesc->setPartMask("ftest" TN "._$P$_of_$N$");
             fdesc->setNumParts(3);
+            for (unsigned p=0; p<fdesc->numParts(); p++)
+                fdesc->queryPart(p)->queryProperties().setPropInt64("@size", 10);
             fdesc->addCluster(grp3,map);
             Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
             file->attach("test::ftest" TN,user);
@@ -1744,6 +1750,8 @@ public:
         fdesc->setDefaultDir("/c$/thordata/test");
         fdesc->setPartMask("testfile1._$P$_of_$N$");
         fdesc->setNumParts(5);
+        for (unsigned p=0; p<fdesc->numParts(); p++)
+            fdesc->queryPart(p)->queryProperties().setPropInt64("@size", 10);
         ClusterPartDiskMapSpec mapping;
         fdesc->addCluster(grp1,mapping);
         fdesc->addCluster(grp2,mapping);
