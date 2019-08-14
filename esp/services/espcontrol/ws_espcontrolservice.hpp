@@ -41,6 +41,9 @@ class CWSESPControlEx : public CWSESPControl
     StringAttr espProcess;
     MapStringTo<int> sessionTimeoutMinutesMap;
     IEspContainer* m_container;
+    int loggingLevelSetting = 1;
+    LogRequest logRequestsSetting = LogRequestsNever;
+    bool logResponsesSetting = false;
 
     const char* readSessionTimeStamp(int t, StringBuffer& str);
     float readSessionTimeoutMin(int sessionTimeoutMinutes, int lastAccessed);
@@ -63,6 +66,7 @@ public:
     }
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
+    virtual bool onGetLoggingSettings(IEspContext &context, IEspGetLoggingSettingsRequest &req, IEspGetLoggingSettingsResponse &resp);
     virtual bool onSetLogging(IEspContext &context, IEspSetLoggingRequest &req, IEspSetLoggingResponse &resp);
     virtual bool onSessionQuery(IEspContext& context, IEspSessionQueryRequest& req, IEspSessionQueryResponse& resp);
     virtual bool onSessionInfo(IEspContext& context, IEspSessionInfoRequest& req, IEspSessionInfoResponse& resp);

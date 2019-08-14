@@ -64,6 +64,10 @@ void CWSESPControlEx::init(IPropertyTree *cfg, const char *process, const char *
     if (!espCFG)
         throw MakeStringException(-1, "Can't find EspBinding for %s", process);
 
+    loggingLevelSetting = cfg->getPropInt("Software/EspProcess/@logLevel", 1);
+    logRequestsSetting = readLogRequest(cfg->queryProp("Software/EspProcess/@logRequests"));
+    logResponsesSetting = cfg->getPropBool("Software/EspProcess/@logResponses", false);
+
     Owned<IPropertyTreeIterator> it = espCFG->getElements("AuthDomains/AuthDomain");
     ForEach(*it)
     {
@@ -195,6 +199,36 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
             m_container->setLogResponses(req.getLogResponses());
         resp.setStatus(0);
         resp.setMessage("Logging settings are updated.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingSettingsRequest& req, IEspGetLoggingSettingsResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to get log settings. Permission denied.");
+        }
+#endif
+        if (!m_container)
+            throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to access container.");
+
+        StringBuffer logRequests;
+        resp.setLoggingLevel(m_container->getLogLevel());
+        resp.setLogRequests(getLogRequestString(m_container->getLogRequests(), logRequests));
+        resp.setLogResponses(m_container->getLogResponses());
+        resp.setLoggingLevelSetting(loggingLevelSetting);
+        resp.setLogRequestsSetting(getLogRequestString(logRequestsSetting, logRequests.clear()));
+        resp.setLogResponsesSetting(logResponsesSetting);
     }
     catch(IException* e)
     {
