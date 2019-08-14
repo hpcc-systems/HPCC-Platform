@@ -2149,8 +2149,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         if (partToSlaveMap.size())
         {
             slave = partToSlaveMap[partNo];
-            if (NotFound == slave) // part not local to cluster, part is handled locally. 'slave' only used for max (see below).
-                slave = 0;
+            if (NotFound == slave) // part not local to cluster, part is handled locally/directly.
+                slave = handlerCounts.size()-1; // last one reserved for out of cluster part handling.
         }
         unsigned max = queryMaxHandlers(hType);
         unsigned &handlerCount = handlerCounts[slave];
@@ -2222,12 +2222,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             std::vector<unsigned> slaveHandlersRR;
             bool remoteLookup = partToSlaveMap.size()>0;
             unsigned slaves = remoteLookup ? queryJob().querySlaves() : 1; // if no map, all parts are treated as if local
-            for (unsigned s=0; s<slaves; s++)
+            unsigned numHandlers = slaves+1; // +1 is for off cluster parts, which will be handled by local/direct handlers
+            for (unsigned s=0; s<numHandlers; s++)
             {
                 handlerCounts.push_back(0);
                 slaveHandlersRR.push_back(0);
             }
-            slaveHandlers.resize(slaves);
+            slaveHandlers.resize(numHandlers);
 
             unsigned currentPart = 0;
             unsigned p = 0;
