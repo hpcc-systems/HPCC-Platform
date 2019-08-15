@@ -1400,7 +1400,7 @@ public:
                         dt->addProp("MinIP",s1.str());
                     }
                     if (d->minsize[drv]<d->maxsize[drv]) {
-                        __int64 av = d->totalsize[drv]/(__int64)grp->ordinality();
+                        __int64 av = d->totalsize[drv]/(__int64)rawgrp->ordinality();
                         if (av) {
                             unsigned pcp = (unsigned)(d->maxsize[drv]*100/av);
                             unsigned pcn = (unsigned)(d->minsize[drv]*100/av);
