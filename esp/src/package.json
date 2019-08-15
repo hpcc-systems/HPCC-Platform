@@ -26,7 +26,8 @@
     "dev-start": "ws",
     "dev-link": "rimraf ./node_modules/@hpcc-js && mklink /J .\\node_modules\\@hpcc-js ..\\..\\..\\hpcc-js\\packages",
     "dev-unlink": "rimraf ./node_modules/@hpcc-js && npm install",
-    "test": "run-s lint"
+    "test": "run-s lint",
+    "postinstall": "rimraf ./node_modules/**/preact/dist/preact.d.ts"
   },
   "main": "src/stub.js",
   "dependencies": {
@@ -43,16 +44,20 @@
     "d3-array": "1.2.4",
     "d3-scale": "1.0.7",
     "d3-selection": "1.4.0",
+    "dijit": "1.15.0",
     "dojo": "1.15.0",
     "dojo-themes": "1.14.1",
     "dojo-util": "1.15.0",
-    "dijit": "1.15.0",
     "dojox": "1.15.0",
     "es6-promise": "4.2.6",
-    "font-awesome": "4.7.0"
+    "font-awesome": "4.7.0",
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
   },
   "devDependencies": {
     "@types/dojo": "1.9.41",
+    "@types/react": "^16.9.1",
+    "@types/react-dom": "^16.8.5",
     "copy-webpack-plugin": "4.5.4",
     "cpx": "1.5.0",
     "css-loader": "2.1.1",
