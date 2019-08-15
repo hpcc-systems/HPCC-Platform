@@ -11,7 +11,7 @@ Palette.rainbow("DiskUsage", ["green", "green", "green", "green", "green", "gree
 
 export class Summary extends FlexGrid {
 
-    private _connection = new MachineService({ baseUrl: "" });
+    private _connection = new MachineService({ baseUrl: "", timeoutSecs: 360 });
     private _loadingMsg;
     private _usage: { [id: string]: { details: GetTargetClusterUsageEx.TargetClusterUsage, gauge: Gauge } } = {};
 

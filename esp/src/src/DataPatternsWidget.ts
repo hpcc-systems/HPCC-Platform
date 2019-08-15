@@ -49,6 +49,8 @@ type _TabContainerWidget = {
     addChild(tabItem: any, pos: number);
 };
 
+export const supportedFileType = (contentType: string): boolean => ["flat", "csv", "thor"].indexOf((contentType || "").toLowerCase()) >= 0;
+
 export interface DataPatternsWidget extends _TabContainerWidget {
 }
 
