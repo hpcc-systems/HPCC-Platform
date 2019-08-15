@@ -584,6 +584,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   HASH_LINK
   HASH_ONWARNING
   HASH_WEBSERVICE
+  HASH_DOLLAR
 
   INTERNAL_READ_NEXT_TOKEN
 
@@ -744,6 +745,9 @@ importId
                         }
     | '$'               {
                             $$.setExpr(createAttribute(selfAtom), $1);
+                        }
+    | HASH_DOLLAR       {
+                            $$.setExpr(createAttribute(_hash_dollar_Atom), $1);
                         }
     | '^'               {
                             $$.setExpr(createAttribute(_root_Atom), $1);
@@ -7233,6 +7237,11 @@ abstractModule
     | '$'
                         {
                             IHqlExpression * scopeExpr = queryExpression(parser->globalScope);
+                            $$.setExpr(LINK(scopeExpr), $1);
+                        }
+    | HASH_DOLLAR
+                        {
+                            IHqlExpression * scopeExpr = queryExpression(parser->queryMacroScope());
                             $$.setExpr(LINK(scopeExpr), $1);
                         }
     | VALUE_MACRO abstractModule ENDMACRO

@@ -210,6 +210,7 @@ IAtom * _graphLocal_Atom;
 IAtom * groupAtom;
 IAtom * groupedAtom;
 IAtom * hashAtom;
+IAtom * _hash_dollar_Atom;
 IAtom * headingAtom;
 IAtom * _hidden_Atom;
 IAtom * hintAtom;
@@ -685,6 +686,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(group);
     MAKEATOM(grouped);
     MAKEATOM(hash);
+    MAKESYSATOM(hash_dollar);
     MAKEATOM(heading);
     MAKESYSATOM(hidden);
     MAKEATOM(hint);

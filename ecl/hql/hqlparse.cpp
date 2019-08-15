@@ -429,7 +429,6 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         child(1) = parameters
         child(2) = defaults for parameters
     */
-
     attribute nextToken;
     int tok = yyLex(nextToken, false, 0);
     if (tok != '(')
@@ -2384,6 +2383,23 @@ void HqlLex::loadXML(const attribute & errpos, const char *name, const char * ch
         // recovery: create a default XML scope
         xmlScope = createXMLScope();
     }
+}
+
+IIdAtom * HqlLex::queryMacroScope()
+{
+    if (inmacro)
+    {
+        IIdAtom * scope = inmacro->queryMacroScope();
+        if (scope)
+            return scope;
+    }
+    if (macroExpr)
+    {
+        IIdAtom * parent = macroExpr->queryFullContainerId();
+        if (parent)
+            return parent;
+    }
+    return nullptr;
 }
 
 IPropertyTree * HqlLex::getClearJavadoc()

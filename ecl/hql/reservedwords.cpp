@@ -108,6 +108,7 @@ static const char * eclReserved3[] = { //Template language
     "#warning",
     "#webservice",
     "#workunit",
+    "#$",
     "loadxml",
     NULL
 };

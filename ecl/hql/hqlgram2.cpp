@@ -419,6 +419,19 @@ IHqlScope * HqlGram::queryGlobalScope()
     return globalScope;
 }
 
+IHqlScope * HqlGram::queryMacroScope()
+{
+    IIdAtom * scopeName = lexObject->queryMacroScope();
+    if (scopeName)
+    {
+        OwnedHqlExpr matched = getResolveAttributeFullPath(str(scopeName), LSFpublic, lookupCtx);
+        if (matched && matched->queryScope())
+            return matched->queryScope();
+    }
+
+    return globalScope;
+}
+
 void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 {
     minimumScopeIndex = 0;
@@ -10854,6 +10867,11 @@ inline bool isDollarModule(IHqlExpression * expr)
     return expr->isAttribute() && (expr->queryName() == selfAtom);
 }
 
+inline bool isHashDollarModule(IHqlExpression * expr)
+{
+    return expr->isAttribute() && (expr->queryName() == _hash_dollar_Atom);
+}
+
 inline bool isRootModule(IHqlExpression * expr)
 {
     return expr->isAttribute() && (expr->queryName() == _root_Atom);
@@ -10863,6 +10881,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
 {
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
+    if (isHashDollarModule(expr))
+        return LINK(queryExpression(queryMacroScope()));
     if (isRootModule(expr))
         return LINK(queryExpression(lookupCtx.queryRepository()->queryRootScope()));
 
@@ -11512,6 +11532,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH_LINK: msg.append("#LINK"); break;
     case HASH_WORKUNIT: msg.append("#WORKUNIT"); break;
     case HASH_WEBSERVICE: msg.append("#WEBSERVICE"); break;
+    case HASH_DOLLAR: msg.append("#$"); break;
     case SIMPLE_TYPE: msg.append("type-name"); break;
 
     case EQ: msg.append("="); break;
