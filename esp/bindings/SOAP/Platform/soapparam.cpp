@@ -275,7 +275,7 @@ bool BaseEspStruct::unmarshall(IEspContext* ctx, IProperties &params, MapStrToBu
 void SoapParamBinary::marshall(IRpcMessage &rpc_call, const char *tagname, const char *basepath, const char *xsdtype, const char *prefix)
 {
     StringBuffer sb64;
-    JBASE64_Encode(value.toByteArray(), value.length(), sb64);
+    JBASE64_Encode(value.toByteArray(), value.length(), sb64, true);
     rpc_call.add_value(basepath, prefix, tagname, xsdtype, sb64);
 }
 
@@ -293,7 +293,7 @@ void SoapParamBinary::toJSON(IEspContext* ctx, StringBuffer &s, const char *tagn
 void SoapParamBinary::toXML(IEspContext *ctx, StringBuffer &s, const char *tagname, const char *prefix, bool encode)
 {
     appendXMLOpenTag(s, tagname, prefix);
-    JBASE64_Encode(value.toByteArray(), value.length(), s);
+    JBASE64_Encode(value.toByteArray(), value.length(), s, true);
     appendXMLCloseTag(s, tagname, prefix);
 }
 

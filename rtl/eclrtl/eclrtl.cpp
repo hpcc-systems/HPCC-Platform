@@ -6216,7 +6216,7 @@ void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * 
     if (slen)
     {
         StringBuffer out;
-        JBASE64_Encode(src, slen, out);
+        JBASE64_Encode(src, slen, out, true);
         tlen = out.length();
         if (tlen)
         {

@@ -618,7 +618,7 @@ StringBuffer &base58ToBase64(StringBuffer &s, const char *b58)
 {
     MemoryBuffer mb;
     base58ToMb(mb, b58);
-    JBASE64_Encode(mb.toByteArray(), mb.length(), s.clear());
+    JBASE64_Encode(mb.toByteArray(), mb.length(), s.clear(),true);
     return s;
 }
 

@@ -5499,7 +5499,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
                 }
             }
             else
-                JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), out);
+                JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), out, true);
         }
         else
         {

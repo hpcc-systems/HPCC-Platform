@@ -1831,7 +1831,7 @@ void encrypt(StringBuffer &ret, const char *in)
     {
         MemoryBuffer out;
         aesEncrypt(CRYPTKEY, CRYPTSIZE, in, (size32_t)strlen(in), out);
-        JBASE64_Encode(out.toByteArray(), out.length(), ret);
+        JBASE64_Encode(out.toByteArray(), out.length(), ret, true);
     }
 }
 

@@ -694,7 +694,7 @@ class CDataMailPart : public CMailPart
 public:
     CDataMailPart(size32_t len, const void * data, char const * mimeType, char const * filename) : CMailPart(mimeType, filename)
     {
-        JBASE64_Encode(data, len, buff);
+        JBASE64_Encode(data, len, buff, true);
         encoding = "base64";
     }
 
@@ -715,7 +715,7 @@ public:
         unsigned char rndm[12];
         for(unsigned i=0; i<12; ++i)
             rndm[i] = getRandom() % 256;
-        JBASE64_Encode(rndm, 12, boundary);
+        JBASE64_Encode(rndm, 12, boundary, true);
         mime.append("; boundary=\"").append(boundary).append("\"");
     }
 

@@ -322,7 +322,7 @@ unsigned CLoggingManager::serializeLogRequestContent(IEspUpdateLogRequestWrap* r
     const char* logRequest = request->getUpdateLogRequest();
     MemoryBuffer memBuf;
     LZWCompress(logRequest, strlen(logRequest), memBuf, 0x100);
-    JBASE64_Encode(memBuf.toByteArray(), memBuf.length(), logData);
+    JBASE64_Encode(memBuf.toByteArray(), memBuf.length(), logData, true);
 
     appendXMLCloseTag(logData, LOGREQUEST);
 

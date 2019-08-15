@@ -398,7 +398,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                     if (!cursorLen)
                         break;
                     const void *cursor = mb.readDirect(cursorLen);
-                    JBASE64_Encode(cursor, cursorLen, remoteReadCursor);
+                    JBASE64_Encode(cursor, cursorLen, remoteReadCursor, true);
                 }
 
                 if (remoteStreamForceResend)
