@@ -272,6 +272,7 @@ extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceServerSideCache;
+extern bool traceTranslations;
 extern bool defaultTimeActivities;
 extern bool defaultTraceEnabled;
 extern unsigned defaultTraceLimit;

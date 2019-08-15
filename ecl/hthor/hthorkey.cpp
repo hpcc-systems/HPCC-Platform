@@ -699,6 +699,8 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
 
             //MORE: We could introduce a more efficient way of checking this that does not create a translator
             Owned<const IDynamicTransform> actualTranslator = createRecordTranslator(expectedFormat->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+            DBGLOG("Record layout translator created for %s",  f->queryLogicalName());
+            actualTranslator->describe();
             if (actualTranslator->keyedTranslated())
                 throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
 
@@ -2540,6 +2542,8 @@ protected:
                 if (actualDiskMeta)
                 {
                     translator.setown(createRecordTranslator(helper.queryProjectedDiskRecordSize()->queryRecordAccessor(true), actualDiskMeta->queryRecordAccessor(true)));
+                    DBGLOG("Record layout translator created for %s",  f->queryLogicalName());
+                    translator->describe();
                     if (translator->canTranslate())
                     {
                         if (getLayoutTranslationMode()==RecordTranslationMode::None)

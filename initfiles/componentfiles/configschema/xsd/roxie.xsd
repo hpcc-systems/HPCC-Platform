@@ -277,6 +277,9 @@
                     <xs:attribute name="soapTraceLevel" type="xs:nonNegativeInteger" hpcc:displayName="Soap trace Level"
                                   hpcc:presetValue="1"
                                   hpcc:tooltip="Level of detail in reporting SOAPCALL information(set to 0 for none, 1 for normal, >1 or more for extended)"/>
+                    <xs:attribute name="traceTranslations" type="xs:boolean" hpcc:displayName="Trace record layout translations"
+                                  hpcc:presetValue="true"
+                                  hpcc:tooltip="Trace record layout translations to log file"/>
                     <xs:attribute name="traceEnabled" type="xs:boolean" hpcc:displayName="Trace Enabled"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="TRACE activity output enabled by default (can be overridden in workunit or query)"/>

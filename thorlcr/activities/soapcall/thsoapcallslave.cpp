@@ -28,7 +28,7 @@ static StringBuffer &buildAuthToken(IUserDescriptor *userDesc, StringBuffer &aut
     userDesc->getUserName(uidpair);
     uidpair.append(":");
     userDesc->getPassword(uidpair);
-    JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+    JBASE64_Encode(uidpair.str(), uidpair.length(), authToken, false);
     return authToken;
 }
 

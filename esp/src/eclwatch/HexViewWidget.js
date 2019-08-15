@@ -4,26 +4,23 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
-    "dojo/request/iframe",
 
     "dijit/registry",
 
     "hpcc/_Widget",
-    "src/ESPWorkunit",
-    "hpcc/ECLSourceWidget",
+    "@hpcc-js/comms",
 
     "dojo/text!../templates/HexViewWidget.html",
 
+    "hpcc/ECLSourceWidget",
     "dijit/form/NumberSpinner",
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, iframe,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil,
         registry,
-        _Widget, ESPWorkunit, ECLSourceWidget,
+        _Widget, hpccComms,
         template) {
         return declare("HexViewWidget", [_Widget], {
             templateString: template,
@@ -87,74 +84,44 @@ define([
                     sourceMode: ""
                 });
                 var context = this;
-                this.wu = ESPWorkunit.Create({
-                    onCreate: function () {
-                        context.wu.update({
-                            QueryText: context.getQuery()
-                        });
-                        context.watchWU();
-                    },
-                    onUpdate: function () {
-                        context.wu.submit();
-                    },
-                    onSubmit: function () {
-                    }
-                });
-            },
-
-            watchWU: function () {
-                if (this.watchHandle) {
-                    this.watchHandle.unwatch();
-                }
-                var context = this;
-                this.watchHandle = this.wu.watch(function (name, oldValue, newValue) {
-                    switch (name) {
-                        case "hasCompleted":
-                            if (newValue === true) {
-                                this.wu.getInfo({
-                                    onGetWUExceptions: function (exceptions) {
-                                        if (exceptions.length) {
-                                            var msg = "";
-                                            arrayUtil.forEach(exceptions, function (exception) {
-                                                if (exception.Severity === "Error") {
-                                                    if (msg) {
-                                                        msg += "\n";
-                                                    }
-                                                    msg += exception.Message;
-                                                }
-                                            });
-                                            if (msg) {
-                                                dojo.publish("hpcc/brToaster", {
-                                                    Severity: "Error",
-                                                    Source: "HexViewWidget.remoteRead",
-                                                    Exceptions: [{ Source: context.wu.Wuid, Message: msg }]
-                                                });
-                                            }
-                                        }
-                                    }
-                                });
-                                context.wu.fetchResults(function (results) {
-                                    context.cachedResponse = "";
-                                    arrayUtil.forEach(results, function (result, idx) {
-                                        var store = result.getStore();
-                                        var result = store.query({
-                                        }, {
-                                                start: 0,
-                                                count: context.bufferLength
-                                            }).then(function (response) {
-                                                context.watchHandle.unwatch();
-                                                context.cachedResponse = response;
-                                                context.displayHex();
-                                                context.wu.doDelete();
-                                            });
-                                    });
-                                });
+                this.wu = hpccComms.Workunit.submit({ baseUrl: "" }, "hthor", context.getQuery()).then(function (wu) {
+                    wu.on("changed", function () {
+                        if (!wu.isComplete()) {
+                            context.hexView.setText("..." + wu.State + "...");
+                        }
+                    });
+                    return wu.watchUntilComplete();
+                }).then(function (wu) {
+                    return wu.fetchECLExceptions().then(function () { return wu; });
+                }).then(function (wu) {
+                    var exceptions = wu.Exceptions && wu.Exceptions.ECLException ? wu.Exceptions.ECLException : [];
+                    if (exceptions.length) {
+                        var msg = "";
+                        arrayUtil.forEach(exceptions, function (exception) {
+                            if (exception.Severity === "Error") {
+                                if (msg) {
+                                    msg += "\n";
+                                }
+                                msg += exception.Message;
                             }
-                            break;
-                        case "State":
-                            context.hexView.setText("..." + (context.wu.isComplete() ? context.i18n.fetchingresults : newValue) + "...");
-                            break;
+                        });
+                        if (msg) {
+                            dojo.publish("hpcc/brToaster", {
+                                Severity: "Error",
+                                Source: "HexViewWidget.remoteRead",
+                                Exceptions: [{ Source: context.wu.Wuid, Message: msg }]
+                            });
+                        }
                     }
+                    return wu.fetchResults().then(function (results) {
+                        return results.length ? results[0].fetchRows() : [];
+                    }).then(function (rows) {
+                        context.cachedResponse = rows;
+                        context.displayHex();
+                        return wu;
+                    });
+                }).then(function (wu) {
+                    return wu.delete();
                 });
             },
 

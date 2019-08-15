@@ -192,6 +192,117 @@ ENDC++;
 isUpper('JIM');
 
 </programlisting>
+
+    <para>Parameters can also include streamed datasets. </para>
+
+    <para>If stream is specified on the dataset then the parameter is passed
+    as an IRowStream. The next row from the dataset is obtained by
+    calling:</para>
+
+    <para><programlisting>dataset-&gt;nextRow(); </programlisting></para>
+
+    <para>After it has been processed the row must be freed by calling </para>
+
+    <para><programlisting>rtlReleaseRow(next); </programlisting></para>
+
+    <para>For example: </para>
+
+    <para><programlisting>traceDataset(STREAMED DATASET(r) ds, BOOLEAN isLocal = FALSE) := EMBED(C++)
+#include &lt;stdio.h&gt;
+#body
+  for(;;)
+  {
+    const byte * next = (const byte *)ds-&gt;nextRow();
+    if (!next)
+      return;
+    unsigned __int64 id = *(__uint64 *)(next);
+    size32_t lenName = *(size32_t *)(next + sizeof(__uint64));
+    const char * name = (char *)(next + sizeof(__uint64) + sizeof(size32_t));
+    printf("id(%u) name(%.*s)\n", (unsigned)id, lenName, name);
+    rtlReleaseRow(next);
+  }
+ENDEMBED;</programlisting></para>
+
+    <para>If the result of a c++ function is a streamed dataset, then it needs
+    to return an instance of an IRowStream interface. The function will also
+    be passed an extra implicit parameter:</para>
+
+    <para><programlisting>IEngineRowAllocator * _resultAllocator</programlisting></para>
+
+    <para>which is used to allocate the rows that are returned from the
+    function. </para>
+
+    <para>For example:</para>
+
+    <para><programlisting>// This function takes two streamed inputs and outputs the result of two values 
+// from the left multiplied together and added to a row from the right.
+
+STREAMED DATASET(r) myDataset(STREAMED DATASET(r) ds1, STREAMED DATASET(r) ds2)
+  := EMBED(C++ : activity)
+#include &lt;stdio.h&gt;
+#body
+    class MyStreamInlineDataset : public RtlCInterface, implements IRowStream
+    {
+    public:
+
+        MyStreamInlineDataset(IEngineRowAllocator * _resultAllocator, IRowStream * _ds1, 
+                              IRowStream * _ds2)
+          : resultAllocator(_resultAllocator), ds1(_ds1), ds2(_ds2)
+        {
+        }
+        RTLIMPLEMENT_IINTERFACE        virtual const void *nextRow() override
+        {
+            const byte * next1a = (const byte *)ds1-&gt;nextRow();
+            if (!next1a)
+                return nullptr;
+            const byte * next1b = (const byte *)ds1-&gt;nextRow();
+            const byte * next2 = (const byte *)ds2-&gt;nextRow();
+            if (!next1b || !next2)
+                rtlFailUnexpected();
+            unsigned __int64 value1a = *(const unsigned __int64 *)next1a;
+            unsigned __int64 value1b = *(const unsigned __int64 *)next1b;
+            unsigned __int64 value2 = *(const unsigned __int64 *)next2;
+            rtlReleaseRow(next1a);
+            rtlReleaseRow(next1b);
+            rtlReleaseRow(next2);
+            
+            unsigned __int64 result = value1a * value1b + value2;
+            RtlDynamicRowBuilder rowBuilder(resultAllocator);
+            byte * row = rowBuilder.getSelf();
+            *(__uint64 *)(row) = result;
+            return rowBuilder.finalizeRowClear(sizeof(unsigned __int64));
+        }
+        virtual void stop() override
+        {
+            ds1-&gt;stop();
+            ds2-&gt;stop();
+        }
+    protected:
+        Linked&lt;IEngineRowAllocator&gt; resultAllocator;
+        IRowStream * ds1;
+        IRowStream * ds2;
+    };    return new MyStreamInlineDataset(_resultAllocator, ds1, ds2);
+ENDEMBED;
+</programlisting></para>
+
+    <para>Note: If the resulting row does not have a fixed size, you should
+    call: </para>
+
+    <para><programlisting>byte * row = rowBuilder.ensureCapacity(&lt;totalSize&gt;, nullptr); </programlisting></para>
+
+    <para>instead of: </para>
+
+    <para><programlisting>byte * row = rowBuilder.getSelf(); </programlisting></para>
+
+    <para>This code uses a RtlDynamicRowBuilder which is a class used by the
+    code generator. Instead of using the RtlDynamicRowBuilder class, you could
+    directly call resultAllocator-&gt;createRow().</para>
+
+    <para>When a data type is included in an input row, rather than being
+    passed as a parameter, the format is the same as the parameters, except
+    that instead of having a pointer to the string etc., the string follows
+    the 4-byte length. The data in the row is not aligned; that is, it has
+    packing of 1. </para>
   </sect2>
 
   <sect2 id="BeginCPP_Available_Options">

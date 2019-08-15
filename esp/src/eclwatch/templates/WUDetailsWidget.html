@@ -28,11 +28,11 @@
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}PublishForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                                    <input id="${id}Jobname2" title="${i18n.JobName}:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
-                                     <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
-                                     <input id="${id}SourceProcess" title="${i18n.SourceProcess}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
-                                     <input id="${id}Comment" title="${i18n.Comment}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
-                                     <select id="${id}Priority" title="${i18n.Priority}:" colspan="2" data-dojo-type="dijit.form.Select">
+                                    <input id="${id}Jobname2" title="${i18n.JobName}:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SourceProcess" title="${i18n.SourceProcess}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}Comment" title="${i18n.Comment}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <select id="${id}Priority" title="${i18n.Priority}:" colspan="2" data-dojo-type="dijit.form.Select">
                                         <option value="" selected="selected">${i18n.None}</option>
                                         <option value="SLA">${i18n.SLA}</option>
                                         <option value="Low">${i18n.Low}</option>
@@ -48,28 +48,28 @@
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}ZapReport"  title="${i18n.ZippedAnalysisPackage}" data-dojo-attach-event="onClick:_onZapReport" data-dojo-props="iconClass:'iconZap'" data-dojo-type="dijit.form.Button">${i18n.ZAP}</div>
+                    <div id="${id}ZapReport" title="${i18n.ZippedAnalysisPackage}" data-dojo-attach-event="onClick:_onZapReport" data-dojo-props="iconClass:'iconZap'" data-dojo-type="dijit.form.Button">${i18n.ZAP}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}SlaveLogs" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.SlaveLogs}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                        <div id="${id}LogsForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
-                            <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                                <select id="${id}ThorProcess" title="${i18n.ThorProcess}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select" /></select>
-                                <input id="${id}SlaveNumber" maxlength="" title="${i18n.SlaveNumber}:" name="SlaveNumber" value="1" required="true" data-dojo-props="trim: true, placeHolder:'1'" data-dojo-type="dijit.form.NumberTextBox"/>
-                                <select id="${id}FileFormat" title="${i18n.File}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select" />
-                                    <option value="1">${i18n.OriginalFile}</option>
-                                    <option value="2">${i18n.Zip}</option>
-                                    <option value="3">${i18n.GZip}</option>
-                                </select>
+                            <div id="${id}LogsForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                    <select id="${id}ThorProcess" title="${i18n.ThorProcess}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select"></select>
+                                    <input id="${id}SlaveNumber" maxlength="" title="${i18n.SlaveNumber}:" name="SlaveNumber" value="1" required="true" data-dojo-props="trim: true, placeHolder:'1'" data-dojo-type="dijit.form.NumberTextBox" />
+                                    <select id="${id}FileFormat" title="${i18n.File}:" name="ThorProcess" colspan="2" data-dojo-type="dijit.form.Select">
+                                        <option value="1">${i18n.OriginalFile}</option>
+                                        <option value="2">${i18n.Zip}</option>
+                                        <option value="3">${i18n.GZip}</option>
+                                    </select>
+                                </div>
+                                <br />
+                                <div><span id="SlavesMaxNumber" class="bold"></span></div>
+                                <div><span id="AllowOnlyNumber" class="boldRed"></span></div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_getDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</button>
+                                </div>
                             </div>
-                            </br>
-                            <div><span id="SlavesMaxNumber" class="bold"></span></div>
-                            <div><span id="AllowOnlyNumber" class="boldRed"></span></div>
-                            <div class="dijitDialogPaneActionBar">
-                                <button type="submit" data-dojo-attach-event="onClick:_getDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</button>
-                            </div>
-                        </div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
@@ -79,7 +79,7 @@
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div style="display:inline-block">
                         <h2>
-                            <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<div id="${id}StateIdImage" class="iconWorkunit" ></div>&nbsp;<span id="${id}Wuid" class="bold">${i18n.WUID}</span>
+                            <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<div id="${id}StateIdImage" class="iconWorkunit"></div>&nbsp;<span id="${id}Wuid" class="bold">${i18n.WUID}</span>
                             <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Wuid"><img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="${i18n.CopyToClipboard}"></button>
                         </h2>
                     </div>
@@ -101,24 +101,24 @@
                             </li>
                             <li id="scopeOptional" class="hidden">
                                 <label class="Prompt" for="${id}Scope">${i18n.Scope}:</label>
-                                <div><input id="${id}Scope" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
+                                <div><input id="${id}Scope" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" /></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Jobname">${i18n.JobName}:</label>
-                                <div><input id="${id}Jobname" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
+                                <div><input id="${id}Jobname" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" /></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Description">${i18n.Description}:</label>
-                                <div><input id="${id}Description" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
+                                <div><input id="${id}Description" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" /></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Protected">${i18n.Protected}:</label>
-                                <div><input id="${id}Protected" data-dojo-type="dijit.form.CheckBox"/></div>
+                                <div><input id="${id}Protected" data-dojo-type="dijit.form.CheckBox" /></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}Cluster">${i18n.Cluster}:</label>
                                 <div id="${id}Cluster"></div>
-                                <div id="${id}AllowedClusters" data-dojo-type="dijit.form.Select"/></div>
+                                <div id="${id}AllowedClusters" data-dojo-type="dijit.form.Select"></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="${id}TotalClusterTime">${i18n.TotalClusterTime}:</label>
@@ -134,9 +134,9 @@
                             </li>
                         </ul>
                     </form>
-            </div>
-            <div id="${id}InfoContainer" class="wrap" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120, showToolbar: true" data-dojo-type="InfoGridWidget">
-            </div>
+                </div>
+                <div id="${id}InfoContainer" class="wrap" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120, showToolbar: true" data-dojo-type="InfoGridWidget">
+                </div>
             </div>
             <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-props="delayWidget: 'VariablesWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
@@ -163,23 +163,23 @@
         </div>
     </div>
     <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="${i18n.ZippedAnalysisPackage}">
-        <div id="${id}ZapForm" style="width:460px;" method="post" encType="application/x-www-form-urlencoded" data-dojo-type="dijit.form.Form">
+        <div id="${id}ZapForm" style="width:460px;" method="post" enctype="application/x-www-form-urlencoded" data-dojo-type="dijit.form.Form">
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                 <input id="${id}ZapName" title="${i18n.FileName}:" name="ZAPFileName" colspan="2" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}BuildVersion" title="${i18n.ESPBuildVersion}:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}ESPIPAddress" title="${i18n.ESPNetworkAddress}:" name="ESPIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}ThorIPAddress" title="${i18n.ThorNetworkAddress}:" name="ThorIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ZapDescription" title="${i18n.Description}:" name="ProblemDescription" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
-                <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
-                <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}ZapDescription" title="${i18n.Description}:" name="ProblemDescription" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
                 <input id="${id}Password" title="${i18n.PasswordOpenZAP}:" name="Password" cols="22" colspan="2" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                 <input id="${id}IncludeSlaveLogsCheckbox" title="${i18n.IncludeSlaveLogs}:" name="IncludeThorSlaveLog" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
                 <input id="${id}EmailCheckbox" title="${i18n.SendEmail}:" name="SendEmail" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
-                <input id="${id}EmailTo" title="${i18n.EmailTo}:" name="EmailTo" colspan="2" data-dojo-props="trim:true, readonly:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox"/>
-                <input id="${id}EmailFrom" title="${i18n.EmailFrom}:" name="EmailFrom" colspan="2" data-dojo-props="trim:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox"/>
-                <input id="${id}EmailSubject" title="${i18n.EmailSubject}:" name="EmailSubject" colspan="2" data-dojo-props="trim:true" data-dojo-type="dijit.form.ValidationTextBox" required="false"/>
-                <input id="${id}EmailBody" title="${i18n.EmailBody}:" name="EmailBody" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}EmailTo" title="${i18n.EmailTo}:" name="EmailTo" colspan="2" data-dojo-props="trim:true, readonly:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}EmailFrom" title="${i18n.EmailFrom}:" name="EmailFrom" colspan="2" data-dojo-props="trim:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}EmailSubject" title="${i18n.EmailSubject}:" name="EmailSubject" colspan="2" data-dojo-props="trim:true" data-dojo-type="dijit.form.ValidationTextBox" required="false" />
+                <input id="${id}EmailBody" title="${i18n.EmailBody}:" name="EmailBody" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
             </div>
             <div class="dijitDialogPaneActionBar">
                 <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onSubmitDialog" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
