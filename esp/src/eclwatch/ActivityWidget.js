@@ -84,7 +84,7 @@ define([
             //  Hitched actions  ---
             _onRefresh: function (event) {
                 this.inherited(arguments);
-                this.refreshUsage(true);
+                this.refreshUsage(false);
             },
 
             _onPause: function (event, params) {
