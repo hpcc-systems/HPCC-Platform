@@ -676,7 +676,7 @@ function createNavigationTree(navTreeData) {
         top.document.activeTab = 0;
         top.document.navDT.lastSelIndex = 0;
       }
-      else if (hasChildren[record.getData('id')] !== true)
+      else if (hasChildren[record.getData('id')] === true)
         return;
     }
     if( (compName === '' || compName === 'Software' || compName === 'Environment') && top.document.keyEventOccur === "false"){
