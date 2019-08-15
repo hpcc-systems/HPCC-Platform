@@ -34,6 +34,7 @@ define([
     "hpcc/FileBelongsToWidget",
     "src/FileSpray",
     "hpcc/FileHistoryWidget",
+    "src/DataPatternsWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
@@ -49,7 +50,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
     BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-    _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget,
+    _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget, DataPatternsWidget,
     template) {
         exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
             templateString: template,
@@ -460,7 +461,7 @@ define([
                 this.setDisabled(this.id + "RenameDropDown", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "DesprayDropDown", this.logicalFile.isDeleted());
                 this.setDisabled(this.id + "_Content", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
-                this.setDisabled(this.id + "_DataPatterns", this.logicalFile.isDeleted() || this.logicalFile.ContentType === "key");
+                this.setDisabled(this.id + "_DataPatterns", this.logicalFile.isDeleted() || !DataPatternsWidget.supportedFileType(this.logicalFile.ContentType));
                 this.setDisabled(this.id + "_Source", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
                 this.setDisabled(this.id + "_DEF", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
                 this.setDisabled(this.id + "_XML", this.logicalFile.isDeleted() || !this.logicalFile.Ecl);
