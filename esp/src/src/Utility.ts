@@ -794,6 +794,38 @@ export function DynamicDialogForm(object) {
     return table;
 }
 
+export function DynamicDialogTable(headingsArr, rows) {
+    var table = domConstruct.create("table", {
+        style: "border-collapse: collapse; width: 100%;"
+    });
+
+    var headingTr = domConstruct.create("tr", {
+        style: "border: 1px solid #dddddd;"
+    }, table);
+
+    arrayUtil.forEach(headingsArr, function(row, idx) {
+        //  @ts-ignore 
+        var th = domConstruct.create("th", {
+            innerHTML: row,
+            style: "text-align: left; padding-left:5px;"
+        }, headingTr)
+    });
+
+    arrayUtil.forEach(rows, function(row, idx) {
+        var tr = domConstruct.create("tr", {
+            style: "padding: 5px 0 5px 0;"
+        }, table);
+        for (var key in row) {
+            //  @ts-ignore 
+            var td = domConstruct.create("td", {
+                innerHTML: key === "ServiceName" ? "<a href=" + row.Protocol + "://" + location.hostname + ":" + row.Port + " target='_blank'>" + row[key] + "</a>" : row[key], //TODO improve the ability to add link in any cell
+                style: "style: width: 30%; padding: 5px 0 5px 5px; border: 1px solid #dddddd;"
+            }, tr);
+        }
+    });
+    return table;
+}
+
 export class Persist {
 
     private id: string;
