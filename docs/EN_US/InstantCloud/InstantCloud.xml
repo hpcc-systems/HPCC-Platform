@@ -318,8 +318,8 @@
     <sect1 id="InstaCloud_LaunchNewHPCC">
       <title>Launch a New HPCC Cluster</title>
 
-      <para>In this section, you will launch a set of Ubuntu 12.04 machines to
-      use for your HPCC Systems Thor platform. The Instant Cloud page uses the
+      <para>In this section, you will launch a set of Ubuntu machines to use
+      for your HPCC Systems Thor platform. The Instant Cloud page uses the
       input you specify to create your cluster for you.</para>
 
       <para>When you press the <emphasis role="bold">Launch Cluster
