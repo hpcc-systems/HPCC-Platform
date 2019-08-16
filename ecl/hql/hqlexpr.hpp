@@ -949,10 +949,7 @@ public:
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
     hash64_t optionHash = 0;
-    unsigned numAttribsSimplified = 0;
     unsigned numAttribsProcessed = 0;
-    unsigned numAttribsFromCache = 0;
-    unsigned numSimplifiedTooComplex = 0;
 
 private:
     void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
@@ -1028,10 +1025,7 @@ public:
     inline bool ignoreSimplified() const { return parseCtx.ignoreSimplified; }
     inline bool createCache(bool isMacro) { return parseCtx.createCache(isMacro); }
     void reportTiming(const char * name);
-    inline void incrementAttribsSimplified() { ++parseCtx.numAttribsSimplified; }
     inline void incrementAttribsProcessed() { ++parseCtx.numAttribsProcessed; }
-    inline void incrementAttribsFromCache() { ++parseCtx.numAttribsFromCache; }
-    inline void incrementSimplifiedTooComplex() { ++parseCtx.numSimplifiedTooComplex; }
     inline bool neverSimplify(const char *fullname) { return parseCtx.neverSimplify(fullname); }
 protected:
 
