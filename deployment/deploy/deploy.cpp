@@ -627,7 +627,7 @@ public:
     virtual void addTempFile(const char* filePath)
     {
         if (filePath)
-            m_tempFiles.append(filePath);
+            m_tempFiles.appendUniq(filePath);
     }
 
     //---------------------------------------------------------------------------
@@ -636,7 +636,7 @@ public:
     virtual void addTempDirectory(const char* dirPath)
     {
         if (dirPath)
-            m_tempDirs.append(dirPath);
+            m_tempDirs.appendUniq(dirPath);
     }
     //---------------------------------------------------------------------------
     //  setDeployToFolder

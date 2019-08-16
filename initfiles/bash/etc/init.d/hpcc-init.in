@@ -149,6 +149,7 @@ check_getopt
 basepath=`pwd`
 
 COMPS=$(${configgen_path}/configgen -env ${envfile} -list)
+rc=$?
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
     echo -e "\033[31merror\033[0m: hpcc-init -> failure to build COMPS from configgen call"

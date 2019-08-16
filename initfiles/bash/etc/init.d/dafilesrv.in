@@ -100,6 +100,7 @@ fi
 check_getopt
 
 COMPS=$(${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list)
+rc=$?
 if [[ $rc -ne 0 ]]; then
     log "hpcc-init: failure to build COMPS from configgen call"
     echo -e "\033[31merror\033[0m: hpcc-init -> failure to build COMPS from configgen call"
@@ -143,6 +144,14 @@ for arg do arg=$arg; done
 
 if [ -z "$arg" ] || [ $# -ne 1 ]; then
     print_usage
+fi
+
+# for starting hpcc components concurrently, as
+# configgen -validateonly does not create unique tempdirs
+thisos=$(uname -s)
+if [[ "$thisos" = "Linux" && -f "${envfile}" && -n "${component}" && \
+    "${DEBUG}" = "NO_DEBUG" && -z "$HPCC_NO_FLOCK" ]] ; then
+    cfggenpre=(flock ${envfile})
 fi
 
 case "$arg" in
