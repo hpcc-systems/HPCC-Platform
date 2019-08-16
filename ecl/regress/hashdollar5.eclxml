@@ -25,7 +25,7 @@ export
 
    output(#$.value);
    output(myMod.value);
-   #$.z.m1()
+   #$.z.m2()
 ENDMACRO;
   </Attribute>
   <Attribute name="value">
@@ -38,15 +38,15 @@ END;
   </Attribute>
  </Module>
  <Module name="x1.y1.z">
-  <Attribute name="m1">
+  <Attribute name="m2">
 export
- m1() := MACRO
+ m2() := MACRO
 
    import #$;
-   import myMod from #$;
+   import myMod from #$ as myMod2;
 
    output(#$.value);
-   output(myMod.value)
+   output(myMod2.value)
 ENDMACRO;
   </Attribute>
   <Attribute name="value">

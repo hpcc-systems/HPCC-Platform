@@ -595,6 +595,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->yyColumn = macroBodyExpr->getStartColumn();
         inmacro->setParentLex(this);
         inmacro->macroParms.setown(macroParms.getClear());
+        inmacro->hashDollar = macroBodyExpr->queryBody()->queryName();
     }
 }
 
@@ -2385,20 +2386,16 @@ void HqlLex::loadXML(const attribute & errpos, const char *name, const char * ch
     }
 }
 
-IIdAtom * HqlLex::queryMacroScope()
+const char * HqlLex::queryMacroScopeName()
 {
     if (inmacro)
     {
-        IIdAtom * scope = inmacro->queryMacroScope();
+        const char * scope = inmacro->queryMacroScopeName();
         if (scope)
             return scope;
     }
-    if (macroExpr)
-    {
-        IIdAtom * parent = macroExpr->queryFullContainerId();
-        if (parent)
-            return parent;
-    }
+    if (hashDollar)
+        return str(hashDollar);
     return nullptr;
 }
 

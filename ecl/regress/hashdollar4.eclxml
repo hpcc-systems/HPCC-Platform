@@ -21,8 +21,8 @@ export m1 := MODULE
     export m2() := MACRO
 
    import #$;
-   import #$.^ as me;
-   import myMod from #$.^;
+   import #$.m1 as me;
+   import myMod from #$;
 
    output(#$.value);
    output(me.value);

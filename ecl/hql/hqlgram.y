@@ -1057,7 +1057,8 @@ badObject
 macro
     : MACRO             {
                             Owned<IFileContents> contents = $1.getContents();
-                            IHqlExpression* expr = createUnknown(no_macro, makeBoolType(), macroAtom, LINK(contents));
+                            IAtom * globalId = parser->queryGlobalScopeId();
+                            IHqlExpression* expr = createUnknown(no_macro, makeBoolType(), globalId, LINK(contents));
 #if defined(TRACE_MACRO)
                             DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
 #endif
@@ -1072,7 +1073,8 @@ macro
     | COMPLEX_MACRO     {
                             Owned<IFileContents> contents = $1.getContents();
 
-                            IHqlExpression* expr = createUnknown(no_macro, makeVoidType(), macroAtom, LINK(contents));
+                            IAtom * globalId = parser->queryGlobalScopeId();
+                            IHqlExpression* expr = createUnknown(no_macro, makeVoidType(), globalId, LINK(contents));
 
 #if defined(TRACE_MACRO)
                             DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);

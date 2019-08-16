@@ -418,6 +418,7 @@ public:
     void saveContext(HqlGramCtx & ctx, bool cloneScopes);
     IHqlScope * queryGlobalScope();
     IHqlScope * queryMacroScope();
+    IAtom * queryGlobalScopeId();
 
     bool canFollowCurrentState(int tok, const short * yyps);
     int mapToken(int lexToken) const;
@@ -1125,7 +1126,7 @@ class HqlLex
         HqlLex* getParentLex() { return parentLex; }
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
         const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
-        IIdAtom * queryMacroScope();
+        const char * queryMacroScopeName();
 
         IPropertyTree * getClearJavadoc();
         void doSlashSlashHash(attribute const & returnToken, const char * command);
@@ -1284,6 +1285,7 @@ private:
         IHqlExpression *macroExpr;
         Owned<IFileContents> forBody;
         Owned<IFileContents> forFilter;
+        IAtom * hashDollar = nullptr;
 
         IXmlScope *xmlScope;
 

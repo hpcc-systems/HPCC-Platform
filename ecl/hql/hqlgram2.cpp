@@ -421,15 +421,21 @@ IHqlScope * HqlGram::queryGlobalScope()
 
 IHqlScope * HqlGram::queryMacroScope()
 {
-    IIdAtom * scopeName = lexObject->queryMacroScope();
+    const char * scopeName = lexObject->queryMacroScopeName();
     if (scopeName)
     {
-        OwnedHqlExpr matched = getResolveAttributeFullPath(str(scopeName), LSFpublic, lookupCtx);
+        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, lookupCtx);
         if (matched && matched->queryScope())
             return matched->queryScope();
     }
 
     return globalScope;
+}
+
+IAtom * HqlGram::queryGlobalScopeId()
+{
+    const char * globalName = globalScope->queryFullName();
+    return createAtom(globalName);
 }
 
 void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
@@ -11681,9 +11687,9 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, FROMJSON, 0);
     simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
-    simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, SCOPE_ID, VALUE_MACRO, '{', '@', 0);
+    simplify(expected, SCOPE_ID, '$', HASH_DOLLAR, '^', 0);
+    simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, VALUE_MACRO, '{', '@', '$', HASH_DOLLAR, IF, 0);
     simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);
-    simplify(expected, SCOPE_ID, '$', 0);
     simplify(expected, SIMPLE_TYPE, _ARRAY_, LINKCOUNTED, EMBEDDED, STREAMED, 0);
     simplify(expected, END, '}', 0);
 }
