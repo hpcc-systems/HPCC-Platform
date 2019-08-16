@@ -127,7 +127,7 @@
 &lt;/Environment&gt;
 </programlisting></para>
 
-    <para>Hosts can be specified by hostname or IP address.</para>
+    <para>Hosts can be specified by hostname or IP address. </para>
 
     <para>Roles must be one of the following supported roles:</para>
 
@@ -147,6 +147,8 @@
         <member>AgentExec</member>
 
         <member>DaliServer</member>
+
+        <member>DaliStop</member>
 
         <member>SashaServer</member>
 
@@ -181,30 +183,25 @@
         <member>Monitoring</member>
       </simplelist></para>
 
-    <para><simplelist columns="3" type="vert">
-        <member></member>
-      </simplelist></para>
-
     <para></para>
 
-    <para>An entry can have one or more nodes, specified in a comma separated
-    list.</para>
+    <para>An entry can have one or more nodes (hosts that require access),
+    specified in a comma separated list. Nodes can have one or more roles,
+    specified in a comma separated list. Roles are case-sensitive.</para>
 
-    <para>Nodes can have one or more roles, specified in a comma separated
-    list.</para>
-
-    <para>It should never be necessary to explicitly add the following roles :
-    </para>
+    <para>It should never be necessary to explicitly add the following roles
+    for nodes within the same environment :</para>
 
     <para><programlisting>AgentExec, DaliServer, EclAgent, EclCC, EclCCServer, EclServer, EspServer, 
 SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
 
     <para>These roles correspond to components in the environment, which
-    should always be implicitly whitelisted by inclusion in the
-    environment.</para>
+    should always be implicitly whitelisted by inclusion in the environment.
+    If nodes in a foreign environment need to communicate with Dali, then
+    those nodes should be explicitly added.</para>
 
-    <para>In addition, the Dali server automatically whitelists these
-    roles:</para>
+    <para>In addition, the following administrative tool roles are
+    automatically whitelisted to run on the Dali server node:</para>
 
     <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, ScheduleAdmin, SwapNode, Testing, 
 TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
@@ -219,18 +216,23 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
     <para>To disable the Whitelist feature entirely, you can add:</para>
 
-    <para><programlisting>&lt;WhiteList enabled="false"&gt;</programlisting><emphasis
+    <para><programlisting>&lt;WhiteList enabled="false"/&gt;</programlisting><emphasis
     role="bold">This is not recommended for production
     environments.</emphasis></para>
 
-    <para></para>
+    <para>To allow legacy components that do not provide a role to connect,
+    you can specify the allowAnonRoles option. The component MUST be on a
+    whitelisted IP.</para>
+
+    <para><programlisting>&lt;WhiteList allowAnonRoles="false"/&gt;</programlisting></para>
 
     <sect3>
       <title>Retrieve the Whitelist</title>
 
       <para>To retrieve the entire whitelist (implicit and explicit), use the
-      <emphasis role="bold">dalidiag</emphasis> command line tool (found in
-      /opt/HPCCSystems/bin/.)</para>
+      <emphasis role="bold">dalidiag</emphasis> command line tool</para>
+
+      <para>(found in /opt/HPCCSystems/bin/)</para>
 
       <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
     </sect3>
@@ -252,7 +254,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
     "operations" : [
         {
             "action" : "find",
-            "target_path" : "/Environment/Software/DaliServerProcess/Whitelist",
+            "target_path" : "/Environment/Software/DaliServerProcess/WhiteList",
             "data" : {
                 "create_if_not_found" : true,
                 "save" : {
@@ -272,7 +274,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
                     },
                     {
                         "name" : "roles",
-                        "value" : "DaliDiag,DailAdmin"
+                        "value" : "DaliDiag,DaliAdmin"
                     }
                 ]
             }
@@ -299,6 +301,8 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       nodes. One node is specified using its hostname (adminnode1). The other
       is referenced by IP address. It adds the DaliDiag role to the
       adminnode3. The result matches the example XML shown earlier.</para>
+
+      <?hard-pagebreak ?>
 
       <para>Sample command line:</para>
 
@@ -330,7 +334,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
       <para><programlisting>{
     “action” : “delete”,
-    “target_path” : “/Environment/Software/DaliServerProcess/Whitelist/Entry[@hosts=’adminnode3’]”
+    “target_path” : “/Environment/Software/DaliServerProcess/WhiteList/Entry[@hosts=’node3’]”
 }
 </programlisting></para>
     </sect3>

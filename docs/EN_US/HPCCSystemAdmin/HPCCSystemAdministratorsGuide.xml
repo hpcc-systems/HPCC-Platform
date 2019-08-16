@@ -268,7 +268,7 @@
           <para>ECLCC Server uses a queue to convert workunits one at a time,
           however you can have ECLCC Servers deployed in the system to
           increase throughput and they will automatically load balance as
-          required. </para>
+          required.</para>
         </sect3>
 
         <sect3 id="SysAdm_ECLAgent">
@@ -289,8 +289,8 @@
           within ECL code or to chain processes together to work in sequence.
           ECL Scheduling is event-based. The ECL Scheduler monitors a Schedule
           list containing registered Workunits and Events and executes any
-          Workunits associated with an Event when that Event is triggered.
-          </para>
+          Workunits associated with an Event when that Event is
+          triggered.</para>
         </sect3>
 
         <sect3 id="SysAdm_ESPServer">
@@ -1659,11 +1659,13 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <title id="SystemD_Ulimits">Systemd ulimits</title>
 
         <para>If you wish to set custom ulimits for specific hpccsystems
-        components, do so in the templates located in
-        /opt/HPCCSystems/etc/systemd/system so that they persist across
-        regenerations of the hpccsystems-platform.target and component service
-        scripts. For the syntax to modify the user limits man
-        systemd.exec.</para>
+        components, do so in the templates located in </para>
+
+        <para>/opt/HPCCSystems/etc/systemd/system </para>
+
+        <para>so that they persist across regenerations of the
+        hpccsystems-platform.target and component service scripts. For the
+        syntax to modify the user limits man systemd.exec.</para>
       </sect2>
     </sect1>
 
