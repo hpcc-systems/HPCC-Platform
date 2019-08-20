@@ -3003,7 +3003,15 @@ public:
                 IERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
         }
     }
-
+    virtual bool isRestrictedAccess() const override
+    {
+        return root->getPropBool("@restricted", false);
+    }
+    virtual void setRestrictedAccess(bool restricted) override
+    {
+        DistributedFilePropertyLock lock(this);
+        root->setPropBool("@restricted", restricted);
+    }
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction)
     {
         CriticalBlock block(sect);
