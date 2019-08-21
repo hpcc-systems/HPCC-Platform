@@ -1560,7 +1560,7 @@ private:
 
                 //Whether this field is in an ifblock, or needs to be copied by linking it do not count as changes
                 FieldMatchType maskedType = (FieldMatchType)(info.matchType & ~(match_link|match_inifblock));
-                if (maskedType != match_perfect && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
+                if (((maskedType != match_perfect) || (idx != info.matchIdx)) && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
                     matchFlags |= match_keychange;
             }
             matchFlags |= info.matchType;
