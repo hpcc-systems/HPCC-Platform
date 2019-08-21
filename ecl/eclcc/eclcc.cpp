@@ -1339,10 +1339,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             if (optExtraStats)
             {
-                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsSimplified, NULL, parseCtx.numAttribsSimplified);
                 updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsProcessed, NULL, parseCtx.numAttribsProcessed);
-                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsFromCache, NULL, parseCtx.numAttribsFromCache);
-                updateWorkunitStat(instance.wu, SSTcompilestage, "compile:cache", StNumAttribsSimplifiedTooComplex, NULL, parseCtx.numSimplifiedTooComplex);
             }
 
             if (exportDependencies)
