@@ -767,7 +767,7 @@ ECLRTL_API IAtom * rtlCreateFieldNameAtom(const char * name);
  * @param tgt           Pointer to encoded string
  * @param slen          Input binary data length
  * @param src           Pointer to input binary data
- * @see                 void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks=true)
+ * @see                 void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks)
  *                      function in jutil library
  */
 ECLRTL_API void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src);

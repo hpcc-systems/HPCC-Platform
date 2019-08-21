@@ -1073,7 +1073,7 @@ static const char pad = '=';
 // long length       -> length in bytes of this data
 // IIOStream &out    -> Write the result into this stream
 //
-void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineBreaks/*=true*/)
+void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineBreaks)
 {
     const unsigned char *in = static_cast<const unsigned char *>(data);
 
@@ -1127,7 +1127,7 @@ void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineB
 }
 
 // JCSMORE could have IIOStream StringBuffer adapter inplace of below.
-void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks/*=true*/)
+void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks)
 {
     const unsigned char *in = static_cast<const unsigned char *>(data);
 

@@ -172,8 +172,8 @@ extern jlib_decl IShuffledIterator *createShuffledIterator(unsigned n); // retur
 extern jlib_decl bool isCIdentifier(const char* id);
 
 /* base64 encoder/decoder */
-extern jlib_decl void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks=true);
-extern jlib_decl void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineBreaks=true);
+extern jlib_decl void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks);
+extern jlib_decl void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineBreaks);
 extern jlib_decl StringBuffer &JBASE64_Decode(const char *in, StringBuffer &out);
 extern jlib_decl MemoryBuffer &JBASE64_Decode(const char *in, MemoryBuffer &out);
 extern jlib_decl StringBuffer &JBASE64_Decode(ISimpleReadStream &in, StringBuffer &out);

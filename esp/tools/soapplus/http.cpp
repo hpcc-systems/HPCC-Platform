@@ -517,7 +517,7 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
         {
             StringBuffer auth, abuf;
             abuf.appendf("%s:%s", m_user.str(), m_password.str());
-            JBASE64_Encode(abuf.str(), abuf.length(), auth);
+            JBASE64_Encode(abuf.str(), abuf.length(), auth, false);
             m_authheader.appendf("Authorization: Basic %s\r\n", auth.str());
         }
     }

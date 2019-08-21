@@ -208,7 +208,7 @@ int HttpClient::getUrl(const char* url)
     {
         StringBuffer auth, abuf;
         abuf.appendf("%s:%s", user.str(), passwd.str());
-        JBASE64_Encode(abuf.str(), abuf.length(), auth);
+        JBASE64_Encode(abuf.str(), abuf.length(), auth, false);
         request.appendf("Authorization: Basic %s\r\n", auth.str());
     }
     request.append("\r\n");
@@ -351,7 +351,7 @@ int HttpClient::sendSoapRequest(const char* url, const char* soapaction, const c
     {
         StringBuffer auth, abuf;
         abuf.appendf("%s:%s", user.str(), passwd.str());
-        JBASE64_Encode(abuf.str(), abuf.length(), auth);
+        JBASE64_Encode(abuf.str(), abuf.length(), auth, false);
         headers.appendf("Authorization: Basic %s\r\n", auth.str());
     }
 

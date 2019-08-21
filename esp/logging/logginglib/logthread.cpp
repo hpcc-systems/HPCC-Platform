@@ -396,7 +396,7 @@ unsigned CLogThread::serializeLogRequestContent(IEspUpdateLogRequestWrap* pReque
     if (logRequest && *logRequest)
     {
         StringBuffer buffer;
-        JBASE64_Encode(logRequest, strlen(logRequest), buffer);
+        JBASE64_Encode(logRequest, strlen(logRequest), buffer, true);
         logData.append("<LogRequest>").append(buffer.str()).append("</LogRequest>");
     }
     return logData.length();

@@ -996,7 +996,7 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
                 cursorMb.setEndian(__BIG_ENDIAN);
                 readActivity->serializeCursor(cursorMb);
                 StringBuffer cursorBinStr;
-                JBASE64_Encode(cursorMb.toByteArray(), cursorMb.length(), cursorBinStr);
+                JBASE64_Encode(cursorMb.toByteArray(), cursorMb.length(), cursorBinStr, true);
                 responseWriter->outputString(cursorBinStr.length(), cursorBinStr.str(), "cursorBin");
             }
         }

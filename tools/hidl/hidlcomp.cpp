@@ -4654,7 +4654,7 @@ void EspMessageInfo::write_esp()
                     //TODO: should we encode binary data?
                     outf("\t{\n");
                     outf("\t\tStringBuffer tmp;\n");
-                    outf("\t\tJBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), tmp);\n", uname, uname);
+                    outf("\t\tJBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), tmp, true);\n", uname, uname);
                     outf("\t\tif (tmp.length()>0)\n");
                     const char* tag = pi->getXmlTag();
                     outf("\t\t\tbuffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", tag, tag);
@@ -4864,7 +4864,7 @@ void EspMessageInfo::write_esp()
                     if (nilRemove)
                     {
                         indentOutf(1,"StringBuffer tmp;\n");
-                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), tmp);\n", uname, uname);
+                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), tmp, true);\n", uname, uname);
                         indentOutf("if (tmp.length()>0)\n");
                         const char* tag = pi->getXmlTag();
                         indentOutf1(1,"buffer.appendf(\"<%s>%%s</%s>\",tmp.str());\n", tag,tag);
@@ -4872,7 +4872,7 @@ void EspMessageInfo::write_esp()
                     else
                     {
                         indentOutf(1,"buffer.append(\"<%s>\");\n", pi->getXmlTag());
-                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), buffer);\n", uname, uname);
+                        indentOutf("JBASE64_Encode(src.get%s().toByteArray(), src.get%s().length(), buffer, ture);\n", uname, uname);
                         indentOutf("buffer.append(\"</%s>\");\n", pi->getXmlTag());
                     }
                     indentOuts(-1,"}\n");

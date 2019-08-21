@@ -3207,7 +3207,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
 
     /*StringBuffer auth, abuf;
     abuf.appendf("%s:%s", strUsername.str(), strPassword.str());
-    JBASE64_Encode(abuf.str(), abuf.length(), auth);
+    JBASE64_Encode(abuf.str(), abuf.length(), auth, false);
     header.appendf("Authorization: Basic %s\r\n", auth.str());
     */
 

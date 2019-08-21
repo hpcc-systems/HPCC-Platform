@@ -234,7 +234,7 @@ public:
             if (length)
             {
                 if (binary)
-                    JBASE64_Encode(value, length, buffer);
+                    JBASE64_Encode(value, length, buffer, true);
                 else
                     encodeUtf8XML((const char *)value, buffer);
             }
