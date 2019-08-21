@@ -2096,6 +2096,7 @@ protected:
             virtual char *getDaliServers() { throwUnexpected(); }
             virtual IWorkUnit* updateWorkUnit() const { throwUnexpected(); }
             virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) { throwUnexpected(); }
+            virtual void addWuExceptionEx(const char*, unsigned int, unsigned int, unsigned int, const char*) override { throwUnexpected(); }
         } ctx;
 
  #if 0

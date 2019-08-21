@@ -259,7 +259,7 @@ bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFi
                 msg.append("Ignoring compression attribute on file ").append(logicalFilename.str()).append(", which is not published as compressed");
                 WARNLOG("%s", msg.str());
                 //MORE: No simple way to do this, unless we are passed an engine context:
-                //agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, "hthor");
+                //agent.addWuExceptionEx(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, MSGAUD_user, "hthor");
                 compressed = true;
             }
         }

@@ -913,7 +913,7 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E)
     StringBuffer message;
     E->errorMessage(message);
     unsigned code = E->errorCode();
-    OERRLOG("%u - %s", code, message.str());
+    IERRLOG("%u - %s", code, message.str());
     WorkunitUpdate w(&workUnit->lock());
     addExceptionToWorkunit(w, SeverityError, "Roxie", code, message.str(), NULL, 0, 0, 0);
 }

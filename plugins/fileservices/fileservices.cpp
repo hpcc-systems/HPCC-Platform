@@ -365,7 +365,7 @@ static void WUmessage(ICodeContext *ctx, ErrorSeverity sev, const char *fn, cons
     StringBuffer s("fileservices");
     if (fn)
         s.append(", ").append(fn);
-    ctx->addWuException(msg, 0, sev, s.str()); // use plain code context
+    ctx->addWuExceptionEx(msg, 0, sev, MSGAUD_audit, s.str()); // use plain code context
     return;
 }
 

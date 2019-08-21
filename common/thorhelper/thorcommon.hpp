@@ -620,6 +620,10 @@ public:
     {
         return ctx->getGraphLoopCounter();
     }
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char *source) override
+    {
+        ctx->addWuExceptionEx(text, code, severity, audience, source);
+    }
 protected:
     ICodeContext * ctx;
 };

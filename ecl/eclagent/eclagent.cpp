@@ -1481,9 +1481,16 @@ void EclAgent::addWuException(const char * text, unsigned code, unsigned severit
         addException(mappedSeverity, source, code, text, NULL, 0, 0, false, false);
 }
 
+void EclAgent::addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, char const * source)
+{
+    ErrorSeverity mappedSeverity = wuRead->getWarningSeverity(code, (ErrorSeverity)severity);
+    if (mappedSeverity != SeverityIgnore)
+        addExceptionEx(mappedSeverity, (MessageAudience)audience, source, code, text, NULL, 0, 0, false, false);
+}
+
 void EclAgent::addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
 {
-    addException(SeverityError, "user", code, text, filename, lineno, column, false, false);
+    addExceptionEx(SeverityError, MSGAUD_user, "user", code, text, filename, lineno, column, false, false);
     if (isAbort)
         throw makeStringException(MSGAUD_user, code, text);
 }
@@ -1650,9 +1657,10 @@ IHThorGraphResults * EclAgent::createGraphLoopResults()
 
 //---------------------------------------------------------------------------
 
-void addException(IWorkUnit *w, ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
+void addException(IWorkUnit *w, ErrorSeverity severity, MessageAudience aud, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError)
 {
-    UERRLOG("%s", text);
+    LOG(mapToLogMsgCategory(severity, aud), "%s", text);
+
     if ((severity == SeverityError) && (w->getState()!=WUStateAborting) && failOnError)
         w->setState(WUStateFailed);
     addExceptionToWorkunit(w, severity, source, code, text, filename, lineno, column, 0);
@@ -1977,7 +1985,7 @@ void EclAgent::doProcess()
                     int code = e->errorCode();
                     VStringBuffer msg("Failed to deschedule workunit %s: ", w->queryWuid());
                     e->errorMessage(msg);
-                    logException(SeverityWarning, code, msg.str(), false);
+                    logException(SeverityWarning, MSGAUD_programmer, code, msg.str(), false);
                     e->Release();
                     UWARNLOG("%s (%d)", msg.str(), code);
                 }
@@ -2049,7 +2057,7 @@ void EclAgent::doProcess()
             StringBuffer m("System error ");
             m.append(e->errorCode()).append(": ");
             e->errorMessage(m);
-            ::addException(w, SeverityError, "eclagent", e->errorCode(), m.str(), NULL, 0, 0, true);
+            ::addException(w, SeverityError, MSGAUD_programmer, "eclagent", e->errorCode(), m.str(), NULL, 0, 0, true);
         }
         catch (IException *e2)
         {
@@ -2289,7 +2297,7 @@ void EclAgentWorkflowMachine::reportContingencyFailure(char const * type, IExcep
     StringBuffer msg;
     msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
     e->errorMessage(msg);
-    agent.logException(SeverityWarning, e->errorCode(), msg.str(), false);
+    agent.logException(SeverityWarning, MSGAUD_user, e->errorCode(), msg.str(), false);
 }
 
 void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling)
@@ -2302,7 +2310,7 @@ void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling
             msg.append("Abort takes precedence over error: ").append(handling->errorCode()).append(": ");
             handling->errorMessage(msg);
             msg.append(" (in item ").append(wfid).append(")");
-            agent.logException(SeverityWarning, handling->errorCode(), msg.str(), false);
+            agent.logException(SeverityWarning, MSGAUD_user, handling->errorCode(), msg.str(), false);
             handling->Release();
         }
         throw new WorkflowException(0, "Workunit abort request received", wfid, WorkflowException::ABORT, MSGAUD_user);
@@ -2427,14 +2435,17 @@ void EclAgent::doNotify(char const * name, char const * text, const char * targe
     pusher->push(name, text, target);
 }
 
-void EclAgent::logException(ErrorSeverity severity, unsigned code, const char * text, bool isAbort)
+void EclAgent::logException(ErrorSeverity severity, MessageAudience aud, unsigned code, const char * text, bool isAbort)
 {
-    addException(severity, "eclagent", code, text, NULL, 0, 0, true, isAbort);
-    if (severity == SeverityError)
-        UERRLOG(code, "%s", text);
+    addExceptionEx(severity, aud, "eclagent", code, text, NULL, 0, 0, true, isAbort);
 }
 
 void EclAgent::addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
+{
+    addExceptionEx(severity, MSGAUD_programmer, source, code, text, filename, lineno, column, failOnError, isAbort);
+}
+
+void EclAgent::addExceptionEx(ErrorSeverity severity, MessageAudience aud, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort)
 {
     if (writeResultsToStdout && (severity != SeverityInformation))
     {
@@ -2454,7 +2465,7 @@ void EclAgent::addException(ErrorSeverity severity, const char * source, unsigne
         WorkunitUpdate w = updateWorkUnit();
         if(isAbort)
             w->setState(WUStateAborting);
-        ::addException(w, severity, source, code, text, filename, lineno, column, failOnError);
+        ::addException(w, severity, aud, source, code, text, filename, lineno, column, failOnError);
     }
     catch (IException *E)
     {
@@ -2482,6 +2493,7 @@ void EclAgent::logException(WorkflowException *e)
     StringBuffer m;
     unsigned code = 0;
     bool isAbort = false;
+    MessageAudience aud = MSGAUD_user;
     if(e)
     {
         switch(e->queryType())
@@ -2490,6 +2502,7 @@ void EclAgent::logException(WorkflowException *e)
             m.append("Error: ");
             break;
         case WorkflowException::SYSTEM:
+            aud = MSGAUD_programmer;
             m.append("System error: ");
             break;
         case WorkflowException::ABORT:
@@ -2506,7 +2519,7 @@ void EclAgent::logException(WorkflowException *e)
     else    
         m.append("Unknown error");
 
-    logException(SeverityError, code, m.str(), isAbort);
+    logException(SeverityError, aud, code, m.str(), isAbort);
 }
 
 void EclAgent::logException(IException *e)
@@ -2526,7 +2539,7 @@ void EclAgent::logException(IException *e)
     else    
         m.append("Unknown error");
 
-    logException(SeverityError, code, m.str(), false);
+    logException(SeverityError, MSGAUD_programmer, code, m.str(), false);
 }
 
 void EclAgent::logException(std::exception & e)
@@ -2536,7 +2549,7 @@ void EclAgent::logException(std::exception & e)
         m.append("out of memory (std::bad_alloc)");
     else
         m.append("standard library exception (std::exception ").append(e.what()).append(")");
-    logException(SeverityError, 0, m.str(), false);
+    logException(SeverityError, MSGAUD_programmer, 0, m.str(), false);
 }
 
 static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
@@ -2726,12 +2739,12 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
         {
             if (dummy.length())
-                logException(SeverityInformation, 0, dummy.str(), false);
+                logException(SeverityInformation, MSGAUD_user, 0, dummy.str(), false);
             else
             {
                 StringBuffer msg;
                 msg.append("PERSIST('").append(logicalName).append("') is up to date");
-                logException(SeverityInformation, 0, msg.str(), false);
+                logException(SeverityInformation, MSGAUD_user, 0, msg.str(), false);
             }
             return true;
         }
@@ -2756,19 +2769,19 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
         if (errText.length())
         {
             errText.append(" (after being calculated by another job)");
-            logException(SeverityInformation, 0, errText.str(), false);
+            logException(SeverityInformation, MSGAUD_user, 0, errText.str(), false);
         }
         else
         {
             StringBuffer msg;
             msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
-            logException(SeverityInformation, 0, msg.str(), false);
+            logException(SeverityInformation, MSGAUD_user, 0, msg.str(), false);
         }
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
         return true;
     }
     if (errText.length())
-        logException(SeverityInformation, 0, errText.str(), false);
+        logException(SeverityInformation, MSGAUD_user, 0, errText.str(), false);
     return false;
 }
 
@@ -2822,7 +2835,7 @@ void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
 
     StringBuffer msg;
     msg.append("Frozen PERSIST('").append(logicalName).append("') is up to date");
-    logException(SeverityInformation, 0, msg.str(), false);
+    logException(SeverityInformation, MSGAUD_user, 0, msg.str(), false);
 }
 
 static int comparePersistAccess(IInterface * const *_a, IInterface * const *_b)
@@ -3207,7 +3220,7 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
         if (userabort) 
             w->setState(WUStateAborted);
         if (excepttext&&*excepttext)
-            addException(SeverityError, "eclagent", 1000, excepttext, NULL, 0, 0, true, false);
+            addExceptionEx(SeverityError, MSGAUD_programmer, "eclagent", 1000, excepttext, NULL, 0, 0, true, false);
         w->deleteTempFiles(NULL, false, true);
         wuRead.clear(); 
         w->commit();        // needed because we can't unlock the workunit in this thread

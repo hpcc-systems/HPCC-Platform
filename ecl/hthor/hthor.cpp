@@ -4001,7 +4001,7 @@ void CHThorGroupSortActivity::createSorter()
     {
         StringBuffer sb;
         sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname.get());
-        agent.addWuException(sb.str(),WRN_UnsupportedAlgorithm,SeverityWarning,"hthor");
+        agent.addWuExceptionEx(sb.str(),WRN_UnsupportedAlgorithm,SeverityWarning,MSGAUD_user,"hthor");
         if((flags & TAFunstable) != 0)
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
@@ -8213,8 +8213,7 @@ void CHThorDiskReadBaseActivity::resolve()
         {
             StringBuffer buff;
             buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
-            UWARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
+            agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
         }
     }
 }
@@ -8230,8 +8229,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
-                UWARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), WRN_MismatchGroupInfo, SeverityError, "hthor");
+                agent.addWuExceptionEx(msg.str(), WRN_MismatchGroupInfo, SeverityError, MSGAUD_user, "hthor");
             }
         }
         else
@@ -8255,8 +8253,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("Ignoring compression attribute on file ").append(mangledHelperFileName.str()).append(", which is not published as compressed");
-                UWARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, "hthor");
+                agent.addWuExceptionEx(msg.str(), WRN_MismatchCompressInfo, SeverityWarning, MSGAUD_user, "hthor");
                 compressed = true;
             }
         }
@@ -8432,7 +8429,7 @@ bool CHThorDiskReadBaseActivity::openNext()
 #endif
                                 VStringBuffer msg("Remote streaming failure, failing over to direct read for: '%s'. ", file.str());
                                 e->errorMessage(msg);
-                                agent.addWuException(msg.str(), WRN_RemoteReadFailure, SeverityWarning, "hthor");
+                                agent.addWuExceptionEx(msg.str(), WRN_RemoteReadFailure, SeverityWarning, MSGAUD_user, "hthor");
                                 e->Release();
                                 continue; // try next copy and ultimately failover to local when no more copies
                             }
@@ -10559,8 +10556,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
         {
             StringBuffer buff;
             buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
-            WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, "hthor");
+            agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
         }
     }
 
@@ -10578,8 +10574,7 @@ void CHThorNewDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
             {
                 StringBuffer msg;
                 msg.append("DFS and code generated group info. differs: DFS(").append(grouped ? "grouped" : "ungrouped").append("), CodeGen(").append(grouped ? "ungrouped" : "grouped").append("), using DFS info");
-                WARNLOG("%s", msg.str());
-                agent.addWuException(msg.str(), WRN_MismatchGroupInfo, SeverityError, "hthor");
+                agent.addWuExceptionEx(msg.str(), WRN_MismatchGroupInfo, SeverityError, MSGAUD_user, "hthor");
             }
         }
         else

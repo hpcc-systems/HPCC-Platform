@@ -5062,7 +5062,7 @@ protected:
                         {
                             VStringBuffer s("SubFile %s is not owned by SuperFile %s", name, logicalName.get());
                             if (ctx)
-                                ctx->addWuException(s.str(), 0, SeverityWarning, "DFS[clearSuperOwner]");
+                                ctx->addWuExceptionEx(s.str(), 0, SeverityWarning, MSGAUD_user, "DFS[clearSuperOwner]");
                             else
                             {
                                 Owned<IException> e = makeStringException(-1, s.str());
