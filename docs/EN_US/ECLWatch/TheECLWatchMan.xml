@@ -173,7 +173,7 @@
           <para>The <emphasis role="bold">Maximize/Restore</emphasis> icon
           appears throughout ECL Watch. Press the button to maximize the
           corresponding window pane. Press the button again to restore the
-          pane to its original size. </para>
+          pane to its original size.</para>
         </sect3>
       </sect2>
 
@@ -235,7 +235,7 @@
           filter.</para>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>The Mine Button</title>
 
           <para>The <emphasis role="bold">Mine</emphasis> button appears along
@@ -245,7 +245,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images\ECLWAMine00.jpg" />
+                  <imagedata fileref="images/ECLWAMine00.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
