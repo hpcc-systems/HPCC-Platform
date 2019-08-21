@@ -61,7 +61,7 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
         // ii) It publishes immediately not when done!
         // iii) it is not removing existing physicals first
         // If we really want this, it should replicate when done somehow, and only publish at end.
-        Owned<IDistributedFile> file = lookup(job, logicalName, false, true);
+        Owned<IDistributedFile> file = lookup(job, logicalName, false, true, false, defaultPrivilegedUser);
         StringBuffer scopedName;
         addScope(job, logicalName, scopedName);
         if (group) // publishing
@@ -309,19 +309,19 @@ public:
         LOG(MCauditInfo,"%s",outs.str());
     }
 
-    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, unsigned timeout=INFINITE)
+    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
         VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), write ? "WRITE" : "READ");
-        auto func = [&job, &lfn, &write](unsigned timeout) { return queryDistributedFileDirectory().lookup(lfn, job.queryUserDescriptor(), write, false, false, nullptr, timeout); };
+        auto func = [&job, &lfn, write, privilegedUser](unsigned timeout) { return queryDistributedFileDirectory().lookup(lfn, job.queryUserDescriptor(), write, false, false, nullptr, privilegedUser, timeout); };
         return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
     }
-    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, bool write, unsigned timeout=INFINITE)
+    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, bool write, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
         CDfsLogicalFileName lfn;
         lfn.set(logicalName);
-        return timedLookup(job, lfn, write, timeout);
+        return timedLookup(job, lfn, write, privilegedUser, timeout);
     }
-    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true)
+    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true)
     {
         StringBuffer scopedName;
         bool paused = false;
@@ -341,7 +341,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false, job.queryMaxLfnBlockTimeMins() * 60000);
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -390,7 +390,7 @@ public:
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", logicalName);
             if (dlfn.isForeign())
                 throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", logicalName);
-            efile.setown(timedLookup(job, dlfn, true, job.queryMaxLfnBlockTimeMins() * 60000));
+            efile.setown(timedLookup(job, dlfn, true, true, job.queryMaxLfnBlockTimeMins() * 60000));
             if (efile)
             {
                 if (!extend && !overwriteok)
@@ -420,7 +420,7 @@ public:
                 if (found)
                 {
                     workunit->releaseFile(logicalName);
-                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false, job.queryMaxLfnBlockTimeMins() * 60000);
+                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false, true, job.queryMaxLfnBlockTimeMins() * 60000);
                     if (f)
                     {
                         unsigned p, parts = f->numParts();
@@ -447,7 +447,7 @@ public:
                 }
                 remove(job, *efile, job.queryMaxLfnBlockTimeMins() * 60000);
                 efile.clear();
-                efile.setown(timedLookup(job, dlfn, true, job.queryMaxLfnBlockTimeMins() * 60000));
+                efile.setown(timedLookup(job, dlfn, true, true, job.queryMaxLfnBlockTimeMins() * 60000));
                 if (!efile.get())
                 {
                     ForEachItemIn(c, clusters)
@@ -604,7 +604,7 @@ public:
 
     unsigned __int64 getFileOffset(CJobBase &job, const char *logicalName, unsigned partno)
     {
-        Owned<IDistributedFile> file = lookup(job, logicalName, false);
+        Owned<IDistributedFile> file = lookup(job, logicalName, false, false, false, defaultPrivilegedUser);
         StringBuffer scopedName;
         addScope(job, logicalName, scopedName);
         if (!file)

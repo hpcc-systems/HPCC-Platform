@@ -55,10 +55,10 @@ public:
         queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), false);
         outputName.set(expandedFileName);
 
-        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName));
+        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName, false, false, false, container.activityIsCodeSigned()));
         if (!isFileKey(originalIndexFile))
             throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", originalHelperName.get());
-        patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName));
+        patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName, false, false, false, container.activityIsCodeSigned()));
         if (isFileKey(patchFile))
             throw MakeActivityException(this, 0, "Attempting to read index as a patch file: %s", patchHelperName.get());
         
@@ -186,7 +186,7 @@ public:
         if (0==(KDPoverwrite & helper->getFlags()))
         {
             if (KDPvaroutputname & helper->getFlags()) return;
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true);
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true, false, container.activityIsCodeSigned());
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

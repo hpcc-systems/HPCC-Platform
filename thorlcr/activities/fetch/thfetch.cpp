@@ -51,7 +51,7 @@ public:
     {
         CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
-        Owned<IDistributedFile> fetchFile = queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true);
+        Owned<IDistributedFile> fetchFile = queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), false, container.activityIsCodeSigned());
         if (fetchFile)
         {
             if (isFileKey(fetchFile))

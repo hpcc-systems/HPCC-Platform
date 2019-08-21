@@ -487,7 +487,7 @@ public:
         return ret.getClear();
     }
 
-    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt)
+    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool isPrivilegedUser)
     {
         // NOTE - we rely on the fact that  queryNamedGroupStore().lookup caches results,to avoid excessive load on remote dali
         if (_lfn && !strnicmp(_lfn, "foreign", 7)) //if need to support dali hopping should add each remote location
@@ -518,7 +518,7 @@ public:
             {
                 if (traceLevel > 1)
                     DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
-                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, false);
+                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, false, isPrivilegedUser);
                 if (cloneFile)
                 {
                     Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
@@ -538,14 +538,14 @@ public:
         return NULL;
     }
 
-    virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, bool writeAccess)
+    virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, bool writeAccess, bool isPrivilegedUser)
     {
         if (isConnected)
         {
             unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt,false,nullptr,isPrivilegedUser);
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();

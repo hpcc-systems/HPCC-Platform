@@ -645,7 +645,7 @@ StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, cons
         udesc->set(username, passwd);
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, udesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, udesc, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
     return df->getClusterGroupName(0, nodeGroup);
@@ -2513,7 +2513,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             logicalName.setForeign(ep,false);
         }
 
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
         if (!file)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", logicalName.get());
 

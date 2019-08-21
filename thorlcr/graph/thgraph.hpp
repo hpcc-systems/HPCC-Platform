@@ -276,6 +276,7 @@ protected:
     MemoryBuffer createCtxMb, startCtxMb;
     bool haveCreateCtx;
     unsigned maxCores;
+    bool isCodeSigned = false;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -372,6 +373,7 @@ public:
     virtual CActivityBase *factory() { return factory(getKind()); }
     virtual CActivityBase *factorySet(ThorActivityKind kind) { CActivityBase *_activity = factory(kind); activity.setown(_activity); return _activity; }
     virtual ICodeContext *queryCodeContext();
+    virtual bool activityIsCodeSigned() const { return isCodeSigned; }
 };
 
 typedef CIArrayOf<CGraphElementBase> CGraphElementArray;

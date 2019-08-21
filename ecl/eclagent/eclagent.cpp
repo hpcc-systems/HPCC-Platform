@@ -1378,7 +1378,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
     return useScope;
 }
 
-ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn)
+ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn, bool isPrivilegedUser)
 {
     StringBuffer lfn;
     expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
@@ -1398,7 +1398,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
     }
     if (expandedlfn)
         *expandedlfn = lfn;
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite);
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1456,7 +1456,7 @@ bool EclAgent::fileExists(const char *name)
     StringBuffer lfn;
     expandLogicalName(lfn, name);
 
-    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn.str(),queryUserDescriptor());
+    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
     if (f) 
         return true;
     return false;
@@ -2580,7 +2580,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
         return crc;
     }
 
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor());
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
     if (file)
     {
         WorkunitUpdate wu = updateWorkUnit();
@@ -2905,7 +2905,7 @@ restart:     // If things change beneath us as we are deleting, repeat the proce
                 MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                 persistLock.setown(getPersistReadLock(goer));
             }
-            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser);
             if (!f)
                 goto restart; // Persist has been deleted since last checked - repeat the whole process
             const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -2995,7 +2995,7 @@ char * EclAgent::getGroupName()
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
 {
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData");
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData", false, true, false, nullptr, defaultPrivilegedUser);
     IDistributedFile * dFile = ldFile->queryDistributedFile();
     if (!dFile)
         return NULL;
@@ -3084,7 +3084,7 @@ char *EclAgent::getFilePart(const char *lfn, bool create)
     }
     else
     {
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false, false, nullptr, defaultPrivilegedUser);
         if (!ldFile)
             return NULL;
         unsigned numParts = ldFile->numParts();

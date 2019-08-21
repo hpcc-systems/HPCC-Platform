@@ -774,7 +774,7 @@ public:
                     parent->getPassword(password);
                 }
                 userdesc->set(username.str(),password.str());
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,userdesc);
+                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,userdesc,false,false,false,nullptr,defaultPrivilegedUser);
                 if (file)
                     return file->getFileDescriptor();
             }

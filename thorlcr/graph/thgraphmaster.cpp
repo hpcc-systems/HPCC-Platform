@@ -599,7 +599,7 @@ bool CMasterGraphElement::checkUpdate()
     if (doCheckUpdate)
     {
         StringAttr lfn;
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, temporary, true);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, temporary, true, false, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree &props = file->queryAttributes();
@@ -1174,7 +1174,7 @@ public:
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) override
     {
         unsigned checkSum = 0;
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), name, false, true, false); // NB: do not update accessed
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), name, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
         if (iDfsFile.get())
         {
             if (iDfsFile->getFileCheckSum(checkSum))
@@ -1505,7 +1505,7 @@ void CJobMaster::initNodeDUCache()
         Owned<IPropertyTreeIterator> fileIter = &workunit->getFileIterator();
         ForEach (*fileIter)
         {
-            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(fileIter->query().queryProp("@name"), userDesc);
+            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(fileIter->query().queryProp("@name"), userDesc, false, false, false, nullptr, defaultPrivilegedUser);
             if (f)
             {
                 unsigned n = f->numParts();
