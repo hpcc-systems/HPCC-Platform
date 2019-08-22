@@ -30,17 +30,22 @@ string10        forename;
 integer2        age := 25;
             END;
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search) := interface
+searchOptions := RECORD
+   string search;
+   string prefix;
+END;
+
+FilterDatasetInterface(dataset(namesRecord) ds, searchOptions options) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
 
-filterDatasetLibrary(dataset(namesRecord) ds, string search) := module,library(FilterDatasetInterface)
+filterDatasetLibrary(dataset(namesRecord) ds, searchOptions options) := module,library(FilterDatasetInterface)
     shared f := ds;
-    msg := DATASET([transform({string txt}, SELF.txt := 'Search for ' + search)]);
-    export matches := when(if (count(f(surname = search)) > 0, f), output(msg,named('logging'),EXTEND), success);
-    export others := if (count(f(surname = search)) <= 0, f);
+    msg := DATASET([transform({string txt}, SELF.txt := 'Search for ' + options.search)]);
+    export matches := when(if (count(f(surname = options.search)) > 0, f), output(msg,named('logging'),EXTEND), success);
+    export others := if (count(f(surname = options.search)) <= 0, f);
 end;
 
 build(filterDatasetLibrary);

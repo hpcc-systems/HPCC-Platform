@@ -7423,7 +7423,7 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
                 result = createDataset(no_libraryinput, LINK(cur->queryRecord()), createComma(seq, groupAttr));
             }
             else if (cur->isDatarow())
-                result = createDataset(no_libraryinput, LINK(cur->queryRecord()), seq);     // should this be a row?
+                result = createRow(no_libraryinput, LINK(cur->queryRecord()), seq);
             else
                 result = createValue(no_libraryinput, cur->getType(), seq);
         }
