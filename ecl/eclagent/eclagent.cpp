@@ -90,6 +90,8 @@ constexpr LogMsgCategory MCrunlock = MCprogress(100);      // Category used to i
 
 Owned<IPropertyTree> agentTopology;
 
+static std::atomic_bool stopping_now = {false};
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -3486,12 +3488,15 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 }
                 ~CDaliDownMonitor()
                 {
-                    removeMPConnectionMonitor(this);
-                    sem.signal();
+                    if (!stopping_now)
+                    {
+                        removeMPConnectionMonitor(this);
+                        sem.signal();
+                    }
                 }
                 virtual void onClose(SocketEndpoint &ep)
                 {
-                    if (ep.equals(daliEp))
+                    if (ep.equals(daliEp) && !stopping_now)
                     {
                         WARNLOG("Dali has closed. Waiting 1 minute for process to exit gracefully before killing..");
 
@@ -3672,6 +3677,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     closeDllServer();
     closeEnvironment();
     roxiemem::releaseRoxieHeap();
+    stopping_now = true; // so OnClose does not hold up mp join
     ::closedownClientProcess(); // dali client closedown
     if (traceLevel)
         DBGLOG("exiting");
