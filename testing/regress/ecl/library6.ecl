@@ -26,13 +26,20 @@ string10        forename;
 integer2        age := 25;
             END;
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search) := interface
+searchOptions := RECORD
+   string search;
+   string prefix;
+END;
+
+FilterDatasetInterface(dataset(namesRecord) ds, searchOptions options) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
 
-filterDataset(dataset(namesRecord) ds, string search) := library('aaaLibrary6',FilterDatasetInterface(ds,search));
+filterDataset(dataset(namesRecord) ds, searchOptions options) := library('aaaLibrary6',FilterDatasetInterface(ds,options));
+
+mkOptions(string search) := ROW(transform(searchOptions, SELF.search := search; SELF.prefix := ''));
 
 namesTable := dataset([
         {'Halliday','Gavin',31},
@@ -41,9 +48,9 @@ namesTable := dataset([
         {'Smith','George',75},
         {'Smith','Baby', 2}], namesRecord);
 
-filtered := filterDataset(namesTable, 'Smith');
-filtered2 := filterDataset(namesTable, 'Halliday');
-filtered3 := filterDataset(namesTable, 'Tricky');
+filtered := filterDataset(namesTable, mkOptions('Smith'));
+filtered2 := filterDataset(namesTable, mkOptions('Halliday'));
+filtered3 := filterDataset(namesTable, mkOptions('Tricky'));
 
 addressRecord := RECORD
 unsigned            id;
@@ -63,6 +70,6 @@ sequential(
   output(filtered.matches,,named('MatchSmith'));
   output(filtered2.others,,named('NotHalliday'));
   output(filtered3.others,,named('NotTricky'));
-  output(addressTable, { dataset matches := filterDataset(ds, 'Halliday').matches });
-  output(addressTable, { dataset others := filterDataset(ds, 'Halliday').others });
+  output(addressTable, { dataset matches := filterDataset(ds, mkOptions('Halliday')).matches });
+  output(addressTable, { dataset others := filterDataset(ds, mkOptions('Halliday')).others });
 )

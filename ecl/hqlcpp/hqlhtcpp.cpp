@@ -9084,7 +9084,7 @@ void HqlCppTranslator::doBuildStmtSkip(BuildCtx & ctx, IHqlExpression * expr, bo
                     *canReachFollowing = false;
             }
         }
-        else
+        else if (!cond || !matchesBoolean(cond, false))
             throwError(HQLERR_SkipNotValidHere);
     }
 }

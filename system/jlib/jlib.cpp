@@ -72,12 +72,12 @@ void InitTable::init(SoContext ctx)
             }
             catch (...)
             {
-                printf("module initialization %d:%d threw exception\n", iT.modpriority,iT.priority);
+                fprintf(stderr, "module initialization %d:%d threw exception\n", iT.modpriority,iT.priority);
                 throw;
             }
             if (!res)
             {
-                printf("module initialization %d:%d failed\n", iT.modpriority,iT.priority);
+                fprintf(stderr, "module initialization %d:%d failed\n", iT.modpriority,iT.priority);
                 assertex(res);
             }
         }
