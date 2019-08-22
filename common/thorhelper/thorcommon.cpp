@@ -2033,6 +2033,14 @@ static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTre
                     props.getPropBin("_record_layout", mb);
                     expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
                 }
+                else if (!expr->hasAttribute(_payload_Atom))
+                {
+                    //Very old records before _record_layout was added to the meta information (November 2006!)
+                    IHqlExpression * lastField = queryLastField(expr);
+                    if (lastField && lastField->queryType()->isInteger())
+                        expr.setown(prependOwnedOperand(expr, createAttribute(_payload_Atom, createConstant(1))));
+                }
+
                 if (exportBinaryType(layoutBin, expr, isIndex))
                     return createTypeInfoOutputMetaData(layoutBin, isGrouped);
             }
