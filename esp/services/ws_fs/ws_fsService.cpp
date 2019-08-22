@@ -2523,7 +2523,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             if (!file->querySuperFile())
                 supercopy = false;
         }
-        else if (file->querySuperFile() && isFileKey(file))
+        else if (file->querySuperFile() && (file->querySuperFile()->numSubFiles() > 1) && isFileKey(file))
             supercopy = true;
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
