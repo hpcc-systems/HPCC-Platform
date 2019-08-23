@@ -2825,6 +2825,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 break;
             }
         case no_hqlproject:
+        case no_newusertable:
             {
                 node_operator childOp = child->getOperator();
                 switch(childOp)
