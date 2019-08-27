@@ -165,7 +165,7 @@ public:
         }
     }
 public:
-    CJoinGroup(CActivityBase &_activity, const void *_leftRow, IJoinProcessor *_join)
+    CJoinGroup(const void *_leftRow, IJoinProcessor *_join)
         : join(_join)
     {
     	leftRow.set(_leftRow);
@@ -500,7 +500,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             count = 0;
         }
     };
-    // There is 1 of these per part, but # running is limited
+    /*
+     * There will 1 handler per part up to max per target, then parts will be added and dealt by existing handlers.
+     * NB: No more than 'maxKeyLookupThreads' handler threads will run concurrently.
+     */
     class CLookupHandler : public CInterfaceOf<IInterface>, implements IThreaded
     {
     protected:
@@ -1539,18 +1542,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     lookupHandler->flushTS();
             }
         }
-        void flush(bool protect)
+        void flush()
         {
             ForEachItemIn(h, handlers)
             {
                 CLookupHandler *lookupHandler = handlers.item(h);
                 if (lookupHandler)
-                {
-                    if (protect)
-                        lookupHandler->flushTS();
-                    else
-                        lookupHandler->flush();
-                }
+                    lookupHandler->flush();
             }
         }
         void stop()
@@ -1832,7 +1830,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     }
     const void *preparePendingLookupRow(void *row, size32_t maxSz, const void *lhsRow, size32_t keySz)
     {
-        CJoinGroup *jg = new (rowManager, queryId()) CJoinGroup(*this, lhsRow, this);
+        CJoinGroup *jg = new (rowManager, queryId()) CJoinGroup(lhsRow, this);
         memcpy(row, &jg, sizeof(CJoinGroup *)); // NB: row will release joinGroup on destruction
         jg->incPending(); // prevent complete, must be an paired decPending() at some point
         return keyLookupRowWithJGAllocator->finalizeRow(sizeof(KeyLookupHeader)+keySz, row, maxSz);
@@ -1993,9 +1991,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     }
     void stopReadAhead()
     {
-        keyLookupHandlers.flush(false);
+        keyLookupHandlers.flush();
         keyLookupHandlers.join(); // wait for pending handling, there may be more fetch items as a result
-        fetchLookupHandlers.flush(true);
+        fetchLookupHandlers.flushTS();
         fetchLookupHandlers.join();
 
         // remote handlers will signal to other side that we are done
@@ -2011,7 +2009,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     void readAhead()
     {
         endOfInput = false;
-        CJoinGroup *lastGroupMember = nullptr;
+        CJoinGroup *groupStart = nullptr;
         do
         {
             if (queryAbortSoon())
@@ -2019,11 +2017,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             OwnedConstThorRow lhsRow = inputStream->nextRow();
             if (!lhsRow)
             {
-                if (preserveGroups && lastGroupMember)
-                {
-                    lastGroupMember->addFlag(GroupFlags::gf_eog);
-                    lastGroupMember = nullptr;
-                }
+                groupStart = nullptr; // NB: only ever set if preserveGroups on
                 lhsRow.setown(inputStream->nextRow());
                 if (!lhsRow)
                     break;
@@ -2046,10 +2040,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             {
                 if (preserveGroups)
                 {
-                    if (!lastGroupMember)
+                    if (!groupStart)
                     {
-                        lastGroupMember = jg;
-                        lastGroupMember->addFlag(GroupFlags::gf_head);
+                        groupStart = jg;
+                        groupStart->addFlag(GroupFlags::gf_head); // NB: used by onComplete to ensure start of group is queued 1st (as group entries are consumed gf_head moves forward, see onComplete)
+                        groupStart->addFlag(GroupFlags::gf_start); // NB: start of group, causes eog when seen (if any proceeding grouped rows, see nextRow)
                     }
                 }
                 bool pendingBlock = false;
@@ -2064,14 +2059,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     if (preserveOrder || preserveGroups)
                     {
                         // some of the batches that are not yet queued may be holding up join groups that are ahead of others that are complete.
-                        keyLookupHandlers.flush(false);
+                        keyLookupHandlers.flush();
                         if (needsDiskRead)
                         {
                             /* because the key lookup threads could queue a bunch of disparate fetch batches, need to wait until done before flushing
                              * the ensuing fetch batches.
                              */
                             keyLookupHandlers.join();
-                            fetchLookupHandlers.flush(true);
+                            fetchLookupHandlers.flushTS();
                         }
                     }
                     pendingKeyLookupLimiter.block();
@@ -2564,7 +2559,7 @@ public:
                 if (preserveGroups)
                 {
                     currentJoinGroupSize += currentAdded;
-                    if (currentJoinGroup->hasFlag(GroupFlags::gf_eog))
+                    if (currentJoinGroup->hasFlag(GroupFlags::gf_start))
                         eog = 0 != currentJoinGroupSize;
                     currentJoinGroupSize = 0;
                 }
@@ -2742,7 +2737,7 @@ public:
                 {
                     if (!current->complete())
                     {
-                        dbgassertex(numProcessed); // if onComplete called for a group, there should always be at least 1 complete group ready starting from signalled joinGroup
+                        dbgassertex(numProcessed); // if onComplete called for a group, there should always be at least 1 complete joinGroup ready starting from signalled joinGroup
                         // update current so now marked as new head of group, so that when it completes it will be processed.
                         current->addFlag(GroupFlags::gf_head);
                         break;
