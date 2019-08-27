@@ -225,7 +225,6 @@ define([
                     label: this.i18n.TargetClusters
                 }).placeAt(this.openButton.domNode, "after");
 
-                new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
                 new ToolbarSeparator().placeAt(this.viewModeMachines.domNode, "after");
 
                 this.machineInformationDropDown = this.createLabelAndElement("machineinformation", "Machine Information", "Select", this.i18n.MachineInformation, [{ label: this.i18n.MachineInformation, value: "GetMachineInfo", selected: true }])

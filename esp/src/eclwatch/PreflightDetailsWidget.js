@@ -43,9 +43,8 @@ define([
 
             createGrid: function (domID) {
                 var context = this;
-
-                this.openButton = registry.byId(this.id + "Open");
-                this.openButton.set("disabled", true);
+                dojo.destroy(this.id + "Open");
+                dojo.destroy(this.id + "RemovableSeperator2");
 
                 var retVal = new declare([ESPUtil.Grid(true, false, {rowsPerPage:1000}, true)])({
                     store: this.store,

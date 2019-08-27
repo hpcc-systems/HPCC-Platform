@@ -43,7 +43,7 @@ define([
             createGrid: function (domID) {
                 this.openButton = registry.byId(this.id + "Open");
                 dojo.destroy(this.id + "Open");
-                dojo.destroy("dijit_ToolbarSeparator_18");
+                dojo.destroy(this.id + "RemovableSeperator2");
 
                 var retVal = new declare([ESPUtil.Grid(true, true)])({
                     store: this.store,
