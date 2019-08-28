@@ -7775,6 +7775,7 @@ public:
                 root->setPropInt("@interleaved",interleaved?2:0); // this is ill placed
                 super.setown(new CDistributedSuperFile(parent, root, logicalname, user));
                 created = true;
+                super->setModified();
                 transaction->addFile(super);
             }
         }
