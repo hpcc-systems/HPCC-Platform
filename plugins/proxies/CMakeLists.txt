@@ -20,3 +20,6 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION plu
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION plugins COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION plugins COMPONENT Runtime)
 
+IF (USE_OPENSSL)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
+ENDIF()
