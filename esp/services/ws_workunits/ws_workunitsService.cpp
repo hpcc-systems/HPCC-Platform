@@ -3083,6 +3083,13 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
     }
     catch(IException* e)
     {
+        CErrorMessageFormat errorMessageFormat = req.getErrorMessageFormat();
+        if (errorMessageFormat == CErrorMessageFormat_XML)
+            context.setResponseFormat(ESPSerializationXML);
+        else if (errorMessageFormat == CErrorMessageFormat_JSON)
+            context.setResponseFormat(ESPSerializationJSON);
+        else if (errorMessageFormat == CErrorMessageFormat_Text)
+            context.setResponseFormat(ESPSerializationTEXT);
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;

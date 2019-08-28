@@ -2498,6 +2498,22 @@ StringBuffer &toJSON(StringBuffer &json, IMultiException *me, const char *callba
     return json;
 }
 
+StringBuffer &toText(StringBuffer &content, IMultiException *me)
+{
+    IArrayOf<IException> &exs = me->getArray();
+    content.append("Exceptions: \n");
+    content.append("  Source: ").append(me->source()).append("\n");
+    ForEachItemIn(i, exs)
+    {
+        IException &e = exs.item(i);
+        StringBuffer msg;
+        content.append("  Exception: \n");
+        content.append("    Code: ").append(e.errorCode()).append("\n");
+        content.append("    Message: ").append(e.errorMessage(msg)).append("\n");
+    }
+    return content;
+}
+
 bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt)
 {
     IEspContext *context=queryContext();
@@ -2518,6 +2534,10 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         case ESPSerializationXML:
             setContentType(HTTP_TYPE_APPLICATION_XML);
             me->serialize(content);
+            break;
+        case ESPSerializationTEXT:
+            setContentType(HTTP_TYPE_TEXT_PLAIN);
+            toText(content, me);
             break;
         case ESPSerializationANY:
         default:

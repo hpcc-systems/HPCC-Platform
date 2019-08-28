@@ -43,6 +43,13 @@ ESPenum EclDefinitionActions : string
     Publish("Publish"),
 };
 
+ESPenum ErrorMessageFormat : string
+{
+    XML("xml"),
+    JSON("json"),
+    Text("text")
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -898,6 +905,7 @@ ESPrequest WULogFileRequest
     [min_ver("1.38")] string LogDate;
     [min_ver("1.38")] int SlaveNumber(1);
     [min_ver("1.55")] int64 SizeLimit(0);
+    [min_ver("1.77")] ESPenum ErrorMessageFormat ErrorMessageFormat;
     string PlainText;
 };
 
@@ -2308,7 +2316,7 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 // ----------------------------------------------------------------------------------
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("1.76"), default_client_version("1.76"), cache_group("ESPWsWUs"),
+    version("1.77"), default_client_version("1.77"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
