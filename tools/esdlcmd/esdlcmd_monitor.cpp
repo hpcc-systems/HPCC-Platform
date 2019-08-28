@@ -125,6 +125,8 @@ public:
             }
             else
             {
+                if (iter.matchFlag(optHideGetDataFrom, ESDLOPT_HIDE_GETDATAFROM))
+                    continue;
                 if (EsdlConvertCmd::parseCommandLineOption(iter))
                     continue;
                 if (EsdlConvertCmd::matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
@@ -260,7 +262,7 @@ public:
         xml.append("</esdl>");
 
         Owned<IPropertyTree> depTree = createPTreeFromXMLString(xml, ipt_ordered);
-        removeEclHidden(depTree);
+        removeEclHidden(depTree, !optHideGetDataFrom);
         toXML(depTree, xml.clear());
 
         StringBuffer monTemplate;
@@ -283,6 +285,8 @@ public:
         puts("                   to create a ECL result differencing template for." );
         puts("  <serviceName>    Name of the ESDL Service to generate the template for." );
         puts("  <methodName>     Name of the ESDL method to generate the template for." );
+        puts("Options:");
+        puts("  --hide-get-data-from  Hide ESDL elements with @get_data_from option" );
 
         puts(ESDLOPT_INCLUDE_PATH_USAGE);
         EsdlConvertCmd::usage();
@@ -298,6 +302,7 @@ public:
 
     StringAttr optService;
     StringAttr optMethod;
+    bool optHideGetDataFrom = false;
 };
 
 class EsdlMonitorCmd : public EsdlConvertCmd
@@ -344,6 +349,8 @@ public:
                 if (EsdlConvertCmd::parseCommandLineOption(iter))
                     continue;
                 if (iter.matchOption(optCassConsistency, ESDL_OPTION_CASSANDRA_CONSISTENCY))
+                    continue;
+                if (iter.matchFlag(optHideGetDataFrom, ESDLOPT_HIDE_GETDATAFROM))
                     continue;
                 if (EsdlConvertCmd::matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
                     return false;
@@ -1004,8 +1011,8 @@ public:
         monitoringTemplate.setown(createPTreeFromXMLString(diffTemplateContent, ipt_ordered));
         globals = ensurePTree(monitoringTemplate, "Globals");
 
-        removeEclHidden(depTree);
-        removeEclHidden(depTree->getPropTree("RequestInfo"));
+        removeEclHidden(depTree, !optHideGetDataFrom);
+        removeEclHidden(depTree->getPropTree("RequestInfo"), !optHideGetDataFrom);
 
         VStringBuffer xpath("EsdlMethod[@name='%s']/@response_type", optMethod.str());
         StringAttr esp_resp_type = depTree->queryProp(xpath);
@@ -1188,7 +1195,8 @@ public:
         puts("  <diffTemplate>   The template that specifies the differencing and monitoring rules usedto generate the result");
         puts("                   differencing and monitoring ECL code for the given service method.\n" );
         puts("Options:");
-        puts("  --no-export      Do not export ECL definition from generated ECL files" );
+        puts("  --no-export           Do not export ECL definition from generated ECL files" );
+        puts("  --hide-get-data-from  Hide ESDL elements with @get_data_from option" );
 
         puts(ESDLOPT_INCLUDE_PATH_USAGE);
         puts("   --cassandra-consistency <consistency>  Consistency value to use for Cassandra statements\n");
@@ -1213,6 +1221,7 @@ public:
     unsigned optFlags;
     bool optOutputCategoryList=false;  //hidden option, do not document
     bool optNoExport = false;
+    bool optHideGetDataFrom = false;
 };
 
 

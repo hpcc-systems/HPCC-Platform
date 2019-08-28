@@ -53,8 +53,8 @@ interface IEsdlDefinitionHelper : extends IInterface
     virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts=NULL, unsigned flags=0 )=0;
 };
 
-esdl_decl void removeEclHidden(IPropertyTree *depTree);
-esdl_decl void removeEclHidden(StringBuffer &xml);
+esdl_decl void removeEclHidden(IPropertyTree *depTree, bool cloneGetDataFrom);
+esdl_decl void removeEclHidden(StringBuffer &xml, bool cloneGetDataFrom);
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( );
 
