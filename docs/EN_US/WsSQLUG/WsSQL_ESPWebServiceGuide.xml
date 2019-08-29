@@ -54,11 +54,11 @@
     <title>Introduction</title>
 
     <para>The WsSQL Web service is an add-on service that provides an SQL
-    interface into HPCC Systems. The Web service accepts a subset of prepared
-    and standard SQL queries. This provides access to most HPCC data and
+    interface into HPCC Systems<superscript>®</superscript>. The Web service accepts a subset of prepared
+    and standard SQL queries. This provides access to most HPCC Systems data and
     published queries over HTTP or HTTPS using SOAP or REST interfaces.</para>
 
-    <para>The WsSQL service maps HPCC logical files to RDBMS tables. HPCC
+    <para>The WsSQL service maps HPCC Systems logical files to RDBMS tables. HPCC Systems
     Published Queries are exposed as RDBMS Stored Procedures.</para>
 
     <para>The WsSQL service also provides convenient methods to obtain system
@@ -69,23 +69,23 @@
     fashion by users who are more comfortable using SQL than ECL. This makes
     it possible to submit ad-hoc queries without learning ECL.</para>
 
-    <para>The service exposes HPCC logical files as RDB tables.</para>
+    <para>The service exposes HPCC Systems logical files as RDB tables.</para>
 
     <para><itemizedlist mark="bullet">
         <listitem>
-          <para>HPCC Logical File &lt;-&gt; RDB Table</para>
+          <para>HPCC Systems Logical File &lt;-&gt; RDB Table</para>
         </listitem>
 
         <listitem>
-          <para>HPCC Record Fields &lt;-&gt; RDB Table Columns</para>
+          <para>HPCC Systems Record Fields &lt;-&gt; RDB Table Columns</para>
         </listitem>
 
         <listitem>
-          <para>HPCC Published query &lt;-&gt; RDB Stored Procedure</para>
+          <para>HPCC Systems Published query &lt;-&gt; RDB Stored Procedure</para>
         </listitem>
 
         <listitem>
-          <para>Provides HPCC system and data RDB metadata</para>
+          <para>Provides HPCC Systems with system and data RDB metadata</para>
         </listitem>
 
         <listitem>
@@ -97,7 +97,7 @@
         </listitem>
 
         <listitem>
-          <para>Provides means for utilizing HPCC index files for faster
+          <para>Provides means for utilizing HPCC Systems index files for faster
           reads.</para>
 
           <para></para>
@@ -107,7 +107,7 @@
     <sect1>
       <title>Supported File Types</title>
 
-      <para>The WsSQL service supports all HPCC file types except :</para>
+      <para>The WsSQL service supports all HPCC Systems file types except :</para>
 
       <para><itemizedlist>
           <listitem>
@@ -125,7 +125,7 @@
             which contain the record definition in the logical file's
             metadata.</emphasis> Sprayed files do not contain this metadata.
             This metadata exists on any file or index which is written to the
-            HPCC Distributed File System (DFS). Sprayed data files typically
+            HPCC Systems Distributed File System (DFS). Sprayed data files typically
             undergo some processing and an OUTPUT of the transformed data to
             disk before use, so this should not interfere with the service's
             usefulness. You can use the
@@ -141,7 +141,7 @@
   <chapter>
     <title>Setup</title>
 
-    <para>The WsSQL service is included in the HPCC Platform. </para>
+    <para>The WsSQL service is included in the HPCC Systems platform. </para>
 
     <sidebar>
       <para>Prior to version 7.0, WsSQL was an add-on product and was
@@ -292,11 +292,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
   </chapter>
 
   <chapter>
-    <title>Using HPCC Files as a data source</title>
+    <title>Using HPCC Systems Files as a data source</title>
 
     <para>Once installed and configured, the WsSQL service will process
     submitted SQL statements and generate dynamic ECL code. The code is
-    submitted to and executed by your HPCC Platform. The result set is
+    submitted to and executed by your HPCC Systems platform. The result set is
     returned to your application.</para>
 
     <para><variablelist>
@@ -308,7 +308,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             which contain the record definition in the logical file's
             metadata.</emphasis> Sprayed files do not contain this metadata.
             This metadata exists on any file or index which is written to the
-            HPCC Distributed File System (DFS). Sprayed data files typically
+            HPCC Systems Distributed File System (DFS). Sprayed data files typically
             undergo some processing and an OUTPUT of the transformed data to
             disk before use, so this should not interfere with the service's
             usefulness. You can use the
@@ -320,7 +320,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </varlistentry>
       </variablelist></para>
 
-    <para>In addition, you can utilize indexes on the HPCC in one of two
+    <para>In addition, you can utilize indexes on the HPCC Systems in one of two
     ways:</para>
 
     <orderedlist numeration="arabic">
@@ -334,7 +334,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </listitem>
 
       <listitem>
-        <para>Specify the related indexes in the HPCC logical file
+        <para>Specify the related indexes in the HPCC Systems logical file
         description.</para>
       </listitem>
     </orderedlist>
@@ -344,7 +344,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
       <para>The WsSQL service attempts to perform index based reads whenever
       possible. However, in order to take advantage of index reads, the target
-      HPCC files need to be annotated with the pertinent index file names.
+      HPCC Systems files need to be annotated with the pertinent index file names.
       This is accomplished by adding the following key/value entry on the
       file's description using ECL Watch.</para>
 
@@ -437,14 +437,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <para><emphasis role="bold">GetDBSystemInfo</emphasis></para>
 
         <para>You can use this method to gather version information from the
-        HPCC Platform.</para>
+        HPCC Systems platform.</para>
       </listitem>
 
       <listitem>
         <para><emphasis role="bold">GetMetadata</emphasis></para>
 
         <para>This method provides metadata you can use to create a view or
-        model of the target HPCC system as a SQL accessible DB. You can
+        model of the target HPCC Systems platform as a SQL accessible DB. You can
         request Tables, Stored Procedures, and/or Targetclusters.</para>
       </listitem>
 
@@ -498,7 +498,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         creates a new table and loads the data from the source file creating a
         table (logical file) that WsSQL can use. This function is intended to
         use when you have a logical file without metadata or to import a new
-        file into an HPCC platform.</para>
+        file into an HPCC Systems platform.</para>
       </listitem>
 
       <listitem>
@@ -708,37 +708,37 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry><programlisting role="wsig">  FullVersion</programlisting></entry>
 
-                  <entry>Full Version of HPCC Platform</entry>
+                  <entry>Full Version of the HPCC Systems platform</entry>
                 </row>
 
                 <row>
                   <entry><programlisting role="wsig">  Major</programlisting></entry>
 
-                  <entry>Major of HPCC Platform</entry>
+                  <entry>Major version of the HPCC Systems platform</entry>
                 </row>
 
                 <row>
                   <entry><programlisting role="wsig">  Minor</programlisting></entry>
 
-                  <entry>Minor of HPCC Platform</entry>
+                  <entry>Minor version of the HPCC Systems platform</entry>
                 </row>
 
                 <row>
                   <entry><programlisting role="wsig">  Point</programlisting></entry>
 
-                  <entry>Point of HPCC Platform</entry>
+                  <entry>Point of HPCC Systems platform</entry>
                 </row>
 
                 <row>
                   <entry><programlisting role="wsig">  Project</programlisting></entry>
 
-                  <entry>Project of HPCC Platform</entry>
+                  <entry>Project of HPCC Systems platform</entry>
                 </row>
 
                 <row>
                   <entry><programlisting role="wsig">  Maturity</programlisting></entry>
 
-                  <entry>Maturity of HPCC Platform</entry>
+                  <entry>Maturity of HPCC Systems platform</entry>
                 </row>
 
                 <row>
@@ -785,15 +785,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     <sect1>
       <title>GetDBMetaData</title>
 
-      <para>This methods allows you to query the HPCC Platform and get
-      metadata to use to create a view or model of the target HPCC system as a
+      <para>This methods allows you to query the HPCC Systems platform and get
+      metadata to use to create a view or model of the target HPCC Systems as a
       SQL accessible DB.</para>
 
       <para>You can request one or more of the followinfg:</para>
 
       <itemizedlist>
         <listitem>
-          <para>Tables (Logical files in the HPCC Cluster)</para>
+          <para>Tables (Logical files in the HPCC Systems Cluster)</para>
         </listitem>
 
         <listitem>
@@ -1334,8 +1334,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                   <entry>N</entry>
 
-                  <entry>User Name to pass to HPCC. This is used as the job
-                  owner name in HPCC</entry>
+                  <entry>User Name to pass to HPCC Systems. This is used as the job
+                  owner name in HPCC Systems</entry>
                 </row>
 
                 <row>
@@ -1935,7 +1935,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   <entry>N</entry>
 
                   <entry>The username to use as the job's ownername in the
-                  HPCC platform</entry>
+                  HPCC Systems platform</entry>
                 </row>
 
                 <row>
@@ -2101,11 +2101,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
     <sect1 id="CreateTableAndLoad">
       <title>CreateTableAndLoad</title>
 
-      <para>This method creates a table (HPCC logical file) which can
+      <para>This method creates a table (HPCC Systems logical file) which can
       subsequently be accessed using WsSQL. The table is assigned the layout
       as specified in the request ECLFields section. The table is then
       populated with data from an existing file. The source data file can
-      either reside on the HPCC Landing Zone after being uploaded, or it can
+      either reside on the HPCC Systems Landing Zone after being uploaded, or it can
       already have been sprayed on to the system.</para>
 
       <sect2>
@@ -2192,8 +2192,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                   <entry>Y</entry>
 
-                  <entry>The name of the table to create in the HPCC
-                  Platform's distributed file system.</entry>
+                  <entry>The name of the table to create in the HPCC Systems
+                  platform's distributed file system.</entry>
                 </row>
 
                 <row>
@@ -2320,7 +2320,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                   <entry>Y**</entry>
 
-                  <entry>IP address or hostname of the HPCC Landing
+                  <entry>IP address or hostname of the HPCC Systems Landing
                   Zone</entry>
                 </row>
 
@@ -3242,7 +3242,7 @@ Joe Smith CA
 </programlisting>
 
       <para>The interface supports SQL index hints, which gives the SQL user
-      the option to specify the most appropriate HPCC index for the current
+      the option to specify the most appropriate HPCC Systems index for the current
       SQL query. This also allows you to disable the use of an index.</para>
 
       <para><emphasis role="bold">select
@@ -3567,8 +3567,8 @@ Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /*
       role="bold">]]<emphasis role="bold">[;]</emphasis></emphasis></para>
 
       <para>The CREATE TABLE and LOAD DATA SQL statements allow you to create
-      a file in an HPCC cluster that is accessible via WsSQL. You can populate
-      the new file from data in a logical file already on the HPCC cluster or
+      a file in an HPCC Systems cluster that is accessible via WsSQL. You can populate
+      the new file from data in a logical file already on the HPCC Systems cluster or
       one that is on a landing zone.</para>
 
       <para>All Create requests MUST be accompanied by a Load request. You
@@ -3585,7 +3585,7 @@ Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /*
               <row>
                 <entry><emphasis>newtablename</emphasis></entry>
 
-                <entry>The logical filename to create on the HPCC cluster.
+                <entry>The logical filename to create on the HPCC Systems cluster.
                 <emphasis role="bold">Note: </emphasis>Create and Load must
                 target the same file.</entry>
               </row>
@@ -3601,7 +3601,7 @@ Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /*
                 <entry><emphasis>sourcetablename</emphasis></entry>
 
                 <entry>The source file from which to extract data to load into
-                the new table. This can be a logical file on an HPCC cluster
+                the new table. This can be a logical file on an HPCC Systems cluster
                 or a physical file on a landing zone. For a landing zone file,
                 you MUST provide a <emphasis role="bold">connection</emphasis>
                 '<emphasis>landingzoneIP</emphasis>' and a <emphasis
@@ -3614,7 +3614,7 @@ Select Firstname from persons where lastname = 'Jones' and zip &gt; '33445'   /*
               <row>
                 <entry><emphasis>landingzoneIP</emphasis></entry>
 
-                <entry>The IP Address or hostname of the HPCC Landing
+                <entry>The IP Address or hostname of the HPCC Systems Landing
                 Zone</entry>
               </row>
 
@@ -3819,7 +3819,7 @@ INTO TABLE newCustomerFile4CSV
         <sect3>
           <title>Reserved SQL Keywords</title>
 
-          <para>Your HPCC identifiers (field names, Stored Procedure names,
+          <para>Your HPCC Systems identifiers (field names, Stored Procedure names,
           etc) cannot use SQL reserved words such as:</para>
 
           <programlisting>ADD ALL ANY AS ASC AT AVG BETWEEN BOOL BOOLEAN BY CALL COLUMN CONTAINS COUNT 
@@ -3831,7 +3831,7 @@ SUM TABLE TRUE UPPER USE WHERE XOR DIV MOD OR AND</programlisting>
         <sect3>
           <title>Special Characters</title>
 
-          <para>Your HPCC filenames should avoid special characters other
+          <para>Your HPCC Systems filenames should avoid special characters other
           than:</para>
 
           <programlisting>( 'A'..'Z' | 'a'..'z' | '' | '$') ( 'A'..'Z' | 'a'..'z' | '' | '$' | '0'..'9' )

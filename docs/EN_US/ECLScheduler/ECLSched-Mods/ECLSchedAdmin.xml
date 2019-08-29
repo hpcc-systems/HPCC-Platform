@@ -27,7 +27,7 @@
       <para>The <emphasis role="bold">scheduleadmin</emphasis> is the command
       line interface to the ECL Scheduler. The scheduleadmin is located by
       default in <emphasis role="bold">/opt/HPCCSystems/bin/ </emphasis>on
-      your HPCC system.</para>
+      your HPCC Systems platform.</para>
 
       <para><emphasis role="bold">scheduleadmin
       </emphasis><emphasis>daliserver</emphasis>

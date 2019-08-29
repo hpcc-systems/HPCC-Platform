@@ -64,7 +64,7 @@
 
   <para>The <emphasis role="bold">HDFSConnector.Pipeout </emphasis>macro
   writes the given <emphasis>ECL_RS</emphasis> recordset to the target HDFS
-  system in file parts -- one file part for each HPCC Thor node. You can then
+  system in file parts -- one file part for each HPCC Systems Thor node. You can then
   use other means to merge the file parts or you can use <emphasis
   role="bold">HDFSConnector.PipeOutAndMerge</emphasis> to do both
   tasks.</para>

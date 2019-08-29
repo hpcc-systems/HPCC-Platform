@@ -44,7 +44,7 @@
       </itemizedlist></para>
 
     <para><emphasis role="bold">Buildset definition</emphasis> - The plugin
-    declares itself as an HPCC Security Manager Plugin component, and declares
+    declares itself as an HPCC Systems<superscript>®</superscript> Security Manager Plugin component, and declares
     the location of the plugin files and the configuration definition
     schema.</para>
 
@@ -67,7 +67,7 @@
     <para><emphasis role="bold">Configuration Definition</emphasis> - The
     plugin must provide a definition of the configuration elements and the
     structure it expects to receive at the time it is instantiated. The XSD
-    file is consumed by the HPCC Configuration manager component and is
+    file is consumed by the HPCC Systems Configuration Manager component and is
     rendered as a GUI form. The configuration definition is defined as an
     element of the component name (as declared in the buildset) followed by
     attributes and/or complex elements.</para>
@@ -170,13 +170,13 @@
 
     <para><emphasis role="bold">Configuration transformation rules</emphasis>
     - (optional) specified as an xsl template, this set of rules can be
-    applied to the configuration XML. Refer to XSL templates in the HPCC
+    applied to the configuration XML. Refer to XSL templates in the HPCC Systems
     source tree.</para>
 
     <sect2 id="concrete-example">
       <title>Concrete Example</title>
 
-      <para>The HPCC Platform includes a security manager plugin
+      <para>The HPCC Systems platform includes a security manager plugin
       implementation (HTPasswd) and can be used as a guidance for the plugin
       development process:</para>
 

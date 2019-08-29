@@ -4,7 +4,7 @@
 <sect1 id="Unity_Launcher">
   <title>Unity Launcher Icon</title>
 
-  <para>The HPCC platform supports an Ubuntu Unity Launcher icon.</para>
+  <para>The HPCC Systems platform supports an Ubuntu Unity Launcher icon.</para>
 
   <para>This allows you to start, stop, restart, or query the status of an
   installed single node system from an icon on the Unity Launcher of a desktop
@@ -17,7 +17,7 @@
         <listitem>
           <para>This is only useful on a single-node system at this time.
           Future versions may operate in a different manner and support
-          multi-node HPCC systems<superscript>®</superscript>.</para>
+          multi-node HPCC Systems<superscript>®</superscript>.</para>
         </listitem>
       </varlistentry>
     </variablelist></para>
@@ -31,7 +31,7 @@
         Systems<superscript>®</superscript> application icon.</para>
 
         <figure>
-          <title>HPCC Application Icon</title>
+          <title>HPCC Systems Application Icon</title>
 
           <mediaobject>
             <imageobject>

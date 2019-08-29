@@ -4,7 +4,7 @@
 <sect1 id="session-management" role="nobrk">
   <title>Session Management</title>
 
-  <para>The 7.0 release of HPCC Platform introduces the new ESP Session
+  <para>The 7.0 release of HPCC Systems platform introduces the new ESP Session
   Management security feature. This functions like many banking applications,
   where after a configurable period of inactivity you are warned with a "You
   are about to be locked out" pop-up. If no action further is taken, the
@@ -154,7 +154,7 @@
       </listitem>
 
       <listitem>
-        <para><emphasis role="strong">Q</emphasis>: Will HPCC command line
+        <para><emphasis role="strong">Q</emphasis>: Will HPCC Systems command line
         utilities be affected?</para>
 
         <para><emphasis role="strong">A</emphasis>: Possibly. If you have
@@ -216,7 +216,7 @@
         require SSL/TLS and HTTPS?</para>
 
         <para><emphasis role="strong">A</emphasis>: These secure protocols are
-        already available for your HPCC Administrator to configure. Though not
+        already available for your HPCC Systems Administrator to configure. Though not
         required for session management, hopefully they are currently
         enabled.</para>
       </listitem>
@@ -236,7 +236,7 @@
         Session Management changes?</para>
 
         <para><emphasis role="strong">A</emphasis>: You can configure your
-        system to use Session Management as part of HPCC Version 7.0.</para>
+        system to use Session Management as part of HPCC Systems Version 7.0.</para>
       </listitem>
     </orderedlist>
   </sect2>

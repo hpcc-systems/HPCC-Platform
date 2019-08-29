@@ -17,7 +17,7 @@
       </listitem>
 
       <listitem>
-        <para>You must install the package on every HPCC Thor node. To install
+        <para>You must install the package on every HPCC Systems Thor node. To install
         the package, follow the installation instructions for your operating
         system:</para>
 
@@ -60,7 +60,7 @@
   <sect2>
     <title>Editing and distributing the Configuration file</title>
 
-    <para>After you install the HDFS to HPCC Connector package, you must edit
+    <para>After you install the HDFS to HPCC Systems Connector package, you must edit
     the configuration file and push it out to all nodes.</para>
 
     <orderedlist>
@@ -96,7 +96,7 @@
   <sect2 role="brk">
     <title>Installing the ECL library to your ECL IDE source folder</title>
 
-    <para>The HDSF to HPCC Connector library is a single ECL file containing
+    <para>The HDFS to HPCC Systems Connector library is a single ECL file containing
     three MACROs. These steps explain how to install to your ECL source
     repository.</para>
 

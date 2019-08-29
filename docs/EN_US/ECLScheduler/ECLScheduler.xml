@@ -67,7 +67,7 @@
       <title>Introduction</title>
 
       <para>The ECL Scheduler is a component process installed with the HPCC
-      system platform. It typically starts with the platform.</para>
+      Systems platform. It typically starts with the platform.</para>
 
       <para>An interface to the scheduler is available through ECL Watch. The
       ECL Scheduler interface allows you to see a list of scheduled workunits.

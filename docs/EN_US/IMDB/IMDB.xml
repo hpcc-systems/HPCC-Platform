@@ -68,7 +68,7 @@
 
       <para>This exercise shows the methodology to extract useful information
       from data. Finding interesting links and relationships from large or
-      massive datasets is a typical use of the HPCCSystems High Performance
+      massive datasets is a typical use of the HPCC Systems High Performance
       Computing Cluster (HPCC) platform.</para>
 
       <para>In this example, we will download the data files from the Internet
@@ -79,7 +79,7 @@
       everyone should understand the data and relationships intuitively.
       However, the data is comprehensive enough to provide a solid example and
       inspiration for new users to gain skills to attack their own real-world
-      problems with an HPCC.</para>
+      problems with an HPCC Systems.</para>
 
       <para>In this example, we will:</para>
 
@@ -120,9 +120,9 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>While this example will run on a single-node HPCC, you
+                <entry>While this example will run on a single-node HPCC Systems platform, you
                 will see a dramatic difference in performance on a multi-node
-                system. The true power of an HPCC is its ability to work on
+                system. The true power of an HPCC Systems<superscript>®</superscript> platform is its ability to work on
                 different portions of the data file in parallel. This is known
                 as Massively Parallel Processing (MPP).</entry>
               </row>
@@ -146,7 +146,7 @@
         pictures.</para>
 
         <para>It is manageable in size (~400MB) and is sufficient in size to
-        exercise an HPCC platform but not too big to download<emphasis
+        exercise an HPCC Systems platform but not too big to download<emphasis
         role="bold">.</emphasis></para>
 
         <para>The plain text data files are available from the following ftp
@@ -240,8 +240,8 @@ Blankline</programlisting></para>
         Zone</emphasis></title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC cluster. A Landing Zone is a
-        storage location attached to your HPCC. It has a utility running to
+        which it can be sprayed to your HPCC Systems cluster. A Landing Zone is a
+        storage location attached to your HPCC Systems. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
         <para>For smaller data files, maximum of 2GB, you can use the
@@ -249,7 +249,7 @@ Blankline</programlisting></para>
         ~400 mb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC cluster. The power of the HPCC comes from its ability to
+        in the HPCC Systems cluster. The power of the HPCC Systems comes from its ability to
         assign multiple processors to work on different portions of the data
         file in parallel.</para>
 
@@ -363,7 +363,7 @@ Blankline</programlisting></para>
         <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC system, we must "spray" it to
+        <para>To use the data file in our HPCC Systems platform, we must "spray" it to
         all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -486,7 +486,7 @@ Blankline</programlisting></para>
 
           <listitem>
             <para>After both sprays are complete, we can query the logical
-            files on the HPCC to see the files we sprayed.</para>
+            files on the HPCC Systems platform to see the files we sprayed.</para>
           </listitem>
 
           <listitem>

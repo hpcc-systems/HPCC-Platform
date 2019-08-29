@@ -135,7 +135,7 @@
     unchanged.</para>
 
     <para>We have signed the SERVICE definitions provided by the ECL standard
-    plugins and included the public key in the HPCC platform installation.
+    plugins and included the public key in the HPCC Systems platform installation.
     Code that tries to use service definitions that are signed will continue
     to work as before but, code that tries to call arbitrary library functions
     using user-supplied SERVICE definitions will give compile errors, if the

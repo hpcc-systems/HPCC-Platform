@@ -11,18 +11,18 @@
   <para>There are essentially three issues around working with BLOB
   data:</para>
 
-  <para>1) How to get the data into the HPCC (spraying).</para>
+  <para>1) How to get the data into the HPCC Systems cluster(spraying).</para>
 
-  <para>2) How to work with the data, once it is in the HPCC.</para>
+  <para>2) How to work with the data, once it is in the HPCC Systems cluster.</para>
 
-  <para>3) How to get the data back out of the HPCC (despraying).</para>
+  <para>3) How to get the data back out of the HPCC Systems cluster (despraying).</para>
 
   <sect2 id="Spraying_BLOB_Data">
     <title>Spraying BLOB Data</title>
 
     <para>In the HPCCClientTools.PDF there is a chapter devoted to the
     DFUplus.exe program. This is a command line tool with specific options
-    that allow you to spray and despray files into BLOBs in the HPCC. In all
+    that allow you to spray and despray files into BLOBs in the HPCC Systems cluster. In all
     the examples below, we'll assume you have a DFUPLUS.INI file in the same
     folder as the executable containing the standard content described in that
     section of the PDF.</para>
@@ -49,7 +49,7 @@
   <sect2 id="Working_with_BLOB_Data">
     <title>Working with BLOB Data</title>
 
-    <para>Once you've sprayed the data into the HPCC you must define the
+    <para>Once you've sprayed the data into the HPCC Systems cluster you must define the
     RECORD structure and DATASET. The following RECORD structure defines the
     result of the spray above:</para>
 
@@ -93,7 +93,7 @@ BUILDINDEX(imageKey);</programlisting>
     <title>Despraying BLOB Data</title>
 
     <para>The DFUplus.exe program also allows you to despray BLOB files from
-    the HPCC, splitting them back into the separate files they originated
+    the HPCC Systems platform, splitting them back into the separate files they originated
     from. The key to making a despray operation write BLOBs to separate files
     is the use of the <emphasis>splitprefix=Filename,Filesize</emphasis>
     option. For example, the following command line desprays all the BLOB data
