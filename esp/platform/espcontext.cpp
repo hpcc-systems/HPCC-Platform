@@ -836,6 +836,17 @@ LogRequest readLogRequest(char const* req)
     return LogRequestsNever;
 }
 
+StringBuffer& getLogRequestString(LogRequest req, StringBuffer& out)
+{
+    if (req == LogRequestsAlways)
+        out.append("all");
+    else if (req == LogRequestsWithIssuesOnly)
+        out.append("only-ones-with-issues");
+    else
+        out.append("never");
+    return out;
+}
+
 LogLevel getEspLogLevel() { return getEspLogLevel(NULL); }
 
 LogLevel getEspLogLevel(IEspContext* ctx)

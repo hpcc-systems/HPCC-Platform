@@ -30,6 +30,20 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetLoggingResponse
     string Message;
 };
 
+ESPrequest [nil_remove] GetLoggingSettingsRequest
+{
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] GetLoggingSettingsResponse
+{
+    int LoggingLevel;
+    string LogRequests;
+    bool LogResponses;
+    int LoggingLevelSetting;
+    string LogRequestsSetting;
+    bool LogResponsesSetting;
+};
+
 ESPStruct [nil_remove] Session
 {
     string ID;
@@ -135,9 +149,10 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] AttachToDaliResponse
     string Message;
 };
 
-ESPservice [auth_feature("NONE"), version("1.02"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
+ESPservice [auth_feature("NONE"), version("1.03"), default_client_version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);
+    ESPmethod [min_ver("1.03")] GetLoggingSettings(GetLoggingSettingsRequest, GetLoggingSettingsResponse);
     ESPmethod [min_ver("1.01")] SessionQuery(SessionQueryRequest, SessionQueryResponse);
     ESPmethod [min_ver("1.01")] SessionInfo(SessionInfoRequest, SessionInfoResponse);
     ESPmethod [min_ver("1.01")] CleanSession(CleanSessionRequest, CleanSessionResponse);

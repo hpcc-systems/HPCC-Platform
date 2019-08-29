@@ -122,6 +122,7 @@ esp_http_decl void addEspNativeArray(StringBuffer& schema, const char* xsdType, 
 esp_http_decl void checkRequest(IEspContext& ctx);
 
 esp_http_decl LogRequest readLogRequest(char const* req);
+esp_http_decl StringBuffer& getLogRequestString(LogRequest req, StringBuffer& out);
 esp_http_decl LogLevel getEspLogLevel(IEspContext* );
 esp_http_decl LogLevel getEspLogLevel();
 esp_http_decl LogRequest getEspLogRequests();
