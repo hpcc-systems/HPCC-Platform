@@ -566,10 +566,7 @@ void listPkgInfo(double version, const char *target, const char *process, const 
         if (process && *process && (version >= 1.01))
             res->setProcess(process);
         getPackageListInfo(mapTree, res);
-        if (target && *target)
-            res->setTarget(target);
-        else
-            res->setTarget(item.queryProp("@querySet"));
+        res->setTarget(item.queryProp("@querySet"));
         results->append(*res.getClear());
     }
 }
