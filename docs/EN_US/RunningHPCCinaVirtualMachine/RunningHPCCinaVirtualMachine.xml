@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book id="Running_HPCC_In_A_Virtual_Machine" lang="en_US" xml:base="../">
-  <title>Running HPCC in a Virtual Machine</title>
+  <title>Running HPCC Systems in a Virtual Machine</title>
 
   <bookinfo>
-    <title>HPCC in a Virtual Machine</title>
+    <title>HPCC Systems in a Virtual Machine</title>
 
     <mediaobject>
       <imageobject>
@@ -67,7 +67,7 @@
     <title>Introduction</title>
 
     <para>These instructions will guide you through installing and running an
-    HPCC<footnote>
+    HPCC Systems<superscript>®</superscript><footnote>
         <para><emphasis role="bold">H</emphasis>igh <emphasis
         role="bold">P</emphasis>erformance <emphasis
         role="bold">C</emphasis>omputing <emphasis
@@ -76,23 +76,22 @@
         <ulink
         url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
         for more details.</para>
-      </footnote> System on a single node inside a Linux virtual machine
+      </footnote> on a single node inside a Linux virtual machine
     running on a Windows host.</para>
 
     <para>Packaged to run inside a virtual machine, this version provides a
-    hands-on experience with an HPCC system. You can experiment with it and
+    hands-on experience with HPCC Systems. You can experiment with it and
     even create real-world data analytics applications-all on your desktop or
     laptop PC.</para>
 
-    <para>This version includes the tools and functionality of an HPCC without
+    <para>This version includes the tools and functionality of an HPCC Systems without
     the need for a physical cluster of servers. It provides enough for you to
-    evaluate an HPCC system and learn to use ECL<footnote>
+    evaluate HPCC Systems and learn to use ECL<footnote>
         <para><emphasis role="bold">E</emphasis>nterprise <emphasis
         role="bold">C</emphasis>ontrol <emphasis
         role="bold">L</emphasis>anguage (ECL) is a declarative, data-centric
         programming language used to manage all aspects of the massive data
-        joins, sorts, and builds that truly differentiate HPCC (High
-        Performance Computing Cluster) from other technologies in its ability
+        joins, sorts, and builds that truly differentiate HPCC Systems<superscript>®</superscript> from other technologies in its ability
         to provide flexible data analysis on a massive scale.</para>
       </footnote>. Naturally, you do not get the power of parallel processing,
     but you can use this version as an evaluation, learning, and
@@ -121,7 +120,7 @@
     <sect1 id="VM_Requirements">
       <title>System Requirements</title>
 
-      <para>Running HPCC in a virtual machine requires (at minimum):</para>
+      <para>Running HPCC Systems in a virtual machine requires (at minimum):</para>
 
       <itemizedlist>
         <listitem>
@@ -158,7 +157,7 @@
       <para>Users should have familiarity with installing and running Windows
       applications.</para>
 
-      <para>To run HPCC in a virtual machine, hardware virtualization must be
+      <para>To run the HPCC Systems platform in a virtual machine, hardware virtualization must be
       enabled in the BIOS of your machine. This setting may be called VT-x or
       AMD-V.</para>
     </sect1>
@@ -167,17 +166,17 @@
   <chapter id="VM_GettingTheTools">
     <title>Getting the Tools and the VM Image</title>
 
-    <para>To run the virtual machine version of the HPCC System, you need
+    <para>To run the virtual machine version of the HPCC Systems platform, you need
     virtualization software. These packages allow you to run virtual images
     inside a single host. There are a several different vendors who make
     virtualization software, while any or all of these could work, we support
-    Oracle VM VirtualBox<superscript>®</superscript> .</para>
+    Oracle VM VirtualBox<superscript>®</superscript>.</para>
 
     <sect1 id="VM_VirtualBox">
       <title>VM VirtualBox</title>
 
       <para>Oracle's virtualization software, VM VirtualBox is supported for
-      running the HPCC virtual machine image.</para>
+      running the HPCC Systems virtual machine image.</para>
 
       <para>In the following section(s), you will:</para>
 
@@ -187,7 +186,7 @@
         </listitem>
 
         <listitem>
-          <para>Download the HPCC virtual machine image from HPCC
+          <para>Download the HPCC Systems virtual machine image from HPCC
           Systems.</para>
         </listitem>
 
@@ -235,11 +234,11 @@
       </sect2>
 
       <sect2 id="VM_ImportVirtualImage">
-        <title id="get_HPCC">Import the HPCC Virtual Image File</title>
+        <title id="get_HPCC">Import the HPCC Systems Virtual Image File</title>
 
         <para><orderedlist>
             <listitem>
-              <para>Download the latest HPCC virtual machine image file
+              <para>Download the latest HPCC Systems virtual machine image file
               from:</para>
 
               <para><ulink
@@ -295,7 +294,7 @@
               pressing <emphasis role="bold">Next</emphasis> as appropriate,
               then press <emphasis role="bold">Import</emphasis>.</para>
 
-              <para>Wait for the HPCC virtual machine to import. This may take
+              <para>Wait for the HPCC Systems virtual machine to import. This may take
               a few minutes.</para>
             </listitem>
 
@@ -446,18 +445,18 @@
           </orderedlist></para>
 
         <para>Note the IP address provided. You will use this address to
-        connect to ECL Watch, and interact with HPCC.</para>
+        connect to ECL Watch, and interact with HPCC Systems.</para>
       </sect2>
     </sect1>
   </chapter>
 
   <chapter id="VM_RunningHPCC_VM">
-    <title>Running the HPCC VM</title>
+    <title>Running the HPCC Systems VM</title>
 
-    <para>In this section, we will access the HPCC using the web-based
+    <para>In this section, we will access the HPCC Systems using the web-based
     interface: ECL Watch<footnote>
-        <para>ECL Watch is a Web-based interface to your HPCC system. It
-        enables you to examine and manage many aspects of the HPCC and allows
+        <para>ECL Watch is a Web-based interface to your HPCC Systems instance. It
+        enables you to examine and manage many aspects of HPCC Systems and allows
         you to see information about jobs you run, data files, and system
         metrics.</para>
       </footnote>.From ECL Watch, we will download the ECL IDE<footnote>
@@ -465,7 +464,7 @@
         used to create queries into your data and ECL files with which to
         build your queries. This is a Windows application.</para>
       </footnote>. If you already have the ECL IDE installed, you can skip
-    this section and continue at <emphasis>Running the HPCC ECL IDE when you
+    this section and continue at <emphasis>Running the HPCC Systems ECL IDE when you
     had a previous version installed</emphasis>.</para>
 
     <para><orderedlist>
@@ -515,7 +514,7 @@
               </mediaobject>
             </figure></para>
 
-          <para>Follow the link to the HPCC System's portal download
+          <para>Follow the link to the HPCC Systems portal download
           page.</para>
         </listitem>
 
@@ -642,13 +641,13 @@
           <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
           <para>At this point you are now connected and ready to work with the
-          HPCC!</para>
+          HPCC Systems!</para>
         </listitem>
       </orderedlist>
     </sect1>
 
     <sect1 id="VM_RunningtheIDE_wPreviousVersion">
-      <title>Running the HPCC ECL IDE when you had a previous version
+      <title>Running the HPCC Systems ECL IDE when you had a previous version
       installed</title>
 
       <orderedlist>
@@ -740,7 +739,7 @@
         <listitem>
           <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
-          <para>You are now connected and ready to work with the HPCC!</para>
+          <para>You are now connected and ready to work with the HPCC Systems platform!</para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -749,7 +748,7 @@
       <title>Write some ECL</title>
 
       <para>Let's write, compile, and execute a simple "Hello World" program
-      on our HPCC.</para>
+      on our HPCC Systems platform.</para>
 
       <orderedlist>
         <listitem>
@@ -799,7 +798,7 @@
           cluster.</para>
 
           <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-          component of your HPCC. It is a massively parallel computer cluster,
+          component of your HPCC Systems. It is a massively parallel computer cluster,
           optimized for sorting, manipulating, and transforming massive data.
           This process is also known as ETL (Extract, Transform, and
           Load)</para>
@@ -892,14 +891,14 @@
     <sect1 id="VM_Working_with_a_data_file">
       <title>Working with data files</title>
 
-      <para>Once you start working with your HPCC system, you will want to
+      <para>Once you start working with your HPCC Systems, you will want to
       process some real data, this section shows you how to load data to your
-      HPCC system.</para>
+      HPCC Systems platform.</para>
 
       <sect2 id="VM_Cautions_and_Warnings">
         <title>Before you begin</title>
 
-        <para>A typical production HPCC system would have much more data
+        <para>A typical production HPCC Systems platform would have much more data
         capacity than using a virtual system for testing purposes. The size of
         the file you wish to work with is limited by the size of your virtual
         machine.</para>
@@ -1114,7 +1113,7 @@
       <title>Next Steps</title>
 
       <para>Available from the menu in ECL Watch are several documents which
-      provide details on various aspects of the HPCC.</para>
+      provide details on various aspects of the HPCC Systems.</para>
 
       <figure>
         <title>ECL Watch Resource Page</title>
@@ -1146,7 +1145,7 @@
 
       <para><itemizedlist>
           <listitem>
-            <para>The <emphasis role="bold">HPCC Data
+            <para>The <emphasis role="bold">HPCC Systems Data
             Tutorial</emphasis></para>
 
             <para>This is a simple, step-by-step tutorial that shows the
@@ -1236,7 +1235,7 @@
           </question>
 
           <answer>
-            <para>The HPCC VM Edition runs on a single node, has a limit of 20
+            <para>The HPCC Systems VM Edition runs on a single node, has a limit of 20
             GB in it workspace, and doesn't support custom
             configurations.</para>
           </answer>
@@ -1248,7 +1247,7 @@
           </question>
 
           <answer>
-            <para>You can run the HPCC VM using the Linux VM Player. The HPCC
+            <para>You can run the HPCC Systems VM using the Linux VM Player. The HPCC Systems
             ECL IDE is a Windows application, but can run under WINE. See the
             Client Tools Manual for details.</para>
           </answer>
@@ -1295,7 +1294,7 @@
 
           <answer>
             <para>Yes. Community Edition binaries run natively on 64-bit Linux
-            server(s). You can access that HPCC from any Windows workstation
+            server(s). You can access HPCC Systems from any Windows workstation
             (32- or 64-bit) that can run the ECL IDE and a supported
             browser.</para>
           </answer>

@@ -67,9 +67,9 @@
     <title>Introducing ECL Watch</title>
 
     <para>ECL Watch is a service that runs on the Enterprise Services Platform
-    (ESP), a middleware component on the HPCC Platform.</para>
+    (ESP), a middleware component on the HPCC Systems platform.</para>
 
-    <para>ECL Watch provides an interface to the HPCC system and allows you to
+    <para>ECL Watch provides an interface to the HPCC Systems platform and allows you to
     view information and interrogate nodes to confirm all expected processes
     are running. It is a plugin that is useful for Systems Administrators to
     check processes, examine topology, and view logs. It is useful to ECL
@@ -78,7 +78,7 @@
     perform Workunit and data files maintenance.</para>
 
     <para>The ECL Watch interface is a browser based set of pages where you
-    can access and interface with the HPCC System. To Run <emphasis
+    can access and interface with the HPCC Systems platform. To Run <emphasis
     role="bold">ECL Watch</emphasis> using you browser, go to the node on your
     system running <emphasis role="bold">ESP/ECL Watch</emphasis> on port
     8010. For example, http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is
@@ -173,7 +173,7 @@
           <para>The <emphasis role="bold">Maximize/Restore</emphasis> icon
           appears throughout ECL Watch. Press the button to maximize the
           corresponding window pane. Press the button again to restore the
-          pane to its original size. </para>
+          pane to its original size.</para>
         </sect3>
       </sect2>
 
@@ -235,7 +235,7 @@
           filter.</para>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>The Mine Button</title>
 
           <para>The <emphasis role="bold">Mine</emphasis> button appears along
@@ -245,7 +245,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images\ECLWAMine00.jpg" />
+                  <imagedata fileref="images/ECLWAMine00.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -278,7 +278,7 @@
 
           <para>The Monitor indicator light is used to provide an at a glance
           snapshot of your overall system health. If you have monitoring and
-          reporting configured (see <emphasis>HPCC Monitoring and
+          reporting configured (see <emphasis>HPCC Systems Monitoring and
           Reporting</emphasis>) then this light will display a color based on
           the the overall (configurable) system health. The light is black if
           there is no monitoring or reporting configured for your
@@ -427,17 +427,17 @@
           bottom of the tab. A copy facility is also provided.</para>
 
           <para>The <emphasis role="bold">Release Notes</emphasis> link opens
-          a new browser tab to the HPCC release notes page where you can find
+          a new browser tab to the HPCC Systems release notes page where you can find
           more release specific information about the contents of each version
           of HPCC.</para>
 
           <para>The <emphasis role="bold">Documentation</emphasis> link opens
-          a new browser tab to the HPCC documentation page, where you can view
-          and download the HPCC system documentation.</para>
+          a new browser tab to the HPCC Systems documentation page, where you can view
+          and download the HPCC Systems platform documentation.</para>
 
           <para>The <emphasis role="bold">Downloads</emphasis> link opens a
-          new browser tab to the HPCC downloads page, where you can find and
-          download the HPCC Platform, Client Tools, and Plugins.</para>
+          new browser tab to the HPCC Systems downloads page, where you can find and
+          download the HPCC Systems platform, client tools, and plugins.</para>
 
           <para>The <emphasis role="bold">Additional Resources</emphasis> link
           opens a submenu that provides links to areas on the HPCC Systems web
@@ -451,7 +451,7 @@
           system.</para>
 
           <para>The <emphasis role="bold">About</emphasis> link opens a dialog
-          to display information about the version of the HPCC platform
+          to display information about the version of the HPCC Systems platform
           installed on your server.</para>
         </sect3>
 
@@ -509,7 +509,7 @@
           <sect4 id="ECLWatch_AdvancedMenuChangePassword" role="nobrk">
             <title>Change Password</title>
 
-            <para>If authentication is enabled on your HPCC system, you can
+            <para>If authentication is enabled on your HPCC Systems platform, you can
             change your password, right from the User Details window.
             <orderedlist>
                 <listitem>
@@ -1077,11 +1077,11 @@
   <chapter id="ECLWatch_FilesChapter">
     <title>Files</title>
 
-    <para>This chapter contains sections dealing with HPCC Platform Files,
+    <para>This chapter contains sections dealing with HPCC Systems platform Files,
     found on the <emphasis role="bold">Files</emphasis> link in ECL
     Watch.</para>
 
-    <para>In an HPCC platform, data files are partitioned across nodes. The
+    <para>In an HPCC Systems platform, data files are partitioned across nodes. The
     file parts, referenced using Logical Filenames, are stored in the
     Distributed File Utility. This allows the collection of file parts to be
     referenced as a single entity.</para>
@@ -1744,7 +1744,7 @@
       <para>There are User Administration features available through ECL
       Watch. Common system administration tasks are accessible through the
       Operations menu in ECL Watch. The links to Users, Groups, Permissions,
-      and Resources allow you to manage these components of your HPCC system
+      and Resources allow you to manage these components of your HPCC Systems platform
       from the ECL Watch interface.</para>
 
       <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
@@ -1853,8 +1853,8 @@
         <title>Installing Ganglia in ECL Watch</title>
 
         <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
-        installed on your HPCC System. For details on installing Ganglia for
-        ECL Watch, refer to the <emphasis>HPCC Monitoring and
+        installed on your HPCC Systems platform. For details on installing Ganglia for
+        ECL Watch, refer to the <emphasis>HPCC Systems Monitoring and
         Reporting</emphasis> manual.</para>
       </sect2>
     </sect1>
@@ -1873,7 +1873,7 @@
     Systems<superscript>®</superscript> Web Portal at <ulink
     url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
     updates, plugins, support, documentation, and more. This is where you can
-    find resources useful for running and maintaining HPCC on the web
+    find resources useful for running and maintaining HPCC Systems on the web
     portal.</para>
 
     <para>You can also get to the resources link on the HPCC
@@ -1881,14 +1881,14 @@
     <emphasis role="bold">Additional Resources</emphasis> link found on the
     sub-menu of at the top right hand side of navigation bar.</para>
 
-    <para>ECL Watch provides a link to the HPCC portal's download page: <ulink
+    <para>ECL Watch provides a link to the HPCC Systems download page: <ulink
     url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
     This is the page where you can download Installation packages, virtual
     images, source code, documentation, and tutorials.</para>
   </chapter>
 
   <appendix id="SessMgmtFAQ">
-    <title>HPCC Session Management</title>
+    <title>HPCC Systems Session Management</title>
 
     <xi:include href="ECLWatch/ECLWa_mods/SessFaq.xml"
                 xpointer="xpointer(//*[@id='session-management'])"

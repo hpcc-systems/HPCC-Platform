@@ -36,14 +36,8 @@ removeSymlink ()
     fi
 }
 
-/etc/init.d/hpcc-init stop
-/etc/init.d/dafilesrv stop
-
-if which systemctl 1>/dev/null 2>&1; then
-	if [ -e /etc/systemd/system/hpccsystems-platform.target ]; then
-		systemctl stop hpccsystems-platform.target
-        removeSymlink "/etc/systemd/system/hpccsystems-platform.target"
-    fi
+if [ -e /etc/systemd/system/hpccsystems-platform.target ]; then
+  removeSymlink "/etc/systemd/system/hpccsystems-platform.target"
 fi
 
 echo ""

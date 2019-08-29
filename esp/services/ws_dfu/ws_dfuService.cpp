@@ -3453,7 +3453,14 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
 
         int numSubFiles = file.hasProp(getDFUQResultFieldName(DFUQRFnumsubfiles));
         if(numSubFiles)
+        {
             lFile->setIsSuperfile(true);
+            if (version >= 1.52)
+            {
+                numSubFiles = file.getPropInt(getDFUQResultFieldName(DFUQRFnumsubfiles));
+                lFile->setNumOfSubfiles(numSubFiles);
+            }
+        }
         else
         {
             lFile->setIsSuperfile(false);

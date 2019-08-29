@@ -4,19 +4,19 @@
 <sect1 id="CassandraWUStorage">
   <title>Using Cassandra for Workunit Storage</title>
 
-  <para>Beginning with version 6.0.0, you can configure your system to use
+  <para>Beginning with HPCC Systems<superscript>®</superscript> version 6.0.0, you can configure your system to use
   Apache <trademark>Cassandra</trademark> database for Workunit storage.
   Apache's Cassandra NoSQL data store is a software framework that supports
   data-intensive distributed applications under a free license.</para>
 
-  <para>The default HPCC configuration continues to be the same--Workunits are
+  <para>The default HPCC Systems<superscript>®</superscript> configuration continues to be the same--Workunits are
   stored in Dali's data store and Sasha is typically configured to archive
   workunits to disk to save memory usage.</para>
 
   <para>Switching to Cassandra Workunit storage eliminates the need to archive
   workunits and allows you to manage your data independently.</para>
 
-  <para>This section details the steps to configure your HPCC platform to use
+  <para>This section details the steps to configure your HPCC Systems platform to use
   Cassandra as a Workunit server.</para>
 
   <sect2 id="CassandraWorkunitServer">
@@ -89,7 +89,7 @@
     <para><orderedlist>
         <listitem>
           <para>Install Cassandra and configure it as you wish. The only
-          requirements to work with an HPCC platform are:</para>
+          requirements to work with an HPCC Systems platform are:</para>
 
           <para><orderedlist numeration="loweralpha">
               <listitem>
@@ -99,13 +99,13 @@
 
               <listitem>
                 <para>If you want security, you should set up Cassandra's
-                authentication and create a superuser for HPCC to use. These
+                authentication and create a superuser for HPCC Systems to use. These
                 credentials must then be entered in the DaliPlugin
                 configuration in Configuration Manager.</para>
               </listitem>
 
               <listitem>
-                <para>Ensure your Cassandra server can be reached by your HPCC
+                <para>Ensure your Cassandra server can be reached by your HPCC Systems
                 nodes. (listen_address and rpc_address)</para>
               </listitem>
 
@@ -117,21 +117,21 @@
         </listitem>
 
         <listitem>
-          <para>Use Configuration Manager to configure your HPCC platform to
+          <para>Use Configuration Manager to configure your HPCC Systems platform to
           use Cassandra for Workunit storage.</para>
         </listitem>
 
         <listitem>
           <para>Make sure Cassandra is running.</para>
 
-          <para>Once you have configured your HPCC Platform to use Cassandra
+          <para>Once you have configured your HPCC Systems platform to use Cassandra
           for Workunit storage, you must make sure Cassandra is running before
           starting your system.</para>
         </listitem>
 
         <listitem>
-          <para>Push out your environment.xml and restart your HPCC
-          Platform.</para>
+          <para>Push out your environment.xml and restart your HPCC Systems
+          platform.</para>
         </listitem>
 
         <listitem>
@@ -161,7 +161,7 @@
   </sect2>
 
   <sect2 id="cfgCassandraWuStorage" role="brk">
-    <title>Configure your HPCC platform to use Cassandra for Workunit
+    <title>Configure your HPCC Systems platform to use Cassandra for Workunit
     storage</title>
 
     <para>This option is configured by adding a DaliPlugin component to your
@@ -170,12 +170,12 @@
     <sect3 id="cassandra_ConnectToConfigMgr">
       <title>Connect to Configuration Manager</title>
 
-      <para>In order to change the configuration for HPCC components, connect
+      <para>In order to change the configuration for HPCC Systems components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all HPCC Components, if they are running.</para>
+          <para>Stop all HPCC Systems components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -342,7 +342,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
           role="bold">every</emphasis> node.</para>
 
           <para>You may want to create a script to push out the XML file to
-          all nodes. A sample script is provided with HPCC. The following
+          all nodes. A sample script is provided with the HPCC Systems platform. The following
           command copies the XML files out to all nodes as required:</para>
 
           <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -s &lt;sourcefile&gt; -t &lt;destinationfile&gt;
@@ -350,7 +350,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
         </listitem>
 
         <listitem>
-          <para>Restart the HPCC system on <emphasis
+          <para>Restart the HPCC Systems platform on <emphasis
           role="bold">every</emphasis> node.</para>
         </listitem>
       </orderedlist>

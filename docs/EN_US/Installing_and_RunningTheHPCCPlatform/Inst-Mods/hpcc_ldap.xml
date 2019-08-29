@@ -2,11 +2,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ldap_config">
-  <title>Configuring HPCC for Authentication</title>
+  <title>Configuring HPCC Systems<superscript>®</superscript> for Authentication</title>
 
-  <para>This section details the steps to configure your HPCC platform to use
+  <para>This section details the steps to configure your HPCC Systems platform to use
   authentication. There are currently a few ways to use authentication with
-  your HPCC system: simple htpasswd authentication, LDAP, or another plugin
+  your HPCC Systems platform: simple htpasswd authentication, LDAP, or another plugin
   security method.</para>
 
   <para>The htpasswd authentication method is basic password authentication.
@@ -58,12 +58,12 @@
     <sect3 id="htpasswd_ConnectToConfigMgr">
       <title>Connect to Configuration Manager</title>
 
-      <para>In order to change the configuration for HPCC components, connect
+      <para>In order to change the configuration for HPCC Systems components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all HPCC Components, if they are running.</para>
+          <para>Stop all HPCC Systems components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -120,7 +120,7 @@
     </sect3>
 
     <sect3 id="Enabling_htpasswd_AUthentication">
-      <title>Enabling htpasswd authentication in HPCC</title>
+      <title>Enabling htpasswd authentication in HPCC Systems</title>
 
       <orderedlist continuation="continues">
         <listitem>
@@ -266,7 +266,7 @@
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
       file must exist on the ESP Node where you have enabled authentication.
-      HPCC only recognizes MD5 encrypted passwords.</para>
+      HPCC Systems only recognizes MD5 encrypted passwords.</para>
 
       <para>The default location is: <emphasis
       role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
@@ -295,26 +295,26 @@
     securing your system, or parts of your system. In addition to these
     configuration settings you should run the <emphasis
     role="bold">initldap</emphasis> utility to create the required default
-    HPCC Admin user on your LDAP server.</para>
+    HPCC Systems Admin user on your LDAP server.</para>
 
     <para>If you choose to use LDAP authentication you must enable LDAP
-    security in your HPCC System configuration. With LDAP security enabled on
+    security in your HPCC Systems configuration. With LDAP security enabled on
     your system you can then choose to enable file scope security. You can
     choose to use LDAP authentication without enabling file scope security.
     The following sections describe how to enable LDAP authentication and file
-    scope security for your HPCC system.</para>
+    scope security for your HPCC Systems platform.</para>
 
     <!--***Note: (9/2014) Adding Documentation for initLdap.*** -->
 
     <sect3 id="UsingLDAP_ConnectToConfigMgr">
       <title>Connect to Configuration Manager</title>
 
-      <para>In order to change the configuration for HPCC components, connect
+      <para>In order to change the configuration for HPCC Systems components, connect
       to the Configuration Manager.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Stop all HPCC Components, if they are running.</para>
+          <para>Stop all HPCC Systems components, if they are running.</para>
         </listitem>
 
         <listitem>
@@ -705,10 +705,10 @@
 
             <listitem>
               <para>Locate the <emphasis role="bold">ldapUser</emphasis> field
-              and verify that there is a valid HPCC user who is a member of
+              and verify that there is a valid HPCC Systems user who is a member of
               the Authenticated Users group on your LDAP server. For example,
               the "<emphasis>roxie</emphasis>" user assumes that the
-              "<emphasis>roxie</emphasis>" user is a valid HPCC authenticated
+              "<emphasis>roxie</emphasis>" user is a valid HPCC Systems authenticated
               user.</para>
             </listitem>
 
@@ -761,8 +761,8 @@
     <sect3 id="UsingLDAP_theInitldapUtility">
       <title>The initldap Utility</title>
 
-      <para>The initldap utility creates the HPCC Administrator's user account
-      and the HPCC OUs for a newly defined LDAP server. The initldap utility
+      <para>The initldap utility creates the HPCC Systems Administrator's user account
+      and the HPCC Systems OUs for a newly defined LDAP server. The initldap utility
       extracts these settings from the LDAPServer component(s) in the
       environment.xml bound to the configured ESPs.</para>
 
@@ -782,7 +782,7 @@
       <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
 Enter the LDAP Admin user 'Directory Manager' password...********
 
-Ready to initialize HPCC LDAP Environment, using the following settings
+Ready to initialize HPCC Systems LDAP Environment, using the following settings
        LDAP Server     : 10.123.456.78
        LDAP Type       : 389DirectoryServer
        HPCC Admin User : HPCCAdmin389
@@ -796,7 +796,7 @@ Proceed?  y/n
       <para>When a new ESP user account is created, a private
       "hpccinternal::&lt;user&gt;" file scope is also created granting new
       users full access to that scope and restricting access to other users.
-      This file scope is used to store temporary HPCC files such as spill
+      This file scope is used to store temporary HPCC Systems files such as spill
       files and temp files.</para>
 
       <para>If you are enabling LDAP file scope security and already have user

@@ -326,7 +326,7 @@ replicate=1</programlisting>
 
           <para>The <emphasis role="bold">spray</emphasis>
           <emphasis>operation</emphasis> copies a file from the landing zone,
-          distributing it across all the nodes of the destination HPCC.</para>
+          distributing it across all the nodes of the destination HPCC Systems cluster.</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
           role="bold">spray</emphasis> <emphasis>operation</emphasis>:</para>
@@ -366,7 +366,7 @@ replicate=1</programlisting>
                     have been obtained by previous use of the savexml
                     <emphasis>operation</emphasis>. This option provides the
                     feature of combining multiple source files into a single
-                    resulting logical file in the HPCC.</entry>
+                    resulting logical file in the HPCC Systems cluster.</entry>
                   </row>
 
                   <row>
@@ -731,7 +731,7 @@ dfuplus action=dspray srcname=le::imagedb
           nodes.</para>
 
           <para>The copy operation can also be used to copy files from other
-          HPCC environments (using the <emphasis>srcdali</emphasis> option).
+          HPCC Systems environments (using the <emphasis>srcdali</emphasis> option).
           This is also known as a remote copy. For a remote copy of a file
           that contains a variable length field, you must include the
           <emphasis role="bold">nosplit</emphasis> option.</para>

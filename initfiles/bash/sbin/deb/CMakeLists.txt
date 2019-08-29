@@ -14,8 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-SET(outFiles)
-GENERATE_BASH(processor ${bash-vars} "postinst.in" outFiles)
-GENERATE_BASH(processor ${bash-vars} "postrm.in" outFiles)
-ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-sbin-deb ALL DEPENDS ${outFiles})
-
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/postinst.in" "${CMAKE_CURRENT_BINARY_DIR}/postinst" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/postrm.in" "${CMAKE_CURRENT_BINARY_DIR}/postrm" @ONLY)

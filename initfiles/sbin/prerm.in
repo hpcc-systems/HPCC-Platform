@@ -15,8 +15,6 @@
 #    limitations under the License.
 ################################################################################
 
-###<REPLACE>###
-
 # Checking if configmgr is still running
 ########################################
 configmgr_status=`ps -ef | grep 'configmgr' | grep -cE '(python|bash)'`
@@ -28,34 +26,35 @@ fi
 # Stop all services before cleaning up
 ######################################
 if which systemctl 1>/dev/null 2>&1; then
-	systemctl stop hpccsystems-platform.target
+    systemctl stop hpccsystems-platform.target
 else 
-	/etc/init.d/hpcc-init stop
-	/etc/init.d/dafilesrv stop
+	@CONFIG_DIR@/hpcc-init stop
+	@CONFIG_DIR@/dafilesrv stop
 fi
+killall -9 -u @RUNTIME_USER@
 
 # Remove edits from /etc files
 ##############################
-${INSTALL_DIR}/sbin/rm_conf_settings.sh
+@ADMIN_PATH@/rm_conf_settings.sh
 
 
 # Remove symlinks
 #################
-${INSTALL_DIR}/etc/init.d/uninstall-init
+@INSTALL_DIR@/etc/init.d/uninstall-init
 
 # Remove installed flag
 #######################
-if [ -f ${CONFIG_DIR}/installed ] ; then
-    rm ${CONFIG_DIR}/installed
+if [ -f @CONFIG_DIR@/installed ] ; then
+    rm @CONFIG_DIR@/installed
 fi
 
 # Check if install dir is a link
 #######################
-if [[ -n ${INSTALL_DIR} ]] ; then
+if [[ -n @INSTALL_DIR@ ]] ; then
 #  trim for readlink
-   ins_dir=$(echo "${INSTALL_DIR}" | sed 's/\/*$//')
+   ins_dir=$(echo "@INSTALL_DIR@" | sed 's/\/*$//')
    if [[ -h ${ins_dir} ]] ; then
-       echo "$(readlink "${ins_dir}") ${INSTALL_DIR}" > /tmp/.hpccinslink
+       echo "$(readlink "${ins_dir}") @INSTALL_DIR@" > /tmp/.hpccinslink
    fi
 fi
 

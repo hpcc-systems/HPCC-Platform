@@ -73,7 +73,7 @@
     <sect2>
       <title><emphasis role="bold">ESP and WsECL</emphasis></title>
 
-      <para>A standard installation of the HPCC platform includes an
+      <para>A standard installation of the HPCC Systems platform includes an
       Enterprise Services Platform (ESP) with the WsECL service configured
       through a service binding to port 8002 (configurable).</para>
 
@@ -150,7 +150,7 @@
 
         <para>8002 is the default port. If you have a modified the port
         setting, use the port you have selected for that purpose. With the 7.0
-        release of HPCC you will need to enter your credentials to log in to
+        release of HPCC Systems you will need to enter your credentials to log in to
         the interface, and your session will lock after a (configurable)
         period of inactivity.</para>
 

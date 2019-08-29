@@ -37,8 +37,8 @@
       
 
       <para>The ECL Scheduler installs when
-      you install the HPCC platform. It
-      starts and stops using hpcc-init, just as all other HPCC
+      you install the HPCC Systems platform. It
+      starts and stops using hpcc-init, just as all other HPCC Systems platform
       components.</para>
     </sect1>
 

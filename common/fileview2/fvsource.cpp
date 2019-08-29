@@ -460,7 +460,10 @@ unsigned DataSourceMetaData::numColumns() const
 
 void DataSourceMetaData::patchIndexFileposition()
 {
-    fields.tos().type.setown(makeSwapIntType(8, false));
+    DataSourceMetaItem & lastfield = fields.tos();
+    //MORE: An approximation to check for fileposition(false) - should switch to using new meta info.
+    if (lastfield.type->isInteger())
+        lastfield.type.setown(makeSwapIntType(8, false));
 }
 
 ITypeInfo * DataSourceMetaData::queryType(unsigned column) const

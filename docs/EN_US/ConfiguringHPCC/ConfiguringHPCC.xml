@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>Configuring the HPCC System</title>
+    <title>Configuring the HPCC Systems® Platform</title>
 
     <mediaobject>
       <imageobject>
@@ -65,7 +65,7 @@
     <title>Using Configuration Manager</title>
 
     <para>Configuration Manager is the utility with which we configure the
-    HPCC platform. The HPCC platform's configuration is stored in an XML file
+    HPCC Systems platform. The HPCC Systems platform's configuration is stored in an XML file
     named <emphasis role="bold">environment.xml</emphasis>. When you install a
     package, a default single-node environment.xml is generated. After that,
     you can use the Configuration Manager to modify it and add nodes and
@@ -81,16 +81,16 @@
     View, it is a good idea to start with a wizard generated configuration and
     use Advanced View to finish it.</para>
 
-    <para>This document will guide you through configuring an HPCC environment
+    <para>This document will guide you through configuring an HPCC Systems environment
     using the Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
       <title>Running the Configuration Manager</title>
 
-      <para>This document will guide you through configuring an HPCC
+      <para>This document will guide you through configuring an HPCC Systems
       environment using the Configuration Manager.</para>
 
-      <para>The HPCC package should already be installed on ALL nodes.</para>
+      <para>The HPCC Systems package should already be installed on ALL nodes.</para>
 
       <para>You can use any tool or shell script you choose.</para>
 
@@ -123,7 +123,7 @@
         </listitem>
       </orderedlist>
 
-      <para>There are different ways to configure your HPCC system. You can
+      <para>There are different ways to configure your HPCC Systems platform. You can
       use the <emphasis role="bold">Generate environment wizard</emphasis> and
       use that environment or experienced users can then use the <emphasis
       role="bold">Advanced View</emphasis> for more specific customization.
@@ -159,8 +159,8 @@
           <listitem>
             <para>Press the Next button.</para>
 
-            <para>Next you will need to define the IP addresses that your HPCC
-            system will be using.</para>
+            <para>Next you will need to define the IP addresses that your HPCC Systems
+            platform will be using.</para>
           </listitem>
 
           <listitem>
@@ -284,7 +284,7 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>Keep in mind, that your HPCC configuration may be
+                <entry>Keep in mind, that your HPCC Systems configuration may be
                 different depending on your needs. For example, you may not
                 need a Roxie or you may need several smaller Roxie clusters.
                 In addition, in a production [Thor] system, you would ensure
@@ -304,9 +304,9 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Stop the HPCC system.</para>
+              <para>Stop the HPCC Systems platform.</para>
 
-              <para>If it is running stop the HPCC system (on every node),
+              <para>If it is running stop the HPCC Systems platform (on every node),
               using a command such as this:</para>
 
               <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
@@ -320,7 +320,7 @@
                   <listitem>
                     <para>You may have a multi-node system and a custom script
                     such as the one illustrated in Appendix of the <emphasis
-                    role="bluebold">Installing and Running the HPCC
+                    role="bluebold">Installing and Running the HPCC Systems
                     Platform</emphasis> document to start and stop your
                     system. If that is the case please use the appropriate
                     command for stopping your system on every node.</para>
@@ -339,7 +339,7 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Be sure HPCC is stopped before attempting to
+                        <entry>Be sure the HPCC Systems platform is stopped before attempting to
                         copy the environment.xml file.</entry>
                       </row>
                     </tbody>
@@ -395,13 +395,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>You may want to use a script to push out the XML file to
               all nodes. See the <emphasis>Example Scripts</emphasis> section
               in the Appendix of the <emphasis role="bluebold">Installing and
-              Running the HPCC Platform</emphasis> document. You can use the
+              Running the HPCC Systems Platform</emphasis> document. You can use the
               scripts as a model to create your own script to copy the
               environment.xml file out to all your nodes.</para>
             </listitem>
 
             <listitem>
-              <para>Restart the HPCC platform on all nodes.</para>
+              <para>Restart the HPCC Systems platform on all nodes.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -432,7 +432,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>If it is running, stop the HPCC system using this command on
+          <para>If it is running, stop the HPCC Systems platform using this command on
           every node:</para>
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
@@ -448,7 +448,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 to use a script to perform this step. See the
                 <emphasis>Example Scripts</emphasis> section in the Appendix
                 of the <emphasis role="bluebold">Installing and Running the
-                HPCC Platform</emphasis> document.</para>
+                HPCC Systems Platform</emphasis> document.</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -466,7 +466,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>You can use this command to confirm HPCC processes
+                    <entry>You can use this command to confirm HPCC Systems processes
                     are stopped: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
@@ -698,7 +698,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <title>Software Section</title>
 
       <para>Use the software components section to configure software
-      components of the HPCC platform. Most software components are actual
+      components of the HPCC Systems platform. Most software components are actual
       running processes; however, some are just definitions used by the
       system. These definitions are used by the configuration
       generator.</para>
@@ -967,7 +967,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry>keyspace</entry>
 
                     <entry>The name of the Cassandra keyspace to use for the
-                    HPCC data store. The default is
+                    HPCC Systems data store. The default is
                     <emphasis>hpcc</emphasis>.</entry>
                   </row>
 
@@ -1232,7 +1232,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>Drop Zone</title>
 
         <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your HPCC system. The drop zone is a logical
+        transferred to or from your HPCC Systems installation. The drop zone is a logical
         combination of a path and one or more servers.</para>
 
         <para>Multiple drop zones allow you to configure different top level
@@ -1842,9 +1842,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             integration</emphasis>
           </para>
 
-          <para>HPCC provides a mechanism to integrate ELK (ElasticSearch,
+          <para>HPCC Systems provides a mechanism to integrate ELK (ElasticSearch,
           Logstash, and Kibana) based visualizations into ECL Watch. This
-          feature can be configured and enabled through the HPCC Configuration
+          feature can be configured and enabled through the HPCC Systems Configuration
           manager.</para>
 
           <para>To configure the ELK Log Visualization component, click and
@@ -2010,7 +2010,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         LDAPServer Installation in ConfigManager. For a complete description
         of how to add LDAP Authentication see <emphasis>Using LDAP
         Authentication</emphasis> section in the <emphasis
-        role="bluebold">Installing and Running The HPCC Platform</emphasis>
+        role="bluebold">Installing and Running The HPCC Systems Platform</emphasis>
         document.</para>
 
         <para>
@@ -2031,7 +2031,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           added the LDAP computers in the Hardware section. For a complete
           description of how to add LDAP Authentication see <emphasis>Using
           LDAP Authentication</emphasis> section in the <emphasis
-          role="bluebold">Installing and Running The HPCC Platform</emphasis>
+          role="bluebold">Installing and Running The HPCC Systems Platform</emphasis>
           document.</para>
 
           <orderedlist>
@@ -2053,12 +2053,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>The HPCC Administrator's account</title>
+          <title>The HPCC Systems Administrator's account</title>
 
-          <para>You can set up an HPCC Administrator's account with limited
-          administrative rights. The HPCC Administrator does not have to be an
-          LDAP Administrator's account. This allows the HPCC Administrator to
-          be able to set up users, groups, and set permissions in HPCC without
+          <para>You can set up an HPCC Systems Administrator's account with limited
+          administrative rights. The HPCC Systems Administrator does not have to be an
+          LDAP Administrator's account. This allows the HPCC Systems Administrator to
+          be able to set up users, groups, and set permissions in HPCC Systems without
           having rights to perform other LDAP administrative functions. To use
           this feature: <orderedlist>
               <listitem>
@@ -2067,14 +2067,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </listitem>
 
               <listitem>
-                <para>In the HPCC configuration manager navigate to this (LDAP
-                Server Process) page and enter the HPCC Administrator group
+                <para>In the HPCC Systems configuration manager navigate to this (LDAP
+                Server Process) page and enter the HPCC Systems Administrator group
                 name as the value in the <emphasis
                 role="bold">adminGroupName</emphasis> field.</para>
               </listitem>
 
               <listitem>
-                <para>Add (HPCC Administrator) users to this new group.</para>
+                <para>Add (HPCC Systems Administrator) users to this new group.</para>
               </listitem>
 
               <listitem>
@@ -2897,7 +2897,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Restart the HPCC system</para>
+              <para>Restart the HPCC Systems platform</para>
 
               <para>You might prefer to script this process, especially if you
               have many nodes. See the Example Scripts section in the Appendix

@@ -2,10 +2,10 @@
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="get_hpcc">
-  <title>Get the latest HPCC Virtual Image File</title>
+  <title>Get the latest HPCC Systems<superscript>®</superscript> Virtual Image File</title>
 
-  <para>The complete details for installing and running HPCC in a virtual
-  machine are available in the document: <emphasis role="bold">Running HPCC in
+  <para>The complete details for installing and running HPCC Systems in a virtual
+  machine are available in the document: <emphasis role="bold">Running HPCC Systems in
   a Virtual Machine</emphasis>, available from <ulink
   url="hpccsystems.com/download/docs">http://hpccsystems.com/download/docs</ulink>
   .</para>
@@ -15,7 +15,7 @@
 
   <para><orderedlist>
       <listitem>
-        <para>Download the latest HPCC Virtual Machine image file from:</para>
+        <para>Download the latest HPCC Systems Virtual Machine image file from:</para>
 
         <para><ulink
         url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>

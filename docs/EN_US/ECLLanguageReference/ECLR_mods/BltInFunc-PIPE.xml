@@ -40,7 +40,7 @@
 
             <entry>The name of a program to execute, which must take any input
             data through stdin and produce its output through stdout. This
-            program must have already been deployed on the HPCC cluster in the
+            program must have already been deployed on the HPCC Systems cluster in the
             Thor instance directory (such as: /var/lib/HPCCSystems/mythor/) but that can be
             overridden by the externalProgDir environment setting for the Thor
             cluster). </entry>

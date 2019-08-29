@@ -55,8 +55,8 @@
     <title>ECL Compiler</title>
 
     <para>The ECL Compiler is the compiler component of the High Performance
-    Computing Cluster (HPCC). It is embedded and included when you install the
-    HPCC. The compiler is the component that actually compiles the ECL
+    Computing Cluster (HPCC) Systems platform. It is embedded and included when you install the
+    HPCC Systems platform. The compiler is the component that actually compiles the ECL
     code.</para>
 
     <para>The syntax and many of the compiler options implemented are similar

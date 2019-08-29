@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>HPCC Preflight and Certification</title>
+  <title>HPCC Systems<superscript>®</superscript> Preflight and Certification</title>
 
   <bookinfo>
     <mediaobject>
@@ -63,10 +63,10 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
   <chapter id="certification_approach">
     <title>Introduction : Certification Approach</title>
 
-    <para>This document provides steps you can use to certify your HPCC
+    <para>This document provides steps you can use to certify your HPCC Systems<superscript>®</superscript> 
     environment.</para>
 
-    <para>Use this procedure when you create a new HPCC system or after you
+    <para>Use this procedure when you create a new HPCC Systems instance or after you
     make any changes or upgrades to the system. This will ensure that your
     system is functioning properly.</para>
 

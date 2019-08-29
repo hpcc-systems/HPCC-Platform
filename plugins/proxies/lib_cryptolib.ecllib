@@ -1,0 +1,48 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+/* Proxy plugin definition for crypto plugin library version CRYPTO 1.0.0 */
+
+export CryptoLib := SERVICE : plugin('cryptolib')
+
+  //Hashing
+  
+  SET OF STRING SupportedHashAlgorithms() : c, pure, fold, entrypoint='clSupportedHashAlgorithms';
+  DATA   Hash(CONST VARSTRING algorithm, CONST DATA inputData) : c, pure, entrypoint='clHash';
+
+  //Symmetric Encryption
+      
+  SET OF STRING SupportedSymmetricCipherAlgorithms() : c, pure, fold, entrypoint='clSupportedSymmetricCipherAlgorithms';
+  DATA  SymmetricEncrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clSymmetricEncrypt';
+  DATA SymmetricDecrypt( CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clSymmetricDecrypt';
+
+  //Asymmetric Public Key Encryption
+  
+  SET OF STRING SupportedPublicKeyAlgorithms() : c, pure, fold, entrypoint='clSupportedPublicKeyAlgorithms';
+
+  //Accepts key data as file specification
+  DATA    Encrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncrypt';
+  DATA    Decrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecrypt';
+  DATA    Sign(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISign';
+  BOOLEAN VerifySignature(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignature';
+  
+  //Accepts key data as memory buffer
+  DATA    EncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncryptBuff';
+  DATA    DecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecryptBuff';
+  DATA    SignBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISignBuff';
+  BOOLEAN VerifySignatureBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignatureBuff';
+ END;

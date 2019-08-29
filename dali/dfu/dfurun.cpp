@@ -1230,7 +1230,7 @@ public:
                     srcName.set(tmp);
                     srcFdesc.setown(srcFile->getFileDescriptor());
                     iskey = isFileKey(srcFile);
-                    if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && iskey)
+                    if ((cmd==DFUcmd_copy) && (srcFile->querySuperFile() != nullptr) && (srcFile->querySuperFile()->numSubFiles() > 1) && iskey)
                         throwError1(DFTERR_InvalidSuperindexCopy, srcName.str());
 
                     oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));

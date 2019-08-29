@@ -30,11 +30,9 @@ GENERATE_BASH(processor ${bash-vars} "remote-install-engine.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "deploy-java-files.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "check-component-exists.sh.in" outFiles)
 
-SET(noInstall)
-GENERATE_BASH(processor ${bash-vars} "prerm.in" noInstall)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/prerm.in" "${CMAKE_CURRENT_BINARY_DIR}/prerm" @ONLY)
 
-
-ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles} ${noInstall})
+ADD_CUSTOM_TARGET(ProcessFiles-initfiles-sbin ALL DEPENDS ${outFiles})
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/regex.awk.in.cmake" "${CMAKE_CURRENT_BINARY_DIR}/regex.awk")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/backup.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/backup.sh" @ONLY)
 

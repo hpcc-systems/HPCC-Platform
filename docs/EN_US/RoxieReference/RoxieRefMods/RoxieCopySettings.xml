@@ -111,7 +111,7 @@
     not otherwise specified Roxie copies from clusters in its own environment
     first. To enable the Preferred Clusters feature, you can use the HPCC
     Systems Configuration Manager. (for additional information about
-    Configuring your HPCC System see <emphasis>Installing and Running the HPCC
+    Configuring HPCC Systems see <emphasis>Installing and Running the HPCC Systems
     Platform</emphasis>)<figure>
         <title>Roxie Preferred Clusters</title>
 
@@ -123,7 +123,7 @@
       </figure></para>
 
     <para>The Preferred Clusters tab can be found on the RoxieCluster page
-    within the HPCC Configuration Manager.</para>
+    within the HPCC Systems Configuration Manager.</para>
 
     <para>On the Preferred Clusters tab, you can add the name and the priority
     of your Roxie clusters. The highest priority number is the preferred
@@ -150,7 +150,7 @@
     callers to select the right set of queries when calling through a
     VIP.</para>
 
-    <para>This setting can be found in the Topology section within the HPCC
+    <para>This setting can be found in the Topology section within the HPCC Systems
     Configuration Manager.</para>
 
     <para><figure>

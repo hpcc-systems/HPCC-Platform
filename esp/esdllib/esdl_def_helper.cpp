@@ -119,38 +119,63 @@ void removeEclHiddenStructs(IPropertyTree &depTree)
     ForEach(*it)
         depTree.removeTree(&it->query());
 }
-void removeEclHiddenElements(IPropertyTree &depTree)
+void removeEclHiddenElements(IPropertyTree &depTree, bool cloneGetDataFrom)
 {
     Owned<IPropertyTreeIterator> it = depTree.getElements("*");
     ForEach(*it)
     {
-        StringArray names;
-        Owned<IPropertyTreeIterator> elements = it->query().getElements("*[@get_data_from]");
+        StringArray namesToBeRemoved;
+        IPropertyTree &depChild = it->query();
+        Owned<IPropertyTreeIterator> elements = depChild.getElements("*[@get_data_from]");
         ForEach(*elements)
-            names.appendUniq(elements->query().queryProp("@name"));
+        {
+            IPropertyTree &element = elements->query();
+            StringAttr name = element.queryProp("@name");
+            if (!cloneGetDataFrom)
+                namesToBeRemoved.appendUniq(name);
+            else
+            {
+                const char *from = element.queryProp("@get_data_from");
+                if (streq(name, from)) //shouldn't happen, but becomes a no-op
+                    continue;
+
+                //to simplify, all properties come from the get_data_from element, except the name which matches original
+                VStringBuffer fromXpath("*[@name='%s']", from);
+                //More than one match should really be an error, but need to maximize compatibility with old ESDL definitions.
+                //Future changes will allow us to report duplicates as a warning or error more gracefully
+                Owned<IPropertyTreeIterator> fromElements = depChild.getElements(fromXpath);
+                if (fromElements->first())
+                {
+                    //make everything the same as get_data_from except the name
+                    //copy to existing item to keep position if possible
+                    synchronizePTree(&element, &fromElements->query(), true);
+                    element.setProp("@name", name);
+                }
+             }
+        }
         elements.setown(it->query().getElements("*[@ecl_hide='1']"));
         ForEach(*elements)
-            names.appendUniq(elements->query().queryProp("@name"));
+            namesToBeRemoved.appendUniq(elements->query().queryProp("@name"));
 
-        ForEachItemIn(i, names)
+        ForEachItemIn(i, namesToBeRemoved)
         {
-            VStringBuffer xpath("*[@name='%s']", names.item(i));
+            VStringBuffer xpath("*[@name='%s']", namesToBeRemoved.item(i));
             it->query().removeProp(xpath);
         }
     }
 }
-esdl_decl void removeEclHidden(IPropertyTree *depTree)
+esdl_decl void removeEclHidden(IPropertyTree *depTree, bool cloneGetDataFrom)
 {
     if (!depTree)
         return;
     removeEclHiddenStructs(*depTree);
-    removeEclHiddenElements(*depTree);
+    removeEclHiddenElements(*depTree, cloneGetDataFrom);
 }
 
-esdl_decl void removeEclHidden(StringBuffer &xml)
+esdl_decl void removeEclHidden(StringBuffer &xml, bool cloneGetDataFrom)
 {
     Owned<IPropertyTree> depTree = createPTreeFromXMLString(xml);
-    removeEclHidden(depTree);
+    removeEclHidden(depTree, cloneGetDataFrom);
     toXML(depTree, xml.clear());
 }
 
@@ -232,7 +257,7 @@ void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xs
 
         if (flags & DEPFLAG_ECL_ONLY)
         {
-            removeEclHidden(xml);
+            removeEclHidden(xml,false);
         }
 
         xmlLen = xml.length();

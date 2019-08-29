@@ -114,6 +114,7 @@ ESPStruct DFULogicalFile
     [min_ver("1.30")] bool Persistent(false);
     [min_ver("1.34")] bool IsProtected(false);
     [min_ver("1.41")] string KeyType;
+    [min_ver("1.52")] int NumOfSubfiles;
 };
 
 ESPStruct DFUPart

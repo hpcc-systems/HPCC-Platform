@@ -307,7 +307,7 @@
             <para>Click on the <emphasis role="bold">Launch Cluster
             </emphasis>link at the top.</para>
 
-            <para>The <emphasis role="bold">Launch a New HPCC Cluster
+            <para>The <emphasis role="bold">Launch a New HPCC Systems Cluster
             </emphasis>window displays.</para>
 
             <para></para>
@@ -316,7 +316,7 @@
     </sect1>
 
     <sect1>
-      <title>Launch a New HPCC Cluster</title>
+      <title>Launch a New HPCC Systems Cluster</title>
 
       <para>In this section, you will launch a set of Ubuntu 12.04 machines to
       use for your HPCC Systems Thor platform. The Instant Cloud page uses the
@@ -358,7 +358,7 @@
         </listitem>
 
         <listitem>
-          <para>Creates the internal user (HPCC).</para>
+          <para>Creates the internal user (hpcc).</para>
         </listitem>
 
         <listitem>
@@ -646,14 +646,13 @@
           role="bold">C</emphasis>ontrol <emphasis
           role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
           programming language used to manage all aspects of the massive data
-          joins, sorts, and builds that truly differentiate HPCC (High
-          Performance Computing Cluster) from other technologies in its
+          joins, sorts, and builds that truly differentiate HPCC Systems from other technologies in its
           ability to provide flexible data analysis on a massive scale.</para>
         </footnote> code using either ECL IDE, the command line ECL compiler,
       or the ECLPlus tool.</para>
 
       <sect2>
-        <title>Install the ECL IDE and HPCC Client Tools</title>
+        <title>Install the ECL IDE and HPCC Systems Client Tools</title>
 
         <para>You only need to install the ECL IDE once. If you have already
         installed it, you can skip this section. .</para>
@@ -841,7 +840,7 @@
               target cluster.</para>
 
               <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-              component of your HPCC. It is a disk based massively parallel
+              component of your HPCC Systems. It is a disk based massively parallel
               computer cluster, optimized for sorting, manipulating, and
               transforming massive data.</para>
 
@@ -932,7 +931,7 @@
             <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
             &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
             <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
-            and login to your HPCC.</para>
+            and login to your HPCC Systems.</para>
           </listitem>
 
           <listitem>
@@ -1044,8 +1043,8 @@ OUTPUT(L);</programlisting></para>
         <title>Load the Dictionary File to your Landing Zone</title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC Thor cluster. A Landing Zone is a
-        storage location attached to your HPCC. It has a utility running to
+        which it can be sprayed to your HPCC Systems platform Thor cluster. A Landing Zone is a
+        storage location attached to your HPCC Systems platform. It has a utility running to
         facilitate file spraying to a cluster.</para>
 
         <para>For smaller data files, maximum of 2GB, you can use the
@@ -1053,7 +1052,7 @@ OUTPUT(L);</programlisting></para>
         kb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC Thor cluster. The power of the HPCC comes from its ability
+        in the HPCC Systems Thor cluster. The power of the HPCC Systems comes from its ability
         to assign multiple processors to work on different portions of the
         data file in parallel. Even though the VM Edition only has a single
         node, the data must be sprayed to the cluster.</para>
@@ -1141,7 +1140,7 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Thor
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Thor system, we must "spray" it
+        <para>To use the data file in our HPCC Systems Thor system, we must "spray" it
         to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
@@ -1516,7 +1515,7 @@ s3cmd --configure
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold">HPCC Systems Data Tutorial</emphasis></para>
         </listitem>
 
         <listitem>
@@ -1526,7 +1525,7 @@ s3cmd --configure
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an HPCC platform using Advanced View.</para>
+          learn how to configure an HPCC Systems platform using Advanced View.</para>
         </listitem>
 
         <listitem>

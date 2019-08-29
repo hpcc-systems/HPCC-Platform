@@ -37,15 +37,15 @@
   <sect1 id="Working_with_a_data_file">
     <title>Working with data files</title>
 
-    <para>Once you start working with your HPCC system, you will want to
+    <para>Once you start working with your HPCC Systems platform, you will want to
     process some real data, this section shows you how to load data to your
-    HPCC system.</para>
+    HPCC Systems platform.</para>
 
     <sect2 id="Cautions_and_Warnings">
       <title>Before you begin</title>
 
       <para>First, you should consider the size of the data and the capacity
-      of your system. A typical production HPCC system would have much more
+      of your system. A typical production HPCC Systems platform would have much more
       data capacity than a development system. The size of the files you wish
       to work with is limited by the size of your system.</para>
     </sect2>

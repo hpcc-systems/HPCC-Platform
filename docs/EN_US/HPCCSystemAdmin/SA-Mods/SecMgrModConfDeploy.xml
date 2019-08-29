@@ -5,17 +5,17 @@
   <title role="nbrk">Configure and Deploy the Security Manager Plugin</title>
 
   <para>The following sections detail the process of configuring your HPCC
-  system to use the Security Manager Plugin.</para>
+  Systems<superscript>®</superscript> platform to use the Security Manager Plugin.</para>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin">
     <title>How to Configure a Security Manager Plugin</title>
 
     <para>Once the plugin has been installed, the plugin can be configured
-    onto the HPCC platform using Configuration Manager.</para>
+    onto the HPCC Systems platform using Configuration Manager.</para>
 
     <para><orderedlist>
         <listitem>
-          <para>Stop all HPCC Components.</para>
+          <para>Stop all HPCC Systems components.</para>
 
           <para>Verify that they are stopped. You can use a single command,
           such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>

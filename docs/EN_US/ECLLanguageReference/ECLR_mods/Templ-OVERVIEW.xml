@@ -6,7 +6,7 @@
       <primary>Template Language</primary>
     </indexterm> Overview</title>
 
-  <para>ECL was created to be the programming language for all of our HPCC
+  <para>ECL was created to be the programming language for all of our HPCC Systems 
   technology. Therefore, it must be able to meet all the demands of a complete
   business solution: from data ingest, through querying and processing, and
   all the way to fulfillment and customer output.</para>

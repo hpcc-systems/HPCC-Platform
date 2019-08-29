@@ -22,6 +22,7 @@ set(
     Audit.ecl
     BLAS.ecl
     BundleBase.ecl
+    Crypto.ecl
     Date.ecl
     File.ecl
     Math.ecl
