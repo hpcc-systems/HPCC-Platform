@@ -224,6 +224,7 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 #define SPILL_PRIORITY_HASHJOIN SPILL_PRIORITY_HIGH
 #define SPILL_PRIORITY_LARGESORT SPILL_PRIORITY_HIGH
 #define SPILL_PRIORITY_LOOKUPJOIN SPILL_PRIORITY_HIGH
+#define SPILL_PRIORITY_KEYEDJOIN SPILL_PRIORITY_LOW+900
 
 
 enum StableSortFlag { stableSort_none, stableSort_earlyAlloc, stableSort_lateAlloc };
