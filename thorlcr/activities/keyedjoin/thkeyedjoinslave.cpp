@@ -63,10 +63,96 @@ static const unsigned defaultMaxKeyLookupThreads = 10;
 static const unsigned defaultMaxFetchThreads = 10;
 static const unsigned defaultKeyLookupMaxQueued = 10000;
 static const unsigned defaultKeyLookupMaxDone = 10000;
+static const unsigned defaultMinKeyLookupJoinGroupMB = 50;
 static const unsigned defaultKeyLookupMaxLocalHandlers = 10;
 static const unsigned defaultKeyLookupMaxHandlersPerRemoteSlave = 2;
 static const unsigned defaultKeyLookupMaxFetchHandlers = 10;
 static const unsigned defaultKeyLookupMaxLocalFetchHandlers = 10;
+static const unsigned defaultKeyLookupProcessBatchLimit = 1000;
+static const unsigned defaultFetchLookupProcessBatchLimit = 10000;
+
+
+/*
+ * This KeyedJoin implementation is comprised of:
+ * 1) A LHS read ahead thread (see CReadAheadThread)
+ *  - LHS rows are read, index fields are extracted, a pending CJoinGroup is created and the row+JG is queued.
+ *  - The total queued is limited (will block). See keyLookupMaxQueued.
+ *
+ * 2) A lookup handler per key handler (base is CLookupHandler)
+ *  - These run concurrently, but max running in parallel are limited to lookupThreadLimiter and fetchThreadLimiter
+ *  - Lookup handlers are either local (reading index parts directly), or remote, sending requests to be processed remotely.
+ *  - Local vs Remote is determined automatically by the locality of the part, but can be overriden by various options, e.g. "forceRemoteLookup"
+ *  NB: Remote processing is currently handled by a service in the Thor slaves processes, in future it is to be moved to dafilesrv.
+ *  - Look up handlers process requests in chunks, i.e. when a threshold is reached a handler is started and processing begins.
+ *  - All RHS matched results are added to the CJoinGroup being processed by the lookup handlers in parallel.
+ *  - Any abort/atmost limit is also recorded as a flag.
+ *  - If a Full Keyed Join is involved, lookup handlers queue further request to fetch handlers.
+ *  - All pending CJoinGroup events are tracked by CJoinGroup::pending, such that when it reaches 0, the CJoinGroup is done.
+ *  - The total size of each CJoinGroup is tracked (see totalRhsSz)
+ *
+ * Ordering:
+ *  - if preserveOrdering is on (it is by default), streamed rhs match rows are added to independent buckets in the CJoinGroup,
+ *    in order to preserve their global order.
+ *  - if a full keyed join is involved, the keyed lookup only returns the fpos, and a placeholder in the row bucket is created
+ *    and filled upon completion of the fetch cycle.
+ *  NB: Strictly speaking the RHS match order may not be semantically important, but a deterministic order is.
+ *
+ *  - When preserving order, the LHS order must remain the same.
+ *    This is achieved by only dequeuing the head of the pending group list (which is ordered) if complete, and any others that
+ *    follow it if they are also complete. IOW a completing group that is not at the head will not move to the done queue.
+ *
+ *  - When CJoinGroup's are complete, they are moved from the pending queue to the done queue (see doneJoinGroupList).
+ *  - The # of queued done groups is limited (will block). See keyLookupMaxDone.
+ *  - The done group queue (doneJoinGroupList) is read by the main KeyedJoin's nextRow() implementation.
+ *
+ * Memory usage & Spilling:
+ *
+ * 1) Each pending CJoinGroup contains a lhs row and up to 'atmost' rhs rows.
+ * 2) There is a capped limit of pending in-flight CJoinGroup's
+ * 3) There is a capped limit of done (yet unread) completed CJoinGroup's
+ *
+ * Since the # matches are unknown when the requests are made, and the rhs rows can be variable length,
+ * the amount of memory in use is very variable.
+ * If ATMOST is at the default value of 10K and there are lots of parts and up to the limit of pending
+ * groups, a lot of memory can be consumed.
+ *
+ * If memory is high roxiemem will attempt to callback to KJ to free some memory.
+ * Strategy:
+ * 1) The current (approx.) memory footprint of KJ is calculated by scanning the pending and done groups
+ * 2) If below a threshold (see: keyLookupMinQueuedBytes), then no further action is taken
+ * 3) If above:
+ *  - Spill join groups until 'spillAmount' reached.
+ *  - Increase spillAmount for next round (double it).
+ *  - Decrease the pending and done queue limits, so that KJ starts processing less.
+ *  - Repeat this process each time this CB is called until down to minimum targets. Minimum memory: keyLookupMinQueuedBytes or minimum queued limits (5)
+ *
+ * Notes:
+ *     Prefer spilling completed groups, as they are not contended by threads adding rhs rows. NB: onCompleteCrit crit prevents queues being manipulated.
+ *     Walk the tail of the 'done' groups 1st (those are JG's ready to be read by downstream activity).
+ *     Walk pending complete groups
+ *     Walk pending incomplete groups. NB: incomplete groups are still being built, and may allocate. Need to avoid deadlock (see activeAddRightCount)
+ *     Each spilt group creates a IRowStreamWithFpos stored in the CJoinGroup, which is used as a stream when reading back.
+ *
+ * Complications:
+ *     When preserving order during spilling, complete groups are implicitly already ordered, and a simple row stream can be written to disk.
+ *     NB: uses a compressed writer
+ *     NB: also true if not preserving order.
+ *
+ *     However if have to consider incomplete groups, then rhs rows may still arrive and their order must also be tracked.
+ *     Spilling a partial group 1st writes a header with {size, skip} markers for each bucket, so that the reader will know the order
+ *     and where to start for each bucket.
+ *     A new SpillMarker marker is written at the end of each bucket (NB: a bucket per lookup part).
+ *     A incomplete CJoinGroup that has spilt, may spill again, or may complete meaning some is on disk and some in memory.
+ *     The last marker written is tracked in the spilling object, so that it can be updated if it spills again, with the size and skip amount to next chunk.
+ *     NB: a pointer to the writer object (IRowStreamWithFpos) is kept in the CJoinGroup.
+ *
+ * Typical scenario (e.g. subgraph with:  Memory-Hungry-KJ + SORT
+ *  - roxiemem freeBufferedRows callback is called. KJ determines it is using above the minimum amount of memory.
+ *  - some spilling takes place.
+ *  - There is continued memory pressure on KJ since Sort has higher priority and KJ keeps spilling.
+ *  - Eventually either the lower min. limit for KJ is reached or the min. number of pending and done groups in play is reached.
+ *
+ */
 
 
 class CJoinGroup;
@@ -87,10 +173,18 @@ struct RowArray
     rowidx_t numRows;
 };
 
+interface IRowStreamWithFpos : extends IInterface
+{
+    virtual void open() = 0;
+    virtual const void *getRow(offset_t &fpos) = 0;
+    virtual void add(CJoinGroup *jg, bool first) = 0;
+};
+
 interface IJoinProcessor
 {
     virtual void onComplete(CJoinGroup * jg) = 0;
     virtual unsigned addRowEntry(unsigned partNo, const void *rhs, offset_t fpos, RowArray *&rowArrays, unsigned &numRowArrays) = 0;
+    virtual IRowStreamWithFpos *getJoinGroupStream(CJoinGroup *jg) = 0;
 };
 
 class CJoinGroup : public CSimpleInterfaceOf<IInterface>
@@ -101,11 +195,14 @@ protected:
     std::atomic<unsigned> pending{0};
     std::atomic<unsigned> candidates{0};
     IJoinProcessor *join = nullptr;
-    std::atomic<rowidx_t> totalRows{0};
+    std::atomic<size32_t> totalRhsSz{0};
     unsigned numRowArrays = 0;
     RowArray *rowArrays = nullptr;
+    IRowStreamWithFpos *rowStream = nullptr;
     GroupFlags groupFlags = gf_null;
     static const GroupFlags GroupFlagLimitMask = (GroupFlags)0x03;
+    std::atomic<int> activeAddRightCount{0}; // Protect addRightMatch* from spillIncomplete contention
+
 public:
     struct JoinGroupRhsState
     {
@@ -114,10 +211,144 @@ public:
         RowArray *arr;
         rowidx_t pos;
     };
+    struct SpillMarker
+    {
+        size32_t skip = 0;
+        size32_t size = 0;
+    };
     CJoinGroup *prev = nullptr;  // Doubly-linked list to allow us to keep track of ones that are still in use
     CJoinGroup *next = nullptr;
 
-    inline const void *_queryNextRhs(offset_t &fpos, JoinGroupRhsState &rhsState) const
+protected:
+    class CJoinGroupRowWriter : public CSimpleInterfaceOf<IInterface>, implements IRowSerializerTarget
+    {
+        Owned<IFileIO> iFileIO;
+        Owned<IFileIOStream> iFileIOStream;
+        Linked<IOutputRowSerializer> serializer;
+        unsigned nesting = 0;
+        MemoryBuffer nested;
+
+    // IRowSerializerTarget impl.
+        virtual void put(size32_t len, const void * ptr) override
+        {
+            if (nesting)
+                nested.append(len, ptr);
+            else
+                iFileIOStream->write(len, ptr);
+        }
+        virtual size32_t beginNested(size32_t count) override
+        {
+            nesting++;
+            unsigned pos = nested.length();
+            nested.append((size32_t)0);
+            return pos;
+        }
+        virtual void endNested(size32_t sizePos) override
+        {
+            size32_t sz = nested.length()-(sizePos + sizeof(size32_t));
+            nested.writeDirect(sizePos, sizeof(sz), &sz);
+            nesting--;
+            if (!nesting)
+            {
+                iFileIOStream->write(nested.length(), nested.toByteArray());
+                nested.clear();
+            }
+        }
+    public:
+        CJoinGroupRowWriter(IFile *iFile, IOutputRowSerializer *_serializer, bool append, bool compress) : serializer(_serializer)
+        {
+            if (compress)
+            {
+                iFileIO.setown(createCompressedFileWriter(iFile, 0, append, false, nullptr, COMPRESS_METHOD_LZ4));
+                iFileIOStream.setown(createIOStream(iFileIO));
+            }
+            else
+            {
+                iFileIO.setown(iFile->open(append ? IFOreadwrite : IFOcreate));
+                iFileIOStream.setown(createBufferedIOStream(iFileIO));
+            }
+            if (append)
+                iFileIOStream->seek(0, IFSend);
+        }
+        ~CJoinGroupRowWriter()
+        {
+            iFileIOStream.clear(); // flushes
+        }
+        void write(const void *row, offset_t fpos)
+        {
+            serializer->serialize(*this, (const byte *)row);
+            iFileIOStream->write(sizeof(fpos), &fpos);
+        }
+        offset_t queryPosition() const
+        {
+            return iFileIOStream->tell();
+        }
+        void addMarker()
+        {
+            CJoinGroup::SpillMarker marker;
+            iFileIOStream->write(sizeof(marker), &marker);
+        }
+        void updateMarker(offset_t pos, const CJoinGroup::SpillMarker &marker)
+        {
+            iFileIOStream->flush();
+            iFileIO->write(pos, sizeof(marker), &marker);
+        }
+        void writeOffsetTable(unsigned n)
+        {
+            const std::vector<CJoinGroup::SpillMarker> markers(n);
+            iFileIOStream->write(n * sizeof(CJoinGroup::SpillMarker), &markers[0]);
+        }
+    };
+
+    void freeRowArrays() // use if rows themselves have already been freed.
+    {
+        if (rowArrays)
+        {
+            RowArray *cur = rowArrays;
+            do
+            {
+                if (cur->rows)
+                    ReleaseRoxieRow(cur->rows);
+                ++cur;
+            } while (--numRowArrays);
+            ReleaseRoxieRow(rowArrays);
+            rowArrays = nullptr;
+        }
+    }
+    void freeRows()
+    {
+        if (rowArrays)
+        {
+            RowArray *cur = rowArrays;
+            do
+            {
+                if (cur->rows)
+                {
+                    const Row *row = cur->rows;
+                    unsigned numRows = cur->numRows;
+                    while (numRows--)
+                    {
+                        if (row->rhs)
+                            ReleaseRoxieRow(row->rhs);
+                        ++row;
+                    }
+                    ReleaseRoxieRow(cur->rows);
+                }
+                ++cur;
+            } while (--numRowArrays);
+            ReleaseRoxieRow(rowArrays);
+            rowArrays = nullptr;
+            totalRhsSz = 0;
+        }
+    }
+    void freeRowsAndStream()
+    {
+        ::Release(rowStream);
+        rowStream = nullptr;
+        freeRows();
+    }
+
+    inline const void *_getNextRhsClear(offset_t &fpos, JoinGroupRhsState &rhsState)
     {
         while (rhsState.arr != (rowArrays+numRowArrays)) // end of array marker
         {
@@ -129,7 +360,9 @@ public:
                     if (row.rhs)
                     {
                         fpos = row.fpos;
-                        return row.rhs;
+                        const void *ret = row.rhs;
+                        row.rhs = nullptr;
+                        return ret;
                     }
                 }
             }
@@ -139,40 +372,62 @@ public:
         fpos = 0;
         return nullptr;
     }
-    void freeRows()
+    inline const void *_getFirstRhsClear(offset_t &fpos, JoinGroupRhsState &rhsState)
     {
-        if (rowArrays)
+        if (!rowArrays)
         {
-            RowArray *cur = rowArrays;
-            while (numRowArrays--)
-            {
-                if (cur->rows)
-                {
-                    const Row *row = cur->rows;
-                    while (cur->numRows--)
-                    {
-                        if (row->rhs)
-                            ReleaseRoxieRow(row->rhs);
-                        ++row;
-                    }
-                    ReleaseRoxieRow(cur->rows);
-                }
-                ++cur;
-            }
-            ReleaseRoxieRow(rowArrays);
-            rowArrays = nullptr;
-            totalRows = 0;
+            fpos = 0;
+            return nullptr;
+        }
+        rhsState.arr = &rowArrays[0];
+        rhsState.pos = 0;
+        return _getNextRhsClear(fpos, rhsState);
+    }
+    void addActiveRightAndBlock()
+    {
+        activeAddRightCount++; // NB: could happen after spillIncomplete() has set to -INT_MAX
+        while (true)
+        {
+            crit.enter();
+            /*
+             * If managed to enter crit and spillIncomplete() is active on this group
+             * let go of the crit and retry, to allow spillIncomplete() to take the crit
+             */
+            if (activeAddRightCount > 0)
+                break; // spillIncomplete() cannot now start
+            /*
+             * If activeAddRightCount<0, then spillIncomplete() has started, loop and relock crit, to give spillIncomplete() a chance to grab crit
+             */
+            crit.leave();
         }
     }
+    void releaseActiveRightAndUnlock()
+    {
+        --activeAddRightCount;
+        crit.leave();
+    }
+    class CSpillSafeBlock
+    {
+        CJoinGroup *jg;
+    public:
+        CSpillSafeBlock(CJoinGroup *_jg) : jg(_jg)
+        {
+            jg->addActiveRightAndBlock();
+        }
+        ~CSpillSafeBlock()
+        {
+            jg->releaseActiveRightAndUnlock();
+        }
+    };
 public:
     CJoinGroup(const void *_leftRow, IJoinProcessor *_join)
         : join(_join)
     {
-    	leftRow.set(_leftRow);
+        leftRow.set(_leftRow);
     }
     ~CJoinGroup()
     {
-        freeRows();
+        freeRowsAndStream();
     }
     void *operator new(size_t size, roxiemem::IRowManager *rowManager, activity_id activityId)
     {
@@ -196,44 +451,56 @@ public:
     }
     inline bool hasAbortLimitBeenHit() const
     {
-        return gf_limitabort == (groupFlags & GroupFlagLimitMask);
+        return 0 != (groupFlags & gf_limitabort);
     }
     inline void setAbortLimitHit()
     {
         CriticalBlock b(crit);
         addFlag(gf_limitabort);
-        freeRows();
+        freeRowsAndStream();
     }
     inline bool hasAtMostLimitBeenHit() const
     {
-        return gf_limitatmost == (groupFlags & GroupFlagLimitMask);
+        return 0 != (groupFlags & gf_limitatmost);
     }
     inline void setAtMostLimitHit()
     {
         CriticalBlock b(crit);
         addFlag(gf_limitatmost);
-        freeRows();
+        freeRowsAndStream();
     }
     inline const void *queryLeft() const
     {
         return leftRow;
     }
-    inline const void *queryFirstRhs(offset_t &fpos, JoinGroupRhsState &rhsState) const
+    inline const void *getFirstRhsClear(offset_t &fpos, JoinGroupRhsState &rhsState)
     {
-        CriticalBlock b(crit);
-        if (!rowArrays)
+        dbgassertex(complete());
+        CriticalBlock b(crit); // NB: only needed because of potential contention with spilling.
+        if (rowStream)
         {
-            fpos = 0;
-            return nullptr;
+            rowStream->open();
+            const void *row = rowStream->getRow(fpos);
+            if (row)
+                return row;
+            rowStream->Release();
+            rowStream = nullptr;
         }
-        rhsState.arr = &rowArrays[0];
-        rhsState.pos = 0;
-        return _queryNextRhs(fpos, rhsState);
+        return _getFirstRhsClear(fpos, rhsState);
     }
-    inline const void *queryNextRhs(offset_t &fpos, JoinGroupRhsState &rhsState) const
+    inline const void *getNextRhsClear(offset_t &fpos, JoinGroupRhsState &rhsState)
     {
-        CriticalBlock b(crit);
-        return _queryNextRhs(fpos, rhsState);
+        CriticalBlock b(crit); // NB: only needed because of potential contention with spilling.
+        if (rowStream)
+        {
+            const void *row = rowStream->getRow(fpos);
+            if (row)
+                return row;
+            rowStream->Release();
+            rowStream = nullptr;
+            return _getFirstRhsClear(fpos, rhsState);
+        }
+        return _getNextRhsClear(fpos, rhsState);
     }
     inline bool complete() const { return 0 == pending; }
     inline void incPending()
@@ -247,14 +514,14 @@ public:
     }
     inline unsigned addRightMatchPending(unsigned partNo, offset_t fpos)
     {
-        CriticalBlock b(crit);
+        CSpillSafeBlock cb(this);
         if (hasFlag(GroupFlagLimitMask)) // NB: flag can be triggered asynchronously, via setAbortLimitHit() / setAtMostLimitHit()
             return NotFound;
         return join->addRowEntry(partNo, nullptr, fpos, rowArrays, numRowArrays);
     }
-    inline void addRightMatchCompletePending(unsigned partNo, unsigned sequence, const void *right)
+    inline void addRightMatchCompletePending(unsigned partNo, unsigned sequence, size32_t rightSz, const void *right)
     {
-        // NB: thread safe, because group limits and arrays have been handled/setup by this stage.
+        CriticalBlock b(crit); // NB: only needed because of potential contention with spilling. NB2: this method doesn't allocate
         if (hasFlag(GroupFlagLimitMask))
         {
             ReleaseRoxieRow(right);
@@ -262,30 +529,164 @@ public:
         }
         RowArray &rowArray = rowArrays[partNo];
         rowArray.rows[sequence].rhs = right;
-        ++totalRows;
+        totalRhsSz += rightSz;
     }
-    inline void addRightMatch(unsigned partNo, const void *right, offset_t fpos)
+    inline void addRightMatch(unsigned partNo, size32_t rightSz, const void *right, offset_t fpos)
     {
-        CriticalBlock b(crit);
+        CSpillSafeBlock cb(this);
         if (hasFlag(GroupFlagLimitMask)) // NB: flag can be triggered asynchronously, via setAbortLimitHit() / setAtMostLimitHit()
         {
             ReleaseRoxieRow(right);
             return;
         }
         join->addRowEntry(partNo, right, fpos, rowArrays, numRowArrays);
-        ++totalRows;
+        totalRhsSz += rightSz;
     }
-    inline unsigned numRhsMatches() const
-    {
-        return totalRows;
-    }
+    inline size32_t getRhsSize() const { return totalRhsSz; }
     inline void addFlag(GroupFlags flag)
     {
         groupFlags = static_cast<GroupFlags>(groupFlags | flag);
     }
+    inline void removeFlag(GroupFlags flag)
+    {
+        groupFlags = static_cast<GroupFlags>(((unsigned)groupFlags) & ~((unsigned)flag));
+    }
     inline bool hasFlag(GroupFlags flag) const
     {
         return 0 != (groupFlags & flag);
+    }
+    inline bool isEmpty() const
+    {
+        return (0 == totalRhsSz) && (nullptr == rowStream);
+    }
+    void spill()
+    {
+        if (rowStream) // grief, this group has spilt at least once before
+            rowStream->add(this, false);
+        else
+            rowStream = join->getJoinGroupStream(this);
+    }
+    size32_t spillCompleteTS(size32_t threshold)
+    {
+        CriticalBlock b(crit);
+        size32_t sz = getRhsSize();
+        if (sz < threshold) // it's possible it's been consumed or partially consumed by time got crit
+            return 0;
+        spill();
+        freeRowArrays(); // rows will have already been release, release rowArrays as not needed anymore
+        totalRhsSz = 0;
+        return sz;
+    }
+    size32_t spillIncomplete(size32_t threshold)
+    {
+        int expectedState=0;
+        if (!activeAddRightCount.compare_exchange_strong(expectedState, -INT_MAX))
+        {
+            // If any thread is in addRightMatch* for this JG, then skip this group to avoid potential deadlock if addRightMatch is allocating
+            return 0;
+        }
+
+        size32_t retSz = 0;
+        CriticalBlock b(crit);
+        if (totalRhsSz >= threshold) // it's possible it's been consumed or partially consumed by time got crit
+        {
+            spill();
+            retSz = totalRhsSz;
+            totalRhsSz = 0;
+        }
+        /*
+         * NB: adding because it was 0 at exchange to -INT_MAX (effectively subtracting INT_MAX),
+         * however addRightMatch* calls may be blocked, waiting for this function to finish, and have incremented activeAddRightCount,
+         * so add back INT_MAX
+         */
+        activeAddRightCount += INT_MAX;
+        return retSz;
+    }
+    // The simple case, where know complete (and therefore ordered), or don't care about order
+    void write(IFile *iFile, IOutputRowSerializer *serializer, bool append)
+    {
+        Owned<CJoinGroupRowWriter> rowWriter = new CJoinGroupRowWriter(iFile, serializer, append, true);
+        CJoinGroup::JoinGroupRhsState rhsState;
+        offset_t fpos;
+        const void *row = _getFirstRhsClear(fpos, rhsState);
+        while (row)
+        {
+            rowWriter->write(row, fpos);
+            ReleaseRoxieRow(row);
+            row = _getNextRhsClear(fpos, rhsState);
+        }
+    }
+    // non trivial case where writing incomplete and need to preserve order
+    void write(IFile *iFile, IOutputRowSerializer *serializer, bool append, std::vector<offset_t> *writeMarkerOffsets)
+    {
+        // NB: called inside crit, indirectly via spillComplete() or spillIncomplete()
+        Owned<CJoinGroupRowWriter> rowWriter = new CJoinGroupRowWriter(iFile, serializer, append, false);
+
+        dbgassertex(rowArrays);
+
+        if (!rowStream) // never spilt, write offset header
+        {
+            /*
+             * A header of 1st offsets to chunks is laid down 1st.
+             * The marker is updated when a chunk is written and the last marker for each stream
+             * is tracked, so it can be updated when the next chunk for the same stream is written.
+             *
+             */
+            rowWriter->writeOffsetTable(numRowArrays);
+            for (unsigned a=0; a<numRowArrays; a++) // 0 if preserveOrder==false
+                (*writeMarkerOffsets)[a] = a * sizeof(CJoinGroup::SpillMarker);
+        }
+
+        CJoinGroup::JoinGroupRhsState rhsState;
+        rhsState.arr = &rowArrays[0];
+        rhsState.pos = 0;
+
+        CJoinGroup::SpillMarker marker;
+        offset_t lastBucketMarkerOffset = (offset_t)-1;
+        while (rhsState.arr != (rowArrays+numRowArrays)) // end of array marker
+        {
+            if (rhsState.arr->rows)
+            {
+                unsigned which = rhsState.arr-rowArrays;
+
+                if (rhsState.arr->numRows)
+                {
+                    lastBucketMarkerOffset = (*writeMarkerOffsets)[which];
+
+                    offset_t startPosition = rowWriter->queryPosition();
+                    /* NB: if startPosition immediately follows the lastBucketMarkerOffset,
+                     * then could remove marker and continue same chunk, but would have to update
+                     * previous marker and we don't have it's position (prob. not worth recoding for this).
+                     */
+
+                    while (rhsState.pos < rhsState.arr->numRows)
+                    {
+                        Row &row = rhsState.arr->rows[rhsState.pos++];
+                        if (row.rhs)
+                        {
+                            rowWriter->write(row.rhs, row.fpos);
+                            ReleaseRoxieRow(row.rhs);
+                            row.rhs = nullptr;
+                        }
+                    }
+                    rhsState.arr->numRows = 0;
+
+                    offset_t endPosition = rowWriter->queryPosition();
+                    dbgassertex(startPosition != endPosition);
+
+                    marker.skip = startPosition-(lastBucketMarkerOffset+sizeof(CJoinGroup::SpillMarker));
+                    marker.size = endPosition - startPosition;
+                    rowWriter->updateMarker(lastBucketMarkerOffset, marker);
+
+                    lastBucketMarkerOffset = endPosition;
+                    (*writeMarkerOffsets)[which] = lastBucketMarkerOffset;
+                    rowWriter->addMarker();
+                }
+            }
+            rhsState.arr++;
+            rhsState.pos = 0;
+        }
+        dbgassertex((offset_t)-1 != lastBucketMarkerOffset); // sanity check that something written
     }
 };
 
@@ -307,6 +708,7 @@ public:
     }
     inline unsigned queryCount() const { return count; }
     inline CJoinGroup *queryHead() const { return head; }
+    inline CJoinGroup *queryTail() const { return tail; }
     CJoinGroup *removeHead()
     {
         if (!head)
@@ -407,17 +809,18 @@ struct PartIO
     ISerialStream *stream = nullptr;
 };
 
-class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
+class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implements roxiemem::IBufferedRowCallback
 {
     typedef CSlaveActivity PARENT;
 
     // CLimiter is used to track a accumulated count of items, e.g. rows or threads
     class CLimiter
     {
-        unsigned count = 0;  // nominal count of active items (e.g. rows or threads)
-        unsigned max = 0;    // if count exceeds max+leeway is reached blocking will occur, if count falls below max blocks will be released
-        unsigned leeway = 0; // leeway allows a gap to occur between time blocking starts and time blocking is released, to avoid thrashing.
-        unsigned blocked = 0; // number of callers blocked due to exceeding max+leeway.
+        unsigned count = 0;         // nominal count of active items (e.g. rows or threads)
+        unsigned max = 0;           // if count exceeds max+leeway is reached blocking will occur, if count falls below max blocks will be released
+        unsigned leewayPercent = 0; // leeway allows a gap to occur between time blocking starts and time blocking is released, to avoid thrashing.
+        unsigned blocked = 0;       // number of callers blocked due to exceeding max+leewayPercent(%).
+        unsigned leeway = 0;
         Semaphore sem;
         CriticalSection crit;
         bool enabled = true;
@@ -427,19 +830,35 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             sem.signal(blocked);
             blocked = 0;
         }
+        void _set(unsigned _max, unsigned _leewayPercent=0)
+        {
+            max = _max;
+            leewayPercent = _leewayPercent;
+            leeway = 0;
+            if (leewayPercent)
+            {
+                leeway = max * leewayPercent / 100;
+                if (0 == leeway)
+                    leeway = 1;
+            }
+        }
     public:
         CLimiter()
         {
         }
-        CLimiter(unsigned _max, unsigned _leeway=0) : max(_max), leeway(_leeway)
+        CLimiter(unsigned _max, unsigned _leewayPercent=0)
         {
+            _set(_max, _leewayPercent);
         }
-        void set(unsigned _max, unsigned _leeway=0)
+        unsigned queryMax() const { return max; }
+        void set(unsigned _max, unsigned _leewayPercent=0)
         {
-            max = _max;
-            leeway = _leeway;
+            CriticalBlock b(crit);
+            _set(_max, _leewayPercent);
+            if (blocked && (count < max))
+                unblock();
         }
-        bool preIncNonBlocking()
+        bool preIncNonBlocking(bool markBlocked)
         {
             {
                 CriticalBlock b(crit);
@@ -447,7 +866,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     return false;
                 if (count++ < max+leeway)
                     return false;
-                ++blocked;
+                if (markBlocked)
+                    ++blocked;
             }
             return true;
         }
@@ -499,6 +919,32 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 unblock();
             count = 0;
         }
+        bool reduceLimit(unsigned newMax, unsigned largePercentage, unsigned reducePercentage, unsigned minimumReduce, unsigned minimumLimit)
+        {
+            if (newMax >= (max * largePercentage / 100))
+            {
+                // reduce by 'reducePercentage'% or 'minimumReduce' whichever is larger
+                unsigned a = max * reducePercentage / 100;
+                if (a < minimumReduce)
+                    a = minimumReduce;
+                if (max < a+minimumLimit)
+                    newMax = minimumLimit;
+                else
+                    newMax = max - a;
+            }
+            else if (newMax < minimumLimit)
+                newMax = minimumLimit;
+            if (newMax == minimumLimit)
+            {
+                set(newMax, 0);
+                return true;
+            }
+            else
+            {
+                set(newMax, 10);
+                return false;
+            }
+        };
     };
     /*
      * There will 1 handler per part up to max per target, then parts will be added and dealt by existing handlers.
@@ -528,6 +974,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         rowcount_t total = 0;
         CLimiter *limiter = nullptr;
         IArrayOf<IPartDescriptor> *allParts = nullptr; // only used for tracing purposes, set by key or fetch derived handlers
+        unsigned batchProcessLimit = 0xffffffff;
 
         inline MemoryBuffer &doUncompress(MemoryBuffer &tgt, MemoryBuffer &src)
         {
@@ -540,8 +987,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 return src;
         }
     public:
-        CLookupHandler(CKeyedJoinSlave &_activity, IThorRowInterfaces *_rowIf) : threaded("CLookupHandler", this),
-            activity(_activity), rowIf(_rowIf)
+        CLookupHandler(CKeyedJoinSlave &_activity, IThorRowInterfaces *_rowIf, unsigned _batchProcessLimit) : threaded("CLookupHandler", this),
+            activity(_activity), rowIf(_rowIf), batchProcessLimit(_batchProcessLimit)
         {
             helper = activity.helper;
         }
@@ -729,8 +1176,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                             ++nextQueue;
                             if (nextQueue == myParts)
                                 nextQueue = 0;
-                            totalQueued -= queue.ordinality();
-                            queue.swap(processing);
+                            unsigned numToDequeue = queue.ordinality();
+                            if (numToDequeue > batchProcessLimit)
+                            {
+                                numToDequeue = batchProcessLimit;
+                                queue.transferRows(0, numToDequeue, processing);
+                            }
+                            else
+                                queue.swap(processing);
+                            totalQueued -= numToDequeue;
                             break;
                         }
                         else
@@ -789,7 +1243,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 keyManager.setLayoutTranslator(&translators[selected]->queryTranslator());
         }
     public:
-        CKeyLookupLocalBase(CKeyedJoinSlave &_activity) : CLookupHandler(_activity, _activity.keyLookupRowWithJGRowIf)
+        CKeyLookupLocalBase(CKeyedJoinSlave &_activity) : CLookupHandler(_activity, _activity.keyLookupRowWithJGRowIf, _activity.keyLookupProcessBatchLimit)
         {
             limiter = &activity.lookupThreadLimiter;
             allParts = &activity.allIndexParts;
@@ -844,9 +1298,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                         else
                         {
                             RtlDynamicRowBuilder joinFieldsRowBuilder(activity.joinFieldsAllocator);
-                            size32_t sz = activity.helper->extractJoinFields(joinFieldsRowBuilder, keyRow, &adapter);
-                            const void *joinFieldsRow = joinFieldsRowBuilder.finalizeRowClear(sz);
-                            joinGroup->addRightMatch(partNo, joinFieldsRow, fpos);
+                            size32_t joinFieldsRowSz = activity.helper->extractJoinFields(joinFieldsRowBuilder, keyRow, &adapter);
+                            const void *joinFieldsRow = joinFieldsRowBuilder.finalizeRowClear(joinFieldsRowSz);
+                            joinGroup->addRightMatch(partNo, joinFieldsRowSz, joinFieldsRow, fpos);
                         }
                     }
                 }
@@ -988,8 +1442,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             }
         }
     public:
-        CRemoteLookupHandler(CKeyedJoinSlave &_activity, IThorRowInterfaces *_rowIf, unsigned _lookupSlave)
-            : CLookupHandler(_activity, _rowIf), lookupSlave(_lookupSlave)
+        CRemoteLookupHandler(CKeyedJoinSlave &_activity, IThorRowInterfaces *_rowIf, unsigned _lookupSlave, unsigned batchProcessLimit)
+            : CLookupHandler(_activity, _rowIf, batchProcessLimit), lookupSlave(_lookupSlave)
         {
             /* NB: There is 1 KJ service per slave, not per channel
              * create reply tag using slave IMPServer and use the slave ICommunicator
@@ -1009,8 +1463,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     class CKeyLookupRemoteHandler : public CRemoteLookupHandler
     {
         typedef CRemoteLookupHandler PARENT;
-
-        CThorExpandingRowArray replyRows;
 
         void initRead(CMessageBuffer &msg, unsigned selected, unsigned partNo, unsigned copy)
         {
@@ -1080,7 +1532,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             msg.clear();
         }
     public:
-        CKeyLookupRemoteHandler(CKeyedJoinSlave &_activity, unsigned _lookupSlave) : PARENT(_activity, _activity.keyLookupRowWithJGRowIf, _lookupSlave), replyRows(_activity, _activity.keyLookupReplyOutputMetaRowIf)
+        CKeyLookupRemoteHandler(CKeyedJoinSlave &_activity, unsigned _lookupSlave) : PARENT(_activity, _activity.keyLookupRowWithJGRowIf, _lookupSlave, _activity.keyLookupProcessBatchLimit)
         {
             limiter = &activity.lookupThreadLimiter;
             allParts = &activity.allIndexParts;
@@ -1127,7 +1579,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 mb.read(count); // amount processed, could be all (i.e. numRows)
                 while (count--)
                 {
-                    const void *requestRow = processing.query(received++);
+                    OwnedConstThorRow requestRow(processing.getClear(received++));
                     KeyLookupHeader lookupKeyHeader;
                     getHeaderFromRow(requestRow, lookupKeyHeader);
                     CJoinGroup *joinGroup = lookupKeyHeader.jg;
@@ -1162,17 +1614,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                             }
                             else
                             {
-                                if (!activity.needsDiskRead)
-                                {
-                                    size32_t sz;
-                                    mb.read(sz);
-                                    replyRows.deserialize(sz, mb.readDirect(sz));
-                                }
                                 std::vector<unsigned __int64> fposs(matches);
-                                mb.read(matches * sizeof(unsigned __int64), &fposs[0]); // JCSMORE shame to serialize these if not needed, does codegen give me a tip?
-                                for (unsigned r=0; r<matches; r++)
+                                if (activity.needsDiskRead)
                                 {
-                                    if (activity.needsDiskRead)
+                                    mb.read(matches * sizeof(unsigned __int64), &fposs[0]); // JCSMORE shame to serialize these if not needed, does codegen give me a tip?
+                                    for (unsigned r=0; r<matches; r++)
                                     {
                                         unsigned __int64 sequence = joinGroup->addRightMatchPending(partNo, fposs[r]);
                                         if (NotFound == sequence) // means limit was hit and must have been caused by another handler
@@ -1187,13 +1633,22 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
 
                                         activity.queueFetchLookup(fposs[r], sequence, joinGroup);
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    size32_t sz;
+                                    mb.read(sz);
+                                    CThorStreamDeserializerSource keyLookupRowSource(sz, mb.readDirect(sz));
+                                    mb.read(matches * sizeof(unsigned __int64), &fposs[0]); // JCSMORE shame to serialize these if not needed, does codegen give me a tip?
+                                    for (unsigned r=0; r<matches; r++)
                                     {
-                                        OwnedConstThorRow row = replyRows.getClear(r);
-                                        joinGroup->addRightMatch(partNo, row.getClear(), fposs[r]);
+                                        dbgassertex(!keyLookupRowSource.eos());
+
+                                        RtlDynamicRowBuilder rowBuilder(activity.keyLookupReplyOutputMetaRowIf->queryRowAllocator());
+                                        size32_t joinFieldsRowSz = activity.keyLookupReplyOutputMetaRowIf->queryRowDeserializer()->deserialize(rowBuilder, keyLookupRowSource);
+                                        joinGroup->addRightMatch(partNo, joinFieldsRowSz, rowBuilder.finalizeRowClear(joinFieldsRowSz), fposs[r]);
                                     }
                                 }
-                                replyRows.clearRows();
                             }
                         }
                     }
@@ -1216,7 +1671,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         bool encrypted = false;
         bool compressed = false;
         Owned<IEngineRowAllocator> fetchDiskAllocator;
-        Owned<IOutputRowDeserializer> fetchDiskDeserializer;
         CThorContiguousRowBuffer prefetchSource;
         std::vector<PartIO> partIOs;
 
@@ -1229,11 +1683,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         }
     public:
         CFetchLocalLookupHandler(CKeyedJoinSlave &_activity)
-            : PARENT(_activity, _activity.fetchInputMetaRowIf)
+            : PARENT(_activity, _activity.fetchInputMetaRowIf, _activity.fetchLookupProcessBatchLimit)
         {
             Owned<IThorRowInterfaces> fetchDiskRowIf = activity.createRowInterfaces(helper->queryDiskRecordSize());
             fetchDiskAllocator.set(fetchDiskRowIf->queryRowAllocator());
-            fetchDiskDeserializer.set(fetchDiskRowIf->queryRowDeserializer());
             limiter = &activity.fetchThreadLimiter;
             allParts = &activity.allDataParts;
         }
@@ -1287,7 +1740,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     unsigned indexPartNo = requestHeader.sequence >> 32; // NB: used to preserveOrder when calling addRightMatchCompletePending
 
                     // If !preserverOrder, right rows added to single array in jg, so pass 0
-                    joinGroup->addRightMatchCompletePending(activity.preserveOrder ? indexPartNo : 0, sequence, fetchRow);
+                    joinGroup->addRightMatchCompletePending(activity.preserveOrder ? indexPartNo : 0, sequence, joinFieldsSz, fetchRow);
 
                     if (++activity.statsArr[AS_DiskAccepted] > activity.rowLimit)
                         helper->onLimitExceeded();
@@ -1304,7 +1757,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     {
         typedef CRemoteLookupHandler PARENT;
 
-        CThorExpandingRowArray replyRows;
+        IOutputRowDeserializer *rowDeserializer = nullptr;
+        IEngineRowAllocator *rowAllocator = nullptr;
         byte flags = 0;
 
         void initRead(CMessageBuffer &msg, unsigned selected, unsigned partNo, unsigned copy)
@@ -1378,10 +1832,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         }
     public:
         CFetchRemoteLookupHandler(CKeyedJoinSlave &_activity, unsigned _lookupSlave)
-            : PARENT(_activity, _activity.fetchInputMetaRowIf, _lookupSlave), replyRows(_activity, _activity.fetchOutputMetaRowIf)
+            : PARENT(_activity, _activity.fetchInputMetaRowIf, _lookupSlave, _activity.fetchLookupProcessBatchLimit)
         {
             limiter = &activity.fetchThreadLimiter;
             allParts = &activity.allDataParts;
+            rowDeserializer = activity.fetchOutputMetaRowIf->queryRowDeserializer();
+            rowAllocator = activity.fetchOutputMetaRowIf->queryRowAllocator();
         }
         virtual void init() override
         {
@@ -1404,8 +1860,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             ScopedAtomic<unsigned __int64> diskSeeks(activity.statsArr[AS_DiskSeeks]);
             unsigned numRows = processing.ordinality();
             // read back results and feed in to appropriate join groups.
-            unsigned accepted = 0;
-            unsigned rejected = 0;
 
             unsigned received = 0;
             bool resent = false;
@@ -1431,23 +1885,30 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     mb.read(handles[selected]);
                 unsigned count;
                 mb.read(count); // amount processed, could be all (i.e. numRows)
+                size32_t totalRowSz = 0;
+                CThorStreamDeserializerSource rowSource(nullptr);
                 if (count)
                 {
-                    size32_t totalRowSz;
                     mb.read(totalRowSz);
-                    replyRows.deserialize(totalRowSz, mb.readDirect(totalRowSz));
-                    mb.read(accepted);
-                    mb.read(rejected);
+
+                    Owned<ISerialStream> stream = createMemorySerialStream(mb.readDirect(totalRowSz), totalRowSz);
+                    rowSource.setStream(stream);
                 }
+
                 FetchRequestHeader fetchHeader;
                 FetchReplyHeader replyHeader;
                 while (count--)
                 {
-                    const void *requestRow = processing.query(received);
+                    dbgassertex(!rowSource.eos());
+
+                    const void *requestRow = processing.query(received++);
                     getHeaderFromRow(requestRow, fetchHeader);
                     CJoinGroup *joinGroup = fetchHeader.jg;
 
-                    OwnedConstThorRow replyRow = replyRows.getClear(received++);
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    size32_t sz = rowDeserializer->deserialize(rowBuilder, rowSource);
+                    OwnedConstThorRow replyRow = rowBuilder.finalizeRowClear(sz);
+
                     getHeaderFromRow(replyRow.get(), replyHeader);
 
                     const void *fetchRow = *((const void **)(((byte *)replyRow.get())+sizeof(FetchReplyHeader)));
@@ -1457,18 +1918,26 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                         unsigned sequence = replyHeader.sequence & 0xffffffff;
                         unsigned indexPartNo = (replyHeader.sequence & ~FetchReplyHeader::fetchMatchedMask) >> 32;
 
+                        size32_t fetchRowSz = activity.joinFieldsAllocator->queryOutputMeta()->getRecordSize(fetchRow);
                         // If !preserverOrder, right rows added to single array in jg, so pass 0
-                        joinGroup->addRightMatchCompletePending(activity.preserveOrder ? indexPartNo : 0, sequence, fetchRow);
+                        joinGroup->addRightMatchCompletePending(activity.preserveOrder ? indexPartNo : 0, sequence, fetchRowSz, fetchRow);
                     }
                     joinGroup->decPending(); // Every queued lookup row triggered an inc., this is the corresponding dec.
                     diskSeeks++; // NB: really the seek happened on the remote side, but it can't be tracked into the activity stats there.
                 }
-                replyRows.clearRows();
+
+                if (received)
+                {
+                    unsigned accepted = 0;
+                    unsigned rejected = 0;
+                    mb.read(accepted);
+                    mb.read(rejected);
+                    activity.statsArr[AS_DiskAccepted] += accepted;
+                    activity.statsArr[AS_DiskRejected] += rejected;
+                }
                 if (received == numRows)
                     break;
             }
-            activity.statsArr[AS_DiskAccepted] += accepted;
-            activity.statsArr[AS_DiskRejected] += rejected;
         }
         virtual void end() override
         {
@@ -1598,7 +2067,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     CLimiter lookupThreadLimiter, fetchThreadLimiter;
     CLimiter pendingKeyLookupLimiter;
     CLimiter doneListLimiter;
-    rowcount_t totalQueuedLookupRowCount = 0;
 
     CPartDescriptorArray allDataParts;
     IArrayOf<IPartDescriptor> allIndexParts;
@@ -1624,12 +2092,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     unsigned maxKeyLookupThreads = defaultMaxKeyLookupThreads;
     unsigned maxFetchThreads = defaultMaxFetchThreads;
     unsigned keyLookupMaxQueued = defaultKeyLookupMaxQueued;
+    memsize_t keyLookupMinQueuedBytes = defaultMinKeyLookupJoinGroupMB * 0x100000;
     unsigned keyLookupMaxDone = defaultKeyLookupMaxDone;
     unsigned maxNumLocalHandlers = defaultKeyLookupMaxLocalHandlers;
     unsigned maxNumRemoteHandlersPerSlave = defaultKeyLookupMaxHandlersPerRemoteSlave;
     unsigned maxNumRemoteFetchHandlers = defaultKeyLookupMaxFetchHandlers;
     unsigned maxNumLocalFetchHandlers = defaultKeyLookupMaxLocalFetchHandlers;
     unsigned fetchLookupQueuedBatchSize = defaultKeyLookupFetchQueuedBatchSize;
+    unsigned keyLookupProcessBatchLimit = defaultKeyLookupProcessBatchLimit;
+    unsigned fetchLookupProcessBatchLimit = defaultFetchLookupProcessBatchLimit;
     bool remoteKeyedLookup = false;
     bool remoteKeyedFetch = false;
     bool forceRemoteKeyedLookup = false;
@@ -1646,12 +2117,18 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
     IArrayOf<IKeyManager> tlkKeyManagers;
     CriticalSection onCompleteCrit, queuedCrit, runningLookupThreadsCrit;
     std::atomic<bool> waitingForDoneGroups{false};
-    Semaphore waitingForDoneGroupsSem, doneGroupsExcessiveSem;
+    Semaphore waitingForDoneGroupsSem;
     CJoinGroupList pendingJoinGroupList, doneJoinGroupList;
     Owned<IException> abortLimitException;
     Owned<CJoinGroup> currentJoinGroup;
     unsigned currentMatchIdx = 0;
     CJoinGroup::JoinGroupRhsState rhsState;
+
+    unsigned spillAmountPercentage = 10;   // Initial percentage to spill, will grow if memory pressure keeps calling callback
+    memsize_t spillAmount = 10 * 0x100000; // (10MB) Initial amount to try to spill
+    memsize_t minRhsJGSpillSz = 1024; // (1K) Threshold, if a join group is smaller than this, don't attempt to spill
+    const unsigned minimumQueueLimit = 5; // When spilling the pending and group limits will gradually reduce until this limit
+    bool memoryCallbackInstalled = false;
 
     roxiemem::IRowManager *rowManager = nullptr;
     unsigned currentAdded = 0;
@@ -2051,7 +2528,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                 {
                     CriticalBlock b(onCompleteCrit); // protecting both pendingJoinGroupList and doneJoinGroupList
                     pendingJoinGroupList.addToTail(LINK(jg));
-                    pendingBlock = pendingKeyLookupLimiter.preIncNonBlocking();
+                    pendingBlock = pendingKeyLookupLimiter.preIncNonBlocking(true);
                 }
                 jg->decPending(); // all lookups queued. joinGroup will complete when all lookups are done (i.e. they're running asynchronously)
                 if (pendingBlock)
@@ -2072,8 +2549,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                     pendingKeyLookupLimiter.block();
                 }
             }
-        }
-        while (!endOfInput);
+        } while (!endOfInput);
         stopReadAhead();
     }
     const void *doDenormTransform(RtlDynamicRowBuilder &target, CJoinGroup &group)
@@ -2083,7 +2559,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         size32_t retSz = 0;
         OwnedConstThorRow lhs;
         lhs.set(group.queryLeft());
-        const void *rhs = group.queryFirstRhs(fpos, rhsState);
+        const void *rhs = group.getFirstRhsClear(fpos, rhsState);
         switch (container.getKind())
         {
             case TAKkeyeddenormalize:
@@ -2100,9 +2576,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
                         added++;
                         lhs.setown(target.finalizeRowClear(transformedSize));
                         if (added==keepLimit)
+                        {
+                            ReleaseRoxieRow(rhs);
                             break;
+                        }
                     }
-                    rhs = group.queryNextRhs(fpos, rhsState);
+                    ReleaseRoxieRow(rhs);
+                    rhs = group.getNextRhsClear(fpos, rhsState);
                 }
                 if (retSz)
                     return lhs.getClear();
@@ -2110,13 +2590,19 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
             }
             case TAKkeyeddenormalizegroup:
             {
-                ConstPointerArray rows;
-                while (rhs && (rows.ordinality() < keepLimit))
+                if (!rhs)
+                    return nullptr;
+                CThorExpandingRowArray rows(*this, nullptr, ers_forbidden, stableSort_none, true, ((unsigned)-1) != keepLimit ? keepLimit : 0);
+                while (true) // NB: keepLimit must be >=1
                 {
                     rows.append(rhs);
-                    rhs = group.queryNextRhs(fpos, rhsState);
+                    if (rows.ordinality() == keepLimit)
+                        break;
+                    rhs = group.getNextRhsClear(fpos, rhsState);
+                    if (!rhs)
+                        break;
                 }
-                retSz = helper->transform(target, lhs, rows.item(0), rows.ordinality(), rows.getArray());
+                retSz = helper->transform(target, lhs, rows.query(0), rows.ordinality(), rows.getRowArray());
                 if (retSz)
                     return target.finalizeRowClear(retSz);
                 break;
@@ -2127,11 +2613,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor
         return nullptr;
     }
 
-    bool transferToDoneList(CJoinGroup *joinGroup)
+    bool transferToDoneList(CJoinGroup *joinGroup, bool markBlocked) // NB: always coming from pendingJoinGroupList
     {
         doneJoinGroupList.addToTail(joinGroup);
         pendingKeyLookupLimiter.dec();
-        return doneListLimiter.preIncNonBlocking();
+        return doneListLimiter.preIncNonBlocking(markBlocked);
     }
 
     void addPartToHandler(CHandlerContainer &handlerContainer, const std::vector<unsigned> &partToSlaveMap, unsigned partCopy, HandlerType hType, std::vector<unsigned> &handlerCounts, std::vector<std::vector<CLookupHandler *>> &slaveHandlers, std::vector<unsigned> &slaveHandlersRR)
@@ -2281,12 +2767,15 @@ public:
         maxFetchThreads = getOptInt(THOROPT_KEYLOOKUP_MAX_FETCH_THREADS, defaultMaxFetchThreads);
         keyLookupMaxQueued = getOptInt(THOROPT_KEYLOOKUP_MAX_QUEUED, defaultKeyLookupMaxQueued);
         keyLookupMaxDone = getOptInt(THOROPT_KEYLOOKUP_MAX_DONE, defaultKeyLookupMaxDone);
+        keyLookupMinQueuedBytes = getOptInt(THOROPT_KEYLOOKUP_MIN_MB, defaultMinKeyLookupJoinGroupMB) * 0x100000;
         maxNumLocalHandlers = getOptInt(THOROPT_KEYLOOKUP_MAX_LOCAL_HANDLERS, defaultKeyLookupMaxLocalHandlers);
         maxNumRemoteHandlersPerSlave = getOptInt(THOROPT_KEYLOOKUP_MAX_REMOTE_HANDLERS, defaultKeyLookupMaxHandlersPerRemoteSlave);
         maxNumLocalFetchHandlers = getOptInt(THOROPT_KEYLOOKUP_MAX_FETCH_LOCAL_HANDLERS, defaultKeyLookupMaxLocalFetchHandlers);
         maxNumRemoteFetchHandlers = getOptInt(THOROPT_KEYLOOKUP_MAX_FETCH_REMOTE_HANDLERS, defaultKeyLookupMaxFetchHandlers);
         forceRemoteKeyedLookup = getOptBool(THOROPT_FORCE_REMOTE_KEYED_LOOKUP);
         forceRemoteKeyedFetch = getOptBool(THOROPT_FORCE_REMOTE_KEYED_FETCH);
+        keyLookupProcessBatchLimit = getOptInt(THOROPT_KEYLOOKUP_PROCESS_BATCHLIMIT, defaultKeyLookupProcessBatchLimit);
+        fetchLookupProcessBatchLimit = getOptInt(THOROPT_FETCHLOOKUP_PROCESS_BATCHLIMIT, defaultFetchLookupProcessBatchLimit);
         messageCompression = getOptBool(THOROPT_KEYLOOKUP_COMPRESS_MESSAGES, true);
 
         fetchLookupQueuedBatchSize = getOptInt(THOROPT_KEYLOOKUP_FETCH_QUEUED_BATCHSIZE, defaultKeyLookupFetchQueuedBatchSize);
@@ -2295,8 +2784,8 @@ public:
         lookupThreadLimiter.set(maxKeyLookupThreads);
         fetchThreadLimiter.set(maxFetchThreads);
 
-        pendingKeyLookupLimiter.set(keyLookupMaxQueued, 100);
-        doneListLimiter.set(keyLookupMaxDone, 100);
+        pendingKeyLookupLimiter.set(keyLookupMaxQueued, 10); // leeway = 10%
+        doneListLimiter.set(keyLookupMaxDone, 10); // leeway = 10%
 
         transformAllocator.setown(getRowAllocator(queryOutputMeta(), (roxiemem::RoxieHeapFlags)(queryHeapFlags()|roxiemem::RHFpacked|roxiemem::RHFunique), AT_Transform));
         rowManager = queryJobChannel().queryThorAllocator()->queryRowManager();
@@ -2521,6 +3010,13 @@ public:
         fetchThreadLimiter.reset();
         keyLookupHandlers.init();
         fetchLookupHandlers.init();
+
+        if ((pendingKeyLookupLimiter.queryMax() > minimumQueueLimit) || (doneListLimiter.queryMax() > minimumQueueLimit))
+        {
+            memoryCallbackInstalled = true;
+            queryRowManager()->addRowBuffer(this);
+        }
+
         readAheadThread.start();
     }
     CATCH_NEXTROW()
@@ -2575,7 +3071,7 @@ public:
             {
                 RtlDynamicRowBuilder rowBuilder(transformAllocator, false);
                 size32_t transformedSize = 0;
-                if (!currentJoinGroup->numRhsMatches() || currentJoinGroup->hasAtMostLimitBeenHit())
+                if (currentJoinGroup->isEmpty() || currentJoinGroup->hasAtMostLimitBeenHit())
                 {
                     switch (joinFlags & JFtypemask)
                     {
@@ -2618,11 +3114,11 @@ public:
                         {
                             rowBuilder.ensureRow();
                             offset_t fpos;
-                            const void *rhs;
+                            OwnedConstThorRow rhs;
                             if (0 == currentMatchIdx)
-                                rhs = currentJoinGroup->queryFirstRhs(fpos, rhsState);
+                                rhs.setown(currentJoinGroup->getFirstRhsClear(fpos, rhsState));
                             else
-                                rhs = currentJoinGroup->queryNextRhs(fpos, rhsState);
+                                rhs.setown(currentJoinGroup->getNextRhsClear(fpos, rhsState));
                             while (true)
                             {
                                 if (!rhs)
@@ -2640,7 +3136,7 @@ public:
                                         currentJoinGroup.clear();
                                     break;
                                 }
-                                rhs = currentJoinGroup->queryNextRhs(fpos, rhsState);
+                                rhs.setown(currentJoinGroup->getNextRhsClear(fpos, rhsState));
                             }
                             break;
                         }
@@ -2681,6 +3177,13 @@ public:
         readAheadThread.join();
         keyLookupHandlers.stop();
         fetchLookupHandlers.stop();
+
+        if (memoryCallbackInstalled)
+        {
+            queryRowManager()->removeRowBuffer(this);
+            memoryCallbackInstalled = false;
+        }
+
         PARENT::stop();
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
@@ -2721,10 +3224,9 @@ public:
                     }
                     head = head->next;
                     CJoinGroup *doneJG = pendingJoinGroupList.removeHead();
-                    if (transferToDoneList(doneJG))
+                    if (transferToDoneList(doneJG, !doneListMaxHit)) // 2nd param(markBlocked), record this thread will block once only
                         doneListMaxHit = true;
-                }
-                while (head);
+                } while (head);
             }
             else if (preserveGroups)
             {
@@ -2744,17 +3246,16 @@ public:
                     }
                     CJoinGroup *next = current->next;
                     CJoinGroup *doneJG = pendingJoinGroupList.remove(current);
-                    if (transferToDoneList(doneJG))
+                    if (transferToDoneList(doneJG, !doneListMaxHit)) // 2nd param(markBlocked), record this thread will block once only
                         doneListMaxHit = true;
                     current = next;
                     ++numProcessed;
-                }
-                while (current);
+                } while (current);
             }
             else
             {
                 CJoinGroup *doneJG = pendingJoinGroupList.remove(joinGroup);
-                doneListMaxHit = transferToDoneList(doneJG);
+                doneListMaxHit = transferToDoneList(doneJG, true);
             }
             bool expectedState = true;
             if (waitingForDoneGroups.compare_exchange_strong(expectedState, false))
@@ -2794,6 +3295,300 @@ public:
         row.rhs = rhs;
         row.fpos = fpos;
         return rowArray.numRows-1;
+    }
+    virtual IRowStreamWithFpos *getJoinGroupStream(CJoinGroup *jg)
+    {
+        class CRowStreamWithFpos : public CSimpleInterfaceOf<IRowStreamWithFpos>
+        {
+            Owned<IFileIO> iFileIO;
+            Linked<IFile> iFile;
+            Linked<IRowInterfaces> rowIf;
+            CThorContiguousRowBuffer prefetchBuffer;
+            Owned<ISourceRowPrefetcher> prefetcher;
+            Owned<ISerialStream> strm;
+            IOutputRowDeserializer *deserializer = nullptr;
+            IEngineRowAllocator *allocator = nullptr;
+            std::vector<CJoinGroup::SpillMarker> spillMarkers;
+            std::vector<offset_t> writeMarkerOffsets;
+            size32_t remaining = 0;
+            unsigned orderedParts = 0;
+            unsigned currentPart = 0;
+            bool eos = false;
+        public:
+            CRowStreamWithFpos(IFile *_iFile, IRowInterfaces *_rowIf, unsigned _orderedParts) : iFile(_iFile), rowIf(_rowIf), prefetchBuffer(nullptr), orderedParts(_orderedParts)
+            {
+                deserializer = rowIf->queryRowDeserializer();
+                allocator = rowIf->queryRowAllocator();
+                writeMarkerOffsets.resize(orderedParts);
+            }
+            ~CRowStreamWithFpos()
+            {
+                if (iFile)
+                    iFile->remove();
+            }
+            virtual void open() override
+            {
+                dbgassertex(!strm);
+                if (orderedParts)
+                    iFileIO.setown(iFile->open(IFOread));
+                else
+                    iFileIO.setown(createCompressedFileReader(iFile));
+                offset_t offset = 0;
+                if (orderedParts)
+                {
+                    spillMarkers.resize(orderedParts);
+                    size32_t len = sizeof(CJoinGroup::SpillMarker)*orderedParts;
+                    iFileIO->read(0, len, &spillMarkers[0]);
+                    currentPart = 0;
+                    while (true)
+                    {
+                        if (spillMarkers[currentPart].size)
+                        {
+                            offset = ((currentPart+1) * sizeof(CJoinGroup::SpillMarker)) + spillMarkers[currentPart].skip;
+                            break;
+                        }
+                        ++currentPart;
+                        assertex(currentPart != orderedParts); // Should never get here, implies nothing written
+                    }
+                    remaining = spillMarkers[currentPart].size;
+                }
+                strm.setown(createFileSerialStream(iFileIO, offset));
+                prefetchBuffer.setStream(strm);
+            }
+            virtual const void *getRow(offset_t &fpos) override
+            {
+                if (eos)
+                    return nullptr;
+
+                RtlDynamicRowBuilder rowBuilder(*allocator);
+                size32_t size = deserializer->deserialize(rowBuilder, prefetchBuffer);
+                const void *row = rowBuilder.finalizeRowClear(size);
+                prefetchBuffer.read(sizeof(fpos), &fpos);
+                prefetchBuffer.finishedRow();
+
+                /* NB: eos is marked by hitting terminator marker if ordered
+                 * If not, eos is at end of stream
+                 */
+                if (orderedParts)
+                {
+                    remaining -= size + sizeof(fpos);
+                    if (0 == remaining)
+                    {
+                        CJoinGroup::SpillMarker marker;
+                        prefetchBuffer.read(sizeof(marker), &marker);
+
+                        remaining = marker.size;
+                        if (0 == remaining)
+                        {
+                            while (true)
+                            {
+                                ++currentPart;
+                                if (currentPart == orderedParts)
+                                {
+                                    eos = true;
+                                    break;
+                                }
+                                if (spillMarkers[currentPart].size)
+                                {
+                                    offset_t offset = ((currentPart+1) * sizeof(CJoinGroup::SpillMarker)) + spillMarkers[currentPart].skip;
+                                    if (prefetchBuffer.tell() != offset)
+                                        prefetchBuffer.reset(offset);
+                                    remaining = spillMarkers[currentPart].size;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (marker.skip) // if 0, implies same bucket spilt twice with no other inbetween.
+                            prefetchBuffer.skip(marker.skip);
+                    }
+                }
+                else if (prefetchBuffer.eos())
+                    eos = true;
+                if (eos)
+                {
+                    iFile->remove();
+                    iFile.clear();
+                }
+                return row;
+            }
+            virtual void add(CJoinGroup *jg, bool first) override
+            {
+                bool append = !first;
+
+                // If preserving order, can only spill simply if complete and have not spilt before.
+                if (jg->complete() && first)
+                    orderedParts = false; // no offset table to read back etc.
+                if (orderedParts)
+                    jg->write(iFile, rowIf->queryRowSerializer(), append, &writeMarkerOffsets);
+                else
+                    jg->write(iFile, rowIf->queryRowSerializer(), append);
+            }
+        };
+
+        StringBuffer tmpFileName;
+        GetTempName(tmpFileName, "kjgroup");
+        Owned<IFile> iFile = createIFile(tmpFileName);
+        Owned<IRowStreamWithFpos> rowStream = new CRowStreamWithFpos(iFile, keyLookupReplyOutputMetaRowIf, preserveOrder ? totalIndexParts : 0);
+
+        rowStream->add(jg, true);
+
+        return rowStream.getClear();
+    }
+
+    // roxiemem::IBufferedRowCallback impl.
+    virtual bool freeBufferedRows(bool critical) override
+    {
+        /*
+         * Strategy:
+         *
+         * Spill join groups until 'spillAmount' reached.
+         * Increase spillAmount for next round (double it).
+         * Decrease the pending and done queue limits, so that KJ starts processing less.
+         * Repeat this process each time this CB is called until down to minumum targets. Minimum memory: keyLookupMinQueuedBytes or minimum queued limits (5)
+         *
+         * Prefer spilling completed groups, as they are not contended by threads adding rhs rows. NB: onCompleteCrit crit prevents queues being maniupulated.
+         * 1) Walk the tail of the 'done' groups 1st (those are JG's ready to be read by downstream activity).
+         * 2) Walk pending complete groups
+         * 3) Walk pending incomplete groups. NB: incomplete groups are still being built, and may allocate. Need to avoid deadlock (see activeAddRightCount)
+         *
+         */
+
+        if (0 == spillAmount) // minimum limits hit, don't try to spill anymore (see end of this function)
+            return false;
+
+        std::vector<CJoinGroup *> doneJGCandidates, incompleteJGCandidates;
+        memsize_t totalToSpill = 0;
+        memsize_t totalInUse = 0;
+        unsigned allRows = 0;
+
+        CriticalBlock b(onCompleteCrit);
+
+        CJoinGroup *cur = doneJoinGroupList.queryTail();
+        while (true)
+        {
+            if (!cur)
+                break;
+            size32_t sz = cur->getRhsSize();
+            totalInUse += sz;
+            if (sz >= minRhsJGSpillSz)
+            {
+                if (totalToSpill < spillAmount)
+                {
+                    doneJGCandidates.push_back(cur);
+                    totalToSpill += sz;
+                }
+            }
+            cur = cur->prev;
+        }
+
+        unsigned potentialPendingJGsToSpill = 0;
+        // scan pending groups from head, as 1st ones are likely to be most full
+        cur = pendingJoinGroupList.queryHead();
+        while (true)
+        {
+            if (!cur)
+                break;
+            size32_t sz = cur->getRhsSize(); // NB: groups may be active, so this is may be an underestimate
+            totalInUse += sz;
+            if (!cur->complete()) // and therefore might grow to need to
+                potentialPendingJGsToSpill++;
+            if (sz >= minRhsJGSpillSz)
+            {
+                if (totalToSpill < spillAmount)
+                {
+                    totalToSpill += sz;
+                    if (cur->complete())
+                        doneJGCandidates.push_back(cur);
+                    else
+                    {
+                        /*
+                         * NB: Caveat: too complicated to spill incomplete groups that are pending on fetch handlers filling group, effectively at random positions
+                         * whilst also requiring to preserving order
+                         *
+                         */
+                        if (!needsDiskRead || !preserveOrder)
+                            incompleteJGCandidates.push_back(cur);
+                    }
+                }
+            }
+            cur = cur->next;
+        }
+        if (totalInUse < keyLookupMinQueuedBytes)
+            return false; // too little to spill
+
+        memsize_t newTotalInUse = totalInUse-totalToSpill;
+        if (newTotalInUse < keyLookupMinQueuedBytes)
+        {
+            memsize_t sz = keyLookupMinQueuedBytes - newTotalInUse;
+            totalToSpill -= sz;
+        }
+
+        unsigned spiltCompleteGroups = 0;
+        unsigned spiltIncompleteGroups = 0;
+        memsize_t totalSpiltSz = 0;
+
+        // spill complete groups 1st
+        for (auto *jg: doneJGCandidates)
+        {
+            size32_t spiltSz = jg->spillCompleteTS(minRhsJGSpillSz);
+            if (spiltSz)
+            {
+                spiltCompleteGroups++;
+                totalSpiltSz += spiltSz;
+            }
+            if (totalSpiltSz >= totalToSpill)
+                break;
+        }
+
+        // now try incomplete groups if not spilt enough
+        if (totalSpiltSz < spillAmount) // not found enough in completed groups
+        {
+            for (auto *jg: incompleteJGCandidates)
+            {
+                size32_t spiltSz = jg->spillIncomplete(minRhsJGSpillSz);
+                if (spiltSz)
+                {
+                    spiltIncompleteGroups++;
+                    totalSpiltSz += spiltSz;
+                }
+                if (totalSpiltSz >= totalToSpill)
+                    break;
+            }
+        }
+
+        // For next time
+        spillAmount = totalInUse * spillAmountPercentage / 100;
+        spillAmountPercentage *= 2;
+        if (spillAmountPercentage > 90)
+            spillAmountPercentage = 90;
+
+        if (!totalSpiltSz)
+            return false;
+
+        bool min = pendingKeyLookupLimiter.reduceLimit(pendingJoinGroupList.queryCount(), 90, 10, 20, minimumQueueLimit);
+        min = doneListLimiter.reduceLimit(doneJoinGroupList.queryCount(), 90, 10, 20, minimumQueueLimit) && min;
+
+        ActPrintLog("Spilt: %" I64F "u bytes (totalInUse before spill=%" I64F "u, %u completed groups, %u incomplete groups, %u pending groups, %u done groups. pending limit set to: %u, done limit set to: %u",
+                (unsigned __int64)totalSpiltSz, (unsigned __int64)totalInUse, spiltCompleteGroups, spiltIncompleteGroups, pendingJoinGroupList.queryCount(), doneJoinGroupList.queryCount(), pendingKeyLookupLimiter.queryMax(), doneListLimiter.queryMax());
+        ActPrintLog("Spilt: potentialPendingJGsToSpill = %u, doneJGCandidates = %" I64F "u", potentialPendingJGsToSpill, (unsigned __int64)doneJGCandidates.size());
+
+        // NB: if limits at minimum and candidates (for spilling) are less than limits, then can't grow to more, disable anymore attempts to spill
+        if (min && (potentialPendingJGsToSpill <= minimumQueueLimit) && (doneJGCandidates.size() <= minimumQueueLimit))
+        {
+            // IOW both limiters have hit mimimum. Stop trying to spill anymore
+            ActPrintLog("Spilt: Minimum pending and group limits reached. Will not attempt to spill any further");
+            spillAmount = 0;
+        }
+
+        return true;
+    }
+    virtual unsigned getSpillCost() const override
+    {
+        return SPILL_PRIORITY_KEYEDJOIN;
+    }
+    virtual unsigned getActivityId() const override
+    {
+        return container.queryId();
     }
 };
 
