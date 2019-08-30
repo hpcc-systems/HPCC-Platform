@@ -32,11 +32,11 @@ ESPenum DFUChangeProtection : int
 };
 
 
-ESPenum DFUChangeRestricted : int
+ESPenum DFUChangeRestriction : int
 {
     NoChange(0, "No Change"),
-    RequireSigned(1, "Restricted"),
-    NotRestricted(2, "NotRestricted")
+    Restrict(1, "Restrict"),
+    NotRestricted(2, "Unrestricted")
 };
 
 ESPenum DFUDefFileFormat : string
@@ -372,7 +372,7 @@ DFUInfoRequest
     [min_ver("1.37")] bool IncludeJsonTypeInfo(false);
     [min_ver("1.37")] bool IncludeBinTypeInfo(false);
     [min_ver("1.39")] ESPenum DFUChangeProtection Protect(0);
-    [min_ver("1.53")] ESPenum DFUChangeRestricted Restricted(0);
+    [min_ver("1.53")] ESPenum DFUChangeRestriction Restrict(0);
 };
 
 ESPresponse
