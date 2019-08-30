@@ -210,6 +210,7 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
         DaliServerProcess,
         BackupNodeProcess,
         EclServerProcess,
+        SparkThorProcess,
     };
     std::unordered_map<std::string, SoftwareComponentType> softwareTypeRoleMap = {
             { "RoxieCluster", RoxieCluster },
@@ -223,6 +224,7 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
             { "DaliServerProcess", DaliServerProcess },
             { "BackupNodeProcess", BackupNodeProcess },
             { "EclServerProcess", EclServerProcess },
+            { "SparkThorProcess", SparkThorProcess },
     };
 
     Owned<IPropertyTreeIterator> softwareIter = conn->queryRoot()->getElements("Software/*");
@@ -287,6 +289,9 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
                     break;
                 case DaliServerProcess:
                     addRoles(component, { DCR_DaliServer, DCR_DaliDiag, DCR_SwapNode, DCR_UpdateEnv, DCR_DaliAdmin, DCR_TreeView, DCR_Testing, DCR_DaFsControl, DCR_XRef, DCR_Config, DCR_ScheduleAdmin, DCR_Monitoring, DCR_DaliStop });
+                    break;
+                case SparkThorProcess:
+                    addRoles(component, { DCR_DaliAdmin });
                     break;
             }
         }
