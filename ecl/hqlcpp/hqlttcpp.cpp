@@ -44,6 +44,7 @@
 #include "hqliproj.hpp"
 #include "hqlgram.hpp"
 #include "hqlctrans.hpp"
+#include "hqlhoist.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -11240,6 +11241,120 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
+}
+
+
+//---------------------------------------------------------------------------
+
+static HqlTransformerInfo setResultCombinerInfo("SetResultCombiner");
+class SetResultCombiner : public ReverseGraphTransformer
+{
+public:
+    SetResultCombiner()
+        : ReverseGraphTransformer(setResultCombinerInfo, true)
+    {
+    }
+
+    virtual void analyseExpr(IHqlExpression * expr) override
+    {
+        switch (pass)
+        {
+        case 0:
+            analyseConditionalParents(expr);
+            break;
+        case 1:
+            spotCandidates(expr);
+            break;
+        }
+    }
+
+    void spotCandidates(IHqlExpression * expr)
+    {
+        ReverseGraphTransformInfo * extra = queryBodyExtra(expr);
+        if (alreadyVisited(extra))
+            return;
+
+        if (extra->hasSharedParent && expr->isDataset() && hasSingleRow(expr))
+        {
+            PointerArrayOf<ReverseGraphTransformInfo> parents;
+            unsigned numExtracts = 0;
+            extra->getAllParents(parents);
+            ForEachItemIn(i, parents)
+            {
+                ReverseGraphTransformInfo * parent = parents.item(i);
+                if (parent->original->getOperator() == no_extractresult)
+                    numExtracts++;
+            }
+
+            if (numExtracts >= 2)
+            {
+                bool primary = true;
+                ForEachItemIn(i, parents)
+                {
+                    ReverseGraphTransformInfo * parent = parents.item(i);
+                    if (parent->original->getOperator() == no_extractresult)
+                    {
+                        if (primary)
+                            parent->spareByte2 = 1;
+                        else
+                            parent->spareByte2 = 2;
+                        primary = false;
+                    }
+                }
+                hasCandidate = true;
+            }
+        }
+        return ReverseGraphTransformer::doAnalyseExpr(expr);
+    }
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr) override
+    {
+        ReverseGraphTransformInfo * extra = queryBodyExtra(expr);
+        if (extra->spareByte2 == 1)
+        {
+            ReverseGraphTransformInfo * child = queryBodyExtra(expr->queryChild(0));
+            PointerArrayOf<ReverseGraphTransformInfo> parents;
+            HqlExprArray actions;
+            child->getAllParents(parents);
+            ForEachItemIn(i, parents)
+            {
+                ReverseGraphTransformInfo * parent = parents.item(i);
+                if (parent->original->getOperator() == no_extractresult)
+                {
+                    HqlExprArray args;
+                    unwindChildren(args, parent->original, 1);
+                    OwnedHqlExpr setResult = createAction(no_setresult, args);
+                    actions.append(*setResult.getClear());
+                }
+            }
+
+            HqlExprArray args;
+            args.append(*LINK(expr->queryChild(0)));
+            args.append(*createAction(no_actionlist, actions));
+            return createAction(no_apply, args);
+        }
+        else if (extra->spareByte2 == 2)
+            return createNullExpr(expr);
+        return ReverseGraphTransformer::createTransformed(expr);
+    }
+
+public:
+    bool hasCandidate = false;
+};
+
+IHqlExpression * combineSetResults(IHqlExpression * expr)
+{
+    //Until thor has a way of calling a graph and returning a result we need to call this transformer, so that
+    //scalars that need to be evaluated in thor are correctly hoisted.
+    SetResultCombiner transformer;
+
+    transformer.analyse(expr, 0);
+    transformer.analyse(expr, 1);
+
+    if (transformer.hasCandidate)
+        return transformer.transformRoot(expr);
+
+    return LINK(expr);
 }
 
 //---------------------------------------------------------------------------

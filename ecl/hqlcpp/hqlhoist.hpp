@@ -63,23 +63,17 @@ public:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class ConditionalContextInfo : public ConditionalTransformInfo
+class ReverseGraphTransformInfo : public ConditionalTransformInfo
 {
 public:
-    ConditionalContextInfo(IHqlExpression * expr) : ConditionalTransformInfo(expr)
+    ReverseGraphTransformInfo(IHqlExpression * expr) : ConditionalTransformInfo(expr)
     {
         firstParent = NULL;
-        commonLocation = NULL;
-        moveTo = NULL;
-        firstAnnotatedExpr = NULL;
         seq = 0;
         hasSharedParent = false;
-        calcedCommonLocation = false;
-        isCandidateExpr = false;
-        createAlias = false;
     }
 
-    void addExtraParent(ConditionalContextInfo * nextParent, bool noteManyUnconditionalParents)
+    void addExtraParent(ReverseGraphTransformInfo * nextParent, bool noteManyUnconditionalParents)
     {
         hasSharedParent = true;
         //We only care about parents of conditional expressions
@@ -89,17 +83,67 @@ public:
         }
     }
 
-    void calcInheritedGuards();
-    bool isCandidateThatMoves() const;
     bool usedOnMultiplePaths() const;
+    void getAllParents(PointerArrayOf<ReverseGraphTransformInfo> & parents);
 
-    inline bool hasDefinitions() const { return definitions.ordinality() != 0; }
-    inline bool changesLocation() const { return moveTo != this; }
-    inline void setFirstParent(ConditionalContextInfo * parent) { firstParent = parent; }
+    inline void setFirstParent(ReverseGraphTransformInfo * parent) { firstParent = parent; }
 
 public:
     // use a pointer for the first match to avoid reallocation for unshared items
-    ConditionalContextInfo * firstParent;  // NULL for the root item
+    ReverseGraphTransformInfo * firstParent;  // NULL for the root item
+    // First annotated expression seen (if any)
+    IHqlExpression * firstAnnotatedExpr;
+    //If conditional, a list of all the other places it is used.
+    PointerArrayOf<ReverseGraphTransformInfo> extraParents;
+    //A sequence number use to ensure it is efficient to find a common parent
+    unsigned seq;
+    bool hasSharedParent;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class ReverseGraphTransformer : public ConditionalHqlTransformer
+{
+protected:
+    ReverseGraphTransformer(HqlTransformerInfo & info, bool _noteManyUnconditionalParents);
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+
+    void analyseConditionalParents(IHqlExpression * expr);
+    inline ReverseGraphTransformInfo * queryBodyExtra(IHqlExpression * expr) { return (ReverseGraphTransformInfo*)NewHqlTransformer::queryTransformExtra(expr->queryBody()); }
+
+protected:
+    ReverseGraphTransformInfo * activeParent = nullptr;
+    unsigned seq = 0;
+    bool noteManyUnconditionalParents;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class ConditionalContextInfo : public ReverseGraphTransformInfo
+{
+public:
+    ConditionalContextInfo(IHqlExpression * expr) : ReverseGraphTransformInfo(expr)
+    {
+        commonLocation = NULL;
+        moveTo = NULL;
+        firstAnnotatedExpr = NULL;
+        calcedCommonLocation = false;
+        isCandidateExpr = false;
+        createAlias = false;
+    }
+
+    void calcInheritedGuards();
+    bool isCandidateThatMoves() const;
+
+    inline bool hasDefinitions() const { return definitions.ordinality() != 0; }
+    inline bool changesLocation() const { return moveTo != this; }
+
+public:
+    bool calcedCommonLocation;
+    //Is this a candidate for evaluating in a single location with guards?
+    bool isCandidateExpr;
+    bool createAlias;
+
     // if this expression is conditional, then which expression contains all uses of it?
     ConditionalContextInfo * commonLocation;
     // where will the definition be moved to.  NULL if it will not be moved.
@@ -108,24 +152,16 @@ public:
     IHqlExpression * firstAnnotatedExpr;
     //Which guarded expressions need to be created at this point?
     HqlExprArray definitions;
-    //If conditional, a list of all the other places it is used.
-    PointerArrayOf<ConditionalContextInfo> extraParents;
     // guards for all expressions that this expression contains
     Owned<CHqlExprMultiGuard> guards;
     //All guards that need to be passed on the container/parent expressions [excludes definitions]
     Owned<CHqlExprMultiGuard> inheritedGuards;
     //A sequence number use to ensure it is efficient to find a common parent
-    unsigned seq;
-    bool hasSharedParent;
-    bool calcedCommonLocation;
-    //Is this a candidate for evaluating in a single location with guards?
-    bool isCandidateExpr;
-    bool createAlias;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class ConditionalContextTransformer : public ConditionalHqlTransformer
+class ConditionalContextTransformer : public ReverseGraphTransformer
 {
 public:
     enum { PassFindConditions,
@@ -145,13 +181,12 @@ public:
     void transformAll(HqlExprArray & exprs, bool forceRootFirst);
 
 protected:
-    virtual void transformCandidate(ConditionalContextInfo * candidate) = 0;
     ConditionalContextTransformer(HqlTransformerInfo & info, bool _alwaysEvaluateGuardedTogether);
+    virtual void transformCandidate(ConditionalContextInfo * candidate) = 0;
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
 
     bool hasUnconditionalCandidate() const;
 
-    void analyseConditionalParents(IHqlExpression * expr);
     void analyseGatherGuards(IHqlExpression * expr);
 
     ConditionalContextInfo * calcCommonLocation(ConditionalContextInfo * extra);
@@ -183,13 +218,10 @@ protected:
 
 protected:
     IArrayOf<ConditionalContextInfo> candidates;
-    ConditionalContextInfo * activeParent;
     OwnedHqlExpr rootExpr;
     CICopyArrayOf<CHqlExprMultiGuard> childGuards;
     ICopyArrayOf<ConditionalContextInfo> insertLocations;
-    unsigned seq;
     bool alwaysEvaluateGuardedTogether;
-    bool noteManyUnconditionalParents;
     bool hasConditionalCandidate;
     bool createRootGraph;
 };

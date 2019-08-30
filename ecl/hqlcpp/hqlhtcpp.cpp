@@ -9643,6 +9643,9 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     traceExpression("After ConvertSetResultToExtract", resourced);
     checkNormalized(resourced);
 
+    resourced.setown(combineSetResults(resourced));
+
+
     if (true)
         resourced.setown(optimizeCompoundSource(resourced, CSFpreload|csfFlags));
 

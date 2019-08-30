@@ -192,6 +192,65 @@ IHqlExpression * queryGuardCondition(CHqlExprMultiGuard * guards, IHqlExpression
 
 //---------------------------------------------------------------------------------------------------------------------
 
+bool ReverseGraphTransformInfo::usedOnMultiplePaths() const
+{
+    if (extraParents.ordinality() != 0)
+        return true;
+    if (firstParent)
+        return firstParent->usedOnMultiplePaths();
+    return false;
+}
+
+void ReverseGraphTransformInfo::getAllParents(PointerArrayOf<ReverseGraphTransformInfo> & parents)
+{
+    if (firstParent)
+        parents.append(firstParent);
+
+    ForEachItemIn(i, extraParents)
+        parents.append(extraParents.item(i));
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+
+ReverseGraphTransformer::ReverseGraphTransformer(HqlTransformerInfo & info, bool _noteManyUnconditionalParents)
+    : ConditionalHqlTransformer(info, CTFnoteor | CTFnoteand | CTFnotemap | CTFnoteifall), noteManyUnconditionalParents(_noteManyUnconditionalParents)
+{
+}
+
+
+ANewTransformInfo * ReverseGraphTransformer::createTransformInfo(IHqlExpression * expr)
+{
+    return CREATE_NEWTRANSFORMINFO(ReverseGraphTransformInfo, expr);
+}
+
+
+void ReverseGraphTransformer::analyseConditionalParents(IHqlExpression * expr)
+{
+    ReverseGraphTransformInfo * extra = queryBodyExtra(expr);
+    if (extra->seq)
+    {
+        extra->addExtraParent(activeParent, noteManyUnconditionalParents);
+        return;
+    }
+
+    if (!extra->firstAnnotatedExpr && (expr != expr->queryBody()))
+        extra->firstAnnotatedExpr = expr;
+
+    extra->setFirstParent(activeParent);
+    extra->seq = ++seq;
+
+    {
+        ReverseGraphTransformInfo * savedParent = activeParent;
+        activeParent = extra;
+        ConditionalHqlTransformer::analyseExpr(expr);
+        activeParent = savedParent;
+    }
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 void ConditionalContextInfo::calcInheritedGuards()
 {
     if (guards && definitions.ordinality() != 0)
@@ -222,28 +281,16 @@ bool ConditionalContextInfo::isCandidateThatMoves() const
     return true;
 }
 
-bool ConditionalContextInfo::usedOnMultiplePaths() const
-{
-    if (extraParents.ordinality() != 0)
-        return true;
-    if (firstParent)
-        return firstParent->usedOnMultiplePaths();
-    return false;
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 
 
 ConditionalContextTransformer::ConditionalContextTransformer(HqlTransformerInfo & info, bool _alwaysEvaluateGuardedTogether)
-: ConditionalHqlTransformer(info, CTFnoteor|CTFnoteand|CTFnotemap|CTFnoteifall),
-    alwaysEvaluateGuardedTogether(_alwaysEvaluateGuardedTogether)
+    : ReverseGraphTransformer(info, false), alwaysEvaluateGuardedTogether(_alwaysEvaluateGuardedTogether)
 {
-    seq = 0;
     hasConditionalCandidate = false;
     noteManyUnconditionalParents = false;//true;
     createRootGraph = false;
     rootExpr.setown(createValue(no_null, makeVoidType(), createAttribute(_root_Atom)));
-    activeParent = NULL;  // cannot call queryBodyExtra(rootExpr) since in constructor
 }
 
 
@@ -294,29 +341,6 @@ void ConditionalContextTransformer::noteCandidate(ConditionalContextInfo * extra
     candidates.append(*LINK(extra));
 }
 
-
-void ConditionalContextTransformer::analyseConditionalParents(IHqlExpression * expr)
-{
-    ConditionalContextInfo * extra = queryBodyExtra(expr);
-    if (extra->seq)
-    {
-        extra->addExtraParent(activeParent, noteManyUnconditionalParents);
-        return;
-    }
-
-    if (!extra->firstAnnotatedExpr && (expr != expr->queryBody()))
-        extra->firstAnnotatedExpr = expr;
-
-    extra->setFirstParent(activeParent);
-    extra->seq = ++seq;
-
-    {
-        ConditionalContextInfo * savedParent = activeParent;
-        activeParent = extra;
-        ConditionalHqlTransformer::analyseExpr(expr);
-        activeParent = savedParent;
-    }
-}
 
 // ---- pass 1b --------
 
@@ -429,12 +453,12 @@ ConditionalContextInfo * ConditionalContextTransformer::calcCommonLocation(Condi
     }
     else
     {
-        commonLocation = calcCommonLocation(extra->firstParent);
+        commonLocation = calcCommonLocation((ConditionalContextInfo *)extra->firstParent);
         if (extra->hasSharedParent)
         {
             ForEachItemIn(i, extra->extraParents)
             {
-                ConditionalContextInfo * curParent = extra->extraParents.item(i);
+                ConditionalContextInfo * curParent = (ConditionalContextInfo *)extra->extraParents.item(i);
                 ConditionalContextInfo * nextExtra = calcCommonLocation(curParent);
 
                 //MORE: What should be done if some expressions can be guarded, and others are marked as unmovable?
@@ -475,7 +499,7 @@ ConditionalContextInfo * ConditionalContextTransformer::selectParent(Conditional
 {
     if (info->hasSharedParent)
         return calcCommonLocation(info);
-    return info->firstParent;
+    return (ConditionalContextInfo *)info->firstParent;
 }
 
 ConditionalContextInfo * ConditionalContextTransformer::findCommonPath(ConditionalContextInfo * left, ConditionalContextInfo * right)

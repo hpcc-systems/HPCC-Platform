@@ -1305,5 +1305,6 @@ bool reportSemanticErrors(IHqlExpression * expr, IErrorReceiver & errors);
 IHqlExpression *getEmbedOptionString(IHqlExpression *embedBody);
 
 //------------------------------------------------------------------------
+IHqlExpression * combineSetResults(IHqlExpression * expr);
 
 #endif
