@@ -21,6 +21,7 @@ GENERATE_BASH(processor ${bash-vars} "install-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_common.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "uninstall-init.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "setupPKI.in" outFiles)
 
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
 FOREACH( oFILES
@@ -32,6 +33,8 @@ FOREACH( oFILES
 )
     install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )
+
+install(CODE "execute_process (COMMAND bash -c \"${CMAKE_CURRENT_BINARY_DIR}/setupPKI\")" COMPONENT Runtime)
 
 if ( PLATFORM )
     install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
