@@ -44,6 +44,7 @@
 #include "hqliproj.hpp"
 #include "hqlgram.hpp"
 #include "hqlctrans.hpp"
+#include "hqlhoist.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -11240,6 +11241,131 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
+}
+
+
+//---------------------------------------------------------------------------
+
+static HqlTransformerInfo setResultCombinerInfo("SetResultCombiner");
+class SetResultCombiner : public NewHqlTransformer
+{
+public:
+    SetResultCombiner() : NewHqlTransformer(setResultCombinerInfo)
+    {
+    }
+
+    inline bool isCandidateExtract(IHqlExpression * original)
+    {
+        if (original->getOperator() == no_extractresult)
+        {
+            IHqlExpression * value = original->queryChild(1);
+            if (value->getOperator() == no_select)
+            {
+                if (!isNewSelector(value))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr) override
+    {
+        if (expr->isAnnotation())
+        {
+            OwnedHqlExpr body = transform(expr->queryBody(false));
+            return expr->cloneAllAnnotations(body);
+        }
+
+        node_operator op = expr->getOperator();
+        switch (op)
+        {
+        case no_actionlist:
+        case no_orderedactionlist:
+        case no_parallel:
+            {
+                HqlExprArray args;
+                bool same = transformChildren(expr, args);
+                if (combineSetResults(args, (op == no_parallel)))
+                    same = false;
+                if (same)
+                    return LINK(expr);
+                return expr->clone(args);
+            }
+        }
+
+        return NewHqlTransformer::createTransformed(expr);
+    }
+
+    IHqlExpression * convertToSetResult(IHqlExpression * extractResult)
+    {
+        HqlExprArray args;
+        unwindChildren(args, extractResult, 1);
+        OwnedHqlExpr setResult = createAction(no_setresult, args);
+        return setResult.getClear();
+    }
+
+    bool combineSetResults(HqlExprArray & exprs, bool okToReorder)
+    {
+        bool combined = false;
+        for (unsigned i=0; i<exprs.ordinality(); i++)
+        {
+            IHqlExpression & next = exprs.item(i);
+            if (isCandidateExtract(&next))
+            {
+                HqlExprArray actions;
+                IHqlExpression * ds = next.queryChild(0);
+
+                bool otherCandidates = false;
+                for (unsigned j=i+1; j < exprs.ordinality();)
+                {
+                    IHqlExpression & cur = exprs.item(j);
+                    bool matched = false;
+                    if (isCandidateExtract(&cur))
+                    {
+                        if (cur.queryChild(0) == ds)
+                        {
+                            actions.append(*convertToSetResult(&cur));
+                            exprs.remove(j);
+                            matched = true;
+                        }
+                        else
+                            otherCandidates = true;
+                    }
+
+                    if (!matched)
+                    {
+                        if (!okToReorder)
+                            break;
+                        else
+                            j++;
+                    }
+                }
+
+                if (actions.ordinality())
+                {
+                    actions.add(*convertToSetResult(&next), 0);
+
+                    HqlExprArray args;
+                    args.append(*LINK(ds));
+                    args.append(*createAction(no_actionlist, actions));
+                    exprs.replace(*createAction(no_apply, args), i);
+
+                    if (okToReorder && !otherCandidates)
+                        return true;
+                    combined = true;
+                }
+            }
+        }
+        return combined;
+    }
+};
+
+IHqlExpression * combineSetResults(IHqlExpression * expr)
+{
+    //Until thor has a way of calling a graph and returning a result we need to call this transformer, so that
+    //scalars that need to be evaluated in thor are correctly hoisted.
+    SetResultCombiner transformer;
+    return transformer.transformRoot(expr);
 }
 
 //---------------------------------------------------------------------------

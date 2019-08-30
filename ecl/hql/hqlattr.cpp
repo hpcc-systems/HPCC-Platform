@@ -2604,6 +2604,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_dataset_alias:
     case no_nocombine:
     case no_unordered:
+    case no_pure:
         {
             return getRecordCountInfo(ds);
         }
@@ -3012,6 +3013,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_delayedselect:
     case no_unboundselect:
     case no_internalselect:
+    case no_purevirtual:
         info.setUnknown(RCMdisk);
         break;
     case no_parse:
