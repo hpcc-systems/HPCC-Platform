@@ -22,6 +22,7 @@ GENERATE_BASH(processor ${bash-vars} "hpcc-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc_common.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "uninstall-init.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "setupPKI.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "sign_config.json" outFiles)
 
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bash-etc-init.d ALL DEPENDS ${outFiles})
 FOREACH( oFILES

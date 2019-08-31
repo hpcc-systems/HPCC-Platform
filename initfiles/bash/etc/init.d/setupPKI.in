@@ -43,14 +43,18 @@ else
 fi
 
 if [ ! -e ${homePath}/certificate/certificate.pem ]; then
-    openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
-        -days 365 -out ${homePath}/certificate/certificate.pem \
-        -batch 1>/dev/null 2>&1
+    #openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
+    #    -days 365 -out ${homePath}/certificate/certificate.pem \
+    #    -batch 1>/dev/null 2>&1
+    openssl req -new -key ${homePath}/certificate/key.pem -out ${homePath}/certificate/csr.pem
+    cfssl sign -config ${INSTALL_DIR}/etc/init.d/sign_config.json ${homePath}/certificate/csr.pem | cfssljson -bare ${homePath}/certificate/certificate
     printf "Self Signed Certificate installed for user %-12s ..." "$user"
     log_success_msg
 else
     printf "Self Signed Certificate already installed for %-9s ..." "$user"
     log_success_msg
 fi
+
+echo ${CA_ADDR} > /tmp/caaddr.txt
 
 exit 0
