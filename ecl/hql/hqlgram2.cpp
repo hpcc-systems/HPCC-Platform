@@ -2643,6 +2643,40 @@ void HqlGram::checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpressi
     }
 }
 
+void HqlGram::checkAlienType(const attribute &errpos, IHqlAlienTypeInfo * alien)
+{
+    IHqlExpression * store = alien->queryStoreFunction();
+    assertex(store->isFunction());
+    ITypeInfo * type = store->queryType()->queryChildType();
+    if (!isUnknownSize(type))
+        return;
+
+    IHqlExpression * size = alien->queryLengthFunction();
+    if (size->isConstant())
+        return;
+
+    if (size->getOperator() == no_funcdef)
+        size = size->queryChild(0);
+    size = queryStripCasts(size);
+    if (size->getOperator() == no_select)
+    {
+        if (size->queryChild(0)->getOperator() == no_selfref)
+        {
+            IHqlExpression & topRecord = activeRecords.tos();
+            if (topRecord.numChildren())
+            {
+                IHqlExpression * lastField = topRecord.queryChild(topRecord.numChildren()-1);
+                if (lastField == size->queryChild(1))
+                {
+                    if (lastField->queryType()->getSize() == 4)
+                        reportWarning(CategoryDeprecated, HQLERR_AlienUseData, errpos.pos, HQLERR_AlienUseData_Text);
+                    return;
+                }
+            }
+        }
+    }
+}
+
 /* In parms: type, value: linked */
 void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression * _value, IHqlExpression *attrs)
 {
@@ -2652,6 +2686,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     if (expectedType->getTypeCode() == type_alien)
     {
         IHqlAlienTypeInfo * alien = queryAlienType(fieldType);
+        checkAlienType(errpos, alien);
         expectedType.setown(alien->getLogicalType());
     }
 
