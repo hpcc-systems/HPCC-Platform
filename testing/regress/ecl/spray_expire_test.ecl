@@ -18,6 +18,8 @@
 //nohthor
 
 //class=spray
+//class=copy
+//class=dfuplus
 
 import Std.File AS FileServices;
 import $.setup;
@@ -126,6 +128,17 @@ expireDaysOut5 := 17;
 expireDaysIn5 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res5:=if(expireDaysIn5 = intformat(expireDaysOut5,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut5,2,0)+','+expireDaysIn5+')');
 
+CopyDestFile := prefix + 'copy_expire.txt';
+expireDaysOut6 := 19;
+expireDaysIn6 := FileServices.GetLogicalFileAttribute(CopyDestFile, 'expireDays');
+res6:=if(expireDaysIn6 = intformat(expireDaysOut6,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut6,2,0)+','+expireDaysIn6+')');
+
+RemotePullDestFile := prefix + 'remote_pull_expire.txt';
+expireDaysOut7 := 23;
+expireDaysIn7 := FileServices.GetLogicalFileAttribute(RemotePullDestFile, 'expireDays');
+res7:=if(expireDaysIn7 = intformat(expireDaysOut7,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut7,2,0)+','+expireDaysIn7+')');
+
+
 sequential (
     //output(dropzonePath, NAMED('dropzonePath')),
     // Preparation
@@ -185,7 +198,7 @@ sequential (
                             SOURCEIP := '.',
                             SOURCEPATH := desprayOutFileName+'_CSV',
                             RECORDSIZE := 9,
-                            DESTINATIONGROUP := 'mythor',
+                            DESTINATIONGROUP := ClusterName,
                             DESTINATIONLOGICALNAME := DestFile,
                             TIMEOUT := -1,
                             ESPSERVERIPPORT := ESPportIP,
@@ -208,12 +221,38 @@ sequential (
     FileServices.DfuPlusExec('action=spray srcip=. srcfile='+desprayOutFileName+'_CSV dstname='+DestFile+' jobname=spray_expire_csv server=. dstcluster=mythor format=csv overwrite=1 replicate=0 expireDays='+intformat(expireDaysOut5,2,0)),
     output(res5,NAMED('DFUPlus')),
 
+    FileServices.Copy(
+                            sourceLogicalName := sprayPrepFileName+'_CSV',
+                            destinationGroup := ClusterName,
+                            destinationLogicalName := CopyDestFile,
+                            sourceDali := '.',
+                            timeOut := -1,
+                            espServerIpPort := ESPportIP,
+                            ALLOWOVERWRITE := true,
+                            expireDays := expireDaysOut6
+                            );
+    output(res6,NAMED('Copy')),
+    
+    FileServices.RemotePull(
+                             remoteEspFsURL := ESPportIP,
+                             sourceLogicalName := sprayPrepFileName+'_CSV',
+                             destinationGroup := ClusterName,
+                             destinationLogicalName := RemotePullDestFile,
+                             TIMEOUT := -1,
+                             ALLOWOVERWRITE := true,
+                             expireDays := expireDaysOut7
+                             );
+     output(res7,NAMED('RemotePull')),
 
     // Clean-up
     FileServices.DeleteExternalFile('.', desprayOutFileName+'_CSV'),
     FileServices.DeleteExternalFile('.', desprayOutFileName+'_XML'),
+    
     FileServices.DeleteLogicalFile(DestFile),
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_CSV'),
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_XML'),
+    
+    FileServices.DeleteLogicalFile(CopyDestFile),
+    FileServices.DeleteLogicalFile(RemotePullDestFile),
 );
 

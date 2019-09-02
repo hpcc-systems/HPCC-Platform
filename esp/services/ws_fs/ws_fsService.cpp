@@ -2561,6 +2561,9 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (!req.getExpireDays_isNull())
             wuOptions->setExpireDays(req.getExpireDays());
 
+        if(req.getNosplit())
+            wuOptions->setNoSplit(true);
+
         if (bRoxie)
         {
             setRoxieClusterPartDiskMapping(destNodeGroup.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
@@ -2605,6 +2608,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 wuOptions->setPush(true);
             if (req.getIfnewer())
                 wuOptions->setIfNewer(true);
+            if (req.getNosplit())
+                wuOptions->setNoSplit(true);
 
             ClusterPartDiskMapSpec mspec;
             wuFSpecDest->getClusterPartDiskMapSpec(destNodeGroup.str(), mspec);
