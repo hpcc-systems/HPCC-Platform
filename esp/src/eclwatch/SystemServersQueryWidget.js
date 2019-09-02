@@ -71,7 +71,6 @@ define([
                 });
                 pfTab.init(topic.response, "machines");
             });
-
         },
 
         initTab: function () {
@@ -99,6 +98,37 @@ define([
                 newPreflight: true
             });
             this.selectChild(nodeTab);
+        },
+
+        _onAdditionalInformation: function (arr) {
+            var context = this;
+            var headings = [this.i18n.ServiceName, this.i18n.ServiceType, this.i18n.Protocol, this.i18n.Port];
+            var rows = [];
+
+            arrayUtil.forEach(arr, function(row){
+                rows.push({
+                    "ServiceName": row.Name,
+                    "ServiceType": row.ServiceType,
+                    "Protocol": row.Protocol,
+                    "Port": row.Port
+                });
+            });
+
+            this.dialog = new Dialog({
+                title: this.i18n.ESPBindings,
+                style: "width: 600px; height: relative;"
+            });
+
+            var table = Utility.DynamicDialogTable(headings, rows);
+
+            this.dialog.set("content", table);
+            this.dialog.show();
+            this.dialog.on("cancel", function () {
+                context.dialog.destroyRecursive();
+            });
+            this.dialog.on("hide", function () {
+                context.dialog.destroyRecursive();
+            });
         },
 
         postCreate: function (args) {
@@ -142,7 +172,7 @@ define([
                         width: 20,
                         selectorType: 'checkbox',
                         disabled: function (item) {
-                            return !item;
+                            return !item.Configuration;
                         },
                     }),
                     Configuration: {
@@ -162,15 +192,11 @@ define([
                     },
                     Informational: {
                         label: this.i18n.Informational,
-                        width: 40,
-                        renderHeaderCell: function (node) {
-                            domClass.add(node, "centerInCell");
-                            node.innerHTML = Utility.getImageHTML("information.png", context.i18n.Informational);
-                        },
+                        width: 60,
                         renderCell: function (object, value, node, options) {
-                            if (object.Informational === "SparkThorProcess") {
+                            if (object.Informational) {
                                 domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>"
+                                node.innerHTML = "<a href='#' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>"
                             }
                         }
                     },
@@ -185,7 +211,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.AuditLog) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' />" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>"
+                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>"
                                     }
                                 },
                             },
@@ -196,7 +222,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.Log) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' />" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>"
+                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>"
                                     }
                                 }
                             }
@@ -274,13 +300,18 @@ define([
                 }
             });
 
-            retVal.on(".dgrid-cell img:click", function (evt) {
+            retVal.on(".dgrid-cell .gridClick:click", function (evt) {
                 var item = retVal.row(evt).data;
                 if (evt.target.title === "Audit Log" || evt.target.title === "Component Log") {
                     context._onOpenLog(item)
                 } else {
                     context._onOpenConfiguration(item);
                 }
+            });
+
+            retVal.on(".dgrid-cell .additionalSystemServersDialog:click", function (evt){
+                var item = retVal.row(evt).data;
+                context._onAdditionalInformation(item.Parent.TpBindings.TpBinding);
             });
 
             retVal.on(".dgrid-cell:click", function(evt){

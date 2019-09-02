@@ -25,7 +25,8 @@ var SystemServersStore = declare([ESPRequest.Store], {
         lang.mixin(row, {
             Name: row.parent,
             childName: row.Name,
-            hpcc_id: row.parent + "_" + row.Name
+            hpcc_id: row.parent + "_" + row.Name,
+            Configuration: false
         });
     },
 
@@ -34,7 +35,7 @@ var SystemServersStore = declare([ESPRequest.Store], {
         for (var key in response.ServiceList) {
             for (var i in response.ServiceList[key]) {
                 if (key !== "TpEclServers") {
-                    response.ServiceList[key][i].map(function(item){
+                    response.ServiceList[key][i].map(function(item) {
                         var cleanKey = key.replace('Tp', '');
                         results.push(item);
                         lang.mixin(item, {
@@ -84,8 +85,9 @@ var SystemServersStore = declare([ESPRequest.Store], {
                 AuditLog: parent.AuditLogDirectory,
                 Log: parent.LogDirectory,
                 ChildQueue: parent.Queue,
-                Informational: item.Type,
-                Component: "SystemServers"
+                Informational: item.Type === "SparkThorProcess" || item.Type === "EspProcess",
+                Component: "SystemServers",
+                Configuration: true
             });
         });
         return QueryResults(children);
