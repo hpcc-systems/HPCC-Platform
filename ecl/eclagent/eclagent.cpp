@@ -3460,6 +3460,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
+    Owned<IConnectionMonitor> daliDownMonitor;
     try
     {
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3472,8 +3473,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             standAloneWorkUnit.setown(createLocalWorkUnit(wuXML->str()));
             wuXML->kill();  // free up text as soon as possible.
         }
-
-        Owned<IConnectionMonitor> daliDownMonitor;
 
         Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers.length())
@@ -3499,8 +3498,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 }
                 ~CDaliDownMonitor()
                 {
-                    removeMPConnectionMonitor(this);
-                    sem.signal();
+                    sem.signal(); // Just in case Dali is shutting down at the same time this process is quitting
                 }
                 virtual void onClose(SocketEndpoint &ep)
                 {
@@ -3679,6 +3677,12 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         EXCLOG(e, "EclAgent");
         e->Release();
+    }
+
+    if (daliDownMonitor)
+    {
+        removeMPConnectionMonitor(daliDownMonitor);
+        daliDownMonitor.clear();
     }
 
     setDaliServixSocketCaching(false);
