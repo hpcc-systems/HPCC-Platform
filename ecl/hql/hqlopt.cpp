@@ -911,7 +911,12 @@ static bool branchesMatch(unsigned options, IHqlExpression * left, IHqlExpressio
     return true;
 }
 
-static IHqlExpression * queryReduntantTransformSource(IHqlExpression * expr, IHqlExpression * record)
+
+/*
+ * Check if the expr is a transform that effectively says SELF := row, where row has the same format as
+ * the target dataset.  If so return row, else return nullptr
+ */
+static IHqlExpression * queryRedundantTransformSource(IHqlExpression * expr, IHqlExpression * record)
 {
     IHqlExpression * result = nullptr;
     ForEachChild(i, expr)
@@ -923,7 +928,7 @@ static IHqlExpression * queryReduntantTransformSource(IHqlExpression * expr, IHq
         case no_skip:
             throwUnexpected();
         case no_assignall:
-            match = queryReduntantTransformSource(cur, record);
+            match = queryRedundantTransformSource(cur, record);
             break;
         case no_assign:
             {
@@ -961,7 +966,7 @@ IHqlExpression * CTreeOptimizer::optimizeCreateRow(IHqlExpression * expr)
     IHqlExpression * transform = expr->queryChild(0);
     if (transformContainsSkip(transform))
         return nullptr;
-    return queryReduntantTransformSource(transform, expr->queryRecord());
+    return queryRedundantTransformSource(transform, expr->queryRecord());
 }
 
 IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
