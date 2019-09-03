@@ -68,8 +68,8 @@ typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
 interface IRowReader : extends IInterface
 {
 public:
-    virtual IRawRowStream * queryRawRowStream() = 0;
-    virtual IAllocRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) = 0;
+    // get the interface for reading streams of row.  outputAllocator can be null if allocating next is not used.
+    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) = 0;
 };
 
 interface ITranslator;

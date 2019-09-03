@@ -10636,8 +10636,8 @@ CHThorNewDiskReadBaseActivity::InputFileInfo * CHThorNewDiskReadBaseActivity::ex
         const char *kind = queryFileKind(distributedFile);
         //Do not use the field translation if the file was originally csv/xml - unless explicitly set
         if ((strisame(kind, "flat") || (RecordTranslationMode::AlwaysDisk == getLayoutTranslationMode())) &&
-//            (strisame(readFormat, "thor") || strisame(kind, readFormat)))
-              (strisame(readFormat, "thor"))) // Not sure about this - only allow fixed source format if reading as flat
+//            (strisame(readFormat, "flat") || strisame(kind, readFormat)))
+              (strisame(readFormat, "flat"))) // Not sure about this - only allow fixed source format if reading as flat
         {
             //Yuk this will be horrible - it needs to cache it for each distributed file
             //and also common them up if they are the same.
@@ -10811,10 +10811,7 @@ bool CHThorNewDiskReadBaseActivity::openNextPart(bool prevWasMissing)
 void CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const char * filename)
 {
     activeReader = reader;
-    if (useRawStream)
-        rawRowStream = reader->queryRawRowStream();
-    else
-        roxieRowStream = reader->queryAllocatedRowStream(rowAllocator);
+    inputRowStream = reader->queryAllocatedRowStream(rowAllocator);
 
     StringBuffer report("Reading file ");
     report.append(filename);
@@ -10823,10 +10820,7 @@ void CHThorNewDiskReadBaseActivity::initStream(IDiskRowReader * reader, const ch
 
 void CHThorNewDiskReadBaseActivity::setEmptyStream()
 {
-    if (useRawStream)
-        rawRowStream = queryNullRawRowStream();
-    else
-        roxieRowStream = queryNullAllocatedRowStream();
+    inputRowStream = queryNullDiskRowStream();
     finishedParts = true;
 }
 
@@ -11067,13 +11061,13 @@ const void *CHThorNewDiskReadActivity::nextRow()
 
     try
     {
-        if (rawRowStream)
+        if (useRawStream)
         {
             for (;;)
             {
                 //Returns a row in the serialized form of the projected format
                 size32_t nextSize;
-                const byte * next = (const byte *)rawRowStream->nextRow(nextSize);
+                const byte * next = (const byte *)inputRowStream->nextRow(nextSize);
                 if (!isSpecialRow(next))
                 {
                     size32_t thisSize = 0;
@@ -11126,7 +11120,7 @@ const void *CHThorNewDiskReadActivity::nextRow()
             //whether there was a limit, a transform etc., but unlikely to save more than a couple of boolean tests.
             for (;;)
             {
-                const byte * next = (const byte *)roxieRowStream->nextRow();
+                const byte * next = (const byte *)inputRowStream->nextRow();
                 if (!isSpecialRow(next))
                 {
                     if (unlikely((processed - initialProcessed) >= limit))

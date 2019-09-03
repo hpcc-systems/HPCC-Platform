@@ -2938,8 +2938,7 @@ protected:
     IHThorCompoundBaseArg & segHelper;
     IDiskRowReader * activeReader = nullptr;
     IArrayOf<IDiskRowReader> readers;
-    IRawRowStream * rawRowStream = nullptr;
-    IAllocRowStream * roxieRowStream = nullptr;
+    IDiskRowStream * inputRowStream = nullptr;
     StringBuffer mangledHelperFileName;
     StringAttr tempFileName;
     const char * logicalFileName = "";

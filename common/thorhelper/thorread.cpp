@@ -37,6 +37,9 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
+/*
+ * A class that implements IDiskReadMapping - which provides all the information representing a translation from actual->expected->projected.
+ */
 //It might be sensible to have result structure which is (mode, expected, projected) shared by all actual->result mappings
 class DiskReadMapping : public CInterfaceOf<IDiskReadMapping>
 {
@@ -85,7 +88,7 @@ protected:
 
 protected:
     RecordTranslationMode mode;
-    mutable bool checkedTranslators = false;
+    mutable std::atomic<bool> checkedTranslators = { false };
     StringAttr format;
     unsigned actualCrc;
     unsigned expectedCrc;
@@ -96,17 +99,18 @@ protected:
     Linked<const IPropertyTree> options;
     mutable Owned<const IDynamicTransform> translator;
     mutable Owned<const IKeyTranslator> keyedTranslator;
+    mutable SpinLock translatorLock; // use a spin lock since almost certainly not going to contend
 };
 
-static CriticalSection translatorCS;
 void DiskReadMapping::ensureTranslators() const
 {
-    const char * filename = ""; // not known at this point
-    CriticalBlock block(translatorCS);
-    if (checkedTranslators)
+    if (checkedTranslators.load())
+        return;
+    SpinBlock block(translatorLock);
+    if (checkedTranslators.load())
         return;
 
-    checkedTranslators = true;
+    const char * filename = ""; // not known at this point
     IOutputMetaData * sourceMeta = expectedMeta;
     unsigned sourceCrc = expectedCrc;
     if (mode != RecordTranslationMode::AlwaysECL)
@@ -141,6 +145,9 @@ void DiskReadMapping::ensureTranslators() const
 
     if (translator)
     {
+        DBGLOG("Record layout translator created for %s", filename);
+        translator->describe();
+
         if (!translator->canTranslate())
             throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", filename);
 
@@ -157,6 +164,8 @@ void DiskReadMapping::ensureTranslators() const
         else
             translator.clear();
     }
+
+    checkedTranslators = true;
 }
 
 THORHELPER_API IDiskReadMapping * createDiskReadMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * options)
@@ -176,14 +185,17 @@ THORHELPER_API IDiskReadMapping * createUnprojectedMapping(IDiskReadMapping * ma
 
 constexpr size32_t defaultReadBufferSize = 0x10000;
 
-class DiskRowReader : extends CInterfaceOf<IAllocRowStream>, implements IRawRowStream, implements IDiskRowReader, implements IThorDiskCallback
+/*
+ * The base class for reading rows from an external file.  Each activity will have an instance of a disk reader for
+ * each actual file format.
+ */
+class DiskRowReader : extends CInterfaceOf<IDiskRowStream>, implements IDiskRowReader, implements IThorDiskCallback
 {
 public:
     DiskRowReader(IDiskReadMapping * _mapping);
-    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IAllocRowStream>)
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IDiskRowStream>)
 
-    virtual IRawRowStream * queryRawRowStream() override;
-    virtual IAllocRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) override;
+    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator) override;
 
     virtual bool getCursor(MemoryBuffer & cursor) override;
     virtual void setCursor(MemoryBuffer & cursor) override;
@@ -242,12 +254,7 @@ DiskRowReader::DiskRowReader(IDiskReadMapping * _mapping)
     readBufferSize = options->getPropInt("readBufferSize", defaultReadBufferSize);
 }
 
-IRawRowStream * DiskRowReader::queryRawRowStream()
-{
-    return this;
-}
-
-IAllocRowStream * DiskRowReader::queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
+IDiskRowStream * DiskRowReader::queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
 {
     outputAllocator.set(_outputAllocator);
     allocatedBuilder.setAllocator(_outputAllocator);
@@ -322,6 +329,9 @@ offset_t DiskRowReader::getLocalOffset()
 
 //---------------------------------------------------------------------------------------------------------------------
 
+/*
+ * base class for reading a local file (or a remote file via the block based IFile interface)
+ */
 class LocalDiskRowReader : public DiskRowReader
 {
 public:
@@ -458,6 +468,9 @@ bool LocalDiskRowReader::setInputFile(const RemoteFilename & filename, const cha
 
 //---------------------------------------------------------------------------------------------------------------------
 
+/*
+ * base class for reading a binary local file
+ */
 class BinaryDiskRowReader : public LocalDiskRowReader
 {
 public:
@@ -465,6 +478,7 @@ public:
 
     virtual const void *nextRow() override;
     virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void * nextRow(MemoryBufferBuilder & builder) override;
     virtual bool getCursor(MemoryBuffer & cursor) override;
     virtual void setCursor(MemoryBuffer & cursor) override;
     virtual void stop() override;
@@ -492,6 +506,10 @@ protected:
 
     size32_t getFixedDiskRecordSize();
 
+private:
+    template <class PROCESS>
+    inline const void * inlineNextRow(PROCESS processor) __attribute((always_inline));
+
 protected:
     ISourceRowPrefetcher * actualRowPrefetcher = nullptr;
     const RtlRecord  * actualRecord = nullptr;
@@ -518,7 +536,7 @@ void BinaryDiskRowReader::clearInput()
 
 bool BinaryDiskRowReader::matches(const char * format, bool streamRemote, IDiskReadMapping * otherMapping)
 {
-    if (!strieq(format, "thor") && !strieq(format, "flat"))
+    if (!strieq(format, "flat"))
         return false;
     return LocalDiskRowReader::matches(format, streamRemote, otherMapping);
 }
@@ -545,123 +563,113 @@ bool BinaryDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalF
     return true;
 }
 
-//Implementation of IAllocRowStream
+template <class PROCESS>
+const void *BinaryDiskRowReader::inlineNextRow(PROCESS processor)
+{
+    for (;;)
+    {
+        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
+        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
+        //Multiple eogs should also be harmless if the engines switch to this representation.
+        if (eogPending)
+        {
+            eogPending = false;
+            return eogRow;
+        }
+
+        inputBuffer.finishedRow();
+        if (inputBuffer.eos())
+            return eofRow;
+
+        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
+        //Is there a better way storing this (and combining it with the eog markers)?
+        if (stranded)
+        {
+            bool eosPending;
+            inputBuffer.read(eosPending);
+            if (eosPending)
+                return eosRow;
+
+            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
+            inputBuffer.finishedRow();
+            if (inputBuffer.eos())
+                return eofRow;
+        }
+
+        actualRowPrefetcher->readAhead(inputBuffer);
+        size32_t sizeRead = inputBuffer.queryRowSize();
+        if (grouped)
+            inputBuffer.read(eogPending);
+        const byte * next = inputBuffer.queryRow();
+
+        if (likely(fieldFilterMatch(next))) // NOTE - keyed fields are checked pre-translation
+            return processor(sizeRead, next);
+    }
+}
+
+
+//Implementation of IAllocRowStream, return a row allocated with roxiemem
 const void *BinaryDiskRowReader::nextRow()
 {
-    for (;;)
-    {
-        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
-        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
-        //Multiple eogs should also be harmless if the engines switch to this representation.
-        if (eogPending)
+    return inlineNextRow([this](size32_t sizeRead, const byte * next){
+        if (needToTranslate)
         {
-            eogPending = false;
-            return eogRow;
+            size32_t size = translator->translate(allocatedBuilder.ensureRow(), *this, next);
+            return allocatedBuilder.finalizeRowClear(size);
         }
-
-        inputBuffer.finishedRow();
-        if (inputBuffer.eos())
-            return eofRow;
-
-        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
-        //Is there a better way storing this (and combining it with the eog markers)?
-        if (stranded)
+        else
         {
-            bool eosPending;
-            inputBuffer.read(eosPending);
-            if (eosPending)
-                return eosRow;
-
-            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
-            inputBuffer.finishedRow();
-            if (inputBuffer.eos())
-                return eofRow;
+            size32_t allocatedSize;
+            void * result = outputAllocator->createRow(sizeRead, allocatedSize);
+            memcpy(result, next, sizeRead);
+            return (const void *)outputAllocator->finalizeRow(sizeRead, result, allocatedSize);
         }
-
-        actualRowPrefetcher->readAhead(inputBuffer);
-        size32_t sizeRead = inputBuffer.queryRowSize();
-        if (grouped)
-            inputBuffer.read(eogPending);
-        const byte * next = inputBuffer.queryRow();
-
-        if (likely(fieldFilterMatch(next))) // NOTE - keyed fields are checked pre-translation
-        {
-            if (needToTranslate)
-            {
-                size32_t size = translator->translate(allocatedBuilder.ensureRow(), *this, next);
-                return allocatedBuilder.finalizeRowClear(size);
-            }
-            else
-            {
-                size32_t allocatedSize;
-                void * result = outputAllocator->createRow(sizeRead, allocatedSize);
-                memcpy(result, next, sizeRead);
-                return outputAllocator->finalizeRow(sizeRead, result, allocatedSize);
-            }
-        }
-    }
+    });
 }
 
 
-//Implementation of IRawRowStream
+//Similar to above, except the code at the end will translate to a local buffer or return the pointer
 const void *BinaryDiskRowReader::nextRow(size32_t & resultSize)
 {
-    //Similar to above, except the code at the end will translate to a local buffer or return the pointer
-    for (;;)
-    {
-        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
-        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
-        //Multiple eogs should also be harmless if the engines switch to this representation.
-        if (eogPending)
+    return inlineNextRow([this,&resultSize](size32_t sizeRead, const byte * next){
+        if (needToTranslate)
         {
-            eogPending = false;
-            return eogRow;
+            //MORE: optimize the case where fields are lost off the end, and not bother translating - but return the modified size.
+            tempOutputBuffer.clear();
+            resultSize = translator->translate(bufferBuilder, *this, next);
+            const void * ret = bufferBuilder.getSelf();
+            bufferBuilder.finishRow(resultSize);
+            return ret;
         }
-
-        inputBuffer.finishedRow();
-        if (inputBuffer.eos())
-            return eofRow;
-
-        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
-        //Is there a better way storing this (and combining it with the eog markers)?
-        if (stranded)
+        else
         {
-            bool eosPending;
-            inputBuffer.read(eosPending);
-            if (eosPending)
-                return eosRow;
-
-            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
-            inputBuffer.finishedRow();
-            if (inputBuffer.eos())
-                return eofRow;
+            resultSize = sizeRead;
+            return (const void *)next;
         }
-
-        actualRowPrefetcher->readAhead(inputBuffer);
-        size32_t sizeRead = inputBuffer.queryRowSize();
-        if (grouped)
-            inputBuffer.read(eogPending);
-        const byte * next = inputBuffer.queryRow();
-
-        if (likely(fieldFilterMatch(next))) // NOTE - keyed fields are checked pre-translation
-        {
-            if (needToTranslate)
-            {
-                //MORE: optimize the case where fields are lost off the end, and not bother translating - but return the modified size.
-                tempOutputBuffer.clear();
-                resultSize = translator->translate(bufferBuilder, *this, next);
-                const void * ret = bufferBuilder.getSelf();
-                bufferBuilder.finishRow(resultSize);
-                return ret;
-            }
-            else
-            {
-                resultSize = sizeRead;
-                return next;
-            }
-        }
-    }
+    });
 }
+
+//return a row allocated within a MemoryBufferBuilder
+const void *BinaryDiskRowReader::nextRow(MemoryBufferBuilder & builder)
+{
+    return inlineNextRow([this,&builder](size32_t sizeRead, const byte * next){
+        //MORE: optimize the case where fields are lost off the end, and not bother translating - but return the modified size.
+        if (needToTranslate)
+        {
+            size32_t resultSize = translator->translate(builder, *this, next);
+            const void * ret = builder.getSelf();
+            builder.finishRow(resultSize);
+            return ret;
+        }
+        else
+        {
+            builder.appendBytes(sizeRead, next);
+            return (const void *)(builder.getSelf() - sizeRead);
+        }
+    });
+}
+
+
 
 
 //Common to IAllocRowStream and IRawRowStream
@@ -703,6 +711,10 @@ size32_t BinaryDiskRowReader::getFixedDiskRecordSize()
 
 //---------------------------------------------------------------------------------------------------------------------
 
+/*
+ * base class for reading a non-binary local file that uses IDynamicFieldValueFetcher to extract the values from
+ * the input data file.
+ */
 class ExternalFormatDiskRowReader : public LocalDiskRowReader
 {
 public:
@@ -765,10 +777,14 @@ public:
     {
         throwUnexpected();
     }
-} nullNestedRowIterator;
+};
+static CNullNestedRowIterator nullNestedRowIterator;
 
 //---------------------------------------------------------------------------------------------------------------------
 
+/*
+ * class for reading a csv local file
+ */
 class CsvDiskRowReader : public ExternalFormatDiskRowReader
 {
 private:
@@ -799,6 +815,8 @@ public:
 
     virtual const void *nextRow() override;
     virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *nextRow(MemoryBufferBuilder & builder) override;
+
     virtual void stop() override;
 
     virtual bool matches(const char * format, bool streamRemote, IDiskReadMapping * otherMapping) override;
@@ -825,7 +843,7 @@ protected:
     size32_t getFixedDiskRecordSize();
 
 protected:
-    constexpr static unsigned defaultMaxCsvRowSize = 10; // MB
+    constexpr static unsigned defaultMaxCsvRowSizeMB = 10;
     StringBuffer csvQuote, csvSeparate, csvTerminate, csvEscape;
     unsigned __int64 headerLines = 0;
     unsigned __int64 maxRowSize = 0;
@@ -839,7 +857,7 @@ CsvDiskRowReader::CsvDiskRowReader(IDiskReadMapping * _mapping)
 {
     const IPropertyTree & config = *mapping->queryOptions();
 
-    maxRowSize = config.getPropInt64("maxRowSize", defaultMaxCsvRowSize) * 1024 * 1024;
+    maxRowSize = config.getPropInt64("maxRowSize", defaultMaxCsvRowSizeMB) * 1024 * 1024;
     preserveWhitespace = config.getPropBool("preserveWhitespace", false);
     preserveWhitespace = config.getPropBool("notrim", preserveWhitespace);
 
@@ -957,6 +975,32 @@ const void *CsvDiskRowReader::nextRow(size32_t & resultSize)
     return nullptr;
 }
 
+const void * CsvDiskRowReader::nextRow(MemoryBufferBuilder & builder)
+{
+    for (;;)
+    {
+        size32_t lineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+        if (!lineLength)
+            break;
+
+        size32_t resultSize = translator->translate(bufferBuilder, *this, *fieldFetcher);
+        dbgassertex(resultSize);
+        const void *ret = builder.getSelf();
+        if (fieldFilterMatchProjected(ret))
+        {
+            builder.finishRow(resultSize);
+            inputStream->skip(lineLength);
+            return ret;
+        }
+        else
+            builder.removeBytes(resultSize);
+        inputStream->skip(lineLength);
+    }
+    return nullptr;
+}
+
+
+
 
 void CsvDiskRowReader::stop()
 {
@@ -976,7 +1020,11 @@ size32_t CsvDiskRowReader::getFixedDiskRecordSize()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CompoundProjectRowReader : extends CInterfaceOf<IAllocRowStream>, implements IRawRowStream, implements IDiskRowReader
+/*
+ * This class is used to project the input rows - for the situations where the disk reader cannot perform
+ * all the filtering and projection that is required.
+ */
+class CompoundProjectRowReader : extends CInterfaceOf<IDiskRowStream>, implements IDiskRowReader
 {
     Linked<IDiskReadMapping> mapping;
     Linked<IDiskRowReader> inputReader;
@@ -986,7 +1034,7 @@ class CompoundProjectRowReader : extends CInterfaceOf<IAllocRowStream>, implemen
     MemoryBufferBuilder bufferBuilder;
     RtlDynamicRowBuilder allocatedBuilder;
     Linked<IEngineRowAllocator> outputAllocator;
-    IRawRowStream * rawInputStream;
+    IDiskRowStream * rawInputStream;
 public:
     CompoundProjectRowReader(IDiskRowReader * _input, IDiskReadMapping * _mapping)
     : inputReader(_input), mapping(_mapping), bufferBuilder(tempOutputBuffer, 0), allocatedBuilder(nullptr)
@@ -995,14 +1043,9 @@ public:
         const RtlRecord &outRecord = mapping->queryProjectedMeta()->queryRecordAccessor(true);
         translator.setown(createRecordTranslator(outRecord, inRecord));
     }
-    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IAllocRowStream>)
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IDiskRowStream>)
 
-    virtual IRawRowStream * queryRawRowStream()
-    {
-        return this;
-    }
-
-    virtual IAllocRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
+    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
     {
         allocatedBuilder.setAllocator(_outputAllocator);
         outputAllocator.set(_outputAllocator);
@@ -1024,7 +1067,7 @@ public:
     {
         if (inputReader->setInputFile(localFilename, logicalFilename, partNumber, baseOffset, meta, expectedFilter))
         {
-            rawInputStream = inputReader->queryRawRowStream();
+            rawInputStream = inputReader->queryAllocatedRowStream(nullptr);
             return true;
         }
         return false;
@@ -1034,7 +1077,7 @@ public:
     {
         if (inputReader->setInputFile(filename, logicalFilename, partNumber, baseOffset, meta, expectedFilter))
         {
-            rawInputStream = inputReader->queryRawRowStream();
+            rawInputStream = inputReader->queryAllocatedRowStream(nullptr);
             return true;
         }
         return false;
@@ -1071,10 +1114,27 @@ public:
         return allocatedBuilder.finalizeRowClear(size);
     }
 
+    virtual const void *nextRow(MemoryBufferBuilder & builder) override
+    {
+        size32_t rawInputSize;
+        const void * next = rawInputStream->nextRow(rawInputSize);
+        if (isSpecialRow(next))
+            return next;
+
+        //MORE: optimize the case where fields are lost off the end, and not bother translating - but return the modified size.
+        size32_t resultSize = translator->translate(builder, unexpectedCallback, (const byte *)next);
+        const void * ret = builder.getSelf();
+        bufferBuilder.finishRow(resultSize);
+        return ret;
+    }
 };
 
 
 
+/*
+ * This class is used for formats which may or may not be able to perform all the filtering and projection that an
+ * input dataset requires.   Depending on the filter it will add an extra layer of translation if required.
+ */
 class AlternativeDiskRowReader : public CInterfaceOf<IDiskRowReader>
 {
 public:
@@ -1084,13 +1144,7 @@ public:
         compoundReader.setown(new CompoundProjectRowReader(expectedReader, mapping));
     }
 
-    virtual IRawRowStream * queryRawRowStream()
-    {
-        assertex(activeReader);
-        return activeReader->queryRawRowStream();
-    }
-
-    virtual IAllocRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
+    virtual IDiskRowStream * queryAllocatedRowStream(IEngineRowAllocator * _outputAllocator)
     {
         assertex(activeReader);
         return activeReader->queryAllocatedRowStream(_outputAllocator);
@@ -1150,6 +1204,9 @@ protected:
 //---------------------------------------------------------------------------------------------------------------------
 
 
+/*
+ * This class is used to read files that have been remotely filtered and projected by dafilesrv.
+ */
 
 class RemoteDiskRowReader : public DiskRowReader
 {
@@ -1158,6 +1215,7 @@ public:
 
     virtual const void *nextRow() override;
     virtual const void *nextRow(size32_t & resultSize) override;
+    virtual const void *nextRow(MemoryBufferBuilder & builder) override;
     virtual bool getCursor(MemoryBuffer & cursor) override;
     virtual void setCursor(MemoryBuffer & cursor) override;
     virtual void stop() override;
@@ -1168,6 +1226,10 @@ public:
 // IDiskRowReader
     virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * meta, const FieldFilterArray & expectedFilter) override;
     virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * meta, const FieldFilterArray & expectedFilter) override;
+
+private:
+    template <class PROCESS>
+    inline const void * inlineNextRow(PROCESS processor) __attribute((always_inline));
 
 protected:
     ISourceRowPrefetcher * projectedRowPrefetcher = nullptr;
@@ -1262,100 +1324,82 @@ bool RemoteDiskRowReader::setInputFile(const char * localFilename, const char * 
 }
 
 
+template <class PROCESS>
+const void *RemoteDiskRowReader::inlineNextRow(PROCESS processor)
+{
+    for (;;)
+    {
+        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
+        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
+        //Multiple eogs should also be harmless if the engines switch to this representation.
+        if (eogPending)
+        {
+            eogPending = false;
+            return eogRow;
+        }
+
+        inputBuffer.finishedRow();
+        if (inputBuffer.eos())
+            return eofRow;
+
+        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
+        //Is there a better way storing this (and combining it with the eog markers)?
+        if (stranded)
+        {
+            bool eosPending;
+            inputBuffer.read(eosPending);
+            if (eosPending)
+                return eosRow;
+
+            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
+            inputBuffer.finishedRow();
+            if (inputBuffer.eos())
+                return eofRow;
+        }
+
+        projectedRowPrefetcher->readAhead(inputBuffer);
+        size32_t sizeRead = inputBuffer.queryRowSize();
+        if (grouped)
+            inputBuffer.read(eogPending);
+        const byte * next = inputBuffer.queryRow();
+
+        return processor(sizeRead, next);
+    }
+}
+
+
 
 //Implementation of IAllocRowStream
 const void *RemoteDiskRowReader::nextRow()
 {
-    for (;;)
-    {
-        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
-        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
-        //Multiple eogs should also be harmless if the engines switch to this representation.
-        if (eogPending)
-        {
-            eogPending = false;
-            return eogRow;
-        }
-
-        inputBuffer.finishedRow();
-        if (inputBuffer.eos())
-            return eofRow;
-
-        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
-        //Is there a better way storing this (and combining it with the eog markers)?
-        if (stranded)
-        {
-            bool eosPending;
-            inputBuffer.read(eosPending);
-            if (eosPending)
-                return eosRow;
-
-            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
-            inputBuffer.finishedRow();
-            if (inputBuffer.eos())
-                return eofRow;
-        }
-
-        projectedRowPrefetcher->readAhead(inputBuffer);
-        size32_t sizeRead = inputBuffer.queryRowSize();
-        if (grouped)
-            inputBuffer.read(eogPending);
-        const byte * next = inputBuffer.queryRow();
-
+    return inlineNextRow([this](size32_t sizeRead, const byte * next){
         size32_t allocatedSize;
         void * result = outputAllocator->createRow(sizeRead, allocatedSize);
         memcpy(result, next, sizeRead);
         return outputAllocator->finalizeRow(sizeRead, result, allocatedSize);
-    }
+    });
 }
 
 
-//Implementation of IRawRowStream
+//Similar to above, except the code at the end will translate to a local buffer or return the pointer
 const void *RemoteDiskRowReader::nextRow(size32_t & resultSize)
 {
-    //Similar to above, except the code at the end will translate to a local buffer or return the pointer
-    for (;;)
-    {
-        //This may return multiple eog in a row with no intervening records - e.g. if all stripped by keyed filter.
-        //It is up to the caller to filter duplicates (to avoid the overhead of multiple pieces of code checking)
-        //Multiple eogs should also be harmless if the engines switch to this representation.
-        if (eogPending)
-        {
-            eogPending = false;
-            return eogRow;
-        }
-
-        inputBuffer.finishedRow();
-        if (inputBuffer.eos())
-            return eofRow;
-
-        //Currently each row in a stranded file contains a flag to indicate if the next is an end of strand.
-        //Is there a better way storing this (and combining it with the eog markers)?
-        if (stranded)
-        {
-            bool eosPending;
-            inputBuffer.read(eosPending);
-            if (eosPending)
-                return eosRow;
-
-            //Call finishRow() so it is not included in the row pointer.  This should be special cased in the base class
-            inputBuffer.finishedRow();
-            if (inputBuffer.eos())
-                return eofRow;
-        }
-
-        projectedRowPrefetcher->readAhead(inputBuffer);
-        size32_t sizeRead = inputBuffer.queryRowSize();
-        if (grouped)
-            inputBuffer.read(eogPending);
-        const byte * next = inputBuffer.queryRow();
+    return inlineNextRow([this,&resultSize](size32_t sizeRead, const byte * next){
         resultSize = sizeRead;
         return next;
-    }
+    });
+}
+
+//Experimental use of lambdas to common up a few function definitions.
+const void *RemoteDiskRowReader::nextRow(MemoryBufferBuilder & builder)
+{
+    return inlineNextRow([this,&builder](size32_t sizeRead, const byte * next){
+        builder.appendBytes(sizeRead, next);
+        return (const void *)(builder.getSelf() - sizeRead);
+    });
 }
 
 
-//Common to IAllocRowStream and IRawRowStream
 bool RemoteDiskRowReader::getCursor(MemoryBuffer & cursor)
 {
     throwUnexpected();
@@ -1377,7 +1421,7 @@ void RemoteDiskRowReader::stop()
 
 IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping * _mapping)
 {
-    if (strieq(format, "thor") || strieq(format, "flat"))
+    if (strieq(format, "flat"))
         return new BinaryDiskRowReader(_mapping);
     if (strieq(format, "csv"))
         return new CsvDiskRowReader(_mapping);
@@ -1394,7 +1438,7 @@ IDiskRowReader * doCreateLocalDiskReader(const char * format, IDiskReadMapping *
 IDiskRowReader * createLocalDiskReader(const char * format, IDiskReadMapping * mapping)
 {
     Owned<IDiskRowReader> directReader = doCreateLocalDiskReader(format, mapping);
-    if (mapping->expectedMatchesProjected() || strieq(format, "thor"))
+    if (mapping->expectedMatchesProjected() || strieq(format, "flat"))
         return directReader.getClear();
 
     Owned<IDiskReadMapping> expectedMapping = createUnprojectedMapping(mapping);

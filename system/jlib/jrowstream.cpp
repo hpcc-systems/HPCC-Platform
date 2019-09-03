@@ -20,49 +20,37 @@
 
 #include "jrowstream.hpp"
 
-class NullRawRowStream : public CInterfaceOf<IRawRowStream>
+//---------------------------------------------------------------------------------------------------------------------
+
+class NullDiskRowStream : public CInterfaceOf<IDiskRowStream>
 {
-    virtual bool getCursor(MemoryBuffer & cursor)
+    virtual bool getCursor(MemoryBuffer & cursor) override
     {
         return true;
     }
-    virtual void setCursor(MemoryBuffer & cursor)
+    virtual void setCursor(MemoryBuffer & cursor) override
     {
     }
     virtual void stop()
     {
     }
-    virtual const void *nextRow(size32_t & size)
+    virtual const void *nextRow(size32_t & size) override
     {
         size = 0;
         return eofRow;
     }
-};
-static NullRawRowStream nullRawStream;
-
-IRawRowStream * queryNullRawRowStream()
-{
-    return &nullRawStream;
-}
-
-IRawRowStream * createNullRawRowStream()
-{
-    return new NullRawRowStream;
-}
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-class NullAllocRowStream : public CInterfaceOf<IAllocRowStream>
-{
-    virtual const void *nextRow()
+    virtual const void *nextRow() override
+    {
+        return eofRow;
+    }
+    virtual const void *nextRow(MemoryBufferBuilder & builder) override
     {
         return eofRow;
     }
 };
-static NullAllocRowStream nullAllocStream;
 
-IAllocRowStream * queryNullAllocatedRowStream()
+static NullDiskRowStream nullDiskRowStream;
+IDiskRowStream * queryNullDiskRowStream()
 {
-    return &nullAllocStream;
+    return &nullDiskRowStream;
 }

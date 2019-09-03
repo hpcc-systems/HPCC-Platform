@@ -88,7 +88,7 @@ public:
     }
     virtual const char * queryFormat() override
     {
-        return "thor";
+        return "flat";
     }
     virtual void getFormatOptions(IXmlWriter & options) override
     {
