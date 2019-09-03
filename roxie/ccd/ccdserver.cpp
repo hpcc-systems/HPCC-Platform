@@ -11879,7 +11879,8 @@ public:
             fileProps.setPropInt64("@totalCRC", totalCRC);
         }
         fileProps.setPropInt("@formatCrc", helper.getFormatCrc());
-
+        if (flags & TDWrestricted)
+            fileProps.setPropBool("restricted", true);
         IRecordSize * inputMeta = input->queryOutputMeta();
         if ((inputMeta->isFixedSize()) && !isOutputTransformed())
             fileProps.setPropInt("@recordSize", inputMeta->getFixedSize() + (grouped ? 1 : 0));
@@ -12443,6 +12444,8 @@ public:
             properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
             rtlFree(layoutMetaBuff);
         }
+        if (helper.getFlags() & TIWrestricted)
+            properties.setPropBool("restricted", true);
         // New record layout info
         setRtlFormat(properties, helper.queryDiskRecordSize());
         // Bloom info

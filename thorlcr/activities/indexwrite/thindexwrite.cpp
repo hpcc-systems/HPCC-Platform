@@ -160,9 +160,11 @@ public:
             if (existingTlk->queryAttributes().hasProp("@modified"))
                 props.setProp("@modified", existingTlk->queryAttributes().queryProp("@modified"));
         }
-        
+
         // Fill in some logical file properties here
         IPropertyTree &props = fileDesc->queryProperties();
+        if (helper->getFlags() & TIWrestricted)
+            props.setPropBool("restricted", true);
 #if 0   // not sure correct record size to put in yet
         IRecordSize *irecsize =((IHThorIndexWriteArg *) baseHelper)->queryDiskRecordSize();
         if (irecsize && (irecsize->isFixedSize()))

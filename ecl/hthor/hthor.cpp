@@ -713,6 +713,8 @@ void CHThorDiskWriteActivity::publish()
         properties.setPropInt64("@totalCRC", totalCRC);
     }
     properties.setPropInt("@formatCrc", helper.getFormatCrc());
+    if (helper.getFlags() & TDWrestricted)
+        properties.setPropBool("restricted", true);
 
     StringBuffer lfn;
     expandLogicalFilename(lfn, mangledHelperFileName.str(), agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
@@ -1260,6 +1262,8 @@ void CHThorIndexWriteActivity::execute()
         properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
         rtlFree(layoutMetaBuff);
     }
+    if (helper.getFlags() & TIWrestricted)
+        properties.setPropBool("restricted", true);
     // New record layout info
     setRtlFormat(properties, helper.queryDiskRecordSize());
     // Bloom info
