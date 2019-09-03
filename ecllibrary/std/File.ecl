@@ -97,6 +97,10 @@ EXPORT INTEGER4 PREFIX_VARIABLE_RECSIZE := lib_fileservices.PREFIX_VARIABLE_RECS
 
 EXPORT INTEGER4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := lib_fileservices.PREFIX_VARIABLE_BIGENDIAN_RECSIZE;
 
+EXPORT FsDropZone := lib_fileservices.FsDropZone;
+
+EXPORT FsDropZoneRecord := lib_fileservices.FsDropZoneRecord;
+
 /*------------------------------------- Spray functions -----------------------------------------------------------*/
 
 /**
@@ -951,5 +955,31 @@ EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', b
  */
 EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW = '') :=
     lib_fileservices.FileServices.GetEspURL(username, userPW);
+    
+    
+ /**
+ * Returns the full URL to the default Drop Zone
+ *
+ * @param username      String containing a username to use for authenticated
+ *                      access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required;
+ *                      OPTIONAL, defaults to an empty string
+ * @param userPW        String containing the password to be used with the
+ *                      user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults
+ *                      to an empty string
+ *
+ * @return              A string containing the full URL (including HTTP scheme
+ *                      and port) to the default DropZone. If more than one Drop Zone
+ *                      process is defined then the first found will
+ *                      be returned; will return an empty string if an ESP
+ *                      server process cannot be found
+ */
+EXPORT varstring GetDefaultDropZone(const varstring username = '', const varstring userPW = '') :=
+    lib_fileservices.FileServices.GetDefaultDropZone(username, userPW);
 
+
+EXPORT dataset(FsDropZoneRecord) GetDropZones(const varstring username = '', const varstring userPW = '') :=
+    lib_fileservices.FileServices.GetDropZones(username, userPW);
+    
 END;
