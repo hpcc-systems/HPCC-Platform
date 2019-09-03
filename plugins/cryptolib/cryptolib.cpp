@@ -22,6 +22,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <string>
 #include <unordered_map>
 
 #include "cryptolib.hpp"
