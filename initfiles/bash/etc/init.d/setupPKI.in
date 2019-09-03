@@ -48,10 +48,21 @@ if [ ! -e ${homePath}/certificate/certificate.pem ]; then
     #    -batch 1>/dev/null 2>&1
     openssl req -new -key ${homePath}/certificate/key.pem -out ${homePath}/certificate/csr.pem
     cfssl sign -config ${INSTALL_DIR}/etc/init.d/sign_config.json ${homePath}/certificate/csr.pem | cfssljson -bare ${homePath}/certificate/certificate
-    printf "Self Signed Certificate installed for user %-12s ..." "$user"
+    printf "CA signed Certificate installed for user %-12s ..." "$user"
     log_success_msg
 else
-    printf "Self Signed Certificate already installed for %-9s ..." "$user"
+    printf "Certificate already installed for %-9s ..." "$user"
+    log_success_msg
+fi
+
+if [ ! -e ${homePath}/.ssh/id_rsa ]; then
+    cp ${homePath}/certificate/key.pem ${homePath}/.ssh/id_rsa
+    ssh-keygen -f ${homePath}/certificate/public.key.pem -i -m PKCS8 > ${homePath}/.ssh/id_rsa.pub
+    cat ${homePath}/.ssh/id_rsa.pub >> ${homePath}/.ssh/authorized_keys
+    printf "ssh keys installed for user %-12s ..." "$user"
+    log_success_msg
+else
+    printf "ssh keys already installed for %-9s ..." "$user"
     log_success_msg
 fi
 
