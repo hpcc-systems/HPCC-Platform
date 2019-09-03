@@ -3335,9 +3335,12 @@ void FileSprayer::updateTargetProperties()
             if (distributedSource)
             {
                 // add original file name from a single distributed source (like Copy)
-                RemoteFilename remoteFile;
-                distributedSource->queryPart(0).getFilename(remoteFile, 0);
-                splitAndCollectFileInfo(newRecord, remoteFile);
+                if (distributedSource->numParts())
+                {
+                    RemoteFilename remoteFile;
+                    distributedSource->queryPart(0).getFilename(remoteFile, 0);
+                    splitAndCollectFileInfo(newRecord, remoteFile);
+                }
             }
             else if (sources.ordinality())
             {
