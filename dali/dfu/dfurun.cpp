@@ -1314,6 +1314,9 @@ public:
                         opttree->setPropInt("@expireDays", options->getExpireDays());
 
                         opttree->setPropBool("@quotedTerminator", options->getQuotedTerminator());
+
+                        opttree->setPropBool("@nosplit", options->getNoSplit());
+
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc)
                         {

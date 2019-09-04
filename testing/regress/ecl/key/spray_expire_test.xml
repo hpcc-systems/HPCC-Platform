@@ -23,3 +23,9 @@
 <Dataset name='DFUPlus'>
  <Row><DFUPlus>Pass</DFUPlus></Row>
 </Dataset>
+<Dataset name='Copy'>
+ <Row><Copy>Pass</Copy></Row>
+</Dataset>
+<Dataset name='RemotePull'>
+ <Row><RemotePull>Pass</RemotePull></Row>
+</Dataset>
