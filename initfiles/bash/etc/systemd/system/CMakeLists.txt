@@ -29,7 +29,8 @@ set(componentList
     sasha
     thor
     thorslave
-    backupnode)
+    backupnode
+    toposerver)
 
 set(dafilesrv "dafilesrv" "-L ${LOG_PATH} -I %i -D" "")
 set(dali "daserver" "--daemon %i" "dafilesrv.service")
@@ -43,6 +44,7 @@ set(sasha "saserver" "--daemon %i" "dafilesrv.service")
 set(thor "thormaster_lcr" "--daemon %i MASTER=\${THORMASTER}:\${THORMASTERPORT}" "dafilesrv.service")
 set(thorslave "thorslave_lcr" "--daemon %i master=\${THORMASTER}:\${THORMASTERPORT} slave=.:\${SLAVEPORT} slavenum=\${SLAVENUM} logDir=${LOG_PATH}/\${THORNAME}" "dafilesrv.service")
 set(backupnode "backup.sh" "" "")
+set(toposerver "toposerver" "--daemon %i" "dafilesrv.service")
 
 foreach(component ${componentList})
     list(GET "${component}" 0 processName)

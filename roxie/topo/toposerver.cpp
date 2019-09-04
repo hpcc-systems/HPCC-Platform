@@ -27,6 +27,8 @@
 #include "jexcept.hpp"
 #include "jlog.hpp"
 #include "jmd5.hpp"
+#include "jfile.hpp"
+#include "jptree.hpp"
 
 /**
  * While billed as a topology server (and used for that by Roxie), this service actually remembers and
@@ -70,6 +72,7 @@ const unsigned timeoutHeartbeatInterval = 10000;
 const unsigned topologyReportInterval = 10000;
 bool aborted = false;
 Semaphore stopping;
+StringBuffer topologyFile;
 
 extern "C" void caughtSIGPIPE(int sig)
 {
@@ -299,13 +302,47 @@ int main(int argc, const char *argv[])
         else
             globals->loadProp(argv[i], true);  // We ignore unrecognized options for now
     }
-    traceLevel = globals->getPropInt("--traceLevel", 1);
-    topoPort = globals->getPropInt("--port", TOPO_SERVER_PORT);
-    if (globals->getPropBool("--stdlog", traceLevel != 0))
+
+    // locate settings xml file in runtime dir
+    char currentDirectory[_MAX_DIR];
+    if (!getcwd(currentDirectory, sizeof(currentDirectory)))
+    {
+        perror("getcwd failure");
+        return EXIT_FAILURE;
+    }
+    topologyFile.set(currentDirectory);
+    addNonEmptyPathSepChar(topologyFile);
+    topologyFile.append(PATHSEPCHAR).append("toposerver.xml");
+    IPropertyTree *topology;
+    if (checkFileExists(topologyFile.str()))
+        topology = createPTreeFromXMLFile(topologyFile.str(), ipt_lowmem);
+    else
+        topology = createPTreeFromXMLString(
+            "<TopoServerProcess port='9004' traceLevel='1'>"
+            "</TopoServerProcess>"
+            , ipt_lowmem
+            );
+    if (globals->hasProp("--traceLevel"))
+        topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
+    if (globals->hasProp("--port"))
+        topology->setProp("@port", globals->queryProp("--port"));
+    if (globals->hasProp("--stdlog"))
+        topology->setProp("@stdlog", globals->queryProp("--stdlog"));
+    if (globals->hasProp("--logdir"))
+        topology->setProp("@logdir", globals->queryProp("--logdir"));
+
+
+    // take ownership of sentinel file
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
+
+    traceLevel = topology->getPropInt("@traceLevel", 1);
+    topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
+    if (topology->getPropBool("@stdlog", traceLevel != 0))
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
     else
         removeLog();
-    const char *logdir = globals->queryProp("--logdir");
+    const char *logdir = topology->queryProp("@logdir");
     if (logdir)
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir, "toposerver");
@@ -316,10 +353,12 @@ int main(int argc, const char *argv[])
     }
     if (traceLevel)
         DBGLOG("Topology server starting");
-
+    
+    writeSentinelFile(sentinelFile);
     doServer();
     if (traceLevel)
         DBGLOG("Topology server stopping");
+    removeSentinelFile(sentinelFile);
     ExitModuleObjects();
     return 0;
 }
