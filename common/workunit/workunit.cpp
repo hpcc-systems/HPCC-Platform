@@ -6770,8 +6770,7 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     if (scopename&&*scopename) {
         if (!user)
             user = queryUserDescriptor();
-        CDateTime now;
-        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags,nullptr,now);
+        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0) {
             if (perm == SecAccess_Unavailable)
                 perm = SecAccess_Full;
