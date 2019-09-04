@@ -629,6 +629,7 @@ define({root:
     ResetViewToSelection: "Reset View to Selection",
     Resource: "Resource",
     Resources: "Resources",
+    Restricted: "Restricted",
     ResponseSchema: "Response Schema",
     Restart: "Restart",
     Restarted: "Restarted",
