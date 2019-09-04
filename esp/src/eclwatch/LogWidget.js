@@ -197,12 +197,13 @@ define([
                     store: store,
                     query: this.getFilter(),
                     columns: {
-                        lineNo: { label: this.i18n.Line, width: 80 },
-                        details: { label: this.i18n.Details, width: 1024 },
+                        lineNo: {width: 80 },
+                        audience: { label: this.i18n.Audience, width: 60},
                         date: { label: this.i18n.Date, width: 100 },
                         time: { label: this.i18n.Time, width: 100 },
                         pid: { label: "PID", width: 60 },
                         tid: { label: "TID", width: 60 },
+                        details: { label: this.i18n.Details, width: 1024 },
                         dummy: { label: "", width: 0 }
                     }
                 }, this.id + "LogGrid");
