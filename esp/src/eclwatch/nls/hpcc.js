@@ -116,6 +116,7 @@ define({root:
     Contents: "Contents",
     ContentType: "Content Type",
     Copy: "Copy",
+    CopyToClipboard: "Copy to clipboard",
     CopyURLToClipboard: "Copy URL to clipboard",
     CopyWUIDs: "Copy WUIDs to clipboard",
     CopyWUIDToClipboard: "Copy WUID to clipboard",
