@@ -119,12 +119,9 @@
     </emphasis><emphasis role="redbold">You are solely responsible for all AWS
     charges.</emphasis></para>
 
-    <para>We are working with Amazon to improve the set up processes.
-    <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an HPCC Systems cluster in an Amazon Elastic Map Reduce (EMR) type
-    environment.</emphasis> We expect that method to be more robust and easier
-    to set up and operate. In addition, HPCC Systems is working on its own
-    Enterprise Cloud offering, but it is not yet ready to be announced.</para>
+    <para>Instant Cloud is being updated to provide managed services
+    functionality like Amazon Elastic Map Reduce (EMR). S3 integration,
+    elasticity, backup, and recovery are features under consideration. </para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <?dbfo keep-together="always"?>
