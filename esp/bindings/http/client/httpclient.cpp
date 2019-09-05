@@ -463,8 +463,24 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
     return HttpClientErrCode::OK;
 }
 
-void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom)
+bool appendProxyPeerAddress(CHttpMessage &copyTo, ISocket *sock, const char *src)
 {
+    if (!sock)
+        return false;
+    IpAddress ip;
+    sock->getPeerAddress(ip);
+
+    StringBuffer s(src);
+    if (s.length())
+        s.append(", ");
+    ip.getIpText(s);
+    copyTo.setHeader("X-Forwarded-For", s);
+    return true;
+}
+
+void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom, bool resetForwardedFor, bool updateForwardedFor)
+{
+    bool copiedForwardedFor = false;
     if (copyFrom.queryHeaders().ordinality())
     {
         ForEachItemIn(i, copyFrom.queryHeaders())
@@ -488,11 +504,24 @@ void copyHeaders(CHttpMessage &copyTo, CHttpMessage &copyFrom)
                         continue;
                 }
                 break;
+            case 'X':
+                if (strieq(name, "X-Forwarded-For"))
+                {
+                    if (resetForwardedFor)
+                        continue;
+                    if (!updateForwardedFor)
+                        break;
+                    copiedForwardedFor = appendProxyPeerAddress(copyTo, copyFrom.getSocket(), pair.item(1));
+                    continue;
+                }
+                break;
             default:
                 break;
             }
             copyTo.setHeader(name, pair.item(1));
         }
+        if (updateForwardedFor && !copiedForwardedFor)
+            appendProxyPeerAddress(copyTo, copyFrom.getSocket(), nullptr);
     }
 }
 
@@ -509,15 +538,15 @@ void copyCookies(CHttpMessage &copyTo, CHttpMessage &copyFrom, const char *host)
     }
 }
 
-int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response)
+int CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response, bool resetForwardedFor)
 {
-    HttpClientErrCode ret = proxyRequest(request, response, false);
+    HttpClientErrCode ret = proxyRequest(request, response, false, resetForwardedFor);
     if (ret == HttpClientErrCode::PeerClosed)
-        ret = proxyRequest(request, response, true);
+        ret = proxyRequest(request, response, true, resetForwardedFor);
     return static_cast<int>(ret);
 }
 
-HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response, bool forceNewConnection)
+HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage *response, bool forceNewConnection, bool resetForwardedFor)
 {
     CHttpRequest *forwardRequest = static_cast<CHttpRequest*>(request);
     assertex(forwardRequest != nullptr);
@@ -551,7 +580,7 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
     httprequest->setHost(m_host.get());
     httprequest->setPort(m_port);
 
-    copyHeaders(*httprequest, *forwardRequest);
+    copyHeaders(*httprequest, *forwardRequest, resetForwardedFor, true);
 
     httprequest->setHeader("HPCC-Forward-For", "true"); //For now limit to one hop, can support multi hpcc forward for hops in future, but why?
 
@@ -583,7 +612,7 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
         return HttpClientErrCode::PeerClosed;
 
     copyCookies(*forwardResponse, *httpresponse, m_host);
-    copyHeaders(*forwardResponse, *httpresponse);
+    copyHeaders(*forwardResponse, *httpresponse, resetForwardedFor, false);
 
     StringBuffer responseStatus;
     StringBuffer responseContentType;
