@@ -121,7 +121,7 @@ private:
 
     HttpClientErrCode sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, bool forceNewConnection);
     HttpClientErrCode sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection);
-    HttpClientErrCode proxyRequest(IHttpMessage *request, IHttpMessage *response,  bool forceNewConnection);
+    HttpClientErrCode proxyRequest(IHttpMessage *request, IHttpMessage *response,  bool forceNewConnection, bool resetForwardedFor);
     HttpClientErrCode postRequest(ISoapMessage &req, ISoapMessage& resp, bool forceNewConnection);
 
 public:
@@ -135,7 +135,7 @@ public:
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response);
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
     virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
-    virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response);
+    virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response, bool resetForwardedFor) override;
 
     virtual int postRequest(ISoapMessage &req, ISoapMessage& resp);
 

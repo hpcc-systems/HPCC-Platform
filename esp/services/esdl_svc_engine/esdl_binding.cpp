@@ -1956,7 +1956,7 @@ void parseNamespace(const char *ns, StringBuffer &service, StringBuffer &method,
     }
 }
 
-bool EsdlBindingImpl::checkForMethodProxy(const char *service, const char *method, StringBuffer &forwardTo)
+bool EsdlBindingImpl::checkForMethodProxy(const char *service, const char *method, StringBuffer &forwardTo, bool &resetForwardedFor)
 {
     if (!m_proxyInfo || !method || !*method)
         return false;
@@ -1969,10 +1969,14 @@ bool EsdlBindingImpl::checkForMethodProxy(const char *service, const char *metho
     if (proxyService->hasProp(xpath)) //if method is configured locally, don't proxy
         return false;
 
-    xpath.setf("Proxy[@method='%s']/@forwardTo", method); //exact (non-wild) match wins
-    forwardTo.set(proxyService->queryProp(xpath));
-    if (forwardTo.length())
+    xpath.setf("Proxy[@method='%s']", method); //exact (non-wild) match wins
+    IPropertyTree *exactProxy = proxyService->queryPropTree(xpath);
+    if (exactProxy)
+    {
+        forwardTo.set(exactProxy->queryProp("@forwardTo"));
+        resetForwardedFor = exactProxy->getPropBool("@resetForwardedFor", resetForwardedFor);
         return true;
+    }
 
     size_t len = strlen(method);
     if (len && (*method=='_' || method[len-1]=='_')) //methods beginning or ending in '_' can't be wild card selected (these are generally internal methods, use explicit match string to override)
@@ -1985,6 +1989,7 @@ bool EsdlBindingImpl::checkForMethodProxy(const char *service, const char *metho
         if (isWildString(wildname) && WildMatch(method, wildname, true))
         {
             forwardTo.set(proxies->query().queryProp("@forwardTo"));
+            resetForwardedFor = proxies->query().getPropBool("@resetForwardedFor", false);
             return true;
         }
     }
@@ -2029,8 +2034,9 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
                 if (len>0 && strieq(reqname.str()+len, "Request"))
                     proxyMethod.setLength(len);
                 StringBuffer proxyAddress;
-                if (checkForMethodProxy(request->queryServiceName(), proxyMethod, proxyAddress))
-                    return forwardProxyMessage(proxyAddress, request, response);
+                bool resetForwardedFor = false;
+                if (checkForMethodProxy(request->queryServiceName(), proxyMethod, proxyAddress, resetForwardedFor))
+                    return forwardProxyMessage(proxyAddress, request, response, resetForwardedFor);
             }
 
             StringBuffer nssrv;
@@ -2270,7 +2276,7 @@ inline bool hasHttpPrefix(const char *addr)
     return false;
 }
 
-int EsdlBindingImpl::forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response)
+int EsdlBindingImpl::forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response, bool resetForwardedFor)
 {
     Owned<IHttpClientContext> httpctx = getHttpClientContext();
 
@@ -2285,7 +2291,7 @@ int EsdlBindingImpl::forwardProxyMessage(const char *addr, CHttpRequest* request
 
     DBGLOG("Forwarding request to %s", url.str());
     Owned<IHttpClient> cl = httpctx->createHttpClient(nullptr, url);
-    cl->proxyRequest(request, response);
+    cl->proxyRequest(request, response, resetForwardedFor);
 
     StringBuffer status;
     DBGLOG("Forwarded request status %s", response->getStatus(status).str());
@@ -2332,8 +2338,9 @@ int EsdlBindingImpl::onGet(CHttpRequest* request, CHttpResponse* response)
                     StringBuffer method;
                     nextPathNode(thepath, method);
                     StringBuffer proxyAddress;
-                    if (checkForMethodProxy(root, method, proxyAddress))
-                        return forwardProxyMessage(proxyAddress, request, response);
+                    bool resetForwardedFor = false;
+                    if (checkForMethodProxy(root, method, proxyAddress, resetForwardedFor))
+                        return forwardProxyMessage(proxyAddress, request, response, resetForwardedFor);
                     break;
                 }
                 default:
@@ -2782,9 +2789,10 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
         if (m_proxyInfo)
         {
             StringBuffer proxyAddress;
-            if (checkForMethodProxy(serviceName, methodName, proxyAddress))
+            bool resetForwardedFor = false;
+            if (checkForMethodProxy(serviceName, methodName, proxyAddress, resetForwardedFor))
             {
-                forwardProxyMessage(proxyAddress, request, response);
+                forwardProxyMessage(proxyAddress, request, response, resetForwardedFor);
                 return;
             }
         }
@@ -2892,9 +2900,10 @@ void EsdlBindingImpl::handleHttpPost(CHttpRequest *request, CHttpResponse *respo
         case sub_serv_instant_query:
         {
             StringBuffer proxyAddress;
-            if (checkForMethodProxy(serviceName, methodName, proxyAddress)) //usually won't catch SOAP requests, so will test again later when method is known.
+            bool resetForwardedFor = false;
+            if (checkForMethodProxy(serviceName, methodName, proxyAddress, resetForwardedFor)) //usually won't catch SOAP requests, so will test again later when method is known.
             {
-                forwardProxyMessage(proxyAddress, request, response);
+                forwardProxyMessage(proxyAddress, request, response, resetForwardedFor);
                 return;
             }
             break;
