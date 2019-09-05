@@ -104,6 +104,7 @@ define([
                 this.replicateDropDown = registry.byId(this.id + "ReplicateDropDown");
                 this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
                 this.isProtected = registry.byId(this.id + "isProtected");
+                this.isRestricted = registry.byId(this.id + "isRestricted");
                 var context = this;
                 var origOnOpen = this.desprayTooltiopDialog.onOpen;
                 this.desprayTooltiopDialog.onOpen = function () {
@@ -158,9 +159,11 @@ define([
             _onSave: function (event) {
                 var context = this;
                 var protectedCheckbox = registry.byId(this.id + "isProtected");
+                var restrictedCheckbox = registry.byId(this.id + "isRestricted");
                 this.logicalFile.save({
                     Description: dom.byId(context.id + "Description").value,
-                    isProtected: protectedCheckbox.get("checked")
+                    isProtected: protectedCheckbox.get("checked"),
+                    isRestricted: restrictedCheckbox.get("checked")
                 }, null);
             },
             _onDelete: function (event) {
@@ -268,6 +271,10 @@ define([
                 this.logicalFile.refresh();
 
                 this.isProtected.on("change", function (evt) {
+                    context._onSave();
+                });
+
+                this.isRestricted.on("change", function (evt) {
                     context._onSave();
                 });
             },
@@ -404,6 +411,8 @@ define([
                     dom.byId(this.id + "CompressedImage").src = this.logicalFile.getCompressedImage();
                 } else if (name === "IsProtected") {
                     this.updateInput("isProtected", oldValue, newValue);
+                } else if (name === "IsRestricted") {
+                    this.updateInput("isRestricted", oldValue, newValue);
                 } else if (name === "Ecl" && newValue) {
                     this.setDisabled(this.id + "_Source", false);
                     this.setDisabled(this.id + "_DEF", false);
