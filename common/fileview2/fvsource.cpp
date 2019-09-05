@@ -463,7 +463,10 @@ void DataSourceMetaData::patchIndexFileposition()
     DataSourceMetaItem & lastfield = fields.tos();
     //MORE: An approximation to check for fileposition(false) - should switch to using new meta info.
     if (lastfield.type->isInteger())
+    {
+        minRecordSize += (8 - lastfield.type->getSize());
         lastfield.type.setown(makeSwapIntType(8, false));
+    }
 }
 
 ITypeInfo * DataSourceMetaData::queryType(unsigned column) const
