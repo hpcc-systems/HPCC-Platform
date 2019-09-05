@@ -19,6 +19,7 @@ do(func, value) := MACRO
  PARALLEL(
     output(func + '(' + #TEXT(value) + ')'),
     #EXPAND(func)((string)value),
+    #EXPAND(func)((varstring)value),
     #EXPAND(func)((qstring)value),
     #EXPAND(func)((data)value)
     )
@@ -26,7 +27,7 @@ ENDMACRO;
 
 doU(func, value) := MACRO
  PARALLEL(
-    output(func + '(' + #TEXT(value) + ')'),
+    output(func + '(' + #TEXT(value) + ') - unicode'),
     #EXPAND(func)((unicode)value),
     #EXPAND(func)((utf8)value),
     #EXPAND(func)((data)value)
@@ -64,3 +65,16 @@ do('HASH64', U'ABCD123 5');
 do('HASH64', u1);
 do('HASH64', U'ABCD123 5 ');
 do('HASH64', u2);
+
+dou('HASH', U'ABCD123 5');
+dou('HASH', u1);
+dou('HASH', U'ABCD123 5 ');
+dou('HASH', u2);
+dou('HASH32', U'ABCD123 5');
+dou('HASH32', u1);
+dou('HASH32', U'ABCD123 5 ');
+dou('HASH32', u2);
+dou('HASH64', U'ABCD123 5');
+dou('HASH64', u1);
+dou('HASH64', U'ABCD123 5 ');
+dou('HASH64', u2);
