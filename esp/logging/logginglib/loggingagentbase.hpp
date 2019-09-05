@@ -26,6 +26,7 @@
 #include "ws_loggingservice_esp.ipp"
 #include "loggingcommon.hpp"
 #include "LoggingErrors.hpp"
+#include <set>
 
 #define LOGREQUEST "LogRequest"
 #define LOGREQUEST_GUID "GUID"
@@ -249,14 +250,67 @@ public:
     void setNoResend(bool val) { noResend = val; };
 };
 
+interface IEspLogAgentVariant : extends IInterface
+{
+    virtual const char* getName() const = 0;
+    virtual const char* getType() const = 0;
+    virtual const char* getGroup() const = 0;
+};
+
+struct IEspLogAgentVariantComparator
+{
+    // Implement alternative to std::less for potential set ordering
+    bool operator () (const Owned<const IEspLogAgentVariant>& lhs, const Owned<const IEspLogAgentVariant>& rhs) const
+    {
+        return (*this)(lhs.get(), rhs.get());
+    }
+    bool operator () (const IEspLogAgentVariant* lhs, const IEspLogAgentVariant* rhs) const
+    {
+        return compare(lhs, rhs) < 0;
+    }
+
+private:
+    int compare(const IEspLogAgentVariant* lhs, const IEspLogAgentVariant* rhs) const
+    {
+        if (lhs == rhs)
+            return 0;
+        if (nullptr == lhs)
+            return 1;
+        if (nullptr == rhs)
+            return -1;
+        int relation = compare(lhs->getName(), rhs->getName());
+        if (0 == relation)
+        {
+            relation = compare(lhs->getType(), rhs->getType());
+            if (0 == relation)
+                relation = compare(lhs->getGroup(), rhs->getGroup());
+        }
+        return relation;
+    }
+    int compare(const char* lhs, const char* rhs) const
+    {
+        if (lhs == rhs)
+            return 0;
+        if (nullptr == lhs)
+            return 1;
+        if (nullptr == rhs)
+            return -1;
+        return stricmp(lhs, rhs);
+    }
+};
+
+interface IEspLogAgentVariantIterator : extends IIteratorOf<const IEspLogAgentVariant> {};
+
 interface IEspLogAgent : extends IInterface
 {
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process) = 0;
+    virtual bool initVariants(IPropertyTree* cfg) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
     virtual void getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID) = 0;
     virtual bool updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual bool hasService(LOGServiceType service) = 0;
     virtual IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req) = 0;
+    virtual IEspLogAgentVariantIterator* getVariants() const = 0;
 };
 
 class CESPLogContentGroupFilters : public CInterface, implements IInterface
@@ -340,6 +394,39 @@ public:
 
     CLogAgentBase() { services[0] = LGSTterm; };
     virtual ~CLogAgentBase() {};
+
+public:
+    bool initVariants(IPropertyTree* cfg) override;
+    IEspLogAgentVariantIterator* getVariants() const override;
+protected:
+    class CVariant : implements CInterfaceOf<IEspLogAgentVariant>
+    {
+    public:
+        CVariant(const char* name, const char* type, const char* group);
+        const char* getName() const override { return m_name->str(); }
+        const char* getType() const override { return m_type->str(); }
+        const char* getGroup() const override { return m_group->str(); }
+    private:
+        String* normalize(const char* token);
+        Owned<String> m_name;
+        Owned<String> m_type;
+        Owned<String> m_group;
+    };
+    using Variants = std::set<Owned<CVariant>, IEspLogAgentVariantComparator>;
+    Variants agentVariants;
+    class CVariantIterator : implements CInterfaceOf<const IEspLogAgentVariantIterator>
+    {
+    public:
+        CVariantIterator(const CLogAgentBase& agent);
+        ~CVariantIterator();
+        bool first() override;
+        bool next() override;
+        bool isValid() override;
+        const IEspLogAgentVariant& query() override;
+    protected:
+        Linked<const CLogAgentBase> m_agent;
+        Variants::const_iterator    m_variantIt;
+    };
 };
 
 

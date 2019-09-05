@@ -7,14 +7,88 @@
 <Dataset name='Result 4'>
 </Dataset>
 <Dataset name='Result 5'>
- <Row><result>Copy superfile as logical file: Pass</result></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><result>Copy superfile as superfle: Pass</result></Row>
+ <Row><result>Copy superfile with 0 subfile as logical file: Pass</result></Row>
 </Dataset>
-<Dataset name='Result 7'>
- <Row><result>Copy superindex as logical file: Pass</result></Row>
+<Dataset name='CopySuperfileW0SubAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
 </Dataset>
 <Dataset name='Result 8'>
- <Row><result>Copy superindex as superfle: Pass</result></Row>
+ <Row><result>Copy superfile with 0 subfile as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperfileW0SubAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><result>Copy superfile with 1 subfile as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperfileW1SubAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><result>Copy superfile with 1 subfile  as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperfileW1SubAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><result>Copy superfile with 2 subfiles as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperfileW2SubsAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><result>Copy superfilewith 2 subfiles as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperfileW2SubsAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><result>Copy superindex with 0 subfile as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW0SubAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><result>Copy superindex with 0 subfile as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW0SubAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><result>Copy superindex with 1 subfile as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW1SubAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><result>Copy superindex with 1 subfile as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW1SubAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><result>Copy superindex with 2 subfiles as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW2SubsAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><result>Copy superindex with 2 subfiles as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW2SubsAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><result>Copy superindex with 3 subfiles as logical file: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW3SubsAsLogicalFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><result>Copy superindex with 3 subfiles as superfile: Pass</result></Row>
+</Dataset>
+<Dataset name='CopySuperIndexW3SubsAsSuperFileResult'>
+ <Row><filecheck>The file is ok.</filecheck></Row>
 </Dataset>

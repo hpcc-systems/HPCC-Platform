@@ -17,6 +17,7 @@
 
 #include "LoggingErrors.hpp"
 #include "loggingagentbase.hpp"
+#include <set>
 
 static const char* const defaultTransactionTable = "transactions";
 static const char* const defaultTransactionAppName = "accounting_log";
@@ -328,6 +329,108 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
     ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
 
     return new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
+}
+
+CLogAgentBase::CVariantIterator::CVariantIterator(const CLogAgentBase& agent)
+    : m_agent(&agent)
+    , m_variantIt(m_agent->agentVariants.end())
+{
+}
+
+CLogAgentBase::CVariantIterator::~CVariantIterator()
+{
+}
+
+bool CLogAgentBase::CVariantIterator::first()
+{
+    m_variantIt = m_agent->agentVariants.begin();
+    return isValid();
+}
+
+bool CLogAgentBase::CVariantIterator::next()
+{
+    if (m_variantIt != m_agent->agentVariants.end())
+        ++m_variantIt;
+    return isValid();
+}
+
+bool CLogAgentBase::CVariantIterator::isValid()
+{
+    return (m_variantIt != m_agent->agentVariants.end());
+}
+
+const IEspLogAgentVariant& CLogAgentBase::CVariantIterator::query()
+{
+    if (!isValid())
+        throw MakeStringException(0, "CVariantIterator::query called in invalid state");
+    IEspLogAgentVariant* entry = m_variantIt->get();
+    if (nullptr == entry)
+        throw MakeStringException(0, "CVariantIterator::query encountered a NULL variant");
+    return *entry;
+}
+
+CLogAgentBase::CVariant::CVariant(const char* name, const char* type, const char* group)
+{
+    m_name.setown(normalize(name));
+    m_type.setown(normalize(type));
+    m_group.setown(normalize(group));
+}
+
+String* CLogAgentBase::CVariant::normalize(const char* token)
+{
+    struct PoolComparator
+    {
+        bool operator () (const Owned<String>& lhs, const Owned<String>& rhs) const
+        {
+            String* lPtr = lhs.get();
+            String* rPtr = rhs.get();
+
+            if (lPtr == rPtr)
+                return false;
+            if (nullptr == lPtr)
+                return false;
+            if (nullptr == rPtr)
+                return true;
+            return lhs->compareTo(*rhs.get()) < 0;
+        }
+    };
+    using PooledStrings = std::set<Owned<String>, PoolComparator>;
+    static PooledStrings pool;
+    static CriticalSection poolLock;
+
+    Owned<String> tmp(new String(StringBuffer(token).trim().toLowerCase()));
+    CriticalBlock block(poolLock);
+    PooledStrings::iterator it = pool.find(tmp);
+
+    if (it != pool.end())
+        return it->getLink();
+    pool.insert(tmp);
+    return tmp.getClear();
+}
+
+bool CLogAgentBase::initVariants(IPropertyTree* cfg)
+{
+    Owned<IPropertyTreeIterator> variantNodes(cfg->getElements("//Variant"));
+    ForEach(*variantNodes)
+    {
+        IPTree& variant = variantNodes->query();
+        const char* type = variant.queryProp("@type");
+        const char* group = variant.queryProp("@group");
+        Owned<CVariant> instance = new CVariant(agentName.get(), type, group);
+        Variants::iterator it = agentVariants.find(instance);
+
+        if (agentVariants.end() == it)
+            agentVariants.insert(instance.getClear());
+    }
+
+    if (agentVariants.empty())
+        agentVariants.insert(new CVariant(agentName.get(), nullptr, nullptr));
+    return true;
+}
+
+IEspLogAgentVariantIterator* CLogAgentBase::getVariants() const
+{
+    return new CVariantIterator(*this);
 }
 
 void CDBLogAgentBase::readDBCfg(IPropertyTree* cfg, StringBuffer& server, StringBuffer& dbUser, StringBuffer& dbPassword)
