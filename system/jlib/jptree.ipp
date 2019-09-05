@@ -648,7 +648,7 @@ public:
     virtual bool hasChildren() const override { return children && children->count()?true:false; }
     virtual unsigned numUniq() override { return checkChildren()?children->count():0; }
     virtual unsigned numChildren() override;
-    virtual bool isCaseInsensitive() override { return isnocase(); }
+    virtual bool isCaseInsensitive() const override { return isnocase(); }
     virtual unsigned getCount(const char *xpath) override;
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;

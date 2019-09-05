@@ -61,6 +61,8 @@ interface ISerialStream;
 class THORHELPER_API CSVSplitter
 {
 public:
+    enum MatchItem { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
+
     CSVSplitter();
     ~CSVSplitter();
 
@@ -68,6 +70,8 @@ public:
     void addSeparator(const char * text);
     void addTerminator(const char * text);
     void addEscape(const char * text);
+    void addItem(MatchItem item, const char * text);
+    void addWhitespace();
 
     void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes);
     void init(unsigned maxColumns, size32_t maxCsvSize, const char *quotes, const char *separators, const char *terminators, const char *escapes, bool preserveWhitespace);
@@ -82,7 +86,6 @@ protected:
     void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape);
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned            maxColumns;
     StringMatcher       matcher;
     unsigned            numQuotes;

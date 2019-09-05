@@ -1125,6 +1125,7 @@ enum
     TDRunfilteredcount  = 0x00800000,       // count/aggregegate doesn't have an additional filter
     TDRfilenamecallback = 0x01000000,
     TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
+    TDRdynformatoptions = 0x04000000,
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -2400,6 +2401,15 @@ struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
 };
 
 
+//New prototype interface for reading any format file through the same interface
+//liable to change at any point.
+struct IHThorNewDiskReadBaseArg : extends IHThorDiskReadBaseArg
+{
+    virtual const char * queryFormat() = 0;
+    virtual void getFormatOptions(IXmlWriter & options) = 0;
+    virtual void getFormatDynOptions(IXmlWriter & options) = 0;
+};
+
 //The following are mixin classes added to one of the activity base interfaces above.
 // common between Read, Normalize
 struct IHThorCompoundExtra : public IInterface
@@ -2540,6 +2550,12 @@ struct IHThorDiskGroupAggregateArg : extends IHThorDiskReadBaseArg, extends IHTh
 };
 
 
+struct IHThorNewDiskReadArg : extends IHThorNewDiskReadBaseArg, extends IHThorSourceLimitTransformExtra, extends IHThorCompoundReadExtra
+{
+    COMMON_NEWTHOR_FUNCTIONS
+};
+
+
 struct IHThorCsvReadArg: public IHThorDiskReadBaseArg
 {
     virtual unsigned getMaxColumns() = 0;
@@ -2557,10 +2573,6 @@ struct IHThorXmlReadArg: public IHThorDiskReadBaseArg
     virtual unsigned __int64 getChooseNLimit() = 0;
     virtual unsigned __int64 getRowLimit() = 0;
     virtual void onLimitExceeded() = 0;
-};
-
-struct IHThorNewDiskReadArg: public IHThorDiskReadArg
-{
 };
 
 typedef unsigned thor_loop_counter_t;

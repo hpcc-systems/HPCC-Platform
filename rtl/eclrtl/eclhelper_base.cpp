@@ -876,6 +876,39 @@ bool CThorXmlReadArg::canMatch(const void * row)                 { return true; 
 bool CThorXmlReadArg::hasMatchFilter()                           { return false; }
 void CThorXmlReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 
+//CThorNewDiskReadArg
+
+unsigned CThorNewDiskReadArg::getFlags() { return 0; }
+void CThorNewDiskReadArg::setCallback(IThorDiskCallback * _tc) { fpp = _tc; }
+bool CThorNewDiskReadArg::canMatchAny()                              { return true; }
+void CThorNewDiskReadArg::createSegmentMonitors(IIndexReadContext *ctx) {}
+bool CThorNewDiskReadArg::canMatch(const void * row)                 { return true; }
+bool CThorNewDiskReadArg::hasMatchFilter()                           { return false; }
+void CThorNewDiskReadArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
+
+unsigned __int64 CThorNewDiskReadArg::getChooseNLimit()              { return I64C(0x7fffffffffffffff); }
+unsigned __int64 CThorNewDiskReadArg::getRowLimit()                  { return (unsigned __int64) -1; }
+void CThorNewDiskReadArg::onLimitExceeded()                          { }
+const char * CThorNewDiskReadArg::queryFormat()                      { return "flat"; }
+void CThorNewDiskReadArg::getFormatOptions(IXmlWriter & options)     { }
+void CThorNewDiskReadArg::getFormatDynOptions(IXmlWriter & options)  { }
+
+bool CThorNewDiskReadArg::needTransform() { return false; }
+bool CThorNewDiskReadArg::transformMayFilter() { return false; }
+unsigned __int64 CThorNewDiskReadArg::getKeyedLimit() { return (unsigned __int64) -1; }
+void CThorNewDiskReadArg::onKeyedLimitExceeded() { }
+ISteppingMeta * CThorNewDiskReadArg::queryRawSteppingMeta() { return NULL; }
+ISteppingMeta * CThorNewDiskReadArg::queryProjectedSteppingMeta() { return NULL; }
+void CThorNewDiskReadArg::mapOutputToInput(ARowBuilder & rowBuilder, const void * projectedRow, unsigned numFields) { }
+size32_t CThorNewDiskReadArg::transform(ARowBuilder & rowBuilder, const void * src)
+{
+    rtlFail(800, "transform() should not be called, input is deserialized");
+}
+
+size32_t CThorNewDiskReadArg::unfilteredTransform(ARowBuilder & rowBuilder, const void * src) { return 0; }
+size32_t CThorNewDiskReadArg::transformOnLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
+size32_t CThorNewDiskReadArg::transformOnKeyedLimitExceeded(ARowBuilder & rowBuilder) { return 0; }
+
 //CThorChildGroupAggregateArg
 
 size32_t CThorChildGroupAggregateArg::mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }

@@ -223,6 +223,7 @@
 #define HQLERR_NonNullChildDSDefault            4211
 #define HQLERR_AttributeXMustBeConstant         4212
 #define HQLERR_CannotInterpretRecord            4213
+#define HQLERR_NoVirtualAndAlien                4214
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -529,6 +530,7 @@
 #define HQLERR_NonNullChildDSDefault_Text       "Non-null child dataset may not be used as default value (target field '%s')"
 #define HQLERR_AttributeXMustBeConstant_Text    "Attribute %s must be set to a constant value"
 #define HQLERR_CannotInterpretRecord_Text       "This dataset contains deprecated record formats and virtual fields.  Remove the alien data types, or temporarily add __OPTION__(LEGACY) to the table definition"
+#define HQLERR_NoVirtualAndAlien_Text           "GenericDiskReads: VIRTUAL fields are not currently supported with ALIEN types"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

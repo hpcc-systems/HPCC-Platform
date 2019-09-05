@@ -482,15 +482,6 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                 }
             }
             arg.setown(createHelper(agent, owner));
-            //Use the new disk read activity unless disabled or the transform uses a virtual field
-            if (((kind == TAKdiskread) || (kind == TAKspillread)) && agent.forceNewDiskReadActivity())
-            {
-                unsigned flags = ((IHThorNewDiskReadArg &)*arg).getFlags();
-                //New activity doesn't currently support virtual callbacks from the transform.  We may want
-                //to implement a new variant to support it without imposing the overhead on the general cases.
-                if ((flags & TDRtransformvirtual) == 0)
-                    kind = TAKnewdiskread;
-            }
             activity.setown(::createActivity(agent, id, subgraph->id, resultsGraph ? resultsGraph->id : 0, kind, isLocal, isGrouped, *arg, node, this));
 
             ForEachItemIn(i2, branches)

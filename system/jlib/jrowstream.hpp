@@ -19,6 +19,7 @@
 #define JROWSTREAM_INCL
 
 #include "jiface.hpp"
+#include "jio.hpp"
 
 //The following values are used as values for special rows which are returned in the row stream
 enum class SpecialRow : memsize_t
@@ -44,17 +45,21 @@ inline SpecialRow getSpecialRowType(const void * row) { return (SpecialRow)(mems
 
 //Base interface for reading a stream of rows
 class MemoryBuffer;
-interface IRowStreamBase : extends IInterface
+class MemoryBufferBuilder;
+
+//An interface for reading rows - which can request the row in the most efficient way for the caller.
+interface IDiskRowStream : extends IRowStream
 {
+// Defined in IRowStream, here for documentation:
+// Request a row which is owned by the caller, and must be freed once it is finished with.
+    virtual const void *nextRow() override =0;
+    virtual void stop() override = 0;                              // after stop called NULL is returned
+
     virtual bool getCursor(MemoryBuffer & cursor) = 0;
     virtual void setCursor(MemoryBuffer & cursor) = 0;
-    virtual void stop() = 0;                              // after stop called NULL is returned
-};
 
-//An interface for reading rows from which are not cloned
-interface IRawRowStream : extends IRowStreamBase
-{
-    virtual const void *nextRow(size32_t & size)=0;       // rows returned are only valid until next call.  Size is the number of bytes in the row.
+// rows returned are only valid until next call.  Size is the number of bytes in the row.
+    virtual const void *nextRow(size32_t & size)=0;
 
     inline const void *ungroupedNextRow(size32_t & size)  // size will not include the size of the eog
     {
@@ -65,27 +70,12 @@ interface IRawRowStream : extends IRowStreamBase
                 return ret;
         }
     }
-};
 
-//An interface for reading rows which have been allocated
-interface IAllocRowStream : extends IInterface
-{
-    virtual const void *nextRow()=0;                      // rows returned must be freed
-
-    inline const void *ungroupedNextRow()
-    {
-        for (;;)
-        {
-            const void *ret = nextRow();
-            if (likely(!isEndOfGroup(ret)))
-                return ret;
-        }
-    }
+    virtual const void *nextRow(MemoryBufferBuilder & builder)=0;
+    // rows returned are created in the target buffer.  This should be generalized to an ARowBuilder
 };
 
 
-extern jlib_decl IRawRowStream * queryNullRawRowStream();
-extern jlib_decl IAllocRowStream * queryNullAllocatedRowStream();
-extern jlib_decl IRawRowStream * createNullRawRowStream();
+extern jlib_decl IDiskRowStream * queryNullDiskRowStream();
 
 #endif

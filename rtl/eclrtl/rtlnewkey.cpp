@@ -2287,10 +2287,11 @@ void RowFilter::remove(unsigned idx)
     filters.remove(idx);
 }
 
-void RowFilter::clear()
+RowFilter & RowFilter::clear()
 {
     filters.kill();
     numFieldsRequired = 0;
+    return *this;
 }
 
 void RowFilter::recalcFieldsRequired()
