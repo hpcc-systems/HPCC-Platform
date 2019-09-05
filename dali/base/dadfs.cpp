@@ -2998,14 +2998,14 @@ public:
                 IERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
         }
     }
-    virtual bool isRestrictedAccess() const override
+    virtual bool isRestrictedAccess() override
     {
-        return root->getPropBool("@restricted", false);
+        return queryAttributes().getPropBool("restricted");
     }
     virtual void setRestrictedAccess(bool restricted) override
     {
         DistributedFilePropertyLock lock(this);
-        root->setPropBool("@restricted", restricted);
+        queryAttributes().setPropBool("restricted", restricted);
     }
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction)
     {

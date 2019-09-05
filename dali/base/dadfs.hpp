@@ -394,7 +394,7 @@ interface IDistributedFile: extends IInterface
                                                                                             // sets or clears deletion protection
                                                                                             // returns true if locked (by anyone) after action
                                                                                             // if callerid NULL and protect=false, clears all
-    virtual bool isRestrictedAccess() const = 0;
+    virtual bool isRestrictedAccess() = 0;
     virtual void setRestrictedAccess(bool restricted) = 0;
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value
