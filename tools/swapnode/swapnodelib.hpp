@@ -25,7 +25,7 @@
 #endif
 
 interface IPropertyTree;
-extern swapnodelib_decl bool swapNode(const char *cluster, const char *oldIP, const char *newIP);
+extern swapnodelib_decl bool swapNode(const char *cluster, const char *oldHost, const char *newHost);
 extern swapnodelib_decl void emailSwap(const char *cluster, const char *msg, bool warn=false, bool sendswapped=false, bool sendhistory=false);
 
 // Called from swapnode and thor

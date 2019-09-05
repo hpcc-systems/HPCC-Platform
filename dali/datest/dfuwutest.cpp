@@ -472,8 +472,7 @@ void testRoxieDest()
 
 void testRoxieCopies()
 {
-    Owned<IGroup> grp = createIGroup("10.173.10.81-90");
-    queryNamedGroupStore().add("__test_cluster_10",grp,true);
+    queryNamedGroupStore().add("__test_cluster_10", { "10.173.10.81-90" }, true);
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     for (unsigned i= 0; i<18;i++) {
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -781,9 +780,10 @@ void testRepeatedFiles2(StringBuffer &wuid)
 static IGroup *getAuxGroup()
 {
     IGroup *auxgrp = queryNamedGroupStore().lookup("test_dummy_group");
-    if (!auxgrp) {
-        auxgrp = createIGroup("10.173.34.70-77");
-        queryNamedGroupStore().add("test_dummy_group",auxgrp,true,"/c$/dummydata");
+    if (!auxgrp)
+    {
+        queryNamedGroupStore().add("test_dummy_group", { "10.173.34.70-77" }, true, "/c$/dummydata");
+        auxgrp = queryNamedGroupStore().lookup("test_dummy_group");
     }
     return auxgrp;
 }

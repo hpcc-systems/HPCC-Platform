@@ -32,6 +32,8 @@
 #include "danqs.hpp"
 #include "dautils.hpp"
 
+#include <vector>
+
 #include "unittests.hpp"
 
 //#define COMPAT
@@ -508,8 +510,8 @@ public:
             file->attach("test::ftest" TN,user);
 #undef TN
         }
-        Owned<IGroup> grp3 = createIGroup("10.150.10.1,10.150.10.2,10.150.10.3");
-        queryNamedGroupStore().add("__testgroup3__",grp3,true);
+        queryNamedGroupStore().add("__testgroup3__", { "10.150.10.1", "10.150.10.2", "10.150.10.3" },true);
+        Owned<IGroup> grp3 = queryNamedGroupStore().lookup("test_dummy_group");
         {   // 3: three parts file old method
 #define TN "3"
             removeLogical("test::ftest" TN, user);
@@ -565,14 +567,14 @@ public:
         unsigned t;
         queryNamedGroupStore().remove("daregress_group");
         dir.removeEntry("daregress::superfile1", user);
-        SocketEndpointArray epa;
-        for (n=0;n<400;n++) {
+        std::vector<std::string> hosts;
+        for (n=0;n<400;n++)
+        {
             s.clear().append("192.168.").append(n/256).append('.').append(n%256);
-            SocketEndpoint ep(s.str());
-            epa.append(ep);
+            hosts.push_back(s.str());
         }
-        Owned<IGroup> group = createIGroup(epa);
-        queryNamedGroupStore().add("daregress_group",group,true);
+        queryNamedGroupStore().add("daregress_group", hosts, true);
+        Owned<IGroup> group = queryNamedGroupStore().lookup("daregress_group");
         ASSERT(queryNamedGroupStore().find(group,s.clear()) && "Created logical group not found");
         ASSERT(stricmp(s.str(),"daregress_group")==0 && "Created logical group found with wrong name");
         group.setown(queryNamedGroupStore().lookup("daregress_group"));
@@ -1739,12 +1741,9 @@ public:
     }
     void testMultiCluster()
     {
-        Owned<IGroup> grp1 = createIGroup("192.168.51.1-5");
-        Owned<IGroup> grp2 = createIGroup("192.168.16.1-5");
-        Owned<IGroup> grp3 = createIGroup("192.168.53.1-5");
-        queryNamedGroupStore().add("testgrp1",grp1);
-        queryNamedGroupStore().add("testgrp2",grp2);
-        queryNamedGroupStore().add("testgrp3",grp3);
+        queryNamedGroupStore().add("testgrp1", { "192.168.51.1-5" });
+        queryNamedGroupStore().add("testgrp2", { "192.168.16.1-5" });
+        queryNamedGroupStore().add("testgrp3", { "192.168.53.1-5" });
 
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         fdesc->setDefaultDir("/c$/thordata/test");
@@ -1753,9 +1752,9 @@ public:
         for (unsigned p=0; p<fdesc->numParts(); p++)
             fdesc->queryPart(p)->queryProperties().setPropInt64("@size", 10);
         ClusterPartDiskMapSpec mapping;
-        fdesc->addCluster(grp1,mapping);
-        fdesc->addCluster(grp2,mapping);
-        fdesc->addCluster(grp3,mapping);
+        fdesc->addCluster("testgrp1", nullptr, mapping);
+        fdesc->addCluster("testgrp2", nullptr, mapping);
+        fdesc->addCluster("testgrp3", nullptr, mapping);
         removeLogical("test::testfile1", user);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
         removeLogical("test::testfile1", user);

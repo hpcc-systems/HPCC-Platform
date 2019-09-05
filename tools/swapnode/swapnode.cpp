@@ -268,24 +268,34 @@ int main(int argc, const char *argv[])
                     case cmd_addspares:
                     case cmd_removespares:
                     {
+                        std::vector<std::string> hosts;
                         SocketEndpointArray allEps;
                         unsigned p=2;
                         do
                         {
-                            const char *ipOrRange = params.item(p);
+                            const char *hostOrIpRange = params.item(p);
                             SocketEndpointArray epa;
-                            epa.fromText(ipOrRange, 0);
-                            ForEachItemIn(e, epa)
-                                allEps.append(epa.item(e));
+                            epa.fromText(hostOrIpRange, 0);
+                            if (epa.ordinality()>1)
+                            {
+                                ForEachItemIn(e, epa)
+                                {
+                                    StringBuffer ipStr;
+                                    epa.item(e).getIpText(ipStr);
+                                    hosts.push_back(ipStr.str());
+                                }
+                            }
+                            else
+                                hosts.push_back(hostOrIpRange);
                             p++;
                         }
                         while (p<params.ordinality());
                         StringBuffer response;
                         bool res;
                         if (cmd == cmd_addspares)
-                            res = addClusterSpares(clusterName, "ThorCluster", allEps, response);
+                            res = addClusterSpares(clusterName, "ThorCluster", hosts, response);
                         else
-                            res = removeClusterSpares(clusterName, "ThorCluster", allEps, response);
+                            res = removeClusterSpares(clusterName, "ThorCluster", hosts, response);
                         if (!res)
                         {
                             WARNLOG("%s", response.str());

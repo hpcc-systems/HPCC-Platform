@@ -535,11 +535,14 @@ int main(int argc,char **argv)
                 rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
 
             // any overrides by Instance definitions?
-            // NB: This won't work if netAddress is "." or if we start supporting hostnames there
-            StringBuffer ipStr;
-            queryHostIP().getIpText(ipStr);
-            VStringBuffer daFileSrvPath("Instance[@netAddress=\"%s\"]", ipStr.str());
-            IPropertyTree *dafileSrvInstance = daFileSrv->queryPropTree(daFileSrvPath);
+            IPropertyTree *dafileSrvInstance = nullptr;
+            Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");
+            ForEach(*iter)
+            {
+                IpAddress instanceIP(iter->query().queryProp("@netAddress"));
+                if (instanceIP.ipequals(queryHostIP()))
+                    dafileSrvInstance = &iter->query();
+            }
             if (dafileSrvInstance)
             {
                 Owned<IPropertyTree> _dafileSrvInstance;

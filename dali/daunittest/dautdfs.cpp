@@ -103,46 +103,44 @@ public:
 protected:
     void testDFS() 
     { 
-        Owned<IGroup> grp = createIGroup("192.168.1.1");
-        dfsgroup->add(DFSUTGROUP "1", grp, true);
-        SocketEndpointArray epa;
+        dfsgroup->add(DFSUTGROUP "1", { "192.168.1.1" }, true);
+        std::vector<std::string> hosts;
         unsigned n;
         StringBuffer s;
-        for (n=0;n<7;n++) {
+        for (n=0;n<7;n++)
+        {
             s.clear().append("192.168.2.").append(n+1);
-            SocketEndpoint ep(s.str());
-            epa.append(ep);
+            hosts.push_back(s.str());
         }
-        grp.setown(createIGroup(epa)); 
-        dfsgroup->add(DFSUTGROUP "7", grp, true);
-        epa.kill();
-        for (n=0;n<400;n++) {
+        dfsgroup->add(DFSUTGROUP "7", hosts, true);
+        hosts.clear();
+        for (n=0;n<400;n++)
+        {
             s.clear().append("192.168.").append(n/256+3).append('.').append(n%256+1);
-            SocketEndpoint ep(s.str());
-            epa.append(ep);
+            hosts.push_back(s.str());
         }
-        grp.setown(createIGroup(epa)); 
-        dfsgroup->add(DFSUTGROUP "400", grp, true);
-        epa.kill();
-        for (n=0;n<400;n++) {
+        dfsgroup->add(DFSUTGROUP "400", hosts, true);
+        hosts.clear();
+        for (n=0;n<400;n++)
+        {
             s.clear().append("192.168.").append(n/256+5).append('.').append(n%256+1);
-            SocketEndpoint ep(s.str());
-            epa.append(ep);
+            hosts.push_back(s.str());
         }
-        grp.setown(createIGroup(epa)); 
-        dfsgroup->add(DFSUTGROUP "400b", grp, true);
-        grp.setown(dfsgroup->lookup(DFSUTGROUP "400"));
+        dfsgroup->add(DFSUTGROUP "400b", hosts, true);
+        hosts.clear();
+        Owned<IGroup> grp = dfsgroup->lookup(DFSUTGROUP "400");
         CPPUNIT_ASSERT(grp.get()!=NULL);
         CPPUNIT_ASSERT(grp->ordinality()==400);
-        epa.kill();
-        for (n=0;n<grp->ordinality();n++) {
+        for (n=0;n<grp->ordinality();n++)
+        {
             s.clear().append("192.168.").append(n/256+3).append('.').append(n%256+1);
             SocketEndpoint ep(s.str());
-            epa.append(ep);
-            CPPUNIT_ASSERT(epa.item(n).equals(grp->queryNode(n).endpoint()));
+            CPPUNIT_ASSERT(ep.equals(grp->queryNode(n).endpoint()));
         }
-        epa.kill();
-        for (n=0;n<grp->ordinality();n++) {
+
+        SocketEndpointArray epa;
+        for (n=0;n<grp->ordinality();n++)
+        {
             s.clear().append("192.168.").append(n/256+5).append('.').append(n%256+1);
             SocketEndpoint ep(s.str());
             epa.append(ep);
@@ -151,15 +149,15 @@ protected:
         CPPUNIT_ASSERT(dfsgroup->find(grp, s.clear()));     
         CPPUNIT_ASSERT(strcmp(DFSUTGROUP "400b",s.str())==0);
         epa.kill();
-        for (n=0;n<7;n++) {
-            s.clear().append("192.168.7.").append(n+1);
-            SocketEndpoint ep(s.str());
-            epa.append(ep);
-        }
-        grp.setown(createIGroup(epa)); 
-        dfsgroup->add(DFSUTGROUP "7b", grp, true, "/c$/altdir");
-        epa.kill();
         grp.clear();
+
+        for (n=0;n<7;n++)
+        {
+            s.clear().append("192.168.7.").append(n+1);
+            hosts.push_back(s.str());
+        }
+        dfsgroup->add(DFSUTGROUP "7b", hosts, true, "/c$/altdir");
+        hosts.clear();
 
         ClusterPartDiskMapSpec mapping;
 

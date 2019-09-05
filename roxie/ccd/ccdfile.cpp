@@ -2886,7 +2886,8 @@ private:
         if (!group)
             throw MakeStringException(0, "Unknown cluster %s while writing file %s",
                     cluster, dFile->queryLogicalName());
-        if (group->isMember())
+        rank_t r = group->rank();
+        if (RANK_NULL != r)
         {
             if (localCluster)
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
@@ -2895,8 +2896,8 @@ private:
             SocketEndpoint me(0, myNode.getNodeAddress());
             eps.append(me);
             localCluster.setown(createIGroup(eps));
-            StringBuffer clusterName;
-            localClusterName.set(eps.getText(clusterName));
+            VStringBuffer clusterName("%s[%u]", cluster, r+1);
+            localClusterName.set(clusterName);
         }
         else
         {

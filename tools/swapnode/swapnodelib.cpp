@@ -154,24 +154,26 @@ protected:
         }
         return info.getClear();
     }
-    bool doSwap(const char *oldip, const char *newip)
+    bool doSwap(const char *oldHost, const char *newHost)
     {
-        Owned<INode> newNode = createINode(newip);
-        Owned<INode> oldNode = createINode(oldip);
-        if (!group->isMember(oldNode)) {
-            ERRLOG("Node %s is not part of group %s", oldip, groupName.get());
+        Owned<INode> newNode = createINode(newHost);
+        Owned<INode> oldNode = createINode(oldHost);
+        if (!group->isMember(oldNode))
+        {
+            ERRLOG("Node %s is not part of group %s", oldHost, groupName.get());
             return false;
         }
-        if (group->isMember(newNode)) {
-            ERRLOG("Node %s is already part of group %s", newip, groupName.get());
+        if (group->isMember(newNode))
+        {
+            ERRLOG("Node %s is already part of group %s", newHost, groupName.get());
             return false;
         }
-        queryNamedGroupStore().swapNode(oldNode->endpoint(),newNode->endpoint());
+        queryNamedGroupStore().swapNode(oldHost, newHost);
         return true;
     }
-    bool doSingleSwapNode(const char *oldip,const char *newip,unsigned nodenum,IPropertyTree *info,const char *timechecked)
+    bool doSingleSwapNode(const char *oldHost, const char *newHost, unsigned nodenum, IPropertyTree *info, const char *timechecked)
     {
-        if (doSwap(oldip,newip)) {
+        if (doSwap(oldHost, newHost)) {
             if (info) {
                 StringBuffer times(timechecked);
                 if (times.length()==0) {
@@ -181,12 +183,12 @@ protected:
                 }
                 // TBD tie up with bad node in auto?
 
-                IPropertyTree *swap = info->addPropTree("Swap",createPTree("Swap"));
-                swap->setProp("@inNetAddress",newip);
-                swap->setProp("@outNetAddress",oldip);
-                swap->setProp("@time",times.str());
+                IPropertyTree *swap = info->addPropTree("Swap", createPTree("Swap"));
+                swap->setProp("@inNetAddress", newHost);
+                swap->setProp("@outNetAddress", oldHost);
+                swap->setProp("@time", times.str());
                 if (UINT_MAX != nodenum)
-                    swap->setPropInt("@rank",nodenum-1);
+                    swap->setPropInt("@rank", nodenum-1);
             }
             return true;
         }
@@ -503,23 +505,22 @@ public:
     CSingleSwapNode(const char *clusterName) : CSwapNode(clusterName)
     {
     }
-    bool swap(const char *oldip, const char *newip)
+    bool swap(const char *oldHost, const char *newHost)
     {
         ensureThorIsDown(clusterName,false,false);
 
         Owned<IPropertyTree> info = getSwapNodeInfo(true);
-        if (!doSingleSwapNode(oldip,newip,UINT_MAX,info,NULL))
+        if (!doSingleSwapNode(oldHost, newHost, UINT_MAX, info, NULL))
             return false;
         // check to see if it was a spare and remove
-        SocketEndpoint spareEp(newip);
+        SocketEndpoint spareEp(newHost);
         if (spareGroup)
         {
             rank_t r = spareGroup->rank(spareEp);
             if (RANK_NULL != r)
             {
-                PROGLOG("Removing spare : %s", newip);
-                spareGroup.setown(spareGroup->remove(r));
-                queryNamedGroupStore().add(spareGroupName, spareGroup); // NB: replace
+                PROGLOG("Removing spare : %s", newHost);
+                queryNamedGroupStore().removeNode(spareGroupName, newHost);
             }
         }
         info.clear();
@@ -530,11 +531,11 @@ public:
     }
 };
 
-bool swapNode(const char *cluster, const char *oldip, const char *newip)
+bool swapNode(const char *cluster, const char *oldHost, const char *newHost)
 {
-    PROGLOG("SWAPNODE(%s,%s,%s) starting",cluster,oldip,newip);
+    PROGLOG("SWAPNODE(%s,%s,%s) starting",cluster, oldHost, newHost);
     CSingleSwapNode swapNode(cluster);
-    return swapNode.swap(oldip, newip);
+    return swapNode.swap(oldHost, newHost);
 }
 
 
@@ -711,8 +712,9 @@ class CAutoSwapNode : public CSwapNode
             StringBuffer to;
             spareEp.getIpText(to);
             rank_t r = spareGroup->rank(spareEp);
+            dbgassertex(RANK_NULL != r);
             spareGroup.setown(spareGroup->remove(r));
-            queryNamedGroupStore().add(spareGroupName, spareGroup); // NB: replace
+            queryNamedGroupStore().removeNode(spareGroupName, to);
             Owned<IPropertyTree> info = getSwapNodeInfo(false);
             if (doSingleSwapNode(from.str(),to.str(),badrank.item(i4)+1,info,ts.str())) {
                 StringBuffer msg;

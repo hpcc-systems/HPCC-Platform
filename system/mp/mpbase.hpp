@@ -92,7 +92,7 @@ interface IGroup: extends IInterface
 interface IGroupResolver: extends IInterface
 {
     virtual IGroup *lookup(const char *logicalgroupname) = 0;
-    virtual bool find(IGroup *grp,StringBuffer &name, bool add) = 0;
+    virtual bool find(IGroup *grp,StringBuffer &name, bool add=false) = 0;
 };
 
 interface INode: extends IInterface
