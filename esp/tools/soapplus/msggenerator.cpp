@@ -347,7 +347,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
     if (schema)
     {
         const char* ns = schema->queryProp("@targetNamespace");
-        if(ns && ns && !m_ecl2esp)
+        if(ns && *ns && !m_ecl2esp)
             message.appendf("  <%s  xmlns=\"%s\">", element, ns);
         else
             message.appendf("  <%s>", element);
