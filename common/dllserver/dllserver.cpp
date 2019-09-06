@@ -813,6 +813,7 @@ void cleanUpOldDlls()
     unsigned month;
     unsigned day;
     cutoff->getGmtDate(year, month, day);
+    //MORE: Should this test be removed?
     if (false && month-- == 1)
     {
         month = 12;

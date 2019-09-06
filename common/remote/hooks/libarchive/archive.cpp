@@ -282,19 +282,19 @@ public:
         return 0;
     }
 protected:
-    struct archive *archive;
-    offset_t fileSize;
+    struct archive *archive = nullptr;
+    offset_t fileSize = 0;
 #if ARCHIVE_VERSION_NUMBER < 3000000
-    off_t curPos;
+    off_t curPos = 0;
 #else
 #if defined(_WIN32)
 #define	int64_t	__int64
 #endif
-    int64_t curPos;
+    int64_t curPos = 0;
 #endif
-    offset_t lastPos;
-    size_t curBuffSize;
-    const void *curBuff;
+    offset_t lastPos = 0;
+    size_t curBuffSize = 0;
+    const void *curBuff = nullptr;
     StringAttr fullName;
 };
 

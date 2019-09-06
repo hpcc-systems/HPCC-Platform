@@ -204,7 +204,7 @@ private:
     ThreadId owner;
     unsigned depth;
 #endif
-    inline CriticalSection(CriticalSection & value __attribute__((unused))) { assert(false); } // dummy to prevent inadvertant use as block
+    inline CriticalSection(CriticalSection &) = delete;
 public:
     inline CriticalSection()
     {
