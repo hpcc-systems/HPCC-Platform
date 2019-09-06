@@ -291,8 +291,8 @@ private:
 class NoQuickEditSection
 {
 #ifdef _WIN32
-    DWORD savedmode;
-    bool saved;
+    DWORD savedmode = 0;
+    bool saved = false;
 #endif
 public:
     NoQuickEditSection()

@@ -93,7 +93,6 @@ public:
 private:
     CriticalSection lockCrit;
     unsigned lockCount;
-    unsigned hash;
     bool lazyFetch;
     bool stateChanges;      // =false when client applying server received changes
     bool connected, serverIterAvailable, serverIter, useAppendOpt, serverGetIdsAvailable;

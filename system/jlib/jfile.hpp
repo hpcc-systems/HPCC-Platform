@@ -138,8 +138,8 @@ public:
     }
     Linked<IFile> file;
     StringAttr name;
-    bool isdir;
-    __int64 size;
+    bool isdir = false;
+    __int64 size = 0;
     CDateTime modifiedTime;
 };
 
