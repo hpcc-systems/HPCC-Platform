@@ -39,6 +39,7 @@
 #include "workunit.hpp"
 
 #include "swapnodelib.hpp"
+#include <string>
 
 struct DaliClient
 {

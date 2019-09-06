@@ -40,6 +40,7 @@
 #include "seclib.hpp"
 
 #include <vector>
+#include <string>
 
 typedef __int64 DistributedLockID;
 #define FOREIGN_DALI_TIMEOUT (1000*60*5)

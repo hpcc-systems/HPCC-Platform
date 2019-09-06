@@ -530,11 +530,14 @@ typedef unsigned __int64 timestamp_type;
 //use these macros before a function definition to disable a particular sanitize option for the body of that function
 
 #ifdef __clang__
- #define NO_SANITIZE(a) [[clang::no_sanitize(a)]]
+  #define NO_SANITIZE(a) [[clang::no_sanitize(a)]]
+  #define NO_SANITIZE_FUNCTION [[clang::no_sanitize("function")]]
 #elif __GNUC__ >= 8
  #define NO_SANITIZE(a) [[gnu::no_sanitize(a)]]
+ #define NO_SANITIZE_FUNCTION [[gnu::no_sanitize("undefined")]]
 #else
  #define NO_SANITIZE(a)
+ #define NO_SANITIZE_FUNCTION
 #endif
 
 
