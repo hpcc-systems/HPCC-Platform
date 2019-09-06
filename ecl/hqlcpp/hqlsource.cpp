@@ -3080,7 +3080,7 @@ class DiskReadBuilder : public DiskReadBuilderBase
 {
 public:
     DiskReadBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, (modeOp != no_pipe))
+        : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, (_tableExpr->queryChild(2)->getOperator() != no_pipe))
     {
         extractCanMatch = (modeOp == no_thor) || (modeOp == no_flat) ||
                           ((modeOp == no_csv) && genericDiskRead);
