@@ -3803,15 +3803,7 @@ hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
 
 hash64_t rtlHash64VStr(const char *str, hash64_t hval)
 {
-    const unsigned char *s = (const unsigned char *)str;
-    unsigned char c;
-
-    while ((c = *s++) != 0)
-    {
-        APPLY_FNV64(hval, c);
-    }
-
-    return hval;
+    return rtlHash64Data(rtlTrimVStrLen(str), str, hval);
 }
 
 
@@ -3900,15 +3892,7 @@ unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
 
 unsigned rtlHash32VStr(const char *str, unsigned hval)
 {
-    const unsigned char *s = (const unsigned char *)str;
-    unsigned char c;
-
-    while ((c = *s++) != 0)
-    {
-        APPLY_FNV32(hval, c);
-    }
-
-    return hval;
+    return rtlHash32Data(rtlTrimVStrLen(str), str, hval);
 }
 
 unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned hval)

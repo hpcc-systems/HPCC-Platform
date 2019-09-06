@@ -499,10 +499,10 @@ protected:
     LogMsgCategory            category;
     LogMsgSysInfo             sysInfo;
     LogMsgJobInfo             jobInfo;
-    LogMsgCode                msgCode;
+    LogMsgCode                msgCode = NoLogMsgCode;
     unsigned                  component;
     StringBuffer              text;
-    bool                      remoteFlag;
+    bool                      remoteFlag = false;
 };
 
 jlib_decl unsigned getPositionOfField(unsigned logfields, unsigned positionoffield);

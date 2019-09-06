@@ -47,10 +47,10 @@ public:
 //CRHRollingCache copied/modified from THOR
 class CRHRollingCache: extends CInterface
 {
-    unsigned max; // max cache size
+    unsigned max = 0; // max cache size
     QueueOf<CRHRollingCacheElem,true> cache;
-    IRowStream * in;
-    bool eos;
+    IRowStream * in = nullptr;
+    bool eos = false;
 public:
     ~CRHRollingCache();
     void init(IRowStream *_in, unsigned _max);
