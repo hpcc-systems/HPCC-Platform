@@ -1473,7 +1473,10 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 interface IWorkUnitFactory : extends IPluggableFactory
 {
-    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL,
+        ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, IPropertyTree *wuPTree,
+        ISecManager *secmgr = nullptr, ISecUser *secuser = nullptr) = 0;
     virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool deleteWorkUnitEx(const char *wuid, bool throwException, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnit * openWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
@@ -1482,8 +1485,12 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociatedFiles) = 0;
     virtual bool importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
         const char *importToIP, const char *importToPath, bool importQueryAssociatedFiles) = 0;
+    virtual void importWorkUnit_New(const char* targetCluster, const char *zapReportFileName,
+        const char *zapReportFilePath, const char *zapReportPassword, const IPropertyTree *directories, const char *app, const char *user,
+        ISecManager *secMgr, ISecUser *secUser) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope,
+        ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, __int64 * cachehint, unsigned *total,
@@ -1716,6 +1723,8 @@ extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid=0);
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
+extern WORKUNIT_API void importWorkunitFromZAPFile(const char* zapReportFileName, const char* zapReportFilePath, const char* zapReportPassword,
+    const char * app, const char * user, ISecManager * secMgr, ISecUser * secUser);
 
 class WORKUNIT_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface
 {

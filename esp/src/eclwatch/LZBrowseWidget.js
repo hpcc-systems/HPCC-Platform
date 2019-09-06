@@ -301,7 +301,8 @@ define([
 
             _onUploadSubmit: function (event) {
                 var target = this.dropZoneTargetSelect.get("row");
-                this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + target.machine.Netaddress + "&OS=" + target.machine.OS + "&Path=" + this.getUploadPath());
+//                this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + target.machine.Netaddress + "&OS=" + target.machine.OS + "&Path=" + this.getUploadPath());
+                this.uploader.set("uploadUrl", "/WsWorkunits/ImportWUZAPFile.json?upload_&ImportQueryAssociatedFile=1");
                 this.uploader.upload();
             },
 

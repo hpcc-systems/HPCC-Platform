@@ -4448,16 +4448,19 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
             if ((accessOwn != SecAccess_Full) || (accessOthers != SecAccess_Full))
                 throw MakeStringException(-1, "Permission denied.");
     
-            StringBuffer password, overwrite, importQueryAssociatedFile;
-            request->getParameter("ImportQueryAssociatedFile", importQueryAssociatedFile);
+            StringBuffer password, importQueryAssociatedFiles;
+            request->getParameter("importQueryAssociatedFiles", importQueryAssociatedFiles);
             request->getParameter("Password", password);
 
             request->readContentToFiles(nullptr, zipFolder, fileNames);
             if (!fileNames.ordinality())
                 throw MakeStringException(-1, "Failed to read upload content.");
 
-            CWsWuFileHelper helper(directories);
-            helper.importWUZAPFile(fileNames.item(0), strToBool(importQueryAssociatedFile), password, espName);
+            ///CWsWuFileHelper helper(directories);
+            ///helper.importWUZAPFile(fileNames.item(0), strToBool(importQueryAssociatedFiles), password, espName);
+//            StringBuffer zapFile;
+  //          zapFile.append(zipFolder).append(fileNames.item(0));
+            importWorkunitFromZAPFile(fileNames.item(0), zipFolder, password, "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
         }
         else
             throw MakeStringException(-1, "WsWorkunits::%s does not support the upload_ option.", method);

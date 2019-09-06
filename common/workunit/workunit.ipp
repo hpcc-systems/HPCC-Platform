@@ -621,6 +621,8 @@ public:
     // interface IWorkUnitFactory - some are left for derived classes
 
     virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
+    virtual IWorkUnit * createWorkUnit(const char * app, const char * user, IPropertyTree *wuPTree,
+        ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secmgr, ISecUser *secuser);
     virtual IConstWorkUnit * openWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
@@ -628,8 +630,12 @@ public:
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated);
     virtual bool importWorkUnit(const char *wuid, const char *zapName, const char *xmlFile,
         const char *importToIP, const char *importToPath, bool importQueryAssociatedFiles);
+    virtual void importWorkUnit_New(const char* targetCluster, const char *zapReportFileName,
+        const char *zapReportFilePath, const char *zapReportPassword, const IPropertyTree *directories, const char *app, const char *user,
+        ISecManager *secMgr, ISecUser *secUser);
     virtual int setTracingLevel(int newlevel);
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope,
+        ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator* getWorkUnitsSorted(WUSortField sortorder, // field to sort by

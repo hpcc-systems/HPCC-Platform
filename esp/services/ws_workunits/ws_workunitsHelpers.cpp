@@ -4156,7 +4156,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     }
 }
 
-void CWsWuFileHelper::importWUZAPFile(const char* zapFileName, bool importQueryAssociatedFile,
+void CWsWuFileHelper::importWUZAPFile(const char* zapFileName, bool importQueryAssociatedFiles,
     const char* password, const char* espName)
 {
     if (isEmptyString(zapFileName))
@@ -4201,7 +4201,7 @@ void CWsWuFileHelper::importWUZAPFile(const char* zapFileName, bool importQueryA
     wuxmlFile.append(strlen(zapFileName) - 3, zapFileName).append("xml");
 
     //Add WU files and update dali
-    if (!factory->importWorkUnit(wuid, zapFileName, wuxmlFile, localIP, importFilePath, importQueryAssociatedFile))
+    if (!factory->importWorkUnit(wuid, zapFileName, wuxmlFile, localIP, importFilePath, importQueryAssociatedFiles))
         throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to import workunit from ZAP File: %s. Check ESP log for details.", zapFileName);
 
     //Import GraphProgress
