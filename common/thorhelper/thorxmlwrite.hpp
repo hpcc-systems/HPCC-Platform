@@ -57,43 +57,6 @@ public:
 
 };
 
-class thorhelper_decl PropertyTreeXmlWriter : implements CInterfaceOf<IXmlWriter>
-{
-public:
-    PropertyTreeXmlWriter(IPropertyTree * _root) : root(_root) {}
-
-    virtual void outputInlineXml(const char *text) override;
-    virtual void outputQuoted(const char *text) override;
-    virtual void outputQString(unsigned len, const char *field, const char *fieldname) override;
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) override;
-    virtual void outputBool(bool field, const char *fieldname) override;
-    virtual void outputData(unsigned len, const void *field, const char *fieldname) override;
-    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) override;
-    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) override;
-    virtual void outputReal(double field, const char *fieldname) override;
-    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
-    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
-    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) override;
-    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) override;
-    virtual void outputBeginDataset(const char *dsname, bool nestChildren) override;
-    virtual void outputEndDataset(const char *dsname) override;
-    virtual void outputBeginNested(const char *fieldname, bool nestChildren) override;
-    virtual void outputEndNested(const char *fieldname) override;
-    virtual void outputBeginArray(const char *fieldname) override; //repeated elements are inline for xml
-    virtual void outputEndArray(const char *fieldname) override;
-    virtual void outputSetAll() override;
-    virtual void outputXmlns(const char *name, const char *uri) override;
-
-protected:
-    void outputLiteralString(size32_t size, const char *value, const char *fieldname);
-
-protected:
-    IPropertyTree * root;
-    ICopyArrayOf<IPropertyTree> stack;
-};
-
-
-
 extern thorhelper_decl void printKeyedValues(StringBuffer &out, IIndexReadContext *segs, IOutputMetaData *rowMeta);
 
 extern thorhelper_decl void convertRowToXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags = (unsigned)-1);
