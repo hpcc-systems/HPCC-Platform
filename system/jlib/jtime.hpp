@@ -170,7 +170,7 @@ class CTimeMon
 {
 public:
     unsigned t;
-    unsigned timeout;
+    unsigned timeout = 0;
 
     CTimeMon() { t = msTick(); }
 

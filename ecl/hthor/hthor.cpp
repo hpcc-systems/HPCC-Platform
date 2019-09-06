@@ -45,6 +45,7 @@
 #include "thorsort.hpp"
 #include "thorparse.ipp"
 #include "thorxmlwrite.hpp"
+#include "rtlformat.hpp"
 #include "thorcommon.hpp"
 #include "jsmartsock.hpp"
 #include "thorstep.hpp"
@@ -1615,7 +1616,7 @@ public:
         {
             writeTransformer->writeTranslatedText(row, pipe);
         }
-        catch (IException *e)
+        catch (IException *)
         {
             ReleaseRoxieRow(row);
             throw;
@@ -10443,7 +10444,7 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
     }
 
-    PropertyTreeXmlWriter writer(formatOptions);
+    CPropertyTreeWriter writer(formatOptions);
     helper.getFormatOptions(writer);
 }
 
@@ -10505,7 +10506,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     if (helper.getFlags() & TDRdynformatoptions)
     {
         curFormatOptions.setown(createPTreeFromIPT(formatOptions));
-        PropertyTreeXmlWriter writer(curFormatOptions);
+        CPropertyTreeWriter writer(curFormatOptions);
         helper.getFormatDynOptions(writer);
     }
     else

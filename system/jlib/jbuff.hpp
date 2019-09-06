@@ -480,16 +480,14 @@ public:
 
 class CLargeMemorySequentialReader
 {
-    size32_t left;
-    memsize_t pos;
-    const void *ptr;
+    size32_t left = 0;
+    memsize_t pos = 0;
+    const void *ptr = nullptr;
     CLargeMemoryAllocator &allocator;
 
     inline CLargeMemorySequentialReader(CLargeMemoryAllocator &_allocator)
         : allocator(_allocator)
     {
-        left = 0;
-        pos = 0;
     }
 
     inline const void *read(size32_t &max)
