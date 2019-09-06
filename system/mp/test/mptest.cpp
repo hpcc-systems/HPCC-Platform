@@ -998,7 +998,7 @@ void MPMultiMTSendRecv(ICommunicator* comm, int counter)
         assertex(r_counter == 0);
         PROGLOG("Rank %d sent %d messages", rank, (counter-s_counter));
         PROGLOG("Rank %d received %d messages", rank, (counter-r_counter));
-        delete validate;
+        delete [] validate;
     }
     comm->barrier();
 }
