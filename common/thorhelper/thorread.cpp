@@ -508,7 +508,7 @@ protected:
 
 private:
     template <class PROCESS>
-    inline const void * inlineNextRow(PROCESS processor) __attribute((always_inline));
+    inline const void * inlineNextRow(PROCESS processor) __attribute__((always_inline));
 
 protected:
     ISourceRowPrefetcher * actualRowPrefetcher = nullptr;
@@ -1238,7 +1238,7 @@ public:
 
 private:
     template <class PROCESS>
-    inline const void * inlineNextRow(PROCESS processor) __attribute((always_inline));
+    inline const void * inlineNextRow(PROCESS processor) __attribute__((always_inline));
 
 protected:
     ISourceRowPrefetcher * projectedRowPrefetcher = nullptr;
