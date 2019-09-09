@@ -138,8 +138,8 @@ static const char * EclDefinition =
 "  ProtectLogicalFile(const varstring lfn,boolean set=true) : c,context,entrypoint='fsProtectLogicalFile'; \n"
 "  DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec'; \n"
 "  varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL'; \n"
-"  varstring GetDefaultDropZone(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetDefaultDropZone'; \n"
-"  dataset(FsDropZoneRecord) GetDropZones(const varstring username = '', const varstring userPW = '') : c,context,entrypoint='fsGetDropZones'; \n"
+"  varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone'; \n"
+"  dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -2767,7 +2767,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
     return strdup("");
 }
 
-FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone(const char *username, const char *userPW)
+FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 {
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
@@ -2777,10 +2777,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone(const char *usern
         dropZoneIt->query().getDirectory(dropZoneDir);
 
     return strdup(dropZoneDir.str());
-
 }
 
-FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *username, const char *userPW)
+FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
     MemoryBuffer mb;
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);

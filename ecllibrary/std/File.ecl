@@ -967,26 +967,26 @@ EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW
  /**
  * Returns the full URL to the default Drop Zone
  *
- * @param username      String containing a username to use for authenticated
- *                      access to the ESP process; an empty string value
- *                      indicates that no user authentication is required;
- *                      OPTIONAL, defaults to an empty string
- * @param userPW        String containing the password to be used with the
- *                      user cited in the username argument; if username is
- *                      empty then this will be ignored; OPTIONAL, defaults
- *                      to an empty string
  *
- * @return              A string containing the full URL (including HTTP scheme
- *                      and port) to the default DropZone. If more than one Drop Zone
+ * @return              A string containing the path to the default DropZone. 
+ *						If more than one Drop Zone
  *                      process is defined then the first found will
- *                      be returned; will return an empty string if an ESP
- *                      server process cannot be found
+ *                      be returned; will return an empty string if a Drop Zone
+ *                      cannot be found
  */
-EXPORT varstring GetDefaultDropZone(const varstring username = '', const varstring userPW = '') :=
-    lib_fileservices.FileServices.GetDefaultDropZone(username, userPW);
+EXPORT varstring GetDefaultDropZone() :=
+    lib_fileservices.FileServices.GetDefaultDropZone();
 
+ /**
+ * Returns the a dataset with full URL to all Drop Zones
+ *
+ *
+ * @return              A dataset containing all defined Drop Zone paths. 
+ *						Will return an empty dataset if a Drop Zone
+ *                      cannot be found
+ */
 
-EXPORT dataset(FsDropZoneRecord) GetDropZones(const varstring username = '', const varstring userPW = '') :=
-    lib_fileservices.FileServices.GetDropZones(username, userPW);
+EXPORT dataset(FsDropZoneRecord) GetDropZones() :=
+    lib_fileservices.FileServices.GetDropZones();
     
 END;

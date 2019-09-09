@@ -161,8 +161,8 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
 FILESERVICES_API void FILESERVICES_CALL fsProtectLogicalFile(ICodeContext * ctx,const char *lfn,bool set);
 FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const char *_cmd);
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW);
-FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone(const char *username, const char *userPW);
-FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx,size32_t & __lenResult,void * & __result, const char *username, const char *userPW);
+FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone();
+FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx,size32_t & __lenResult,void * & __result);
 
 }
 
