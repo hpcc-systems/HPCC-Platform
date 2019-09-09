@@ -17,52 +17,136 @@
 
 ###<REPLACE>###
 
+progname=setupPKI
+
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
 source ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
 
-initPath="$path/etc/init.d"
 homePath=$HOME/$user
-binPath="$path/bin"
+sbin_path="${INSTALL_DIR}/sbin"
+envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
+
+COMPS=$(${sbin_path}/configgen -env ${envfile} -list)
+printf "%s\n" $COMPS
+
+if [[ $rc -ne 0 ]]; then
+    log "$progname: failure to build COMPS from configgen call"
+    echo -e "\033[31merror\033[0m: $progname -> failure to build COMPS from configgen call"
+    exit 1
+fi
+
+comp.parser ${COMPS}
+
+if [ -z ${compArray} ];then
+   log  "There are no components configured to run on this node ..."
+   echo "There are no components configured to run on this node ..."
+   exit 3
+fi
 
 if [ ! -d ${homePath}/certificate ]; then
     mkdir -p ${homePath}/certificate
 fi
 
-if [ ! -e ${homePath}/certificate/key.pem ]; then
-    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
-        1>/dev/null 2>&1
-    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
-        -out ${homePath}/certificate/public.key.pem
-    chmod 0644 ${homePath}/certificate/public.key.pem
-    rm -f ${homePath}/certificate/key.pem.pub
-    printf "RSA key installed for user %-28s ..." "$user"
-    log_success_msg
-else
-    printf "RSA keys are already installed for user %-15s ..." "$user"
+#if [ ! -e ${homePath}/certificate/key.pem ]; then
+#    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
+#        1>/dev/null 2>&1
+#    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
+#        -out ${homePath}/certificate/public.key.pem
+#    chmod 0644 ${homePath}/certificate/public.key.pem
+#    rm -f ${homePath}/certificate/key.pem.pub
+#    printf "RSA key installed for user %-28s ..." "$user"
+#    log_success_msg
+#else
+#    printf "RSA keys are already installed for user %-15s ..." "$user"
+#    log_success_msg
+#fi
+
+#TODO: use ecdsa algo
+csrCfgTemplate='{
+ "key": {
+    "algo": "rsa",
+    "size": 2048
+ },
+ "names": [
+ {
+ "C": "US",
+ "L": "Boca Raton",
+ "O": "HPCCSystems",
+ "OU": "Platform"
+ }
+ ],
+ "Hosts": ["localhost", "127.0.0.1"],'
+
+domainname=""
+for i in "" ${compArray[@]} ; do
+    compName=""
+    componentType=""
+    if [ "$i" != "" ]; then
+        compName=""${i#*_}
+        comp.getByName ${compName}
+        componentType=""`echo ${comp_return} | awk -F" " '{print $1}' | awk -F"=" '{print $2}'`
+    fi
+
+    echo $compName   $componentType
+
+    if [ ! -d ${homePath}/certificate/$compName ]; then
+        mkdir -p ${homePath}/certificate/$compName
+    fi
+
+    if [ ! -e ${homePath}/certificate/$compName/key.pem ]; then
+        #ssh-keygen -t rsa -N '' -f ${homePath}/certificate/$compName/key.pem \
+        #    1>/dev/null 2>&1
+        if [ "$domainname" =  "" ]; then
+             read -p "Domain Name [local]: " domainname
+             if [ "$domainname" = "" ]; then
+                 domainname=local
+             fi
+        fi
+        cn="hpcc"
+        if [ "$compName" != "" ]; then
+             cn="$compName-$componentType"
+        fi
+        csrCfg=${csrCfgTemplate}"
+ \"CN\": \"$cn."$domainname"\"
+}"
+        echo $csrCfg
+        read -p "hit any key to continue: " tmpvar
+        echo $csrCfg | cfssl genkey - | cfssljson -bare ${homePath}/certificate/$compName/my
+        mv ${homePath}/certificate/$compName/my-key.pem ${homePath}/certificate/$compName/key.pem
+        openssl rsa -in ${homePath}/certificate/$compName/key.pem -pubout \
+            -out ${homePath}/certificate/$compName/public.key.pem
+        chmod 0644 ${homePath}/certificate/$compName/public.key.pem
+        rm -f ${homePath}/certificate/$compName/certificate.pem
+        printf "RSA key installed for user %-28s component %s ..." "$user" "$compName"
+        log_success_msg
+    else
+        printf "RSA keys are already installed for user %-15s component %s ..." "$user" "$compName"
+        log_success_msg
+    fi
+    if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+        if [ "${CALOCATION}" = "" ]; then
+            openssl req -new -key ${homePath}/certificate/$compName/key.pem -keyform PEM -x509 \
+            -days 365 -out ${homePath}/certificate/$compName/certificate.pem \
+            -batch 1>/dev/null 2>&1
+            printf "Self signed Certificate installed for user %-12s ..." "$user"
+        else
+            openssl req -new -key ${homePath}/certificate/$compName/key.pem -out ${homePath}/certificate/$compName/csr.pem
+            cfssl sign -remote ${CALOCATION} ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
+            if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+                printf "Failed to generate certificate for component %s\n" "$compName"
+                exit 1
+            else
+                printf "CA signed Certificate installed for user %-14s component %s ..." "$user" "$compName"
+                log_success_msg
+            fi
+        fi
+    else
+    printf "Certificate already installed for user %-9s component %s ..." "$user" "$compName"
     log_success_msg
 fi
 
-if [ ! -e ${homePath}/certificate/certificate.pem ]; then
-    if [ "${CALOCATION}" = "" ]; then
-        openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
-        -days 365 -out ${homePath}/certificate/certificate.pem \
-        -batch 1>/dev/null 2>&1
-        printf "Self signed Certificate installed for user %-12s ..." "$user"
-    else
-        openssl req -new -key ${homePath}/certificate/key.pem -out ${homePath}/certificate/csr.pem
-        cfssl sign -remote ${CALOCATION} ${homePath}/certificate/csr.pem | cfssljson -bare ${homePath}/certificate/certificate
-        if [ ! -e ${homePath}/certificate/certificate.pem ]; then
-            printf "Failed to generate certificate\n"
-            exit 1
-        else
-            printf "CA signed Certificate installed for user %-12s ..." "$user"
-            log_success_msg
-        fi
-    fi
-else
-    printf "Certificate already installed for %-9s ..." "$user"
-    log_success_msg
-fi
+done
 
 if [ ! -e ${homePath}/.ssh/id_rsa ]; then
     cp ${homePath}/certificate/key.pem ${homePath}/.ssh/id_rsa
