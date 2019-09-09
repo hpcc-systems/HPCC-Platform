@@ -48,15 +48,15 @@ EXPORT STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
   EXPORT TestSupportedPKE := MODULE
-    EXPORT TS01 := ASSERT(Std.Crypto.SupportedPublicKeyAlgorithms() = ['SHA256']);
+    EXPORT TS01 := ASSERT(Std.Crypto.SupportedPublicKeyAlgorithms() = ['RSA']);
   END;
 
   //Encrypt/Decrypt
 
   EXPORT TestPKE01 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '');
-    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'256The quick brown fox jumps over the lazy dog');
-    EXPORT TS01  := ASSERT(mod.Decrypt(dat1)  = (DATA)'256The quick brown fox jumps over the lazy dog');
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
+    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog');
+    EXPORT TS01  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog');
   
     EXPORT TS011 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World');
 
@@ -68,9 +68,9 @@ EXPORT STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
   END;
 
   EXPORT TestPKE02 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '0123456789');//uses a passphrase
-    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'256The quick brown fox jumps over the lazy dog');
-    EXPORT TS02  := ASSERT(mod.Decrypt(dat1)  = (DATA)'256The quick brown fox jumps over the lazy dog');
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789');//uses a passphrase
+    EXPORT DATA dat1 := mod.Encrypt(            (DATA)'The quick brown fox jumps over the lazy dog');
+    EXPORT TS02  := ASSERT(mod.Decrypt(dat1)  = (DATA)'The quick brown fox jumps over the lazy dog');
   
     EXPORT TS021 := ASSERT(mod.Decrypt(dat1) != (DATA)'Hello World');
 
@@ -84,7 +84,7 @@ EXPORT STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
   //Digital Signatures
 
   EXPORT TestPKE03 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '');
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
     EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog');
     EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));
  
@@ -98,7 +98,7 @@ EXPORT STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
   END; 
 
   EXPORT TestPKE04 := MODULE
-    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '0123456789');//uses a passphrase
+    EXPORT mod := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '0123456789');//uses a passphrase
     EXPORT DATA sig1 := mod.Sign(                           (DATA)'The quick brown fox jumps over the lazy dog');
     EXPORT TS03 := ASSERT( TRUE = mod.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));
  
