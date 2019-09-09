@@ -833,6 +833,8 @@ Proceed?  y/n
       role="bold">daliconf.xml</emphasis>, por exemplo:</para>
 
       <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
+
+      <para>Execute o addScopes no nó do Dali.</para>
     </sect3>
   </sect2>
 </sect1>

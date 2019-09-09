@@ -1193,7 +1193,12 @@ T2(IDtype idval,FMtype fname,FMtype mname, Ltype lname ) :=
             SELF.lastname := lname);
 ds := DATASET([T1(123,'Fred','Jones'),
                T2(456,'John','Q','Public'),
-               T1(789,'Susie','Smith')]);</programlisting>
+               T1(789,'Susie','Smith')]);
+               
+// You can construct a DATASET from a SET.
+SET OF STRING s := ['Jim','Bob','Richard','Tom'];
+DATASET(s,{STRING txt});
+</programlisting>
   </sect2>
 
   <sect2 id="Single-row_DATASET_Expressions">

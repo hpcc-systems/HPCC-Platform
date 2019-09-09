@@ -632,6 +632,39 @@
               arquivo no tempo de compilação</emphasis> no <emphasis>Guia do
               Programador</emphasis> para obter mais detalhes.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>timeLimit</emphasis></entry>
+
+              <entry/>
+
+              <entry>Para consultas Roxie. Tempo máximo de execução (em ms)
+              para um                consultas.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>generateGlobalId</emphasis></entry>
+
+              <entry>Padrão = false</entry>
+
+              <entry>Para consultas de Roxie. Quando true, gera um único
+              GlobalId                se um não é fornecido.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>analyzeWorkunit</emphasis></entry>
+
+              <entry/>
+
+              <entry>Substitui a configuração no ECL Agent para analisar as
+              workunits               depois que as consultas ECL são
+              executadas (somente Thor). Isso permite que a workunit seja
+              analisada para identificar e exibir potenciais
+                            problemas. Estes possíveis problemas são exibidos
+              na área do ECL Watch               "Warnings &amp; Errors". A
+              configuração global é padronizada para               TRUE, mas
+              pode ser alterado usando o Configuration Manager.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>

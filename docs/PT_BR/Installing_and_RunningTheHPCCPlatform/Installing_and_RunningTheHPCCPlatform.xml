@@ -335,10 +335,6 @@
                   <row>
                     <entry><itemizedlist>
                         <listitem>
-                          <para>Python : pyembed</para>
-                        </listitem>
-
-                        <listitem>
                           <para>JAVA : javaembed</para>
                         </listitem>
 
@@ -377,8 +373,8 @@
               </tgroup>
             </informaltable></para>
 
-          <para>Outras tecnologias, como suporte ao Cassandra
-          (cassandraembed), estão incluídas no pacote da plataforma.</para>
+          <para>Outras tecnologias, como suporte ao Cassandra e Python estão
+          incluídas no pacote da plataforma.</para>
         </sect3>
       </sect2>
 
@@ -3012,7 +3008,7 @@ sudo /etc/init.d/hpcc-init -c esp start
 
       <itemizedlist>
         <listitem>
-          <para>C++ (suporte completo já está embutido)</para>
+          <para>C++ (suporte completo já está incluso)</para>
         </listitem>
 
         <listitem>
@@ -3024,7 +3020,7 @@ sudo /etc/init.d/hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>Python</para>
+          <para>Python (suporte completo já está incluso)</para>
         </listitem>
 
         <listitem>

@@ -113,7 +113,6 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
     <para><emphasis role="bold">As constantes de string VARSTRING <indexterm>
         <primary>VARSTRING string constants</primary>
       </indexterm> </emphasis> devem começar com um caractere "V". O byte nulo
-    de finalização é implícito e o tipo da constante é VARSTRING. O byte nulo
     de finalização é implícito e o tipo da constante é VARSTRING.</para>
 
     <programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting>
@@ -212,7 +211,8 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
                 </indexterm></emphasis></entry>
 
               <entry>Uma STRING indicando o sistema operacional de destino da
-              compilação. (Valores disponíveis: 'windows" ou "linux')</entry>
+              compilação. Os valores possíveis são: 'Windows', 'MacOS', ou
+              'linux' .</entry>
             </row>
 
             <row>
@@ -222,6 +222,27 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
 
               <entry>Um valor BOOLEAN indicando se a compilação gerará um
               executável autônomo.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis> __TARGET_PLATFORM__<indexterm>
+                  <primary>__TARGET_PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Uma STRING contendo o valor da plataforma de destino (o
+                             tipo de cluster em que a consulta foi submetida).
+              Os valores possíveis                são: 'roxie', 'hthor' ,
+              'thor', or 'thorlcr'.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis> __PLATFORM__<indexterm>
+                  <primary>__PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Uma STRING contendo o valor da plataforma em que a
+                             consulta será executada. Os valores possíveis
+              são: 'roxie', 'hthor' , 'thor', or 'thorlcr'.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -242,7 +263,7 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
       time(&amp;timeinsecs);  
       localtime_r(&amp;timeinsecs,&amp;localt);
       char temp[15];
-      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;amp;localt); 
+      strftime(temp , 15, "%Y%m%d%H%M%S", &amp;localt); 
       // Formats the localtime to YYYYMMDDhhmmss 
       strncpy(__result, temp, 14);
       ENDC++;

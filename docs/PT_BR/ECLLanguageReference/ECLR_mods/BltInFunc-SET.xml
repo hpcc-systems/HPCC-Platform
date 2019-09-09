@@ -133,6 +133,14 @@
   qual o valor "myField" é um dos valores "someField" de "anotherDataset", mas
   o código possui uma execução bem mais eficiente.</para>
 
+  <para>Você pode construir um DATASET a partir de um SET.</para>
+
+  <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+               {'C',4},{'D',6},{'E',2}],
+              {STRING1 Ltr, INTEGER1 Val});
+s1 := SET(ds,Ltr);          //a SET of just the Ltr field values:
+DATASET(s1,{STRING1 Ltr});  //a DATASET from the SET</programlisting>
+
   <para>Exemplo:</para>
 
   <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
