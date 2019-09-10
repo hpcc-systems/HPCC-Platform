@@ -2439,7 +2439,6 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
             if (fsize>=sizeof(WinCompressedFileTrailer))  // thats 8 bytes bigger but I think doesn't matter
             {
                 WinCompressedFileTrailer wintrailer;
-                CompressedFileTrailer trailer;
                 if (fileio->read(fsize-sizeof(WinCompressedFileTrailer),sizeof(WinCompressedFileTrailer),&wintrailer)==sizeof(WinCompressedFileTrailer)) {
                     wintrailer.translate(trailer);
                     unsigned compMethod = getCompressedMethod(trailer.compressedType);
