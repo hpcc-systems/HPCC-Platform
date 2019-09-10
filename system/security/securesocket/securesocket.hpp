@@ -45,11 +45,17 @@ enum SecureSocketType
 #define SSLogNormal 5
 #define SSLogMax    10
 
+interface ICertificateInfo : implements IInterface
+{
+     virtual const char* getCN() = 0;
+};
+
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
     virtual int secure_accept(int logLevel=1) = 0;
     virtual int secure_connect(int logLevel=1) = 0;
+    virtual ICertificateInfo* queryRemoteCertInfo() = 0;
 };
 
 // One instance per program running

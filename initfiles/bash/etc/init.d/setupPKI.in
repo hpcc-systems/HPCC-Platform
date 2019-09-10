@@ -17,6 +17,12 @@
 
 ###<REPLACE>###
 
+#TODO:
+# 1. Automatically retrieve and copy CA cert
+# 2. Enable authentication, and check CN when credentials are missing
+# 3. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
+# 4. Check why curl doesn't return when cert auth fails.
+
 progname=setupPKI
 
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
@@ -131,7 +137,7 @@ for i in "" ${compArray[@]} ; do
             -batch 1>/dev/null 2>&1
             printf "Self signed Certificate installed for user %-12s ..." "$user"
         else
-            openssl req -new -key ${homePath}/certificate/$compName/key.pem -out ${homePath}/certificate/$compName/csr.pem
+            #openssl req -new -key ${homePath}/certificate/$compName/key.pem -out ${homePath}/certificate/$compName/csr.pem
             cfssl sign -remote ${CALOCATION} ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
             if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
                 printf "Failed to generate certificate for component %s\n" "$compName"

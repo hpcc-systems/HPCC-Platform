@@ -126,6 +126,30 @@ public:
     }
 };
 
+struct CCertificateInfo : implements ICertificateInfo, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    X509* cert;
+    StringBuffer CN;
+
+    CCertificateInfo(X509* cert_) { cert = cert_; }
+
+    virtual ~CCertificateInfo()
+    {
+        if (cert != nullptr)
+        {
+            X509_free (cert);
+            cert = nullptr;
+        }
+    }
+    virtual const char* getCN()
+    {
+        return CN.str();
+    }
+};
+
 class CSecureSocket : implements ISecureSocket, public CInterface
 {
 private:
@@ -136,9 +160,10 @@ private:
     CStringSet* m_peers;
     int         m_loglevel;
     bool        m_isSecure;
+    Owned<CCertificateInfo> m_remotecertinfo;
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
-    bool verify_cert(X509* cert);
+    bool verify_cert(CCertificateInfo* certinfo);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -149,6 +174,7 @@ public:
 
     virtual int secure_accept(int logLevel);
     virtual int secure_connect(int logLevel);
+    virtual ICertificateInfo* queryRemoteCertInfo() { return m_remotecertinfo.get(); }
 
     virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
@@ -546,8 +572,13 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
     return cn;
 }
 
-bool CSecureSocket::verify_cert(X509* cert)
+bool CSecureSocket::verify_cert(CCertificateInfo* certinfo)
 {
+    if (!certinfo)
+        return false;
+    X509* cert = certinfo->cert;
+    StringBuffer& cn = certinfo->CN;
+
     DBGLOG ("peer's certificate:\n");
 
     char *s, oneline[1024];
@@ -558,14 +589,22 @@ bool CSecureSocket::verify_cert(X509* cert)
         DBGLOG ("\t subject: %s", oneline);
     }
 
+    const char* cnstart = strstr(oneline, "/CN=");
+    if (cnstart != nullptr)
+    {
+        const char* cnend = cnstart+4;
+        while (*cnend and *cnend != '/')
+            cnend++;
+        cn.append(cnend-cnstart-4, cnstart+4);
+    }
+
     s = X509_NAME_oneline (X509_get_issuer_name  (cert), oneline, 1024);
     if(s != NULL)
     {
         DBGLOG ("\t issuer: %s", oneline);
     }
 
-    StringBuffer cn;
-    get_cn(cert, cn);
+    //get_cn(cert, cn);
 
     if(cn.length() == 0)
         throw MakeStringException(-1, "cn of the certificate can't be found");
@@ -646,8 +685,8 @@ int CSecureSocket::secure_accept(int logLevel)
         {
             // We could do all sorts of certificate verification stuff here before
             // deallocating the certificate.
-            verified = verify_cert(client_cert);
-            X509_free (client_cert);
+            m_remotecertinfo.setown(new CCertificateInfo(client_cert));
+            verified = verify_cert(m_remotecertinfo.get());
         }
 
         if(!verified)
@@ -691,9 +730,8 @@ int CSecureSocket::secure_connect(int logLevel)
         {
             // We could do all sorts of certificate verification stuff here before
             // deallocating the certificate.
-            verified = verify_cert(server_cert);
-
-            X509_free (server_cert);    
+            m_remotecertinfo.setown(new CCertificateInfo(server_cert));
+            verified = verify_cert(m_remotecertinfo.get());
         }
 
         if(!verified)
