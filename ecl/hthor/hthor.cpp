@@ -436,6 +436,8 @@ void CHThorDiskWriteActivity::stop()
     if(clusterHandler)
         clusterHandler->finish(file);
     CHThorActivityBase::stop();
+    if (helper.getFlags() & TDXvarfilename)
+        filename.clear();
 }
 
 void CHThorDiskWriteActivity::resolve()
