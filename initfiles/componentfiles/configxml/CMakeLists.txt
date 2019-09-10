@@ -28,6 +28,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsl ${CMAKE_CURRENT_BINARY_DIR}/
 configure_file(environment.xsd.in environment.xsd @ONLY)
 configure_file(cgencomplist_linux.xml.in cgencomplist_linux.xml @ONLY)
 configure_file(cgencomplist_win.xml.in cgencomplist_win.xml @ONLY)
+configure_file(toposerver.xsd.in toposerver.xsd @ONLY)
 
 if("${HPCC_PROJECT_ABBR}" STREQUAL "CC")
     configure_file("buildset${HPCC_PROJECT_ABBR}.xml.in" "buildset.xml")
@@ -104,6 +105,8 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
     ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
+    ${CMAKE_CURRENT_BINARY_DIR}/toposerver.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/toposerver.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )
