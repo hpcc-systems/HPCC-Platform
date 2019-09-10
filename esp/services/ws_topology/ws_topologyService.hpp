@@ -57,6 +57,9 @@ struct ReadLog
     unsigned logfields;
     unsigned columnNumDate;
     unsigned columnNumTime;
+    StringArray logFieldNames;
+    bool includeLogFieldNameLine = true;
+    unsigned readLogFrom = 0;
 };
 
 class CWsTopologySoapBindingEx : public CWsTopologySoapBinding
