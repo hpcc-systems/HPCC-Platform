@@ -48,7 +48,12 @@
                 path="componentfiles/backupnode"
                 processName="BackupNodeProcess"
                 schema="backupnode.xsd"/>
-"            <BuildSet installSet="deploy_map.xml"
+            <BuildSet installSet="deploy_map.xml"
+                name="toposerver"
+                path="componentfiles/toposerver"
+                processName="TopoServerProcess"
+                schema="toposerver.xsd"/>
+            <BuildSet installSet="deploy_map.xml"
                 name="sparkthor"
                 path="componentfiles/sparkthor"
                 processName="SparkThorProcess"

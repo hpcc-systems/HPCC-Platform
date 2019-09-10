@@ -42,6 +42,9 @@
         <File name="eclccserver.xsl" method="xslt" destName="eclccserver.xml"/>
         <File name="eclcc.xsl" method="xslt" destName="eclcc.ini"/>
     </Component>
+  <Component name="toposerver" processName='TopoServerProcess' schema='toposerver.xsd'>
+    <File name="toposerver.xsl" method="xslt" destName="toposerver.xml"/>
+  </Component>
   <Component name="eclscheduler" processName='EclSchedulerProcess' schema='eclscheduler.xsd'>
     <File name="eclscheduler.xsl" method="xslt" destName="eclscheduler.xml"/>
   </Component>
