@@ -1901,6 +1901,9 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         {
             RemoteMultiFilename rmfn;
             SocketEndpoint ep(srcip);
+            if (ep.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "SprayFixed to %s: cannot resolve source network IP from %s.", destname, srcip);
+
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
             fnamebuf.trim();
@@ -2078,6 +2081,9 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         {
             RemoteMultiFilename rmfn;
             SocketEndpoint ep(srcip);
+            if (ep.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "SprayVariable to %s: cannot resolve source network IP from %s.", destname, srcip);
+
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
             fnamebuf.trim();
@@ -2375,6 +2381,9 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             RemoteFilename rfn;
             SocketEndpoint ep(destip);
+            if (ep.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Despray %s: cannot resolve destination network IP from %s.", srcname, destip);
+
             StringBuffer destfileWithPath, umask;
             getDropZoneInfoByIP(version, destip, destfile, destfileWithPath, umask);
             rfn.setPath(ep, destfileWithPath.str());
@@ -2510,6 +2519,9 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (!isEmptyString(srcDali))
         {
             SocketEndpoint ep(srcDali);
+            if (ep.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Copy %s: cannot resolve SourceDali network IP from %s.", srcname, srcDali);
+
             logicalName.setForeign(ep,false);
         }
 
@@ -2785,6 +2797,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         ep.set(MACHINE_IP);
 #else
         ep.set(netaddr);
+        if (ep.isNull())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "FileList: cannot resolve network IP from %s.", netaddr);
 #endif
         rfn.setPath(ep, sPath.str());
         Owned<IFile> f = createIFile(rfn);
@@ -3045,8 +3059,10 @@ bool CFileSprayEx::onDfuMonitor(IEspContext &context, IEspDfuMonitorRequest &req
             if (filename&&*filename) {
                 RemoteFilename rfn;
                 if (ip&&*ip) {
-                    SocketEndpoint ep;
-                    ep.set(ip);
+                    SocketEndpoint ep(ip);
+                    if (ep.isNull())
+                        throw MakeStringException(ECLWATCH_INVALID_INPUT, "DfuMonitor: cannot resolve network IP from %s.", ip);
+
                     rfn.setPath(ep,filename);
                 }
                 else
@@ -3121,6 +3137,8 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* dropZone, 
     ep.set(MACHINE_IP);
 #else
     ep.set(netaddr);
+    if (ep.isNull())
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "CFileSprayEx::getDropZoneFiles: cannot resolve network IP from %s.", netaddr);
 #endif
 
     rfn.setPath(ep, path);
@@ -3293,8 +3311,9 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
             throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
 
         RemoteFilename rfn;
-        SocketEndpoint ep;
-        ep.set(netAddress);
+        SocketEndpoint ep(netAddress);
+        if (ep.isNull())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DeleteDropZoneFiles: cannot resolve network IP from %s.", netAddress);
 
         rfn.setPath(ep, path.str());
         Owned<IFile> f = createIFile(rfn);
