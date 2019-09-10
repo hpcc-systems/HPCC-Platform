@@ -898,6 +898,19 @@
              name="s1"
              netAddress="."/>
   </EclSchedulerProcess>
+  <TopoServerProcess build="_"
+                     buildSet="toposerver"
+                     description="Topology Server process"
+                     logdir="${LOG_PATH}/mytoposerver"
+                     name="mytoposerver"
+                     port="9004"
+                     stdlog="true"
+                     traceLevel="1">
+   <Instance computer="localhost"
+             directory="${RUNTIME_PATH}/mytoposerver"
+             name="s1"
+             netAddress="."/>
+  </TopoServerProcess>
   @SPARK_ENV_S@
   <SparkThorProcess build="_"
                     buildSet="sparkthor"
@@ -912,7 +925,7 @@
                     SPARK_WORKER_MEMORY="1G"
                     SPARK_WORKER_PORT="7071">
    <Instance computer="localhost"
-             directory="/var/lib/HPCCSystems/mysparkthor"
+             directory="${RUNTIME_PATH}/mysparkthor"
              name="s1"
              netAddress="."/>
    </SparkThorProcess>
@@ -1257,6 +1270,11 @@
                    resource="WsLoggingAccess"/>
     </Properties>
    </BuildSet>
+   <BuildSet installSet="deploy_map.xml"
+             name="toposerver"
+             path="componentfiles/toposerver"
+             processName="TopoServerProcess"
+             schema="toposerver.xsd"/>
    @SPARK_ENV_S@
    <BuildSet installSet="deploy_map.xml"
              name="sparkthor"

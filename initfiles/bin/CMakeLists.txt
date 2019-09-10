@@ -27,6 +27,7 @@ GENERATE_BASH(processor ${bash-vars} "init_esp.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_roxie.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_sasha.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_thorslave.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_toposerver.in" outFiles)
 ADD_CUSTOM_TARGET(ProcessFiles-initfiles-bin ALL DEPENDS ${outFiles})
 
 configure_file(init_backupnode.in init_backupnode @ONLY)

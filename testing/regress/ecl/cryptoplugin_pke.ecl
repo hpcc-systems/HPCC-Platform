@@ -61,7 +61,7 @@ STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
 
-encModule := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '');
+encModule := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
 
 //Digital Signature tests
 
@@ -86,7 +86,7 @@ output( (STRING)encModule.Decrypt(encrypted) );
 output( (STRING)encModule.Decrypt(encrypted) );
 
 
-encModuleBuff := Std.Crypto.PublicKeyEncryptionFromBuffer('SHA256', pubKey, privKey, '');
+encModuleBuff := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
 
 DATA sigBuff := encModuleBuff.Sign((DATA)'The quick brown fox jumps over the lazy dog');
 output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE

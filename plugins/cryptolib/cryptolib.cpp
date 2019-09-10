@@ -383,7 +383,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSupportedPublicKeyAlgorithms(bool & __isAllR
 {
     __isAllResult = false;
     StringArray algorithms;
-    algorithms.appendList("SHA256", ",");
+    algorithms.appendList("RSA", ",");
     stringArrayToECLSetOfString(algorithms, &__result, &__lenResult);
 }
 
@@ -407,7 +407,7 @@ void doPKISign(size32_t & __lenResult, void * & __result,
 
 void verifyPKIAlgorithm(const char * pkAlgorithm)
 {
-    if (!strieq(pkAlgorithm, "SHA256"))
+    if (!strieq(pkAlgorithm, "RSA"))
         throw MakeStringException(-1, "Unsupported PKI algorithm (%s) specified", pkAlgorithm);
 }
 
