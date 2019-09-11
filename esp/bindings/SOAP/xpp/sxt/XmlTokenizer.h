@@ -663,6 +663,9 @@ namespace sxt {
             }
             if(paramNotifyCDSect)
               return CDSECT;
+          }
+          else if (ch == ']') {  // ] after ]], e.g., Case like: <![CDATA[[X]]]>, the content is [X]
+            state = STATE_CDSECT_BRACKET_BRACKET;
           } else {
             state = STATE_CDSECT;
           }
