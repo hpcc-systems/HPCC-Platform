@@ -142,7 +142,7 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
                 slaves[channel].append(ep);
                 if (ep.equals(mySlaveEP))
                 {
-                    mySubChannels[channel] = slaves[channel].ordinality();
+                    mySubChannels[channel] = slaves[channel].ordinality()-1;
                     channels.push_back(channel);
                 }
                 slaves[0].append(ep);
