@@ -5584,12 +5584,7 @@ void HqlCppTranslator::doBuildExprAdd(BuildCtx & ctx, IHqlExpression * expr, CHq
 
     CHqlBoundExpr boundL, boundR;
     buildExpr(ctx, expr->queryChild(0), boundL);
-
-    bool WORK_AROUND_GCC_CONDITION_BUG = (options.targetCompiler == GccCppCompiler);
-    if (WORK_AROUND_GCC_CONDITION_BUG && expr->queryChild(1)->getOperator() == no_if)
-        buildTempExpr(ctx, expr->queryChild(1), boundR);
-    else
-        buildExpr(ctx, expr->queryChild(1), boundR);
+    buildExpr(ctx, expr->queryChild(1), boundR);
 
     tgt.expr.setown(adjustBoundIntegerValues(boundL.expr, boundR.expr, false));
 }
