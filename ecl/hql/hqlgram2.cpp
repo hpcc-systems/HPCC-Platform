@@ -11444,6 +11444,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case REMOTE: msg.append("REMOTE"); break;
     case REPEAT: msg.append("REPEAT"); break;
     case RESPONSE: msg.append("RESPONSE"); break;
+    case RESTRICTED: msg.append("RESTRICTED"); break;
     case RETRY: msg.append("RETRY"); break;
     case RETURN: msg.append("RETURN"); break;
     case RIGHT: msg.append("RIGHT"); break;

@@ -1140,6 +1140,7 @@ enum
     TDWnooverwrite      = 0x40000,
     TDWupdatecrc        = 0x80000,      // has format crc
     TDWexpires          = 0x100000,
+    TDWrestricted       = 0x200000,
 };
 
 //flags for thor index read
@@ -1183,6 +1184,7 @@ enum
     TIWhaswidth         = 0x0800,
     TIWexpires          = 0x1000,
     TIWmaxlength        = 0x2000,       // explicit maxlength
+    TIWrestricted       = 0x200000,     // value matches the equivalent TDW flag (same value as TDW* caused problems as some index related code uses TDW* flags)
 };
 
 //flags for thor dataset/temp tables

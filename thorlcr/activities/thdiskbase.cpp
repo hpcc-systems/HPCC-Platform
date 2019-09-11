@@ -238,6 +238,8 @@ void CWriteMasterBase::publish()
             props.setPropInt64("@totalCRC", totalCRC);
         }
     }
+    if (TDWrestricted & diskHelperBase->getFlags())
+        props.setPropBool("restricted", true );
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {
