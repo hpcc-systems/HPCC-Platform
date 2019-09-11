@@ -392,7 +392,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         UNIMPLEMENTED;
     }
 
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(filename.get(), "Read", true, false, false);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(filename.get(), "Read", true, false, false, nullptr, isCodeSigned);
     if (!ldFile)
         return false;
     IDistributedFile * f = ldFile->queryDistributedFile();
@@ -421,6 +421,8 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
 void EclGraphElement::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * _node)
 {
     node.set(_node);
+    if (node)
+        isCodeSigned = isActivityCodeSigned(*node);
     kind = (ThorActivityKind)node->getPropInt("att[@name=\"_kind\"]/@value", TAKnone);
     id = node->getPropInt("@id", 0);
 

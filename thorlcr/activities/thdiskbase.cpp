@@ -46,7 +46,7 @@ void CDiskReadMasterBase::init()
     fileName.set(expandedFileName);
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
 
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true, container.activityIsCodeSigned());
     if (file)
     {
         if (file->isExternal() && (helper->getFlags() & TDXcompress))
@@ -155,7 +155,7 @@ void CWriteMasterBase::init()
     if (diskHelperBase->getFlags() & TDWextend)
     {
         assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, true);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, true, false, container.activityIsCodeSigned());
         if (file.get())
         {
             fileDesc.setown(file->getFileDescriptor());
@@ -238,6 +238,8 @@ void CWriteMasterBase::publish()
             props.setPropInt64("@totalCRC", totalCRC);
         }
     }
+    if (TDWrestricted & diskHelperBase->getFlags())
+        props.setPropBool("restricted", true );
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {
@@ -362,7 +364,7 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
         if (0 == ((TDXvarfilename|TDXtemporary|TDXjobtemp) & diskHelperBase->getFlags()))
         {
             OwnedRoxieString fname(diskHelperBase->getFileName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true, false, container.activityIsCodeSigned());
             if (file)
             {
                 if (0 == ((TDWextend+TDWoverwrite) & diskHelperBase->getFlags()))

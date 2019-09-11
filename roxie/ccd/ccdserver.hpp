@@ -181,7 +181,7 @@ interface IRoxieServerActivity : extends IActivityBase
 // Roxie server-side caching
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
 // Dynamic file support
-    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt) = 0;
+    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt, bool isPrivilegedUser) = 0;
     virtual const IResolvedFile *queryVarFileInfo() const = 0;
 //misc
     virtual IRoxieSlaveContext *queryContext() = 0;
@@ -226,6 +226,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual const StatisticsMapping &queryStatsMapping() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;
     virtual roxiemem::RoxieHeapFlags getHeapFlags() const = 0;
+    virtual bool isActivityCodeSigned() const = 0;
 };
 interface IGraphResult : public IInterface
 {

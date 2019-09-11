@@ -299,17 +299,17 @@ public:
     {
         return ctx->queryAuthToken();
     }
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
-        return ctx->resolveLFN(filename, isOpt);
+        return ctx->resolveLFN(filename, isOpt, isPrivilegedUser);
     }
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
-        return ctx->createLFN(filename, overwrite, extend, clusters);
+        return ctx->createLFN(filename, overwrite, extend, clusters, isPrivilegedUser);
     }
-    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
+    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
-        ctx->onFileCallback(header, lfn, isOpt, isLocal);
+        ctx->onFileCallback(header, lfn, isOpt, isLocal, isPrivilegedUser);
     }
     virtual IActivityGraph *getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity)
     {
@@ -417,8 +417,8 @@ protected:
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
+    bool isCodeSigned = false;
     unsigned heapFlags;
-
     mutable RelaxedAtomic<__int64> processed = {0};
     mutable RelaxedAtomic<__int64> started = {0};
 
@@ -432,6 +432,7 @@ public:
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
         heapFlags = _graphNode.getPropInt("hint[@name='heapflags']/@value", _queryFactory.queryOptions().heapFlags);
+        isCodeSigned = ::isActivityCodeSigned(_graphNode);
     }
     
     ~CRoxieServerActivityFactoryBase()
@@ -610,6 +611,10 @@ public:
     virtual roxiemem::RoxieHeapFlags getHeapFlags() const
     {
         return (roxiemem::RoxieHeapFlags)heapFlags;
+    }
+    virtual bool isActivityCodeSigned() const
+    {
+        return isCodeSigned;
     }
 };
 
@@ -1020,17 +1025,17 @@ public:
         }
     }
 
-    const IResolvedFile *resolveLFNIndex(const char *filename, bool isOpt)
+    const IResolvedFile *resolveLFNIndex(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
-        const IResolvedFile *ret = resolveLFN(filename, isOpt);
+        const IResolvedFile *ret = resolveLFN(filename, isOpt, isPrivilegedUser);
         if (ret && !ret->isKey())
             throw MakeStringException(0, "Attempting to read flat file as an index: %s", filename);
         return ret;
     }
 
-    const IResolvedFile *resolveLFNFlat(const char *filename, bool isOpt)
+    const IResolvedFile *resolveLFNFlat(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
-        const IResolvedFile *ret = resolveLFN(filename, isOpt);
+        const IResolvedFile *ret = resolveLFN(filename, isOpt, isPrivilegedUser);
         if (ret && ret->isKey())
             throw MakeStringException(0, "Attempting to read index as a flat file: %s", filename);
         return ret;
@@ -1258,9 +1263,9 @@ public:
         return false;
     }
 
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
-        return ctx->resolveLFN(filename, isOpt);
+        return ctx->resolveLFN(filename, isOpt, isPrivilegedUser);
     }
 
     virtual const IResolvedFile *queryVarFileInfo() const
@@ -4850,7 +4855,7 @@ public:
                                 StringBuffer s;
                                 activity.queryLogCtx().CTXLOG("Callback on query %s file %s", header.toString(s).str(),(const char *) lfn);
                             }
-                            activity.queryContext()->onFileCallback(header, lfn, isOpt, isLocal);
+                            activity.queryContext()->onFileCallback(header, lfn, isOpt, isLocal, defaultPrivilegedUser);
                         }
                         else
                             throwUnexpected();
@@ -11708,7 +11713,8 @@ protected:
             else
                 clusters.append(".");
         }
-        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters));
+        // Using defaultPrivilegedUser as restricted files applies to limits reading of file (not writing of files)
+        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters, defaultPrivilegedUser));
         // MORE - need to check somewhere that single part if it's an existing file or an external one...
     }
 
@@ -11879,7 +11885,8 @@ public:
             fileProps.setPropInt64("@totalCRC", totalCRC);
         }
         fileProps.setPropInt("@formatCrc", helper.getFormatCrc());
-
+        if (flags & TDWrestricted)
+            fileProps.setPropBool("restricted", true);
         IRecordSize * inputMeta = input->queryOutputMeta();
         if ((inputMeta->isFixedSize()) && !isOutputTransformed())
             fileProps.setPropInt("@recordSize", inputMeta->getFixedSize() + (grouped ? 1 : 0));
@@ -12181,7 +12188,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         else
             clusters.append(".");
         OwnedRoxieString fname(helper.getFileName());
-        writer.setown(ctx->createLFN(fname, overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
+        writer.setown(ctx->createLFN(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
         if (writer->queryFile()->exists())
         {
@@ -12443,6 +12450,8 @@ public:
             properties.setPropBin("_record_layout", layoutMetaSize, layoutMetaBuff);
             rtlFree(layoutMetaBuff);
         }
+        if (helper.getFlags() & TIWrestricted)
+            properties.setPropBool("restricted", true);
         // New record layout info
         setRtlFormat(properties, helper.queryDiskRecordSize());
         // Bloom info
@@ -21906,7 +21915,7 @@ public:
             if (variableFileName)
             {
                 OwnedRoxieString fileName(helper.getFileName());
-                varFileInfo.setown(resolveLFNFlat(fileName, isOpt));
+                varFileInfo.setown(resolveLFNFlat(fileName, isOpt, factory->isActivityCodeSigned()));
                 numParts = 0;
                 if (varFileInfo)
                     numParts = varFileInfo->getNumParts();
@@ -22826,7 +22835,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
@@ -22907,7 +22916,7 @@ public:
             if ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(helper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true, isActivityCodeSigned());
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -22955,7 +22964,7 @@ public:
         {
             bool isOpt = (flags & TIRoptional) != 0;
             OwnedRoxieString indexName(indexHelper->getFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
             if (indexfile)
             {
                 unsigned projectedCrc = indexHelper->getProjectedFormatCrc();
@@ -22995,7 +23004,7 @@ public:
             if ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) == 0)
             {
                 OwnedRoxieString indexName(indexHelper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true);
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true, isActivityCodeSigned());
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -23046,7 +23055,7 @@ protected:
     void setVariableFileInfo()
     {
         OwnedRoxieString indexName(indexHelper.getFileName());
-        varFileInfo.setown(resolveLFNIndex(indexName, isOpt));
+        varFileInfo.setown(resolveLFNIndex(indexName, isOpt, defaultPrivilegedUser));
         if (varFileInfo)
         {
             unsigned projectedCrc = indexHelper.getProjectedFormatCrc();
@@ -23717,7 +23726,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
     void setVariableFileInfo()
     {
         OwnedRoxieString indexName(indexHelper.getFileName());
-        varFileInfo.setown(resolveLFNIndex(indexName, isOpt));
+        varFileInfo.setown(resolveLFNIndex(indexName, isOpt, defaultPrivilegedUser));
         unsigned projectedCrc = indexHelper.getProjectedFormatCrc();
         unsigned expectedCrc = indexHelper.getDiskFormatCrc();
         IOutputMetaData *projectedMeta = indexHelper.queryProjectedDiskRecordSize();
@@ -24909,7 +24918,7 @@ public:
         if (variableFileName)
         {
             OwnedRoxieString fname(helper.getFileName());
-            varFileInfo.setown(resolveLFNFlat(fname, isOpt));
+            varFileInfo.setown(resolveLFNFlat(fname, isOpt, defaultPrivilegedUser));
             if (varFileInfo)
                 map.setown(varFileInfo->getFileMap());
         }
@@ -25031,7 +25040,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (helper->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true, true,
-                                                                        _queryFactory.queryWorkUnit(), true));
+                                                                        _queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
             if (datafile)
                 map.setown(datafile->getFileMap());
         }
@@ -25053,7 +25062,7 @@ public:
             if ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(helper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true, isActivityCodeSigned());
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -25098,14 +25107,14 @@ public:
                 if (indexName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
-                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
+                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
                     if (indexfile)
                         keySet.setown(indexfile->getKeyArray(isOpt, isLocal ? queryFactory.queryChannel() : 0));
                 }
                 if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
-                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
                     if (datafile)
                     {
                         if (isLocal)
@@ -25139,13 +25148,13 @@ public:
             Owned<const IResolvedFile> temp;
             if (fileName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true));
+                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
             if (indexName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true));
+                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -25648,7 +25657,7 @@ public:
         else if (variableIndexFileName)
         {
             OwnedRoxieString indexFileName(helper.getIndexFileName());
-            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
+            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0, factory->isActivityCodeSigned()));
             if (varFileInfo)
             {
                 unsigned expectedCrc = helper.getIndexFormatCrc();
@@ -26347,7 +26356,7 @@ public:
         {
             bool isFetchOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fname(helper.getFileName());
-            varFetchFileInfo.setown(resolveLFNFlat(fname, isFetchOpt));
+            varFetchFileInfo.setown(resolveLFNFlat(fname, isFetchOpt, factory->isActivityCodeSigned()));
             if (varFetchFileInfo)
             {
                 // Note - we don't need to do any translation on the disk part of full-keyed joins
@@ -26502,7 +26511,7 @@ public:
         else if (variableIndexFileName)
         {
             OwnedRoxieString indexFileName(helper.getIndexFileName());
-            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0));
+            varFileInfo.setown(resolveLFNIndex(indexFileName, (helper.getJoinFlags() & JFindexoptional) != 0, factory->isActivityCodeSigned()));
             if (varFileInfo)
             {
                 unsigned expectedCrc = helper.getIndexFormatCrc();
@@ -26743,7 +26752,7 @@ public:
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
             if (indexfile)
             {
                 unsigned expectedCrc = helper->getIndexFormatCrc();
@@ -26767,7 +26776,7 @@ public:
         if (!isHalfKeyed && !variableFetchFileName)
         {
             bool isFetchOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit(), true, isActivityCodeSigned()));
             if (datafile)
             {
                 if (isLocal)  // Not sure this works
@@ -26790,7 +26799,7 @@ public:
                 headId, keySet, keyTranslators, indexReadMeta, joinFlags, isSimple, isLocal);
         else
             return new CRoxieServerKeyedJoinActivity(_ctx, this, _probeManager,
-                headId, keySet, keyTranslators, indexReadMeta, 
+                headId, keySet, keyTranslators, indexReadMeta,
                 tailId, map, joinFlags, isLocal); // MORE - not sure local variant actually works - should be using files not map, for example?
     }
 

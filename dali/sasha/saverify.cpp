@@ -221,7 +221,7 @@ public:
 
     void verifyFile(const char *name,CDateTime *cutoff)
     {
-        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,UNKNOWN_USER);
+        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultPrivilegedUser);
         if (!file)
             return;
         IPropertyTree &fileprops = file->queryAttributes();
@@ -343,7 +343,7 @@ public:
             }
         }
         if (!stopped) {
-            file.setown(queryDistributedFileDirectory().lookup(name,UNKNOWN_USER));
+            file.setown(queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultPrivilegedUser));
             if (!file)
                 return;
             if (afor.ok) {

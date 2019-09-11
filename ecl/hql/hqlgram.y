@@ -397,6 +397,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   REMOTE
   REPEAT
   RESPONSE
+  RESTRICTED
   RETRY
   RETURN
   RIGHT
@@ -3066,6 +3067,10 @@ buildFlag
                             parser->normalizeExpression($3, type_numeric, false);
                             $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
+    | RESTRICTED        {
+                            $$.setExpr(createAttribute(restrictedAtom));
+                            $$.setPosition($1);
+                        }
     | expression
     ;
 
@@ -3485,6 +3490,10 @@ outputFlag
                         }
     | PERSIST           {
                             $$.setExpr(createAttribute(persistAtom));
+                            $$.setPosition($1);
+                        }
+    | RESTRICTED        {
+                            $$.setExpr(createAttribute(restrictedAtom));
                             $$.setPosition($1);
                         }
     | XML_TOKEN         {

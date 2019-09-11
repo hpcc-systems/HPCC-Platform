@@ -128,7 +128,7 @@ StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logic
 {
     Owned<IUserDescriptor> userdesc = createUserDescriptor();
     userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",logicalName);
     return wuid.append(df->queryAttributes().queryProp("@workunit"));
@@ -1341,7 +1341,7 @@ IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char*
     context.getUserID(username);
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
     userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         return NULL;
 

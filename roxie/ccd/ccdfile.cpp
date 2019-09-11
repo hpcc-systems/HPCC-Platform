@@ -1930,7 +1930,7 @@ public:
                     Owned<IFileDescriptor> fDesc = sub.getFileDescriptor();
                     Owned<IFileDescriptor> remoteFDesc;
                     if (daliHelper)
-                        remoteFDesc.setown(daliHelper->checkClonedFromRemote(sub.queryLogicalName(), fDesc, cacheIt));
+                        remoteFDesc.setown(daliHelper->checkClonedFromRemote(sub.queryLogicalName(), fDesc, cacheIt, defaultPrivilegedUser));
                     subDFiles.append(OLINK(sub));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
@@ -1949,7 +1949,7 @@ public:
                 Owned<IFileDescriptor> fDesc = dFile->getFileDescriptor();
                 Owned<IFileDescriptor> remoteFDesc;
                 if (daliHelper)
-                    remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt));
+                    remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt, defaultPrivilegedUser));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
         }
@@ -2482,6 +2482,10 @@ public:
             return checkFileExists(physicalName.get());
         else
             return false;
+    }
+    virtual bool isRestrictedAccess() const override
+    {
+        return (dFile && dFile->isRestrictedAccess());
     }
 };
 

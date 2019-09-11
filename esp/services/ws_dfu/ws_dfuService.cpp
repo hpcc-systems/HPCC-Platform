@@ -1105,7 +1105,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     if (!autocreatesuper)
     {//a file lock created by the lookup() will be released after '}'
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true, false, false, nullptr, defaultPrivilegedUser);
         if (existingSuperfile)
         {
             if (!df)
@@ -1257,7 +1257,7 @@ bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, Stri
     StringArray emptySuperFiles;
     IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
     {
-        Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true);
+        Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
         if(!df)
             return false;
         Owned<IDistributedSuperFileIterator> supers = df->getOwningSuperFiles();
@@ -1316,7 +1316,7 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         {
-            Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true);
+            Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
             if(!df)
             {
                 PROGLOG("CWsDfuEx::DFUDeleteFiles: %s not found", lfn);
@@ -1495,7 +1495,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 
             try
             {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), true);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), true, false, false, nullptr, defaultPrivilegedUser);
                 if (df)
                 {
                     if (subfiles.length() > 0)
@@ -1614,7 +1614,7 @@ IHqlExpression * getEclRecordDefinition(const char * ecl)
 
 IHqlExpression * getEclRecordDefinition(IUserDescriptor* udesc, const char* FileName)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
     if(!df->queryAttributes().hasProp("ECL"))
@@ -1696,7 +1696,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             userdesc.setown(createUserDescriptor());
             userdesc->set(userId, context.queryPassword(), context.querySignature());
         }
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
         if (!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
 
@@ -1772,7 +1772,7 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
 
 bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         return false;
 
@@ -1971,7 +1971,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             return;
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true); // lock super-owners
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 
@@ -4942,7 +4942,7 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get(), false, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -4990,7 +4990,7 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get());
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get(),false,false,false,nullptr,defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5597,7 +5597,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     {
         userdesc.setown(createUserDescriptor());
         userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-        df.setown(queryDistributedFileDirectory().lookup(indexName, userdesc));
+        df.setown(queryDistributedFileDirectory().lookup(indexName, userdesc, false, false, false, nullptr, defaultPrivilegedUser));
         if(!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
 
@@ -5909,7 +5909,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
 
     checkLogicalName(fileName, userDesc, true, false, false, nullptr); // check for read permissions
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, false, false, true, nullptr, lockTimeoutMs); // lock super-owners
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, false, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs); // lock super-owners
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file '%s'.", fileName.str());
 
@@ -6436,7 +6436,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
             fileDesc->queryProperties().setProp("@owner", userId);
         }
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, false, false, true, nullptr, req.getLockTimeoutMs());
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, false, false, true, nullptr, defaultPrivilegedUser, req.getLockTimeoutMs());
         if (df)
         {
             if (!req.getOverwrite())

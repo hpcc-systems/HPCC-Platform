@@ -112,6 +112,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual bool exists() const = 0;
     virtual bool isSuperFile() const = 0;
     virtual bool isKey() const = 0;
+    virtual bool isRestrictedAccess() const = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile

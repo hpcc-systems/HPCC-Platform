@@ -584,6 +584,12 @@ IHqlExpression * NewProjectMapper2::doExpandFields(IHqlExpression * expr, IHqlEx
 
     if (expandCallback && (expr == oldDataset))
     {
+        /*
+         * If the mapping comes from a constant transform, then return ROW(transform) as the expanded value
+         */
+        if (mapping->isConstant() && mapping->isTransform())
+            return createRow(no_createrow, LINK(mapping));
+
         OwnedHqlExpr mapped = expandCallback->onExpandSelector();
         if (mapped)
             return mapped.getClear();
@@ -615,6 +621,13 @@ IHqlExpression * NewProjectMapper2::doExpandFields(IHqlExpression * expr, IHqlEx
             IHqlExpression * ds = expr->queryChild(0);
             if (ds->getOperator() == no_select)
                 ret = doNewExpandSelect(ds, oldDataset, newDataset, oldParent);
+            else if (ds == oldDataset)
+            {
+                //Check for activerow(dataset) and if so return the no_createrow - with a surrounding activerow
+                OwnedHqlExpr mapped = doExpandFields(ds, oldDataset, newDataset, oldParent);
+                if (mapped)
+                    return mapped.getClear();
+            }
             break;
         }
     case no_projectrow:

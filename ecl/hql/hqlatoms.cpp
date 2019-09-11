@@ -378,6 +378,7 @@ IAtom * resizeAtom;
 IAtom * _resourced_Atom;
 IAtom * responseAtom;
 IAtom * restartAtom;
+IAtom * restrictedAtom;
 IAtom * resultAtom;
 IAtom * _results_Atom;
 IAtom * retryAtom;
@@ -856,6 +857,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(resourced);
     MAKEATOM(response);
     MAKEATOM(restart);
+    MAKEATOM(restricted);
     MAKEATOM(result);
     MAKESYSATOM(results);
     MAKEATOM(retry);
