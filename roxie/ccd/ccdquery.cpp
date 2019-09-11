@@ -1160,7 +1160,8 @@ public:
                                     if (indexName)
                                     {
                                         bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isIndexOpt']/@value");
-                                        const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu, true);
+                                        bool isCodeSigned = isActivityCodeSigned(node);
+                                        const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu, true, isCodeSigned);
                                         if (indexFile)
                                         {
                                             hashValue = indexFile->addHash64(hashValue);
@@ -1173,8 +1174,9 @@ public:
                                     {
                                         if (!node.getPropBool("att[@name='_isSpill']/@value") && !node.getPropBool("att[@name='_isSpillGlobal']/@value"))
                                         {
+                                            bool isCodeSigned = isActivityCodeSigned(node);
                                             bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isOpt']/@value");
-                                            const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu, true);
+                                            const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu, true, isCodeSigned);
                                             if (dataFile)
                                             {
                                                 hashValue = dataFile->addHash64(hashValue);

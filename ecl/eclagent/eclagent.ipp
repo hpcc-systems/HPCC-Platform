@@ -167,9 +167,9 @@ public:
     {
         ctx->unlockWorkUnit();
     }
-    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn)
+    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser)
     {
-        return ctx->resolveLFN(logicalName, errorTxt, optional, noteRead, write, expandedlfn);
+        return ctx->resolveLFN(logicalName, errorTxt, optional, noteRead, write, expandedlfn, isPrivilegedUser);
     }
     virtual StringBuffer & getTempfileBase(StringBuffer & buff)
     {
@@ -578,7 +578,7 @@ public:
     //virtual void logException(IEclException *e);  
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
-    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL);
+    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser);
 
     virtual void executeThorGraph(const char * graphName);
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
@@ -787,6 +787,7 @@ public:
     bool onlyUpdateIfChanged;
     bool alreadyUpdated;
     bool isEof;
+    bool isCodeSigned = false;
     unsigned whichBranch;
     CIArrayOf<EclGraphElement> branches;
     UnsignedArray branchIndexes;

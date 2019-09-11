@@ -383,6 +383,7 @@ extern HQL_API IAtom * resizeAtom;
 extern HQL_API IAtom * _resourced_Atom;
 extern HQL_API IAtom * responseAtom;
 extern HQL_API IAtom * restartAtom;
+extern HQL_API IAtom * restrictedAtom;
 extern HQL_API IAtom * resultAtom;
 extern HQL_API IAtom * _results_Atom;
 extern HQL_API IAtom * retryAtom;

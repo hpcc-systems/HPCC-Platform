@@ -10586,6 +10586,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
         if (!compressAttr->hasAttribute(lzwAtom))  flags.append("|TIWnolzwcompress");
     }
     if (widthExpr) flags.append("|TIWhaswidth");
+    if (expr->hasAttribute(restrictedAtom)) flags.append("|TIWrestricted");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -10977,6 +10978,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (updateAttr) flags.append("|TDWupdatecrc");
             if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TDWupdate");
             if (expires) flags.append("|TDWexpires");
+            if (expr->hasAttribute(restrictedAtom)) flags.append("|TDWrestricted");
 
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

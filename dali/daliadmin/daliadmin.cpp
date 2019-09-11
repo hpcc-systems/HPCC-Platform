@@ -558,7 +558,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
         outln(str.str());
     }
     else {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc,false,false,false,nullptr,defaultPrivilegedUser);
         if (file) {
             Owned<IFileDescriptor> fdesc = file->getFileDescriptor();
             Owned<IPropertyTree> t = createPTree("File");
@@ -590,8 +590,8 @@ static void setdfspartattr(const char *lname, unsigned partNum, const char *attr
         throw MakeStringException(0, "External file not supported");
     if (lfn.isForeign()) 
         throw MakeStringException(0, "Foreign file not supported");
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc);
-    if (nullptr == file.get())
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc, false, false, false, nullptr, defaultPrivilegedUser);
+    if (!file)
         throw MakeStringException(0, "Could not find file: '%s'", lname);
     if (file->querySuperFile())
         throw MakeStringException(0, "Cannot be used on a superfile");
@@ -869,7 +869,7 @@ static void dfsLs(const char *name, const char *options, bool safe = false)
 
 static void dfsmap(const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
         UERRLOG("File %s not found",lname);
         return;
@@ -902,7 +902,7 @@ static int dfsexists(const char *lname,IUserDescriptor *user)
 
 static void dfsparents(const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true,nullptr,defaultPrivilegedUser);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter) 
@@ -916,7 +916,7 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
 {
     for (;;)
     {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true,nullptr,defaultPrivilegedUser);
         if (!file)
         {
             UERRLOG("File '%s' not found", lname);
@@ -1043,7 +1043,7 @@ public:
 static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 {
     static CIpTable dafilesrvips;
-    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user);
+    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user,false,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
         UERRLOG("VERIFY: cannot find %s",name);
         return 1;
@@ -1162,7 +1162,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 
 static void setprotect(const char *filename, const char *callerid, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect(callerid,true);
 }
 
@@ -1170,7 +1170,7 @@ static void setprotect(const char *filename, const char *callerid, IUserDescript
 
 static void unprotect(const char *filename, const char *callerid, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect((strcmp(callerid,"*")==0)?NULL:callerid,false);
 }
 //=============================================================================
@@ -1623,7 +1623,7 @@ static offset_t getCompressedSize(IDistributedFile *file)
 
 static void dfscompratio (const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
     StringBuffer out;
     out.appendf("File %s ",lname);
     if (file) {
@@ -1806,7 +1806,7 @@ static void normalizeFileNames(IUserDescriptor *user, const char *name)
         Owned<IDistributedFile> dFile;
         try
         {
-            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, 30000)); // 30 sec timeout
+            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, defaultPrivilegedUser, 30000)); // 30 sec timeout
             if (!dFile)
                 UWARNLOG("Could not find file lfn = %s", dlfn.get());
         }
@@ -1981,7 +1981,7 @@ static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor 
         throw MakeStringException(0,"Invalid mode: %s", mode);
 
     PROGLOG("Looking up file: %s, mode=%s", logicalFile, mode);
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, false, NULL, 5000);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, false, NULL, defaultPrivilegedUser, 5000);
     if (!file)
     {
         UERRLOG("File not found: %s", logicalFile);

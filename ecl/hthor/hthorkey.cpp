@@ -1073,9 +1073,9 @@ IInputSteppingMeta * CHThorIndexReadActivity::querySteppingMeta()
 }
 
 
-ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead=true, bool write=false)
+ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, write);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, write, nullptr, isPrivilegedUser);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -1089,7 +1089,7 @@ extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, 
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexRead", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexRead", 0 != (arg.getFlags() & TIRoptional),true, false, defaultPrivilegedUser);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1271,7 +1271,7 @@ extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_ag
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexNormalize", 0 != (arg.getFlags() & TIRoptional),true,true);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexNormalize", 0 != (arg.getFlags() & TIRoptional),true,true,defaultPrivilegedUser);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1388,7 +1388,7 @@ extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_ag
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexAggregate", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexAggregate", 0 != (arg.getFlags() & TIRoptional), true, false, defaultPrivilegedUser);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1544,7 +1544,7 @@ extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent,
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexCount", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexCount", 0 != (arg.getFlags() & TIRoptional), true, false, defaultPrivilegedUser);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -1655,7 +1655,7 @@ extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(arg.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexGroupAggregate", 0 != (arg.getFlags() & TIRoptional));
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(_agent, lfn, "IndexGroupAggregate", 0 != (arg.getFlags() & TIRoptional), true, false, defaultPrivilegedUser);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
     {
@@ -2136,11 +2136,13 @@ class CHThorThreadedActivityBase : public CHThorActivityBase, implements IThread
     };
 
 public:
-    CHThorThreadedActivityBase (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize)
+    CHThorThreadedActivityBase (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize, IPropertyTree *_node)
         : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), fetch(_fetch)
     {
         exception = NULL;
         rowLimit = 0;
+        if (_node)
+            isCodeSigned = isActivityCodeSigned(*_node);
     }
 
     virtual ~CHThorThreadedActivityBase ()
@@ -2207,6 +2209,7 @@ protected:
     Owned<InputHandler> inputThread;
     unsigned numParts;
     unsigned __int64 rowLimit;
+    bool isCodeSigned = false;
     Owned<IThreadPool> threadPool;
     CriticalSection pendingCrit;
     IException *exception;
@@ -2267,7 +2270,7 @@ public:
         OwnedRoxieString lfn(fetch.getFileName());
         if (lfn.get())
         {
-            Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional));
+            Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional), isCodeSigned);
             IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
             if(dFile)
             {
@@ -2294,7 +2297,7 @@ class CHThorFetchActivityBase : public CHThorThreadedActivityBase, public IFetch
 {
 public:
     CHThorFetchActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize, IPropertyTree *_node)
-      : CHThorThreadedActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, diskSize)
+      : CHThorThreadedActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, diskSize, _node)
     {
         pendingSeq = 0;
         signalSeq = 0;
@@ -2583,7 +2586,7 @@ public:
         ICsvParameters * csvInfo = _arg.queryCsvParameters();
 
         OwnedRoxieString lfn(fetch.getFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional));
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional), isCodeSigned);
         IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         const char * quotes = NULL;
         const char * separators = NULL;
@@ -3481,9 +3484,10 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     Owned<IOutputMetaData> actualDiskMeta;           // only one disk layout is permitted
     Owned<const IDynamicTransform> translator;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
+    bool isCodeSigned = false;
 public:
     CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize()), helper(_arg)
+        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize(), _node), helper(_arg)
     {
         atomic_set(&prefiltered, 0);
         atomic_set(&postfiltered, 0);
@@ -3496,6 +3500,7 @@ public:
             const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
             if (recordTranslationModeHintText)
                 recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+            isCodeSigned = isActivityCodeSigned(*_node);
         }
     }
 
@@ -4023,7 +4028,7 @@ public:
     virtual void start()
     {
         OwnedRoxieString lfn(helper.getIndexFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional));
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, false, isCodeSigned);
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)
         {

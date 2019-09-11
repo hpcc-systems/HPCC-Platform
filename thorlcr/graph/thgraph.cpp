@@ -335,7 +335,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     ownerId = xgmml->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);
     onCreateCalled = prepared = haveCreateCtx = nullAct = false;
     onlyUpdateIfChanged = xgmml->getPropBool("att[@name=\"_updateIfChanged\"]/@value", false);
-
+    isCodeSigned = isActivityCodeSigned(_xgmml);
     StringBuffer helperName("fAc");
     xgmml->getProp("@id", helperName);
     helperFactory = (EclHelperFactory) queryJob().queryDllEntry().getEntry(helperName.str());

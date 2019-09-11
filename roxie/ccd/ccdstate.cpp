@@ -451,7 +451,7 @@ protected:
     }
 
     // Use dali to resolve subfile into physical file info
-    static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool resolveLocal)
+    static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool resolveLocal, bool isPrivilegedUser)
     {
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
         if (traceLevel > 9)
@@ -474,7 +474,7 @@ protected:
             {
                 if (daliHelper->connected())
                 {
-                    Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheResult, writeAccess);
+                    Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheResult, writeAccess, isPrivilegedUser);
                     if (dFile)
                         result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, !useCache, cacheResult, writeAccess);
                 }
@@ -485,7 +485,7 @@ protected:
                     if (fd)
                     {
                         Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, NULL, false);
-                        Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheResult);
+                        Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheResult, isPrivilegedUser);
                         creator->addSubFile(fd.getClear(), remoteFDesc.getClear());
                         result = creator.getClear();
                     }
@@ -524,15 +524,15 @@ protected:
     }
 
     // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
-    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory) const
+    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory, bool isPrivilegedUser) const
     {
-        IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
+        IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate, isPrivilegedUser);
         if (!result && (!checkCompulsory || !isCompulsory()))
-            result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate, resolveLocally());
+            result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate, resolveLocally(), isPrivilegedUser);
         return result;
     }
 
-    IResolvedFile *lookupFile(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate) const
+    IResolvedFile *lookupFile(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool isPrivilegedUser) const
     {
         // Order of resolution: 
         // 1. Files named in package
@@ -562,7 +562,7 @@ protected:
                     }
                     if (traceLevel > 9)
                         DBGLOG("Looking up subfile %s", subFileName.str());
-                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
+                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false, isPrivilegedUser);  // NOTE - overwriting a superfile does NOT require write access to subfiles
                     if (subFileInfo)
                     {
                         if (!super)
@@ -588,7 +588,7 @@ protected:
             const CRoxiePackageNode *basePackage = getBaseNode(i);
             if (!basePackage)
                 continue;
-            IResolvedFile *result = basePackage->lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
+            IResolvedFile *result = basePackage->lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate, isPrivilegedUser);
             if (result)
                 return result;
         }
@@ -609,6 +609,7 @@ protected:
         {
             // Look through all files and resolve them now
             Owned<IPropertyTreeIterator> supers = node->getElements("SuperFile");
+            const bool isCodeSigned = isActivityCodeSigned(*node);
             ForEach(*supers)
             {
                 IPropertyTree &super = supers->query();
@@ -617,7 +618,7 @@ protected:
                 {
                     try
                     {
-                        const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true);
+                        const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true, isCodeSigned);
                         if (resolved)
                         {
                             files.append(*const_cast<IResolvedFile *>(resolved));
@@ -674,14 +675,14 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
-    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix) const
+    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix, bool isPrivilegedUser) const
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false, ignoreForeignPrefix);
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
-        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false, true);
+        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false, true, isPrivilegedUser);
         if (!result)
         {
             StringBuffer compulsoryMsg;
@@ -695,13 +696,13 @@ public:
         return result;
     }
 
-    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const
+    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false, false);
-        Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, true, true);
+        Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, true, true, isPrivilegedUser);
         if (!resolved)
-            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true, resolveLocally()));
+            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true, resolveLocally(), isPrivilegedUser));
         if (resolved)
         {
             if (resolved->exists())
@@ -730,7 +731,7 @@ public:
         else if (daliHelper)
             user = daliHelper->queryUserDescriptor();//predeployed query mode
 
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true, isPrivilegedUser);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);

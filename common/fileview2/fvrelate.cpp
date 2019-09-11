@@ -373,7 +373,7 @@ void ViewFileWeb::gatherWebFromPattern(const char * filenamePattern, const ViewG
     if (!localOptions.kind)
         localOptions.kind = S_LINK_RELATIONSHIP_KIND;
 
-    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, udesc);
+    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, udesc, defaultPrivilegedUser);
     if (iter->first())
     {
         do
@@ -426,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,false,false,true); // lock super-owners
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,false,false,true,nullptr,defaultPrivilegedUser); // lock super-owners
     if (!resolved)
         return NULL;
 

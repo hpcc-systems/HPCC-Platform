@@ -649,4 +649,11 @@ extern THORHELPER_API bool getTranslators(Owned<const IDynamicTransform> &transl
 // Returns a ITranslator that gives access to a dynamic translator, keyed translator and the format used
 extern THORHELPER_API ITranslator *getTranslators(const char *tracing, unsigned expectedCrc, IOutputMetaData *expectedFormat, unsigned publishedCrc, IOutputMetaData *publishedFormat, unsigned projectedCrc, IOutputMetaData *projectedFormat, RecordTranslationMode mode);
 
+inline bool isActivityCodeSigned(IPropertyTree &graphNode)
+{
+    if (!isEmptyString(graphNode.queryProp("att[@name=\"signedBy\"]/@value")))
+        return true;
+    return false;
+}
+
 #endif // THORHELPER_HPP

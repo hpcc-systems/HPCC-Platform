@@ -41,7 +41,7 @@ LogicFileWrapper::~LogicFileWrapper()
 void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& returnCluster, IUserDescriptor* udesc)
 {
     try {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc) ;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser) ;
         if(!df)
             throw MakeStringException(-1,"Could not find logical file");
         df->getClusterName(0,returnCluster);    // ** TBD other cluster
@@ -71,7 +71,7 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         {
-            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, true) ;
+            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, true, false, false, nullptr, defaultPrivilegedUser) ;
             if(!df)
             {
                 returnStr.appendf("<Message><Value>File %s not found</Value></Message>", cname.str());
@@ -98,7 +98,7 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
 {
     try
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc) ;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, false, nullptr, defaultPrivilegedUser) ;
         if(!df)
             return false;
 

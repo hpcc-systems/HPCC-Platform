@@ -994,11 +994,12 @@ public:
     {
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
+        bool isCodeSigned = isActivityCodeSigned(_graphNode);
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
                 unsigned channel = queryFactory.queryChannel();
@@ -2416,9 +2417,10 @@ public:
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
         {
+            bool isCodeSigned = isActivityCodeSigned(graphNode);
             bool isOpt = (helper->getFlags() & TIRoptional) != 0;
             OwnedRoxieString indexName(helper->getFileName());
-            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
+            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
                 translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
@@ -3599,9 +3601,10 @@ public:
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
+            bool isCodeSigned = isActivityCodeSigned(_graphNode);
             bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fname(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
                 unsigned expectedCrc = helper->getDiskFormatCrc();
@@ -3996,9 +3999,10 @@ public:
         expectedMeta = helper->queryIndexRecordSize();
         if (!variableFileName)
         {
+            bool isCodeSigned = isActivityCodeSigned(_graphNode);
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
                 translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, true));
@@ -4334,9 +4338,10 @@ public:
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
+            bool isCodeSigned = isActivityCodeSigned(_graphNode);
             bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
                 unsigned expectedCrc = helper->getDiskFormatCrc();
@@ -4677,19 +4682,20 @@ public:
             ThorActivityKind kind = getActivityKind(_graphNode);
             if (kind != TAKdiskwrite && kind != TAKspillwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
+                bool isCodeSigned = isActivityCodeSigned(_graphNode);
                 const char *fileName = queryNodeFileName(_graphNode, kind);
                 const char *indexName = queryNodeIndexName(_graphNode, kind);
                 if (indexName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
-                    indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+                    indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
                     if (indexfile)
                         keyArray.setown(indexfile->getKeyArray(isOpt, queryFactory.queryChannel()));
                 }
                 if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
-                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
                     if (datafile)
                     {
                         fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));

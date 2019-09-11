@@ -911,6 +911,64 @@ static bool branchesMatch(unsigned options, IHqlExpression * left, IHqlExpressio
     return true;
 }
 
+
+/*
+ * Check if the expr is a transform that effectively says SELF := row, where row has the same format as
+ * the target dataset.  If so return row, else return nullptr
+ */
+static IHqlExpression * queryRedundantTransformSource(IHqlExpression * expr, IHqlExpression * record)
+{
+    IHqlExpression * result = nullptr;
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        IHqlExpression * match = nullptr;
+        switch (cur->getOperator())
+        {
+        case no_skip:
+            throwUnexpected();
+        case no_assignall:
+            match = queryRedundantTransformSource(cur, record);
+            break;
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                IHqlExpression * rhs = cur->queryChild(1);
+                if (rhs->getOperator() != no_select)
+                    return nullptr;
+                if (lhs->queryChild(1) != rhs->queryChild(1))
+                    return nullptr;
+                match = rhs->queryChild(0);
+                break;
+            }
+        }
+
+        if (!match)
+            return nullptr;
+        if (result)
+        {
+            if (match != result)
+                return nullptr;
+        }
+        else
+        {
+            if (match->queryRecord() != record)
+                return nullptr;
+            result = match;
+        }
+    }
+    return result;
+}
+
+IHqlExpression * CTreeOptimizer::optimizeCreateRow(IHqlExpression * expr)
+{
+    //Check for createrow(transform(record, SELF.x := <row>.x; SELF.y := <row>.y) -> <row>
+    IHqlExpression * transform = expr->queryChild(0);
+    if (transformContainsSkip(transform))
+        return nullptr;
+    return queryRedundantTransformSource(transform, expr->queryRecord());
+}
+
 IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
 {
     IHqlExpression * trueExpr = expr->queryChild(1);
@@ -2344,6 +2402,18 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
     //Removing child nodes could be included, but it may create more spillers/splitters - which may be significant in thor.
     switch (op)
     {
+        case no_createrow:
+        {
+            IHqlExpression * ret = optimizeCreateRow(transformed);
+            if (ret)
+            {
+                DBGLOG("Optimizer: Remove Redundant %s", queryNode0Text(transformed));
+                if (ret->isDataset())
+                    return ensureActiveRow(ret);
+                return LINK(ret);
+            }
+            break;
+        }
     case no_if:
         {
             OwnedHqlExpr ret = optimizeIf(transformed);

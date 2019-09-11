@@ -2254,6 +2254,7 @@ protected:
     MemoryAttr encryptionkey;
     bool persistent;
     bool grouped;
+    bool isCodeSigned = false;
     enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml } readType = rt_unknown;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     unsigned __int64 stopAfter = 0;
@@ -2958,7 +2959,7 @@ protected:
     bool finishedParts = false;
     unsigned __int64 stopAfter = 0;
     unsigned __int64 offsetOfPart = 0;
-
+    bool isCodeSigned = false;
     void close();
     void resolveFile();
     virtual void verifyRecordFormatCrc();
@@ -3059,7 +3060,7 @@ extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_age
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EXTRATYPE extra) \
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, extra); }
 
-extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional);
+extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool privilegedUser);
 
 #endif // HTHOR_IPP_INCL
 

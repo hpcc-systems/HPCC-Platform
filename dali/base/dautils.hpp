@@ -440,7 +440,7 @@ interface ILocalOrDistributedFile: extends IInterface
     virtual bool isExternal() const = 0;
 };
 
-extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite=false);
+extern da_decl ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite, bool isPrivilegedUser);
 
 typedef __int64 ConnectionId;
 
