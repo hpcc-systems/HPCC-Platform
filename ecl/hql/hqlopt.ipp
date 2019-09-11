@@ -112,6 +112,7 @@ protected:
 
     IHqlExpression * optimizeAggregateCompound(IHqlExpression * transformed);
     IHqlExpression * optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount, bool isLocal);
+    IHqlExpression * optimizeCreateRow(IHqlExpression * expr);
     IHqlExpression * optimizeJoinCondition(IHqlExpression * expr);
     IHqlExpression * optimizeDistributeDedup(IHqlExpression * expr);
     IHqlExpression * optimizeIf(IHqlExpression * expr);
