@@ -2197,7 +2197,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                 addAttribute(WaMetaGroupSortOrder, getExprECL(groupSortOrder, s.clear(), true).str());
         }
 
-        if (options.noteRecordSizeInGraph)
+        if (options.noteRecordSizeInGraph || options.generateActivityFormats)
         {
             LinkedHqlExpr record = activityExpr->queryRecord();
             if (!record && (getNumChildTables(activityExpr) == 1))
@@ -2207,9 +2207,15 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                 //In Thor the serialized record is the interesting value, so include that in the graph
                 if (translator.targetThor())
                     record.setown(getSerializedForm(record, diskAtom));
-                StringBuffer temp;
-                getRecordSizeText(temp, record);
-                addAttribute(WaRecordSize, temp.str());
+
+                if (options.noteRecordSizeInGraph)
+                {
+                    StringBuffer temp;
+                    getRecordSizeText(temp, record);
+                    addAttribute(WaRecordSize, temp.str());
+                }
+                if (options.generateActivityFormats)
+                    translator.addFormatAttribute(*this, WaRecordFormat, record);
             }
         }
 
@@ -10225,6 +10231,14 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * record
     subctx.addQuoted(s);
 }
 
+
+void HqlCppTranslator::addFormatAttribute(ActivityInstance & instance, WuAttr attr, IHqlExpression * record)
+{
+    //MORE: Better would be to add a section to the workunit and only generate the record formats once, and reference them from here
+    StringBuffer recordEcl;
+    getRecordECL(record, recordEcl);
+    instance.addAttribute(attr, recordEcl.str());
+}
 
 void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, bool removeFilepos, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
