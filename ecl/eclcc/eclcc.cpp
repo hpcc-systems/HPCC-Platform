@@ -2333,7 +2333,7 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         // Look up the file in Dali
         try
         {
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(filename, udesc, false, false);
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(filename, udesc, false, false, false, nullptr, defaultPrivilegedUser);
             if (dfsFile)
             {
                 const char *recordECL = dfsFile->queryAttributes().queryProp("ECL");

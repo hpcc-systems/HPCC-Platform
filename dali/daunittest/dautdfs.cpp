@@ -33,7 +33,6 @@
 #define DFSUTSCOPE  "test::dfsut"
 #define DFSUTDIR    "test/dfsut"
 
-
 class TTestDFS : public CPPUNIT_NS::TestFixture
 {
     CPPUNIT_TEST_SUITE(TTestDFS);
@@ -55,7 +54,7 @@ class TTestDFS : public CPPUNIT_NS::TestFixture
     {
         StringArray superfiles;
         StringArray files;
-        Owned<IDistributedFileIterator> iter = dfsdir->getIterator(DFSUTSCOPE "::*", true, UNKNOWN_USER);
+        Owned<IDistributedFileIterator> iter = dfsdir->getIterator(DFSUTSCOPE "::*", true, UNKNOWN_USER, defaultNonPrivilegedUser);
         ForEach(*iter) {
             IDistributedFile &file = iter->query();
             if (file.querySuperFile())
@@ -172,7 +171,7 @@ protected:
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
         file->attach(DFSUTSCOPE "::testfile1", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile1", UNKNOWN_USER));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile1", UNKNOWN_USER, false, false, false, nullptr, true));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==1);
         CPPUNIT_ASSERT(file->numCopies(0)==2);
@@ -210,7 +209,7 @@ protected:
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
         file->attach(DFSUTSCOPE "::testfile2", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile2", UNKNOWN_USER));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile2", UNKNOWN_USER, false, false, false, nullptr, true));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         unsigned pi;
@@ -254,7 +253,7 @@ protected:
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
         file->attach(DFSUTSCOPE "::testfile3", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile3", UNKNOWN_USER));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile3", UNKNOWN_USER, false, false, false, nullptr, true));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         for (pi=0;pi<8;pi++) {
@@ -312,7 +311,7 @@ protected:
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
         file->attach(DFSUTSCOPE "::testfile4", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile4", UNKNOWN_USER));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile4", UNKNOWN_USER, false, false, false, nullptr, true));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         for (pi=0;pi<8;pi++) {

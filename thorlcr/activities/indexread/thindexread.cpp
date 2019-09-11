@@ -229,7 +229,7 @@ public:
         StringBuffer expandedFileName;
         queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
         fileName.set(expandedFileName);
-        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true);
+        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true, container.activityIsCodeSigned());
         if (index)
         {
             checkFileType(this, index, "key", true);

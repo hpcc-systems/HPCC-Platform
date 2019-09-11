@@ -92,7 +92,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual void unlockWorkUnit() = 0;
     
-    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL) = 0;
+    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
     virtual StringBuffer & getTempfileBase(StringBuffer & buff) = 0;
     virtual const char *noteTemporaryFile(const char *fname) = 0;
     virtual const char *noteTemporaryFilespec(const char *fname) = 0;

@@ -3041,7 +3041,7 @@ public:
         return dfile.get(); 
     }
 
-    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write)
+    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write, bool isPrivilegedUser)
     {
         fileExists = false;
         if (!onlydfs)
@@ -3064,7 +3064,7 @@ public:
             if (gotlocal)
             {
                 if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
-                    dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write)); // MORE - if dFile is not null then arguably exists should be true
+                    dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write,false,false,nullptr,isPrivilegedUser)); // MORE - if dFile is not null then arguably exists should be true
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -3088,7 +3088,7 @@ public:
             }
             else
             {
-                dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+                dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write,false,false,nullptr,isPrivilegedUser));
                 if (dfile.get())
                     return true;
             }
@@ -3240,10 +3240,10 @@ public:
 
 };
 
-ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite, bool isPrivilegedUser)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
-    if (ret->init(fname,user,onlylocal,onlydfs,iswrite))
+    if (ret->init(fname,user,onlylocal,onlydfs,iswrite,isPrivilegedUser))
         return ret.getClear();
     return NULL;
 }

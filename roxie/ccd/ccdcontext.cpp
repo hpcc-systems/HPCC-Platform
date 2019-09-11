@@ -441,7 +441,7 @@ private:
 
     inline bool fileExists(const char *lfn)
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, queryUserDescriptor());
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
         if (f)
             return true;
         return false;
@@ -735,7 +735,7 @@ private:
                     MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                     persistLock.setown(getPersistReadLock(goer));
                 }
-                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser);
                 if (!f)
                     goto restart; // Persist has been deleted since last checked - repeat the whole process
                 const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -2487,22 +2487,22 @@ public:
         return NULL;
     }
 
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
         CDateTime cacheDate; // Note - this is empty meaning we don't know...
         return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
     }
 
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
         throwUnexpected(); // only support writing on the server
     }
 
-    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
+    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
         // On a slave, we need to request info using our own header (not the one passed in) and need to get global rather than just local info
         // (possibly we could get just local if the channel matches but not sure there is any point)
-        Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt);
+        Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt, isPrivilegedUser);
         if (dFile)
         {
             MemoryBuffer mb;
@@ -3614,7 +3614,7 @@ public:
         }
     }
 
-    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt, bool isPrivilegedUser)
     {
         CriticalBlock b(contextCrit);
         StringBuffer expandedName;
@@ -3622,7 +3622,7 @@ public:
         Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
         if (!ret)
         {
-            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit, false));
+            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit, false, isPrivilegedUser));
             if (ret)
             {
                 IResolvedFile *add = const_cast<IResolvedFile *>(ret.get());
@@ -3632,9 +3632,9 @@ public:
         return ret.getClear();
     }
 
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
+    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
-        return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit);
+        return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit, isPrivilegedUser);
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
@@ -3643,9 +3643,9 @@ public:
         CRoxieContextBase::endGraph(startTimeStamp, startCycles, aborting);
     }
 
-    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
+    virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
-        Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt);
+        Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt, isPrivilegedUser);
         if (dFile)
         {
             MemoryBuffer mb;
@@ -3893,7 +3893,7 @@ public:
     {
         StringBuffer fullname;
         expandLogicalFilename(fullname, logicalName, workUnit, false, false);
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor());
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor(),false,false,false,nullptr,defaultPrivilegedUser);
         if (file)
         {
             WorkunitUpdate wu = updateWorkUnit();

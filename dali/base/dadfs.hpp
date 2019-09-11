@@ -557,26 +557,28 @@ interface IDistributedFileDirectory: extends IInterface
 {
     virtual IDistributedFile *lookup(   const char *logicalname,
                                         IUserDescriptor *user,
-                                        bool writeaccess=false,
-                                        bool hold = false,
-                                        bool lockSuperOwner = false,
-                                        IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
+                                        bool writeaccess,
+                                        bool hold,
+                                        bool lockSuperOwner,
+                                        IDistributedFileTransaction *transaction, // transaction only used for looking up superfile sub file
+                                        bool privilegedUser,
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
     virtual IDistributedFile *lookup(   CDfsLogicalFileName &logicalname,
                                         IUserDescriptor *user,
-                                        bool writeaccess=false,
-                                        bool hold = false,
-                                        bool lockSuperOwner = false,
-                                        IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
+                                        bool writeaccess,
+                                        bool hold,
+                                        bool lockSuperOwner,
+                                        IDistributedFileTransaction *transaction, // transaction only used for looking up superfile sub files
+                                        bool privilegedUser,
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
     virtual IDistributedFile *createNew(IFileDescriptor *desc) = 0;
     virtual IDistributedFile *createExternal(IFileDescriptor *desc, const char *name) = 0;
 
-    virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
+    virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user,bool isPrivilegedUser) = 0;
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters,
@@ -761,7 +763,8 @@ enum DistributedFileSystemError
     DFSERR_ClusterAlreadyExists,
     DFSERR_LookupConnectionTimout,       // only raised if timeout specified on lookup etc.
     DFSERR_FailedToDeleteFile,
-    DFSERR_PassIterateFilesLimit
+    DFSERR_PassIterateFilesLimit,
+    DFSERR_RestrictedFileAccessDenied
 };
 
 
@@ -838,6 +841,8 @@ extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned ti
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
 
+constexpr bool defaultPrivilegedUser = true;
+constexpr bool defaultNonPrivilegedUser = false;
 
 #endif
 

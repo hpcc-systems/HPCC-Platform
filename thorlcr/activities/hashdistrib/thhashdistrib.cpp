@@ -123,7 +123,7 @@ public:
         StringBuffer scoped;
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName, false, false, false, container.activityIsCodeSigned());
         if (!file)
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == file->numParts())

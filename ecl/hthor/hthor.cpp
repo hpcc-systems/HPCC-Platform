@@ -159,9 +159,9 @@ const void * CRowBuffer::next()
 }
 
 
-ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional)
+ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, false, nullptr, isPrivilegedUser);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -445,7 +445,7 @@ void CHThorDiskWriteActivity::resolve()
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
-        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn);
+        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn,defaultPrivilegedUser);
         if (f)
         {
             if (f->queryDistributedFile())
@@ -1051,7 +1051,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true, false, false, nullptr, defaultNonPrivilegedUser);
 
         if (f)
         {
@@ -8085,12 +8085,13 @@ CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, un
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
     actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
-
+    isCodeSigned = false;
     if (_node)
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+        isCodeSigned = isActivityCodeSigned(*_node);
     }
 }
 
@@ -8167,7 +8168,7 @@ void CHThorDiskReadBaseActivity::resolve()
     }
     else
     {
-        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional), isCodeSigned));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName.set(mangledHelperFileName.str()+1);
         else
@@ -10437,11 +10438,13 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     expectedDiskMeta = helper.queryDiskRecordSize();
     projectedDiskMeta = helper.queryProjectedDiskRecordSize();
     formatOptions.setown(createPTree());
+    isCodeSigned = false;
     if (_node)
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+        isCodeSigned = isActivityCodeSigned(*_node);
     }
 
     CPropertyTreeWriter writer(formatOptions);
@@ -10525,7 +10528,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     }
     else
     {
-        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional)));
+        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional), isCodeSigned));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName = mangledHelperFileName.str()+1;
         else
