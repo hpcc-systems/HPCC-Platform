@@ -18,10 +18,10 @@
 ###<REPLACE>###
 
 #TODO:
-# 1. Automatically retrieve and copy CA cert
-# 2. Enable authentication, and check CN when credentials are missing
-# 3. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
-# 4. Should make client cert verify a separate function in securesocket.
+# 1. Use fqdn as CN and hostname. Investigate: how to set up DNS? May need to check how kubernetes does it (CoreDNS?)
+# 2. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
+# 3. Add getComponent() to ICertificateInfo interface.
+# 4. Add cfssl source as submodule. (Build and start up on init ?)
 
 progname=setupPKI
 
@@ -83,6 +83,12 @@ csrCfgTemplate='{
  }
  ],
  "Hosts": ["localhost", "127.0.0.1"],'
+if [ ! -e ${homePath}/certificate/cacert.pem ]; then
+    if [ "${CALOCATION}" != "" ]; then
+        cfssl info -remote ${CALOCATION} | cfssljson -bare ${homePath}/certificate/cacert
+        printf "Retrieved CA certificate from CA Server."
+    fi
+fi
 
 domainname=""
 for i in "" ${compArray[@]} ; do
