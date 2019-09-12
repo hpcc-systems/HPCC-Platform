@@ -882,7 +882,10 @@ const void *CHThorIndexReadActivity::nextRow()
             if (!keyedLimitRowCreated)
             {
                 keyedLimitRowCreated = true;
-                return createKeyedLimitOnFailRow();
+                const void * ret = createKeyedLimitOnFailRow();
+                if (ret)
+                    processed++;
+                return ret;
             }
             return NULL;
         }
@@ -1186,7 +1189,10 @@ const void *CHThorIndexNormalizeActivity::nextRow()
             else if((helper.getFlags() & TIRkeyedlimitcreates) != 0)
             {
                 skipLimitReached = true;
-                return createKeyedLimitOnFailRow();
+                const void * ret = createKeyedLimitOnFailRow();
+                if (ret)
+                    processed++;
+                return ret;
             }
             else
                 helper.onKeyedLimitExceeded(); // should throw exception
