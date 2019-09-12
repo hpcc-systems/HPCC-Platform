@@ -1357,6 +1357,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringToDate(size32_t lenS, const char *
 {
     struct tm tm;
     memset(&tm, 0, sizeof(tm));
+    tm.tm_mday = 1;
     if (simple_strptime(lenS, s, fmtin, &tm))
         return makeDate(tm);
     return 0;
@@ -1382,6 +1383,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s,
         const char * curFormat = formats+off;
         
         memset(&tm, 0, sizeof(tm));
+        tm.tm_mday = 1;
         if (simple_strptime(lenS, s, curFormat, &tm))
             return makeDate(tm);
         off += strlen(curFormat) + 1;
