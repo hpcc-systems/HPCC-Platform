@@ -26841,7 +26841,7 @@ public:
         : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorSoapActionArg &)basehelper)
     {
         eof = false;
-        if (clientCert.certificate.length() > 0 && clientCert.privateKey.length() > 0 && clientCert.passphrase.length() > 0)
+        if (clientCert.certificate.length() > 0 && clientCert.privateKey.length() > 0)
             pClientCert = &clientCert;
         else
             pClientCert = NULL;

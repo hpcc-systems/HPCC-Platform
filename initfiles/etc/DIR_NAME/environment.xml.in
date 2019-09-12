@@ -31,6 +31,8 @@
                 buildSet="roxie"
                 callbackRetries="3"
                 callbackTimeout="5000"
+                certificateFileName="@HOME_DIR@/@RUNTIME_USER@/certificate/myroxie/certificate.pem"
+                privateKeyFileName="@HOME_DIR@/@RUNTIME_USER@/certificate/myroxie/key.pem"
                 channelsPerNode="1"
                 checkCompleted="true"
                 checkFileDate="true"
@@ -291,7 +293,7 @@
                    ldapAuthMethod="kerberos"
                    ldapConnections="10"
                    ldapServer=""
-                   method="none"
+                   method="userNameOnly"
                    checkViewPermissions="false"
                    passwordExpirationWarningDays="10"/>
    <EspBinding defaultForPort="true"

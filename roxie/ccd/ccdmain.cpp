@@ -1009,6 +1009,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         clientCert.certificate.set(topology->queryProp("@certificateFileName"));
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));
+        DBGLOG("CATEST: certificate: %s private key: %s", clientCert.certificate.get(), clientCert.privateKey.get());
         useHardLink = topology->getPropBool("@useHardLink", false);
         maxFileAge[false] = topology->getPropInt("@localFilesExpire", (unsigned) -1);
         maxFileAge[true] = topology->getPropInt("@remoteFilesExpire", 60*60*1000);

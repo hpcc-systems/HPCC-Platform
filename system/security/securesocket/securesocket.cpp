@@ -175,7 +175,6 @@ public:
     virtual int secure_accept(int logLevel);
     virtual int secure_connect(int logLevel);
     virtual ICertificateInfo* queryRemoteCertInfo() { return m_remotecertinfo.get(); }
-
     virtual int logPollError(unsigned revents, const char *rwstr);
     virtual int wait_read(unsigned timeoutms);
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
@@ -679,7 +678,7 @@ int CSecureSocket::secure_accept(int logLevel)
     if(m_verify)
     {
         bool verified = false;
-        // Get client's certificate (note: beware of dynamic allocation) - opt 
+        // Get client's certificate (note: beware of dynamic allocation) - opt
         X509* client_cert = SSL_get_peer_certificate (m_ssl);
         if (client_cert != NULL) 
         {
@@ -964,12 +963,15 @@ public:
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
-        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile)<=0)
+        //if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
         {
             char errbuf[512];
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
             throw MakeStringException(-1, "error loading certificate chain file %s - %s", certfile, errbuf);
         }
+        else
+            DBGLOG("CATEST: successfully loaded certificate file %s", certfile);
 
         if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
         {
@@ -977,6 +979,8 @@ public:
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
             throw MakeStringException(-1, "error loading private key file %s - %s", privkeyfile, errbuf);
         }
+        else
+            DBGLOG("CATEST: successfully loaded private key file %s", privkeyfile);
 
         if(!SSL_CTX_check_private_key(m_ctx))
         {
@@ -1025,6 +1029,7 @@ public:
         const char* certfile = config->queryProp("certificate");
         if(certfile && *certfile)
         {
+            //if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
             if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
             {
                 char errbuf[512];

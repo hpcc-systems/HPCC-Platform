@@ -244,50 +244,44 @@ int CEspHttpServer::processRequest()
         else //user ID is in HTTP header
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
-        authState = checkUserAuth();
-        if ((authState == authTaskDone) || (authState == authFailed))
-            return 0;
-
-        if (authState == authNotRequired)
+        ISecureSocket* sock = dynamic_cast<ISecureSocket*>(&m_socket);
+        if (sock != nullptr)
         {
-            DBGLOG("Explicit authentication not enabled, use certificate authentication");
-            ISecureSocket* sock = dynamic_cast<ISecureSocket*>(&m_socket);
-            if (sock != nullptr)
+            DBGLOG("CATEST: Use certificate authentication for tls connections");
+            ICertificateInfo* certinfo = sock->queryRemoteCertInfo();
+            if (certinfo)
             {
-                ICertificateInfo* certinfo = sock->queryRemoteCertInfo();
-                if (certinfo)
+                const char* cn = certinfo->getCN();
+                if (cn && *cn)
                 {
-                    const char* cn = certinfo->getCN();
-                    if (cn && *cn)
+                    DBGLOG("CATEST: CN=%s", cn);
+                    const char* dot = strchr(cn, '.');
+                    if (!dot)
+                        dot = cn + strlen(cn);
+                    const char* ptr = dot - 1;
+                    while (*ptr != '-' && ptr > cn)
+                        ptr--;
+                    if (*ptr == '-')
+                        ptr++;
+                    if (strncasecmp(ptr, "eclagent", 7) == 0) //Add allowed components here
                     {
-                        DBGLOG("CN=%s", cn);
-                        const char* dot = strchr(cn, '.');
-                        if (!dot)
-                            dot = cn + strlen(cn);
-                        const char* ptr = dot - 1;
-                        while (*ptr != '-' && ptr > cn)
-                            ptr--;
-                        if (*ptr == '-')
-                            ptr++;
-                        if (strncasecmp(ptr, "eclagent", 7) == 0) //Add allowed components here
-                        {
-                            DBGLOG("Request is from eclagent, allow!");
-                            authState = authSucceeded;
-                        }
+                        DBGLOG("CATEST: Request is from eclagent, allow!");
+                        authState = authSucceeded;
                     }
                 }
             }
+            if (authState == authSucceeded)
+                DBGLOG("CATEST: authentication succeeded");
             else
-                authState = authSucceeded; //Keep http as usual
-
-            if (authState != authSucceeded)
-            {
-                DBGLOG("Certificate authentication failed.");
-                m_response->setPersistentEligible(false);
-                m_response->sendBasicChallenge("ESP", true);
-                return 0;
-            }
+                DBGLOG("CATEST: authentication failed");
         }
+
+        if (authState != authSucceeded)
+            authState = checkUserAuth();
+
+        if ((authState == authTaskDone) || (authState == authFailed))
+            return 0;
+
 
         if (!stricmp(method.str(), GET_METHOD))
         {
@@ -1122,7 +1116,6 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
 
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
             return handleUserNameOnlyMode(authReq);
-        return authNotRequired;
     }
 
     if (!m_apport->rootAuthRequired() && strieq(authReq.httpMethod.str(), GET_METHOD) &&

@@ -21,7 +21,7 @@
 # 1. Automatically retrieve and copy CA cert
 # 2. Enable authentication, and check CN when credentials are missing
 # 3. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
-# 4. Check why curl doesn't return when cert auth fails.
+# 4. Should make client cert verify a separate function in securesocket.
 
 progname=setupPKI
 
