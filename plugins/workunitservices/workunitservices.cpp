@@ -247,7 +247,7 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx, const char * wuid)
     StringBuffer _wuid(wuid);
     if (!_wuid.length())
         return NULL;
-    wuid = _wuid.toUpperCase().str();
+    wuid = _wuid.toUpperCase().clip().str();
     Owned<IWorkUnitFactory> wuFactory = getWorkunitFactory(ctx);
     Owned<IConstWorkUnit> wu = wuFactory->openWorkUnit(wuid);
     if (wu)
