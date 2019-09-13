@@ -695,6 +695,7 @@ static jobject getClassLoader(CheckedJNIEnv *JNIenv, jclass obj)
     return classloader;
 }
 
+static StringBuffer helperLibraryName;
 static CheckedJNIEnv *queryJNIEnv();
 
 // Some global objects setup at load time for efficiency and code readability
@@ -704,6 +705,7 @@ static jmethodID clc_newInstance;
 static jmethodID clc_getSignature;
 static jclass hpccIteratorClass;
 static jmethodID hi_constructor;
+static jmethodID hi_load;
 static jclass utilIteratorClass;
 static jclass langIterableClass;
 static jmethodID iterable_iterator;
@@ -786,6 +788,8 @@ static void setupGlobals(CheckedJNIEnv *J)
         clc_getSignature = J->GetStaticMethodID(customLoaderClass, "getSignature","(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/String;");
         hpccIteratorClass = J->FindGlobalClass("com/HPCCSystems/HpccUtils");
         hi_constructor = J->GetMethodID(hpccIteratorClass, "<init>", "(JLjava/lang/String;)V");
+        hi_load = J->GetStaticMethodID(hpccIteratorClass, "load", "(Ljava/lang/String;)V");
+        J->CallStaticVoidMethod(hpccIteratorClass, hi_load, J->NewStringUTF(helperLibraryName));
     }
     catch (IException *E)
     {
@@ -1027,15 +1031,12 @@ void JavaGlobalState::unregister(const char *key)
     globalState->doUnregister(key);
 }
 
-static StringBuffer helperLibraryName;
-
 #ifdef _WIN32
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #endif
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    globalState = new JavaGlobalState;
     // Make sure we are never unloaded (as JVM does not support it)
     // we do this by doing a dynamic load of the javaembed library
 #ifdef _WIN32
@@ -1054,6 +1055,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         // Deliberately leak this handle
     }
 #endif
+    globalState = new JavaGlobalState;
     return true;
 }
 MODULE_EXIT()
