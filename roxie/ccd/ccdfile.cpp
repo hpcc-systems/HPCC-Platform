@@ -2116,11 +2116,17 @@ public:
                 bool actualUnknown = true;
                 if (mode != RecordTranslationMode::AlwaysECL)
                 {
-                    if (diskTypeInfo.item(idx))
-                        actual = diskTypeInfo.item(idx);
-                    else
-                        actualUnknown = false;
                     thisFormatCrc = formatCrcs.item(idx);
+                    if (diskTypeInfo.item(idx))
+                    {
+                        actual = diskTypeInfo.item(idx);
+                        actualUnknown = false;
+                    }
+                    else if (thisFormatCrc == expectedFormatCrc)  // Type descriptors that cannot be serialized can still be read from code
+                    {
+                        actual = expected;
+                        actualUnknown = false;
+                    }
                 }
 
                 assertex(actual);
@@ -2137,6 +2143,13 @@ public:
                     {
                         if (traceLevel > 5)
                             DBGLOG("Assume no translation required, crc's match");
+                    }
+                    else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
+                    {
+                        if (thisFormatCrc)
+                            throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
+                        else if (traceLevel > 5)
+                            DBGLOG("Assume no translation required, disk format unknown");
                     }
                     else
                     {
