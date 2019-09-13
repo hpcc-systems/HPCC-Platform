@@ -47,6 +47,7 @@ private:
     StringAttr   m_lastname;
     StringAttr   m_pw;
     StringAttr   m_employeeID;
+    StringAttr   m_employeeNumber;
     StringAttr   m_distinguishedName;
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
@@ -92,7 +93,9 @@ public:
     virtual const char * getLastName();
     virtual bool setLastName(const char * lname);
     virtual const char * getEmployeeID();
+    virtual const char * getEmployeeNumber();
     virtual bool setEmployeeID(const char * emplID);
+    virtual bool setEmployeeNumber(const char * emplNumber);
     virtual const char * getDistinguishedName();
     virtual bool setDistinguishedName(const char * dn);
     const char * getRealm();

@@ -21,6 +21,7 @@ ESPenum UserSortBy : string
     FullName("fullname"),
     PasswordExpiration("passwordexpiration"),
     EmployeeID("employeeID"),
+    EmployeeNumber("employeeNumber"),
 };
 
 ESPenum GroupSortBy : string
@@ -53,6 +54,7 @@ ESPstruct UserInfo
     string fullname;
     [min_ver("1.07")] string passwordexpiration;
     [min_ver("1.10")] string employeeID;
+    [min_ver("1.16")] string employeeNumber;
 };
 
 ESPstruct GroupInfo
@@ -236,6 +238,7 @@ ESPresponse UserInfoEditInputResponse
     string lastname;
     [min_ver("1.10")] string employeeID;
     [min_ver("1.12")] string PasswordExpiration;
+    [min_ver("1.16")] string employeeNumber;
 };
 
 ESPrequest UserInfoEditRequest
@@ -244,6 +247,7 @@ ESPrequest UserInfoEditRequest
     string firstname;
     string lastname;
     [min_ver("1.10")] string employeeID;
+    [min_ver("1.16")] string employeeNumber;
 };
 
 ESPresponse UserInfoEditResponse
@@ -261,6 +265,7 @@ ESPrequest AddUserRequest
     [label("Password"), password, cols(20)] password1;
     [label("Retype password"), password, cols(20)] password2;
     [min_ver("1.10"), label("Employee ID"), cols(20)] string employeeID;
+    [min_ver("1.16"), label("Employee Number"), cols(20)] string employeeNumber;
 };
 
 ESPresponse AddUserResponse
@@ -986,7 +991,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.15"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.16"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
