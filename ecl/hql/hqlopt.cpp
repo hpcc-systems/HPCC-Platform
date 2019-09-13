@@ -3927,7 +3927,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         args.append(*LINK(transformed->queryChild(1)));
                         args.append(*LINK(transformed->queryChild(2)));
                         args.append(*expanded);
-                        args.append(*LINK(selSeq));
+                        unwindChildren(args, transformed, 4);
                         return transformed->clone(args);
                     }
                 }
