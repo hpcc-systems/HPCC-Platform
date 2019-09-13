@@ -839,14 +839,12 @@
         <sect3 id="ECLWatch_ECLWorkunitsHelpersTab">
           <title>Helpers tab</title>
 
-          <para>The Helpers tab display several helpful elements. Which show
-          the ECL. The work unit XML. Archived query, The DLL. S. O.., Thor
-          log, ECL Agent log, and Thor slave log. The relevant logs files. If
-          a Roxy log only logs the relevant sections for the selected work
-          unit.</para>
-
-          <para>From a workunit, when you look at the log, it only shows the
-          portion of the log that pertains to that workunit.</para>
+          <para>The Helpers tab displays several helpful elements of a
+          workunit, which might include: the submitted ECL code, the Workunit
+          XML, the archived query, the DLL (SO), the generated C++ file(s),
+          the Thor log, the Thor slave logs, the ECL Agent log, and the
+          Compiler log. Log files only show the portion of the log that
+          pertains to the selected workunit.</para>
         </sect3>
 
         <sect3 id="WUDetails_ECL__TAB">
@@ -1566,10 +1564,10 @@
         Name, Description, Job Name, Protected state, Content Type, Key Type,
         File Size, Format, Compressed state and information, Modified Date,
         Expire in (days) value, Directory and Path Mask, Record Size, Record
-        Count, Replication state, File Parts, and Skew information. </para>
+        Count, Replication state, File Parts, and Skew information.</para>
 
         <para>Check the Protected box to protect the file from deletion or
-        expiration. </para>
+        expiration.</para>
 
         <para>The Key Type value only displays if the file is an INDEX. Key
         Type can have three possible values: Distributed, Local, or
