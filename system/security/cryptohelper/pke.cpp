@@ -82,7 +82,7 @@ public:
             throwEVPExceptionV(0, "loadKeyFromFile: failed to open key: %s", keyFile);
         RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, (void*)passPhrase);
         if (!rsaKey)
-            throwEVPExceptionV(0, "Failed to public create key: %s", keyFile);
+            throwEVPExceptionV(0, "Failed to create public key: %s", keyFile);
         finalize(rsaKey, keyFile);
     }
 };
