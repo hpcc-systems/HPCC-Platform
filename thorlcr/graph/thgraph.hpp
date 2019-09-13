@@ -327,6 +327,7 @@ public:
     bool isPrepared() const { return prepared; }
 
     CGraphBase &queryOwner() const { return *owner; }
+    bool inChildQuery() const;
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
     IGraphTempHandler *queryTempHandler(bool assert=true) const;
     CJobBase &queryJob() const;
@@ -832,6 +833,10 @@ protected:
     bool jobEnded = false;
     bool failOnLeaks = false;
     unsigned maxLfnBlockTimeMins = DEFAULT_MAXLFN_BLOCKTIME_MINS;
+    memsize_t keyNodeCacheBytes = 0;
+    memsize_t keyLeafCacheBytes = 0;
+    memsize_t keyBlobCacheBytes = 0;
+
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -863,6 +868,10 @@ public:
     inline unsigned queryJobSlaveChannelNum(unsigned slaveNum) const { dbgassertex(slaveNum && slaveNum<=querySlaves()); return jobSlaveChannelNum[slaveNum-1]; }
     ICommunicator &queryNodeComm() const { return ::queryNodeComm(); }
     const rank_t &queryMyNodeRank() const { return myNodeRank; }
+    memsize_t getKeyNodeCacheSize() const { return keyNodeCacheBytes; }
+    memsize_t getKeyLeafCacheSize() const { return keyLeafCacheBytes; }
+    memsize_t getKeyBlobCacheSize() const { return keyBlobCacheBytes; }
+
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
@@ -1084,6 +1093,7 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() const { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() const { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
+    bool inChildQuery() const { return container.inChildQuery(); }
     unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone, byte seq=0) const;
