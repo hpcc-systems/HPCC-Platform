@@ -175,6 +175,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/account.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/account_input.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/account_myaccount.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/codesign.xslt
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/smc_xslt COMPONENT Runtime )
 ENDFOREACH ( iFILES )
