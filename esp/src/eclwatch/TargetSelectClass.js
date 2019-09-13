@@ -62,6 +62,8 @@ define([
                     this.loadClusterGroups();
                 } else if (params.SprayTargets === true) {
                     this.loadSprayTargets();
+                } else if (params.LogicalFileSearchType === true) {
+                    this.logicalFileSearchType();
                 } else if (params.DropZones === true) {
                     this.loadDropZones();
                 } else if (params.Users === true) {
@@ -513,14 +515,14 @@ define([
                 this._postLoad();
             },
 
-            LogicalFileSearchType: function () {
+            logicalFileSearchType: function () {
                 this.options.push({
-                    label: "Created",
+                    label: this.i18n.CreatedByWorkunit,
                     value: "Created"
                 });
                 this.options.push({
-                    label: "Used",
-                    value: "Referenced"
+                    label: this.i18n.UsedByWorkunit,
+                    value: "Used"
                 });
                 this._postLoad();
             },
