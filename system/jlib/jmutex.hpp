@@ -364,6 +364,11 @@ public:
     {
         enter();
     }
+    inline CLeavableCriticalBlock(CriticalSection &_crit, bool lock) : crit(_crit)
+    {
+        if (lock)
+            enter();
+    }
     inline ~CLeavableCriticalBlock()
     {
         if (locked)
