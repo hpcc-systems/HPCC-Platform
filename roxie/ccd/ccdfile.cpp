@@ -2900,7 +2900,9 @@ private:
             SocketEndpoint me(0, myNode.getNodeAddress());
             eps.append(me);
             localCluster.setown(createIGroup(eps));
-            VStringBuffer clusterName("%s[%u]", cluster, r+1);
+            StringBuffer clusterName(cluster);
+            if (group->ordinality()>1)
+                clusterName.appendf("[%u]", r+1);
             localClusterName.set(clusterName);
         }
         else
