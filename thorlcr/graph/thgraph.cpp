@@ -3081,6 +3081,10 @@ CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_contai
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;
+
+    defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags);
+    if (container.queryJob().queryUsePackedAllocators())
+        defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)(defaultRoxieMemHeapFlags | roxiemem::RHFpacked);
 }
 
 CActivityBase::~CActivityBase()

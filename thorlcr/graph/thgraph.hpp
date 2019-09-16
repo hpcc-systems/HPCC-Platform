@@ -60,7 +60,7 @@
 
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
-const static unsigned defaultHeapFlags = roxiemem::RHFscanning;
+const static roxiemem::RoxieHeapFlags defaultHeapFlags = roxiemem::RHFscanning;
 
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
@@ -853,6 +853,7 @@ public:
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose() override;
 
+    inline bool queryUsePackedAllocators() const { return usePackedAllocator; }
     unsigned queryMaxLfnBlockTimeMins() const { return maxLfnBlockTimeMins; }
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
@@ -1045,6 +1046,7 @@ class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, im
     CSingletonLock CABallocatorlock;
     CSingletonLock CABserializerlock;
     CSingletonLock CABdeserializerlock;
+    roxiemem::RoxieHeapFlags defaultRoxieMemHeapFlags = roxiemem::RHFnone;
 
 protected:
     CGraphElementBase &container;
@@ -1075,7 +1077,7 @@ public:
     inline bool queryInitialized() const { return initialized; }
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
-    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags); }
+    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
 
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

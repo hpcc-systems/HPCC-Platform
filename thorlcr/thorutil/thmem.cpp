@@ -2463,10 +2463,9 @@ IThorAllocator *createThorAllocator(unsigned memLimitMB, unsigned sharedMemLimit
 {
     PROGLOG("Thor allocator: Size=%d (MB), sharedLimit=%d (MB), CRC=%s, Packed=%s", memLimitMB, sharedMemLimitMB, crcChecking?"ON":"OFF", usePacked?"ON":"OFF");
     roxiemem::RoxieHeapFlags flags;
+    flags = defaultHeapFlags;
     if (usePacked)
-        flags = roxiemem::RHFpacked;
-    else
-        flags = roxiemem::RHFnone;
+        flags = (roxiemem::RoxieHeapFlags)(flags | roxiemem::RHFpacked);
     dbgassertex(numChannels);
     dbgassertex((1==numChannels) || sharedMemLimitMB);
     if (crcChecking)
