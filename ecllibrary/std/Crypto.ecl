@@ -15,7 +15,7 @@ IMPORT lib_cryptolib;
  * @return        SET OF STRING containing all supported Hash Algorithms
  */
 EXPORT SET OF STRING SupportedHashAlgorithms() := lib_cryptolib.CryptoLib.SupportedHashAlgorithms();
-	
+
 
 /**
  * Returns set of supported CipherAlgorithms
@@ -35,41 +35,37 @@ EXPORT SET OF STRING SupportedPublicKeyAlgorithms() := lib_cryptolib.CryptoLib.S
 
 
 /**
- * Hashing module that can be instantiated by an ECL caller.  Data can be hashed
- * with functionality here
+ * Hashing module containing all the supported hashing functions.
  *
- * @param   hashAlgorithm  Hashing algorithm to be used, as returned by SupportedHashAlgorithms()
- * @return                 Hashing object reference
+ * @param   hashAlgorithm  The Hashing algorithm to use, as returned by SupportedHashAlgorithms()
  */
 EXPORT Hashing(VARSTRING hashAlgorithm) := MODULE
     /**
      * Create a hash of the given data, using a hash algorithm that
      * was returned by SupportedHashAlgorithms()
      *
-     * @param   inputData      Data to be hashed
+     * @param   inputData      Data to hash
      * @return                 Hashed contents
      */
     EXPORT DATA Hash(DATA inputData) := FUNCTION
-        return lib_cryptolib.CryptoLib.Hash(hashAlgorithm, inputData);
+        RETURN lib_cryptolib.CryptoLib.Hash(hashAlgorithm, inputData);
     END;
 END; // Hashing module
 
 //-----
 
 /**
- * Encryption module that can be instantiated by an ECL caller
- * to perform symmetric encryption/decryption
+ * Encryption module containing all symmetric encryption/decryption functions
  *
- * @param   algorithm      Symmetric algorithm to be used, as returned by SupportedSymmetricCipherAlgorithms()
- * @param   passphrase     Passphrase to be used for encryption/encryption
- * @return                 Encryption object reference
+ * @param   algorithm      Symmetric algorithm to use, as returned by SupportedSymmetricCipherAlgorithms()
+ * @param   passphrase     Passphrase to use for encryption/encryption
  */
 EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
     /**
      * Encrypt the given data, using the specified passphrase and symmetric cipher
      * algorithm that was returned by SupportedSymmetricCipherAlgorithms()
      *
-     * @param   inputData  Contents to be encrypted
+     * @param   inputData  Contents to encrypt
      * @return             Encrypted cipher
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
@@ -80,7 +76,7 @@ EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
      * Decrypt the given cipher, using the specified passphrase and symmetric cipher
      * algorithm that was returned by SupportedSymmetricCipherAlgorithms()
      *
-     * @param   encryptedData  Contents to be decrypted
+     * @param   encryptedData  Contents to decrypt
      * @return                 Decrypted data
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
@@ -92,21 +88,20 @@ END; // SymmetricEncryption module
 
 
 /**
- * Encryption module that can be instantiated by an ECL caller
- * to perform asymmetric encryption/decryption/digital signing/signature verification
+ * Encryption module containing all asymmetric encryption/decryption/digital
+ * signing/signature verification functions
  *
- * @param   pkAlgorithm    ASymmetric algorithm to be used, as returned by SupportedPublicKeyAlgorithms()
+ * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
  * @param   publicKeyFile  File specification of PEM formatted public key file
  * @param   privateKeyFile File specification of PEM formatted private key file
- * @param   passphrase	   Passphrase to be used for encryption/encryption/signing/verifying
- * @return                 Encryption object reference
+ * @param   passphrase     Passphrase to use for encryption/encryption/signing/verifying
  */
 EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRING privateKeyFile = '', VARSTRING passphrase = '') := MODULE
     /**
      * Encrypt the given data, using the specified public key file,
      * passphrase, and algorithm
      *
-     * @param   inputData    Contents to be Encrypted
+     * @param   inputData    Contents to Encrypt
      * @return               Encrypted data
      */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
@@ -117,7 +112,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      * Decrypt the given encrypted data, using the specified private key file,
      * passphrase, and algorithm
      *
-     * @param   encryptedData    Contents to be Decrypted
+     * @param   encryptedData    Contents to Decrypt
      * @return                   Decrypted data
      */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
@@ -128,7 +123,7 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      * Create a digital signature of the given data, using the
      * specified private key file, passphrase and algorithm
      *
-     * @param   inputData    Contents to be signed
+     * @param   inputData    Contents to sign
      * @return               Computed Digital signature
      */
     EXPORT DATA Sign( DATA inputData) := FUNCTION
@@ -139,9 +134,9 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
      * Verify the given digital signature of the given data, using
      * the specified public key file, passphrase and algorithm
      *
-     * @param   signature      Signature to be verified
+     * @param   signature      Signature to verify
      * @param   signedData     Data used to create signature
-     * @return                 BOOL
+     * @return                 Boolean TRUE/FALSE
      */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.VerifySignature( pkAlgorithm, publicKeyFile, passphrase, signature, signedData);
@@ -151,21 +146,20 @@ END; // PublicKeyEncryption module
 
 
 /**
-  * Encryption module that can be instantiated by an ECL caller
-  * to perform asymmetric encryption/decryption/digital signing/signature verification
+  * Encryption module containing all asymmetric encryption/decryption/digital
+  * signing/signature verification functions
   *
-  * @param   pkAlgorithm    ASymmetric algorithm to be used, as returned by SupportedPublicKeyAlgorithms()
+  * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
   * @param   publicKeyBuff  PEM formatted Public key buffer
   * @param   privateKeyBuff PEM formatted Private key buffer
-  * @param   passphrase     Passphrase to be used for encryption/encryption/signing/verifying
-  * @return                 Encryption object reference
+  * @param   passphrase     Passphrase to use for encryption/encryption/signing/verifying
   */
 EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '', VARSTRING privateKeyBuff = '', VARSTRING passphrase = '') := MODULE
     /**
       * Encrypt the given data, using the specified public key, passphrase,
       * and algorithm
       *
-      * @param   inputData    Contents to be Encrypted
+      * @param   inputData    Contents to Encrypt
       * @return               Encrypted data
       */
     EXPORT DATA Encrypt(DATA inputData) := FUNCTION
@@ -176,7 +170,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       * Decrypt the given data, using the specified private key, passphrase,
       * and algorithm
       *
-      * @param   encryptedData  Contents to be Decrypted
+      * @param   encryptedData  Contents to Decrypt
       * @return                 Decrypted data
       */
     EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
@@ -187,7 +181,7 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       * Create a digital signature of the given data, using the specified private key,
       * passphrase, and algorithm
       *
-      * @param   inputData    Contents to be signed
+      * @param   inputData    Contents to sign
       * @return               Computed digital signature
       */
     EXPORT DATA Sign(DATA inputData) := FUNCTION
@@ -198,9 +192,9 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
       * Verify the given digital signature of the given data, using the specified public key,
       * passphrase, and algorithm
       *
-      * @param   signature      Signature to be verified     
+      * @param   signature      Signature to verify     
       * @param   signedData     Data used to create signature
-      * @return                 True if signature is valid, false otherwise
+      * @return                 Booolean TRUE if signature is valid, otherwise FALSE
       */
     EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
         RETURN lib_cryptolib.CryptoLib.VerifySignatureBuff( pkAlgorithm, publicKeyBuff, passphrase, signature, signedData);
