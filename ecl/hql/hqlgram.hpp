@@ -450,6 +450,7 @@ public:
     void checkType(attribute &a1, ITypeInfo *t2);
     ITypeInfo *checkType(attribute &e1, attribute &e2);
     bool checkAlienTypeDef(IHqlScope* scope, const attribute& errpos);
+    void checkAlienType(const attribute &errpos, IHqlAlienTypeInfo * alien);
     IHqlExpression* checkServiceDef(IHqlScope* serviceScope,IIdAtom * name, IHqlExpression* attrs, const attribute& errpos);
     void checkConstant(attribute & attr, bool callAllowed);
     IHqlExpression * checkConstant(const attribute & errpos, IHqlExpression * expr, bool callAllowed);

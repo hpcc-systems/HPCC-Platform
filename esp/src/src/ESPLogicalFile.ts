@@ -252,7 +252,8 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
                 Cluster: this.Cluster,
                 UpdateDescription: true,
                 FileDesc: request.Description,
-                Protect: request.isProtected === true ? 1 : 2
+                Protect: request.isProtected === true ? 1 : 2,
+                Restrict: request.isRestricted === true ? 1 : 2
             }
         }).then(function (response) {
             if (lang.exists("DFUInfoResponse.FileDetail", response)) {

@@ -6770,8 +6770,7 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
     if (scopename&&*scopename) {
         if (!user)
             user = queryUserDescriptor();
-        CDateTime now;
-        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags,nullptr,now);
+        perm = querySessionManager().getPermissionsLDAP("workunit",scopename,user,auditflags);
         if (perm<0) {
             if (perm == SecAccess_Unavailable)
                 perm = SecAccess_Full;
@@ -10855,6 +10854,8 @@ void readRow(StringBuffer &out, MemoryBuffer &in, TypeInfoArray &types, StringAt
             case 8:
                 in.read(cvald);
                 break;
+            default:
+                throwUnexpected();
             }
             outputXmlReal(cvald, name.text, out);
             break;
@@ -11122,6 +11123,7 @@ void CLocalWUResult::addResultRaw(unsigned len, const void *data, WUResultFormat
         formatStr = "csv";
         break;
     default:
+        existingFormat = nullptr;
         p->removeProp("@format");
         break;
     }

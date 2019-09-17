@@ -122,7 +122,7 @@ bool GenEnvRules::isValidServerCombo(const char* server1, const char* server2) c
 
    const char * propname = "avoid_combo";
 
-   if (!foundInProp(propname, s1.str()) && !foundInProp(propname, s1.str()))
+   if (!foundInProp(propname, s1.str()) && !foundInProp(propname, s2.str()))
      return true;
 
    return false;;

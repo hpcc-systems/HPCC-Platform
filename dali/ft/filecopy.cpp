@@ -2874,6 +2874,7 @@ inline bool nonempty(IPropertyTree *pt, const char *p) { const char *s = pt->que
 bool FileSprayer::disallowImplicitReplicate()
 {
     return options->getPropBool(ANsplit) ||
+           options->getPropBool(ANnosplit) ||
            querySplitPrefix() ||
            nonempty(options,"@header") ||
            nonempty(options,"@footer") ||
@@ -3335,9 +3336,12 @@ void FileSprayer::updateTargetProperties()
             if (distributedSource)
             {
                 // add original file name from a single distributed source (like Copy)
-                RemoteFilename remoteFile;
-                distributedSource->queryPart(0).getFilename(remoteFile, 0);
-                splitAndCollectFileInfo(newRecord, remoteFile);
+                if (distributedSource->numParts())
+                {
+                    RemoteFilename remoteFile;
+                    distributedSource->queryPart(0).getFilename(remoteFile, 0);
+                    splitAndCollectFileInfo(newRecord, remoteFile);
+                }
             }
             else if (sources.ordinality())
             {

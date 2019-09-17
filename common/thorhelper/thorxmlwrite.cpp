@@ -24,7 +24,8 @@
 #include "deftype.hpp"
 #include "rtlformat.hpp"
 #include "rtlbcd.hpp"
-
+#include "eclrtl_imp.hpp"
+#include "nbcd.hpp"
 
 CommonFieldProcessor::CommonFieldProcessor(StringBuffer &_result, bool _trim) : result(_result), trim(_trim)
 {

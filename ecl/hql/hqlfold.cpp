@@ -5522,7 +5522,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                 }
                 break;
             case no_inlinetable:
-                if (foldOptions & HFOconstantdatasets)
+                if (foldOptions & (HFOconstantdatasets|HFOforcefold))
                 {
                     OwnedITypeInfo boolType = makeBoolType();
                     OwnedHqlExpr filterCondition = createBalanced(no_and, boolType, args, 1, args.ordinality());
@@ -5580,11 +5580,11 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             switch (childOp)
             {
             case no_inlinetable:
-                if ((foldOptions & HFOconstantdatasets) && isNoSkipInlineDataset(child))
+                if ((foldOptions & (HFOconstantdatasets|HFOforcefold)) && isNoSkipInlineDataset(child))
                     ret = queryOptimizeAggregateInline(expr, child->queryChild(0)->numChildren());
                 break;
             default:
-                if ((foldOptions & HFOconstantdatasets) && hasSingleRow(child))
+                if ((foldOptions & (HFOconstantdatasets|HFOforcefold)) && hasSingleRow(child))
                     ret = queryOptimizeAggregateInline(expr, 1);
                 break;
             }

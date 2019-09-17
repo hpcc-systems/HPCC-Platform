@@ -371,15 +371,15 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
             double version = context.getClientVersion();
             if (version < 1.38)
                 doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
             else
                 doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
         }
         else
         {
             doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), NULL,
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
         }
     }
     catch(IException* e)
@@ -1958,7 +1958,7 @@ void CWsDfuEx::queryFieldNames(IEspContext &context, const char *fileName, const
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
     const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
-    CDFUChangeProtection protect, IEspDFUFileDetail &FileDetails)
+    CDFUChangeProtection protect, CDFUChangeRestriction changeRestriction, IEspDFUFileDetail &FileDetails)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -1987,6 +1987,11 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         if (protectBy.isEmpty())
             protectBy.set("hpcc");
         df->setProtect(protectBy.str(), protect == CDFUChangeProtection_Protect ? true : false);
+    }
+    if (changeRestriction != CDFUChangeRestriction_NoChange)
+    {
+        context.ensureFeatureAccess("DFURestrictedAccess", SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "DFURestrictedAccess: Permission denied.");
+        df->setRestrictedAccess(changeRestriction==CDFUChangeRestriction_Restrict);
     }
 
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
@@ -2075,7 +2080,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             }
         }
     }
-
+    if (version >= 1.53)
+        FileDetails.setIsRestricted(df->isRestrictedAccess());
     if (version >= 1.38)
         FileDetails.setRecordSizeInt64(recordSize);
     comma c2(recordSize);
@@ -6066,7 +6072,11 @@ static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "getDFUFileIGroup: Failed to get ConfigurationDirectory: %s.", groupName.str());
 
         GroupType grpType = (clusterType == ThorLCRCluster) ? grp_thor : ((clusterType == HThorCluster) ? grp_hthor : grp_roxie);
-        queryNamedGroupStore().add(groupName.str(), group, false, defaultDir.str(), grpType);
+
+        std::vector<std::string> hosts;
+        ForEachItemIn(l, locations)
+            hosts.push_back(locations.item(l));
+        queryNamedGroupStore().add(groupName, hosts, false, defaultDir, grpType);
         ESPLOG(LogMin, "DFUFileIGroup %s added", groupName.str());
     }
     return group.getClear();

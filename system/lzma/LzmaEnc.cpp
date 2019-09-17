@@ -820,7 +820,7 @@ static void LenEnc_Encode2(CLenPriceEnc *p, CRangeEnc *rc, UInt32 symbol, UInt32
 }
 
 
-NO_SANITIZE("function")
+NO_SANITIZE_FUNCTION
 static void MovePos(CLzmaEnc *p, UInt32 num)
 {
   #ifdef SHOW_STAT
@@ -834,7 +834,7 @@ static void MovePos(CLzmaEnc *p, UInt32 num)
   }
 }
 
-NO_SANITIZE("function")
+NO_SANITIZE_FUNCTION
 static UInt32 ReadMatchDistances(CLzmaEnc *p, UInt32 *numDistancePairsRes)
 {
   UInt32 lenRes = 0, numPairs;
@@ -948,7 +948,7 @@ static UInt32 Backward(CLzmaEnc *p, UInt32 *backRes, UInt32 cur)
 
 #define LIT_PROBS(pos, prevByte) (p->litProbs + ((((pos) & p->lpMask) << p->lc) + ((prevByte) >> (8 - p->lc))) * 0x300)
 
-NO_SANITIZE("function")
+NO_SANITIZE_FUNCTION
 static UInt32 GetOptimum(CLzmaEnc *p, UInt32 position, UInt32 *backRes)
 {
   UInt32 numAvail, mainLen, numPairs, repMaxIndex, i, posState, lenEnd, len, cur;
@@ -1509,7 +1509,7 @@ static UInt32 GetOptimum(CLzmaEnc *p, UInt32 position, UInt32 *backRes)
 
 #define ChangePair(smallDist, bigDist) (((bigDist) >> 7) > (smallDist))
 
-NO_SANITIZE("function")
+NO_SANITIZE_FUNCTION
 static UInt32 GetOptimumFast(CLzmaEnc *p, UInt32 *backRes)
 {
   UInt32 numAvail, mainLen, mainDist, numPairs, repIndex, repLen, i;
@@ -1754,7 +1754,7 @@ void LzmaEnc_Destroy(CLzmaEncHandle p, ISzAlloc *alloc, ISzAlloc *allocBig)
   alloc->Free(alloc, p);
 }
 
-NO_SANITIZE("function")
+NO_SANITIZE_FUNCTION
 static SRes LzmaEnc_CodeOneBlock(CLzmaEnc *p, Bool useLimits, UInt32 maxPackSize, UInt32 maxUnpackSize)
 {
   UInt32 nowPos32, startPos32;

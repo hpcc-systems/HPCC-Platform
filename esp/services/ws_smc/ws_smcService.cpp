@@ -1825,7 +1825,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
     {
 #ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-        if(!secmgr || !secmgr->isSuperUser(context.queryUser()))
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
         {
             context.setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "access denied, administrators only.");

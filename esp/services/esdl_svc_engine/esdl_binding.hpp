@@ -245,8 +245,8 @@ public:
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
 
-    bool checkForMethodProxy(const char *service, const char *method, StringBuffer &address);
-    int forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response);
+    bool checkForMethodProxy(const char *service, const char *method, StringBuffer &address, bool &resetForwardedFor);
+    int forwardProxyMessage(const char *addr, CHttpRequest* request, CHttpResponse* response, bool resetForwardedFor);
 
     virtual void initEsdlServiceInfo(IEsdlDefService &srvdef);
 

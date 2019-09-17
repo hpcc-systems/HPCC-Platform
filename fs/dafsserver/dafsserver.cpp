@@ -1464,7 +1464,7 @@ public:
             else
                 outMeta.set(inMeta);
         }
-        translator.setown(createRecordTranslatorViaCallback(*outRecord, *record));
+        translator.setown(createRecordTranslatorViaCallback(*outRecord, *record, type_utf8));
     }
     virtual bool requiresPostProject() const override
     {

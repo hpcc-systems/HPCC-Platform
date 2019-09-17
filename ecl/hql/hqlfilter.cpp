@@ -553,7 +553,7 @@ void FilterExtractor::expandSelects(IHqlExpression * expr, IHqlSimpleScope * exp
                         ITypeInfo * exprType = expr->queryType();
                         ITypeInfo * matchType = match->queryType();
                         if ((exprType->getSize() != matchType->getSize()) ||
-                            (exprType->getTypeCode() == type_bitfield || exprType->getTypeCode() == type_bitfield))
+                            (exprType->getTypeCode() == type_bitfield || matchType->getTypeCode() == type_bitfield))
                             firstOffsetField = keyableSelects.ordinality();
                     }
 

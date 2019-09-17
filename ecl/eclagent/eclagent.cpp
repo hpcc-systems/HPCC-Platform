@@ -3266,7 +3266,7 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     }
     // this shouldn't happen but..
     DBGLOG("Adding group %s",mygroupname.str());
-    queryNamedGroupStore().add(mygroupname.str(),mygrp,true);
+    queryNamedGroupStore().add(mygroupname.str(), { GetCachedHostName() }, true);
     out.append(mygroupname);
     return queryNamedGroupStore().lookup(mygroupname.str());
 }

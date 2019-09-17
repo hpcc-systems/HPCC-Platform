@@ -134,26 +134,26 @@ function update_version_file()
     
     if [ -n "$VERBOSE" ] ; then
       echo sed -E \
-       -e "\"s/HPCC_MINOR +$HPCC_MINOR *)/HPCC_MINOR $_new_minor )/\"" \
-       -e "\"s/HPCC_POINT +$HPCC_POINT *)/HPCC_POINT $_new_point )/\"" \
-       -e "\"s/HPCC_SEQUENCE +$HPCC_SEQUENCE *)/HPCC_SEQUENCE $_new_sequence )/\"" \
-       -e "\"s/HPCC_MATURITY +\"$HPCC_MATURITY\" *)/HPCC_MATURITY \"$_new_maturity\" )/\"" \
-       -i .bak $VERSIONFILE 
+       -e "\"s/HPCC_MINOR +$HPCC_MINOR *\)/HPCC_MINOR $_new_minor )/\"" \
+       -e "\"s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/\"" \
+       -e "\"s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/\"" \
+       -e "\"s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/\"" \
+       -i.bak $VERSIONFILE
     fi
     if [ -z "$DRYRUN" ] ; then 
       sed -E \
-       -e "s/HPCC_MINOR +$HPCC_MINOR *)/HPCC_MINOR $_new_minor )/" \
-       -e "s/HPCC_POINT +$HPCC_POINT *)/HPCC_POINT $_new_point )/" \
-       -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *)/HPCC_SEQUENCE $_new_sequence )/" \
-       -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *)/HPCC_MATURITY \"$_new_maturity\" )/" \
-       -i .bak $VERSIONFILE
+       -e "s/HPCC_MINOR +$HPCC_MINOR *\)/HPCC_MINOR $_new_minor )/" \
+       -e "s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/" \
+       -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/" \
+       -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/" \
+       -i.bak $VERSIONFILE
        cat $VERSIONFILE
     else
       sed -E \
-       -e "s/HPCC_MINOR +$HPCC_MINOR *)/HPCC_MINOR $_new_minor )/" \
-       -e "s/HPCC_POINT +$HPCC_POINT *)/HPCC_POINT $_new_point )/" \
-       -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *)/HPCC_SEQUENCE $_new_sequence )/" \
-       -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *)/HPCC_MATURITY \"$_new_maturity\" )/" \
+       -e "s/HPCC_MINOR +$HPCC_MINOR *\)/HPCC_MINOR $_new_minor )/" \
+       -e "s/HPCC_POINT +$HPCC_POINT *\)/HPCC_POINT $_new_point )/" \
+       -e "s/HPCC_SEQUENCE +$HPCC_SEQUENCE *\)/HPCC_SEQUENCE $_new_sequence )/" \
+       -e "s/HPCC_MATURITY +\"$HPCC_MATURITY\" *\)/HPCC_MATURITY \"$_new_maturity\" )/" \
        $VERSIONFILE
     fi
 }

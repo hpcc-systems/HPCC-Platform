@@ -127,7 +127,7 @@ interface ISessionManager: extends IInterface
     virtual StringBuffer &getClientProcessEndpoint(SessionId id,StringBuffer &buf)=0; // for diagnostics
     virtual unsigned queryClientCount() = 0; // for SNMP
 
-    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, const char * reqSignature, CDateTime & reqUTCTimestamp, int *err=NULL)=0;
+    virtual SecAccessFlags getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags, int *err=NULL)=0;
     virtual bool checkScopeScansLDAP()=0;
     virtual unsigned getLDAPflags()=0;
     virtual void setLDAPflags(unsigned flags)=0;
@@ -148,8 +148,6 @@ interface ISessionManager: extends IInterface
 extern da_decl ISessionManager &querySessionManager();
 
 #define myProcessSession() (querySessionManager().lookupProcessSession())
-
-extern da_decl bool createDaliSignature(const char * scope, IUserDescriptor *udesc, CDateTime &now, StringBuffer &b64sig);
 
 interface IMessageWrapper
 {

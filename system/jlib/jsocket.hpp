@@ -163,7 +163,8 @@ public:
         port = other.port;
         return *this;
     }
-	bool operator == (const SocketEndpoint &other) const { return equals(other); }
+    bool operator == (const SocketEndpoint &other) const { return equals(other); }
+    bool operator != (const SocketEndpoint &other) const { return !equals(other); }
 
     unsigned hash(unsigned prev) const;
     
@@ -639,6 +640,10 @@ extern jlib_decl int wait_write_multiple(UnsignedArray  &socks,     //IN   socke
 extern jlib_decl void throwJSocketException(int jsockErr);
 extern jlib_decl IJSOCK_Exception* createJSocketException(int jsockErr, const char *_msg);
 
+extern jlib_decl bool isIPV4(const char *ip);
+extern jlib_decl bool isIPV6(const char *ip);
+extern jlib_decl bool isIPAddress(const char *ip);
+
 interface IWhiteListHandler : extends IInterface
 {
     virtual bool isWhiteListed(const char *ip, unsigned __int64 role, StringBuffer *responseText=nullptr) const = 0;
@@ -655,7 +660,6 @@ interface IWhiteListWriter : extends IInterface
 typedef std::function<bool(IWhiteListWriter &)> WhiteListPopulateFunction;
 typedef std::function<StringBuffer &(StringBuffer &, unsigned __int64)> WhiteListFormatFunction;
 extern jlib_decl IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc, WhiteListFormatFunction roleFormatFunc = {}); // format function optional
-
 
 #endif
 

@@ -1893,6 +1893,12 @@ void MemoryBufferBuilder::finishRow(size32_t length)
     reserved = 0;
 }
 
+void MemoryBufferBuilder::appendBytes(size32_t len, const void * ptr)
+{
+    dbgassertex(buffer);
+    buffer->append(len, ptr);
+}
+
 void MemoryBufferBuilder::removeBytes(size32_t len)
 {
     dbgassertex(buffer);

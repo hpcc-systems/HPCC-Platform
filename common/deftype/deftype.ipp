@@ -1062,14 +1062,14 @@ struct CStringTypeKey
 {
     ExtraInfoAttr charset;
     ExtraInfoAttr collation;
-    memsize_t length;   // to make sure that there is no random packing in the structure
+    memsize_t length = 0;   // to make sure that there is no random packing in the structure
 };
 typedef MapXToIInterface<CStringTypeKey, CStringTypeKey &> CStringTypeToTypeMap;
 
 struct CUnicodeTypeKey
 {
     ExtraInfoAttr locale;
-    memsize_t length;   // to make sure that there is no random packing in the structure
+    memsize_t length = 0;   // to make sure that there is no random packing in the structure
 };
 typedef MapXToIInterface<CUnicodeTypeKey, CUnicodeTypeKey &> CUnicodeTypeToTypeMap;
 

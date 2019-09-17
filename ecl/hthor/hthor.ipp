@@ -2929,16 +2929,16 @@ protected:
     {
         IDistributedFile * file;
         Owned<IOutputMetaData> actualMeta;
-        Owned<IPropertyTree> meta;
+        Owned<const IPropertyTree> formatOptions;
+        Owned<const IPropertyTree> meta;
         unsigned actualCrc;
     };
 
-    IHThorDiskReadBaseArg &helper;
+    IHThorNewDiskReadBaseArg &helper;
     IHThorCompoundBaseArg & segHelper;
     IDiskRowReader * activeReader = nullptr;
     IArrayOf<IDiskRowReader> readers;
-    IRawRowStream * rawRowStream = nullptr;
-    IAllocRowStream * roxieRowStream = nullptr;
+    IDiskRowStream * inputRowStream = nullptr;
     StringBuffer mangledHelperFileName;
     StringAttr tempFileName;
     const char * logicalFileName = "";
@@ -2949,7 +2949,7 @@ protected:
     IOutputMetaData *expectedDiskMeta = nullptr;
     IOutputMetaData *projectedDiskMeta = nullptr;
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
-    Owned<IPropertyTree> readerOptions;
+    Owned<IPropertyTree> formatOptions;
     unsigned partNum = 0;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     bool useRawStream = false; // Constant for the lifetime of the activity
@@ -2978,7 +2978,7 @@ protected:
     }
 
 public:
-    CHThorNewDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *node);
+    CHThorNewDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *node);
     ~CHThorNewDiskReadBaseActivity();
     IMPLEMENT_IINTERFACE
 
@@ -3004,7 +3004,7 @@ public:
 protected:
     bool openFirstPart();
     void initStream(IDiskRowReader * reader, const char * filename);
-    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc);
+    InputFileInfo * extractFileInformation(IDistributedFile * fileDesc, const IPropertyTree * curFormatOptions);
     bool openFilePart(const char * filename);
     bool openFilePart(ILocalOrDistributedFile * localFile, IDistributedFilePart * filePart, unsigned whichPart);
     void setEmptyStream();
@@ -3014,7 +3014,7 @@ protected:
     virtual void closepart();
 
     bool openNextPart(bool prevWasMissing);
-    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, IPropertyTree * options);
+    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, const IPropertyTree * options);
 };
 
 
@@ -3022,7 +3022,7 @@ class CHThorNewDiskReadActivity : public CHThorNewDiskReadBaseActivity
 {
     typedef CHThorNewDiskReadBaseActivity PARENT;
 protected:
-    IHThorDiskReadArg &helper;
+    IHThorNewDiskReadArg &helper;
     bool needTransform;
     bool hasMatchFilter;
     unsigned __int64 lastGroupProcessed;
@@ -3031,7 +3031,7 @@ protected:
     unsigned __int64 remoteLimit = 0;
 
 public:
-    CHThorNewDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
+    CHThorNewDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *node);
 
     virtual void ready();
     virtual void stop();

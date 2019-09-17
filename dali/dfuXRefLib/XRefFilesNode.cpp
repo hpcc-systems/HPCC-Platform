@@ -377,7 +377,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         const char* _node = part.queryProp("Node[1]");
         if (!_node||!*_node)
             _node = part.queryProp("RNode[1]");
-        if (!*_node||!*_node) {
+        if (!_node||!*_node) {
             OERRLOG("%s - could not attach (missing part info)",Partmask);
             errstr.appendf("ERROR: %s - could not attach (missing part info)",Partmask);
             return false;

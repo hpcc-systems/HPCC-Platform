@@ -54,7 +54,7 @@ class jlib_decl MappingBase : public CInterfaceOf<IMapping>
 
 protected:
     //Packs into the remainder of the 8byte value from CInterface in 64bit
-    unsigned hash;
+    unsigned hash = 0;
 };
 
 class jlib_decl Mapping : extends MappingBase

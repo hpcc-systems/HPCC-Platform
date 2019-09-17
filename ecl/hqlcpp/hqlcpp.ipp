@@ -457,6 +457,7 @@ public:
 
     void start(const char * text, unsigned _flags = 0);
     void finish();
+    bool isEmpty() const;
     unsigned numStmts() const;
     void setIncomplete(bool value);
     void setIncluded(bool value);
@@ -823,6 +824,7 @@ struct HqlCppOptions
     bool                forceAllProjectedDiskSerialized;
     bool                newIndexReadMapping;
     bool                diskReadsAreSimple;
+    bool                genericDiskReads;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

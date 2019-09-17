@@ -80,7 +80,8 @@
                     <div style="display:inline-block">
                         <h2>
                             <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<div id="${id}StateIdImage" class="iconWorkunit"></div>&nbsp;<span id="${id}Wuid" class="bold">${i18n.WUID}</span>
-                            <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Wuid"><img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="${i18n.CopyToClipboard}"></button>
+                            <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}Wuid"><i class="fa fa-clipboard" title="${i18n.CopyWUIDToClipboard}"></i></button>
+                            <button id="${id}ShareWUClippy" class="clippy" data-clipboard-text=""><i class="fa fa-share" title="${i18n.CopyURLToClipboard}"></i></button>
                         </h2>
                     </div>
                     <div id="${id}WUStatus" style="width:512px;height:64px;float:right">

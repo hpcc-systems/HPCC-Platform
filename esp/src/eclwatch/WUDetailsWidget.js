@@ -129,11 +129,11 @@ define([
                 this.emailSubject = registry.byId(this.id + "EmailSubject");
                 this.emailBody = registry.byId(this.id + "EmailBody");
                 this.protected = registry.byId(this.id + "Protected");
-
                 this.infoGridWidget = registry.byId(this.id + "InfoContainer");
                 this.zapDialog = registry.byId(this.id + "ZapDialog");
 
                 Clippy.attach(this.id + "ClippyButton");
+                Clippy.attach(this.id + "ShareWUClippy");
 
                 this.wuStatus = new WUStatusModule.WUStatus()
                     .baseUrl("")
@@ -310,6 +310,8 @@ define([
 
                 this.graphLink = dom.byId(this.id + "ActiveGraph");
 
+                domAttr.set(this.id + "ShareWUClippy", "data-clipboard-text", this.getURL());
+
                 if (params.Wuid) {
                     this.summaryWidget.set("title", params.Wuid);
 
@@ -337,7 +339,9 @@ define([
 
                 this.protected.on("change", function (evt) {
                     context._onSave();
-                })
+                });
+
+                this.refreshActionState();
             },
 
             initTab: function () {

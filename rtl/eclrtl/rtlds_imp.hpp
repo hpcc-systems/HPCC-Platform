@@ -691,6 +691,7 @@ public:
         buffer = &_buffer;
     }
 
+    void appendBytes(size32_t len, const void * ptr);
     void removeBytes(size32_t len);
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);

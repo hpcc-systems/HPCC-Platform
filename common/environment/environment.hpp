@@ -174,7 +174,7 @@ interface IConstEnvironment : extends IConstEnvBase
 {
     virtual IConstDomainInfo * getDomain(const char * name) const = 0;
     virtual IConstMachineInfo * getMachine(const char * name) const = 0;
-    virtual IConstMachineInfo * getMachineByAddress(const char * netaddress) const = 0;
+    virtual IConstMachineInfo * getMachineByAddress(const char * hostOrIP) const = 0;
     virtual IConstMachineInfo * getMachineForLocalHost() const = 0;
     virtual IConstDropZoneInfo * getDropZone(const char * name) const = 0;
     virtual IConstInstanceInfo * getInstance(const char * type, const char * version, const char * domain) const = 0;

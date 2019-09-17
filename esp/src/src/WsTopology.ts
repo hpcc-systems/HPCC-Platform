@@ -45,16 +45,19 @@ var TpLogFileStore = declare([Memory, Evented], {
                         if (options.start === 0 || idx > 0) {
                             //  Throw away first line as it will probably only be a partial line  ---
                             var itemParts = item.split(" ");
-                            var lineNo, date, time, pid, tid, details;
+                            var lineNo, audience, time, pid, tid, date, details;
                             if (itemParts.length) lineNo = nextItem(itemParts);
+                            if (itemParts.length) audience = nextItem(itemParts);
                             if (itemParts.length) date = nextItem(itemParts);
                             if (itemParts.length) time = nextItem(itemParts);
                             if (itemParts.length) pid = nextItem(itemParts);
                             if (itemParts.length) tid = nextItem(itemParts);
                             if (itemParts.length) details = itemParts.join(" ");
+
                             data.push({
                                 __hpcc_id: response.TpLogFileResponse.PageNumber + "_" + idx,
                                 lineNo: lineNo,
+                                audience: audience,
                                 date: date,
                                 time: time,
                                 pid: pid,

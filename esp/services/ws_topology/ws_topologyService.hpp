@@ -54,6 +54,9 @@ struct ReadLog
     unsigned prevPage;
     unsigned nextPage;
     unsigned TotalPages;
+    unsigned logfields;
+    unsigned columnNumDate;
+    unsigned columnNumTime;
 };
 
 class CWsTopologySoapBindingEx : public CWsTopologySoapBinding
@@ -101,8 +104,8 @@ private:
     bool findTimestampAndLT(const char * logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
     unsigned findLineTerminator(const char* dataPtr, const size32_t dataSize);
     bool isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength);
-    char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator);
-    void addALogLine(offset_t& readFrom, unsigned& locationFlag, const char *dataRow, ReadLog& readLogReq, StringArray& returnbuff);
+    char* readALogLine(char* dataPtr, size32_t& dataSize, ReadLog& readLogReq, StringBuffer& logLine, bool& hasLineTerminator);
+    void addALogLine(offset_t& readFrom, unsigned& locationFlag, const char *dataRow, ReadLog& readLogReq, StringBuffer& logTimeString, StringArray& returnbuff);
     void readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq);
     void setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
                                          const char* fileType, StringBuffer& returnbuf, IEspTpLogFileResponse &resp);
@@ -112,6 +115,16 @@ private:
                                     bool& bThresholdIsPercentage);
 
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
+    void readLogMessageFields(char* logStart, size32_t bytesRemaining, ReadLog& readLogReq);
+    const char* readLastLogDateTimeFromContentBuffer(StringBuffer& content, ReadLog& readLogReq, CDateTime& latestLogTime);
+    bool readLastLogDateTime(const char* logName, IFileIO* rIO, size32_t fileSize, size32_t readSize,
+        ReadLog& readLogReq, CDateTime& latestLogTime);
+    void readLogField(const char* lineStart, const unsigned lineLength, const unsigned columnNum,
+        const unsigned columnLength, StringBuffer& logField);
+    bool readLogDateTimeFromLogLine(const char* lineStart, const unsigned lineLength, ReadLog& readLogReq,
+        CDateTime& dt, StringBuffer& logFieldTime);
+    void readLastNRowsToArray(const char* logName, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnBuf);
+
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsTopologyEx(){};
