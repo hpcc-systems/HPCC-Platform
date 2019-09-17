@@ -955,8 +955,8 @@ EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', b
  */
 EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW = '') :=
     lib_fileservices.FileServices.GetEspURL(username, userPW);
-    
-    
+
+
  /**
  * Returns the full URL to the default Drop Zone
  *
@@ -981,5 +981,5 @@ EXPORT varstring GetDefaultDropZone(const varstring username = '', const varstri
 
 EXPORT dataset(FsDropZoneRecord) GetDropZones(const varstring username = '', const varstring userPW = '') :=
     lib_fileservices.FileServices.GetDropZones(username, userPW);
-    
+
 END;
