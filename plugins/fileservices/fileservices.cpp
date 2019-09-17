@@ -138,13 +138,8 @@ static const char * EclDefinition =
 "  ProtectLogicalFile(const varstring lfn,boolean set=true) : c,context,entrypoint='fsProtectLogicalFile'; \n"
 "  DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec'; \n"
 "  varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL'; \n"
-<<<<<<< HEAD
-"  varstring GetDefaultDropZone(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetDefaultDropZone'; \n"
-"  dataset(FsDropZoneRecord) GetDropZones(const varstring username = '', const varstring userPW = '') : c,context,entrypoint='fsGetDropZones'; \n"
-=======
 "  varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone'; \n"
 "  dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones'; \n"
->>>>>>> 02f30a6bde0a0432df1b7a40c9f8cebb50672a2f
 "END;";
 
 #define WAIT_SECONDS 30

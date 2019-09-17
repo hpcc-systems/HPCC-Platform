@@ -965,7 +965,7 @@ EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW
 
 
  /**
- * Returns the full URL to the default Drop Zone
+ * Returns the path to the default Drop Zone
  *
  *
  * @return              A string containing the path to the default DropZone. 
@@ -978,7 +978,7 @@ EXPORT varstring GetDefaultDropZone() :=
     lib_fileservices.FileServices.GetDefaultDropZone();
 
  /**
- * Returns the a dataset with full URL to all Drop Zones
+ * Returns the a dataset with full paths to all Drop Zones
  *
  *
  * @return              A dataset containing all defined Drop Zone paths. 
