@@ -57,7 +57,7 @@
 
 #define UNK_PERM_VALUE (SecAccessFlags)-2	//used to initialize "default" permission, which we later try to deduce
 
-const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration", "@employeeid" };
+const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration", "@employeeid", "@employeenumber" };
 
 const char* getUserFieldNames(UserField field)
 {
@@ -1582,7 +1582,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeId", "distinguishedName",NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeId", "distinguishedName", "employeeNumber", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = lconn.get()->getLd();
@@ -1697,6 +1697,12 @@ public:
                     CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
                     if (vals.hasValues())
                         user.setEmployeeID(vals.queryCharValue(0));
+                }
+                else if(stricmp(attribute, "employeeNumber") == 0)
+                {
+                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
+                    if (vals.hasValues())
+                        user.setEmployeeNumber(vals.queryCharValue(0));
                 }
                 else if(stricmp(attribute, "distinguishedName") == 0)
                 {
@@ -2097,7 +2103,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = lconn.get()->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", "distinguishedName", "userAccountControl", "pwdLastSet", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", "employeeNumber", "distinguishedName", "userAccountControl", "pwdLastSet", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -2170,6 +2176,8 @@ public:
                         }
                         else if(stricmp(attribute, "employeeId") == 0)
                             user.setEmployeeID(vals.queryCharValue(0));
+                        else if(stricmp(attribute, "employeeNumber") == 0)
+                            user.setEmployeeNumber(vals.queryCharValue(0));
                     }
                 }
             }
@@ -2557,7 +2565,7 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
         }
 
-        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeId", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeId", "employeeNumber", NULL};
 
         CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
@@ -2642,6 +2650,12 @@ public:
                     if (vals.hasValues())
                         user->setEmployeeID(vals.queryCharValue(0));
                 }
+                else if(stricmp(attribute, "employeeNumber") == 0)
+                {
+                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
+                    if (vals.hasValues())
+                        user->setEmployeeNumber(vals.queryCharValue(0));
+                }
             }
             if (user->getName() && *user->getName())
                 users.append(*LINK(user.get()));
@@ -2694,6 +2708,7 @@ public:
         userTree->addPropInt(getUserFieldNames(UFUserID), usr.getUserID());
         userTree->addProp(getUserFieldNames(UFPasswordExpiration), sb.str());
         userTree->addProp(getUserFieldNames(UFEmployeeID), usr.getEmployeeID());
+        userTree->addProp(getUserFieldNames(UFEmployeeNumber), usr.getEmployeeNumber());
         users->addPropTree("User", userTree.getClear());
     }
 
@@ -2832,7 +2847,16 @@ public:
                 employeeID_values
             };
 
-            LDAPMod *attrs[5];
+            const char * emplNumber = user.getEmployeeNumber();
+            char *employeeNumber_values[] = {(emplNumber && *emplNumber) ? (char*)emplNumber : nullptr, nullptr };
+            LDAPMod employeeNumber_attr =
+            {
+                LDAP_MOD_REPLACE,
+                "employeeNumber",
+                employeeNumber_values
+            };
+
+            LDAPMod *attrs[6];
             int ind = 0;
         
             attrs[ind++] = &gn_attr;
@@ -2848,6 +2872,7 @@ public:
             }
 
             attrs[ind++] = &employeeID_attr;
+            attrs[ind++] = &employeeNumber_attr;
             
             attrs[ind] = NULL;
             
@@ -5946,6 +5971,7 @@ private:
         }
 
         const char* employeeID = user.getEmployeeID();
+        const char* employeeNumber = user.getEmployeeNumber();
 
         StringBuffer dn;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -6044,7 +6070,15 @@ private:
             employeeID_values
         };
 
-        LDAPMod *attrs[9];
+        char* employeeNumber_values[] = {(char*)employeeNumber, NULL};
+        LDAPMod employeeNumber_attr =
+        {
+            LDAP_MOD_ADD,
+            "employeeNumber",
+            employeeNumber_values
+        };
+
+        LDAPMod *attrs[10];
         int ind = 0;
         
         attrs[ind++] = &cn_attr;
@@ -6061,6 +6095,8 @@ private:
             attrs[ind++] = &dispname_attr;
             if (employeeID && *employeeID)
                 attrs[ind++] = &employeeID_attr;
+            if (employeeNumber && *employeeNumber)
+                attrs[ind++] = &employeeNumber_attr;
         }
         else
         {

@@ -176,6 +176,8 @@ interface ISecUser : extends IInterface
     virtual bool setLastName(const char * lname) = 0;
     virtual const char * getEmployeeID() = 0;
     virtual bool setEmployeeID(const char * emplID) = 0;
+    virtual const char * getEmployeeNumber() = 0;
+    virtual bool setEmployeeNumber(const char * emplNumber) = 0;
     virtual const char * getDistinguishedName() = 0;
     virtual bool setDistinguishedName(const char * dn) = 0;
     virtual const char * getRealm() = 0;

@@ -34,6 +34,7 @@ private:
     StringBuffer    m_firstname;
     StringBuffer    m_lastname;
     StringBuffer    m_employeeID;
+    StringBuffer    m_employeeNumber;
     StringBuffer    m_distinguishedName;
     unsigned        m_userID;
     StringBuffer    m_Fqdn;
@@ -114,6 +115,17 @@ public:
     bool setEmployeeID(const char * emplID)
     {
         m_employeeID.set(emplID);
+        return true;
+    }
+
+    const char * getEmployeeNumber()
+    {
+        return m_employeeNumber.str();
+    }
+
+    bool setEmployeeNumber(const char * emplNumber)
+    {
+        m_employeeNumber.set(emplNumber);
         return true;
     }
 
@@ -250,6 +262,7 @@ public:
         destination.setFirstName(getFirstName());
         destination.setLastName(getLastName());
         destination.setEmployeeID(getEmployeeID());
+        destination.setEmployeeNumber(getEmployeeNumber());
         destination.setRealm(getRealm());
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
