@@ -155,6 +155,7 @@ public:
             jobject frame = JNIEnv::GetObjectArrayElement(frames, i);
             checkUnexpectedException();
             msg = (jstring) JNIEnv::CallObjectMethod(frame, frame_toString);
+            checkUnexpectedException();
             text = JNIEnv::GetStringUTFChars(msg, 0);
             DBGLOG("javaembed: exception: stack: %s", text);
             JNIEnv::ReleaseStringUTFChars(msg, text);
@@ -163,6 +164,7 @@ public:
             JNIEnv::DeleteLocalRef(frame);
         }
         jthrowable cause = (jthrowable) JNIEnv::CallObjectMethod(exception, throwable_getCause);
+        checkUnexpectedException();
         if (cause && cause != exception)
         {
             DBGLOG("javaembed: exception: Caused by:");
@@ -4268,6 +4270,9 @@ protected:
 
     jclass loadClass(const char *className)
     {
+        StringBuffer uclassname(className);
+        uclassname.replace('/', '.');
+        className=uclassname.str();
         JNIenv->ExceptionClear();
         jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         jstring classNameString = JNIenv->NewStringUTF(className);
