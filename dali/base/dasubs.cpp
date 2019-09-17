@@ -576,7 +576,6 @@ public:
     {
         ICoven &coven=queryCoven();
         CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages",this,&CDaliPublisherClient::processMessage);
-        stopped = false;
         CMessageBuffer mb;
         stopped = false;
         while (!stopped) {
@@ -588,7 +587,10 @@ public:
                     DBGLOG("QPROBE: MPTAG_DALI_SUBSCRIPTION_REQUEST has %d waiting",waiting);
     #endif
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL,NULL))
-                    handler.handleMessage(mb);
+                {
+                    if (!stopped)
+                        handler.handleMessage(mb);
+                }
                 else
                     stopped = true;
             }
@@ -605,6 +607,8 @@ public:
     {
         //ICoven &coven=queryCoven();
         //ICommunicator &comm=coven.queryComm();
+        if (stopped)
+            return;
         unsigned tag;
         mb.read(tag);
         SubscriptionId id;
