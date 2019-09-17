@@ -4,7 +4,7 @@ import * as ESPUtil from "./ESPUtil";
 import * as topic from "dojo/topic"
 
 const espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600; // 10 minuntes?
-const IDLE_TIMEOUT = espTimeoutSeconds * 10;
+const IDLE_TIMEOUT = espTimeoutSeconds * 1000;
 const SESSION_RESET_FREQ = 30 * 1000;
 const idleWatcher = new ESPUtil.IdleWatcher(IDLE_TIMEOUT);
 const monitorLockClick = new ESPUtil.MonitorLockClick();
