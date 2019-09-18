@@ -43,7 +43,7 @@
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Edges}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
-                                        <input title="${i18n.Label}:" name="elabel" value="%Label%\n%NumRowsProcessed%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        <input title="${i18n.Label}:" name="elabel" value="%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% - %SkewMaxRowsProcessed%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -54,7 +54,7 @@
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <span id="${id}GraphStatus" ></span>
+                    <span id="${id}GraphStatus"></span>
                     <div class="right" data-dojo-attach-event="onChange:_onMaximizeGraph" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                 </div>
             </div>

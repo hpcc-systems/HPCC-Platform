@@ -2,7 +2,10 @@ import { Icon, Palette } from "@hpcc-js/common";
 import { BaseScope, ScopeEdge, ScopeGraph, ScopeSubgraph, ScopeVertex } from "@hpcc-js/comms";
 import { Edge, IGraphData, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
 import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex } from "@hpcc-js/util";
+import { format as d3Format } from "d3-format";
 import { decodeHtml } from "./Utility";
+
+const formatNum = d3Format(",");
 
 export type VertexType = Vertex | Icon;
 
@@ -139,7 +142,7 @@ export class WUScopeController {
         return this;
     }
 
-    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%";
+    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% - %SkewMaxRowsProcessed%";
     edgeLabelTpl(): string;
     edgeLabelTpl(_: string): this;
     edgeLabelTpl(_?: string): string | this {
@@ -270,11 +273,25 @@ export class WUScopeController {
         return retVal;
     }
 
-    format(labelTpl, obj) {
-        labelTpl = labelTpl.split("\\n").join("\n");
+    formatNum(str): string {
+        if (isNaN(str)) {
+            return str;
+        }
+        return formatNum(str);
+    }
+
+    formatNums(obj) {
+        for (const key in obj) {
+            obj[key] = this.formatNum(obj[key]);
+        }
+        return obj;
+    }
+
+    formatLine(labelTpl, obj): string {
         let retVal = "";
         let lpos = labelTpl.indexOf("%");
         let rpos = -1;
+        let replacementFound = lpos >= 0 ? false : true;  //  If a line has no symbols always include it, otherwise only include that line IF a replacement was found  ---
         while (lpos >= 0) {
             retVal += labelTpl.substring(rpos + 1, lpos);
             rpos = labelTpl.indexOf("%", lpos + 1);
@@ -283,11 +300,23 @@ export class WUScopeController {
                 break;
             }
             const key = labelTpl.substring(lpos + 1, rpos);
+            replacementFound = replacementFound || !!obj[labelTpl.substring(lpos + 1, rpos)];
             retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
             lpos = labelTpl.indexOf("%", rpos + 1);
         }
         retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-        return retVal.split("\n").filter(d => d.trim().length > 0).map(d => decodeHtml(d)).join("\n");
+        return replacementFound ? retVal : "";
+    }
+
+    format(labelTpl, obj) {
+        labelTpl = labelTpl.split("\\n").join("\n");
+        return labelTpl
+            .split("\n")
+            .map(line => this.formatLine(line, obj))
+            .filter(d => d.trim().length > 0)
+            .map(decodeHtml)
+            .join("\n")
+            ;
     }
 
     createSubgraph(subgraph: ScopeSubgraph): Subgraph {
@@ -306,10 +335,11 @@ export class WUScopeController {
     }
 
     createVertex(vertex: ScopeVertex): VertexType {
-        const attrs = vertex._.rawAttrs();
-        attrs["ID"] = vertex._.Id;
-        attrs["Parent ID"] = vertex.parent && vertex.parent._.Id;
-        attrs["Scope"] = vertex._.ScopeName;
+        const rawAttrs = vertex._.rawAttrs();
+        const formattedAttrs = this.formatNums(vertex._.formattedAttrs());
+        formattedAttrs["ID"] = vertex._.Id;
+        formattedAttrs["Parent ID"] = vertex.parent && vertex.parent._.Id;
+        formattedAttrs["Scope"] = vertex._.ScopeName;
         let v = this.verticesMap[vertex._.Id];
         if (!v) {
             if (vertex._.ScopeType === "dummy") {
@@ -329,7 +359,7 @@ export class WUScopeController {
                     .icon_shape_colorStroke(UNKNOWN_STROKE)
                     .icon_shape_colorFill(UNKNOWN_STROKE)
                     .icon_image_colorFill(Palette.textColor(UNKNOWN_STROKE))
-                    .faChar(faCharFactory(attrs["Kind"]))
+                    .faChar(faCharFactory(rawAttrs["Kind"]))
                     .textbox_shape_colorStroke(UNKNOWN_STROKE)
                     .textbox_shape_colorFill(UNKNOWN_FILL)
                     .textbox_text_colorFill(Palette.textColor(UNKNOWN_FILL))
@@ -359,7 +389,7 @@ export class WUScopeController {
             this.rVerticesMap[v.id()] = vertex;
         }
         if (v instanceof Vertex) {
-            const label = this.format(this.vertexLabelTpl(), attrs);
+            const label = this.format(this.vertexLabelTpl(), formattedAttrs);
             v
                 .icon_diameter(this.showIcon() ? 24 : 0)
                 .text(label)
@@ -379,10 +409,11 @@ export class WUScopeController {
     }
 
     createEdge(edge: ScopeEdge): Edge | undefined {
-        const attrs = edge._.rawAttrs();
-        attrs["ID"] = edge._.Id;
-        attrs["Parent ID"] = edge.parent && edge.parent._.Id;
-        attrs["Scope"] = edge._.ScopeName;
+        const rawAttrs = edge._.rawAttrs();
+        const formattedAttrs = this.formatNums(edge._.formattedAttrs());
+        formattedAttrs["ID"] = edge._.Id;
+        formattedAttrs["Parent ID"] = edge.parent && edge.parent._.Id;
+        formattedAttrs["Scope"] = edge._.ScopeName;
         let e = this.edgesMap[edge._.Id];
         if (!e) {
             const sourceV = this.verticesMap[edge.source._.Id];
@@ -393,10 +424,10 @@ export class WUScopeController {
 
                 let strokeDasharray = null;
                 let weight = 100;
-                if (attrs["IsDependency"]) {
+                if (rawAttrs["IsDependency"]) {
                     weight = 10;
                     strokeDasharray = "1,2";
-                } else if (attrs["_childGraph"]) {
+                } else if (rawAttrs["_childGraph"]) {
                     strokeDasharray = "5,5";
                 } else if (isSpill) {
                     weight = 25;
@@ -418,7 +449,7 @@ export class WUScopeController {
             }
         }
         if (e instanceof Edge) {
-            const label = this.format(this.edgeLabelTpl(), attrs);
+            const label = this.format(this.edgeLabelTpl(), formattedAttrs);
             e.text(label);
         }
         return e;
@@ -706,12 +737,12 @@ export class WUScopeController {
             //  TODO Move into BaseScope  ---
             retVal[key] = decodeHtml(retVal[key]);
         }
-        retVal.__formatted = item._.formattedAttrs();
+        retVal.__formatted = this.formatNums(item._.formattedAttrs());
         return retVal;
     }
 
     formatRow(item: ScopeEdge | ScopeSubgraph | ScopeVertex, columns, row) {
-        const attrs = item._.formattedAttrs();
+        const attrs = this.formatNums(item._.formattedAttrs());
         for (const key in attrs) {
             const idx = columns.indexOf(key);
             if (idx === -1) {
@@ -801,7 +832,7 @@ export class WUScopeController {
             rows.push(`<tr><td class="key">Parent ID:</td><td class="value">${highlightText("Parent ID", parentScope.Id)}</td></tr>`);
         }
         rows.push(`<tr><td class="key">Scope:</td><td class="value">${highlightText("Scope", scope.ScopeName)}</td></tr>`);
-        const attrs = scope.formattedAttrs();
+        const attrs = this.formatNums(scope.formattedAttrs());
         for (const key in attrs) {
             if (key === "Label") {
                 label = attrs[key];
