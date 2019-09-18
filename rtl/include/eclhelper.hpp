@@ -472,8 +472,8 @@ static const char * const PVirtualLocalFilePosition = (const char *)(memsize_t)F
 static const char * const PVirtualFilename = (const char *)(memsize_t)FVirtualFilename;
 static const char * const PVirtualRowSize = (const char *)(memsize_t)FVirtualRowSize;
 
-inline bool isVirtualInitializer(const byte * initializer) { return initializer && (memsize_t)initializer < FVirtualLimit; }
-inline byte getVirtualInitializer(const byte * initializer) { return (byte)(memsize_t)initializer; }
+inline bool isVirtualInitializer(const void * initializer) { return initializer && (memsize_t)initializer < FVirtualLimit; }
+inline byte getVirtualInitializer(const void * initializer) { return (byte)(memsize_t)initializer; }
 
 typedef IThorDiskCallback IVirtualFieldCallback;
 
@@ -481,12 +481,12 @@ typedef IThorDiskCallback IVirtualFieldCallback;
 struct RtlFieldInfo
 {
     constexpr inline RtlFieldInfo(const char * _name, const char * _xpath, const RtlTypeInfo * _type, unsigned _flags = 0, const char *_initializer = NULL)
-    : name(_name), xpath(_xpath), type(_type), initializer((const byte *) _initializer), flags(_type->fieldType | _flags) {}
+    : name(_name), xpath(_xpath), type(_type), initializer(_initializer), flags(_type->fieldType | _flags) {}
 
     const char * name;
     const char * xpath;
     const RtlTypeInfo * type;
-    const byte *initializer;
+    const void *initializer;
     unsigned flags;
 
     inline bool hasNonScalarXpath() const { return (flags & RFTMhasnonscalarxpath) != 0; }
