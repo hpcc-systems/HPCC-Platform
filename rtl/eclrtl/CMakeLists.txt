@@ -92,8 +92,15 @@ if (USE_BOOST_REGEX)
 endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
+
+if(CENTOS_6_BOOST)
+  add_dependencies(eclrtl boost-regex)
+  target_link_libraries( eclrtl boost-regex)
+else()
+  target_link_libraries( eclrtl ${BOOST_REGEX_LIBRARIES} )
+endif()
+
 target_link_libraries ( eclrtl 
-      ${BOOST_REGEX_LIBRARIES}
       jlib
       nbcd
       roxiemem

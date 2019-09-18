@@ -69,7 +69,7 @@ unsigned lastTopologyReport = 0;
 const unsigned timeoutCheckInterval = 1000;
 const unsigned heartbeatInterval = 5000;
 const unsigned timeoutHeartbeatInterval = 10000;
-const unsigned topologyReportInterval = 10000;
+const unsigned topologyReportInterval = 60000;
 bool aborted = false;
 Semaphore stopping;
 StringBuffer topologyFile;
@@ -92,6 +92,8 @@ extern "C" void caughtSIGALRM(int sig)
 extern "C" void caughtSIGTERM(int sig)
 {
     DBGLOG("Caught sigterm %d", sig);
+    stopping.signal();
+    aborted = true;
 }
 
 extern "C" void caughtSIGABRT(int sig)
@@ -177,9 +179,8 @@ void regenerateResponse()
     }
 }
 
-void doServer()
+void doServer(ISocket *socket)
 {
-    Owned<ISocket> socket = ISocket::create(topoPort);
     std::thread pinger([]()
     {
         // Force a periodic refresh so we see missing heartbeats even when none are coming in, and we can interrupt the socket on closedown
@@ -284,81 +285,93 @@ int main(int argc, const char *argv[])
         E->Release();
         return EXIT_FAILURE;
     }
-    Owned<IProperties> globals = createProperties(true);
-    for (unsigned i=0; i<(unsigned)argc; i++)
-    {
-        if (stricmp(argv[i], "--help")==0 ||
-            stricmp(argv[i], "-h")==0)
-        {
-            topo_server_usage();
-            return EXIT_SUCCESS;
-        }
-        else if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-        }
-        else
-            globals->loadProp(argv[i], true);  // We ignore unrecognized options for now
-    }
-
-    // locate settings xml file in runtime dir
-    char currentDirectory[_MAX_DIR];
-    if (!getcwd(currentDirectory, sizeof(currentDirectory)))
-    {
-        perror("getcwd failure");
-        return EXIT_FAILURE;
-    }
-    topologyFile.set(currentDirectory);
-    addNonEmptyPathSepChar(topologyFile);
-    topologyFile.append(PATHSEPCHAR).append("toposerver.xml");
-    IPropertyTree *topology;
-    if (checkFileExists(topologyFile.str()))
-        topology = createPTreeFromXMLFile(topologyFile.str(), ipt_lowmem);
-    else
-        topology = createPTreeFromXMLString(
-            "<TopoServerProcess port='9004' traceLevel='1'>"
-            "</TopoServerProcess>"
-            , ipt_lowmem
-            );
-    if (globals->hasProp("--traceLevel"))
-        topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
-    if (globals->hasProp("--port"))
-        topology->setProp("@port", globals->queryProp("--port"));
-    if (globals->hasProp("--stdlog"))
-        topology->setProp("@stdlog", globals->queryProp("--stdlog"));
-    if (globals->hasProp("--logdir"))
-        topology->setProp("@logdir", globals->queryProp("--logdir"));
-
-
-    // take ownership of sentinel file
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
-
-    traceLevel = topology->getPropInt("@traceLevel", 1);
-    topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
-    if (topology->getPropBool("@stdlog", traceLevel != 0))
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
-    else
-        removeLog();
-    const char *logdir = topology->queryProp("@logdir");
-    if (logdir)
+    try
     {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir, "toposerver");
-        lf->setMaxDetail(TopDetail);
-        lf->beginLogging();
-        queryLogMsgManager()->enterQueueingMode();
-        queryLogMsgManager()->setQueueDroppingLimit(512, 32);
+        Owned<IProperties> globals = createProperties(true);
+        for (unsigned i=0; i<(unsigned)argc; i++)
+        {
+            if (stricmp(argv[i], "--help")==0 ||
+                stricmp(argv[i], "-h")==0)
+            {
+                topo_server_usage();
+                return EXIT_SUCCESS;
+            }
+            else if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+                if (daemon(1,0) || write_pidfile(argv[++i])) {
+                    perror("Failed to daemonize");
+                    return EXIT_FAILURE;
+                }
+            }
+            else
+                globals->loadProp(argv[i], true);  // We ignore unrecognized options for now
+        }
+
+        // locate settings xml file in runtime dir
+        char currentDirectory[_MAX_DIR];
+        if (!getcwd(currentDirectory, sizeof(currentDirectory)))
+        {
+            perror("getcwd failure");
+            return EXIT_FAILURE;
+        }
+        topologyFile.set(currentDirectory);
+        addNonEmptyPathSepChar(topologyFile);
+        topologyFile.append(PATHSEPCHAR).append("toposerver.xml");
+        IPropertyTree *topology;
+        if (checkFileExists(topologyFile.str()))
+            topology = createPTreeFromXMLFile(topologyFile.str(), ipt_lowmem);
+        else
+            topology = createPTreeFromXMLString(
+                "<TopoServerProcess port='9004' traceLevel='1'>"
+                "</TopoServerProcess>"
+                , ipt_lowmem
+                );
+        if (globals->hasProp("--traceLevel"))
+            topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
+        if (globals->hasProp("--port"))
+            topology->setProp("@port", globals->queryProp("--port"));
+        if (globals->hasProp("--stdlog"))
+            topology->setProp("@stdlog", globals->queryProp("--stdlog"));
+        if (globals->hasProp("--logdir"))
+            topology->setProp("@logdir", globals->queryProp("--logdir"));
+
+        traceLevel = topology->getPropInt("@traceLevel", 1);
+        topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
+        if (topology->getPropBool("@stdlog", traceLevel != 0))
+            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+        else
+            removeLog();
+        const char *logdir = topology->queryProp("@logdir");
+        if (logdir)
+        {
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir, "toposerver");
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+            queryLogMsgManager()->enterQueueingMode();
+            queryLogMsgManager()->setQueueDroppingLimit(512, 32);
+        }
+        Owned<ISocket> socket = ISocket::create(topoPort);
+        if (traceLevel)
+            DBGLOG("Topology server starting");
+
+        writeSentinelFile(sentinelFile);
+        doServer(socket);
+        if (traceLevel)
+            DBGLOG("Topology server stopping");
+        removeSentinelFile(sentinelFile);
     }
-    if (traceLevel)
-        DBGLOG("Topology server starting");
-    
-    writeSentinelFile(sentinelFile);
-    doServer();
-    if (traceLevel)
-        DBGLOG("Topology server stopping");
-    removeSentinelFile(sentinelFile);
+    catch (IException *E)
+    {
+        EXCLOG(E);
+        E->Release();
+    }
+    catch (...)
+    {
+        Owned<IException> E = makeStringException(MSGAUD_programmer, 999, "Unexpected exception");
+        EXCLOG(E);
+        E->Release();
+    }
     ExitModuleObjects();
     return 0;
 }
