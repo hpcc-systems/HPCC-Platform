@@ -497,6 +497,11 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                     StringBuffer sb;
                     oneusr->setPasswordexpiration(getPasswordExpiration(usr, sb));
                 }
+
+                if (version >= 1.16)
+                {
+                    oneusr->setEmployeeNumber(usr->getEmployeeNumber());
+                }
                 espusers.append(*oneusr.getLink());
             }
         }
@@ -563,6 +568,9 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
         case CUserSortBy_EmployeeID:
             sortOrder[0] = UFEmployeeID;
             break;
+        case CUserSortBy_EmployeeNumber:
+            sortOrder[0] = UFEmployeeNumber;
+            break;
         default:
             break;
         }
@@ -594,6 +602,10 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
             const char* employeeID = usr.queryProp(getUserFieldNames(UFEmployeeID));
             if (employeeID && *employeeID)
                 userInfo->setEmployeeID(employeeID);
+
+            const char* employeeNumber = usr.queryProp(getUserFieldNames(UFEmployeeNumber));
+            if (employeeNumber && *employeeNumber)
+                userInfo->setEmployeeNumber(employeeNumber);
 
             espUsers.append(*userInfo.getClear());
         }
@@ -941,6 +953,11 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             employeeID = req.getEmployeeID();
         }
 
+        const char * employeeNumber = nullptr;
+        if (context.getClientVersion() >= 1.15)
+        {
+            employeeNumber = req.getEmployeeNumber();
+        }
         Owned<ISecUser> user = secmgr->createUser(username);
         ISecCredentials& cred = user->credentials();
         const char* firstname = req.getFirstname();
@@ -951,6 +968,8 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             user->setLastName(lastname);
         if(employeeID != NULL)
             user->setEmployeeID(employeeID);
+        if(employeeNumber != nullptr)
+            user->setEmployeeNumber(employeeNumber);
         if(pass1 != NULL)
             cred.setPassword(pass1);
         try
@@ -1406,6 +1425,9 @@ bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQuery
         case CUserSortBy_EmployeeID:
             sortOrder[0] = UFEmployeeID;
             break;
+        case CUserSortBy_EmployeeNumber:
+            sortOrder[0] = UFEmployeeNumber;
+            break;
         default:
             break;
         }
@@ -1437,6 +1459,10 @@ bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQuery
             const char* employeeID = usr.queryProp(getUserFieldNames(UFEmployeeID));
             if (employeeID && *employeeID)
                 userInfo->setEmployeeID(employeeID);
+
+            const char* employeeNumber = usr.queryProp(getUserFieldNames(UFEmployeeNumber));
+            if (employeeNumber && *employeeNumber)
+                userInfo->setEmployeeNumber(employeeNumber);
 
             users.append(*userInfo.getLink());
         }
@@ -3709,6 +3735,11 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
             user->setEmployeeID(req.getEmployeeID());
         }
 
+        if (context.getClientVersion() >= 1.16)
+        {
+            user->setEmployeeNumber(req.getEmployeeNumber());
+        }
+
         try
         {
             secmgr->updateUser("names", *user.get());
@@ -3766,7 +3797,12 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
                 StringBuffer sb;
                 resp.setPasswordExpiration(getPasswordExpiration(user, sb));
             }
+            if (version >= 1.16)
+            {
+                resp.setEmployeeNumber(user->getEmployeeNumber());
+            }
         }
+
     }
     catch(IException* e)
     {

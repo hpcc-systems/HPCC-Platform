@@ -117,7 +117,8 @@ enum UserField
     UFFullName = 2,
     UFPasswordExpiration = 3,
     UFEmployeeID = 4,
-    UFterm = 5,
+    UFEmployeeNumber = 5,
+    UFterm = 6,
     UFreverse = 256,
     UFnocase = 512,
     UFnumeric = 1024

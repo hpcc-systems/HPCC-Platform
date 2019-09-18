@@ -540,11 +540,31 @@ void CWsTopologyEx::readLogMessageFields(char* logStart, size32_t bytesRemaining
     //Read LogMessageFields from the first log line
     if (finger > logStart)
     {
-        StringBuffer logLine;
-        logLine.append(finger - logStart, logStart);
-        readLogReq.logfields = getMessageFieldsFromHeader(logLine);
-        if (readLogReq.logfields == 0)
-            readLogReq.logfields = MSGFIELD_LEGACY;
+        StringBuffer firstLogLine;
+        unsigned lengthOf1stLine = finger - logStart;
+        firstLogLine.append(lengthOf1stLine, logStart);
+        readLogReq.logfields = getMessageFieldsFromHeader(firstLogLine);
+        if (readLogReq.logfields != 0)
+        {
+            if (readLogReq.includeLogFieldNameLine)
+                readLogReq.readLogFrom = 0;
+            else
+                readLogReq.readLogFrom = lengthOf1stLine + readLogReq.ltBytes;
+            readLogReq.logFieldNames.appendListUniq(firstLogLine, " "); //Ex: "#MsgID    Audience Date       Time(milli)  PID   TID   "
+            const char* lastField = readLogReq.logFieldNames.last();
+            if (isEmptyString(lastField))
+                readLogReq.logFieldNames.replace("Details", readLogReq.logFieldNames.length() - 1);
+            return;
+        }
+
+        readLogReq.logfields = MSGFIELD_LEGACY;
+        readLogReq.logFieldNames.append("lineNo");
+        readLogReq.logFieldNames.append("Date");
+        readLogReq.logFieldNames.append("Time");
+        readLogReq.logFieldNames.append("PID");
+        readLogReq.logFieldNames.append("TID");
+        readLogReq.logFieldNames.append("Details");
+        readLogReq.readLogFrom = 0; //No FieldNameLine
     }
 }
 
@@ -559,7 +579,7 @@ bool CWsTopologyEx::findTimestampAndLT(const char *logname, IFile* rFile, ReadLo
     if (readSize > fileSize)
         readSize = fileSize;
 
-    //Read the first chuck of file to find out a timestamp and line terminator
+    //Read the first chunk of file to find out a timestamp and line terminator
     StringBuffer dataBuffer;
     size32_t bytesRead = rIO->read(0, readSize, dataBuffer.reserve(readSize));
     if (bytesRead != readSize)
@@ -603,7 +623,7 @@ bool CWsTopologyEx::readLastLogDateTime(const char *logName, IFileIO* rIO, size3
 {
     size32_t readFrom = 0;
     if (readSize < fileSize)
-        readFrom = fileSize - readSize; //Search LastLogTime from the last chuck
+        readFrom = fileSize - readSize; //Search LastLogTime from the last chunk
 
     StringBuffer contentBuffer, previousPartialLine;
     while (1)
@@ -613,7 +633,7 @@ bool CWsTopologyEx::readLastLogDateTime(const char *logName, IFileIO* rIO, size3
             throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logName);
             
         if (!previousPartialLine.isEmpty())
-            contentBuffer.append(previousPartialLine); //Append the leftover from the last chuck
+            contentBuffer.append(previousPartialLine); //Append the leftover from the last chunk
 
         const char* partialLineEndPtr = readLastLogDateTimeFromContentBuffer(contentBuffer, readLogReq, latestLogTime);
         if (!partialLineEndPtr)
@@ -757,7 +777,8 @@ void CWsTopologyEx::readLogFileToArray(const char *logname, OwnedIFileIO rIO, Re
     if (eof)
         return;
 
-    if ((readLogReq.logfields != MSGFIELD_LEGACY) && (readLogReq.filterType != GLOFirstNRows))
+    if ((readLogReq.logfields != MSGFIELD_LEGACY) && (!readLogReq.includeLogFieldNameLine ||
+        (readLogReq.filterType != GLOFirstNRows)))
     { //skip the title line
         if (lineReader->readLine(logLine.clear()))
             return;
@@ -794,23 +815,24 @@ void CWsTopologyEx::readLogFileToArray(const char *logname, OwnedIFileIO rIO, Re
 
 void CWsTopologyEx::readLastNRowsToArray(const char* logName, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnBuf)
 {
-    size32_t readSize = AVERAGELOGROWSIZE*readLogReq.lastRows;
-    if (readLogReq.fileSize < readSize)
-        readSize = (size32_t) readLogReq.fileSize;
-
     CDateTime dt; //Not used for readLastNRows
     StringBuffer logFieldTime; //Not used for readLastNRows
     StringBuffer contentBuffer, logLine, previousPartialLine;
     bool nRowsLogged = false;
 
-    //read the last chuck since the file may be too big
-    size32_t readFrom = (size32_t) readLogReq.fileSize-readSize;
+    size32_t logBytesToRead = (size32_t) readLogReq.fileSize - readLogReq.readLogFrom;
+    size32_t readSize = AVERAGELOGROWSIZE*readLogReq.lastRows;
+    if (readSize > logBytesToRead)
+        readSize = logBytesToRead;
+
+    //read the last chunk since the file may be too big
+    size32_t readFrom = (size32_t) readLogReq.fileSize - readSize;
     while (1)
     {
         size32_t bytesRead = rIO->read(readFrom, readSize, contentBuffer.clear().reserve(readSize));
         if (bytesRead != readSize)
             throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logName);
-            
+
         if (!previousPartialLine.isEmpty())
             contentBuffer.append(previousPartialLine); //Add the leftover from previous contentBuffer
 
@@ -839,13 +861,28 @@ void CWsTopologyEx::readLastNRowsToArray(const char* logName, OwnedIFileIO rIO, 
             finger--;
         }
 
-        if (nRowsLogged || (readFrom == 0))
+        if (nRowsLogged)
             break;
 
+        if (readFrom == readLogReq.readLogFrom)
+        {
+            //This is the first chunk of the log file. We need to include the first
+            //log line which does not have a LineTerminator in the front.
+            logLine.clear().append(lineEndPtr - startPtr, startPtr);
+            returnBuf.append(logLine);
+            break;
+        }
+
         previousPartialLine.clear().append(lineEndPtr - startPtr, startPtr);
-        readFrom -= readSize;
-        if (readFrom < 0)
-            readFrom = 0;
+
+        logBytesToRead -= readSize;
+        if (readSize > logBytesToRead)
+        {//less than a full chunk
+            readSize = logBytesToRead;
+            readFrom = readLogReq.readLogFrom;
+        }
+        else
+            readFrom -= readSize;
     }
 }
 
@@ -857,10 +894,20 @@ void CWsTopologyEx::readLogFile(const char *logname, IFile* rFile, ReadLog& read
 
     if ((readLogReq.filterType == GLOFirstPage) || (readLogReq.filterType == GLOLastPage) || (readLogReq.filterType == GLOGoToPage)) //by page number
     {
-        size32_t fileSize = (size32_t) (readLogReq.pageTo - readLogReq.pageFrom);
-        size32_t nRead = rIO->read(readLogReq.pageFrom, fileSize, returnbuff.reserve(fileSize));
-        if (nRead != fileSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
+        if (readLogReq.pageFrom < readLogReq.readLogFrom)
+        {
+            size32_t fileSize = (size32_t) (readLogReq.pageTo - readLogReq.readLogFrom);
+            size32_t nRead = rIO->read(readLogReq.readLogFrom, fileSize, returnbuff.reserve(fileSize));
+            if (nRead != fileSize)
+                throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
+        }
+        else
+        {
+            size32_t fileSize = (size32_t) (readLogReq.pageTo - readLogReq.pageFrom);
+            size32_t nRead = rIO->read(readLogReq.pageFrom, fileSize, returnbuff.reserve(fileSize));
+            if (nRead != fileSize)
+                throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
+        }
     }
     else
     {
@@ -914,6 +961,7 @@ void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileN
     readLogReq.lastRows = req.getLastRows();
     readLogReq.reverse = req.getReversely();
     readLogReq.loadContent = req.getLoadData();
+    readLogReq.includeLogFieldNameLine = req.getIncludeLogFieldNames();
 
     readLogReq.fileSize = rFile->size();
     readLogReq.TotalPages = (int) ceil(((double)readLogReq.fileSize)/LOGFILESIZELIMIT);
@@ -1042,6 +1090,8 @@ void CWsTopologyEx::setTpLogFileResponse(IEspContext &context, ReadLog& readLogR
     double version = context.getClientVersion();
     if (version > 1.05)
         resp.setTotalPages( readLogReq.TotalPages );
+    if (version >= 1.29)
+        resp.setLogFieldNames(readLogReq.logFieldNames);
 
     if (readLogReq.fileSize > 0)
         resp.setFileSize(readLogReq.fileSize);

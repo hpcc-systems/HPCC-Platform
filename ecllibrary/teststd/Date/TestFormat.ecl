@@ -23,6 +23,8 @@ EXPORT TestFormat := MODULE
     ASSERT(Date.FromStringToDate('1December1', '%d%b%Y') = 00011201, CONST);
     ASSERT(Date.FromStringToDate('1970-02-01', '%Y-%m-%d') = 19700201, CONST);
     ASSERT(Date.FromStringToDate('', '%Y-%m-%d') = 0, CONST); // HPCC-16780; Invalid input date
+    ASSERT(Date.FromStringToDate('', '') = 19000101, CONST); // HPCC-22791; Supply default day
+    ASSERT(Date.FromStringToDate('201909', '%Y%m') = 20190901, CONST); // HPCC-22791; Supply default day
 
     ASSERT(Date.FromStringToTime('12:34:56', '%H:%M:%S') = 123456, CONST);
 

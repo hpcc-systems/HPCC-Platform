@@ -35,6 +35,10 @@ public class HpccUtils  implements Iterator, ActivityContext
         System.load(dllname);
         handle = _handle;
     }
+    public static void load(String dllname)
+    {
+        System.load(dllname);
+    }
     public native void remove();
     public boolean hasNext()
     {

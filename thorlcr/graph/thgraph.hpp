@@ -60,7 +60,7 @@
 
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
-const static unsigned defaultHeapFlags = roxiemem::RHFscanning;
+const static roxiemem::RoxieHeapFlags defaultHeapFlags = roxiemem::RHFscanning;
 
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
@@ -327,6 +327,7 @@ public:
     bool isPrepared() const { return prepared; }
 
     CGraphBase &queryOwner() const { return *owner; }
+    bool inChildQuery() const;
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
     IGraphTempHandler *queryTempHandler(bool assert=true) const;
     CJobBase &queryJob() const;
@@ -832,6 +833,10 @@ protected:
     bool jobEnded = false;
     bool failOnLeaks = false;
     unsigned maxLfnBlockTimeMins = DEFAULT_MAXLFN_BLOCKTIME_MINS;
+    memsize_t keyNodeCacheBytes = 0;
+    memsize_t keyLeafCacheBytes = 0;
+    memsize_t keyBlobCacheBytes = 0;
+
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -853,6 +858,7 @@ public:
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose() override;
 
+    inline bool queryUsePackedAllocators() const { return usePackedAllocator; }
     unsigned queryMaxLfnBlockTimeMins() const { return maxLfnBlockTimeMins; }
     virtual void addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
@@ -863,6 +869,10 @@ public:
     inline unsigned queryJobSlaveChannelNum(unsigned slaveNum) const { dbgassertex(slaveNum && slaveNum<=querySlaves()); return jobSlaveChannelNum[slaveNum-1]; }
     ICommunicator &queryNodeComm() const { return ::queryNodeComm(); }
     const rank_t &queryMyNodeRank() const { return myNodeRank; }
+    memsize_t getKeyNodeCacheSize() const { return keyNodeCacheBytes; }
+    memsize_t getKeyLeafCacheSize() const { return keyLeafCacheBytes; }
+    memsize_t getKeyBlobCacheSize() const { return keyBlobCacheBytes; }
+
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
@@ -1045,6 +1055,7 @@ class graph_decl CActivityBase : implements CInterfaceOf<IThorRowInterfaces>, im
     CSingletonLock CABallocatorlock;
     CSingletonLock CABserializerlock;
     CSingletonLock CABdeserializerlock;
+    roxiemem::RoxieHeapFlags defaultRoxieMemHeapFlags = roxiemem::RHFnone;
 
 protected:
     CGraphElementBase &container;
@@ -1075,7 +1086,7 @@ public:
     inline bool queryInitialized() const { return initialized; }
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
-    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags); }
+    inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
 
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
@@ -1084,6 +1095,7 @@ public:
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     bool firstNode() const { return 1 == container.queryJobChannel().queryMyRank(); }
     bool lastNode() const { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
+    bool inChildQuery() const { return container.inChildQuery(); }
     unsigned queryMaxCores() const { return container.queryMaxCores(); }
     IThorRowInterfaces *getRowInterfaces();
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone, byte seq=0) const;
