@@ -430,6 +430,11 @@ IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
     return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
 }
 
+bool CGraphElementBase::inChildQuery() const
+{
+    return (nullptr != queryOwner().queryOwner()) && !queryOwner().isGlobal();
+}
+
 void CGraphElementBase::reset()
 {
     alreadyUpdated = false;
@@ -2729,12 +2734,15 @@ void CJobBase::startJob()
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
     logDiskSpace();
-    unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
-    unsigned keyLeafCacheMB = (unsigned)getWorkUnitValueInt("keyLeafCacheMB", DEFAULT_KEYLEAFCACHEMB * queryJobChannels());
-    unsigned keyBlobCacheMB = (unsigned)getWorkUnitValueInt("keyBlobCacheMB", DEFAULT_KEYBLOBCACHEMB * queryJobChannels());
-    setNodeCacheMem(keyNodeCacheMB * 0x100000);
-    setLeafCacheMem(keyLeafCacheMB * 0x100000);
-    setBlobCacheMem(keyBlobCacheMB * 0x100000);
+    unsigned keyNodeCacheMB = getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
+    unsigned keyLeafCacheMB = getWorkUnitValueInt("keyLeafCacheMB", DEFAULT_KEYLEAFCACHEMB * queryJobChannels());
+    unsigned keyBlobCacheMB = getWorkUnitValueInt("keyBlobCacheMB", DEFAULT_KEYBLOBCACHEMB * queryJobChannels());
+    keyNodeCacheBytes = ((memsize_t)0x100000) * keyNodeCacheMB;
+    keyLeafCacheBytes = ((memsize_t)0x100000) * keyLeafCacheMB;
+    keyBlobCacheBytes = ((memsize_t)0x100000) * keyBlobCacheMB;
+    setNodeCacheMem(keyNodeCacheBytes);
+    setLeafCacheMem(keyLeafCacheBytes);
+    setBlobCacheMem(keyBlobCacheBytes);
     PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
@@ -3081,6 +3089,10 @@ CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_contai
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;
+
+    defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags);
+    if (container.queryJob().queryUsePackedAllocators())
+        defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)(defaultRoxieMemHeapFlags | roxiemem::RHFpacked);
 }
 
 CActivityBase::~CActivityBase()

@@ -437,7 +437,7 @@ public:
         else
         {
             IDigitalSignatureManager * pDSM = nullptr;
-            if (!isEmptyString(pubKeyFS) && !isEmptyString(privKeyFS))
+            if (!isEmptyString(pubKeyFS) || !isEmptyString(privKeyFS))
                 pDSM = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
             else
                 pDSM = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);

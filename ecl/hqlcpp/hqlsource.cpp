@@ -1186,6 +1186,9 @@ void SourceBuilder::buildReadMembers(IHqlExpression * expr)
     //---- virtual bool transformMayFilter() { return <bool>; } ----
     if (transformCanFilter)
         translator.doBuildBoolFunction(instance->classctx, "transformMayFilter", true);
+
+    if (translator.queryOptions().generateDiskFormats)
+        translator.addFormatAttribute(*instance, WaDiskFormat, tableExpr->queryRecord());
 }
 
 void SourceBuilder::buildLimits(BuildCtx & classctx, IHqlExpression * expr, unique_id_t id)

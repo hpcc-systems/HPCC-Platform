@@ -46,9 +46,11 @@
   </informaltable>
 
   <para>The <emphasis role="bold">FromStringToDate</emphasis> function
-  converts a string to a Date_t using the relevant string format. The
-  resulting date must be representable within the Gregorian calendar after the
-  year 1600.</para>
+  converts a string to a Date_t using the relevant string format. </para>
+
+  <para>If the resulting date must be representable within the Gregorian
+  calendar after the year 1600, you should use the
+  Std.Date.IsValidGregorianDate() function to determine its validity.</para>
 
   <para><programlisting>Supported characters:
 
@@ -85,5 +87,6 @@ D4:= STD.Date.FromStringToDate('29/4/1974', '%d/%m/%Y');
     //D4 contains 19740429
  </programlisting>
 
-  <para></para>
+  <para>See Also: <link
+  linkend="IsValidGregorianDate">IsValidGregorianDate</link></para>
 </sect1>

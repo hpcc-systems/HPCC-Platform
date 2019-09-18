@@ -378,6 +378,8 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Crypto.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   <chapter id="Date_Handling">
     <title><emphasis>Date and Time Handling</emphasis></title>
 

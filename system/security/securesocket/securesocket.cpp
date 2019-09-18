@@ -926,11 +926,11 @@ public:
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
-        if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
+        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile)<=0)
         {
             char errbuf[512];
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
-            throw MakeStringException(-1, "error loading certificate file %s - %s", certfile, errbuf);
+            throw MakeStringException(-1, "error loading certificate chain file %s - %s", certfile, errbuf);
         }
 
         if(SSL_CTX_use_PrivateKey_file(m_ctx, privkeyfile, SSL_FILETYPE_PEM) <= 0)
@@ -987,11 +987,11 @@ public:
         const char* certfile = config->queryProp("certificate");
         if(certfile && *certfile)
         {
-            if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
+            if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
             {
                 char errbuf[512];
                 ERR_error_string_n(ERR_get_error(), errbuf, 512);
-                throw MakeStringException(-1, "error loading certificate file %s - %s", certfile, errbuf);
+                throw MakeStringException(-1, "error loading certificate chain file %s - %s", certfile, errbuf);
             }
         }
 

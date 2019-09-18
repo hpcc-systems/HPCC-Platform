@@ -825,6 +825,8 @@ struct HqlCppOptions
     bool                newIndexReadMapping;
     bool                diskReadsAreSimple;
     bool                genericDiskReads;
+    bool                generateActivityFormats;
+    bool                generateDiskFormats;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1763,6 +1765,7 @@ public:
     void doInlineTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * targetRow);
     void doUserTransform(BuildCtx & ctx, IHqlExpression * transform, BoundRow * self);
     IHqlExpression * createOrderFromSortList(const DatasetReference & dataset, IHqlExpression * sortList, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
+    void addFormatAttribute(ActivityInstance & instance, WuAttr attr, IHqlExpression * record);
 
     void buildSkewThresholdMembers(BuildCtx & ctx, IHqlExpression * expr);
     void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, const HqlExprArray & left, const HqlExprArray & right);

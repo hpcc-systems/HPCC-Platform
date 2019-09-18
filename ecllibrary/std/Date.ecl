@@ -621,8 +621,7 @@ EXPORT Seconds_t SecondsFromDateTimeRec(DateTime_rec datetime, BOOLEAN is_local_
 
 
 /**
- * Converts a string to a Date_t using the relevant string format.  The resulting
- * date must be representable within the Gregorian calendar after the year 1600.
+ * Converts a string to a Date_t using the relevant string format.
  *
  * @param date_text     The string to be converted.
  * @param format        The format of the input string.
