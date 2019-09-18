@@ -156,7 +156,7 @@
 
 <xsl:attribute-set name="section.title.level1.properties">
  <xsl:attribute name="font-size">
-    <xsl:value-of select="$body.font.master * 2.525"></xsl:value-of>
+    <xsl:value-of select="$body.font.master * 2.425"></xsl:value-of>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
     <xsl:attribute name="color">#A91919</xsl:attribute>
