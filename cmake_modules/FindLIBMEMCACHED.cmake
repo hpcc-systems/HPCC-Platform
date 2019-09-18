@@ -75,7 +75,7 @@ if((LIBMEMCACHEDCORE_LIBRARY STREQUAL "LIBMEMCACHEDCORE_LIBRARY-NOTFOUND"
             DOWNLOAD_DIR ${CMAKE_BINARY_DIR}/downloads
             SOURCE_DIR ${CMAKE_BINARY_DIR}/downloads/libmemcached
             CONFIGURE_COMMAND "${CMAKE_BINARY_DIR}/downloads/libmemcached/configure" --prefix=${INSTALL_DIR} LDFLAGS=-L${LIB_PATH}
-            BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH}
+            BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} CXXFLAGS='-fpermissive' LDFLAGS='-Wl,-rpath-link,${LIB_PATH}'
             BINARY_DIR ${CMAKE_BINARY_DIR}/build-libmemcached
             INSTALL_COMMAND "")
         add_library(libmemcached SHARED IMPORTED GLOBAL)

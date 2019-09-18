@@ -28,6 +28,7 @@ if (NOT JLIB_ONLY)
    
    if (USE_AERON)
        project (aeron_include)
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lrt")
          remove_definitions(-fvisibility=hidden)
          HPCC_ADD_SUBDIRECTORY (aeron)
    endif()
