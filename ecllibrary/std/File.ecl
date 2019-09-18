@@ -97,6 +97,10 @@ EXPORT INTEGER4 PREFIX_VARIABLE_RECSIZE := lib_fileservices.PREFIX_VARIABLE_RECS
 
 EXPORT INTEGER4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := lib_fileservices.PREFIX_VARIABLE_BIGENDIAN_RECSIZE;
 
+EXPORT FsDropZone := lib_fileservices.FsDropZone;
+
+EXPORT FsDropZoneRecord := lib_fileservices.FsDropZoneRecord;
+
 /*------------------------------------- Spray functions -----------------------------------------------------------*/
 
 /**
@@ -958,5 +962,31 @@ EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', b
  */
 EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW = '') :=
     lib_fileservices.FileServices.GetEspURL(username, userPW);
+
+
+ /**
+ * Returns the path to the default Drop Zone
+ *
+ *
+ * @return              A string containing the path to the default Drop Zone.
+ *                      If more than one Drop Zone
+ *                      process is defined then the first found will
+ *                      be returned; will return an empty string if a Drop Zone
+ *                      cannot be found
+ */
+EXPORT varstring GetDefaultDropZone() :=
+    lib_fileservices.FileServices.GetDefaultDropZone();
+
+ /**
+ * Returns a dataset with full paths to all Drop Zones
+ *
+ *
+ * @return              A dataset containing all defined Drop Zone paths.
+ *                      Will return an empty dataset if a Drop Zone
+ *                      cannot be found
+ */
+
+EXPORT dataset(FsDropZoneRecord) GetDropZones() :=
+    lib_fileservices.FileServices.GetDropZones();
 
 END;

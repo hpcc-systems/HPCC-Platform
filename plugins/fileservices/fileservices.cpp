@@ -60,6 +60,8 @@ static const char * EclDefinition =
 "export integer4 RECFMVB_RECSIZE := -1; // special value for SprayFixed record size \n"
 "export integer4 PREFIX_VARIABLE_RECSIZE := -3; // special value for SprayFixed record size \n"
 "export integer4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := -4; // special value for SprayFixed record size \n"
+"export FsDropZone := string; \n"
+"export FsDropZoneRecord := record FsDropZone dropzone; end; \n"
 "export FileServices := SERVICE : time\n"
 "  boolean FileExists(const varstring lfn, boolean physical=false) : c,context,entrypoint='fsFileExists'; \n"
 "  DeleteLogicalFile(const varstring lfn,boolean ifexists=false) : c,action,context,entrypoint='fsDeleteLogicalFile'; \n"
@@ -136,6 +138,8 @@ static const char * EclDefinition =
 "  ProtectLogicalFile(const varstring lfn,boolean set=true) : c,context,entrypoint='fsProtectLogicalFile'; \n"
 "  DfuPlusExec(const varstring cmdline) : c,context,entrypoint='fsDfuPlusExec'; \n"
 "  varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL'; \n"
+"  varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone'; \n"
+"  dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -2763,4 +2767,32 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
     return strdup("");
 }
 
+FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
+    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
+    SCMStringBuffer dropZoneDir;
+    if (dropZoneIt->first())
+        dropZoneIt->query().getDirectory(dropZoneDir);
 
+    return strdup(dropZoneDir.str());
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
+{
+    MemoryBuffer mb;
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
+    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
+    ForEach(*dropZoneIt)
+    {
+        SCMStringBuffer dropZoneDir;
+        dropZoneIt->query().getDirectory(dropZoneDir);
+        size32_t sz = dropZoneDir.length();
+        mb.append(sz).append(sz,dropZoneDir.str());
+    }
+
+    __lenResult = mb.length();
+    __result = mb.detach();
+}
