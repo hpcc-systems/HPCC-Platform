@@ -25,7 +25,7 @@
 interface IEspStore : extends IInterface
 {
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg) = 0;
-
+    virtual IPropertyTree * getStores(const char * namefilter, const char * ownerfilter, const char * typefilter, ISecUser * user) = 0;
     virtual bool set(const char * storename, const char * thenamespace, const char * key, const char * value, ISecUser * owner, bool global) = 0;
     virtual bool fetchKeySet(StringArray & keyset, const char * storename, const char * ns, ISecUser * user, bool global) = 0;
     virtual bool fetch(const char * storename, const char * ns, const char * key, StringBuffer & value, ISecUser * username, bool global) = 0;

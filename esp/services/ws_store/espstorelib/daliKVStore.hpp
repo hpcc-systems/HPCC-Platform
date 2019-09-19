@@ -56,6 +56,7 @@ public:
         return true;
     }
 
+    IPropertyTree * getStores(const char * namefilter, const char * ownerfilter, const char * typefilter, ISecUser * user);
     bool fetchAllNamespaces(StringArray & namespaces, const char * storename, ISecUser * user, bool global);
     bool createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner);
     bool addNamespace(const char * storename, const char * thenamespace, ISecUser * owner, bool global);

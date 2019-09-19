@@ -117,6 +117,36 @@ IEspStore* CwsstoreEx::loadStoreProvider(const char* instanceName, const char* l
     return (IEspStore*) xproc();
 }
 
+bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, IEspListStoresResponse &resp)
+{
+    const char *user = context.queryUserId();
+    double version = context.getClientVersion();
+
+    const char * namefilter = req.getNameFilter();
+    const char * ownerfilter = req.getOwnerFilter();
+    const char * typefilter  = req.getTypeFilter();
+
+    IArrayOf<IEspStoreInfo> storeinfos;
+    Owned<IPropertyTree> stores = m_storeProvider->getStores(namefilter, ownerfilter, typefilter, new CSecureUser(user, nullptr));
+    if (stores)
+    {
+        Owned<IPropertyTreeIterator> iter = stores->getElements("Store");
+        ForEach(*iter)
+        {
+            Owned<IEspStoreInfo> store = createStoreInfo();
+            store->setOwner(iter->query().queryProp("@createUser"));
+            store->setName(iter->query().queryProp("@name"));
+            store->setCreateTime(iter->query().queryProp("@createTime"));
+            store->setType(iter->query().queryProp("@type"));
+            store->setDescription(iter->query().queryProp("@description"));
+            storeinfos.append(*store.getClear());
+        }
+        resp.setStores(storeinfos);
+    }
+
+    return true;
+}
+
 bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req, IEspCreateStoreResponse &resp)
 {
     const char *user = context.queryUserId();
