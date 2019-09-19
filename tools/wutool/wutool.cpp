@@ -88,7 +88,7 @@ void usage(const char * action = nullptr)
                "   results <workunits> - Dump results from specified workunits\n"
                "   info <workunits> <filter>\n"
                "                       - Display information from a workunit\n"
-               "   analyse <workunit>  - Analyse the workunit to highlight performance issues\n"
+               "   analyze <workunit>  - Analyse the workunit to highlight performance issues\n"
                "\n"
                "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
                "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
@@ -218,7 +218,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
             printf("%s\n", schema.str());
         }
     }
-    else if (stricmp(action, "analyse")==0)
+    else if (stricmp(action, "analyze")==0)
     {
         WuAnalyseOptions options; // TODO: allow options to be set from from command line parameters
         analyseAndPrintIssues(&w, options);
@@ -600,7 +600,7 @@ int main(int argc, const char *argv[])
         {
             usage();
         }
-        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info") || strieq(action, "analyse"))
+        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info") || strieq(action, "analyze"))
         {
             if (strieq(action, "info") && args.empty())
                 args.append("source[all],properties[all]");
