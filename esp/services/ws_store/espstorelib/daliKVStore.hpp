@@ -38,9 +38,13 @@ static const char* DALI_KVSTORE_GLOBAL="GLOBAL";
 static const char* DALI_KVSTORE_NAME_ATT="@name";
 static const char* DALI_KVSTORE_DESCRIPTION_ATT="@description";
 static const char* DALI_KVSTORE_CREATEDBY_ATT="@createUser";
+static const char* DALI_KVSTORE_TYPE_ATT="@type";
 static const char* DALI_KVSTORE_CREATEDTIME_ATT="@createTime";
 static const char* DALI_KVSTORE_EDITEDBY_ATT="@editBy";
 static const char* DALI_KVSTORE_EDITEDTIME_ATT="@editTime";
+static const char* DALI_KVSTORE_MAXVALSIZE_ATT="@maxValSize";
+
+static unsigned int DALI_KVSTORE_MAXVALSIZE_DEFAULT=1024;
 
 class DALIKVSTORE_API CDALIKVStore : public CInterface, implements IEspStore
 {
@@ -58,7 +62,7 @@ public:
 
     IPropertyTree * getStores(const char * namefilter, const char * ownerfilter, const char * typefilter, ISecUser * user);
     bool fetchAllNamespaces(StringArray & namespaces, const char * storename, ISecUser * user, bool global);
-    bool createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner);
+    bool createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner, unsigned int maxvalsize);
     bool addNamespace(const char * storename, const char * thenamespace, ISecUser * owner, bool global);
     bool set(const char * storename, const char * thenamespace, const char * key, const char * value, ISecUser * owner, bool global);
     bool fetchKeySet(StringArray & keyset, const char * storename, const char * ns, ISecUser * user, bool global);
@@ -88,7 +92,6 @@ public:
 
 private:
     bool m_isDetachedFromDali = false;
-
 };
 
 #endif /* DALIKVSTORE_HPP_ */

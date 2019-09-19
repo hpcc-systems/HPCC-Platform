@@ -17,7 +17,7 @@
 
 #include "daliKVStore.hpp"
 
-bool CDALIKVStore::createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner)
+bool CDALIKVStore::createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner, unsigned int maxvalsize=DALI_KVSTORE_MAXVALSIZE_DEFAULT)
 {
     if (!storename || !*storename)
         throw MakeStringException(-1, "DALI Keystore createStore(): Store name not provided");
@@ -48,13 +48,16 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
     apptree->setProp(DALI_KVSTORE_CREATEDTIME_ATT,dt.getString(str).str());
 
     if (apptype && *apptype)
-        apptree->setProp("@type", apptype);
+        apptree->setProp(DALI_KVSTORE_TYPE_ATT, apptype);
 
     if (description && *description)
         apptree->setProp(DALI_KVSTORE_DESCRIPTION_ATT, description);
 
     if (owner && !isEmptyString(owner->getName()))
         apptree->setProp(DALI_KVSTORE_CREATEDBY_ATT, owner->getName());
+
+    if (maxvalsize != 0)
+        apptree->setPropInt(DALI_KVSTORE_MAXVALSIZE_ATT, maxvalsize);
 
     root->addPropTree("Store", LINK(apptree));
 
@@ -89,6 +92,10 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
     Owned<IPropertyTree> storetree = conn->getRoot();
     if (!storetree.get())
         throw MakeStringException(-1, "DALI KV Store set(): Unable to access store '%s'", storename); //this store doesn't exist
+
+    int maxval = storetree->getPropInt(DALI_KVSTORE_MAXVALSIZE_ATT, 0);
+    if (maxval > 0 && strlen(value) > maxval)
+        throw MakeStringException(-1, "DALI Keystore set(): Size of the value exceeds maximum size allowed (%i)", maxval);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
@@ -487,19 +494,19 @@ IPropertyTree * CDALIKVStore::getStores(const char * namefilter, const char * ow
       Owned<IPropertyTreeIterator> iter = storetree->getElements("*");
       ForEach(*iter)
       {
-          name.set(iter->query().queryProp("@name"));
+          name.set(iter->query().queryProp(DALI_KVSTORE_NAME_ATT));
           if (name.length() == 0 || !wildcardmatch(namefilter, name.str()))
               continue;
 
           if (!isEmptyString(ownerfilter))
           {
-              const char * owner = iter->query().queryProp("@createUser");
+              const char * owner = iter->query().queryProp(DALI_KVSTORE_CREATEDBY_ATT);
               if (!isEmptyString(owner) && !wildcardmatch(ownerfilter, owner))
                   continue;
           }
           if (!isEmptyString(typefilter))
           {
-              const char * type = iter->query().queryProp("@type");
+              const char * type = iter->query().queryProp(DALI_KVSTORE_TYPE_ATT);
               if (!isEmptyString(type) && !wildcardmatch(typefilter, type))
                   continue;
           }
