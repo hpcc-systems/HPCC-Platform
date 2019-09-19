@@ -222,7 +222,7 @@ STD.Crypto.SupportedPublicKeyAlgorithms(); //returns SET of STRINGs</programlist
           <row>
             <entry><emphasis>myHashModule</emphasis></entry>
 
-            <entry>The name of the Hashing module structure </entry>
+            <entry>The name of the Hashing module structure</entry>
           </row>
 
           <row>
@@ -1184,7 +1184,7 @@ STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
 //PKE Encryption module definition
-myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', publicKey, privateKey,''); 
+myPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', publicKey, privateKey,''); 
 
 DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
 OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps'));</programlisting>
@@ -1281,7 +1281,7 @@ STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
 //PKE Encryption module definition
-myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', publicKey, privateKey,''); 
+myPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', publicKey, privateKey,''); 
 
 DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
 OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps'));</programlisting>
