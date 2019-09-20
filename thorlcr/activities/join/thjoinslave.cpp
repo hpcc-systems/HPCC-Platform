@@ -444,10 +444,10 @@ public:
             leftInput->getMetaInfo(info);
             if (info.totalRowsMax==0) 
                 isemptylhs = true;
-            if (rightpartition)
-                leftStream.set(leftInputStream); // already ungrouped
-            else
+            if (leftInput->isGrouped())
                 leftStream.setown(createUngroupStream(leftInputStream));
+            else
+                leftStream.set(leftInputStream);
         }
         else
         {
@@ -465,10 +465,10 @@ public:
         }
         else if (helper->isRightAlreadyLocallySorted())
         {
-            if (rightpartition)
-                rightStream.set(createUngroupStream(rightInputStream));
+            if (rightInput->isGrouped())
+                rightStream.setown(createUngroupStream(rightInputStream));
             else
-                rightStream.set(rightInputStream); // already ungrouped
+                rightStream.set(rightInputStream);
         }
         else
         {
