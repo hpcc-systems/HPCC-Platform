@@ -449,6 +449,65 @@ IPropertyTree * CDALIKVStore::getAllPairs(const char * storename, const char * n
     return(storetree->getPropTree(xpath.str()));
 }
 
+static bool wildcardmatch(const char *filter, const char * value, bool casesensitive = false)
+{
+    if (isEmptyString(filter) && isEmptyString(value))
+        return true;
+
+    if (*filter == '*' && *(filter+1) != 0 && *value == 0)
+        return false;
+
+    if (*filter == '?' || casesensitive ? *filter == *value : tolower(*filter) == tolower(*value))
+        return wildcardmatch(filter+1, value+1, casesensitive);
+
+    if (*filter == '*')
+        return wildcardmatch(filter+1, value, casesensitive) || wildcardmatch(filter, value+1, casesensitive); //already lowercased if needed
+    return false;
+}
+
+IPropertyTree * CDALIKVStore::getStores(const char * namefilter, const char * ownerfilter, const char * typefilter, ISecUser * user)
+{
+    ensureAttachedToDali(); //throws if in offline mode
+
+    if (isEmptyString(namefilter))
+        namefilter="*";
+
+    VStringBuffer xpath("%s", DALI_KVSTORE_PATH);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    if (!conn)
+        throw MakeStringException(-1, "DALI Keystore fetch: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
+
+    Owned<IPropertyTree> filteredstores = createPTree("Stores");
+    Owned<IPropertyTree> storetree = conn->getRoot();
+
+    if(!storetree.get())
+        throw MakeStringException(-1, "DALI Keystore fetch: ");
+
+      StringBuffer name;
+      Owned<IPropertyTreeIterator> iter = storetree->getElements("*");
+      ForEach(*iter)
+      {
+          name.set(iter->query().queryProp("@name"));
+          if (name.length() == 0 || !wildcardmatch(namefilter, name.str()))
+              continue;
+
+          if (!isEmptyString(ownerfilter))
+          {
+              const char * owner = iter->query().queryProp("@createUser");
+              if (!isEmptyString(owner) && !wildcardmatch(ownerfilter, owner))
+                  continue;
+          }
+          if (!isEmptyString(typefilter))
+          {
+              const char * type = iter->query().queryProp("@type");
+              if (!isEmptyString(type) && !wildcardmatch(typefilter, type))
+                  continue;
+          }
+          filteredstores->addPropTree("Store", LINK(&iter->query()));
+      }
+    return(filteredstores.getClear());
+}
+
 extern "C"
 {
     DALIKVSTORE_API IEspStore* newEspStore()
