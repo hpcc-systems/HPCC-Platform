@@ -634,6 +634,10 @@ __LINE__            {
                         lexer->reportError(returnToken, ERR_TMPLT_UNKNOWNCOMMAND, "%s", msg.str());
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
+#\$                 {
+                        updatepos1;
+                        return HASH_DOLLAR;
+                    }
         
 ABS                 { RETURNSYM(ABS); }
 ACOS                { RETURNSYM(ACOS); }
