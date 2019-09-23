@@ -254,7 +254,7 @@ OUTPUT(hash1);
 OUTPUT(hash2);</programlisting>
   </sect1>
 
-  <sect1 id="hash">
+  <sect1 id="hash_crypto">
     <title>Hash</title>
 
     <para><emphasis>myHashModule</emphasis><emphasis
