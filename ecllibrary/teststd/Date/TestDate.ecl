@@ -114,7 +114,7 @@ EXPORT TestDate := MODULE
     ASSERT(Date.MonthWeekNumFromDate(20180302, 6) = 2, CONST);  // Start of week = Friday
     ASSERT(Date.MonthWeekNumFromDate(20180302, 7) = 1, CONST);  // Start of week = Saturday
     ASSERT(Date.MonthWeekNumFromDate(20180303, 7) = 2, CONST);  // Start of week = Saturday
-    
+
     ASSERT( Date.ISODayOfWeekFromDate(20140130) = 4, CONST);   // 4=Thursday
     ASSERT( Date.ISODayOfWeekFromDate(19650217) = 3, CONST);   // 3=Wednesday
     ASSERT( Date.ISODayOfWeekFromDate(20530213) = 4, CONST);   // 4=Thursday
@@ -208,6 +208,54 @@ EXPORT TestDate := MODULE
     ASSERT(Date.AdjustSeconds(917872496, hour_delta:=1) = 917876096);
 
     ASSERT(Date.AdjustCalendar(20140130, month_delta:=1) = 20140228);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-23) = 20150301);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-22) = 20150401);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-21) = 20150501);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-20) = 20150601);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-19) = 20150701);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-18) = 20150801);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-17) = 20150901);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-16) = 20151001);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-15) = 20151101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-14) = 20151201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-13) = 20160101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-12) = 20160201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-11) = 20160301);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-10) = 20160401);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-9) = 20160501);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-8) = 20160601);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-7) = 20160701);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-6) = 20160801);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-5) = 20160901);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-4) = 20161001);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-3) = 20161101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-2) = 20161201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=-1) = 20170101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=0) = 20170201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=1) = 20170301);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=2) = 20170401);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=3) = 20170501);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=4) = 20170601);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=5) = 20170701);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=6) = 20170801);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=7) = 20170901);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=8) = 20171001);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=9) = 20171101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=10) = 20171201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=11) = 20180101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=12) = 20180201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=13) = 20180301);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=14) = 20180401);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=15) = 20180501);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=16) = 20180601);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=17) = 20180701);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=18) = 20180801);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=19) = 20180901);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=20) = 20181001);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=21) = 20181101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=22) = 20181201);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=23) = 20190101);
+    ASSERT(Date.AdjustCalendar(20170201, month_delta:=24) = 20190201);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=1) = 20010228);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=4) = 20040229);
 
