@@ -3708,6 +3708,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     WsWuInfo winfo(context, cwu);
     createZAPWUXMLFile(winfo, inFileNamePrefixWithPath.str());
     createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
+    createZAPWUQueryAssociatedFiles(cwu, folderToZIP);
     createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
     createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
@@ -3719,6 +3720,51 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     cleanFolder(zipDir, true);
     if (zipRet != 0)
         throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command 'zip'. Please make sure that zip utility is installed.");
+}
+
+void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* pathToCreate)
+{
+    Owned<IConstWUQuery> query = cwu->getQuery();
+    if (!query)
+    {
+        IERRLOG("Cannot get Query for workunit %s.", cwu->queryWuid());
+        return;
+    }
+
+    Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
+    ForEach(*iter)
+    {
+        SCMStringBuffer name, ip;
+        IConstWUAssociatedFile& cur = iter->query();
+        cur.getName(name);
+        cur.getIp(ip);
+
+        RemoteFilename rfn;
+        SocketEndpoint ep(ip.str());
+        rfn.setPath(ep, name.str());
+
+        OwnedIFile sourceFile = createIFile(rfn);
+        if (!sourceFile)
+        {
+            IERRLOG("Cannot open %s on %s.", name.str(), ip.str());
+            continue;
+        }
+
+        StringBuffer fileName(name.str());
+        getFileNameOnly(fileName, false);
+
+        StringBuffer outFileName(pathToCreate);
+        outFileName.append(PATHSEPCHAR).append(fileName);
+
+        OwnedIFile outFile = createIFile(outFileName);
+        if (!outFile)
+        {
+            IERRLOG("Cannot create %s.", outFileName.str());
+            continue;
+        }
+
+        copyFile(outFile, sourceFile);
+    }
 }
 
 void CWsWuFileHelper::setZAPFile(const char* zipFileNameReq, const char* zipFileNamePrefix,
