@@ -42,7 +42,6 @@ ESPrequest ListKeysRequest
     string StoreName;
     string Namespace;
     bool   UserSpecific(false);
-    [min_ver("1.02")] string TargetUser;
 };
 
 ESPresponse [exceptions_inline] ListKeysResponse
@@ -68,7 +67,6 @@ ESPrequest ListNamespacesRequest
 {
     string StoreName;
     bool   UserSpecific(false);
-    [min_ver("1.02")] string TargetUser;
 };
 
 ESPresponse [exceptions_inline] ListNamespacesResponse
