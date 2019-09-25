@@ -457,7 +457,7 @@ static bool wildcardmatch(const char *filter, const char * value, bool casesensi
     if (*filter == '*' && *(filter+1) != 0 && *value == 0)
         return false;
 
-    if (*filter == '?' || casesensitive ? *filter == *value : tolower(*filter) == tolower(*value))
+    if (*filter == '?' || (casesensitive ? *filter == *value : tolower(*filter) == tolower(*value)))
         return wildcardmatch(filter+1, value+1, casesensitive);
 
     if (*filter == '*')
