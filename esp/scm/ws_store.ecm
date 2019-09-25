@@ -35,6 +35,8 @@ ESPStruct StoreInfo
     string Description;
     string Owner;
     string CreateTime;
+    string MaxValSize;
+    bool   IsDefault(false);
 };
 
 ESPrequest ListKeysRequest
@@ -164,6 +166,7 @@ ESPrequest CreateStoreRequest
     string Type;
     string Description;
     [depr_ver("1.01")] bool UserSpecific(false);
+    [min_ver("1.02")] int MaxValueSize(1024);
 };
 
 ESPresponse [exceptions_inline] CreateStoreResponse

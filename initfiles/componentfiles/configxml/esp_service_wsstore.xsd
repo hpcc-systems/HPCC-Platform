@@ -72,6 +72,14 @@
                           </xs:restriction>
                       </xs:simpleType>
                   </xs:attribute>
+                  <xs:attribute name="maxvalsize" type="xs:string" default="1024">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <colIndex>5</colIndex>
+                        <tooltip>Max size of the value entries</tooltip>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
