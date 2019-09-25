@@ -32,7 +32,7 @@ public:
     {
         if (field && field->initializer && !isVirtualInitializer(field->initializer))
         {
-            field->process(field->initializer, field->initializer, *this);
+            field->process((const byte *) field->initializer, (const byte *) field->initializer, *this);
             assertex(fieldExpected==NULL);
         }
     }

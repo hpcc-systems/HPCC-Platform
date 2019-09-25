@@ -1680,11 +1680,13 @@ unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 r
 #endif
 
 //In a separate module to stop optimizer removing the surrounding catch.
+int minus4096 = -4096;  // Stops compiler being clever enough to report error
+
 void doStackProbe()
 {
     byte local;
     const volatile byte * x = (const byte *)&local;
-    byte forceload __attribute__((unused)) = x[-4096];
+    byte forceload __attribute__((unused)) = x[minus4096];
 }
 
 #ifdef __GNUC__
