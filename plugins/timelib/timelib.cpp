@@ -795,18 +795,22 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     unsigned int    year = date / 10000;
     unsigned int    month = (date - (year * 10000)) / 100;
     unsigned int    day = date - (year * 10000) - (month * 100);
-    int             expectedMonthVal = month + month_delta - 1;
+    int             expectedMonthVal = month - 1;
     time_t          seconds;
     unsigned int    result = 0;
 
     // Normalize the expected month value
-    if (expectedMonthVal >= 0)
+    if (month_delta > 0)
     {
-        expectedMonthVal = expectedMonthVal % 12;
+        expectedMonthVal = (expectedMonthVal + month_delta) % 12;
     }
-    else
+    else if (month_delta < 0)
     {
-        expectedMonthVal = 12 - (abs(expectedMonthVal) % 12);
+        expectedMonthVal = expectedMonthVal - ((-1 * month_delta) % 12);
+        if (expectedMonthVal < 0)
+        {
+            expectedMonthVal += 12;
+        }
     }
 
     memset(&timeInfo, 0, sizeof(timeInfo));
