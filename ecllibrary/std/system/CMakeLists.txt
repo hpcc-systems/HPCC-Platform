@@ -20,6 +20,7 @@ set(
     Email.ecl
     Job.ecl
     Log.ecl
+    Store.ecl
     Thorlib.ecl
     Util.ecl
     Workunit.ecl

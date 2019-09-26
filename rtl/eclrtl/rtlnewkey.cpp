@@ -94,7 +94,7 @@ static void readSubLength(size32_t & subLength, const char * &in)
 
 void readFieldFromFieldFilter(StringBuffer & fieldText, const char * & src)
 {
-    readUntilTerminator(fieldText, src, "=*:");
+    readUntilTerminator(fieldText, src, "=*:!");
 }
 
 void deserializeSet(ISetCreator & creator, const char * filter)
@@ -2048,6 +2048,16 @@ IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type
     {
     case '*':
         return createWildFieldFilter(fieldId, type);
+    case '!':
+        //This syntax is added as a convenience when processing from a user supplied string
+        if (src[1] == '=')
+        {
+            Owned<IValueSet> values = createValueSet(type);
+            deserializeSet(*values, src+2);
+            values->invertSet();
+            return createFieldFilter(fieldId, values);
+        }
+        break;
     case '=':
         {
             Owned<IValueSet> values = createValueSet(type);
@@ -2058,24 +2068,13 @@ IFieldFilter * deserializeFieldFilter(unsigned fieldId, const RtlTypeInfo & type
         {
             char * end;
             size32_t subLength = strtoul(src+1, &end, 10);
+            //This could support !, but this is a legacy syntax : is now specified as part of the set
             if (*end != '=')
                 UNIMPLEMENTED_X("Expected =");
 
-            //Created a truncated type
-            FieldTypeInfoStruct info;
-            info.fieldType = (type.fieldType & ~RFTMunknownsize);
-            info.length = subLength;
-            Owned<SharedRtlTypeInfo> subType(new SharedRtlTypeInfo(info.createRtlTypeInfo()));
-
-            //The serialized set is already truncated to the appropriate length.
-            Owned<IValueSet> values = createValueSet(*subType->type);
-            deserializeSet(*values, end+1);
-            if (type.isFixedSize())
-            {
-                return new FixedSubStringFieldFilter(fieldId, type, subType, values);
-            }
-
-            return new VariableSubStringFieldFilter(fieldId, type, subType, values);
+            Owned<IValueSet> set = createValueSet(type);
+            deserializeSet(*set, end+1);
+            return createSubStringFieldFilter(fieldId, subLength, set);
         }
     }
 

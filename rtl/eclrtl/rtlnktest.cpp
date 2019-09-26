@@ -974,25 +974,10 @@ protected:
                 filter = nullptr;
             }
 
-            const char * equal = strchr(next, '=');
-            assertex(equal);
-            const char * colon = strchr(next, ':');
-            if (colon && colon > equal)
-                colon = nullptr;
-            StringBuffer fieldName(colon ? colon - next : equal-next, next);
-            unsigned fieldNum = searchRecord.getFieldNum(fieldName);
-            assertex(fieldNum != (unsigned) -1);
-            const RtlTypeInfo *fieldType = searchRecord.queryType(fieldNum);
-            Owned<IValueSet> set = createValueSet(*fieldType);
-            deserializeSet(*set, equal+1);
-
-            IFieldFilter * filter;
-            if (colon)
-                filter = createSubStringFieldFilter(fieldNum, atoi(colon+1), set);
-            else
-                filter = createFieldFilter(fieldNum, set);
-            cursor.addFilter(*filter);
-            verifyFilter(searchRecord, filter);
+            IFieldFilter * fieldFilter = deserializeFieldFilter(searchRecord, next);
+            assertex(fieldFilter);
+            cursor.addFilter(*fieldFilter);
+            verifyFilter(searchRecord, fieldFilter);
         }
     }
 
@@ -1147,6 +1132,8 @@ protected:
         testKeyed("id=[1],[256,280]","1|256|257|258|");
         testKeyed("id=[1],[256,280],[1000],[1023]","1|256|257|258|");
         testKeyed("id=[1],[2],[4],[6],[12],[23],[255],[256],[300],[301],[320]","1|2|256|");
+        testKeyed("id!=[1],[256]","2|257|258|515|");
+        testKeyed("id!=","1|2|256|257|258|515|");
         testKeyed("extra=['MAR','MAS']", "1|257|258|");
         testKeyed("extra=('MAR','MAS')", "1|");
         testKeyed("name=['AB','AC']", "2|257|");

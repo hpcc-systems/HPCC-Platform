@@ -954,7 +954,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
         }
 
         const char * employeeNumber = nullptr;
-        if (context.getClientVersion() >= 1.15)
+        if (context.getClientVersion() >= 1.16)
         {
             employeeNumber = req.getEmployeeNumber();
         }

@@ -429,7 +429,6 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         child(1) = parameters
         child(2) = defaults for parameters
     */
-
     attribute nextToken;
     int tok = yyLex(nextToken, false, 0);
     if (tok != '(')
@@ -596,6 +595,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->yyColumn = macroBodyExpr->getStartColumn();
         inmacro->setParentLex(this);
         inmacro->macroParms.setown(macroParms.getClear());
+        inmacro->hashDollar = macroBodyExpr->queryBody()->queryName();
     }
 }
 
@@ -2384,6 +2384,19 @@ void HqlLex::loadXML(const attribute & errpos, const char *name, const char * ch
         // recovery: create a default XML scope
         xmlScope = createXMLScope();
     }
+}
+
+const char * HqlLex::queryMacroScopeName()
+{
+    if (inmacro)
+    {
+        const char * scope = inmacro->queryMacroScopeName();
+        if (scope)
+            return scope;
+    }
+    if (hashDollar)
+        return str(hashDollar);
+    return nullptr;
 }
 
 IPropertyTree * HqlLex::getClearJavadoc()

@@ -264,7 +264,7 @@ private:
                     if (isVirtualInitializer(child->initializer))
                         addProp("vinit", getVirtualInitializer(child->initializer));
                     else
-                        addProp("init", child->type->size(child->initializer, nullptr), child->initializer);
+                        addProp("init", child->type->size((const byte *) child->initializer, nullptr), (const byte *) child->initializer);
                 }
                 closeCurly();
                 fields++;
@@ -469,8 +469,8 @@ private:
                 // initializer is tricky - it's not (in general) a null-terminated string but the actual length is not easily available
                 if (flags & RFTMhasInitializer)
                 {
-                    unsigned initLength = child->type->size(child->initializer, nullptr);
-                    out.appendPacked(initLength).append(initLength, child->initializer);
+                    unsigned initLength = child->type->size((const byte *) child->initializer, nullptr);
+                    out.appendPacked(initLength).append(initLength, (const byte *) child->initializer);
                 }
                 else if (flags &RFTMhasVirtualInitializer)
                     out.append(getVirtualInitializer(child->initializer));
@@ -1590,7 +1590,7 @@ private:
             info.matchIdx = sourceRecInfo.getFieldNum(destRecInfo.queryName(idx));
             if (info.matchIdx == (unsigned) -1)
             {
-                const byte * initializer = field->initializer;
+                const byte * initializer = (const byte *) field->initializer;
                 info.matchType = isVirtualInitializer(initializer) ? match_virtual : match_none;
                 size32_t defaultSize = (initializer && !isVirtualInitializer(initializer)) ? type->size(initializer, nullptr) : type->getMinSize();
                 fixedDelta -= defaultSize;

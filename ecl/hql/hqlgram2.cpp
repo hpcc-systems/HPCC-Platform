@@ -419,6 +419,25 @@ IHqlScope * HqlGram::queryGlobalScope()
     return globalScope;
 }
 
+IHqlScope * HqlGram::queryMacroScope()
+{
+    const char * scopeName = lexObject->queryMacroScopeName();
+    if (scopeName)
+    {
+        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, lookupCtx);
+        if (matched && matched->queryScope())
+            return matched->queryScope();
+    }
+
+    return globalScope;
+}
+
+IAtom * HqlGram::queryGlobalScopeId()
+{
+    const char * globalName = globalScope->queryFullName();
+    return createAtom(globalName);
+}
+
 void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 {
     minimumScopeIndex = 0;
@@ -10899,6 +10918,11 @@ inline bool isDollarModule(IHqlExpression * expr)
     return expr->isAttribute() && (expr->queryName() == selfAtom);
 }
 
+inline bool isHashDollarModule(IHqlExpression * expr)
+{
+    return expr->isAttribute() && (expr->queryName() == _hash_dollar_Atom);
+}
+
 inline bool isRootModule(IHqlExpression * expr)
 {
     return expr->isAttribute() && (expr->queryName() == _root_Atom);
@@ -10908,6 +10932,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
 {
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
+    if (isHashDollarModule(expr))
+        return LINK(queryExpression(queryMacroScope()));
     if (isRootModule(expr))
         return LINK(queryExpression(lookupCtx.queryRepository()->queryRootScope()));
 
@@ -11557,6 +11583,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH_LINK: msg.append("#LINK"); break;
     case HASH_WORKUNIT: msg.append("#WORKUNIT"); break;
     case HASH_WEBSERVICE: msg.append("#WEBSERVICE"); break;
+    case HASH_DOLLAR: msg.append("#$"); break;
     case SIMPLE_TYPE: msg.append("type-name"); break;
 
     case EQ: msg.append("="); break;
@@ -11705,9 +11732,9 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, FROMJSON, 0);
     simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
-    simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, SCOPE_ID, VALUE_MACRO, '{', '@', 0);
+    simplify(expected, SCOPE_ID, '$', HASH_DOLLAR, '^', 0);
+    simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, VALUE_MACRO, '{', '@', '$', HASH_DOLLAR, IF, 0);
     simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);
-    simplify(expected, SCOPE_ID, '$', 0);
     simplify(expected, SIMPLE_TYPE, _ARRAY_, LINKCOUNTED, EMBEDDED, STREAMED, 0);
     simplify(expected, END, '}', 0);
 }

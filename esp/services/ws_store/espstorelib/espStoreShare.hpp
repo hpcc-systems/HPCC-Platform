@@ -25,7 +25,7 @@
 interface IEspStore : extends IInterface
 {
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg) = 0;
-
+    virtual IPropertyTree * getStores(const char * namefilter, const char * ownerfilter, const char * typefilter, ISecUser * user) = 0;
     virtual bool set(const char * storename, const char * thenamespace, const char * key, const char * value, ISecUser * owner, bool global) = 0;
     virtual bool fetchKeySet(StringArray & keyset, const char * storename, const char * ns, ISecUser * user, bool global) = 0;
     virtual bool fetch(const char * storename, const char * ns, const char * key, StringBuffer & value, ISecUser * username, bool global) = 0;
@@ -34,7 +34,7 @@ interface IEspStore : extends IInterface
     virtual bool deletekey(const char * storename, const char * thenamespace, const char * key, ISecUser * user, bool global) = 0;
     virtual bool deleteNamespace(const char * storename, const char * thenamespace, ISecUser * user, bool global) = 0;
     virtual bool addNamespace(const char * storename, const char * thenamespace, ISecUser * owner, bool global) = 0;
-    virtual bool createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner) = 0;
+    virtual bool createStore(const char * apptype, const char * storename, const char * description, ISecUser * owner, unsigned int maxvalsize) = 0;
     virtual bool setOfflineMode(bool offline) = 0 ;
     virtual bool fetchKeyProperty(StringBuffer & propval , const char * storename, const char * ns, const char * key, const char * property, ISecUser * username, bool global) = 0;
     virtual IPropertyTree * getAllKeyProperties(const char * storename, const char * ns, const char * key, ISecUser * username, bool global) =0;

@@ -125,24 +125,26 @@ MySQLOptionDefinition options[] =
 {
     addoption(MYSQL_OPT_COMPRESS, ParamTypeNone),
     addoption(MYSQL_OPT_CONNECT_TIMEOUT, ParamTypeUInt),
+#if (MYSQL_VERSION_ID < 80000)
     addoption(MYSQL_OPT_GUESS_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
+    addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
+    addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
+    addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
+#endif
     addoption(MYSQL_OPT_LOCAL_INFILE, ParamTypeUInt),
     addoption(MYSQL_OPT_NAMED_PIPE, ParamTypeNone),
     addoption(MYSQL_OPT_PROTOCOL, ParamTypeUInt),
     addoption(MYSQL_OPT_READ_TIMEOUT, ParamTypeUInt),
     addoption(MYSQL_OPT_RECONNECT, ParamTypeBool),
-    addoption(MYSQL_OPT_SSL_VERIFY_SERVER_CERT, ParamTypeBool),
-    addoption(MYSQL_OPT_USE_EMBEDDED_CONNECTION, ParamTypeNone),
-    addoption(MYSQL_OPT_USE_REMOTE_CONNECTION, ParamTypeNone),
     addoption(MYSQL_OPT_USE_RESULT, ParamTypeNone),
     addoption(MYSQL_OPT_WRITE_TIMEOUT, ParamTypeUInt),
     addoption(MYSQL_READ_DEFAULT_FILE, ParamTypeString),
     addoption(MYSQL_READ_DEFAULT_GROUP, ParamTypeString),
     addoption(MYSQL_REPORT_DATA_TRUNCATION, ParamTypeBool),
-    addoption(MYSQL_SECURE_AUTH, ParamTypeBool),
     addoption(MYSQL_SET_CHARSET_DIR, ParamTypeString),
     addoption(MYSQL_SET_CHARSET_NAME, ParamTypeString),
-    addoption(MYSQL_SET_CLIENT_IP, ParamTypeString),
     addoption(MYSQL_SHARED_MEMORY_BASE_NAME, ParamTypeString),
 #if MYSQL_VERSION_ID >= 50507
     addoption(MYSQL_DEFAULT_AUTH, ParamTypeString),
@@ -170,7 +172,7 @@ MySQLOptionDefinition options[] =
 #if (MYSQL_VERSION_ID >= 50610)
     addoption(MYSQL_OPT_CAN_HANDLE_EXPIRED_PASSWORDS, ParamTypeBool),
 #endif
-#if (MYSQL_VERSION_ID >= 50703)
+#if (MYSQL_VERSION_ID >= 50703 && MYSQL_VERSION_ID < 80000)
     addoption(MYSQL_OPT_SSL_ENFORCE, ParamTypeBool),
 #endif
 #if (MYSQL_VERSION_ID >= 50709)

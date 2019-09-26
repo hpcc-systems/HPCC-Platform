@@ -170,7 +170,7 @@ size32_t RtlTypeInfoBase::buildNull(ARowBuilder &builder, size32_t offset, const
 {
     if (field->initializer && !isVirtualInitializer(field->initializer))
     {
-        size32_t initSize = size(field->initializer, nullptr);
+        size32_t initSize = size((const byte *) field->initializer, nullptr);
         builder.ensureCapacity(offset+initSize, queryName(field));
         memcpy(builder.getSelf()+offset, field->initializer, initSize);
         return offset+initSize;

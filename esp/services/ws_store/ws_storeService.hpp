@@ -49,6 +49,7 @@ public:
 
     virtual void init(IPropertyTree *_cfg, const char *_process, const char *_service);
 
+    bool onListStores(IEspContext &context, IEspListStoresRequest &req, IEspListStoresResponse &resp);
     bool onListNamespaces(IEspContext &context, IEspListNamespacesRequest &req, IEspListNamespacesResponse &resp);
     bool onListKeys(IEspContext &context, IEspListKeysRequest &req, IEspListKeysResponse &resp);
     bool onSet(IEspContext &context, IEspSetRequest &req, IEspSetResponse &resp);

@@ -106,6 +106,11 @@ define([
                             sortable: true,
                             label: this.i18n.EmployeeID
                         },
+                        employeeNumber: {
+                            width: 180,
+                            sortable: true,
+                            label: this.i18n.EmployeeNumber
+                        },
                         fullname: {
                             label: this.i18n.FullName,
                             sortable: true
@@ -202,7 +207,7 @@ define([
                 var fileName = this.dialogValidationTextBox.get("value") + ".csv";
 
                 arrayUtil.forEach(selections, function (cell, idx) {
-                    var rowData = [cell.username, cell.employeeID, cell.fullname, cell.passwordexpiration];
+                    var rowData = [cell.username, cell.employeeID, cell.employeeNumber, cell.fullname, cell.passwordexpiration];
                     row.push(rowData);
                 });
 
