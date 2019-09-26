@@ -2971,7 +2971,9 @@ void ScopeFilter::finishedFilter()
             intersectDepth(1, 1);
             break;
         case SSTgraph:
-            intersectDepth(2, 2);
+            //This should really be intersectDepth(2,2) but workunits prior to 7.4 did not have graph ids prefixed by the wfid
+            //Remove once 7.2 is a distant memory (see HPCC-22887)
+            intersectDepth(1, 2);
             break;
         case SSTsubgraph:
             intersectDepth(3, UINT_MAX);
