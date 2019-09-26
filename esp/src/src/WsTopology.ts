@@ -35,7 +35,8 @@ var TpLogFileStore = declare([Memory, Evented], {
         } else {
             TpLogFile({
                 request: lang.mixin({}, query, {
-                    PageNumber: options.start / options.count
+                    PageNumber: options.start / options.count,
+                    IncludeLogFieldNames: 0
                 })
             }).then(lang.hitch(this, function (response) {
                 var data = [];
@@ -58,7 +59,7 @@ var TpLogFileStore = declare([Memory, Evented], {
                                 if ((i + 1) == (columns).length) {
                                     value = itemParts.join("");
                                 } else if (itemParts.length) {
-                                    nextItem(itemParts);
+                                    value = nextItem(itemParts);
                                 }
 
                                 tempObj[cleanName] = value;
