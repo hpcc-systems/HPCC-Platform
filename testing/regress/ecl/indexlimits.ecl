@@ -54,7 +54,7 @@ indexReadNoHitRowLimit := LIMIT(i(age < 30), 2, SKIP); // Skip should not be tri
 // NB: Index keyed limit tests
 indexReadHitKeyedLimit := LIMIT(i(fname = 'Charles'), 1, SKIP, KEYED); // could hit limit locally.
 indexReadHitKeyedOnFail := LIMIT(i(fname = 'Charles'), 1, KEYED, ONFAIL(TRANSFORM(RECORDOF(i), SELF.fname := 'KEYED LIMIT EXCEEDED'; SELF.lname := 'KEYED LIMIT EXCEEDED'; SELF.age := 0; SELF.addrs := [])));
-indexReadComboHitRowLimit := LIMIT(LIMIT(i(age >= 50), 1, SKIP)(fname = 'Charles'), 2, SKIP, KEYED); // keyed limit should not be triggered, but row limit should
+indexReadComboHitRowLimit := LIMIT(LIMIT(i(fname = 'Charles'), 2, SKIP, KEYED)(age >= 50), 1, SKIP); // keyed limit should not be triggered, but row limit should
 indexReadNoHitKeyedLimit := LIMIT(i(fname = 'Charles'), 2, SKIP, KEYED); // Skip should not be triggered
 
 // NB: Index read row limit tests on normalized index
