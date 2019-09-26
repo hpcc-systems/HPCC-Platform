@@ -3085,7 +3085,9 @@ void WuScopeFilter::finishedFilter()
         if (!(properties & (PTattributes|PThints)))
             sourceFlags &= ~(SSFsearchGraph);
 
-        setDepth(2, 2);
+        //This should really be setDepth(2,2) but workunits prior to 7.4 did not have graph ids prefixed by the wfid
+        //Remove once 7.2 is a distant memory (see HPCC-22887)
+        setDepth(1, 2);
     }
     else if (matchOnly(SSTsubgraph))
     {

@@ -15,7 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('testHashDedupSpillTimes',10);
+//version spillTimes=0
+//version spillTimes=10
+
+import ^ as root;
+spillTimes := #IFDEFINED(root.spillTimes, 0);
+
+#option ('testHashDedupSpillTimes', spillTimes);
+
 MyRec := RECORD
     INTEGER3 Id;
     STRING10 Field1;
