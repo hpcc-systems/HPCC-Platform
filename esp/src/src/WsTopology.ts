@@ -8,6 +8,7 @@ import * as QueryResults from "dojo/store/util/QueryResults";
 import * as Evented from "dojo/Evented";
 
 import * as ESPRequest from "./ESPRequest";
+import * as Utility from "./Utility";
 
 declare const dojoConfig;
 
@@ -39,31 +40,30 @@ var TpLogFileStore = declare([Memory, Evented], {
             }).then(lang.hitch(this, function (response) {
                 var data = [];
                 if (lang.exists("TpLogFileResponse.LogData", response)) {
+                    var columns = response.TpLogFileResponse.LogFieldNames.Item;
                     this.lastPage = response.TpLogFileResponse.LogData;
                     this.emit("pageLoaded", this.lastPage);
                     arrayUtil.forEach(response.TpLogFileResponse.LogData.split("\n"), function (item, idx) {
                         if (options.start === 0 || idx > 0) {
                             //  Throw away first line as it will probably only be a partial line  ---
                             var itemParts = item.split(" ");
-                            var lineNo, audience, time, pid, tid, date, details;
-                            if (itemParts.length) lineNo = nextItem(itemParts);
-                            if (itemParts.length) audience = nextItem(itemParts);
-                            if (itemParts.length) date = nextItem(itemParts);
-                            if (itemParts.length) time = nextItem(itemParts);
-                            if (itemParts.length) pid = nextItem(itemParts);
-                            if (itemParts.length) tid = nextItem(itemParts);
-                            if (itemParts.length) details = itemParts.join(" ");
+                            var tempObj = {
+                                __hpcc_id: response.TpLogFileResponse.PageNumber + "_" + idx
+                            };
 
-                            data.push({
-                                __hpcc_id: response.TpLogFileResponse.PageNumber + "_" + idx,
-                                lineNo: lineNo,
-                                audience: audience,
-                                date: date,
-                                time: time,
-                                pid: pid,
-                                tid: tid,
-                                details: details
-                            });
+                            for  (var i = 0; i < columns.length; ++i) {
+                                var cleanName = Utility.removeSpecialCharacters(columns[i]);
+                                var value = "";
+
+                                if ((i + 1) == (columns).length) {
+                                    value = itemParts.join("");
+                                } else if (itemParts.length) {
+                                    nextItem(itemParts);
+                                }
+
+                                tempObj[cleanName] = value;
+                                data.push(tempObj);
+                            }
                         }
                     }, this);
                 }
