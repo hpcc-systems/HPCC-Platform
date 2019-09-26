@@ -214,6 +214,7 @@ extern HQL_API IAtom * _graphLocal_Atom;
 extern HQL_API IAtom * groupAtom;
 extern HQL_API IAtom * groupedAtom;
 extern HQL_API IAtom * hashAtom;
+extern HQL_API IAtom * _hash_dollar_Atom;
 extern HQL_API IAtom * headingAtom;
 extern HQL_API IAtom * _hidden_Atom;
 extern HQL_API IAtom * hintAtom;

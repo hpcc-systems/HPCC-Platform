@@ -126,6 +126,10 @@ export function valueCleanUp(intsize): string {
     }
 }
 
+export function removeSpecialCharacters(stringToConvert): string {
+    return stringToConvert.replace(/[\!\@\#\$\%\^\&\*\)\(\+\=\.\<\>\{\}\[\]\:\;\'\"\|\~\`\_\-]/g, "");
+}
+
 export function unitTest(size, unit) {
     var nsIndex = size.indexOf(unit);
     if (nsIndex !== -1) {

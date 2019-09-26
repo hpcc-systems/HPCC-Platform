@@ -20,6 +20,12 @@ limitations under the License.
 
 #define SDS_LOCK_TIMEOUT_ESPSTORE (30*1000)
 #define DEFAULT_ESP_STORE_FACTORY_METHOD "newEspStore"
+#define DEFAULT_ESP_STORE_MAX_VAL_SIZE 1024
+#define ESP_STORE_NAME_ATT "@name"
+#define ESP_STORE_TYPE_ATT "@type"
+#define ESP_STORE_DESCRIPTION_ATT "@description"
+#define ESP_STORE_MAXVALSIZE_ATT "@maxvalsize"
+#define ESP_STORE_DEFAULT_ATT "@default"
 
 typedef IEspStore* (*newEspStore_t_)();
 
@@ -76,13 +82,14 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
             StringBuffer description;
             bool isDefault = false;
 
-            iter->query().getProp("@name", id);
-            iter->query().getProp("@type", type);
-            iter->query().getProp("@description", description);
-            isDefault = iter->query().getPropBool("@default", false);
+            iter->query().getProp(ESP_STORE_NAME_ATT, id);
+            iter->query().getProp(ESP_STORE_TYPE_ATT, type);
+            iter->query().getProp(ESP_STORE_DESCRIPTION_ATT, description);
+            unsigned int maxvalsize = iter->query().getPropInt(ESP_STORE_MAXVALSIZE_ATT, DEFAULT_ESP_STORE_MAX_VAL_SIZE);
+            isDefault = iter->query().getPropBool(ESP_STORE_DEFAULT_ATT, false);
 
             ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
-            m_storeProvider->createStore(type.str(), id.str(), description.str(), new CSecureUser(owner.str(), nullptr));
+            m_storeProvider->createStore(type.str(), id.str(), description.str(), new CSecureUser(owner.str(), nullptr), maxvalsize);
             if (isDefault)
             {
                 if (!m_defaultStore.isEmpty())
@@ -117,11 +124,52 @@ IEspStore* CwsstoreEx::loadStoreProvider(const char* instanceName, const char* l
     return (IEspStore*) xproc();
 }
 
+bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, IEspListStoresResponse &resp)
+{
+    const char *user = context.queryUserId();
+    double version = context.getClientVersion();
+
+    const char * namefilter = req.getNameFilter();
+    const char * ownerfilter = req.getOwnerFilter();
+    const char * typefilter  = req.getTypeFilter();
+
+    IArrayOf<IEspStoreInfo> storeinfos;
+    Owned<IPropertyTree> stores = m_storeProvider->getStores(namefilter, ownerfilter, typefilter, new CSecureUser(user, nullptr));
+    if (stores)
+    {
+        Owned<IPropertyTreeIterator> iter = stores->getElements("Store");
+        ForEach(*iter)
+        {
+            IPropertyTree * tree = &iter->query();
+            Owned<IEspStoreInfo> store = createStoreInfo();
+            store->setOwner(tree->queryProp("@createUser"));
+            store->setName(tree->queryProp("@name"));
+            store->setCreateTime(tree->queryProp("@createTime"));
+            store->setType(tree->queryProp("@type"));
+            store->setDescription(tree->queryProp("@description"));
+            store->setMaxValSize(tree->queryProp("@maxValSize"));
+            store->setIsDefault (!m_defaultStore.isEmpty() && strcasecmp(m_defaultStore.str(), tree->queryProp("@name"))==0);
+
+            storeinfos.append(*store.getClear());
+        }
+        resp.setStores(storeinfos);
+    }
+    return true;
+}
+
 bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req, IEspCreateStoreResponse &resp)
 {
     const char *user = context.queryUserId();
     double version = context.getClientVersion();
-    bool success = m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), new CSecureUser(user, nullptr));
+    unsigned int maxvalsize = DEFAULT_ESP_STORE_MAX_VAL_SIZE;
+
+    if (version >= 1.02)
+    {
+        maxvalsize = req.getMaxValueSize();
+    }
+
+    bool success = m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), new CSecureUser(user, nullptr), maxvalsize);
+
     if (version > 1)
       resp.setSuccess(success);
 

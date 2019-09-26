@@ -32,6 +32,8 @@
 
 #include "unittests.hpp"
 
+static const unsigned oneMinute = 60000; // msec
+
 class JlibSemTest : public CppUnit::TestFixture
 {
 public:
@@ -43,11 +45,9 @@ protected:
 
     void testTimedAvailable(Semaphore & sem)
     {
-        unsigned now = msTick();
-        sem.wait(100);
-        unsigned taken = msTick() - now;
         //Shouldn't cause a reschedule, definitely shouldn't wait for 100s
-        ASSERT(taken < 5);
+        if(!sem.wait(100))
+            ASSERT(false);
     }
 
     void testTimedElapsed(Semaphore & sem, unsigned time)
@@ -56,7 +56,7 @@ protected:
         sem.wait(time);
         unsigned taken = msTick() - now;
         VStringBuffer errMsg("values: time: %u, taken: %u", time, taken);
-        CPPUNIT_ASSERT_MESSAGE(errMsg.str(), taken >= time && taken < 2*time);
+        CPPUNIT_ASSERT_MESSAGE(errMsg.str(), taken >= time && taken < time + oneMinute);
         PROGLOG("%s", errMsg.str());
     }
 
@@ -94,7 +94,7 @@ protected:
     {
         unsigned __int64 sumTaken = 0;
         unsigned maxTaken = 0;
-        unsigned timeLimit = 2 * time;
+        unsigned timeLimit = time + oneMinute;
         unsigned numberOfOut = 0;
         bool isSignaled = false;
 
@@ -1731,7 +1731,7 @@ public:
                                 line.append(newlines[nl]);
                             readCrc.tally(line.length(), line.str());
                         }
-                        else 
+                        else
                             break;
                     }
                 }

@@ -941,6 +941,10 @@ void SourceBuilder::analyse(IHqlExpression * expr)
         break;
     case no_filter:
         {
+            //LIMIT(ds(filter1))(filter2) cannot be implemented as a compound activity - because it is impossible to count the rows being
+            //filtered by filter1.
+            if (limitExpr)
+                throwError(HQLERR_CannotFilterLimitInsideActivity);
             OwnedHqlExpr unkeyedFilter;
             HqlExprArray conds;
             unwindFilterConditions(conds, expr);

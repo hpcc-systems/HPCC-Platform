@@ -221,6 +221,7 @@ define({root:
     EmailBody: "Email Body",
     EmailSubject: "Email Subject",
     EmployeeID: "Employee ID",
+    EmployeeNumber: "Employee Number",
     Empty: "(Empty)",
     Enable: "Enable",
     EnableScopeScans: "Enable Scope Scans",

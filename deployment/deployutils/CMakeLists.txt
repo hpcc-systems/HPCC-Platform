@@ -48,6 +48,10 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/shared
     )
 
+if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.2.0")
+  set_source_files_properties(deployutils.cpp PROPERTIES COMPILE_FLAGS -Wno-format-overflow)
+endif()
+
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOYUTILS_EXPORTS )
 
 HPCC_ADD_LIBRARY( deployutils SHARED ${SRCS} )

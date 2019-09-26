@@ -1778,7 +1778,7 @@ private:
                     read += bytesRead;
                     response.setLength(read);
                     if (bytesRead==0) {
-                        master->logctx.CTXLOG("%sCALL: Warning %sHTTP response terminated prematurely",master->wscType == STsoap ? "SOAP" : "HTTP",chunked?"CHUNKED ":NULL);
+                        master->logctx.CTXLOG("%sCALL: Warning %sHTTP response terminated prematurely",master->wscType == STsoap ? "SOAP" : "HTTP",chunked?"CHUNKED ":"");
                         break; // oops  looks likesocket closed early
                     }
                 }

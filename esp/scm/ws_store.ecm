@@ -28,6 +28,17 @@ ESPStruct NamespaceSet
    ESParray<ESPStruct KVPair, Entry> Entries;
 };
 
+ESPStruct StoreInfo
+{
+    string Name;
+    string Type;
+    string Description;
+    string Owner;
+    string CreateTime;
+    string MaxValSize;
+    bool   IsDefault(false);
+};
+
 ESPrequest ListKeysRequest
 {
     string StoreName;
@@ -40,6 +51,18 @@ ESPresponse [exceptions_inline] ListKeysResponse
     string StoreName;
     string Namespace;
     ESParray<string, Key> KeySet;
+};
+
+ESPrequest ListStoresRequest
+{
+    string NameFilter;
+    string TypeFilter;
+    string OwnerFilter;
+};
+
+ESPresponse [exceptions_inline] ListStoresResponse
+{
+    ESParray<ESPStruct StoreInfo, Store> Stores;
 };
 
 ESPrequest ListNamespacesRequest
@@ -143,6 +166,7 @@ ESPrequest CreateStoreRequest
     string Type;
     string Description;
     [depr_ver("1.01")] bool UserSpecific(false);
+    [min_ver("1.02")] int MaxValueSize(1024);
 };
 
 ESPresponse [exceptions_inline] CreateStoreResponse
@@ -154,8 +178,9 @@ ESPresponse [exceptions_inline] CreateStoreResponse
     [min_ver("1.01")] bool Success;
 };
 
-ESPservice [version("1.01"), default_client_version("1.01"), auth_feature("WsStoreAccess:READ"), exceptions_inline("./smc_xslt/exceptions.xslt")] wsstore
+ESPservice [version("1.02"), default_client_version("1.02"), auth_feature("WsStoreAccess:READ"), exceptions_inline("./smc_xslt/exceptions.xslt")] wsstore
 {
+    ESPmethod [auth_feature("WsStoreAccess:READ"), min_ver("1.02")] ListStores(ListStoresRequest, ListStoresResponse);
     ESPmethod [auth_feature("WsStoreAccess:FULL")] Delete(DeleteRequest, DeleteResponse);
     ESPmethod [auth_feature("WsStoreAccess:FULL")] DeleteNamespace(DeleteNamespaceRequest, DeleteNamespaceResponse);
     ESPmethod [auth_feature("WsStoreAccess:WRITE")] Set(SetRequest, SetResponse);
