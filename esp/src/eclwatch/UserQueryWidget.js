@@ -284,6 +284,7 @@ define([
                 var tab = this.ensureUserPane(selections[i].username, {
                     Username: selections[i].username,
                     EmployeeID: selections[i].employeeID,
+                    EmployeeNumber: selections[i].employeeNumber,
                     Fullname: selections[i].fullname,
                     Passwordexpiration: selections[i].passwordexpiration
                 });
@@ -328,10 +329,11 @@ define([
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + usernames);
         },
 
-        _onUsersRowDblClick: function (username, employeeID, fullname, passwordexpiration) {
+        _onUsersRowDblClick: function (username, employeeID, employeeNumber, fullname, passwordexpiration) {
             var userTab = this.ensureUserPane(username, {
                 Username: username,
                 EmployeeID: employeeID,
+                EmployeeNumber: employeeNumber,
                 Fullname: fullname,
                 Passwordexpiration: passwordexpiration
             });
@@ -620,6 +622,11 @@ define([
                         sortable: true,
                         label: this.i18n.EmployeeID
                     },
+                    employeeNumber: {
+                        width: 180,
+                        sortable: true,
+                        label: this.i18n.EmployeeNumber
+                    },
                     fullname: {
                         label: this.i18n.FullName,
                         sortable: true
@@ -636,13 +643,13 @@ define([
             this.usersGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.employeeID,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username,item.employeeID,item.employeeNumber,item.fullname,item.passwordexpiration);
                 }
             });
             this.usersGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.employeeID,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username,item.employeeID,item.employeeNumber,item.fullname,item.passwordexpiration);
                 }
             });
             this.usersGrid.onSelectionChanged(function (event) {

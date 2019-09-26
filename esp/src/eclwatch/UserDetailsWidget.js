@@ -78,7 +78,8 @@ define([
                             username: this.user,
                             firstname: formInfo.firstname,
                             lastname: formInfo.lastname,
-                            employeeID: formInfo.employeeID
+                            employeeID: formInfo.employeeID,
+                            employeeNumber: formInfo.employeeNumber
                         }
                     });
 
@@ -110,6 +111,7 @@ define([
                 if (this.user) {
                     this.updateInput("User", null, this.user);
                     this.updateInput("EmployeeID", null, params.EmployeeID);
+                    this.updateInput("EmployeeNumber", null, params.EmployeeNumber);
                     this.updateInput("Username", null, this.user);
                     this.updateInput("PasswordExpiration", null, params.Passwordexpiration);
 
@@ -152,6 +154,9 @@ define([
                     }
                     if (lang.exists("UserInfoEditInputResponse.employeeID", response)) {
                         context.updateInput("EmployeeID", null, response.UserInfoEditInputResponse.employeeID);
+                    }
+                    if (lang.exists("UserInfoEditInputResponse.employeeNumber", response)) {
+                        context.updateInput("EmployeeNumber", null, response.UserInfoEditInputResponse.employeeNumber);
                     }
                     if (lang.exists("UserInfoEditInputResponse.PasswordExpiration", response)) {
                         context.updateInput("PasswordExpiration", null, response.UserInfoEditInputResponse.PasswordExpiration);
