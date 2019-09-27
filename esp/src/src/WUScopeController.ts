@@ -142,7 +142,7 @@ export class WUScopeController {
         return this;
     }
 
-    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% - %SkewMaxRowsProcessed%";
+    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%";
     edgeLabelTpl(): string;
     edgeLabelTpl(_: string): this;
     edgeLabelTpl(_?: string): string | this {
