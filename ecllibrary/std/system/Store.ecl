@@ -9,18 +9,21 @@ IMPORT Std;
  * information, provided as arguments.
  *
  * @param   username        The username of the user requesting access to the
- *                          key value store; set to an empty string if
- *                          authentication is not required; OPTIONAL, defaults
- *                          to an empty string
+ *                          key value store; this is typically the same
+ *                          username used to login to ECL Watch; set to an
+ *                          empty string if authentication is not required;
+ *                          OPTIONAL, defaults to an empty string
  * @param   userPW          The password of the user requesting access to the
- *                          key value store; set to an empty string if
- *                          authentication is not required; OPTIONAL, defaults
- *                          to an empty string
+ *                          key value store; this is typically the same
+ *                          password used to login to ECL Watch; set to an
+ *                          empty string if authentication is not required;
+ *                          OPTIONAL, defaults to an empty string
  * @param   espURL          The full URL for accessing the esp process running
  *                          on the HPCC Systems cluster (this is typically the
  *                          same URL as used to access ECL Watch); set to an
  *                          empty string to use the URL of the current esp
- *                          process; OPTIONAL, defaults to an empty string
+ *                          process as found via Std.File.GetEspURL();
+ *                          OPTIONAL, defaults to an empty string
  *
  * @return  A reference to the module, correctly initialized with the
  *          given access parameters.
@@ -29,16 +32,18 @@ EXPORT Store(STRING username = '',
              STRING userPW = '',
              STRING espURL = '') := MODULE
 
+    SHARED MY_USERNAME := TRIM(username, ALL);
+    SHARED MY_USER_PW := TRIM(userPW, LEFT, RIGHT);
     SHARED ENCODED_CREDENTIALS := IF
         (
-            TRIM(username, ALL) != '',
-            'Basic ' + Std.Str.EncodeBase64((DATA)(TRIM(username, ALL) + ':' + TRIM(userPW, LEFT, RIGHT))),
+            MY_USERNAME != '',
+            'Basic ' + Std.Str.EncodeBase64((DATA)(MY_USERNAME + ':' + MY_USER_PW)),
             ''
         );
 
     // The URL that will be used by all SOAPCALL invocations
     TRIMMED_URL := TRIM(espURL, ALL);
-    SHARED MY_ESP_URL := IF(TRIMMED_URL != '', TRIMMED_URL, Std.File.GetEspURL()) + '/WsStore/?ver_=1.02';
+    SHARED MY_ESP_URL := IF(TRIMMED_URL != '', TRIMMED_URL, Std.File.GetEspURL(MY_USERNAME, MY_USER_PW)) + '/WsStore/?ver_=1.02';
 
     /**
      * Helper for function for setting the has_exception field within a
@@ -83,12 +88,14 @@ EXPORT Store(STRING username = '',
         STRING                          description     {XPATH('Description')};
         STRING                          owner           {XPATH('Owner')};
         STRING                          create_time     {XPATH('CreateTime')};
+        UNSIGNED4                       max_value_size  {XPATH('MaxValSize')};
+        BOOLEAN                         is_default      {XPATH('IsDefault')};
     END;
 
     EXPORT ListStoresResponseRec := RECORD
         DATASET(StoreInfoRec)           stores          {XPATH('Stores/Store')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     EXPORT CreateStoreResponseRec := RECORD
@@ -97,26 +104,26 @@ EXPORT Store(STRING username = '',
         STRING                          store_name      {XPATH('Name')};
         STRING                          description     {XPATH('Description')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     EXPORT SetKeyValueResponseRec := RECORD
         BOOLEAN                         succeeded       {XPATH('Success')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     EXPORT GetKeyValueResponseRec := RECORD
         BOOLEAN                         was_found := TRUE;                      // Will be FALSE if key was not found
         STRING                          value           {XPATH('Value')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     EXPORT DeleteKeyValueResponseRec := RECORD
         BOOLEAN                         succeeded       {XPATH('Success')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     SHARED KeySetRec := RECORD
@@ -127,7 +134,7 @@ EXPORT Store(STRING username = '',
         STRING                          namespace       {XPATH('Namespace')};
         DATASET(KeySetRec)              keys            {XPATH('KeySet/Key')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     SHARED KeyValueRec := RECORD
@@ -139,7 +146,7 @@ EXPORT Store(STRING username = '',
         STRING                          namespace       {XPATH('Namespace')};
         DATASET(KeyValueRec)            key_values      {XPATH('Pairs/Pair')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     SHARED NamespaceLayout := RECORD
@@ -149,13 +156,13 @@ EXPORT Store(STRING username = '',
     EXPORT ListNamespacesResponseRec := RECORD
         DATASET(NamespaceLayout)        namespaces      {XPATH('Namespaces/Namespace')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     EXPORT DeleteNamespaceResponseRec := RECORD
         BOOLEAN                         succeeded       {XPATH('Success')};
         BOOLEAN                         has_exceptions := FALSE;
-        DATASET(ExceptionListLayout)    exceptions      {XPATH('Exceptions')};
+        ExceptionListLayout             exceptions      {XPATH('Exceptions')};
     END;
 
     //--------------------------------------------------------------------------
@@ -169,6 +176,10 @@ EXPORT Store(STRING username = '',
      * @param   description         A STRING describing the purpose of the
      *                              store; may be an empty string; OPTIONAL,
      *                              defaults to an empty string
+     * @param   maxValueSize        The maximum size of any value stored within
+     *                              this store, in bytes; use a value of zero to
+     *                              indicate an unlimited maximum size; OPTIONAL,
+     *                              defaults to 1024
      * @param   isUserSpecific      If TRUE, this store will be visible only
      *                              to the user indicated by the (username, userPW)
      *                              arguments provided when the module was
@@ -185,6 +196,7 @@ EXPORT Store(STRING username = '',
      */
     EXPORT CreateStore(STRING storeName,
                        STRING description = '',
+                       UNSIGNED4 maxValueSize = 1024,
                        BOOLEAN isUserSpecific = FALSE,
                        UNSIGNED2 timeoutInSeconds = 0) := FUNCTION
         soapResponse := SOAPCALL
@@ -192,9 +204,10 @@ EXPORT Store(STRING username = '',
                 MY_ESP_URL,
                 'CreateStore',
                 {
-                    STRING  pStoreName      {XPATH('Name')} := storeName;
-                    STRING  pDescription    {XPATH('Description')} := description;
-                    BOOLEAN pUserSpecific   {XPATH('UserSpecific')} := isUserSpecific;
+                    STRING      pStoreName      {XPATH('Name')} := storeName;
+                    STRING      pDescription    {XPATH('Description')} := description;
+                    UNSIGNED4   pMaxValueSize   {XPATH('MaxValueSize')} := maxValueSize;
+                    BOOLEAN     pUserSpecific   {XPATH('UserSpecific')} := isUserSpecific;
                 },
                 DATASET(CreateStoreResponseRec),
                 XPATH('CreateStoreResponse'),
@@ -208,7 +221,7 @@ EXPORT Store(STRING username = '',
                 TRANSFORM
                     (
                         RECORDOF(LEFT),
-                        SELF.already_present := NOT(LEFT.succeeded) AND NOT(EXISTS(LEFT.exceptions.exceptions)),
+                        SELF.already_present := (NOT LEFT.succeeded) AND (NOT EXISTS(LEFT.exceptions.exceptions)),
                         SELF := LEFT
                     )
             );
@@ -400,30 +413,14 @@ EXPORT Store(STRING username = '',
                     TIMEOUT(timeoutInSeconds)
                 );
 
-            wasFound := (soapResponse[1].exceptions[1].exceptions[1].code != '-1');
-
-            finalResponse := IF
+            finalResponse := PROJECT
                 (
-                    wasFound,
-                    PROJECT
+                    soapResponse,
+                    TRANSFORM
                         (
-                            soapResponse,
-                            TRANSFORM
-                                (
-                                    RECORDOF(LEFT),
-                                    SELF.was_found := TRUE,
-                                    SELF := LEFT
-                                )
-                        ),
-                    DATASET
-                        (
-                            1,
-                            TRANSFORM
-                                (
-                                    GetKeyValueResponseRec,
-                                    SELF.was_found := FALSE,
-                                    SELF := []
-                                )
+                            RECORDOF(LEFT),
+                            SELF.was_found := NOT EXISTS(LEFT.exceptions.exceptions),
+                            SELF := LEFT
                         )
                 );
 
