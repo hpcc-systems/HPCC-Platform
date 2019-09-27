@@ -34,6 +34,7 @@
     </Programs>
     <Software>
         <EspService ActivityInfoCacheSeconds="10"
+                    ActivityInfoCacheAutoRebuildSeconds="120"
                     allowNewRoxieOnDemandQuery="false"
                     AWUsCacheTimeout="15"
                     build="_"

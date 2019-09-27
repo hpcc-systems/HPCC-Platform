@@ -24,6 +24,9 @@
 #include "TpWrapper.hpp"
 #include "WUXMLInfo.hpp"
 
+const unsigned DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND = 10;
+const unsigned DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND = 120;
+
 enum BulletType
 {
     bulletNONE = 0,
@@ -154,15 +157,94 @@ public:
     inline IArrayOf<IEspActiveWorkunit>& queryActiveWUs() { return aws; };
     inline IArrayOf<IEspServerJobQueue>& queryServerJobQueues() { return serverJobQueues; };
     inline IArrayOf<IEspDFUJob>& queryDFURecoveryJobs() { return DFURecoveryJobs; };
+    inline StringBuffer& queryTimeCached(StringBuffer& str) { return timeCached.getString(str, true); }
+};
+
+class CWsSMCEx;
+
+class CActivityInfoReader : public CInterface, implements IThreaded
+{
+    bool stopping = false;
+    bool detached = false;
+    bool first = true;
+    bool firstBlocked = false;
+    unsigned autoRebuildSeconds = DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND;
+    unsigned forceRebuildSeconds = DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND;
+    Owned<CActivityInfo> activityInfoCache;
+    Semaphore sem;
+    Semaphore firstSem;
+    CriticalSection crit;
+    CThreaded threaded;
+    std::atomic<bool> waiting = {false};
+public:
+    CActivityInfoReader(unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
+        : autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), threaded("ActivityInfoReader")
+    {
+        threaded.init(this);
+    };
+
+    ~CActivityInfoReader()
+    {
+        stopping = true;
+        sem.signal();
+        firstSem.signal(); // in case
+        threaded.join();
+    }
+
+    virtual void threadmain() override;
+    CActivityInfo* getActivityInfo()
+    {
+        CLeavableCriticalBlock b(crit);
+        if (first)
+        {
+            if (detached)
+                return nullptr;
+            firstBlocked = true;
+            b.leave();
+            firstSem.wait();
+            b.enter();
+            if (first)
+                return nullptr;
+        }
+
+        //Now, activityInfoCache should always be available.
+        assertex(activityInfoCache);
+        if (!detached && !activityInfoCache->isCachedActivityInfoValid(forceRebuildSeconds))
+            rebuild();
+        return activityInfoCache.getLink();
+    }
+    void rebuild()
+    {
+        bool expected = true;
+        if (waiting.compare_exchange_strong(expected, false))
+            sem.signal();
+    }
+    void setDetachedState(bool _detached)
+    {
+        CriticalBlock b(crit);
+        if (detached != _detached)
+        {
+            detached = _detached;
+            if (detached)
+            {
+                // NB: first will still be true, signal and getActivityInfo() will return null
+                if (firstBlocked)
+                {
+                    firstBlocked = false;
+                    firstSem.signal(); // NB: first still true
+                }
+            }
+            else
+                rebuild();
+        }
+    }
+    bool isDaliDetached() const { return detached; }
 };
 
 class CWsSMCEx : public CWsSMC
 {
     long m_counter;
     CTpWrapper m_ClusterStatus;
-    CriticalSection getActivityCrit;
-    Owned<CActivityInfo> activityInfoCache;
-    unsigned activityInfoCacheSeconds;
 
     StringBuffer m_ChatURL;
     StringBuffer m_Banner;
@@ -173,6 +255,7 @@ class CWsSMCEx : public CWsSMC
     int m_BannerAction;
     bool m_EnableChatURL;
     CriticalSection crit;
+    Owned<CActivityInfoReader> activityInfoReader;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -195,6 +278,18 @@ public:
     bool onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueueAvailabilityRequest &req, IEspGetThorQueueAvailabilityResponse& resp);
     bool onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEspSetBannerResponse& resp);
     bool onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityEditionRequest &req, IEspNotInCommunityEditionResponse &resp);
+
+    virtual bool attachServiceToDali() override
+    {
+        activityInfoReader->setDetachedState(false);
+        return true;
+    }
+
+    virtual bool detachServiceFromDali() override
+    {
+        activityInfoReader->setDetachedState(true);
+        return true;
+    }
 
     virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
     virtual bool onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp);
@@ -221,8 +316,6 @@ private:
     void setJobPriority(IEspContext &context, IWorkUnitFactory* factory, const char* wuid, const char* queue, WUPriorityClass& priority);
 
     void setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
-    void clearActivityInfoCache();
-    CActivityInfo* getActivityInfo(IEspContext &context);
     void setActivityResponse(IEspContext &context, CActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp);
     void addWUsToResponse(IEspContext &context, const IArrayOf<IEspActiveWorkunit>& aws, IEspActivityResponse& resp);
 
