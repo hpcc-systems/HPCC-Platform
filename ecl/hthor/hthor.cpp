@@ -8248,9 +8248,6 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         compressed = fileDesc->isCompressed(&blockcompressed); //try new decompression, fall back to old unless marked as block
         if (fixedDiskRecordSize)
         {
-            size32_t dfsSize = fileDesc->queryProperties().getPropInt("@recordSize");
-            if (!((dfsSize == 0) || (dfsSize == fixedDiskRecordSize) || (grouped && (dfsSize+1 == fixedDiskRecordSize)))) //third option for backwards compatibility, as hthor used to publish @recordSize not including the grouping byte
-                throw MakeStringException(0, "Published record size %d for file %s does not match coded record size %d", dfsSize, mangledHelperFileName.str(), fixedDiskRecordSize);
             if (!compressed && (((helper.getFlags() & TDXcompress) != 0) && (fixedDiskRecordSize >= MIN_ROWCOMPRESS_RECSIZE)))
             {
                 StringBuffer msg;
