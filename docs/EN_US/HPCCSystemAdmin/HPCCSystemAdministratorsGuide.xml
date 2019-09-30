@@ -2,10 +2,12 @@
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <title>HPCC Systems<superscript>®</superscript> Administrator's Guide</title>
+  <title>HPCC Systems<superscript>®</superscript> Administrator's
+  Guide</title>
 
   <bookinfo>
-    <title>HPCC  Systems<superscript>®</superscript> Administrator's Guide</title>
+    <title>HPCC Systems<superscript>®</superscript> Administrator's
+    Guide</title>
 
     <mediaobject>
       <imageobject>
@@ -74,12 +76,13 @@
       parallel-processing computing platform that solves Big Data
       problems.</para>
 
-      <para>HPCC Systems platform stores and processes large quantities of data, processing
-      billions of records per second using massive parallel processing
-      technology. Large amounts of data across disparate data sources can be
-      accessed, analyzed, and manipulated in fractions of seconds. HPCC Systems
-      functions as both a processing and a distributed data storage
-      environment, capable of analyzing terabytes of information.</para>
+      <para>HPCC Systems platform stores and processes large quantities of
+      data, processing billions of records per second using massive parallel
+      processing technology. Large amounts of data across disparate data
+      sources can be accessed, analyzed, and manipulated in fractions of
+      seconds. HPCC Systems functions as both a processing and a distributed
+      data storage environment, capable of analyzing terabytes of
+      information.</para>
     </sect1>
 
     <sect1 id="HPCC_Architectural_Overview">
@@ -130,8 +133,9 @@
       <sect2 id="HPCC_Clusters" role="brk">
         <title>Clusters</title>
 
-        <para>HPCC Systems environment contains clusters which you define and use
-        according to your needs. The types of clusters used by HPCC Systems:</para>
+        <para>HPCC Systems environment contains clusters which you define and
+        use according to your needs. The types of clusters used by HPCC
+        Systems:</para>
 
         <sect3 id="SysAdm_Thor_Cluster">
           <title>Thor</title>
@@ -178,8 +182,8 @@
         <title>System Servers</title>
 
         <para>The System Servers are integral middleware components of an HPCC
-        Systems platform. They are used to control workflow and inter-component
-        communication.</para>
+        Systems platform. They are used to control workflow and
+        inter-component communication.</para>
 
         <sect3 id="SysAdm_Dali">
           <title>Dali</title>
@@ -195,8 +199,8 @@
           -clients</emphasis>)</para>
 
           <para>Another task Dali performs is to act as the locking manager.
-          HPCC Systems uses Dali's locking manager to control shared and exclusive
-          locks to metadata.</para>
+          HPCC Systems uses Dali's locking manager to control shared and
+          exclusive locks to metadata.</para>
         </sect3>
 
         <sect3 id="SysAdm_Sahsa">
@@ -428,18 +432,18 @@
     <title>Hardware and Software Requirements</title>
 
     <para>This chapter describes some of the hardware and software
-    requirements in order to run the HPCC Systems platform. HPCC Systems is designed to run on
-    commodity hardware, which makes building and maintaining large scale
-    (petabytes) clusters economically feasible. When planning your cluster
-    hardware, you will need to balance a number of considerations specific to
-    your needs.</para>
+    requirements in order to run the HPCC Systems platform. HPCC Systems is
+    designed to run on commodity hardware, which makes building and
+    maintaining large scale (petabytes) clusters economically feasible. When
+    planning your cluster hardware, you will need to balance a number of
+    considerations specific to your needs.</para>
 
     <para>This section provides some insight into the hardware and
     infrastructure that HPCC Systems works well on. This is not an exclusive
     comprehensive set of instructions, nor a mandate on what hardware you must
     have. Consider this as a guide to use when looking to implement or scale
-    your HPCC Systems platform. These suggestions should be taken into consideration for
-    your specific enterprise needs.</para>
+    your HPCC Systems platform. These suggestions should be taken into
+    consideration for your specific enterprise needs.</para>
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/Hardware.xml"
                 xpointer="xpointer(//*[@id='HW-Switch'])"
@@ -462,20 +466,21 @@
     <title>Hardware and Components</title>
 
     <para>This section provides some insight as to what sort of hardware and
-    infrastructure optimally HPCC Systems works well on. This is not an exclusive
-    comprehensive set of instructions, nor a mandate on what hardware you must
-    have. Consider this as a guide to use when looking to implement or scale
-    your HPCC Systems platform. These suggestions should be taken into consideration for
-    your specific enterprise needs.</para>
+    infrastructure optimally HPCC Systems works well on. This is not an
+    exclusive comprehensive set of instructions, nor a mandate on what
+    hardware you must have. Consider this as a guide to use when looking to
+    implement or scale your HPCC Systems platform. These suggestions should be
+    taken into consideration for your specific enterprise needs.</para>
 
-    <para>HPCC Systems is designed to run on commodity hardware, which makes building
-    and maintaining large scale (petabytes) clusters economically feasible.
-    When planning your cluster hardware, you will need to balance a number of
-    considerations, including fail-over domains and potential performance
-    issues. Hardware planning should include distributing HPCC Systems across multiple
-    physical hosts, such as a cluster. Generally, one type of best practice is
-    to run HPCC Systems processes of a particular type, for example Thor, Roxie, or
-    Dali, on a host configured specifically for that type of process.</para>
+    <para>HPCC Systems is designed to run on commodity hardware, which makes
+    building and maintaining large scale (petabytes) clusters economically
+    feasible. When planning your cluster hardware, you will need to balance a
+    number of considerations, including fail-over domains and potential
+    performance issues. Hardware planning should include distributing HPCC
+    Systems across multiple physical hosts, such as a cluster. Generally, one
+    type of best practice is to run HPCC Systems processes of a particular
+    type, for example Thor, Roxie, or Dali, on a host configured specifically
+    for that type of process.</para>
 
     <sect1 id="SysAdm_ThorHW">
       <title>Thor Hardware</title>
@@ -492,21 +497,21 @@
 
       <para>It is important to note that HPCC Systems by nature is a parallel
       processing system and all Thor slave nodes will be exercising at
-      precisely the same time. So when allocating more than one HPCC Systems Thor
-      slave per physical machine assure that each slave meets the recommended
-      requirements.</para>
+      precisely the same time. So when allocating more than one HPCC Systems
+      Thor slave per physical machine assure that each slave meets the
+      recommended requirements.</para>
 
       <para>For instance, 1 physical server with 48 cores, 96GB RAM, 10Gb/sec
       network and 2GB/sec sequential I/O would be capable of running ten (10)
-      HPCC Systems Thor slaves at optimal efficiency. The order of optimization for
-      resource usage in a Thor slave node is disk I/O 60%, network 30%, and
-      CPU 10%. Any increase in sequential I/O will have the most impact on
-      speed, followed by improvements in network, followed by improvements in
-      CPU.</para>
+      HPCC Systems Thor slaves at optimal efficiency. The order of
+      optimization for resource usage in a Thor slave node is disk I/O 60%,
+      network 30%, and CPU 10%. Any increase in sequential I/O will have the
+      most impact on speed, followed by improvements in network, followed by
+      improvements in CPU.</para>
 
-      <para>Network architecture is also an important consideration. HPCC Systems Thor
-      nodes work optimally in a streamlined network architecture between all
-      Thor slave processes.</para>
+      <para>Network architecture is also an important consideration. HPCC
+      Systems Thor nodes work optimally in a streamlined network architecture
+      between all Thor slave processes.</para>
 
       <para>RAID is recommended and all RAID levels suitable for sequential
       read/write operations and high availability are acceptable. For example,
@@ -516,19 +521,19 @@
     <sect1 id="SysAdm_RoxieHW">
       <title>Roxie Hardware Configurations</title>
 
-      <para>HPCC Systems Roxie processes require require a proper, yet different (from
-      Thor) balance of CPU, RAM, network, and disk I/O in order to ensure
-      efficient operations. A single HPCC Systems Roxie node works optimally when
-      allocated 6 or more CPU cores, 24GB RAM, 1Gb/sec network backbone, and
-      400/sec 4k random read IOPS.</para>
+      <para>HPCC Systems Roxie processes require require a proper, yet
+      different (from Thor) balance of CPU, RAM, network, and disk I/O in
+      order to ensure efficient operations. A single HPCC Systems Roxie node
+      works optimally when allocated 6 or more CPU cores, 24GB RAM, 1Gb/sec
+      network backbone, and 400/sec 4k random read IOPS.</para>
 
-      <para>Each HPCC Systems Roxie node is presented two hard drives, each capable of
-      200/sec 4k random seek IOPS. Hard drive recommendations for Roxie
-      efficiency are 15K SAS, or SSD. A good rule of thumb is the more random
-      read IOPS the better and faster your Roxie will perform.</para>
+      <para>Each HPCC Systems Roxie node is presented two hard drives, each
+      capable of 200/sec 4k random seek IOPS. Hard drive recommendations for
+      Roxie efficiency are 15K SAS, or SSD. A good rule of thumb is the more
+      random read IOPS the better and faster your Roxie will perform.</para>
 
-      <para>Running multiple HPCC Systems Roxie nodes on a single physical server is
-      not recommended, except in the cases of virtualization or
+      <para>Running multiple HPCC Systems Roxie nodes on a single physical
+      server is not recommended, except in the cases of virtualization or
       containers.</para>
 
       <para>Configure your system to balance the size of your Thor and Roxie
@@ -541,13 +546,14 @@
     <sect1 id="SysAdm_Dali_Sasha">
       <title>Dali and Sasha Hardware Configurations</title>
 
-      <para>HPCC Systems Dali processes store cluster metadata in RAM. For optimal
-      efficiency, provide at least 48GB of RAM, 6 or more CPU cores, 1Gb/sec
-      network interface and a high availability disk for a single HPCC Systems Dali.
-      The HPCC Systems Dali processes are one of the few native active/passive
-      components. Using standard "swinging disk" clustering is recommended for
-      a high availability setup. For a single HPCC Systems Dali process, any suitable
-      High Availability (HA) RAID level is fine.</para>
+      <para>HPCC Systems Dali processes store cluster metadata in RAM. For
+      optimal efficiency, provide at least 48GB of RAM, 6 or more CPU cores,
+      1Gb/sec network interface and a high availability disk for a single HPCC
+      Systems Dali. The HPCC Systems Dali processes are one of the few native
+      active/passive components. Using standard "swinging disk" clustering is
+      recommended for a high availability setup. For a single HPCC Systems
+      Dali process, any suitable High Availability (HA) RAID level is
+      fine.</para>
 
       <para>Sasha only stores data to locally available disks, reading data
       from Dali then processing it by archiving workunits (WUs) to disk. It is
@@ -641,26 +647,26 @@
   <chapter id="Routine_Maintenance">
     <title>Routine Maintenance</title>
 
-    <para>In order to ensure that your HPCC Systems platform keeps running optimally,
-    some care and maintenance is required. The following sections address
-    routine maintenance tasks for your HPCC Systems platform.</para>
+    <para>In order to ensure that your HPCC Systems platform keeps running
+    optimally, some care and maintenance is required. The following sections
+    address routine maintenance tasks for your HPCC Systems platform.</para>
 
     <!--***SYSTEM HEALTH CHECK UP***TO COME***-->
 
     <sect1 id="SysAdmin_DataHandling">
       <title>Data Handling</title>
 
-      <para>When you start working with your HPCC Systems platform, you will want to
-      have some data on the system to process. Data gets transferred to the
-      HPCC Systems platform by a process called a spray. Likewise to get data out from
-      an HPCC Systems platform it must be desprayed.</para>
+      <para>When you start working with your HPCC Systems platform, you will
+      want to have some data on the system to process. Data gets transferred
+      to the HPCC Systems platform by a process called a spray. Likewise to
+      get data out from an HPCC Systems platform it must be desprayed.</para>
 
-      <para>As the HPCC Systems platform is a computer cluster the data gets deployed out over the
-      nodes that make up the cluster. A <emphasis>spray</emphasis> or import
-      is the relocation of a data file from one location (such as a Landing
-      Zone) to a cluster. The term spray was adopted due to the nature of the
-      file movement -- the file is partitioned across all nodes within a
-      cluster.</para>
+      <para>As the HPCC Systems platform is a computer cluster the data gets
+      deployed out over the nodes that make up the cluster. A
+      <emphasis>spray</emphasis> or import is the relocation of a data file
+      from one location (such as a Landing Zone) to a cluster. The term spray
+      was adopted due to the nature of the file movement -- the file is
+      partitioned across all nodes within a cluster.</para>
 
       <para>A <emphasis>despray</emphasis> or export is the relocation of a
       data file from a Data Refinery cluster to a single machine location
@@ -678,8 +684,10 @@
       protocol, something like a WinSCP.</para>
 
       <para>For more information about HPCC Systems data handling see the
-      <emphasis>HPCC Systems<superscript>®</superscript> Data Handling</emphasis> and the <emphasis>HPCC Systems<superscript>®</superscript> Data
-      Tutorial</emphasis> documents.</para>
+      <emphasis>HPCC Systems<superscript>®</superscript> Data
+      Handling</emphasis> and the <emphasis>HPCC
+      Systems<superscript>®</superscript> Data Tutorial</emphasis>
+      documents.</para>
 
       <!--***CAN TIE THIS ALL TOGETHER - as part of routine maint. clean up some data files... archive data... etc. ***TO COME***-->
     </sect1>
@@ -796,11 +804,12 @@
 
           <para><emphasis role="bold">Backupnode</emphasis></para>
 
-          <para>Backupnode is a tool that is packaged with HPCC Systems platform. Backupnode
-          allows you to backup Thor nodes on demand or in a script. You can
-          also use backupnode regularly in a crontab or by adding a backupnode
-          component with Configuration Manager to your environment. You would
-          always want to run it on the Thor master of that cluster.</para>
+          <para>Backupnode is a tool that is packaged with HPCC Systems
+          platform. Backupnode allows you to backup Thor nodes on demand or in
+          a script. You can also use backupnode regularly in a crontab or by
+          adding a backupnode component with Configuration Manager to your
+          environment. You would always want to run it on the Thor master of
+          that cluster.</para>
 
           <para>The following example is one suggested way for invoking
           backupnode manually.</para>
@@ -905,8 +914,8 @@
     <sect1 id="SysAdm_Log_Files">
       <title>Log Files</title>
 
-      <para>HPCC Systems provides a wealth of information which can be used to debug,
-      track transactions, application performance, and troubleshooting
+      <para>HPCC Systems provides a wealth of information which can be used to
+      debug, track transactions, application performance, and troubleshooting
       purposes. You can review HPCC Systems messages as they are reported and
       captured in the log files. Log files can help you in understanding what
       is occurring on the system and useful in troubleshooting.</para>
@@ -1115,16 +1124,17 @@
   <chapter id="OnDemand_Maintenance">
     <title>System Configuration and Management</title>
 
-    <para>HPCC Systems require configuration. The Configuration Manager
-    tool (configmgr) included with the system software is a valuable piece of
-    setting up your HPCC Systems platform. The Configuration Manager is a graphical tool
-    provided that can be used to configure your system. Configuration Manager
-    has a wizard that you can run which will easily generate an environment
-    file to get you configured, up and running quickly. There is an advanced
-    option available through Configuration Manager which allows for a more
-    specific configuration, while still using the graphical interface. If
-    desired you can edit the environment files using any xml or text editor
-    however the file structure must remain valid.</para>
+    <para>HPCC Systems require configuration. The Configuration Manager tool
+    (configmgr) included with the system software is a valuable piece of
+    setting up your HPCC Systems platform. The Configuration Manager is a
+    graphical tool provided that can be used to configure your system.
+    Configuration Manager has a wizard that you can run which will easily
+    generate an environment file to get you configured, up and running
+    quickly. There is an advanced option available through Configuration
+    Manager which allows for a more specific configuration, while still using
+    the graphical interface. If desired you can edit the environment files
+    using any xml or text editor however the file structure must remain
+    valid.</para>
 
     <para>
       <figure>
@@ -1188,8 +1198,8 @@
 
                 <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
-                level HPCC Systems administrators should attempt to change any aspects
-                of this file.</entry>
+                level HPCC Systems administrators should attempt to change any
+                aspects of this file.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -1198,8 +1208,9 @@
 
       <programlisting>/etc/HPCCSystems</programlisting>
 
-      <para>Environment.conf is required upon startup of the HPCC Systems platform. The
-      environment.conf is where the HPCC Systems environment file is defined.</para>
+      <para>Environment.conf is required upon startup of the HPCC Systems
+      platform. The environment.conf is where the HPCC Systems environment
+      file is defined.</para>
 
       <programlisting>/opt/HPCCSystems/environment.xml</programlisting>
 
@@ -1270,12 +1281,12 @@ jvmoptions=-XX:-UsePerfData
 # Enabling both may lead to unpredicatable results
 # including segfaults or undefined symbol errors.
 #
-# If you would prefer to use python 3 and disable python2, change the line below to read
-#  additionalPlugins=python3
+# If you would prefer to use python 2 and disable python3, change the line below to read
+#  additionalPlugins=python2
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).
 # Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
-additionalPlugins=python2
+additionalPlugins=python3
 
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).
@@ -1309,9 +1320,10 @@ classpath=/opt/HPCCSystems/classes
 runtime=/var/lib/HPCCSystems
 lock=/var/lock/HPCCSystems</programlisting>
 
-        <para>The HPCC Systems platform will not run properly without the proper paths, and in some
-        cases needs the absolute path. If a process or component can't find a
-        path you will get an error message such as the following:</para>
+        <para>The HPCC Systems platform will not run properly without the
+        proper paths, and in some cases needs the absolute path. If a process
+        or component can't find a path you will get an error message such as
+        the following:</para>
 
         <programlisting>"There are no components configured to run on the node..." </programlisting>
 
@@ -1489,17 +1501,17 @@ lock=/var/lock/HPCCSystems</programlisting>
       <sect2 id="Using_nice">
         <title>Using nice</title>
 
-        <para>The HPCC Systems platform supports <emphasis>nice</emphasis>-based
-        priorities using the nice Linux utility which invokes scripts and
-        programs with specified priorities. The priority assigned to a process
-        indicates to the CPU to provide more or less time than to other
-        processes. A nice value of -20 is the highest priority, and a value of
-        19 is the lowest.</para>
+        <para>The HPCC Systems platform supports
+        <emphasis>nice</emphasis>-based priorities using the nice Linux
+        utility which invokes scripts and programs with specified priorities.
+        The priority assigned to a process indicates to the CPU to provide
+        more or less time than to other processes. A nice value of -20 is the
+        highest priority, and a value of 19 is the lowest.</para>
 
         <para>The default environment.conf file is delivered with the nice
-        value disabled. If you wish to use nice to prioritize HPCC Systems processes,
-        you need to modify the environment.conf file to enable nice. You can
-        also adjust the nice value in environment.conf.</para>
+        value disabled. If you wish to use nice to prioritize HPCC Systems
+        processes, you need to modify the environment.conf file to enable
+        nice. You can also adjust the nice value in environment.conf.</para>
       </sect2>
 
       <sect2 id="SysAdm_OtherEnv.conf">
@@ -1594,8 +1606,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     <sect1 id="SystemD_initScripts">
       <title>Initialization under Systemd</title>
 
-      <para>The primary tool for starting and stopping the HPCC Systems platform on a
-      target machine using systemd is the
+      <para>The primary tool for starting and stopping the HPCC Systems
+      platform on a target machine using systemd is the
       <emphasis>hpccsystems-platform.target</emphasis>. This target script is
       dependent on the environment.xml file, and gets generated using the
       <emphasis>generate-hpccsystems-target.sh</emphasis> script that is
@@ -1659,9 +1671,9 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <title id="SystemD_Ulimits">Systemd ulimits</title>
 
         <para>If you wish to set custom ulimits for specific hpccsystems
-        components, do so in the templates located in </para>
+        components, do so in the templates located in</para>
 
-        <para>/opt/HPCCSystems/etc/systemd/system </para>
+        <para>/opt/HPCCSystems/etc/systemd/system</para>
 
         <para>so that they persist across regenerations of the
         hpccsystems-platform.target and component service scripts. For the
@@ -1675,14 +1687,15 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       <para>The performance of your system can vary depending on how some
       components interact. One area which could impact performance is the
       relationship with users, groups, and Active Directory. If possible,
-      having a separate Active Directory specific to HPCC Systems could be a good
-      policy. There have been a few instances where just one Active Directory
-      servicing many, diverse applications has been less than optimal.</para>
+      having a separate Active Directory specific to HPCC Systems could be a
+      good policy. There have been a few instances where just one Active
+      Directory servicing many, diverse applications has been less than
+      optimal.</para>
 
-      <para>HPCC Systems makes setting up your Active Directory OU's relatively easy.
-      ESP creates all the OU's for you when it starts up, based on the
-      settings you defined in Configuration Manager. You can then start
-      Dali/ESP and use ECLWatch to add or modify users or groups.</para>
+      <para>HPCC Systems makes setting up your Active Directory OU's
+      relatively easy. ESP creates all the OU's for you when it starts up,
+      based on the settings you defined in Configuration Manager. You can then
+      start Dali/ESP and use ECLWatch to add or modify users or groups.</para>
 
       <para>You can assign permissions to each user individually, however it
       is more manageable to assign these permissions to groups, and then add
@@ -1811,12 +1824,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     <title>Best Practices</title>
 
     <para>This chapter outlines various forms of best practices established by
-    long time HPCC Systems users and administrators running HPCC Systems in a high
-    availability, demanding production environment. While it is not required
-    that you run your environment in this manner, as your specific
+    long time HPCC Systems users and administrators running HPCC Systems in a
+    high availability, demanding production environment. While it is not
+    required that you run your environment in this manner, as your specific
     requirements may vary. This section provides some best practice
-    recommendations established after several years of running HPCC Systems in a
-    demanding, intense, production environment.</para>
+    recommendations established after several years of running HPCC Systems in
+    a demanding, intense, production environment.</para>
 
     <sect1 id="BP_Cluster_Redundancy" role="nobrk">
       <title>Cluster Redundancy</title>
@@ -1940,12 +1953,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
     <sect1 id="BP_High_Availability">
       <title>High Availability</title>
 
-      <para>If you require high availability for your HPCC Systems platform, there are
-      some additional considerations that you should be aware of. This is not
-      comprehensive list, and it is not meant to be step-by-step instructions
-      for setting up disaster recovery. Instead this section just provides
-      some more information to consider when incorporating HPCC Systems into your
-      disaster recovery plan.</para>
+      <para>If you require high availability for your HPCC Systems platform,
+      there are some additional considerations that you should be aware of.
+      This is not comprehensive list, and it is not meant to be step-by-step
+      instructions for setting up disaster recovery. Instead this section just
+      provides some more information to consider when incorporating HPCC
+      Systems into your disaster recovery plan.</para>
 
       <sect2 id="Thor_HA">
         <title>Thor</title>
@@ -2073,10 +2086,10 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
       <para>There are several other aspects to best practice considerations,
       and these will change with your system requirements. The following
       sections are some best practice considerations for some aspects of the
-      HPCC Systems platform. Keep in mind that suggested best practices are merely
-      suggested and may not be appropriate for your needs. A thorough review
-      of the considerations highlighted here can be very helpful if your needs
-      align with the stated considerations.</para>
+      HPCC Systems platform. Keep in mind that suggested best practices are
+      merely suggested and may not be appropriate for your needs. A thorough
+      review of the considerations highlighted here can be very helpful if
+      your needs align with the stated considerations.</para>
 
       <!--/*Further elaboration of both User permissions, and permission settings... also some hardware set up best practices. Suggested***/-->
 
@@ -2253,9 +2266,9 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
             </mediaobject>
           </figure></para>
 
-        <para>Open up the HPCC Systems Configuration Manager and proceed to the
-        Advanced View option. For more information about using ConfigMgr see
-        Using Configuration Manager. <orderedlist>
+        <para>Open up the HPCC Systems Configuration Manager and proceed to
+        the Advanced View option. For more information about using ConfigMgr
+        see Using Configuration Manager. <orderedlist>
             <listitem>
               <para>Select your ESP Service (the default is the <emphasis
               role="bold">myws_ecl</emphasis>) from the Navigator panel on the
@@ -2291,8 +2304,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         configured to take full advantage of the resources available per node
         using Virtual Thor slaves.</para>
 
-        <para>In HPCC Systems platform versions prior to 6.0.0, cluster configurations were
-        typically set to N number of <emphasis
+        <para>In HPCC Systems platform versions prior to 6.0.0, cluster
+        configurations were typically set to N number of <emphasis
         role="bold">slavesPerNode</emphasis><indexterm>
             <primary>slavesPerNode</primary>
           </indexterm> <emphasis></emphasis> , where N equalled or approached
@@ -2461,8 +2474,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
         <para>Thor, Roxie, and ECL Agent clusters all have options in the
         configuration to enable huge page support. The Transparent Huge Pages
         are enabled for Thor, Roxie, and ECL Agent clusters in the default
-        HPCC Systems environment. Thor clusters can stand to benefit more from huge
-        pages than can Roxie.</para>
+        HPCC Systems environment. Thor clusters can stand to benefit more from
+        huge pages than can Roxie.</para>
 
         <para>You can check the file
         /sys/kernel/mm/transparent_hugepage/enabled to see what your OS
@@ -2480,8 +2493,8 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
           "hugepages=N" parameter at boot. With huge pages you also need to
           explicitly allocate the size.</para>
 
-          <para>In HPCC Systems, there are three places in the configuration manager
-          to set the attributes to use Huge Pages.</para>
+          <para>In HPCC Systems, there are three places in the configuration
+          manager to set the attributes to use Huge Pages.</para>
 
           <para>There are attributes in each component, in the ECL Agent
           attributes, in Roxie attributes, and in Thor attributes. In each
@@ -2508,7 +2521,8 @@ heapUseTransparentHugePages</programlisting>
   <chapter id="Resources">
     <title>System Resources</title>
 
-    <para>There are additional resources available for the HPCC Systems System.</para>
+    <para>There are additional resources available for the HPCC Systems
+    System.</para>
 
     <sect1 id="HPCC_Resources" role="nobrk">
       <title>HPCC Systems Resources</title>
@@ -2519,11 +2533,11 @@ heapUseTransparentHugePages</programlisting>
       Systems<superscript>®</superscript> Web Portal at <ulink
       url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for
       software updates, plugins, support, documentation, and more. This is
-      where you can find resources useful for running and maintaining HPCC Systems on
-      the web portal.</para>
+      where you can find resources useful for running and maintaining HPCC
+      Systems on the web portal.</para>
 
-      <para>ECL Watch provides a link to the HPCC Systems portal's download page:
-      <ulink
+      <para>ECL Watch provides a link to the HPCC Systems portal's download
+      page: <ulink
       url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
       This is the page where you can download Installation packages, virtual
       images, source code, documentation, and tutorials.</para>
@@ -2532,8 +2546,8 @@ heapUseTransparentHugePages</programlisting>
     <sect1 id="SysAdm_Addl_Resources">
       <title>Additional Resources</title>
 
-      <para>Additional help with HPCC Systems and Learning ECL is also available.
-      There are online courses available. Go to :</para>
+      <para>Additional help with HPCC Systems and Learning ECL is also
+      available. There are online courses available. Go to :</para>
 
       <para><ulink
       url="https://learn.lexisnexis.com/hpcc">https://learn.lexisnexis.com/hpcc
