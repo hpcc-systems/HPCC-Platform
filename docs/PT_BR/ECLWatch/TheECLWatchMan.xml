@@ -140,6 +140,17 @@
             seu estado atual.</para>
           </listitem>
         </itemizedlist>
+
+        <sect3>
+          <title>Maximizar Painel</title>
+
+          <para><graphic fileref="images/ECLWAMax01.jpg"/></para>
+
+          <para>O ícone<emphasis role="bold">Maximizar/Restaurar</emphasis>
+          está presente em todo o ECL Watch. Pressione o botão para maximizar
+          a o painel correspondente. Pressione novamente para restaurar o
+          painel ao seu tamanho original.</para>
+        </sect3>
       </sect2>
 
       <sect2 id="ListWidgets">

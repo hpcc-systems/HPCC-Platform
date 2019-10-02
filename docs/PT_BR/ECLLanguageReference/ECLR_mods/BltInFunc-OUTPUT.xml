@@ -23,8 +23,8 @@
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="systax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> ,file
@@ -41,8 +41,8 @@
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="systax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
@@ -59,8 +59,8 @@
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
-  :=<emphasis role="bold"> ]
+  <para role="systax"><emphasis
+  role="bold">[</emphasis><emphasis>attr</emphasis> :=<emphasis role="bold"> ]
   OUTPUT(</emphasis><emphasis>recordset</emphasis><emphasis role="bold">,
   [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">]</emphasis><emphasis> , file </emphasis><emphasis role="bold">
