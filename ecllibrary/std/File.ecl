@@ -419,11 +419,15 @@ EXPORT DfuPlusExec(varstring cmdline) :=
  * @param failIfNoSourceFile If TRUE it causes a missing source file to trigger a failure.  Defaults to FALSE.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
- * @param noSplit      Don't split a file part to multiple target parts. Default is FALSE.
+ * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
-EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.fSprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit);
+EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fSprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Same as fSprayFixed, but does not return the DFU Workunit ID.
@@ -431,16 +435,16 @@ EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 
  * @see fSprayFixed
  */
 
-EXPORT SprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.SprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit);
+EXPORT SprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.SprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 // fSprayVariable is now called fSprayDelimited (but the old name is available for backward compatibility)
-EXPORT varstring fSprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit);
+EXPORT varstring fSprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 // SprayVariable is now called SprayDelimited (but the old name is available for backward compatibility)
-EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit);
+EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Sprays a file of fixed delimited records from a single machine and distributes it across the nodes of the
@@ -472,10 +476,14 @@ EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMa
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
  * @param noSplit      Don't split a file part to multiple target parts. Default is FALSE.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
-EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit);
+EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Same as fSprayDelimited, but does not return the DFU Workunit ID.
@@ -483,8 +491,8 @@ EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integ
  * @see fSprayDelimited
  */
 
-EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, const varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit);
+EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, const varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Sprays an xml file from a single machine and distributes it across the nodes of the destination group.
@@ -507,11 +515,15 @@ EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceM
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
  * @param noSplit      Don't split a file part to multiple target parts. Default is FALSE.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.fSprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit);
+EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fSprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Same as fSprayXml, but does not return the DFU Workunit ID.
@@ -519,8 +531,8 @@ EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 so
  * @see fSprayXml
  */
 
-EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
-    lib_fileservices.FileServices.SprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit);
+EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.SprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
 
 /**
  * Copies a distributed file from multiple machines, and desprays it to a single file on a single machine.
@@ -533,11 +545,15 @@ EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxReco
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
  * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE) :=
-    lib_fileservices.FileServices.fDespray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite);
+EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fDespray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite, username, userPw);
 
 /**
  * Same as fDespray, but does not return the DFU Workunit ID.
@@ -545,8 +561,8 @@ EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstr
  * @see fDespray
  */
 
-EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE) :=
-    lib_fileservices.FileServices.Despray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite);
+EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.Despray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite, username, userPw);
 
 /**
  * Copies a distributed file to another distributed file.
@@ -570,11 +586,15 @@ EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destina
  * @param transferBufferSize Overrides the size (in bytes) of the internal buffer used to copy the file.  Default is 64k.
  * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays);
+EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, username, userPw);
 
 /**
  * Same as fCopy, but does not return the DFU Workunit ID.
@@ -582,8 +602,8 @@ EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, 
  * @see fCopy
  */
 
-EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.Copy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays);
+EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean preserveCompression=TRUE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.Copy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, username, userPw);
 
 /**
  * Ensures the specified file is replicated to its mirror copies.
@@ -592,11 +612,15 @@ EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring d
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fReplicate(varstring logicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fReplicate(logicalName, timeOut, espServerIpPort);
+EXPORT varstring fReplicate(varstring logicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fReplicate(logicalName, timeOut, espServerIpPort, username, userPw);
 
 /**
  * Same as fReplicated, but does not return the DFU Workunit ID.
@@ -604,8 +628,8 @@ EXPORT varstring fReplicate(varstring logicalName, integer4 timeOut=-1, varstrin
  * @see fReplicate
  */
 
-EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.Replicate(logicalName, timeOut, espServerIpPort);
+EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.Replicate(logicalName, timeOut, espServerIpPort, username, userPw);
 
 /**
  * Copies a distributed file to a distributed file on remote system.  Similar to fCopy, except the copy executes
@@ -631,11 +655,15 @@ EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServer
  * @param wrap          Should the fileparts be wrapped when copying to a smaller sized cluster?  The default is FALSE.
  * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.fRemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays);
+EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fRemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw);
 
 /**
  * Same as fRemotePull, but does not return the DFU Workunit ID.
@@ -643,8 +671,8 @@ EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalNa
  * @see fRemotePull
  */
 
-EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays);
+EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw);
 
 /*------------------------------------- File monitoring functions -------------------------------------------------------*/
 
@@ -658,11 +686,15 @@ EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstri
  * @param shotCount     The number of times to generate the event before the monitoring job completes. A value
  *                      of -1 indicates the monitoring job continues until manually aborted. The default is 1.
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fMonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort);
+EXPORT varstring fMonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fMonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort, username, userPw);
 
 /**
  * Same as fMonitorLogicalFileName, but does not return the DFU Workunit ID.
@@ -670,8 +702,8 @@ EXPORT varstring fMonitorLogicalFileName(varstring eventToFire, varstring name, 
  * @see fMonitorLogicalFileName
  */
 
-EXPORT MonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort);
+EXPORT MonitorLogicalFileName(varstring eventToFire, varstring name, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.MonitorLogicalFileName(eventToFire, name, shotCount, espServerIpPort, username, userPw);
 
 /**
  * Creates a file monitor job in the DFU Server. If an appropriately named file arrives in this interval it will fire
@@ -686,11 +718,15 @@ EXPORT MonitorLogicalFileName(varstring eventToFire, varstring name, integer4 sh
  * @param shotCount     The number of times to generate the event before the monitoring job completes. A value
  *                      of -1 indicates the monitoring job continues until manually aborted. The default is 1.
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fMonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subDirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorFile(eventToFire, ip, filename, subDirs, shotCount, espServerIpPort);
+EXPORT varstring fMonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subDirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fMonitorFile(eventToFire, ip, filename, subDirs, shotCount, espServerIpPort, username, userPw);
 
 /**
  * Same as fMonitorFile, but does not return the DFU Workunit ID.
@@ -698,8 +734,8 @@ EXPORT varstring fMonitorFile(varstring eventToFire, varstring ip, varstring fil
  * @see fMonitorFile
  */
 
-EXPORT MonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subdirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorFile(eventToFire, ip, filename, subdirs, shotCount, espServerIpPort);
+EXPORT MonitorFile(varstring eventToFire, varstring ip, varstring filename, boolean subdirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.MonitorFile(eventToFire, ip, filename, subdirs, shotCount, espServerIpPort, username, userPw);
 
 /**
  * Waits for the specified DFU workunit to finish.
@@ -708,21 +744,29 @@ EXPORT MonitorFile(varstring eventToFire, varstring ip, varstring filename, bool
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  * @return              A string containing the final status string of the DFU workunit.
  */
 
-EXPORT varstring WaitDfuWorkunit(varstring wuid, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.WaitDfuWorkunit(wuid, timeOut, espServerIpPort);
+EXPORT varstring WaitDfuWorkunit(varstring wuid, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.WaitDfuWorkunit(wuid, timeOut, espServerIpPort, username, userPw);
 
 /**
  * Aborts the specified DFU workunit.
  *
  * @param wuid          The dfu wfid to abort.
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
  */
 
-EXPORT AbortDfuWorkunit(varstring wuid, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.AbortDfuWorkunit(wuid, espServerIpPort);
+EXPORT AbortDfuWorkunit(varstring wuid, varstring espServerIpPort=GETENV('ws_fs_server'), const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.AbortDfuWorkunit(wuid, espServerIpPort, username, userPw);
 
 /*------------------------------------- Superfile functions -------------------------------------------------------*/
 
@@ -949,7 +993,7 @@ EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', b
  *                      access to the ESP process; an empty string value
  *                      indicates that no user authentication is required;
  *                      OPTIONAL, defaults to an empty string
- * @param userPW        String containing the password to be used with the
+ * @param userPw        String containing the password to be used with the
  *                      user cited in the username argument; if username is
  *                      empty then this will be ignored; OPTIONAL, defaults
  *                      to an empty string
@@ -960,8 +1004,8 @@ EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', b
  *                      be returned; will return an empty string if an ESP
  *                      server process cannot be found
  */
-EXPORT varstring GetEspURL(const varstring username = '', const varstring userPW = '') :=
-    lib_fileservices.FileServices.GetEspURL(username, userPW);
+EXPORT varstring GetEspURL(const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.GetEspURL(username, userPw);
 
 
  /**

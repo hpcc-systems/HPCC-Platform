@@ -332,6 +332,8 @@ ESPrequest [nil_remove] SprayFixed
     [min_ver("1.10")] bool quotedTerminator(true);
     [min_ver("1.14")] int expireDays;
     [min_ver("1.14")] string DFUServerQueue;
+    [min_ver("1.20")] string srcUsername;
+    [min_ver("1.20")] string srcPassword;
 };
 
 ESPresponse [exceptions_inline]
@@ -385,6 +387,8 @@ ESPrequest [nil_remove] SprayVariable
     [min_ver("1.11")] bool isJSON(false);
     [min_ver("1.14")] int expireDays;
     [min_ver("1.14")] string DFUServerQueue;
+    [min_ver("1.19")] string srcUsername;
+    [min_ver("1.19")] string srcPassword;
 };
 
 ESPresponse [exceptions_inline]
@@ -401,6 +405,8 @@ ESPrequest [nil_remove] Replicate
     bool   repeatLast(false);
     bool   onlyRepeated(false);
     [min_ver("1.14")] string DFUServerQueue;
+    [min_ver("1.20")] string srcUsername;
+    [min_ver("1.20")] string srcPassword;
 };
 
 ESPresponse [exceptions_inline]
@@ -432,6 +438,9 @@ ESPrequest Despray
     bool   compress(false);
     string encrypt;
     string decrypt;
+
+    [min_ver("1.20")] string srcUsername;
+    [min_ver("1.20")] string srcPassword;
 
 };
 
@@ -593,6 +602,9 @@ ESPrequest DfuMonitorRequest
     string Filename;
     bool   Sub;
     int    ShotLimit;
+
+    [min_ver("1.20")] string srcUsername;
+    [min_ver("1.20")] string srcPassword;
 };
 
 ESPresponse [exceptions_inline] DfuMonitorResponse
@@ -684,7 +696,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.18"),
+    version("1.20"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
