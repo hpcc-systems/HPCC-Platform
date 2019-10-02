@@ -392,20 +392,6 @@ void CDiskRecordPartHandler::open()
         if (!partStream)
             throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
         ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
-        if (activity.isFixedDiskWidth)
-        {
-            if (!compressed || blockCompressed)
-            {
-                unsigned fixedSize = activity.diskRowMinSz;
-                if (partDesc->queryProperties().hasProp("@size"))
-                {
-                    offset_t lsize = partDesc->queryProperties().getPropInt64("@size");
-                    if (0 != lsize % fixedSize)
-                        throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%" I64F "d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
-                }
-            }
-        }
-
         partStream->setFilters(activity.fieldFilters);
     }
 
