@@ -105,6 +105,11 @@ SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
     parâmetros de entrada.</para>
 
     <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
+
+    <para>Você pode construir um DATASET a partir from a SET.</para>
+
+    <programlisting>SET OF STRING s := ['Jim','Bob','Richard','Tom'];
+DATASET(s,{STRING txt});</programlisting>
   </sect2>
 
   <sect2 id="Set_Ordering_and_Indexing">

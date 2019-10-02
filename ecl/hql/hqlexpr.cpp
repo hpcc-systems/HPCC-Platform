@@ -4665,6 +4665,7 @@ switch (op)
         assertex(queryChild(0)->isDictionary());
         break;
     case no_newusertable:
+    case no_newkeyindex:
         assertex(queryChild(2)->getOperator() == no_newtransform);
         break;
     }

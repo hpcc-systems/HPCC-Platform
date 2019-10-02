@@ -56,25 +56,23 @@
 
   <para>Example:</para>
 
-  <programlisting>  wuid := WORKUNIT //get WUID
-  
-  namesRecord := RECORD
+  <programlisting>wuid := WORKUNIT; //get WUID
+ 
+namesRecord := RECORD
   STRING20 surname;
   STRING10 forename;
   INTEGER2 age;
-  END;
-  
-  namesTable := DATASET([
-  {'Halligan','Kevin',31},
-  {'Halligan','Liz',30},
-  {'Salter','Abi',10},
-  {'X','Z'}], namesRecord);
-  
-  DISTRIBUTION(namesTable, surname, forename,
-          NAMED('Stats'));
-  x := DATASET(ROW(TRANSFORM({STRING line},
-  SELF.line := WORKUNIT('Stats', STRING))));
-</programlisting>
+END;
 
-  <para>See Also: <link linkend="_WORKUNIT">#WORKUNIT</link>, <link linkend="OUTPUT">OUTPUT</link>, <link linkend="DISTRIBUTION">DISTRIBUTION</link></para>
+namesTable := DATASET([{'Halligan','Kevin',31},
+                       {'Halligan','Liz',30},
+                       {'Salter','Abi',10},
+                       {'X','Z',42}], namesRecord);
+ 
+DISTRIBUTION(namesTable, surname, forename,NAMED('Stats'));
+WORKUNIT('Stats',STRING);</programlisting>
+
+  <para>See Also: <link linkend="_WORKUNIT">#WORKUNIT</link>, <link
+  linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="DISTRIBUTION">DISTRIBUTION</link></para>
 </sect1>

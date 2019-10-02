@@ -621,6 +621,7 @@ class CWsWuFileHelper
         const char *whatChanged, const char *timing, IConstWorkUnit *cwu, const char *pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
     void createZAPECLQueryArchiveFiles(IConstWorkUnit *cwu, const char *pathNameStr);
+    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);

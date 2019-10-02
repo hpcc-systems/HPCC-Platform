@@ -726,6 +726,16 @@
     <para>A <emphasis>joincondition</emphasis>, LIMIT e ATMOST determinam como
     isso é feito.</para>
 
+    <para>Um limite implícito de 10000 é adicionado quando não há LIMIT
+    especificado <emphasis role="bold">E</emphasis> o seguinte é
+    verdadeiro:</para>
+
+    <para>Não há limite especificado para ATMOST <emphasis
+    role="bold">E</emphasis> e não é um LEFT ONLY JOIN <emphasis
+    role="bold">E</emphasis> <emphasis role="bold">(</emphasis>ou nenhum
+    limite KEEP especificado OU o JOIN que tem um postfilter<emphasis
+    role="bold">)</emphasis>.</para>
+
     <para><emphasis role="bold">3. Determina quais correspondências devem ser
     especificadas para </emphasis><emphasis
     role="bold">transform</emphasis><emphasis role="bold">.</emphasis></para>

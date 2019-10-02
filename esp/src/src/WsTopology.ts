@@ -1,3 +1,4 @@
+import { Connection } from "@hpcc-js/comms";
 import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
@@ -35,7 +36,8 @@ var TpLogFileStore = declare([Memory, Evented], {
         } else {
             TpLogFile({
                 request: lang.mixin({}, query, {
-                    PageNumber: options.start / options.count
+                    PageNumber: options.start / options.count,
+                    IncludeLogFieldNames: 0
                 })
             }).then(lang.hitch(this, function (response) {
                 var data = [];
@@ -58,7 +60,7 @@ var TpLogFileStore = declare([Memory, Evented], {
                                 if ((i + 1) == (columns).length) {
                                     value = itemParts.join("");
                                 } else if (itemParts.length) {
-                                    nextItem(itemParts);
+                                    value = nextItem(itemParts);
                                 }
 
                                 tempObj[cleanName] = value;
@@ -206,4 +208,18 @@ export function TpLogFile(params) {
 export function CreateTpLogFileStore() {
     var store = new TpLogFileStore();
     return Observable(store);
+}
+export function TpGetServerVersion() {
+    const connection = new Connection({ baseUrl: "/esp", type: "get" });
+    return connection.send("titlebar", { rawxml_: undefined }, "text").then((response: string) => {
+        if (typeof response === "string") {
+            const BuildVersion = "BuildVersion";
+            const idxStart = response.indexOf(`<${BuildVersion}>`);
+            const idxEnd = response.indexOf(`</${BuildVersion}>`);
+            if (idxStart >= 0 && idxEnd >= 0) {
+                return response.substr(idxStart + BuildVersion.length + 2, idxEnd - (idxStart + BuildVersion.length + 2));
+            }
+        }
+        return "";
+    });
 }

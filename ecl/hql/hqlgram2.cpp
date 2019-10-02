@@ -7173,12 +7173,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         transform.setown(createDefaultAssignTransform(record, sourceDataset->queryNormalizedSelector(), indexAttr));
         //The transform operator must be changed to no_newtransform since it will be an argument to no_newusertable
         if (transform->getOperator() == no_transform)
-        {
-            HqlExprArray args;
-            unwindChildren(args, transform);
-            OwnedHqlExpr newTransform = createValue(no_newtransform, transform->getType(), args);
-            transform.swap(newTransform);
-        }
+            transform.setown(replaceOperator(transform, no_newtransform));
     }
 
     //need to tag record scope in this case so it generates no_activetable as top selector
@@ -7964,7 +7959,7 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
     finalRecord.setown(cleanIndexRecord(finalRecord));
 
     OwnedHqlExpr transform = createClearTransform(finalRecord, errpos);
-    return createDataset(no_newkeyindex, ds, createComma(LINK(finalRecord), transform.getClear(), newAttrs.getClear()));
+    return createDataset(no_newkeyindex, ds, createComma(LINK(finalRecord), replaceOperator(transform, no_newtransform), newAttrs.getClear()));
 }
 
 

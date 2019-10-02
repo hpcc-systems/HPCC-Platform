@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Dali-LDAP">
+  <title>Dali e Segurança</title>
+
+  <para>Esta seção contém informações adicionais sobre as configurações de
+  segurança e Dali</para>
+
+  <sect2 id="LDAP-Dali">
+    <title>Configurações de segurança Dali e LDAP</title>
+
+    <para>Existem algumas configurações de segurança Dali que afetam o
+    desempenho do Dali. As seguintes configurações explicam ainda mais o
+    impacto de algumas configurações comuns de segurança.</para>
+
+    <sect3 id="DaliNoLDAP">
+      <title>Dali sem LDAP</title>
+
+      <para>Se você configurar o Dali sem nenhum servidor LDAP
+      conectado:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Qualquer pessoa pode acessar qualquer arquivo e qualquer
+          workunit. Essencialmente, você não tem segurança.</para>
+        </listitem>
+
+        <listitem>
+          <para>Sem um servidor LDAP configurado, o atributo CheckScopeScan na
+          configuração é ignorado. Isso significa que qualquer usuário pode
+          ver toda a lista de arquivos lógicos e acessar qualquer
+          arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Qualquer pessoa pode ver, acessar ou até mesmo executar
+          qualquer unidade de trabalho.</para>
+        </listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>Dali com o servidor LDAP e a configuração CheckScopeScans
+      desativada</title>
+
+      <para>Nesse cenário, você tem seu Dali vinculado a um servidor LDAP e o
+      atributo CheckScopeScans é definido como false</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A configuração CheckScopeScans afeta somente a listagem de
+          arquivos lógicos.</para>
+        </listitem>
+
+        <listitem>
+          <para>Todas as chamadas de acesso a arquivos são autorizadas,
+          garantindo que o chamador tenha acesso ao escopo do arquivo
+          especificado.</para>
+        </listitem>
+
+        <listitem>
+          <para>As credenciais do FilesDefaultUser são injetadas se nenhuma
+          for fornecida. A <emphasis>filesDefaultUser</emphasis> é uma conta
+          do LDAP usada para acessar arquivos quando nenhuma credencial de
+          usuário tiver sido fornecida. Esta conta é semelhante a uma conta do
+          tipo “convidado”, por isso deve ter acesso bastante limitado caso
+          seja utilizada. Para desativar o acesso sem credenciais, deixe em
+          branco o atributo filesDefaultUser.</para>
+        </listitem>
+
+        <listitem>
+          <para>Como a configuração CheckScopeScans está desativada, os
+          usuários podem ver toda a lista de arquivos lógicos, mesmo que o
+          usuário não tenha acesso para visualizar um arquivo.</para>
+        </listitem>
+      </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>Dali com servidor LDAP e configuração CheckScopeScans
+      ativada</title>
+
+      <para>Nesse cenário, você tem seu Dali vinculado a um servidor LDAP e o
+      atributo CheckScopeScans é definido como true.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Todas as chamadas de acesso a arquivos são autorizadas,
+          garantindo que o chamador tenha acesso ao escopo do arquivo
+          especificado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Os usuários podem ver os arquivos listados para todos os
+          arquivos nos escopos de arquivo para os quais eles têm permissão de
+          acesso de leitura.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Você deve ter em mente, pois o sistema deve fazer uma chamada LDAP
+      externa para verificar todos os níveis no escopo, de cima para baixo,
+      que a profundidade dos escopos de arquivos pode ter um custo de
+      desempenho em sistemas com File Scope Security (Segurança de Escopo de
+      Arquivo) ativada.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="WhitelistInDali" role="brk">
+    <title>Whitelist em Dali</title>
+
+    <para>O servidor Dali tem a capacidade de restringir o acesso a apenas
+    aqueles nós que estão associados a uma função na definição de ambiente
+    (environment.xml) ou explicitamente adicionados a
+    <emphasis>Whitelist</emphasis> na configuração de Dali. A Whitelist é
+    implicitamente preenchida com os componentes do servidor e suas funções
+    conforme definido no ambiente. Você pode adicionar explicitamente nós
+    adicionais e suas funções aprovadas a uma Whitelist suplementar no arquivo
+    environment.xml, conforme mostrado no exemplo a seguir:</para>
+
+    <para><programlisting>&lt;Environment&gt;
+...
+ &lt;Software&gt;
+ ...
+   &lt;DaliServerProcess&gt;
+     &lt;WhiteList&gt;
+      &lt;Entry hosts="adminnode1,192.168.0.101" roles="DaliDiag,DaliAdmin"/&gt;
+      &lt;Entry hosts="adminnode3" roles="DaliDiag"/&gt;
+     &lt;/WhiteList&gt;
+   ...
+   &lt;/DaliServerProcess&gt;
+ ...
+ &lt;/Software&gt;
+...
+&lt;/Environment&gt;
+</programlisting></para>
+
+    <para>Os hosts podem ser especificados por nome de host ou endereço
+    IP.</para>
+
+    <para>As funções devem ser uma das seguintes suportadas:</para>
+
+    <para><simplelist columns="3" type="vert">
+        <member>ThorMaster</member>
+
+        <member>EclCCServer</member>
+
+        <member>EclCC</member>
+
+        <member>EclServer</member>
+
+        <member>EclScheduler</member>
+
+        <member>EclAgent</member>
+
+        <member>AgentExec</member>
+
+        <member>DaliServer</member>
+
+        <member>SashaServer</member>
+
+        <member>DfuServer</member>
+
+        <member>EspServer</member>
+
+        <member>Config</member>
+
+        <member>SchedulerAdmin</member>
+
+        <member>RoxieMaster</member>
+
+        <member>BackupGen</member>
+
+        <member>DaFsControl</member>
+
+        <member>SwapNode</member>
+
+        <member>DaliAdmin</member>
+
+        <member>UpdateEnv</member>
+
+        <member>TreeView</member>
+
+        <member>DaliDiag</member>
+
+        <member>Testing</member>
+
+        <member>XRef</member>
+
+        <member>Monitoring</member>
+      </simplelist></para>
+
+    <para><simplelist columns="3" type="vert">
+        <member/>
+      </simplelist></para>
+
+    <para/>
+
+    <para>Uma entrada pode ter um ou mais nós especificados em uma lista
+    separada por vírgulas.</para>
+
+    <para>Os nós podem ter uma ou mais funções, especificadas em uma lista
+    separada por vírgulas.</para>
+
+    <para>Nunca deve ser necessário incluir explicitamente as seguintes
+    funções:</para>
+
+    <para><programlisting>AgentExec, DaliServer, EclAgent, EclCC, EclCCServer, EclServer, EspServer, 
+SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
+
+    <para>Essas funções correspondem a componentes no ambiente, que devem
+    estar sempre implicitamente na Whitelist (lista de permissões) pela
+    inclusão no ambiente.</para>
+
+    <para>Além disso, o servidor Dali coloca na Whitlist (lista de permissões)
+    automaticamente essas funções:</para>
+
+    <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, ScheduleAdmin, SwapNode, Testing, 
+TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
+
+    <?hard-pagebreak ?>
+
+    <para>As únicas funções que provavelmente serão adicionadas são
+    ferramentas administrativas e utilitários que não são componentes
+    definidos, por exemplo:</para>
+
+    <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, SchedulerAdmin, SwapNode, Testing, 
+TreeView, UpdateEnv, XRef</programlisting></para>
+
+    <para>Para desabilitar totalmente o recurso Whitelist (Lista de
+    permissões), você pode adicionar:</para>
+
+    <para><programlisting>&lt;WhiteList enabled="false"&gt;</programlisting><emphasis
+    role="bold">Isso não é recomendado para ambientes de
+    produção.</emphasis></para>
+
+    <para/>
+
+    <sect3>
+      <title>Recuperar a Whitelist (Lista de permissões)</title>
+
+      <para>Para recuperar toda a lista de desbloqueio (implícita e
+      explícita), use a linha de comando <emphasis
+      role="bold">dalidiag</emphasis> (encontrada em
+      /opt/HPCCSystems/bin/.)</para>
+
+      <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+    </sect3>
+
+    <sect3 role="brk">
+      <title>Use envmod para adicionar ou remover entradas na lista de
+      permissões suplementar</title>
+
+      <para>Recomendamos usar o comando <emphasis
+      role="bold">envmod</emphasis> para adicionar entradas da Whitelist ao
+      seu arquivo environment.xml. O utilitário envmod pode ser encontrado em
+      /opt/HPCCSystems/bin/.</para>
+
+      <para>Use um arquivo de modelo, como o exemplo a seguir:</para>
+
+      <para><programlisting>{
+    "name" : "AddWhiteList",
+    "description" : "Add whilelist to environment",
+    "type" : "modification",
+    "operations" : [
+        {
+            "action" : "find",
+            "target_path" : "/Environment/Software/DaliServerProcess/Whitelist",
+            "data" : {
+                "create_if_not_found" : true,
+                "save" : {
+                    "name" : "whiteListNodeId"
+                }
+            }
+        },
+        {
+            "action" : "create",
+            "target_nodeid" : "{{whiteListNodeId}}",
+            "data" : {
+                "node_type" : "Entry",
+                "attributes" : [
+                    {
+                        "name" : "hosts",
+                        "value" : "adminnode1,192.168.0.101"
+                    },
+                    {
+                        "name" : "roles",
+                        "value" : "DaliDiag,DailAdmin"
+                    }
+                ]
+            }
+        },
+{
+            "action" : "create",
+            "target_nodeid" : "{{whiteListNodeId}}",
+            "data" : {
+                "node_type" : "Entry",
+                "attributes" : [
+                    {
+                        "name" : "hosts",
+                        "value" : "adminnode3"
+                    },
+                    {
+                        "name" : "roles",
+                        "value" : "DaliDiag"
+                    }
+                ]
+            }
+        }
+    ]
+}</programlisting>Este exemplo adiciona as funções DaliDiag e DaliAdmin aos
+      dois nós. Um nó é especificado usando seu nome de host (adminnode1). O
+      outro é referenciado pelo endereço IP. Adiciona o papel de DaliDiag ao
+      adminnode3. O resultado corresponde ao exemplo XML mostrado
+      anteriormente.</para>
+
+      <para>Exemplo de linha de comando:</para>
+
+      <programlisting>sudo /opt/HPCCSystems/bin/envmod \
+     -t myWhitelistTemplate.json \
+     -e /etc/HPCCSystems/source/environment.xml \
+     -d /opt/HPCCSystems/componentfiles/configschema/xsd \
+     -o /etc/HPCCSystems/source/environmentWithWhitelist.xml</programlisting>
+
+      <para>O parâmetro -t (ou --template) é o local do modelo.</para>
+
+      <para>O parâmetro -e (ou --env) é o local do arquivo de ambiente. Se
+      omitido, a ação valida o modelo.</para>
+
+      <para>O parâmetro -d (ou --schema-dir) é o local dos arquivos de
+      esquema.</para>
+
+      <para>O parâmetro -o (ou --output) é o local do arquivo de saída. Se
+      você especificar -o sem um caminho completo para um arquivo, ele
+      substituirá o arquivo de entrada.</para>
+
+      <para><emphasis role="bold">Depois de ter modificado seu ambiente, você
+      DEVE copiar environment.xml para cada nó. </emphasis></para>
+
+      <para><emphasis role="bold"/></para>
+
+      <para>Para remover uma entrada, use um modelo como o seguinte:</para>
+
+      <para><programlisting>{
+    “action” : “delete”,
+    “target_path” : “/Environment/Software/DaliServerProcess/Whitelist/Entry[@hosts=’adminnode3’]”
+}
+</programlisting></para>
+    </sect3>
+  </sect2>
+</sect1>

@@ -201,6 +201,7 @@ extern HQL_API IHqlExpression * removeAttribute(IHqlExpression * expr, IAtom * a
 extern HQL_API IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand);
 extern HQL_API IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op);
 extern HQL_API IHqlExpression * removeChild(IHqlExpression * expr, unsigned child);
+extern HQL_API IHqlExpression * replaceOperator(IHqlExpression * expr, node_operator newOp);
 extern HQL_API IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);
 extern HQL_API IHqlExpression * prependOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);

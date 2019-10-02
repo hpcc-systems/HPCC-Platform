@@ -144,7 +144,7 @@ InRec  := {HeaderRec AND NOT [RecID,Address,Zip]};
 
 //this MODULE creates a concrete instance
 BatchHeaderSearch(InRec l) := MODULE(IHeaderFileSearch)
-  EXPORT STRING120 company_val := l.company;
+  EXPORT STRING20 company_val := l.company;
   EXPORT STRING2 state_val := l.state;
   EXPORT STRING25 city_val := l.city;
 END;

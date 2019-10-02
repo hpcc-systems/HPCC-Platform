@@ -5566,6 +5566,13 @@ bool hasOperand(IHqlExpression * expr, IHqlExpression * child)
     return false;
 }
 
+IHqlExpression * replaceOperator(IHqlExpression * expr, node_operator newOp)
+{
+    HqlExprArray args;
+    unwindChildren(args, expr);
+    return createWrapper(newOp, expr->queryType(), args);
+}
+
 //-------------------------------------------------------------------------------------------------------
 
 class HQL_API SplitDatasetAttributeTransformer : public NewHqlTransformer

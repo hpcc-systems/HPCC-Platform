@@ -88,16 +88,16 @@
 
             <entry>Uma estrutura RECORD que contém as definições do campo de
             entrada a partir das quais a entrada XML é construída para o
-            serviço SOAP . O nome das tags no XML são derivados dos nomes dos
-            campos no registro de entrada; isso pode ser substituído ao
-            colocar um xpath no campo ( {xpath('tagname')} – consulte a seção
-            Suporte ao XPATH na discussão sobre Estrutura RECORD). Se o
-            parâmetro <emphasis>recset</emphasis> não estiver presente, cada
-            definição de campo deve conter um valor padrão que constituirá o
-            registro de entrada individual. Se o parâmetro <emphasis>recset
-            </emphasis> estiver presente, cada definição de campo deve conter
-            um valor padrão, a menos que transform também esteja especificada
-            para fornecer valores de dados.</entry>
+            serviço SOAP . O nome das tags no XML são derivados dos nomes em
+            minúsculas dos campos no registro de entrada; isso pode ser
+            substituído             colocando um xpath no campo ({xpath
+            ('tagname')} - veja a seção XPATH Support da discussão RECORD
+            Structure). Se o parâmetro <emphasis>recset</emphasis> não estiver
+            presente, cada definição de campo deve conter um valor padrão que
+            constituirá o registro de entrada individual. Se o parâmetro
+            <emphasis>recset </emphasis> estiver presente, cada definição de
+            campo deve conter um valor padrão, a menos que transform também
+            esteja especificada para fornecer valores de dados.</entry>
           </row>
 
           <row>
@@ -405,8 +405,10 @@
                 <primary>HTTPHEADER</primary>
               </indexterm></emphasis></entry>
 
-            <entry>Refere-se às informações de cabeçalho a serem especificadas
-            para o serviço.</entry>
+            <entry>Especifica as informações do cabeçalho a serem passadas
+            para o serviço.              SOAPCALL suporta múltiplas instâncias
+            da opção HTTPHEADER se              você precisa especificar
+            várias strings de chave/valor de cabeçalho.</entry>
           </row>
         </tbody>
       </tgroup>

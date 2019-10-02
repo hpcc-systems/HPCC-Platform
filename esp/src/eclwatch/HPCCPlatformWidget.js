@@ -219,10 +219,11 @@ define([
                     }
                 });
 
-                this.activity = ESPActivity.Get();
-                this.activity.watch("Build", function (name, oldValue, newValue) {
-                    context.build = WsSMC.parseBuildString(newValue);
+                WsTopology.TpGetServerVersion().then(function(buildVersion) {
+                    context.build = WsSMC.parseBuildString(buildVersion);
                 });
+
+                this.activity = ESPActivity.Get();
                 this.activity.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                     context.refreshBanner(context.activity);
                 });

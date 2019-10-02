@@ -178,34 +178,42 @@
     <para>Exemplo:</para>
 
     <programlisting>inrec := RECORD
-  UNSIGNED6 did;
+  UNSIGNED6 uid;
 END;
 outrec := RECORD(inrec)
   STRING20  name;
-  STRING10  ssn;
+  STRING11  ssn;
   UNSIGNED8  dob;
 END;
 ds := DATASET([1,2,3,4,5,6], inrec);
-i1 := DATASET([{1, 'Kevin'}, {2, 'Richard'}, {5,'Nigel'}],
-    { UNSIGNED6 did, STRING10 name });
-i2 := DATASET([{3, '123462'}, {5, '1287234'}, {6,'007001002'}],
-    { UNSIGNED6 did, STRING10 ssn });
-i3 := DATASET([{1, 19700117}, {4, 19831212}, {6,20000101}],
-    { UNSIGNED6 did, UNSIGNED8 dob}); 
-j1 := JOIN(ds, i1, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
-j2 := JOIN(ds, i2, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
-j3 := JOIN(ds, i3, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
-combined1 := COMBINE(j1, 
-                     j2,   
+i1 := DATASET([ {1, 'Kevin'}, 
+			 {2, 'Richard'}, 
+			 {5,'Nigel'}],
+              {UNSIGNED6 udid, STRING10 name });
+i2 := DATASET([ {3, '000-12-3462'}, 
+                {5, '000-12-8723'}, 
+                {6, '000-10-1002'}],
+              {UNSIGNED6 udid, STRING10 ssn });
+i3 := DATASET([ {1, 19700117},
+			 {4, 19831212}, 
+                {6, 20010101}],
+    			{UNSIGNED6 udid, UNSIGNED8 dob}); 
+j1 := JOIN(ds, i1, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
+j2 := JOIN(ds, i2, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
+j3 := JOIN(ds, i3, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
+combined1 := COMBINE(j1, j2,   
              TRANSFORM(outRec,
-      SELF := LEFT;
-      SELF := RIGHT;
-      SELF := []));
-combined2 := COMBINE(combined1,
-                   j3,
+      			   SELF := LEFT;
+      			   SELF := RIGHT;
+      			   SELF := []));
+		   LOCAL);
+combined2 := COMBINE(combined1, j3,
              TRANSFORM(outRec,
-      SELF.dob := RIGHT.dob;
-      SELF := LEFT));
+      			   SELF.dob := RIGHT.dob;
+            		   SELF := LEFT)),
+		   LOCAL);
+OUTPUT(combined1);
+OUTPUT(combined2);
 </programlisting>
   </sect2>
 
@@ -223,7 +231,7 @@ combined2 := COMBINE(combined1,
 
     <para>Exemplo:</para>
 
-    <programlisting>inrec := {UNSIGNED6 did};
+    <programlisting>inrec := {UNSIGNED6 udid};
 outrec := RECORD(inrec)
   STRING20 name;
   UNSIGNED score;
@@ -237,52 +245,55 @@ resultRec := RECORD(inrec)
 END;
 ds := DATASET([1,2,3,4,5,6], inrec);
 dsg := GROUP(ds, ROW);
-i1 := DATASET([ {1, 'Kevin', 10},
-   {2, 'Richard', 5},
-   {5,'Nigel', 2},
-   {0, '', 0} ], outrec);
-i2 := DATASET([ {1, 'Kevin Halligan', 12},
-   {2, 'Richard Chapman', 15},
-   {3, 'Jake Smith', 20},
-   {5,'Nigel Hicks', 100},
-   {0, '', 0} ], outrec);
+i1 := DATASET([{1, 'Kevin'  ,10},
+               {2, 'Richard', 5},
+               {5, 'Nigel'  , 2},
+               {0, ''       , 0} ], outrec);
+i2 := DATASET([{1, 'Kevin Hall',      12},
+               {2, 'Richard Chapman', 15},
+               {3, 'Jake Smith',      20},
+               {5, 'Nigel Hicks',    100},
+               {0, ''          ,       0} ], outrec);
 i3 := DATASET([ {1, 'Halligan', 8},
-   {2, 'Richard', 8},
-   {6, 'Pete', 4},
-   {6, 'Peter', 8},
-   {6, 'Petie', 1},
-   {0, '', 0} ], outrec);
-j1 := JOIN( dsg,
-  i1,
-  LEFT.did = RIGHT.did,
-  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
-  LEFT OUTER, MANY LOOKUP);
-j2 := JOIN( dsg,
-  i2,
-  LEFT.did = RIGHT.did,
-  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
-  LEFT OUTER,
-  MANY LOOKUP);
-j3 := JOIN( dsg,
-  i3,
-  LEFT.did = RIGHT.did,
-  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
-  LEFT OUTER,
-  MANY LOOKUP);
+                {2, 'Richard',  8},
+                {6, 'Pete',     4},
+                {6, 'Peter',    8},
+                {6, 'Petie',    1},
+                {0, '',         0} ], outrec);
+j1 := JOIN(dsg,i1,
+           LEFT.uid = RIGHT.uid,
+           TRANSFORM(outrec, 
+                     SELF := LEFT; 
+                     SELF := RIGHT),
+           LEFT OUTER, MANY LOOKUP);
+j2 := JOIN(dsg,i2,
+           LEFT.uid = RIGHT.uid,
+           TRANSFORM(outrec, 
+                     SELF := LEFT; 
+                     SELF := RIGHT), 
+           LEFT OUTER, MANY LOOKUP);
+j3 := JOIN(dsg,i3,
+           LEFT.uid = RIGHT.uid,
+           TRANSFORM(outrec, 
+                     SELF := LEFT; 
+                     SELF := RIGHT), 
+           LEFT OUTER, MANY LOOKUP);
 combined := REGROUP(j1, j2, j3);
 resultRec t(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
- self.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
- self := l;
+ SELF.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
+ SELF := l;
  END;
-res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)));
+res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)),LOCAL);
+OUPUT(res1);
+
 //A variation using rows in a child query.
 resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
  SELF.names := PROJECT(SORT(r, -score),
         TRANSFORM(nameRec, SELF := LEFT));
  SELF := l;
  END;
-res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)));
-</programlisting>
+res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)),LOCAL);
+OUPUT(res2);</programlisting>
 
     <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
     linkend="REGROUP">REGROUP</link></para>

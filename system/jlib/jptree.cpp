@@ -3241,13 +3241,16 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     {
         CriticalBlock block(hashcrit);
         AttrValue *newattrs = newAttrArray(numAttrs+1);
-        memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
+        if (attrs)
+        {
+            memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
+            freeAttrArray(attrs, numAttrs);
+        }
         v = &newattrs[numAttrs];
         if (!v->key.set(key))
             v->key.setPtr(attrHT->addkey(key, isnocase()));
         if (!v->value.set(val))
             v->value.setPtr(attrHT->addval(val));
-        freeAttrArray(attrs, numAttrs);
         numAttrs++;
         attrs = newattrs;
     }

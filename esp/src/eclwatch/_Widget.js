@@ -191,6 +191,7 @@ define([
 
             //  DOM functions  ---
             setDisabled: function (id, disabled, icon, disabledIcon) {
+                disabled === undefined ? disabled = false : disabled = true;
                 var target = registry.byId(id);
                 if (target) {
                     target.set("disabled", disabled);
