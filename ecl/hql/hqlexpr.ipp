@@ -33,7 +33,7 @@
 //It allocates a unique id to each expression that is created, then add the unique ids into the
 //checkSeqId() function, and add a breakpoint there
 #ifdef _DEBUG
-//#define DEBUG_TRACK_INSTANCEID
+#define DEBUG_TRACK_INSTANCEID
 #endif
 
 #include "jexcept.hpp"
