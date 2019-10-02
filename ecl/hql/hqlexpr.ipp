@@ -29,6 +29,11 @@
 #define THREAD_SAFE_SYMBOLS
 #endif
 
+//Define the following to provide information about how many unique expressions of each type are created
+//use in conjunction with --leakcheck flag, otherwise the destructor does not get called
+//#define GATHER_LINK_STATS
+//#define GATHER_COMMON_STATS
+
 //The following flag is to allow tracing when expressions are created, linked, released, destroyed
 //It allocates a unique id to each expression that is created, then add the unique ids into the
 //checkSeqId() function, and add a breakpoint there
