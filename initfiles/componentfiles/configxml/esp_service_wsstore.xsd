@@ -20,6 +20,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspService">
         <xs:complexType>
+          <!--DocAutoBuildCode-->
+            <xs:annotation>
+             <xs:appinfo>
+                <docid>ESPWS.t1</docid>
+             </xs:appinfo>
+           </xs:annotation>		
         <xs:sequence>
               <xs:element name="Store" minOccurs="0" maxOccurs="unbounded">
                 <xs:annotation>
@@ -32,7 +38,7 @@
                 <!--DocAutoBuildCode-->
                   <xs:annotation>
                     <xs:appinfo>
-                      <docid>XYZ</docid>
+                      <docid>ESPWS.t2</docid>
                    </xs:appinfo>
                   </xs:annotation>
                   <xs:attribute name="name" type="xs:string" use="required" default="">
@@ -54,7 +60,7 @@
                     <xs:annotation>
                       <xs:appinfo>
                         <colIndex>3</colIndex>
-                        <tooltip>Describe the purpose of the store</tooltip>
+                        <tooltip>Description of this WsStore instance.</tooltip>
                       </xs:appinfo>
                     </xs:annotation>
                   </xs:attribute>
