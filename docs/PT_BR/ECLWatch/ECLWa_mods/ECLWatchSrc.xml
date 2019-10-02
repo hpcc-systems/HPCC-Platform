@@ -673,11 +673,14 @@
 
           <para>É possível ver as representações visuais das workunits
           selecionadas. Visualizations (Visualizações) estão disponíveis na
-          aba <emphasis role="bold">Output</emphasis> da workunit. A aba
-          Visualize oferece diversos tipos de gráficos que podem ser gerados
-          se você incluiu recursos adicionais em seu código ECL através do
-          mecanismo de manifesto aprimorado (como uma página da Web de
-          índice). <figure>
+          página de detalhes da workunit. Nesta página selecione a aba
+          <emphasis role="bold">Output</emphasis>. Verifique se a caixa de
+          seleção do resultado está marcada e pressione o botão <emphasis
+          role="bold">Visualize</emphasis>. <graphic
+          fileref="../../images/ECLWAViz01.jpg"/></para>
+
+          <para>A aba Visualize ofereceuma série de tipos de gráficos que
+          podem ser gerados a partir do seu resultado.<figure>
               <title>Visualização</title>
 
               <mediaobject>
@@ -687,11 +690,8 @@
               </mediaobject>
             </figure></para>
 
-          <para>Para acessar as Visualizations (Visualizações), clique na aba
-          Outputs da página de detalhe das workunits e selecione a aba
-          <emphasis role="bold">Visualize</emphasis> . É possível acessar
-          diferentes tipos de visualização clicando na lista suspensa na aba
-          Visualize. Clique no menu suspenso <emphasis
+          <para>Você pode acessar diversos tipos de visualizações clicando na
+          lista suspensa da aba Visualize. Clique no menu <emphasis
           role="bold">Mappings</emphasis> para alterar os parâmetros.</para>
         </sect3>
 
@@ -1405,6 +1405,59 @@
           <para>Preencha os campos do arquivo de origem e o destino, marque as
           opções necessárias e depois pressione o botão <emphasis
           role="bold">Submit</emphasis> .</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>Verifique se a caixa<emphasis role="bold">
+                Overwrite</emphasis> está marcada para sobrescrever arquivos
+                de mesmo nome.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique se a caixa<emphasis role="bold">
+                Compress</emphasis> está marcada para comprimir a cópia do
+                arquivo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a caixa<emphasis role="bold"> Retain Superfile
+                Structure</emphasis> para a cópia reter a estrutura
+                                de um Superfile. Se você está copiando um
+                superfile que contém                 ÍNDICES, você deve
+                habilitar esta opção.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a caixa<emphasis role="bold">
+                Replicate</emphasis> para criar cópias de backup de todas as
+                parte.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a caixa<emphasis role="bold"> No
+                Split</emphasis> para evitar a divisão da cópia do arquivoem
+                partes.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a caixa<emphasis role="bold"> Wrap</emphasis>
+                para manter o número de partes e envelopamento caso o destino
+                cluster de destino for menor que o original.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a opção<emphasis role="bold"> Preserve
+                Compression</emphasis> para manter a compressão do
+                arquivo.</para>
+              </listitem>
+
+              <listitem>
+                <para>Verifique a opção <emphasis role="bold"> Expire in
+                (days)</emphasis> para inserir o número de dia antes da
+                remoção automática do arquivo. Se omitido, o padrão é -1
+                (nunca expira).</para>
+              </listitem>
+            </itemizedlist></para>
         </sect3>
 
         <sect3 id="CopyLogicalFile">
@@ -1543,6 +1596,22 @@
 
       <sect2 id="LogicalFilesDetailsPage" role="brk">
         <title>Detalhes do Arquivos Lógicos (Logical Files Details)</title>
+
+        <para>A página de Detalhes de Arquivos Lógicos mostra detalhes
+        específicos para o arquivo selecionado, incluindo: Workunit ID, Owner,
+        Super Owner, Cluster Name, Description, Job Name, Protected state,
+        Content Type, Key Type, File Size, Format, Compressed state e
+        informações como, Modified Date, Expire in value, Directory e Path
+        Mask, Record Size, Record Count, Replication state, File Parts, e Skew
+        information.</para>
+
+        <para>Marque a caixa Protected para proteger o arquivo contra exclusão
+        ou          expiração.</para>
+
+        <para>O valor do Tipo de Chave é exibido apenas se o arquivo for um
+        ÍNDICE. Chave          O tipo pode ter três valores possíveis:
+        Distributed (Distribuído), Local ou          Particionado
+        (Partitioned).</para>
 
         <para>A página Logical Files Detail (Detalhes dos Arquivos lógicos)
         mostra detalhes específicos para o arquivo selecionado. Selecione o

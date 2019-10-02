@@ -10,15 +10,15 @@
       <primary>Str.EditDistance</primary>
     </indexterm><indexterm>
       <primary>EditDistance</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>string1, string2, radius</emphasis>
+  <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.EditDistance<indexterm>
       <primary>STD.Uni.EditDistance</primary>
     </indexterm><indexterm>
       <primary>Uni.EditDistance</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2, locale</emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>string1, string2, locale,
+  radius</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -50,6 +50,13 @@
         </row>
 
         <row>
+          <entry><emphasis>radius</emphasis></entry>
+
+          <entry>Opcional. O máximo aceitável para distance editável, ou 0
+          para sem limite. Padrão é 0.</entry>
+        </row>
+
+        <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>EditDistance retorna um valor UNSIGNED4.</entry>
@@ -65,11 +72,18 @@
   transformar <emphasis>string1</emphasis> em
   <emphasis>string2</emphasis>.</para>
 
+  <para>Se a distância de edição for maior que o <emphasis>raio</emphasis>   
+  retornará um valor arbitrário &gt; <emphasis>raio</emphasis>, mas pode   
+  não ser exato. Isso permite que a função termine mais rapidamente se as
+  strings    são significativamente diferentes.</para>
+
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">STD.Str.EditDistance('CAT','CAT');  //returns 0
 STD.Str.EditDistance('CAT','BAT');  //returns 1
 STD.Str.EditDistance('BAT','BAIT'); //returns 1
 STD.Str.EditDistance('CAT','BAIT'); //returns 2
+STD.Str.EditDistance('CARTMAN','BATMAN');   //returns 2
+STD.Str.EditDistance('CARTMAN','BATMAN',1); //returns arbitrary number &gt; 1
 </programlisting>
 </sect1>

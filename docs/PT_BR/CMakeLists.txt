@@ -72,7 +72,7 @@ add_subdirectory(HPCCDataHandling)
 add_subdirectory(HPCCDataTutorial)
 add_subdirectory(HPCCMonitoring)
 add_subdirectory(HPCCSystemAdmin)
-##7.2#add_subdirectory(HPCCSpark)
+add_subdirectory(HPCCSpark)
 add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
@@ -83,7 +83,8 @@ add_subdirectory(RunningHPCCinaVirtualMachine)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
-##7.2#add_subdirectory(WsSQLUG)
+#9/16
+add_subdirectory(WsSQLUG)
 #add_subdirectory(PortalHTML)
 
 

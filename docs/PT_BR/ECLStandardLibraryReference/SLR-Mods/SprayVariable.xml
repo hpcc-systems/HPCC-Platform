@@ -13,33 +13,36 @@
     </indexterm><indexterm>
       <primary>SprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
+  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> srcCSVseparator </emphasis> <emphasis role="bold">]
-  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
-  <emphasis> srcCSVterminator </emphasis> <emphasis role="bold">] </emphasis>
-  <emphasis>, </emphasis> <emphasis role="bold">[</emphasis> <emphasis>
-  srcCSVquote </emphasis> <emphasis role="bold">] </emphasis> <emphasis>,
-  </emphasis> <emphasis role="bold"> </emphasis> <emphasis>destinationgroup,
-  destinationlogicalname </emphasis>, <emphasis role="bold">[</emphasis>
-  <emphasis>timeout</emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
-  role="bold"> [</emphasis> <emphasis>espserverIPport</emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
+  </emphasis> <emphasis>destinationGroup, destinationLogicalName </emphasis>,
+  <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis><emphasis role="bold">]</emphasis> ,
-  <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> failIfNoSourceFile </emphasis> <emphasis
+  <emphasis>espServerIpPort</emphasis> <emphasis role="bold">]</emphasis>
+  ,<emphasis> </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
+  ,<emphasis role="bold"> [</emphasis> <emphasis>allowOverwrite</emphasis>
+  <emphasis role="bold">] , [</emphasis> <emphasis>replicate</emphasis>
+  <emphasis role="bold">] , [</emphasis> <emphasis>compress
+  </emphasis><emphasis role="bold">]</emphasis> , <emphasis role="bold">
+  [</emphasis> <emphasis> sourceCsvEscape </emphasis> <emphasis
   role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
-  recordStructurePresent </emphasis> <emphasis role="bold">]</emphasis>,
-  <emphasis role="bold"> [</emphasis> <emphasis> quotedTerminator </emphasis>
+  failIfNoSourceFile </emphasis> <emphasis role="bold">]</emphasis>, <emphasis
+  role="bold"> [</emphasis> <emphasis> recordStructurePresent </emphasis>
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis><emphasis
-  role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
+  <emphasis> quotedTerminator </emphasis> <emphasis role="bold">]</emphasis>,
+  <emphasis role="bold"> [</emphasis> <emphasis> encoding </emphasis>
+  <emphasis role="bold">]</emphasis><emphasis role="bold"> , [</emphasis>
+  <emphasis>expireDays</emphasis> <emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -52,32 +55,34 @@
     </indexterm><indexterm>
       <primary>fSprayDelimited</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
+  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVseparator </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> srcCSVterminator </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
   role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> srcCSVquote </emphasis> <emphasis role="bold">]
-  </emphasis> <emphasis>, destinationgroup, destinationlogicalname </emphasis>
+  [</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis role="bold">]
+  </emphasis> <emphasis>, destinationGroup, destinationLogicalName </emphasis>
   <emphasis role="bold">, [</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">] , [</emphasis> <emphasis>espserverIPport</emphasis> <emphasis
+  role="bold">] , [</emphasis> <emphasis>espServerIpPort</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
   role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
   role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>allowOverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
   <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis> compress </emphasis> <emphasis role="bold">]</emphasis> ,
+  <emphasis>compress </emphasis> <emphasis role="bold">]</emphasis> ,
   <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
   <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
   <emphasis> failIfNoSourceFile </emphasis> <emphasis
   role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
   recordStructurePresent </emphasis> <emphasis role="bold">]</emphasis>,
   <emphasis role="bold"> [</emphasis> <emphasis> quotedTerminator </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
+  <emphasis role="bold">]</emphasis> , <emphasis role="bold"> [</emphasis>
+  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> ,
+  <emphasis role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -242,6 +247,13 @@
           <entry>Uma string terminada por nulo que contém a codificação. Pode
           ser definida como: ascii, utf8, utf8n, utf16, utf16le, utf16be,
           utf32, utf32le e utf32be. Se omitida, o padrão é ascii.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuServerQueue</emphasis></entry>
+
+          <entry>Nome do Servidor DFU de destino. O padrão é '' (empty) para o
+          primeiro na fila de DFU no ambiente.</entry>
         </row>
 
         <row>
