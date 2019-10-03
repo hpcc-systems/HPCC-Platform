@@ -222,9 +222,9 @@ ECL_H3_API void ECL_H3_CALL polyfill(ICodeContext *_ctx, bool &__isAllResult, si
         if (i == 0)
             west = east = row->lon;
         else if (west > row->lon)
-            west = lon;
+            west = row->lon;
         else if (east < row->lon)
-            east = lon;
+            east = row->lon;
     }
     if (east - west >= 180)
     {
