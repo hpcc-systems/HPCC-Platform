@@ -148,7 +148,7 @@ bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, 
             store->setType(tree->queryProp("@type"));
             store->setDescription(tree->queryProp("@description"));
             store->setMaxValSize(tree->queryProp("@maxValSize"));
-            store->setIsDefault (!m_defaultStore.isEmpty() && strcasecmp(m_defaultStore.str(), tree->queryProp("@name"))==0);
+            store->setIsDefault (!m_defaultStore.isEmpty() && stricmp(m_defaultStore.str(), tree->queryProp("@name"))==0);
 
             storeinfos.append(*store.getClear());
         }
