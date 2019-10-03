@@ -452,7 +452,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     inType = false;
     errorHandler = NULL;
     moduleName = NULL;
-    resolveSymbols = true;
     lastpos = 0;
     inSignedModule = false;
     
@@ -501,7 +500,7 @@ HqlGram::~HqlGram()
 int HqlGram::yyLex(attribute * yylval, const short * activeState)
 {
     if (checkAborting()) return 0;
-    return lexObject->yyLex(*yylval, resolveSymbols, activeState);
+    return lexObject->yyLex(*yylval, LEXall, activeState);
 }
 
 
@@ -3240,7 +3239,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
     attribute nextToken;
     for (;;)
     {
-        int next = lexObject->yyLex(nextToken, false, NULL);
+        int next = lexObject->yyLex(nextToken, LEXidentifier, NULL);
         switch (next)
         {
         case ASSIGN:
