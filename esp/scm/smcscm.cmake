@@ -36,6 +36,7 @@ set ( ESPSCM_SRCS
       ws_packageprocess.ecm
       ws_esdlconfig.ecm
       ws_elk.ecm
+      ws_codesign.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
