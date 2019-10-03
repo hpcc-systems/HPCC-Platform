@@ -414,6 +414,11 @@
                          path="WsStoreAccess"
                          resource="WsStoreAccess"
                          service="ws_store"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to sign ECL code"
+                         path="CodeSignAccess"
+                         resource="CodeSignAccess"
+                         service="ws_codesign"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -735,6 +740,10 @@
                          path="WsStoreAccess"
                          resource="WsStoreAccess"
                          service="ws_store"/>
+    <AuthenticateFeature description="Access to sign ECL code"
+                         path="CodeSignAccess"
+                         resource="CodeSignAccess"
+                         service="ws_codesign"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -1115,6 +1124,10 @@
                           path="WsELKAccess"
                           resource="WsELKAccess"
                           service="ws_elk"/>
+     <AuthenticateFeature description="Access to sign ECL code"
+                          path="CodeSignAccess"
+                          resource="CodeSignAccess"
+                          service="ws_codesign"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">

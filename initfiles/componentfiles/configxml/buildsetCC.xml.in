@@ -213,6 +213,10 @@
                         path="WsStoreAccess"
                         resource="WsStoreAccess"
                         service="ws_store"/>
+                    <AuthenticateFeature description="Access to sign ECL code"
+                        path="CodeSignAccess"
+                        resource="CodeSignAccess"
+                        service="ws_codesign"/>
                     <ProcessFilters>
                         <Platform name="Windows">
                             <ProcessFilter name="any">
