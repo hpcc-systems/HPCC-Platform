@@ -1713,20 +1713,6 @@ public:
                         StringBuffer line;
                         if (!lineReader->readLine(line))
                         {
-    #ifdef _DEBUG
-                            printf("JlibIOTest::test readLines");
-                            for(const char *p = line.str(); *p; ++p)
-                            {
-                                switch(*p)
-                                {
-                                case '\n': printf("\\n"); break;
-                                case '\t': printf("\\t"); break;
-                                case '\r': printf("\\r"); break;
-                                default: putchar(*p);break;
-                                }
-                            }
-                            putchar('\n');
-    #endif
                             if (pEol==1)
                                 line.append(newlines[nl]);
                             readCrc.tally(line.length(), line.str());
