@@ -248,7 +248,7 @@ void CSlaveMessageHandler::threadmain()
                             break;
                         }
                         CActivityBase *activity = element->queryActivity();
-                        if (activity && activity->needReInit())
+                        if (activity)
                             element->sentActInitData->set(slave, 0); // clear to permit serializeActivityInitData to resend
                         toSerialize.append(*LINK(element));
                     }
