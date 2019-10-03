@@ -386,6 +386,7 @@ static const char * eclReserved12[] = {//Attributes
     "probability",
     "pulled",
     "remote",
+    "restricted",
     "return",
     "right",
     "rows",

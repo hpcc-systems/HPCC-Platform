@@ -163,6 +163,16 @@ public:
     }
 };
 
+struct WUShowScheduledFilters
+{
+    StringAttr cluster, state, eventName, jobName, owner, eventText;
+
+    WUShowScheduledFilters(const char *_cluster, const char *_state, const char *_owner,
+        const char *_jobName, const char *_eventName, const char *_eventText)
+        : cluster(_cluster), state(_state), owner(_owner),
+        jobName(_jobName), eventName(_eventName), eventText(_eventText) {};
+};
+
 class CWsWorkunitsEx : public CWsWorkunits
 {
 public:

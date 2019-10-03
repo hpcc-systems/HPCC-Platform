@@ -3512,13 +3512,13 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
    return true;
 }
 
-void getScheduledWUs(IEspContext &context, const char *stateReq, const char *jobNameReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
+void getScheduledWUs(IEspContext &context, WUShowScheduledFilters *filters, const char *serverName, IArrayOf<IEspScheduledWU> & results)
 {
     double version = context.getClientVersion();
     if (notEmpty(serverName))
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IScheduleReader> reader = getScheduleReader(serverName, eventName);
+        Owned<IScheduleReader> reader = getScheduleReader(serverName, filters->eventName);
         Owned<IScheduleReaderIterator> it(reader->getIterator());
         while(it->isValidEventName())
         {
@@ -3547,9 +3547,13 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *job
                                 owner.set(cw->queryUser());
                             }
 
-                            if (!isEmptyString(jobNameReq) && (jobName.isEmpty() || !WildMatch(jobName.str(), jobNameReq, true)))
+                            if (!filters->jobName.isEmpty() && (jobName.isEmpty() || !WildMatch(jobName.str(), filters->jobName, true)))
                                 match =  false;
-                            else if (!isEmptyString(stateReq))
+                            else if (!filters->owner.isEmpty() && (owner.isEmpty() || !WildMatch(owner, filters->owner, true)))
+                                match =  false;
+                            else if (!filters->eventText.isEmpty() && (ieventText.isEmpty() || !WildMatch(ieventText, filters->eventText, true)))
+                                match =  false;
+                            else if (!filters->state.isEmpty())
                             {
                                 if (!cw)
                                     match =  false;
@@ -3565,7 +3569,7 @@ void getScheduledWUs(IEspContext &context, const char *stateReq, const char *job
                                         stateID = cw->getState();
                                         state.set(cw->queryStateDesc());
                                     }
-                                    if (!strieq(stateReq, state.str()))
+                                    if (!strieq(filters->state, state.str()))
                                         match =  false;
                                 }
                             }
@@ -3619,9 +3623,8 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
 {
     try
     {
-        const char *clusterName = req.getCluster();
-        const char *eventName = req.getEventName();
-        const char *state = req.getState();
+        WUShowScheduledFilters filters(req.getCluster(), req.getState(), req.getOwner(),
+            req.getJobName(), req.getEventName(), req.getEventText());
 
         IArrayOf<IEspScheduledWU> results;
         if(notEmpty(req.getPushEventName()))
@@ -3643,11 +3646,11 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
             if (isEmpty(iclusterName))
                 continue;
 
-            if(isEmpty(clusterName))
-                getScheduledWUs(context, state, req.getJobName(), iclusterName, eventName, results);
-            else if (strieq(clusterName, iclusterName))
+            if (filters.cluster.isEmpty())
+                getScheduledWUs(context, &filters, iclusterName, results);
+            else if (strieq(filters.cluster, iclusterName))
             {
-                getScheduledWUs(context, state, req.getJobName(), clusterName, eventName, results);
+                getScheduledWUs(context, &filters, filters.cluster, results);
                 resp.setClusterSelected(i+1);
             }
 
@@ -3664,8 +3667,8 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
 
         bool first=false;
         StringBuffer Query("PageFrom=Scheduler");
-        appendUrlParameter(Query, "EventName", eventName, first);
-        appendUrlParameter(Query, "ECluster", clusterName, first);
+        appendUrlParameter(Query, "EventName", filters.eventName, first);
+        appendUrlParameter(Query, "ECluster", filters.cluster, first);
         resp.setQuery(Query.str());
     }
     catch(IException* e)
