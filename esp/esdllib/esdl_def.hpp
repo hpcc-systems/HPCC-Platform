@@ -188,8 +188,11 @@ interface IEsdlDefFileIterator : extends IIteratorOf<IEsdlDefFile>
 {
 };
 
+interface IEsdlDefReporter;
 interface IEsdlDefinition : extends IInterface
 {
+    virtual void setReporter(IEsdlDefReporter* reporter)=0;
+    virtual IEsdlDefReporter* queryReporter() const=0;
     virtual void addDefinitionsFromFile(const char *filename)=0;
     virtual void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, double ver)=0;
     virtual void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefId)=0;
@@ -222,12 +225,158 @@ interface IEsdlDefinition : extends IInterface
     virtual bool isShared() = 0;
 };
 
-esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns=NULL);
-esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns=NULL);
+typedef IEsdlDefReporter* (*EsdlDefReporterFactory)();
+esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns=NULL, EsdlDefReporterFactory factory = nullptr);
+esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns=nullptr, EsdlDefReporterFactory factory = nullptr);
 esdl_decl IEsdlDefinition *queryEsdlDefinition(const char *esdl_ns=NULL);
 esdl_decl void releaseEsdlDefinition(const char *esdl_ns=NULL);
 
 esdl_decl void initEsdlTypeList();
 esdl_decl EsdlBasicElementType esdlSimpleType(const char *type);
+
+interface IEsdlDefReporter : extends IInterface
+{
+    using Flags = uint64_t;
+    static const Flags ReportDisaster  = 1 << 0;
+    static const Flags ReportAError    = 1 << 1;
+    static const Flags ReportIError    = 1 << 2;
+    static const Flags ReportOError    = 1 << 3;
+    static const Flags ReportUError    = 1 << 4;
+    static const Flags ReportIWarning  = 1 << 5;
+    static const Flags ReportOWarning  = 1 << 6;
+    static const Flags ReportUWarning  = 1 << 7;
+    static const Flags ReportDProgress = 1 << 8;
+    static const Flags ReportOProgress = 1 << 9;
+    static const Flags ReportUProgress = 1 << 10;
+    static const Flags ReportDInfo     = 1 << 11;
+    static const Flags ReportOInfo     = 1 << 12;
+    static const Flags ReportUInfo     = 1 << 13;
+    static const Flags ReportStats     = 1 << 14;
+    static const Flags ReportCategoryMask =
+            ReportDisaster |
+            ReportAError | ReportIError | ReportOError | ReportUError |
+            ReportIWarning | ReportOWarning | ReportUWarning |
+            ReportDProgress | ReportOProgress | ReportUProgress |
+            ReportDInfo | ReportOInfo | ReportUInfo |
+            ReportStats;
+    static const Flags ReportErrorClass = ReportIError | ReportOError | ReportUError;
+    static const Flags ReportWarningClass = ReportIWarning | ReportOWarning | ReportUWarning;
+    static const Flags ReportProgressClass = ReportDProgress | ReportOProgress | ReportUProgress;
+    static const Flags ReportInfoClass = ReportDInfo | ReportOInfo | ReportUInfo;
+    static const Flags ReportDeveloperAudience = ReportIError | ReportIWarning | ReportDProgress | ReportDInfo;
+    static const Flags ReportOperatorAudience = ReportOError | ReportOWarning | ReportOProgress | ReportOInfo;
+    static const Flags ReportUserAudience = ReportUError | ReportUWarning | ReportUProgress | ReportUInfo;
+
+    static const Flags ReportDefinition = Flags(1) << 63;
+    static const Flags ReportService    = Flags(1) << 62;
+    static const Flags ReportMethod     = Flags(1) << 61;
+    static const Flags ReportComponentMask = Flags(UINT64_MAX) & ~ReportCategoryMask;
+
+    virtual Flags queryFlags() const = 0;
+    virtual Flags getFlags(Flags mask = Flags(-1)) const = 0;
+    virtual bool testFlags(Flags flags) const = 0;
+    virtual void setFlags(Flags flags, bool state) = 0;
+    virtual void report(Flags flags, const char* fmt, ...) const = 0;
+    virtual void report(Flags flags, const char* fmt, va_list& args) const = 0;
+    virtual void report(Flags flags, const StringBuffer& msg) const = 0;
+};
+
+class EsdlDefReporter : public IEsdlDefReporter, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    Flags queryFlags() const override { return m_flags; }
+    Flags getFlags(Flags mask) const override { return m_flags & mask; }
+    bool  testFlags(Flags flags) const override { return (m_flags & flags) == flags; }
+
+    void  setFlags(Flags flags, bool state) override
+    {
+        if (state)
+            m_flags = m_flags | flags;
+        else
+            m_flags = m_flags & ~flags;
+    }
+
+    void report(Flags flags, const char* fmt, ...) const
+    {
+        if (testFlags(flags))
+        {
+            va_list args;
+            va_start(args, fmt);
+            reportSelf(flags, fmt, args);
+            va_end(args);
+        }
+    }
+
+    void report(Flags flags, const char* fmt, va_list& args) const
+    {
+        if (testFlags(flags))
+            reportSelf(flags, fmt, args);
+    }
+
+    void report(Flags flags, const StringBuffer& msg) const
+    {
+        if (testFlags(flags))
+            reportSelf(flags, msg);
+    }
+
+protected:
+    void reportSelf(Flags flags, const char* fmt, va_list& args) const
+    {
+        StringBuffer msg;
+        msg.valist_appendf(fmt, args);
+        reportSelf(flags, msg);
+    }
+
+    virtual void reportSelf(Flags flags, const StringBuffer& msg) const
+    {
+        Flags masked = getFlags(flags);
+        const char* componentLabel = getComponentLabel(flags);
+        const char* levelLabel = getLevelLabel(flags);
+
+        if (componentLabel != nullptr && levelLabel != nullptr)
+            reportSelf(flags, componentLabel, levelLabel, msg);
+    }
+
+    const char* getComponentLabel(Flags flags) const
+    {
+        switch (getFlags(ReportComponentMask))
+        {
+        case ReportDefinition: return "EsdlDefinition";
+        case ReportService: return "EsdlDefService";
+        case ReportMethod: return "EsdlDefMethod";
+        default: return nullptr;
+        }
+    }
+
+    const char* getLevelLabel(Flags flags) const
+    {
+        switch (flags & getFlags(ReportCategoryMask))
+        {
+        case ReportDisaster : return "Disaster";
+        case ReportAError : return "Audit Error";
+        case ReportIError: return "Internal Error";
+        case ReportOError: return "Operator Error";
+        case ReportUError: return "User Error";
+        case ReportIWarning: return "Internal Warning";
+        case ReportOWarning: return "Operator Warning";
+        case ReportUWarning: return "User Warning";
+        case ReportDProgress: return "Debug Progress";
+        case ReportOProgress: return "Operator Progress";
+        case ReportUProgress: return "User Progress";
+        case ReportDInfo: return "Debug Info";
+        case ReportOInfo: return "Operator Info";
+        case ReportUInfo: return "User Info";
+        case ReportStats: return "Stats";
+        default: return nullptr;
+        }
+    }
+
+    virtual void reportSelf(Flags flags, const char* component, const char* level, const char* msg) const = 0;
+
+private:
+    Flags m_flags = 0;
+};
 
 #endif //ESDLDEF_HPP

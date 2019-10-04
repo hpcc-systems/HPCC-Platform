@@ -294,7 +294,7 @@ public:
 
     virtual void loadServiceDef()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath, optTraceFlags());
     }
 
 public:
@@ -984,7 +984,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath, optTraceFlags());
 
         Owned<IEsdlDefObjectIterator> responseEsdl = cmdHelper.esdlDef->getDependencies(optService, optMethod, 0, nullptr, DEPFLAG_INCLUDE_RESPONSE | DEPFLAG_INCLUDE_METHOD | DEPFLAG_ECL_ONLY);
         Owned<IEsdlDefObjectIterator> requestEsdl = cmdHelper.esdlDef->getDependencies(optService, optMethod, 0, nullptr, DEPFLAG_INCLUDE_REQUEST | DEPFLAG_ECL_ONLY);

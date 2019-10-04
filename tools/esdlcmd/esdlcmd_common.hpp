@@ -27,6 +27,9 @@
 #include "ws_esdlconfig_esp.ipp"
 #include "esdl2xml.hpp"
 
+#include <algorithm>
+#include <list>
+
 #define COMPONENTS_DIR_NAME "componentfiles"
 #define HIGHER_DIR_RELATIVE ".."
 
@@ -48,6 +51,28 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 
 #define ESDL_OPTION_VERBOSE              "--verbose"
 #define ESDL_OPT_VERBOSE                 "-v"
+
+#define ESDL_OPTION_TRACE_CATEGORY      "--trace-category"
+#define ESDL_OPT_TRACE_CATEGORY         "-tcat"
+#define ESDL_TRACE_CATEGORY_IERROR      "ie"
+#define ESDL_TRACE_CATEGORY_OERROR      "oe"
+#define ESDL_TRACE_CATEGORY_UERROR      "ue"
+#define ESDL_TRACE_CATEGORY_IWARNING    "iw"
+#define ESDL_TRACE_CATEGORY_OWARNING    "ow"
+#define ESDL_TRACE_CATEGORY_UWARNING    "uw"
+#define ESDL_TRACE_CATEGORY_DPROGRESS   "dp"
+#define ESDL_TRACE_CATEGORY_OPROGRESS   "op"
+#define ESDL_TRACE_CATEGORY_UPROGRESS   "up"
+#define ESDL_TRACE_CATEGORY_DINFO       "di"
+#define ESDL_TRACE_CATEGORY_OINFO       "oi"
+#define ESDL_TRACE_CATEGORY_UINFO       "ui"
+#define ESDL_TRACE_CATEGORY_DEVELOPER   "dev"
+#define ESDL_TRACE_CATEGORY_OPERATOR    "admin"
+#define ESDL_TRACE_CATEGORY_USER        "user"
+#define ESDL_TRACE_CATEGORY_ERROR       "err"
+#define ESDL_TRACE_CATEGORY_WARNING     "warn"
+#define ESDL_TRACE_CATEGORY_PROGRESS    "prog"
+#define ESDL_TRACE_CATEGORY_INFO        "info"
 
 #define ESDL_CONVERT_SOURCE             "--source"
 #define ESDL_CONVERT_OUTDIR             "--outdir"
@@ -78,7 +103,6 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_NO_ARRAYOF              "--no-arrayof"
 #define ESDLOPT_OUTPUT_CATEGORIES       "--output-categories"
 #define ESDLOPT_USE_UTF8_STRINGS        "--utf8"
-
 #define ESDLOPT_NO_EXPORT               "--no-export"
 #define ESDLOPT_HIDE_GETDATAFROM        "--hide-get-data-from"
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
@@ -114,6 +138,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_INCLUDE_PATH_ENV        "ESDL_INCLUDE_PATH"
 #define ESDLOPT_INCLUDE_PATH_INI        "esdlIncludePath"
 #define ESDLOPT_INCLUDE_PATH_USAGE      "   -I, --include-path <include path>    Locations to look for included esdl files\n"
+
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
 enum esdlCmdOptionMatchIndicator
@@ -123,9 +148,22 @@ enum esdlCmdOptionMatchIndicator
     EsdlCmdOptionCompletion=2
 };
 
+class EsdlCmdReporter : public EsdlDefReporter
+{
+protected:
+    void reportSelf(Flags flag, const char* component, const char* level, const char* msg) const override
+    {
+        fprintf(stdout, "%s [%s]: %s\n", level, component, msg);
+    }
+};
+
 class EsdlCmdCommon : public CInterface, implements IEsdlCommand
 {
 public:
+    using TraceFlags = IEsdlDefReporter::Flags;
+    static const TraceFlags defaultSuccinctTraceFlags = IEsdlDefReporter::ReportErrorClass | IEsdlDefReporter::ReportWarningClass;
+    static const TraceFlags defaultVerboseTraceFlags = defaultSuccinctTraceFlags | IEsdlDefReporter::ReportProgressClass | IEsdlDefReporter::ReportInfoClass;
+
     IMPLEMENT_IINTERFACE;
     EsdlCmdCommon() : optVerbose(false)
     {}
@@ -137,6 +175,16 @@ public:
         fprintf(stdout,
             "   --help                               Display usage information for the given command\n"
             "   -v,--verbose                         Output additional tracing information\n"
+            "   -tcat,--trace-category <flags>       Control which debug messages are output; a case-insensitive comma-delimited combination of:\n"
+            "                                            " ESDL_TRACE_CATEGORY_DEVELOPER ": all output for the developer audience\n"
+            "                                            " ESDL_TRACE_CATEGORY_OPERATOR ": all output for the operator audience\n"
+            "                                            " ESDL_TRACE_CATEGORY_USER ": all output for the user audience\n"
+            "                                            " ESDL_TRACE_CATEGORY_ERROR ": all error output\n"
+            "                                            " ESDL_TRACE_CATEGORY_WARNING ": all warning output\n"
+            "                                            " ESDL_TRACE_CATEGORY_PROGRESS ": all progress output\n"
+            "                                            " ESDL_TRACE_CATEGORY_INFO ": all info output\n"
+            "                                        Errors and warnings are enabled by default if not verbose, and all are enabled when verbose."
+            "                                        Use an empty <flags> value to disable all."
         );
     }
     virtual void outputWsStatus(int code, const char * message)
@@ -144,11 +192,20 @@ public:
         fprintf(code == 0 ? stdout : stderr, "\n %s.\n", message);
     }
 public:
+    inline TraceFlags optTraceFlags() { return (m_optTraceFlagsGiven ? m_actualTraceFlags : (optVerbose ? m_verboseTraceFlags : m_succinctTraceFlags)) | IEsdlDefReporter::ReportMethod; }
     bool optVerbose;
+protected:
+    void parseTraceFlags(const char* traceCategories);
+    TraceFlags m_succinctTraceFlags = defaultSuccinctTraceFlags;
+    TraceFlags m_verboseTraceFlags = defaultVerboseTraceFlags;
+private:
+    TraceFlags m_actualTraceFlags = 0;
+    bool m_optTraceFlagsGiven = false;
 };
 
 class EsdlCmdHelper : public CInterface
 {
+    static IEsdlDefReporter* makeCmdReporter() { return new EsdlCmdReporter(); }
 public:
     Owned<IEsdlDefinition> esdlDef;
     Owned<IEsdlDefinitionHelper> defHelper;
@@ -158,7 +215,7 @@ public:
 public:
     EsdlCmdHelper()
     {
-        esdlDef.set(createEsdlDefinition());
+        esdlDef.set(createEsdlDefinition(nullptr, makeCmdReporter));
         defHelper.set(createEsdlDefinitionHelper());
     }
 
@@ -169,10 +226,12 @@ public:
         return new EsdlCmdHelper();
     }
 
-    void loadDefinition(const char * sourceFileName, const char * serviceName, double version, const char* includePath)
+    void loadDefinition(const char * sourceFileName, const char * serviceName, double version, const char* includePath, IEsdlDefReporter::Flags traceFlags)
     {
         if (!esdlDef.get())
-            esdlDef.set(createEsdlDefinition());
+            esdlDef.set(createEsdlDefinition(nullptr, makeCmdReporter));
+        IEsdlDefReporter* reporter = esdlDef->queryReporter();
+        reporter->setFlags(traceFlags, true);
 
         if(!esdlDef->hasFileLoaded(sourceFileName))
         {
@@ -192,9 +251,9 @@ public:
         }
     }
 
-    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=NULL, unsigned flags=0, const char* includePath=NULL)
+    void getServiceESXDL(const char * sourceFileName, const char * serviceName, StringBuffer & xmlOut, double version, IProperties *opts=nullptr, unsigned flags=0, const char* includePath=nullptr, IEsdlDefReporter::Flags traceFlags = EsdlCmdCommon::defaultSuccinctTraceFlags)
     {
-        loadDefinition(sourceFileName, serviceName, version, includePath);
+        loadDefinition(sourceFileName, serviceName, version, includePath, traceFlags);
 
         if (esdlDef)
         {

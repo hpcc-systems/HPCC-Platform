@@ -216,7 +216,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion,"");
+        cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion,"", optTraceFlags());
         createOptionals();
 
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
@@ -503,7 +503,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion, "");
+        cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion, "", optTraceFlags());
         createOptionals();
 
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
@@ -696,7 +696,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath, optTraceFlags());
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, 0, NULL, optFlags );
 
         if(!optPreprocessOutputDir.isEmpty())
@@ -928,7 +928,7 @@ public:
 
     virtual int processCMD()
     {
-        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath);
+        cmdHelper.loadDefinition(optSource, optService, 0, optIncludePath, optTraceFlags());
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService, optMethod, ESDLOPTLIST_DELIMITER, 0, NULL, optFlags );
 
         if(!optPreprocessOutputDir.isEmpty())

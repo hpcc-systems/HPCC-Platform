@@ -21,7 +21,10 @@
 
 #include "hidl_utils.hpp"
 #include "hidlcomp.h"
+#include "AccessMapGenerator.hpp"
 
+#include <algorithm>
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -5414,113 +5417,94 @@ void EspServInfo::write_factory_impl()
     outf(" IClient%s * create%sClient() {  return new CClient%s(); }\n", name_, name_, name_);
 }
 
-const char * translateAuthLevel(const char * level)
+
+using HidlAccessMapGenerator = TAccessMapGenerator<const char*>;
+
+using HidlAccessMapScopeMapper = HidlAccessMapGenerator::ScopeMapper;
+
+struct HidlAccessMapLevelMapper : public HidlAccessMapGenerator::LevelMapper
 {
-    /*
-     *  This method might belong in seclib where the enumeration is defined (selib.h)
-     *  enum SecAccessFlags
-     *  {
-     *     SecAccess_Unknown = -255,
-     *     SecAccess_None = 0,
-     *     SecAccess_Access = 1,
-     *     SecAccess_Read = 3,
-     *     SecAccess_Write = 7,
-     *     SecAccess_Full = 255
-     *   };
-    */
+    const char* levelUnavailable() const override { return "SecAccess_Unavailable"; }
+    const char* levelNone() const override { return "SecAccess_None"; }
+    const char* levelDeferred() const override { return "SecAccess_None"; }
+    const char* levelAccess() const override { return "SecAccess_Access"; }
+    const char* levelRead() const override { return "SecAccess_Read"; }
+    const char* levelWrite() const override { return "SecAccess_Write"; }
+    const char* levelFull() const override { return "SecAccess_Full"; }
+    const char* levelUnknown() const override { return "SecAccess_Unknown"; }
 
-    if (!level || !*level)
+    bool isEqual(const char* lhs, const char* rhs) const override
     {
-        outs(2, "\n//FEATURE LEVEL NOT SET, DEFAULTING TO 'READ'\n");
-        return "SecAccess_Read";
+        return (lhs != nullptr && rhs != nullptr && strieq(lhs, rhs));
     }
 
-    if (strieq(level, "NONE"))
+    const char* toString(const char* level) const override
     {
-        outs(2, "\n//WARNING: FEATURE LEVEL AUTHORIZATION HAS BEEN TURNED OFF!!\n");
-        return "SecAccess_None";
+        return level;
     }
+};
 
-    if (strieq(level, "DEFERRED"))
-    {
-        outs(2, "\n//WARNING: AUTOMATIC FEATURE LEVEL AUTHORIZATION LOGIC HAS BEEN DEFERED TO IN METHOD(DEVELOPER'S RESPONSIBILITY)!!\n");
-        return "SecAccess_None";
-    }
-
-    if (strieq(level, "FULL"))
-        return "SecAccess_Full";
-    else if (strieq(level, "WRITE"))
-        return "SecAccess_Write";
-    else if (strieq(level, "READ"))
-        return "SecAccess_Read";
-    else if (strieq(level, "ACCESS"))
-        return "SecAccess_Access";
-
-    //we might need to throw here...
-    outf(2, "\n//FEATURE LEVEL VALUE '%s' INVALID: DEFAULTING REQUIRED LEVEL to 'FULL'!\n//Valid values are NONE, DEFERRED, ACCESS, READ, WRITE, FULL\n", level);
-    return "SecAccess_Full";
-}
-
-void writeAccessMap(const char * rawServiceAccessList, const char * methodname, int tabs)
+struct HidlAccessMapReporter : public HidlAccessMapGenerator::Reporter
 {
     StrBuffer indent;
-    for (int tabindex = 0; tabindex < tabs; tabindex++)
-        indent.append('\t');
 
-    outf("%sMapStringTo<SecAccessFlags> accessmap;\n", indent.str());
-    if (rawServiceAccessList && *rawServiceAccessList)
+    HidlAccessMapReporter(int tabs)
     {
-        int listlen = strlen(rawServiceAccessList);
-        StrBuffer currAccessName;
-        StrBuffer currAccessLevel;
-        bool nameComplete = false;
-
-        for (int i = 0; i <= listlen; i++ )
-        {
-            if (i == listlen || rawServiceAccessList[i] == ',')
-            {
-                if (nameComplete == false)
-                {
-                    if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
-                    {
-                        outf("\n//WARNING: Developer has suppressed automatic feature level authorization, ensure this behavior is correct!\n");
-                        currAccessName.clear();
-                        continue;
-                    }
-                    else
-                        outf("\nError: Access level must be declared in service definition: %s. Example: ESPservice [%s(\"myAccessFeature:FULL\"]\n", currAccessName.str(), FEATEACCESSATTRIBUTE);
-                }
-
-                outf("%saccessmap.setValue(\"%s\", %s);\n", indent.str(), currAccessName.str(), translateAuthLevel(currAccessLevel.str()));
-                currAccessName.clear();
-                currAccessLevel.clear();
-                nameComplete = false;
-                continue;
-            }
-            else if (rawServiceAccessList[i] == ':')
-            {
-                if (currAccessName.length()==0)
-                {
-                    currAccessName.setf("%sAccess", methodname);
-                    outf("\n//processaccesslist: defaulted current name to : %s\n", currAccessName.str());
-                }
-
-                nameComplete = true;
-                continue;
-            }
-            else if (rawServiceAccessList[i] == '"')
-                continue;
-
-            if (!nameComplete)
-                currAccessName.append(rawServiceAccessList[i]);
-            else
-                currAccessLevel.append(rawServiceAccessList[i]);
-        }
+        for (int tabindex = 0; tabindex < tabs; tabindex++)
+            indent.append('\t');
     }
-    else
+
+    bool reportInfo() const override { return false; }
+    bool reportDebug() const override { return false; }
+
+    void preEntry(size_t termCount) const override
     {
-        outf("\n%saccessmap.setValue(\"%sAccess\", %s);\n", indent.str(), methodname, "SecAccess_Read"); //This seems to be the default per seclib
+        outf("%sMapStringTo<SecAccessFlags> accessmap;\n", indent.str());
     }
+    void entry(const char* name, const char* level) const override
+    {
+        outf("%saccessmap.setValue(\"%s\", %s);\n", indent.str(), name, level);
+    }
+
+protected:
+    void reportError(const char* fmt, va_list& args) const override
+    {
+        reportSomething("\nERROR: ", fmt, args);
+    }
+    void reportWarning(const char* fmt, va_list& args) const override
+    {
+        reportSomething("//WARNING: ", fmt, args);
+    }
+    void reportInfo(const char* fmt, va_list& args) const override
+    {
+        reportSomething("//INFO: ", fmt, args);
+    }
+    void reportDebug(const char* fmt, va_list& args) const override
+    {
+        reportSomething("//DEBUG: ", fmt, args);
+    }
+
+    inline void reportSomething(const char* prefix, const char* fmt, va_list& args) const
+    {
+        outs(prefix);
+        voutf(fmt, args);
+        outs("\n");
+    }
+};
+
+void writeAccessMap(int indentLevel, EspServInfo& svci, const char* serviceName, const char* serviceFragment, EspMethodInfo& mthi)
+{
+    HidlAccessMapScopeMapper scopeMapper({"EsdlService", "EsdlMethod"});
+    HidlAccessMapLevelMapper levelMapper;
+    HidlAccessMapReporter    reporter(indentLevel);
+    HidlAccessMapGenerator   generator(scopeMapper, levelMapper, reporter);
+
+    generator.setVariable("service", serviceName);
+    generator.setVariable("method", mthi.getName());
+    generator.insertScope("EsdlService", serviceFragment);
+    generator.insertScope("EsdlMethod", mthi.getMetaString(FEATEACCESSATTRIBUTE, NULL));
+    generator.setDefaultSecurity("${service}Access:FULL");
+    generator.generateMap();
 }
 
 void EspServInfo::write_esp_binding_ipp()
@@ -5648,8 +5632,6 @@ void EspServInfo::write_esp_binding()
 
     StrBuffer servicefeatureurl;
     getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
-    if (servicefeatureurl.length() == 0)
-        outf("ESDL Error: %s service definition must declare default feature access. Example 'ESPservice [%s(\"MyServiceAccess:FULL\")]'", name_, FEATEACCESSATTRIBUTE);
 
     outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n{\n\tinit_strings();\n\tsetWsdlVersion(%s);", name_, name_, wsdlVer.str());
     outf("\n}\n");
@@ -5747,18 +5729,7 @@ void EspServInfo::write_esp_binding()
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0);
 
-        const char * methodAccess = mthi->getMetaString(FEATEACCESSATTRIBUTE, NULL);
-        StrBuffer servicefeatureurl;
-        getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
-
-        if (methodAccess && *methodAccess)
-        {
-            if (servicefeatureurl.length() != 0)
-                servicefeatureurl.append(",");
-            servicefeatureurl.append(methodAccess);
-        }
-
-        writeAccessMap(servicefeatureurl.str(),name_, 2);
+        writeAccessMap(2, *this, name_, servicefeatureurl, *mthi);
 
         StrBuffer clearCacheGroupIDs;
         if (mthi->hasMetaTag("clear_cache_group"))
@@ -6219,19 +6190,9 @@ void EspServInfo::write_esp_binding()
             outf("\t\t\tcheckRequest(context);\n");
             outf("\t\t\tC%s* resp = new C%s(\"%s\");\n", mthi->getResp(), mthi->getResp(), name_);
             outf("\t\t\tesp_response.setown(resp);\n");
-            
-            const char * methodAccess = mthi->getMetaString(FEATEACCESSATTRIBUTE, NULL);
-            StrBuffer servicefeatureurl;
-            getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
 
-            if (methodAccess && *methodAccess)
-            {
-                if (servicefeatureurl.length() != 0)
-                    servicefeatureurl.append(",");
-                servicefeatureurl.append(methodAccess);
-            }
+            writeAccessMap(3, *this, name_, servicefeatureurl, *mthi);
 
-            writeAccessMap(servicefeatureurl.str(),name_, 3);
             if (bHandleExceptions)
             {
                 outf("\t\t\tsource.setf(\"%s::%%s()\", method);\n", name_);
