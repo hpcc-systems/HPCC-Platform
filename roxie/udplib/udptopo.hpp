@@ -73,13 +73,14 @@ extern UDPLIB_API SocketEndpoint mySlaveEP;
 class UDPLIB_API ChannelInfo
 {
 public:
-    ChannelInfo(unsigned _subChannel, unsigned _numSubChannels);
+    ChannelInfo(unsigned _subChannel, unsigned _numSubChannels, unsigned _replicationLevel);
     ChannelInfo(ChannelInfo && ) = default;
 
     unsigned getIbytiDelay(unsigned primarySubChannel) const;
     void noteChannelsSick(unsigned primarySubChannel) const;
     void noteChannelHealthy(unsigned subChannel) const;
     inline unsigned subChannel() const { return mySubChannel; }
+    inline unsigned replicationLevel() const { return myReplicationLevel; }
 
     /*
      * Determine whether to abort on receipt of an IBYTI for a packet which I have already started processing
@@ -90,6 +91,7 @@ public:
 
 private:
     unsigned mySubChannel = 0;     // Which subChannel does this node implement for this channel - zero-based
+    unsigned myReplicationLevel = 0; // Which data location is this channel pulling its data from - zero-based
     unsigned numSubChannels = 0;   // How many subchannels are there for this channel, across all slaves. Equivalently, the number of slaves that implement this channel
     mutable std::vector<unsigned> currentDelay;  // NOTE - technically should be atomic, but in the event of a race we don't really care who wins
 };
@@ -110,6 +112,7 @@ struct RoxieEndpointInfo
     enum Role { RoxieServer, RoxieSlave } role;
     unsigned channel;
     SocketEndpoint ep;
+    unsigned replicationLevel;
 };
 
 extern UDPLIB_API void startTopoThread(const SocketEndpointArray &topoServers, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel);

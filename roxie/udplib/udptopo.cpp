@@ -62,8 +62,8 @@ void ChannelInfo::noteChannelHealthy(unsigned subChannel) const
     currentDelay[subChannel] = initIbytiDelay;
 }
 
-ChannelInfo::ChannelInfo(unsigned _mySubChannel, unsigned _numSubChannels)
-: mySubChannel(_mySubChannel), numSubChannels(_numSubChannels)
+ChannelInfo::ChannelInfo(unsigned _mySubChannel, unsigned _numSubChannels, unsigned _replicationLevel)
+: mySubChannel(_mySubChannel), numSubChannels(_numSubChannels), myReplicationLevel(_replicationLevel)
 {
     for (unsigned i = 0; i < numSubChannels; i++)
         currentDelay.emplace_back(initIbytiDelay);
@@ -103,6 +103,7 @@ private:
     std::map<unsigned, ChannelInfo> channelInfo;
     std::map<unsigned, unsigned> mySubChannels;
     std::vector<unsigned> channels;
+    std::vector<unsigned> replicationLevels;
 };
 
 SocketEndpoint mySlaveEP;
@@ -119,16 +120,24 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
     {
         StringArray fields;
         fields.appendList(line.c_str(), "|", true);
-        if (fields.length()==3)
+        if (fields.length()==4)
         {
             const char *role = fields.item(0);
             const char *channelStr = fields.item(1);
             const char *epStr = fields.item(2);
+            const char *replStr = fields.item(3);
             char *tail = nullptr;
             unsigned channel = strtoul(channelStr, &tail, 10);
             if (*tail)
             {
                 DBGLOG("Unexpected characters parsing channel in topology entry %s", line.c_str());
+                continue;
+            }
+            tail = nullptr;
+            unsigned repl = strtoul(replStr, &tail, 10);
+            if (*tail)
+            {
+                DBGLOG("Unexpected characters parsing replication level in topology entry %s", line.c_str());
                 continue;
             }
             SocketEndpoint ep;
@@ -144,6 +153,7 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
                 {
                     mySubChannels[channel] = slaves[channel].ordinality()-1;
                     channels.push_back(channel);
+                    replicationLevels.push_back(repl);
                 }
                 slaves[0].append(ep);
             }
@@ -151,9 +161,12 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
                 servers[ep.port].append(ep);
         }
     }
-    for (auto& c : mySubChannels)
+    for (unsigned i = 0; i < channels.size(); i++)
     {
-        channelInfo.emplace(std::make_pair(c.first, ChannelInfo(c.second, slaves[c.first].ordinality())));
+        unsigned channel = channels[i];
+        unsigned repl = replicationLevels[i];
+        unsigned subChannel = mySubChannels[channel];
+        channelInfo.emplace(std::make_pair(channel, ChannelInfo(subChannel, slaves[channel].ordinality(), repl)));
     }
 }
 
@@ -303,6 +316,7 @@ void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
         }
         topoBuf.append(role.channel).append('|');
         role.ep.getUrlStr(topoBuf);
+        topoBuf.append('|').append(role.replicationLevel);
         topoBuf.append('\n');
     }
     Owned<const ITopologyServer> newServer = new CTopologyServer(topoBuf);   // We set the initial topology to just the local information we know about
