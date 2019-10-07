@@ -690,6 +690,9 @@ extern HQL_API IHqlExpression * queryOperator(node_operator search, const HqlExp
 
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search)
 {
+    if (!expr)
+        return nullptr;
+
     for (;;)
     {
         annotate_kind kind = expr->getAnnotationKind();
@@ -7777,6 +7780,11 @@ IHqlExpression * createParseMetaAnnotation(IHqlExpression * _ownedBody, HqlExprA
 
 //==============================================================================================================
 
+static bool suppressLocationAnnotations = false;
+void enableLocationAnnotations(bool value)
+{
+    suppressLocationAnnotations = !value;
+}
 
 CHqlLocationAnnotation::CHqlLocationAnnotation(IHqlExpression *_body, ISourcePath * _sourcePath, int _lineno, int _column)
 : CHqlAnnotation(_body), sourcePath(_sourcePath)
@@ -7829,6 +7837,8 @@ IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePat
     assertex(lineno != 0xcdcdcdcd && column != 0xcdcdcdcd);
     assertex(lineno != 0xcccccccc && column != 0xcccccccc);
 #endif
+    if (suppressLocationAnnotations)
+        return ownedBody;
     return CHqlLocationAnnotation::createLocationAnnotation(ownedBody, sourcePath, lineno, column);
 }
 

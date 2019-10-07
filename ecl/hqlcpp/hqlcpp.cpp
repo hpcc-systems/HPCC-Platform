@@ -2164,9 +2164,12 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
     return wu()->getDebugValueBool(name, defValue);
 }
 
-void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * location, unsigned id, const char * msg)
+void HqlCppTranslator::doReportWarning(WarnErrorCategory category, ErrorSeverity explicitSeverity, IHqlExpression * expr, unsigned id, const char * msg)
 {
     Owned<IError> warnError;
+    IHqlExpression * location = queryAnnotation(expr, annotate_location);
+    if (!location)
+        location = queryAnnotation(expr, annotate_symbol);
     if (!location)
         location = queryActiveActivityLocation();
     unsigned activity = 0;
