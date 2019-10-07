@@ -22,6 +22,8 @@
 # 2. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
 # 3. Add getComponent() to ICertificateInfo interface.
 # 4. Add cfssl source as submodule. (Build and start up on init ?)
+# 5. Genenrate from common privatekey for no-CA case.
+# 6. Use built-in verification better, better proof-of-concept use case.
 
 progname=setupPKI
 
@@ -83,14 +85,24 @@ csrCfgTemplate='{
  }
  ],
  "Hosts": ["localhost", "127.0.0.1"],'
+domainname=""
 if [ ! -e ${homePath}/certificate/cacert.pem ]; then
     if [ "${CALOCATION}" != "" ]; then
         cfssl info -remote ${CALOCATION} | cfssljson -bare ${homePath}/certificate/cacert
-        printf "Retrieved CA certificate from CA Server."
+        printf "Retrieved CA certificate from CA Server.\n"
+    else
+        read -p "Domain Name [local]: " domainname
+        if [ "$domainname" = "" ]; then
+            domainname=local
+        fi
+        genkeyCfg=${csrCfgTemplate}"
+ \"CN\": \"CA."$domainname"\"
+}"
+        echo $genkeyCfg | cfssl genkey -initca - | cfssljson -bare ${homePath}/certificate/cacert
+        printf "Generated self-signed CA certificate and privatekey.\n"
     fi
 fi
 
-domainname=""
 for i in "" ${compArray[@]} ; do
     compName=""
     componentType=""
@@ -138,10 +150,14 @@ for i in "" ${compArray[@]} ; do
     fi
     if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
         if [ "${CALOCATION}" = "" ]; then
-            openssl req -new -key ${homePath}/certificate/$compName/key.pem -keyform PEM -x509 \
-            -days 365 -out ${homePath}/certificate/$compName/certificate.pem \
-            -batch 1>/dev/null 2>&1
-            printf "Self signed Certificate installed for user %-12s ..." "$user"
+            cfssl sign -ca=${homePath}/certificate/cacert.pem -ca-key=${homePath}/certificate/cacert-key.pem ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
+            if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+                printf "Failed to generate certificate for component %s\n" "$compName"
+                exit 1
+            else
+                printf "Local CA signed Certificate installed for user %-14s component %s ..." "$user" "$compName"
+                log_success_msg
+            fi
         else
             #openssl req -new -key ${homePath}/certificate/$compName/key.pem -out ${homePath}/certificate/$compName/csr.pem
             cfssl sign -remote ${CALOCATION} ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
