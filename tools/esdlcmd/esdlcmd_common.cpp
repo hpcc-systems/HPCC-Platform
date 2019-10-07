@@ -91,6 +91,13 @@ esdlCmdOptionMatchIndicator EsdlCmdCommon::matchCommandLineOption(ArgvIterator &
         return EsdlCmdOptionMatch;
     }
 
+    StringAttr traceCategories;
+    if (iter.matchOption(traceCategories, ESDL_OPTION_TRACE_CATEGORY) || iter.matchOption(traceCategories, ESDL_OPT_TRACE_CATEGORY))
+    {
+        parseTraceFlags(traceCategories);
+        return EsdlCmdOptionMatch;
+    }
+
     StringAttr tempArg;
     if (iter.matchOption(tempArg, "-brk"))
     {
@@ -109,6 +116,51 @@ esdlCmdOptionMatchIndicator EsdlCmdCommon::matchCommandLineOption(ArgvIterator &
         usage();
     }
     return EsdlCmdOptionNoMatch;
+}
+
+void EsdlCmdCommon::parseTraceFlags(const char* traceCategories)
+{
+    m_optTraceFlagsGiven = true;
+    if (!isEmptyString(traceCategories))
+    {
+        using Category = std::pair<const char*, IEsdlDefReporter::Flags>;
+        using CategoryMap = std::list<Category>;
+        static const CategoryMap definedCategories({
+            { ESDL_TRACE_CATEGORY_DEVELOPER, IEsdlDefReporter::ReportDeveloperAudience },
+            { ESDL_TRACE_CATEGORY_OPERATOR, IEsdlDefReporter::ReportOperatorAudience },
+            { ESDL_TRACE_CATEGORY_USER, IEsdlDefReporter::ReportUserAudience },
+            { ESDL_TRACE_CATEGORY_ERROR, IEsdlDefReporter::ReportErrorClass },
+            { ESDL_TRACE_CATEGORY_WARNING, IEsdlDefReporter::ReportWarningClass },
+            { ESDL_TRACE_CATEGORY_PROGRESS, IEsdlDefReporter::ReportProgressClass },
+            { ESDL_TRACE_CATEGORY_INFO, IEsdlDefReporter::ReportInfoClass },
+            { ESDL_TRACE_CATEGORY_IERROR, IEsdlDefReporter::ReportIError },
+            { ESDL_TRACE_CATEGORY_OERROR, IEsdlDefReporter::ReportOError },
+            { ESDL_TRACE_CATEGORY_UERROR, IEsdlDefReporter::ReportUError },
+            { ESDL_TRACE_CATEGORY_IWARNING, IEsdlDefReporter::ReportIWarning },
+            { ESDL_TRACE_CATEGORY_OWARNING, IEsdlDefReporter::ReportOWarning },
+            { ESDL_TRACE_CATEGORY_UWARNING, IEsdlDefReporter::ReportUWarning },
+            { ESDL_TRACE_CATEGORY_DPROGRESS, IEsdlDefReporter::ReportDProgress },
+            { ESDL_TRACE_CATEGORY_OPROGRESS, IEsdlDefReporter::ReportOProgress },
+            { ESDL_TRACE_CATEGORY_UPROGRESS, IEsdlDefReporter::ReportUProgress },
+            { ESDL_TRACE_CATEGORY_DINFO, IEsdlDefReporter::ReportDInfo },
+            { ESDL_TRACE_CATEGORY_OINFO, IEsdlDefReporter::ReportOInfo },
+            { ESDL_TRACE_CATEGORY_UINFO, IEsdlDefReporter::ReportUInfo },
+        });
+        StringArray categories;
+        categories.appendList(traceCategories, ",");
+        for (aindex_t idx = 0; idx < categories.ordinality(); idx++) // not using ForEachItemIn because ordinality may change
+        {
+            const char* category = categories.item(idx);
+            CategoryMap::const_iterator it = std::find_if(definedCategories.begin(), definedCategories.end(), [category](const Category& entry) {
+                return strieq(category, entry.first);
+            });
+
+            if (it != definedCategories.end())
+            {
+                m_actualTraceFlags |= it->second;
+            }
+        }
+    }
 }
 
 bool EsdlCmdCommon::finalizeOptions(IProperties *globals)

@@ -29,6 +29,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/rtl/eclrtl
     ${HPCC_SOURCE_DIR}/rtl/include #IXMLWriter
     ${HPCC_SOURCE_DIR}/common/thorhelper #JSONWRITER
+    ${HPCC_SOURCE_DIR}/tools/hidl #TAccessMapGenerator
 )
 
 ADD_DEFINITIONS ( -D_USRDLL -DESDLLIB_EXPORTS )

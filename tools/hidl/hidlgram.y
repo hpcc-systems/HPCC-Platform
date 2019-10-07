@@ -196,12 +196,19 @@ EspServiceStart
         CurService->tags = getClearCurMetaTags();
 
         StrBuffer minPingVer;
+        StrBuffer pingAuthFeature("none");
         for (MetaTagInfo* t = CurService->tags; t!=NULL; t = t->next)
         {
             if (streq("ping_min_ver",t->getName()))
             {
-                minPingVer.set(t->getString());
-                break;
+                if (minPingVer.length()==0)
+                {
+                    minPingVer.set(t->getString());
+                }
+            }
+            else if (streq("ping_auth_feature", t->getName()))
+            {
+                pingAuthFeature.set(t->getString());
             }
         }
 
@@ -233,12 +240,16 @@ EspServiceStart
 
         EspMethodInfo *method=new EspMethodInfo("Ping", reqname.str(), respname.str());
 
+        CurMetaTags = NULL;
         if(minPingVer.length()!=0)
         {
-            CurMetaTags = NULL;
             AddMetaTag(new MetaTagInfo("min_ver", minPingVer.str()));
-            method->tags = getClearCurMetaTags();
-         }
+        }
+        if (pingAuthFeature.length()!=0)
+        {
+            AddMetaTag(new MetaTagInfo("auth_feature", pingAuthFeature.str()));
+        }
+        method->tags = getClearCurMetaTags();
 
         method->next=CurService->methods;
         CurService->methods=method;

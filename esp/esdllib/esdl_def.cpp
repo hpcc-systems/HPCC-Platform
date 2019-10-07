@@ -20,6 +20,7 @@
 #include "jliball.hpp"
 #include "espcontext.hpp"
 #include "esdl_def.hpp"
+#include "EsdlAccessMapGenerator.hpp"
 #include <xpp/XmlPullParser.h>
 #include <memory>
 
@@ -961,69 +962,6 @@ void EsdlDefStruct::load(EsdlDefinition *esdl, XmlPullParser *xpp, StartTag &str
     }
 }
 
-static SecAccessFlags translateAuthLevel(const char* flag)
-{
-    if (!flag || !*flag)
-        return SecAccess_Full;
-    if (!stricmp(flag,"None") || !stricmp(flag,"Deferred"))
-        return SecAccess_None;
-    if (!stricmp(flag,"Access"))
-        return SecAccess_Access;
-    if (!stricmp(flag,"Read"))
-        return SecAccess_Read;
-    if (!stricmp(flag,"Write"))
-        return SecAccess_Write;
-    if (!stricmp(flag,"Full"))
-        return SecAccess_Full;
-
-    DBGLOG("Unknown access level: %s", flag);
-    throw( MakeStringException(0, "Unknown access level: %s", flag) );
-}
-
-static void parseAccessList(const char * rawServiceAccessList, MapStringTo<SecAccessFlags> & accessmap, const char * defaultaccessname)
-{
-    if (rawServiceAccessList && *rawServiceAccessList)
-    {
-        StringBuffer currAccessName;
-        StringBuffer currAccessLevel;
-
-        StringArray accessList;
-        accessList.appendList(rawServiceAccessList, ",");
-        ForEachItemIn(idx, accessList)
-        {
-            currAccessName.clear();
-            currAccessLevel.clear();
-            const char * accessEntry = accessList.item(idx);
-            int entrylen = strlen(accessEntry);
-            int currIndex = 0;
-
-            for (;currIndex <= entrylen && accessEntry[currIndex] != ':'; currIndex++ )
-            {
-                if (!isspace(accessEntry[currIndex]))
-                    currAccessName.append(accessEntry[currIndex]);
-            }
-
-            if (accessEntry[currIndex] == ':')
-            {
-                currIndex++;
-                if (currAccessName.isEmpty())
-                    currAccessName.setf("%sAccess",  defaultaccessname);
-            }
-
-            for (;currIndex <= entrylen; currIndex++ )
-            {
-                if (!isspace(accessEntry[currIndex]))
-                    currAccessLevel.append(accessEntry[currIndex]);
-            }
-
-            if (strieq(currAccessName, "NONE") || strieq(currAccessName, "DEFERRED"))
-                continue;
-
-            accessmap.setValue(currAccessName.str(), translateAuthLevel(currAccessLevel.str()));
-        }
-    }
-}
-
 class EsdlDefMethod : public EsdlDefObject, implements IEsdlDefMethod
 {
 public:
@@ -1033,35 +971,7 @@ public:
     MapStringTo<SecAccessFlags> m_accessmap;
     const MapStringTo<SecAccessFlags> & queryAccessMap(){return m_accessmap;}
 
-    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl, IEsdlDefService * parentservice = nullptr) : EsdlDefObject(tag, esdl)
-    {
-        const char *product = queryProp("productAssociation");
-        if (product && *product)
-        {
-            if (strstr(product, ":default"))
-            {
-                StringBuffer val;
-                const char * finger = product;
-                while(*finger && *finger !=':'){val.append(*finger++);}
-
-                props->setProp("product_", val.str());
-                props->setProp("productdefault_", true);
-            }
-            else
-                props->setProp("product_", product);
-        }
-
-        StringBuffer allfeatures;
-        if (parentservice)
-        {
-            allfeatures.set(parentservice->queryProp("auth_feature"));
-            if (!allfeatures.isEmpty())
-                allfeatures.append(',');
-        }
-
-        allfeatures.append(queryMetaData("auth_feature"));
-        parseAccessList(allfeatures.str(), m_accessmap, parentservice ? parentservice->queryName() :  queryProp("name"));
-    }
+    EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl, IEsdlDefService * parentservice = nullptr);
 
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeMethod;}
 
@@ -1369,13 +1279,17 @@ public:
 
     Owned<IPropertyTree> flConfig;
 
+    Owned<IEsdlDefReporter> reporter;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    EsdlDefinition()
+    EsdlDefinition(EsdlDefReporterFactory factory)
     {
         verdefs.setown(createProperties(true));
         optionals.setown(createProperties(true));
+        if (factory)
+            setReporter(factory());
     }
 
     ~EsdlDefinition()
@@ -1402,6 +1316,14 @@ public:
         }
     }
 
+    void setReporter(IEsdlDefReporter* _reporter) override
+    {
+        reporter.setown(_reporter);
+    }
+    IEsdlDefReporter* queryReporter() const override
+    {
+        return reporter.get();
+    }
     void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefName, double ver);
     void addDefinitionFromXML(const StringBuffer & xmlDef, const char * esdlDefId);
     void addDefinitionsFromFile(const char *filename);
@@ -2157,6 +2079,43 @@ EsdlDefObject::EsdlDefObject(StartTag &tag, EsdlDefinition *esdl)
     }
 }
 
+EsdlDefMethod::EsdlDefMethod(StartTag &tag, EsdlDefinition *esdl, IEsdlDefService * parentservice) : EsdlDefObject(tag, esdl)
+{
+    const char *product = queryProp("productAssociation");
+    if (product && *product)
+    {
+        if (strstr(product, ":default"))
+        {
+            StringBuffer val;
+            const char * finger = product;
+            while(*finger && *finger !=':'){val.append(*finger++);}
+
+            props->setProp("product_", val.str());
+            props->setProp("productdefault_", true);
+        }
+        else
+            props->setProp("product_", product);
+    }
+
+    EsdlAccessMapScopeMapper scopeMapper({"EsdlService", "EsdlMethod"});
+    EsdlAccessMapLevelMapper levelMapper;
+    EsdlAccessMapReporter    reporter(m_accessmap, LINK(esdl->queryReporter()));
+    EsdlAccessMapGenerator   generator(scopeMapper, levelMapper, reporter);
+
+    generator.setVariable("method", queryProp("name"));
+    generator.insertScope("EsdlMethod", queryMetaData("auth_feature"));
+    if (parentservice)
+    {
+        generator.setVariable("service", parentservice->queryName());
+        generator.insertScope("EsdlService", parentservice->queryProp("auth_feature"));
+        generator.setDefaultSecurity("${service}Access:FULL");
+    }
+    else
+    {
+        generator.setDefaultSecurity("${method}Access:FULL");
+    }
+    generator.generateMap();
+}
 
 static Owned<IEsdlDefinition> default_ns;
 
@@ -2166,14 +2125,14 @@ typedef MapStringTo<IEsdlDefinitionPtr> EsdlNamespaceMap;
 
 EsdlNamespaceMap esdl_namespaces;
 
-esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns)
+esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns, EsdlDefReporterFactory factory)
 {
     if (esdl_ns && *esdl_ns)
     {
         IEsdlDefinition **ptns = esdl_namespaces.getValue(esdl_ns);
         if (!ptns)
         {
-            IEsdlDefinition *tns = new EsdlDefinition();
+            IEsdlDefinition *tns = new EsdlDefinition(factory);
             esdl_namespaces.setValue(esdl_ns, tns);
             return LINK<IEsdlDefinition>(tns);
         }
@@ -2181,16 +2140,16 @@ esdl_decl IEsdlDefinition *createEsdlDefinition(const char *esdl_ns)
             return LINK<IEsdlDefinition>(*ptns);
     }
     else if (!default_ns)
-        default_ns.setown(new EsdlDefinition());
+        default_ns.setown(new EsdlDefinition(factory));
     return default_ns.getLink();
 }
 
-esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns)
+esdl_decl IEsdlDefinition *createNewEsdlDefinition(const char *esdl_ns, EsdlDefReporterFactory factory)
 {
     if (esdl_ns && *esdl_ns)
         return createEsdlDefinition(esdl_ns);
     else
-        return new EsdlDefinition();
+        return new EsdlDefinition(factory);
 }
 
 esdl_decl IEsdlDefinition *queryEsdlDefinition(const char *esdl_ns)

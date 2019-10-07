@@ -122,7 +122,7 @@ public:
         Owned<IClientPublishESDLDefinitionRequest> request = esdlConfigClient->createPublishESDLDefinitionRequest();
 
         StringBuffer esxml;
-        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0, NULL, (DEPFLAG_INCLUDE_TYPES & ~DEPFLAG_INCLUDE_METHOD), optIncludePath.str());
+        esdlHelper->getServiceESXDL(optSource.get(), optESDLService.get(), esxml, 0, NULL, (DEPFLAG_INCLUDE_TYPES & ~DEPFLAG_INCLUDE_METHOD), optIncludePath.str(), optTraceFlags());
         if (esxml.length()==0)
         {
             fprintf(stderr,"\nESDL Definition for service %s could not be loaded from: %s\n", optESDLService.get(), optSource.get());
@@ -1254,7 +1254,7 @@ public:
         Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientGetESDLBindingRequest> getrequest = esdlConfigClient->createGetESDLBindingRequest();
         if (optVerbose)
-            fprintf(stdout,"\nFetching current ESDL binging configuration for (%s)\n", optBindingId.get());
+            fprintf(stdout,"\nFetching current ESDL binding configuration for (%s)\n", optBindingId.get());
         getrequest->setEsdlBindingId(optBindingId.get());
 
         Owned<IClientGetESDLBindingResponse> getresp = esdlConfigClient->GetESDLBinding(getrequest);
