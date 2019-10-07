@@ -7370,6 +7370,10 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
             expandParameter(renamed, nextParameter);
         }
     }
+    else if (expr->isFunction())
+    {
+        throwError1(HQLERR_LibraryParamNoFunctions, str(expr->queryId()));
+    }
     else
         realParameters.append(*LINK(expr));
 }
