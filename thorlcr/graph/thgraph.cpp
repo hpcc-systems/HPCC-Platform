@@ -221,7 +221,6 @@ IThorResult *createResult(CActivityBase &activity, IThorRowInterfaces *rowIf, Th
 class CThorBoundLoopGraph : implements IThorBoundLoopGraph, public CInterface
 {
     CGraphBase *graph;
-    activity_id activityId;
     Linked<IOutputMetaData> resultMeta;
     Owned<IOutputMetaData> counterMeta, loopAgainMeta;
     Owned<IThorRowInterfaces> resultRowIf, countRowIf, loopAgainRowIf;
@@ -229,7 +228,7 @@ class CThorBoundLoopGraph : implements IThorBoundLoopGraph, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorBoundLoopGraph(CGraphBase *_graph, IOutputMetaData * _resultMeta, unsigned _activityId) : graph(_graph), resultMeta(_resultMeta), activityId(_activityId)
+    CThorBoundLoopGraph(CGraphBase *_graph, IOutputMetaData * _resultMeta, unsigned _activityId) : graph(_graph), resultMeta(_resultMeta)
     {
         counterMeta.setown(createFixedSizeMetaData(sizeof(thor_loop_counter_t)));
         loopAgainMeta.setown(createFixedSizeMetaData(sizeof(bool)));
@@ -258,8 +257,8 @@ public:
         if (!resultRowIf)
             resultRowIf.setown(activity.createRowInterfaces(resultMeta));
         ThorGraphResultType resultType = activity.queryGraph().isLocalChild() ? thorgraphresult_nul : thorgraphresult_distributed;
-        IThorResult *loopResult =  activity.queryGraph().createResult(activity, 0, results, resultRowIf, resultType); // loop output
-        IThorResult *inputResult = activity.queryGraph().createResult(activity, 1, results, resultRowIf, resultType); // loop input
+        activity.queryGraph().createResult(activity, 0, results, resultRowIf, resultType); // loop output
+        activity.queryGraph().createResult(activity, 1, results, resultRowIf, resultType); // loop input
     }
     virtual CGraphBase *queryGraph() { return graph; }
 };
@@ -680,6 +679,8 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                         case TAKfilterproject:
                             whichBranch = ((IHThorFilterProjectArg *)baseHelper.get())->canMatchAny() ? 0 : 1;
                             break;
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -703,6 +704,8 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                         return false;
                     break;
                 }
+                default:
+                    break;
             }
             if (checkDependencies && ((unsigned)-1 != whichBranch))
             {
@@ -993,6 +996,8 @@ bool isLoopActivity(CGraphElementBase &container)
         case TAKgraphloop:
         case TAKparallelgraphloop:
             return true;
+        default:
+            break;
     }
     return false;
 }
@@ -2299,11 +2304,10 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
 
     class CGraphExecutorFactory : implements IThreadFactory, public CInterface
     {
-        CGraphExecutor &executor;
     public:
         IMPLEMENT_IINTERFACE;
 
-        CGraphExecutorFactory(CGraphExecutor &_executor) : executor(_executor) { }
+        CGraphExecutorFactory() { }
 // IThreadFactory
         virtual IPooledThread *createNew()
         {
@@ -2378,7 +2382,7 @@ public:
         PROGLOG("CGraphExecutor: limit = %d", limit);
         waitOnRunning = 0;
         stopped = false;
-        factory = new CGraphExecutorFactory(*this);
+        factory = new CGraphExecutorFactory();
         graphPool.setown(createThreadPool("CGraphExecutor pool", factory, &jobChannel, limit));
     }
     ~CGraphExecutor()
@@ -2545,8 +2549,7 @@ public:
 // IContextLogger
 class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
-    CJobBase &job;
-    unsigned traceLevel;
+    unsigned traceLevel = 1;
     StringAttr globalIdHeader;
     StringAttr callerIdHeader;
     StringAttr globalId;
@@ -2555,9 +2558,8 @@ class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorContextLogger(CJobBase &_job) : job(_job)
+    CThorContextLogger()
     {
-        traceLevel = 1;
         if (globals->hasProp("@httpGlobalIdHeader"))
             setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
@@ -2678,7 +2680,7 @@ void CJobBase::init()
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
 
-    logctx.setown(new CThorContextLogger(*this));
+    logctx.setown(new CThorContextLogger());
 
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));

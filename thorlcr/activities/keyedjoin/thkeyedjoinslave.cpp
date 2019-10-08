@@ -1705,7 +1705,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
             ScopedAtomic<unsigned __int64> diskRejected(activity.statsArr[AS_DiskRejected]);
             ScopedAtomic<unsigned __int64> diskSeeks(activity.statsArr[AS_DiskSeeks]);
-            unsigned numRows = processing.ordinality();
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
             {
                 OwnedConstThorRow row = processing.getClear(r);
@@ -2382,10 +2381,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             indexLookupRow.setown(preparePendingLookupRow(keyFieldsRowBuilder.getUnfinalizedClear(), keyFieldsRowBuilder.getMaxLength(), lhsRow, keyedFieldsRowSize));
             if (keyLookupHandlers.isLocalKey())
-            {
-                CLookupHandler *lookupHandler = keyLookupHandlers.queryHandler(0);
                 queueLookupForPart(0, indexLookupRow);
-            }
             else if (!remoteKeyedLookup) // either local only or legacy, either way lookup in all allIndexParts I have
             {
                 ForEachItemIn(p, allIndexParts)
@@ -2625,7 +2621,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         // NB: This is called in partNo ascending order
 
         unsigned partNo = partCopy & partMask;
-        unsigned copy = partCopy >> 24;
         unsigned slave = 0;
         if (partToSlaveMap.size())
         {
@@ -3099,6 +3094,8 @@ public:
                                         ret.setown(rowBuilder.finalizeRowClear(transformedSize));
                                     break;
                                 }
+                                default:
+                                    throwUnexpected();
                             }
                             if (ret)
                                 currentAdded++;
@@ -3459,7 +3456,6 @@ public:
         std::vector<CJoinGroup *> doneJGCandidates, incompleteJGCandidates;
         memsize_t totalToSpill = 0;
         memsize_t totalInUse = 0;
-        unsigned allRows = 0;
 
         CriticalBlock b(onCompleteCrit);
 

@@ -129,7 +129,7 @@ void CSlaveMessageHandler::threadmain()
             if (stopped || !job.queryJobChannel(0).queryJobComm().recv(msg, RANK_ALL, mptag, &sender))
                 break;
             SlaveMsgTypes msgType;
-            msg.read((int &)msgType);
+            readUnderlyingType(msg, msgType);
             switch (msgType)
             {
                 case smt_errorMsg:
@@ -594,6 +594,8 @@ bool CMasterGraphElement::checkUpdate()
                 temporary = true;
             break;
         }
+        default:
+            break;
     }
 
     if (doCheckUpdate)
@@ -603,7 +605,7 @@ bool CMasterGraphElement::checkUpdate()
         if (file)
         {
             IPropertyTree &props = file->queryAttributes();
-            if ((eclCRC == props.getPropInt("@eclCRC")) && (totalCRC == props.getPropInt64("@totalCRC")))
+            if ((eclCRC == (unsigned)props.getPropInt("@eclCRC")) && (totalCRC == (unsigned __int64)props.getPropInt64("@totalCRC")))
             {
                 // so this needs pruning
                 Owned<IThorException> e = MakeActivityWarning(this, TE_UpToDate, "output file = '%s' - is up to date - it will not be rebuilt", file->queryLogicalName());
@@ -660,8 +662,8 @@ public:
     {
         receiving = false;
     }
-    virtual const mptag_t queryTag() const { return tag; }
-    virtual bool wait(bool exception, unsigned timeout)
+    virtual mptag_t queryTag() const override { return tag; }
+    virtual bool wait(bool exception, unsigned timeout) override
     {
         Owned<IException> e;
         CTimeMon tm(timeout);
@@ -725,7 +727,7 @@ public:
         }
         return true;
     }
-    virtual void cancel(IException *e)
+    virtual void cancel(IException *e) override
     {
         if (receiving)
             comm->cancel(RANK_ALL, tag);
@@ -1070,7 +1072,6 @@ public:
         PROTECTED_GETRESULT(stepname, sequence, "VarUnicode", "unicode",
             MemoryBuffer result;
             r->getResultUnicode(MemoryBuffer2IDataVal(result));
-            unsigned tlen = result.length()/2;
             result.append((UChar)0);
             return (UChar *)result.detach();
         );
@@ -1758,8 +1759,6 @@ bool CJobMaster::go()
             job.fireException(exception);
             return true;
         }
-    private:
-        graph_id graphId;
     };
     Owned<CTimeoutTrigger> qtHandler;
     int guillotineTimeout = workunit->getDebugValueInt("maxRunTime", 0);
@@ -2756,9 +2755,8 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
             return false; // don't know if or how this could happen, but all bets off with packet if did.
         }
     }
-    unsigned subs, _subs;
+    unsigned subs;
     mb.read(subs);
-    _subs = subs;
     while (subs--)
     {
         graph_id subId;
@@ -2839,6 +2837,8 @@ static bool suppressStatisticIfZero(StatisticKind kind)
     case StTimeSpillElapsed:
     case StNumDiskRetries:
         return true;
+    default:
+        break;
     }
     return false;
 }
@@ -2867,7 +2867,7 @@ void CThorStats::reset()
 {
     tot = max = avg = 0;
     min = (unsigned __int64) -1;
-    minNode = maxNode = maxSkew = minSkew = maxNode = minNode = 0;
+    minNode = maxNode = maxSkew = minSkew = 0;
 }
 
 void CThorStats::calculateSkew()

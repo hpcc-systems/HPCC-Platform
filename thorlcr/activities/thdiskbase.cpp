@@ -102,7 +102,6 @@ void CDiskReadMasterBase::init()
 
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
-    IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     dst.append(fileName);
     dst.append(subfileLogicalFilenames.ordinality());
     if (subfileLogicalFilenames.ordinality())
@@ -319,7 +318,6 @@ void CWriteMasterBase::publish()
                     partDesc->queryProperties().setPropInt64("@size", 0);
                     p++;
                 }
-                clusterIdx++;
             }
         }
         queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc, NULL);

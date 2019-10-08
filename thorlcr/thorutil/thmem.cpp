@@ -749,9 +749,9 @@ void CThorExpandingRowArray::compact()
         }
     }
     numRows = freeFinger-rows;
-    memsize_t numEmptiedPages = rowManager->compactRows(numRows, rows);
 
 #ifdef _DEBUG
+    memsize_t numEmptiedPages = rowManager->compactRows(numRows, rows);
     ActPrintLog(&activity, "CThorExpandingRowArray::compact(): compactRows freed %" I64F "d pages", (unsigned __int64)numEmptiedPages);
 #endif
 
@@ -1958,6 +1958,8 @@ public:
             return overflowCount;
         case StSizeSpillFile:
             return sizeSpill;
+        default:
+            break;
         }
         return 0;
     }

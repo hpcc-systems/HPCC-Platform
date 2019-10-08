@@ -164,7 +164,7 @@ public:
         {
             Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
             Owned<IWUResult> result = updateWorkUnitResult(wu, resultName, resultSeq);
-            numResults = validRC(result->getResultRowCount());
+            numResults = (rowcount_t)result->getResultRowCount();
         }
     }
 };

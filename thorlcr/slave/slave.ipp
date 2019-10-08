@@ -107,7 +107,6 @@ public:
         ForEachItemIn(i, inputs)
         {
             IThorDataLink *curInput = queryInput(i);
-            CActivityBase *activity = curInput->queryFromActivity();
             IThorNWayInput *nWayInput = dynamic_cast<IThorNWayInput *>(curInput);
             if (nWayInput)
             {

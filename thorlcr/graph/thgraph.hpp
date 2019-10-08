@@ -65,7 +65,7 @@ const static roxiemem::RoxieHeapFlags defaultHeapFlags = roxiemem::RHFscanning;
 #define INVALID_UNIQ_ID -1;
 typedef activity_id unique_id;
 
-enum msgids
+enum msgids:unsigned
 {
     QueryInit,
     QueryDone,
@@ -109,7 +109,7 @@ interface IThorResource
 
 interface IBarrier : extends IInterface
 {
-    virtual const mptag_t queryTag() const = 0;
+    virtual mptag_t queryTag() const = 0;
     virtual bool wait(bool exception, unsigned timeout=INFINITE) = 0;
     virtual void cancel(IException *e=NULL) = 0;
 };
@@ -166,14 +166,14 @@ interface IThorBoundLoopGraph : extends IInterface
 class CFileUsageEntry : public CInterface
 {
     StringAttr name;
-    unsigned usage;
     graph_id graphId;
     WUFileKind fileKind;
+    unsigned usage;
 public:
     CFileUsageEntry(const char *_name, graph_id _graphId, WUFileKind _fileKind, unsigned _usage) :name(_name), graphId(_graphId), fileKind(_fileKind), usage(_usage) { }
     unsigned queryUsage() const { return usage; }
-    const graph_id queryGraphId() const { return graphId; }
-    const WUFileKind queryKind() const { return fileKind; }
+    graph_id queryGraphId() const { return graphId; }
+    WUFileKind queryKind() const { return fileKind; }
     const char *queryName() const { return name.get(); }
     void decUsage() { --usage; }
 
@@ -358,7 +358,7 @@ public:
     IPropertyTree &queryXGMML() const { return *xgmml; }
     const activity_id &queryOwnerId() const { return ownerId; }
 //
-    const ThorActivityKind getKind() const { return kind; }
+    ThorActivityKind getKind() const { return kind; }
     const activity_id &queryId() const { return id; }
     StringBuffer &getEclText(StringBuffer& dst) const
     {
@@ -477,10 +477,11 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
 
     class CGraphCodeContext : implements ICodeContextExt
     {
-        ICodeContextExt *ctx;
-        CGraphBase *containerGraph, *parent;
+        ICodeContextExt *ctx = nullptr;
+        CGraphBase *containerGraph = nullptr;
+        CGraphBase *parent = nullptr;
     public:
-        CGraphCodeContext() : parent(nullptr), containerGraph(nullptr), ctx(nullptr) { }
+        CGraphCodeContext() { }
         void setContext(CGraphBase *_parent, CGraphBase *_containerGraph, ICodeContextExt *_ctx)
         {
             parent = _parent;
@@ -904,7 +905,7 @@ public:
     const char *queryScope() const { return scope.str(); }
     IDiskUsage &queryIDiskUsage() const { return *(IDiskUsage *)this; }
     void setDiskUsage(offset_t _diskUsage) { diskUsage = _diskUsage; }
-    const offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
+    offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
     mptag_t querySlaveMpTag() const { return slavemptag; }
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     unsigned queryNodes() const { return nodeGroup->ordinality()-1; }
@@ -1079,7 +1080,7 @@ public:
     inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
     CActivityBase &queryChannelActivity(unsigned channel) const { return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId()); }
-    inline const mptag_t queryMpTag() const { return mpTag; }
+    inline mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }

@@ -39,15 +39,6 @@ typedef size32_t rowidx_t;
 
 #include "jexcept.hpp"
 
-// validate that type T doesn't truncate
-template <class T>
-inline rowcount_t validRC(T X)
-{
-    if (X != (rowcount_t)X)
-        throw MakeStringException(0, "rowcount_t value truncation");
-    return (rowcount_t)X;
-}
-
 template <class T>
 inline rowidx_t validRIDX(T X)
 {

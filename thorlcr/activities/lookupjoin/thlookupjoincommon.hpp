@@ -31,6 +31,8 @@ inline bool isSmartJoin(CActivityBase &activity)
         case TAKsmartdenormalize:
         case TAKsmartdenormalizegroup:
             return true;
+        default:
+            break;
     }
     return false;
 }

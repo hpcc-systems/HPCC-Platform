@@ -237,20 +237,20 @@ public:
         : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), slave(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone) { };
     CThorException(MemoryBuffer &mb)
     {
-        mb.read((unsigned &)action);
+        readUnderlyingType<ThorExceptionAction>(mb, action);
         mb.read(jobId);
         mb.read(graphName);
         mb.read(graphId);
-        mb.read((unsigned &)kind);
+        readUnderlyingType(mb, kind);
         mb.read(id);
         mb.read(slave);
-        mb.read((unsigned &)audience);
+        readUnderlyingType(mb, audience);
         mb.read(errorcode);
         mb.read(msg);
         mb.read(file);
         mb.read(line);
         mb.read(column);
-        mb.read((int &)severity);
+        readUnderlyingType(mb, severity);
         mb.read(origin);
         if (0 == origin.length()) // simpler to clear serialized 0 length terminated string here than check on query
             origin.clear();
@@ -942,7 +942,7 @@ void serializeThorException(IException *e, MemoryBuffer &out)
     out.append(file);
     out.append(line);
     out.append(column);
-    out.append(te->querySeverity());
+    out.append((unsigned)te->querySeverity());
     out.append(te->queryOrigin());
     IException *oe = te->queryOriginalException();
     if (oe)
@@ -1218,7 +1218,7 @@ class CRowServer : public CSimpleInterface, implements IThreaded, implements IRo
     ICommunicator &comm;
     CActivityBase *activity;
     mptag_t mpTag;
-    unsigned myNode, fetchBuffSize;
+    unsigned fetchBuffSize;
     Linked<IRowStream> seq;
     bool running;
 
@@ -1443,7 +1443,6 @@ void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const
     OwningSimpleHashTableOf<CITranslatorMapping, unsigned> translatorTable;
     ForEachItemIn(p, partDescriptors)
     {
-        IPartDescriptor &partDesc = partDescriptors.item(p);
         unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
         Owned<const ITranslator> translatorContainer;
         if (translatorTable.ordinality())

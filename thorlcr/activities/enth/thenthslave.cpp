@@ -105,8 +105,8 @@ public:
         PARENT::start();
         IHThorEnthArg *helper = static_cast <IHThorEnthArg *> (queryHelper());
         counter = 0;
-        denominator = validRC(helper->getProportionDenominator());
-        numerator = validRC(helper->getProportionNumerator());
+        denominator = (rowcount_t)helper->getProportionDenominator();
+        numerator = (rowcount_t)helper->getProportionNumerator();
     }
     virtual bool isGrouped() const override { return false; }
     void getMetaInfo(ThorDataLinkMetaInfo &info) const override

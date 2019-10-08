@@ -77,8 +77,7 @@ class CRegistryServer : public CSimpleInterface
 {
     unsigned msgDelay, slavesRegistered;
     CriticalSection crit;
-    bool stopped;
-
+    bool stopped = false;
     static CriticalSection regCrit;
     static CRegistryServer *registryServer;
 
@@ -122,7 +121,7 @@ class CRegistryServer : public CSimpleInterface
                     continue;
                 }
                 RegistryCode code;
-                msg.read((int &)code);
+                readUnderlyingType<RegistryCode>(msg, code);
                 if (rc_deregister != code)
                     throwUnexpected();
                 Owned<IException> e = deserializeException(msg);
@@ -137,7 +136,7 @@ public:
     Linked<CMasterWatchdogBase> watchdog;
     IBitSet *status;
 
-    CRegistryServer()  : deregistrationWatch(*this), stopped(false)
+    CRegistryServer()  : deregistrationWatch(*this)
     {
         status = createThreadSafeBitSet();
         msgDelay = SLAVEREG_VERIFY_DELAY;
@@ -461,7 +460,7 @@ public:
     void start(unsigned timeoutSecs)
     {
         bool expected = false;
-        if (started.compare_exchange_strong(expected, true));
+        if (started.compare_exchange_strong(expected, true))
         {
             timeout = timeoutSecs * 1000; // sem_post and sem_wait are mem_barriers
             sem.signal();
@@ -470,7 +469,7 @@ public:
     void stop()
     {
         bool expected = false;
-        if (stopped.compare_exchange_strong(expected, true));
+        if (stopped.compare_exchange_strong(expected, true))
             sem.signal();
     }
     virtual void threadmain() override

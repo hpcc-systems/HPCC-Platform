@@ -77,7 +77,6 @@ public:
         if (!results && !abortSoon)
         {
             ActPrintLog("WARNING: no results");
-            IHThorRemoteResultArg *helper = (IHThorRemoteResultArg *)queryHelper();
             //helper->sendResult(NULL);
             // Jake I think this always cores (so raise exception instead)
             throw MakeThorException(TE_UnexpectedMultipleSlaveResults, "Received no results from slaves");

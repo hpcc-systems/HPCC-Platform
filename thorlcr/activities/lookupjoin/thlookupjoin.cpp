@@ -37,6 +37,8 @@ class CLookupJoinActivityMaster : public CMasterActivity
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
                 return true;
+            default:
+                break;
         }
         return false;
     }

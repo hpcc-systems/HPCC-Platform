@@ -158,8 +158,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
 #endif
         }
-        msg.read((unsigned &)masterSlaveMpTag);
-        msg.read((unsigned &)kjServiceMpTag);
+        readUnderlyingType<mptag_t>(msg, masterSlaveMpTag);
+        readUnderlyingType<mptag_t>(msg, kjServiceMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
         if (!queryNodeComm().reply(msg))
@@ -204,7 +204,7 @@ bool UnregisterSelf(IException *e)
     try
     {
         CMessageBuffer msg;
-        msg.append((int)rc_deregister);
+        msg.append(rc_deregister);
         serializeException(e, msg); // NB: allows exception to be NULL
         if (!queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION, 60*1000))
         {
