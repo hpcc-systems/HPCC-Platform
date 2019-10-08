@@ -62,10 +62,8 @@
 
 //#define TRACE_THIS
 //#define CONSISTENCY_CHECK
-//#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
 //#define CHECK_RECORD_CONSISTENCY
-//#define GATHER_COMMON_STATS
 
 // To debug a symbol in the C++ generated code, use SEARCH_NAME*
 // and set a breakpoint on debugMatchedName() below
@@ -76,7 +74,6 @@
 //#define SEARCH_NAME1   "v1"
 //#define SEARCH_NAME2   "v2"
 //#define CHECK_SELSEQ_CONSISTENCY
-//#define GATHER_COMMON_STATS
 #define VERIFY_EXPR_INTEGRITY
 
 #if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
@@ -540,6 +537,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
+    for (auto & cur  : *exprCache)
+    {
+        if (cur.getOperator() == no_constant)
+        {
+            StringBuffer text;
+            toECL(&cur, text, false);
+            printf("CONST:%" I64F "u:%s", querySeqId(&cur), text.str());
+        }
+    }
+
     printf("op,cnt,clash");
     for (unsigned i=0; i < no_last_pseudoop; i++)
     {
