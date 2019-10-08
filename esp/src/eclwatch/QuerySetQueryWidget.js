@@ -461,8 +461,9 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
-                ESPUtil.goToPageUserPreference(this.querySetGrid, "QuerySetQueryWidget");
-                this.querySetGrid.startup();
+                ESPUtil.goToPageUserPreference(this.querySetGrid, "QuerySetQueryWidget_GridRowsPerPage").then(function(){
+                    context.querySetGrid.startup();
+                });
 
                 this.recreateQueriesGrid.createGrid({
                     idProperty: "Name",

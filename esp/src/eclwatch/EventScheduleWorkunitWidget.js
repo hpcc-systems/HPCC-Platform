@@ -165,7 +165,9 @@ define([
                 this.eventGrid.onSelectionChanged(function (event) {
                     context.refreshActionState();
                 });
-                this.eventGrid.startup();
+                ESPUtil.goToPageUserPreference(this.eventGrid, "EventScheduleWorkunitWidget_GridRowsPerPage").then(function(){
+                    context.eventGrid.startup();
+                });
                 this.refreshActionState();
             },
 

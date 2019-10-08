@@ -542,7 +542,9 @@ define([
             this.groupsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.groupsGrid.startup();
+            ESPUtil.goToPageUserPreference(this.groupsGrid, "UsersQueryWidget_GroupsGrid_GridRowsPerPage").then(function(){
+                context.groupsGrid.startup();
+            });
         },
 
         initGroupsContextMenu: function () {
@@ -655,7 +657,9 @@ define([
             this.usersGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.usersGrid.startup();
+            ESPUtil.goToPageUserPreference(this.usersGrid, "UsersQueryWidget_UsersGrid_GridRowsPerPage").then(function(){
+                context.usersGrid.startup();
+            });
         },
 
         initUsersContextMenu: function () {

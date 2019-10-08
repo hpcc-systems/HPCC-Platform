@@ -516,13 +516,16 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
-                ESPUtil.goToPageUserPreference(this.workunitsGrid, "WUQueryWidget");
-                aspect.after(this.workunitsGrid, "gotoPage", function (deferred, args) {
+
+                aspect.after(context.workunitsGrid, "gotoPage", function (deferred, args) {
                     return deferred.then(function () {
                         args[0] > 1 ? context._idleWatcher.stop() : context._idleWatcher.start();
                     });
                 });
-                this.workunitsGrid.startup();
+                
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "WUQueryWidget_GridRowsPerPage").then(function(){
+                    context.workunitsGrid.startup();
+                });
             },
 
             refreshGrid: function (clearSelection) {
