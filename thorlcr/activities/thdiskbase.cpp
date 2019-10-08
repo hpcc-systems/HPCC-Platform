@@ -102,7 +102,6 @@ void CDiskReadMasterBase::init()
 
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
-    IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     dst.append(fileName);
     dst.append(subfileLogicalFilenames.ordinality());
     if (subfileLogicalFilenames.ordinality())

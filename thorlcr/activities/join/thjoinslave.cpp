@@ -258,6 +258,8 @@ public:
                 joinhelper.setown(createDenormalizeHelper(*this, helperdn, this));
                 break;
             }
+            default:
+                throwUnexpected();
         }
     }
     void startSecondaryInput()

@@ -57,7 +57,6 @@ public:
             case TAKcreaterowlimit: 
             case TAKskiplimit: 
             {
-                unsigned slaves = container.queryJob().querySlaves();
                 CMessageBuffer mb;
                 mb.append(total);
                 queryJobChannel().queryJobComm().send(mb, RANK_ALL_OTHER, mpTag);
@@ -69,6 +68,8 @@ public:
                     helper->onLimitExceeded();
                 break;
             }
+            default:
+                throwUnexpected();
         }
     }
     virtual void abort()

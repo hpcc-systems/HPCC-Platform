@@ -342,6 +342,8 @@ public:
                     case TAKloopcount:
                         // NB: finishedLooping set at end of loop, so that last getNextRow() iteration spits out final rows
                         break;
+                    default:
+                        throwUnexpected();
                     }
                 }
 
@@ -1200,7 +1202,6 @@ class CChildThroughNormalizeSlaveActivity : public CSlaveActivity
     Owned<IEngineRowAllocator> allocator;
     OwnedConstThorRow lastInput;
     RtlDynamicRowBuilder nextOutput;
-    size32_t recordsize;
     rowcount_t numProcessedLastGroup;
     bool ok;
 
@@ -1428,7 +1429,6 @@ public:
     }
     virtual IThorResult *createResult()
     {
-        IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
         ThorGraphResultType resultType = thorgraphresult_nul;
         if (!queryGraph().isLocalChild())

@@ -87,7 +87,7 @@ public:
     virtual void start()
     {
         PARENT::start();
-        skipCount = validRC(helper->numToSkip());
+        skipCount = (rowcount_t)helper->numToSkip();
         limit = (rowcount_t)helper->getLimit();
         firstget = true;
         skipped = 0;
@@ -142,7 +142,7 @@ public:
     virtual void start()
     {
         PARENT::start();
-        skipCount = validRC(helper->numToSkip());
+        skipCount = (rowcount_t)helper->numToSkip();
         limit = (rowcount_t)helper->getLimit();
         countThisGroup = 0;
     }
@@ -216,7 +216,8 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
     bool firstget = true;
     ThorDataLinkMetaInfo inputMeta;
 
-    rowcount_t lastTotalLimitState = 0, lastSkipCountState = RCMAX;
+    rowcount_t lastTotalLimitState = 0;
+    rowcount_t lastSkipCountState = RCMAX;
 
     void sendOnce(rowcount_t count)
     {
@@ -259,7 +260,7 @@ public:
         input->getMetaInfo(inputMeta);
         totallimit = (rowcount_t)helper->getLimit();
 
-        rowcount_t _skipCount = validRC(helper->numToSkip()); // max
+        rowcount_t _skipCount = (rowcount_t)helper->numToSkip(); // max
         if (!isInputFastThrough(0))
         {
             if (hasLookAhead(0) && (lastTotalLimitState == totallimit) && (lastSkipCountState == _skipCount))

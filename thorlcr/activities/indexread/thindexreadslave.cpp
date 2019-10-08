@@ -1000,7 +1000,6 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, implements
     bool gathered, merging;
     Owned<IAggregateTable> localAggTable;
     Owned<IRowStream> aggregateStream;
-    memsize_t maxMem;
     Owned<IHashDistributor> distributor;
     bool done = false;
 

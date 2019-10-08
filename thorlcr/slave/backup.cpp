@@ -293,7 +293,6 @@ public:
             if (item)
             {
                 lookup.removeExact(item);
-                unsigned pos = todo.find(item);
                 todo.dequeue(item);
                 item->Release();
                 write();

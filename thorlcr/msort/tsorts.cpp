@@ -296,7 +296,6 @@ class CMiniSort
         unsigned ret = 0;
         for (;;)
         {
-            size32_t ln = mb.length();
             OwnedConstThorRow row = stream.nextRow();
             if (!row)
                 break;
@@ -570,7 +569,6 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
 {
     CActivityBase *activity;
     SocketEndpoint myendpoint;
-    IDiskUsage *iDiskUsage;
     Linked<ICommunicator> clusterComm;
     mptag_t mpTagRPC;
 
@@ -780,7 +778,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
-        : activity(_activity), myendpoint(ep), iDiskUsage(_iDiskUsage), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
+        : activity(_activity), myendpoint(ep), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
           rowArray(*_activity, _activity), threaded("CThorSorter", this), spillStats(spillStatistics)
     {
         numnodes = 0;

@@ -47,7 +47,7 @@ public:
     {
         receiving = false;
     }
-    virtual bool wait(bool exception, unsigned timeout)
+    virtual bool wait(bool exception, unsigned timeout) override
     {
         Owned<IException> e;
         CTimeMon tm(timeout);
@@ -94,7 +94,7 @@ public:
         }   
         return true;
     }
-    virtual void cancel(IException *e)
+    virtual void cancel(IException *e) override
     {
         if (receiving)
             comm->cancel(jobChannel.queryMyRank(), tag);
@@ -110,7 +110,7 @@ public:
         if (!comm->send(msg, 0, tag, LONGTIMEOUT))
             throw MakeStringException(0, "CBarrierSlave::cancel - Timeout sending to master");
     }
-    virtual const mptag_t queryTag() const { return tag; }
+    virtual mptag_t queryTag() const override { return tag; }
 };
 
 
@@ -1229,7 +1229,6 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
     {
         if (checkProgressUpdatedAndClear() || progressActive)
         {
-            unsigned sPos = mb.length();
             Owned<IThorActivityIterator> iter = getConnectedIterator();
             ForEach (*iter)
             {
@@ -2014,6 +2013,8 @@ public:
             return cycle_to_nanosec(getStatistic(StCycleDiskReadIOCycles));
         case StTimeDiskWriteIO:
             return cycle_to_nanosec(getStatistic(StCycleDiskWriteIOCycles));
+        default:
+            break;
         }
 
         Owned<IFileIO> openiFileIO = getFileIO();

@@ -40,7 +40,7 @@ public:
         IHThorFirstNArg *helper = (IHThorFirstNArg *)queryHelper();
 
         rowcount_t limit = (rowcount_t)helper->getLimit();
-        rowcount_t skip = validRC(helper->numToSkip());
+        rowcount_t skip = (rowcount_t)helper->numToSkip();
         unsigned nslaves = container.queryJob().querySlaves();
         unsigned s = 1;
         for (;;)

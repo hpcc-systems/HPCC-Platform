@@ -273,7 +273,6 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
     typedef CSlaveActivity PARENT;
 
     IRowStream *fetchStreamOut = nullptr;
-    unsigned maxKeyRecSize = 0;
     rowcount_t limit = 0;
     unsigned offsetCount = 0;
     unsigned offsetMapSz = 0;
@@ -551,7 +550,6 @@ public:
             prefetchBuffer.setStream(stream);
             prefetcher->readAhead(prefetchBuffer);
             const byte * row = prefetchBuffer.queryRow();
-            size32_t sz = prefetchBuffer.queryRowSize();
             LocalVirtualFieldCallback fieldCallback("<MORE>", fpos, localFpos);
             fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, fieldCallback, row);
             prefetchBuffer.finishedRow();
@@ -599,7 +597,7 @@ public:
         if (inputStream->eos())
             return 0;
         size32_t maxRowSize = 10*1024*1024; // MORE - make configurable
-        size32_t thisLineLength = csvSplitter.splitLine(inputStream, maxRowSize);
+        csvSplitter.splitLine(inputStream, maxRowSize);
         return ((IHThorCsvFetchArg *)fetchBaseHelper)->transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), keyRow, localFpos);
     }
     virtual void onLimitExceeded()

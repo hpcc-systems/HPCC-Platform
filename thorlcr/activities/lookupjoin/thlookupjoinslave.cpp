@@ -286,7 +286,9 @@ class CBroadcaster : public CSimpleInterface
                 if (t>=nodes)
                     t -= nodes;
                 t += 1; // adjust 0 based to 1 based, i.e. excluding master at 0
+#ifdef _TRACEBROADCAST
                 unsigned sendLen = sendItem->length();
+#endif
                 if (0 == sendRecv) // send
                 {
 #ifdef _TRACEBROADCAST
@@ -376,10 +378,8 @@ class CBroadcaster : public CSimpleInterface
                     break;
                 }
                 case bcast_sendStopping:
-                {
                     setStopping(sendItem->queryNode());
-                    // fall through
-                }
+                // fall through
                 case bcast_send:
                 {
                     if (!allRequestStop) // don't care if all stopping
@@ -759,11 +759,11 @@ public:
     {
         return helper->match(lhs, rhsrow);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows, unsigned flags)
+    inline size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows, unsigned flags)
     {
         return helper->transform(rowBuilder, left, right, numRows, rows, flags);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned count, unsigned flags)
+    inline size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned count, unsigned flags)
     {
         return helper->transform(rowBuilder, left, right, count, flags);
     }
@@ -956,7 +956,7 @@ protected:
     unsigned numNodes, numSlaves;
     OwnedMalloc<CInMemJoinBase *> channels;
 
-    atomic_t interChannelToNotifyCount; // only used on channel 0
+    std::atomic<unsigned> interChannelToNotifyCount{0}; // only used on channel 0
     InterruptableSemaphore interChannelBarrierSem;
     bool channelActivitiesAssigned;
 
@@ -968,9 +968,9 @@ protected:
     }
     inline bool incNotifyCountAndCheck()
     {
-        if (atomic_add_and_read(&interChannelToNotifyCount, 1) == queryJob().queryJobChannels())
+        if (++interChannelToNotifyCount == queryJob().queryJobChannels())
         {
-            atomic_set(&interChannelToNotifyCount, 0); // reset for next barrier
+            interChannelToNotifyCount = 0; // reset for next barrier
             return true;
         }
         return false;
@@ -1007,6 +1007,8 @@ protected:
             case TAKsmartdenormalizegroup:
             case TAKalldenormalizegroup:
                 return true;
+            default:
+                break;
         }
         return false;
     }
@@ -1021,6 +1023,8 @@ protected:
             case TAKsmartdenormalize:
             case TAKsmartdenormalizegroup:
                 return true;
+            default:
+                break;
         }
         return false;
     }
@@ -1034,6 +1038,8 @@ protected:
             case JT_RightOuter: return str.append("RIGHT OUTER");
             case JT_LeftOnly:   return str.append("LEFT ONLY");
             case JT_RightOnly:  return str.append("RIGHT ONLY");
+            default:
+                break;
         }
         return str.append("---> Unknown Join Type <---");
     }
@@ -1316,7 +1322,6 @@ public:
         numSlaves = queryJob().querySlaves();
         local = container.queryLocal() || (1 == numSlaves);
         rowProcessor = NULL;
-        atomic_set(&interChannelToNotifyCount, 0);
         rhsTableLen = 0;
         leftITDL = rightITDL = NULL;
 
@@ -2708,8 +2713,7 @@ public:
     virtual void start() override
     {
         PARENT::start();
-        if (!isSmart())
-            dbgassertex(leftITDL->isGrouped() == grouped); // std. lookup join expects these to match
+        dbgassertex(isSmart() || (leftITDL->isGrouped() == grouped)); // std. lookup join expects these to match
     }
     virtual void reset() override
     {

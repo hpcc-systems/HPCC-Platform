@@ -131,8 +131,7 @@ public:
                 const void *lastRow = sortedRows.query(topNLimit-1);
                 if (compare->docompare(lastRow, row) > 0)
                     sortedRows.binaryInsert(row.getClear(), *compare, true);
-                else // had enough and out of range
-                    ;
+                // else had enough and out of range
             }
         }
         rowidx_t sortedCount = sortedRows.ordinality();

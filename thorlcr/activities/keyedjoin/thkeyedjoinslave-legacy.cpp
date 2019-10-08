@@ -355,14 +355,13 @@ static int unsignedcompare(unsigned *i1, unsigned *i2)
 
 class CJoinGroupPool
 {
-    CActivityBase &activity;
     CJoinGroup *groupStart;
 public:
     CJoinGroup head;
     CriticalSection crit;
     bool preserveGroups, preserveOrder;
 
-    CJoinGroupPool(CActivityBase &_activity) : activity(_activity), head(_activity)
+    CJoinGroupPool(CActivityBase &_activity) : head(_activity)
     {
         head.next = &head;
         head.prev = &head;
@@ -858,7 +857,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                                     prefetchBuffer.setStream(stream);
                                     prefetcher->readAhead(prefetchBuffer);
                                     const byte * row = prefetchBuffer.queryRow();
-                                    size32_t sz = prefetchBuffer.queryRowSize();
                                     LocalVirtualFieldCallback fieldCallback("<MORE>", fpos, localFpos);
                                     fetchedLen = translator->queryTranslator().translate(fetchedRowBuilder, fieldCallback, row);
                                     prefetchBuffer.finishedRow();
@@ -1637,8 +1635,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             StringBuffer filename;
             rfn.getPath(filename);
 
-            IPropertyTree const &props = filePart.queryOwner().queryProperties();
-            unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
             Owned<IFileIO> lazyFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart);
             Owned<IDelayedFile> delayedFile = createDelayedFile(lazyFileIO);
             Owned<IKeyIndex> keyIndex = createKeyIndex(filename, crc, *delayedFile, false, false);
@@ -2240,6 +2236,8 @@ public:
                                     transformedSize = helper->transform(row.ensureRow(), djg->queryLeft(), NULL, 0, (const void **)NULL); // no dummrhs (hthor and roxie don't pass)
                                     break;
                                 }
+                                default:
+                                    throwUnexpected();
                             }
                             if (transformedSize)
                                 currentAdded++;

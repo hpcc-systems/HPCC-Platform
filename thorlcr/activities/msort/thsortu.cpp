@@ -325,7 +325,6 @@ class CJoinHelper : implements IJoinHelper, public CSimpleInterface
     bool betweenjoin = false;
     Owned<IException> onFailException;
     ThorActivityKind kind = TAKnone;
-    activity_id activityId = 0;
     Owned<ILimitedCompareHelper> limitedhelper;
     Owned<CDualCache> dualcache;
     Linked<IEngineRowAllocator> allocator;
@@ -704,6 +703,8 @@ public:
                             denormRows.kill();
                         }
                         break;
+                    default:
+                        break;
                 }
             }
             nextL();            // output outer once
@@ -998,7 +999,6 @@ class SelfJoinHelper: implements IJoinHelper, public CSimpleInterface
     unsigned keepremaining = (unsigned)-1;
     OwnedConstThorRow nextrow;
     Owned<IException> onFailException;
-    activity_id activityId = 0;
     Linked<IEngineRowAllocator> allocator;
     Linked<IEngineRowAllocator> allocatorin;
     IMulticoreIntercept* mcoreintercept = nullptr;
@@ -1407,8 +1407,6 @@ public:
             }
         }
         while (high-low>((int)atmost)) {
-            CRollingCacheElem *rl = cache->mid(low);
-            CRollingCacheElem *rh = cache->mid(high-1);
             int vl = iabs(cache->mid(low)->cmp);
             int vh = iabs(cache->mid(high-1)->cmp);
             int v;
@@ -1482,17 +1480,16 @@ public:
 
     class cWorkItem
     {
-        CActivityBase &activity;
     public:
         CThorExpandingRowArray lgroup;
         CThorExpandingRowArray rgroup;
         const void *row;
         inline cWorkItem(CActivityBase &_activity, CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
-            : activity(_activity), lgroup(_activity, &_activity), rgroup(_activity, &_activity)
+            : lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
             set(_lgroup,_rgroup);
         }
-        inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity, &_activity), rgroup(_activity, &_activity)
+        inline cWorkItem(CActivityBase &_activity) : lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
             clear();
         }

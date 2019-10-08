@@ -287,6 +287,8 @@ public:
             case TAKsideeffect:
                 nullAct = true;
                 break;
+            default:
+                break;
         }
     }
     virtual void deserializeCreateContext(MemoryBuffer &mb)

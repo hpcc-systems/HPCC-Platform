@@ -119,7 +119,7 @@ typedef IAtom ISourcePath;
 struct HQL_API ECLlocation
 {
 public:
-    inline ECLlocation() : lineno(0), column(0), position(0), sourcePath(NULL) {}
+    inline ECLlocation() {}
     ECLlocation(const IHqlExpression * _expr) { if (!extractLocationAttr(_expr)) clear(); }
     ECLlocation(int _line, int _column, int _position, ISourcePath * _sourcePath) { set(_line, _column, _position, _sourcePath); }
 
@@ -170,10 +170,10 @@ public:
 
 public:
 //  Linked<ISourcePath> sourcePath;
-    ISourcePath * sourcePath;
-    int position;
-    int lineno;
-    int column;
+    ISourcePath * sourcePath = nullptr;
+    int position = 0;
+    int lineno = 0;
+    int column = 0;
 };
 
 interface IFileContents;
