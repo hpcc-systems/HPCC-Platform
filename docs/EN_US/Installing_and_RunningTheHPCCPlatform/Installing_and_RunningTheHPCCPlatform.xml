@@ -2391,17 +2391,19 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>HPCC Systems supports Python3 by default. The HPCC Systems
-        platform includes plugins for both Python2 and Python3, but only one
-        may be safely enabled at a time as the Python libraries export the
-        same symbols for both versions. Enabling both may lead to
-        unpredictable results including segmentation faults or undefined
-        symbol errors.</para>
+        <para>The HPCC Systems platform supports Python3 by default. It
+        includes plugins for both Python2 and Python3, but only one may be
+        safely enabled at a time as the Python libraries export the same
+        symbols for both versions. Enabling both may lead to unpredictable
+        results including segmentation faults or undefined symbol
+        errors.</para>
 
-        <para>By default the Python2 plugin will be present but disabled, and
-        the Python3 plugin will be present and enabled. If you want to use
-        Python2 modify the your environment.conf file according to the example
-        in the file. A cluster updated from an older version may not have the
+        <para>By default the Python2 plugin is present but disabled, and the
+        Python3 plugin is present and enabled. If you want to use Python2
+        modify your environment.conf file according to the example in the
+        file. </para>
+
+        <para>A cluster updated from an older version may not have the
         appropriate entries in the environment.conf file to support either
         version of Python.</para>
 
