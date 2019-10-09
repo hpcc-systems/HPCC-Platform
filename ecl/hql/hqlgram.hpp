@@ -38,6 +38,25 @@
 #define REC_FLD_ERR_STR "Need to supply a value for field '%s'"
 #define ERR_WRONGSCOPING_ERR_STR "Value for field '%s' cannot be computed in this scope"
 
+//The following flags control what processing is applied when the lexer matches a particular token.  Should
+//it set up the associated type/expression, or should it only return the token type.
+//Macro gathering and other processing only care about the span of the matched token, not the the meaning.
+enum LexerFlags : unsigned
+{
+    LEXnone         = 0x00000,
+    LEXresolve      = 0x00001,  // Should identifiers be resolved to expressions or keywords
+    LEXidentifier   = 0x00002,  // Should identifiers create atoms or not
+    LEXstring       = 0x00004,  // Do string constants create IHqlExpressions
+    LEXnumeric      = 0x00008,  // Do numeric tokens evaluate their value?
+    LEXembed        = 0x00010,  // Create strings for the body of embedded code
+    LEXexpand       = 0x00020,  // process #expand
+
+    LEXall          = 0xFFFFFFFF,
+    LEXnoresolve    = (LEXall & ~LEXresolve)
+};
+BITMASK_ENUM(LexerFlags);
+
+
 struct DefineIdSt
 {
 private: 
@@ -913,7 +932,6 @@ protected:
     bool expectedUnknownId;
     bool insideEvaluate;
     bool fieldMapUsed;
-    bool resolveSymbols;
     bool forceResult;
     bool associateWarnings;
     bool isQuery;
@@ -1098,10 +1116,10 @@ class HqlLex
         ~HqlLex();   
 
         void enterEmbeddedMode();
-        static int doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
-        static int lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
+        static int doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, LexerFlags lookupFlags, const short * activeState);
+        static int lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, LexerFlags lookupFlags, const short * activeState, const char * tokenText);
 
-        int yyLex(attribute & returnToken, bool lookup, const short * activeState);    /* lexical analyzer */
+        int yyLex(attribute & returnToken, LexerFlags lookupFlags, const short * activeState);    /* lexical analyzer */
 
         bool assertNext(attribute & returnToken, int expected, unsigned code, const char * msg);
         bool assertNextOpenBra();
@@ -1157,7 +1175,7 @@ class HqlLex
         }
 
         inline void setMacroParams(IProperties * _macroParams) { macroParms.set(_macroParams); }
-        inline void setTokenPosition(attribute & returnToken)
+        inline void setTokenPosition(attribute & returnToken) const
         {
             returnToken.setPosition(yyLineNo, yyColumn, yyPosition, sourcePath);
         }
@@ -1237,8 +1255,8 @@ class HqlLex
 
         void doPreprocessorLookup(const attribute & errpos, bool stringify, int extra);
         void doApply(attribute & returnToken);
-        int doElse(attribute & returnToken, bool lookup, const short * activeState, bool isElseIf);
-        int doEnd(attribute & returnToken, bool lookup, const short * activeState);
+        int doElse(attribute & returnToken, LexerFlags lookupFlags, const short * activeState, bool isElseIf);
+        int doEnd(attribute & returnToken, LexerFlags lookupFlags, const short * activeState);
         void doExpand(attribute & returnToken);
         void doTrace(attribute & returnToken);
         void doError(attribute & returnToken, bool isError);
@@ -1268,8 +1286,6 @@ class HqlLex
         bool getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
         int processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
-
-        bool readCheckNextToken(attribute & returnToken, int expected, unsigned errCode, const char * msg);
 
 private:
         HqlGram *yyParser;
