@@ -611,7 +611,6 @@ static void doPKIDecrypt(size32_t & __lenResult,void * & __result,
 }
 
 
-
 //encryption functions that take filespecs of key files
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & __result,
                                             const char * pkalgorithm,
