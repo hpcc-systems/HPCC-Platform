@@ -17,6 +17,8 @@
 
 //class=file
 
+#onwarning(10140, ignore);
+
 import $.setup;
 Files := setup.Files(false, false, false);
 

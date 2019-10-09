@@ -650,6 +650,7 @@ void checkFormatCrc(CActivityBase *activity, IDistributedFile *file, unsigned ex
                     {
                         // propagate as warning to workunit
                         e->setAction(tea_warning);
+                        e->setSeverity(SeverityWarning);
                         activity->fireException(e);
                     }
                     else

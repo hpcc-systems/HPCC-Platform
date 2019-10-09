@@ -55,7 +55,7 @@ public:
         if (fetchFile)
         {
             if (isFileKey(fetchFile))
-                throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", fname.get());
+                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", fname.get());
             Owned<IFileDescriptor> fileDesc = getConfiguredFileDescriptor(*fetchFile);
             void *ekey;
             size32_t ekeylen;

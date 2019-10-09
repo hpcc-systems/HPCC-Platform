@@ -280,7 +280,7 @@ public:
         if (indexFile)
         {
             if (!isFileKey(indexFile))
-                throw MakeActivityException(this, 0, "Attempting to read flat file as an index: %s", indexFileName.get());
+                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", indexFileName.get());
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
             if (helper->diskAccessRequired())
             {
@@ -291,7 +291,7 @@ public:
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
-                            throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", fetchFilename.get());
+                            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", fetchFilename.get());
                         if (superIndex)
                             throw MakeActivityException(this, 0, "Superkeys and full keyed joins are not supported");
 

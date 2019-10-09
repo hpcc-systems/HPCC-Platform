@@ -18,6 +18,8 @@
 import $.setup;
 import Std.File;
 
+#onwarning(10140, ignore);
+
 //version optRemoteRead=false
 //version optRemoteRead=true
 

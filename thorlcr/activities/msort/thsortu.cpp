@@ -1195,7 +1195,6 @@ retry:
                     }
                     if (curgroup.ordinality() > INITIAL_SELFJOIN_MATCH_WARNING_LEVEL) {
                         Owned<IThorException> e = MakeActivityWarning(&activity, TE_SelfJoinMatchWarning, "Exceeded initial match limit");
-                        e->setAction(tea_warning);
                         e->queryData().append((unsigned)curgroup.ordinality());
                         activity.fireException(e);
                     }
