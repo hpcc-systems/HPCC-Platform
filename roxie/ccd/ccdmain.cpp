@@ -410,7 +410,7 @@ public:
 static SocketEndpointArray topologyServers;
 static std::vector<RoxieEndpointInfo> myRoles;
 static std::vector<unsigned> farmerPorts;
-static std::vector<unsigned> slaveChannels;
+static std::vector<std::pair<unsigned, unsigned>> slaveChannels;
 
 static bool splitarg(const char *arg, std::string &name, std::string &value)
 {
@@ -461,7 +461,7 @@ void readStaticTopology()
         {
             IPropertyTree &roxieFarm = roxieFarms->query();
             unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
-            RoxieEndpointInfo server = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, ip }};
+            RoxieEndpointInfo server = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, ip }, 0};
             allRoles.push_back(server);
         }
     }
@@ -491,7 +491,7 @@ void readStaticTopology()
                 int channel = (int)i+1 - (copy * cyclicOffset);
                 while (channel < 1)
                     channel = channel + numNodes;
-                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, (unsigned) channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }};
+                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, (unsigned) channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
                 allRoles.push_back(slave);
             }
         }
@@ -506,7 +506,7 @@ void readStaticTopology()
             for (unsigned i=0; i<numNodes; i++)
             {
                 unsigned channel = i+1;
-                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }};
+                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
                 allRoles.push_back(slave);
                 channel += numNodes;
             }
@@ -520,7 +520,7 @@ void readStaticTopology()
         unsigned channel = 1;
         for (unsigned i=0; i<numNodes; i++)
         {
-            RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }};
+            RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, 0 };
             allRoles.push_back(slave);
             channel++;
             if (channel > calcNumChannels)
@@ -647,7 +647,15 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 }
                 else if (name=="--channel")
                 {
-                    slaveChannels.push_back(atoi(value.c_str()));
+                    char *tail = nullptr;
+                    unsigned channel = strtoul(value.c_str(), &tail, 10);
+                    unsigned repl = 0;
+                    if (*tail==':')
+                    {
+                        tail++;
+                        repl = atoi(tail);
+                    }
+                    slaveChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
                     continue;
                 }
             }
@@ -1128,13 +1136,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 VStringBuffer xpath("./RoxieFarmProcess[@port='%u']", port);
                 if (!topology->hasProp(xpath))
                     topology->addPropTree("./RoxieFarmProcess")->setPropInt("@port", port);
-                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }};
+                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
                 myRoles.push_back(me);
             }
-            for (unsigned channel: slaveChannels)
+            for (std::pair<unsigned, unsigned> channel: slaveChannels)
             {
                 mySlaveEP.set(ccdMulticastPort, myIP);
-                RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieSlave, channel, mySlaveEP };
+                RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieSlave, channel.first, mySlaveEP, channel.second };
                 myRoles.push_back(me);
             }
         }
