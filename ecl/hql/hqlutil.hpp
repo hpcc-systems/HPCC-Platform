@@ -187,6 +187,7 @@ extern HQL_API IHqlExpression * createNullTransform(IHqlExpression * record);
  * @param location      Location to use when reporting errors
  */
 extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location);
+extern HQL_API IHqlExpression * createMappingTransform(node_operator transformOp, IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location);
 
 extern HQL_API IHqlExpression * getFailCode(IHqlExpression * failExpr);
 extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted);

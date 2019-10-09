@@ -9158,7 +9158,7 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
                     OwnedHqlExpr left = createSelector(no_left, oldTransform, seq);
                     OwnedHqlExpr self = getSelf(dfsLayout);
                     MultiErrorReceiver dummy;
-                    OwnedHqlExpr transformECLtoDFS = createMappingTransform(self, left, true, dummy, where);  // transforms from ECL layout to DFS layout. Don't report missing here!
+                    OwnedHqlExpr transformECLtoDFS = createMappingTransform(no_newtransform, self, left, true, dummy, where);  // transforms from ECL layout to DFS layout. Don't report missing here!
 
                     NewProjectMapper2 mapper;
                     mapper.setMapping(oldTransform);
