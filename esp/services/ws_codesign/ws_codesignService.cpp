@@ -43,6 +43,13 @@ void Cws_codesignEx::init(IPropertyTree *cfg, const char *process, const char *s
     isGPGv1 = strstr(output.str(), "gpg (GnuPG) 1.");
 }
 
+void Cws_codesignEx::clearPassphrase(const char* key)
+{
+    StringBuffer output, errmsg;
+    VStringBuffer cmd("gpg-connect-agent \"clear_passphrase --mode=normal %s\" /bye", key);
+    runExternalCommand(output, errmsg, cmd.str(), "");
+}
+
 bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSignResponse &resp)
 {
     resp.setRetCode(-1);
@@ -73,20 +80,15 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
         return false;
     }
 
+    StringBuffer keygrip;
     if (!isGPGv1)
     {
-        StringBuffer keygrip;
         auto kgptr = strstr(output.str(), "Keygrip = ");
         if (kgptr)
             keygrip.append(40, kgptr+10);
 
         if (keygrip.length() > 0)
-        {
-            output.clear();
-            errmsg.clear();
-            cmd.clear().appendf("gpg-connect-agent \"clear_passphrase --mode=normal %s\" /bye", keygrip.str());
-            runExternalCommand(output, errmsg, cmd.str(), "");
-        }
+            clearPassphrase(keygrip.str());
     }
 
     output.clear();
@@ -106,5 +108,9 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
 
     resp.setRetCode(0);
     resp.setSignedText(output.str());
+
+    if (!isGPGv1 && keygrip.length() > 0)
+        clearPassphrase(keygrip.str());
+
     return true;
 }
