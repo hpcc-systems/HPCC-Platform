@@ -194,7 +194,7 @@ var LocalisedXGMMLWriter = declare([], {
     },
 
     addSemiVisibleEdge: function (edge) {
-        if (!this.m_visibleEdges[edge.__hpcc_id]) {
+        if (edge && !this.m_visibleEdges[edge.__hpcc_id]) {
             this.m_visibleEdges[edge.__hpcc_id] = edge;
         }
     },
@@ -213,17 +213,25 @@ var LocalisedXGMMLWriter = declare([], {
             this.addSemiVisibleVertex(source);
             while (this.noSpills && source.isSpill()) {
                 var inEdges = source.getInEdges();
-                this.addSemiVisibleEdge(inEdges[0]);
-                source = inEdges[0].getSource();
-                this.addSemiVisibleVertex(source);
+                if (inEdges.length) {
+                    this.addSemiVisibleEdge(inEdges[0]);
+                    source = inEdges[0].getSource();
+                    this.addSemiVisibleVertex(source);
+                } else {
+                    break;
+                }
             }
             var target = edge.getTarget();
             this.addSemiVisibleVertex(target);
             while (this.noSpills && target.isSpill()) {
                 var outEdges = target.getOutEdges();
-                this.addSemiVisibleEdge(outEdges[0]);
-                target = outEdges[0].getTarget();
-                this.addSemiVisibleVertex(target);
+                if (outEdges.length) {
+                    this.addSemiVisibleEdge(outEdges[0]);
+                    target = outEdges[0].getTarget();
+                    this.addSemiVisibleVertex(target);
+                } else {
+                    break;
+                }
             }
         }
     },
