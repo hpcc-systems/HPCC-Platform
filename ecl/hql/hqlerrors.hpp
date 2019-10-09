@@ -515,6 +515,7 @@
 #define HQLERR_OnlyExtendOutputInLibrary        3157
 #define HQLERR_UnnamedOutputInLibrary           3158
 #define HQLERR_AlienUseData                     3159
+#define HQLERR_LibraryParamNoFunctions          3160
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -568,6 +569,7 @@
 #define HQLERR_OnlyExtendOutputInLibrary_Text   "OUTPUT within a library must use EXTEND"
 #define HQLERR_UnnamedOutputInLibrary_Text      "OUTPUT within a library must be NAMED"
 #define HQLERR_AlienUseData_Text                "More efficient to use a DATA field than this custom alien type"
+#define HQLERR_LibraryParamNoFunctions_Text     "Library parameter '%s' cannot be a function"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

@@ -1248,6 +1248,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.setFastSyntax();
         parseCtx.timeParser = instance.wu->getDebugValueBool("timeParser", false);
 
+        //Avoid creating location annotations if syntax checking or creating an archive - since they are only really
+        //used when transforming the tree and generating code.  Can significantly speed up some queries.
+        //Option noteLocations can be used to override the default.
+        enableLocationAnnotations(instance.wu->getDebugValueBool("noteLocations", !optSyntax && !optArchive));
+
         unsigned maxErrorsDebugOption = instance.wu->getDebugValueInt("maxErrors", 0);
         if (maxErrorsDebugOption != 0)
             parseCtx.maxErrors = maxErrorsDebugOption;
@@ -1913,6 +1918,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
         instance.archive.setown(createAttributeArchive());
 
     EclRepositoryArray repositories;
+    processDefinitions(repositories);
     repositories.append(*LINK(pluginsRepository));
     repositories.append(*LINK(libraryRepository));
     if (bundlesRepository)
