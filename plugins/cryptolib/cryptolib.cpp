@@ -19,6 +19,7 @@
 #include "jexcept.hpp"
 #include "digisign.hpp"
 #include "ske.hpp"
+#include "dasess.hpp"
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
@@ -438,12 +439,11 @@ public:
         {
             IDigitalSignatureManager * pDSM = nullptr;
             if (!isEmptyString(pubKeyFS) || !isEmptyString(privKeyFS))
-                pDSM = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
+                ret = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
             else
-                pDSM = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
+                ret = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
 
-            dsmCache.emplace(pair<string, IDigitalSignatureManager*>(searchKey.str(), pDSM));
-            ret = pDSM;
+            dsmCache.emplace(pair<string, IDigitalSignatureManager*>(searchKey.str(), ret));
         }
         return LINK(ret);
     }
@@ -538,11 +538,11 @@ private:
     KeyCache keyCache;
 
 public:
-    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase, const char * userName)
     {
         if (isEmptyString(keyFS) && isEmptyString(keyBuff))
             throw MakeStringException(-1, "Must specify a key filename or provide a key buffer");
-        VStringBuffer searchKey("%s_%s_%s", isEmptyString(keyFS) ? "" : keyFS, isEmptyString(keyBuff) ? "" : keyBuff, isEmptyString(passphrase) ? "" : passphrase);
+        VStringBuffer searchKey("%s_%s_%s_%s", isEmptyString(keyFS) ? "" : keyFS, isEmptyString(keyBuff) ? "" : keyBuff, isEmptyString(passphrase) ? "" : passphrase, isEmptyString(userName) ? "" : userName);
         CriticalBlock block(csKeyCache);
         KeyCache::iterator it = keyCache.find(searchKey.str());
         CLoadedKey * ret = nullptr;
@@ -557,21 +557,20 @@ public:
             {
                 //Create CLoadedKey from filespec
                 if (isPublic)
-                    pCLK = loadPublicKeyFromFile(keyFS, passphrase);
+                    ret = loadPublicKeyFromFile(keyFS, passphrase);
                 else
-                    pCLK = loadPrivateKeyFromFile(keyFS, passphrase);
+                    ret = loadPrivateKeyFromFile(keyFS, passphrase);
             }
             else
             {
                 //Create CLoadedKey from key contents
                 if (isPublic)
-                    pCLK = loadPublicKeyFromMemory(keyBuff, passphrase);
+                    ret = loadPublicKeyFromMemory(keyBuff, passphrase);
                 else
-                    pCLK = loadPrivateKeyFromMemory(keyBuff, passphrase);
+                    ret = loadPrivateKeyFromMemory(keyBuff, passphrase);
             }
 
-            keyCache.emplace(pair<string, CLoadedKey*>(searchKey.str(), pCLK));
-            ret = pCLK;
+            keyCache.emplace(pair<string, CLoadedKey*>(searchKey.str(), ret));
         }
         return LINK(ret);
     }
@@ -612,49 +611,69 @@ static void doPKIDecrypt(size32_t & __lenResult,void * & __result,
 
 
 //encryption functions that take filespecs of key files
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(ICodeContext * ctx,
+                                            size32_t & __lenResult,void * & __result,
                                             const char * pkalgorithm,
                                             const char * publickeyfile,
                                             const char * passphrase,
                                             size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, publickeyfile, nullptr, passphrase);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, publickeyfile, nullptr, passphrase, userName.str());
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(ICodeContext * ctx,
+                                            size32_t & __lenResult,void * & __result,
                                             const char * pkalgorithm,
                                             const char * privatekeyfile,
                                             const char * passphrase,
                                             size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, privatekeyfile, nullptr, passphrase);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, privatekeyfile, nullptr, passphrase, userName.str());
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }
 
 //encryption functions that take keys in a buffer
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(ICodeContext * ctx,
+                                                size32_t & __lenResult,void * & __result,
                                                 const char * pkalgorithm,
                                                 const char * publickeybuff,
                                                 const char * passphrase,
                                                 size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, nullptr, publickeybuff, passphrase);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, nullptr, publickeybuff, passphrase, userName.str());
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(ICodeContext * ctx,
+                                                size32_t & __lenResult,void * & __result,
                                                 const char * pkalgorithm,
                                                 const char * privatekeybuff,
                                                 const char * passphrase,
                                                 size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, nullptr, privatekeybuff, passphrase);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    StringBuffer userName;
+    if (udesc)
+        udesc->getUserName(userName);
+    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, nullptr, privatekeybuff, passphrase, userName.str());
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }

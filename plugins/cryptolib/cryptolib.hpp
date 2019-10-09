@@ -59,15 +59,15 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricDecrypt(size32_t & __lenResult,void
 //Public Key encryption/decryption
 //CRYPTOLIB_API void CRYPTOLIB_CALL clInstalledPublicKeyAlgorithms(bool & __isAllResult, size32_t & __lenResult, void * & __result);
 CRYPTOLIB_API void CRYPTOLIB_CALL clSupportedPublicKeyAlgorithms(bool & __isAllResult, size32_t & __lenResult, void * & __result);
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * publickeyfile,const char * passphrase,size32_t lenInputdata,const void * inputdata);
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeyfile,const char * passphrase,size32_t lenEncrypteddata,const void * encrypteddata);
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(ICodeContext * ctx, size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * publickeyfile,const char * passphrase,size32_t lenInputdata,const void * inputdata);
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(ICodeContext * ctx, size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeyfile,const char * passphrase,size32_t lenEncrypteddata,const void * encrypteddata);
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKISign(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeyfile,const char * passphrase,size32_t lenInputdata,const void * inputdata);
 CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignature(const char * pkalgorithm,const char * publickeyfile,const char * passphrase,size32_t lenSignature,const void * signature,size32_t lenSigneddata,const void * signeddata);
 
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * publickeybuff,const char * passphrase,size32_t lenInputdata,const void * inputdata);
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeybuff,const char * passphrase,size32_t lenEncrypteddata,const void * encrypteddata);
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(ICodeContext * ctx, size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * publickeybuff,const char * passphrase,size32_t lenInputdata,const void * inputdata);
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(ICodeContext * ctx, size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeybuff,const char * passphrase,size32_t lenEncrypteddata,const void * encrypteddata);
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignBuff(size32_t & __lenResult,void * & __result,const char * pkalgorithm,const char * privatekeybuff,const char * passphrase,size32_t lenInputdata,const void * inputdata);
 CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff(const char * pkalgorithm,const char * publickeybuff,const char * passphrase,size32_t lenSignature,const void * signature,size32_t lenSigneddata,const void * signeddata);

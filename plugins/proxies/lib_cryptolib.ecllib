@@ -35,14 +35,14 @@ export CryptoLib := SERVICE : plugin('cryptolib')
   SET OF STRING SupportedPublicKeyAlgorithms() : c, pure, fold, entrypoint='clSupportedPublicKeyAlgorithms';
 
   //Accepts key data as file specification
-  DATA    Encrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncrypt';
-  DATA    Decrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecrypt';
+  DATA    Encrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKIEncrypt';
+  DATA    Decrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, context, entrypoint='clPKIDecrypt';
   DATA    Sign(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISign';
   BOOLEAN VerifySignature(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignature';
   
   //Accepts key data as memory buffer
-  DATA    EncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncryptBuff';
-  DATA    DecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecryptBuff';
+  DATA    EncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKIEncryptBuff';
+  DATA    DecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, context, entrypoint='clPKIDecryptBuff';
   DATA    SignBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISignBuff';
   BOOLEAN VerifySignatureBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignatureBuff';
  END;
