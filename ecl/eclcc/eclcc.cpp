@@ -1918,6 +1918,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
         instance.archive.setown(createAttributeArchive());
 
     EclRepositoryArray repositories;
+    processDefinitions(repositories);
     repositories.append(*LINK(pluginsRepository));
     repositories.append(*LINK(libraryRepository));
     if (bundlesRepository)
