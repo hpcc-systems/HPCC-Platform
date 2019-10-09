@@ -442,7 +442,7 @@ public:
             else
                 pDSM = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
 
-            dsmCache.insert(pair<string, IDigitalSignatureManager*>(searchKey.str(), pDSM));
+            dsmCache.emplace(pair<string, IDigitalSignatureManager*>(searchKey.str(), pDSM));
             ret = pDSM;
         }
         return LINK(ret);
@@ -527,6 +527,56 @@ CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff(const char * pkalgori
     }
 }
 
+//-----------------------------------------------------------------
+//  Simple cache for loaded keys
+//-----------------------------------------------------------------
+class CKeyCache
+{
+private:
+    CriticalSection csKeyCache;//guards serial modifications to the cache map
+    typedef std::unordered_map<string, Owned<CLoadedKey>> KeyCache;
+    KeyCache keyCache;
+
+public:
+    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+    {
+        if (isEmptyString(keyFS) && isEmptyString(keyBuff))
+            throw MakeStringException(-1, "Must specify a key filename or provide a key buffer");
+        VStringBuffer searchKey("%s_%s_%s", isEmptyString(keyFS) ? "" : keyFS, isEmptyString(keyBuff) ? "" : keyBuff, isEmptyString(passphrase) ? "" : passphrase);
+        CriticalBlock block(csKeyCache);
+        KeyCache::iterator it = keyCache.find(searchKey.str());
+        CLoadedKey * ret = nullptr;
+        if (it != keyCache.end())//exists in cache?
+        {
+            ret = (*it).second;
+        }
+        else
+        {
+            CLoadedKey * pCLK = nullptr;
+            if (!isEmptyString(keyFS))
+            {
+                //Create CLoadedKey from filespec
+                if (isPublic)
+                    pCLK = loadPublicKeyFromFile(keyFS, passphrase);
+                else
+                    pCLK = loadPrivateKeyFromFile(keyFS, passphrase);
+            }
+            else
+            {
+                //Create CLoadedKey from key contents
+                if (isPublic)
+                    pCLK = loadPublicKeyFromMemory(keyBuff, passphrase);
+                else
+                    pCLK = loadPrivateKeyFromMemory(keyBuff, passphrase);
+            }
+
+            keyCache.emplace(pair<string, CLoadedKey*>(searchKey.str(), pCLK));
+            ret = pCLK;
+        }
+        return LINK(ret);
+    }
+};
+static CKeyCache g_KeyCache;
 
 //------------------------------------
 //Encryption helper
@@ -570,7 +620,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & _
                                             size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publickeyfile, passphrase);
+    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, publickeyfile, nullptr, passphrase);
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
@@ -582,7 +632,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(size32_t & __lenResult,void * & _
                                             size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privatekeyfile, passphrase);
+    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, privatekeyfile, nullptr, passphrase);
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }
 
@@ -595,7 +645,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(size32_t & __lenResult,void *
                                                 size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(publickeybuff, passphrase);
+    Owned<CLoadedKey> publicKey = g_KeyCache.getInstance(true, nullptr, publickeybuff, passphrase);
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
@@ -606,6 +656,6 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void *
                                                 size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privatekeybuff, passphrase);
+    Owned<CLoadedKey> privateKey = g_KeyCache.getInstance(false, nullptr, privatekeybuff, passphrase);
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }
