@@ -437,13 +437,12 @@ public:
         }
         else
         {
-            IDigitalSignatureManager * pDSM = nullptr;
             if (!isEmptyString(pubKeyFS) || !isEmptyString(privKeyFS))
                 ret = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
             else
                 ret = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
 
-            dsmCache.emplace(pair<string, IDigitalSignatureManager*>(searchKey.str(), ret));
+            dsmCache.emplace(searchKey.str(), ret);
         }
         return LINK(ret);
     }
@@ -552,7 +551,6 @@ public:
         }
         else
         {
-            CLoadedKey * pCLK = nullptr;
             if (!isEmptyString(keyFS))
             {
                 //Create CLoadedKey from filespec
@@ -570,7 +568,7 @@ public:
                     ret = loadPrivateKeyFromMemory(keyBuff, passphrase);
             }
 
-            keyCache.emplace(pair<string, CLoadedKey*>(searchKey.str(), ret));
+            keyCache.emplace(searchKey.str(), ret);
         }
         return LINK(ret);
     }
