@@ -2097,7 +2097,28 @@ public:
         else
             mb.append(false);
     }
-    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, bool isIndex) const override
+
+    static FileFormatMode getMode(IFileDescriptor *fileDesc)
+    {
+        if (isFileKey(fileDesc))
+            return FileFormatMode::index;
+        else
+        {
+            const char *kind = fileDesc->queryKind();
+            if (kind)
+            {
+                if (streq("csv", kind))
+                    return FileFormatMode::csv;
+                else if (streq("xml", kind))
+                    return FileFormatMode::xml;
+                else if (streq("json", kind))
+                    return FileFormatMode::xml;   // MORE - is that right?
+            }
+            return FileFormatMode::flat;
+        }
+    }
+
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, FileFormatMode fileMode) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2108,10 +2129,16 @@ public:
         assertex(projected != nullptr);
         ForEachItemIn(idx, subFiles)
         {
+            FileFormatMode actualMode = getMode(subFiles.item(idx));
             IOutputMetaData *actual = expected;
-            if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
+            const char *subname = subNames.item(idx);
+            if (fileMode!=actualMode)
             {
-                const char *subname = subNames.item(idx);
+                if (traceLevel>0)
+                    DBGLOG("Not translating %s as file type does not match", subname);
+            }
+            else if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
+            {
                 int thisFormatCrc = 0;
                 bool actualUnknown = true;
                 if (mode != RecordTranslationMode::AlwaysECL)
@@ -2163,7 +2190,7 @@ public:
                             throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
                         else if (translator->needsTranslate())
                         {
-                            if (isIndex && translator->keyedTranslated())
+                            if (fileMode==FileFormatMode::index && translator->keyedTranslated())
                                 throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
                             keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
                         }
