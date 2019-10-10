@@ -9658,11 +9658,16 @@ static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSe
 
 IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location)
 {
+    return createMappingTransform(no_transform, selfSelector, inSelector, replaceMissingWithDefault, err, location);
+}
+
+IHqlExpression * createMappingTransform(node_operator transformOp, IHqlExpression * selfSelector, IHqlExpression * inSelector, bool replaceMissingWithDefault, IErrorReceiver &err, ECLlocation &location)
+{
     HqlExprArray assigns;
     IHqlExpression * selfRecord = selfSelector->queryRecord();
     IHqlExpression * inRecord = inSelector->queryRecord();
     createMappingAssigns(assigns, selfSelector, inSelector, inRecord->querySimpleScope(), selfRecord, replaceMissingWithDefault, err, location);
-    return createValue(no_transform, makeTransformType(selfRecord->getType()), assigns);
+    return createValue(transformOp, makeTransformType(selfRecord->getType()), assigns);
 
 }
 
