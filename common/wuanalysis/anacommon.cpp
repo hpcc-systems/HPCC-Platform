@@ -34,7 +34,9 @@ int PerformanceIssue::compareCost(const PerformanceIssue & other) const
 
 void PerformanceIssue::print() const
 {
-    printf("[%" I64F "dms] %s: %s\n", statUnits2msecs(cost), scope.str(), comment.str());
+    StringBuffer out;
+    formatStatistic(out, cost, SMeasureTimeNs);
+    printf("[%s] %s: %s\n", out.str(), scope.str(), comment.str());
 }
 
 void PerformanceIssue::createException(IWorkUnit * wu)
