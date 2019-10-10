@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jlib.hpp"
+#include "jfile.hpp"
 #include "thorplugin.hpp"
 #include "workunit.hpp"
 
@@ -25,6 +26,7 @@ void usage(const char *progname)
     printf("Options:\n");
     printf("  -m     Display manifest information\n");
     printf("  -w     Display embedded workunit\n");
+    printf("  -a     Display embedded archive\n");
     printf("/nIf no options specified, -w is assumed\n");
 }
 
@@ -33,6 +35,7 @@ int main(int argc, char **argv)
     InitModuleObjects();
     bool doManifestInfo = false;
     bool doWorkunit = false;
+    bool doArchive = false;
     for (int i = 1; i < argc; i++)
     {
         if (argv[i][0]=='-')
@@ -41,6 +44,8 @@ int main(int argc, char **argv)
                 doManifestInfo = true;
             else if (strcmp(argv[i], "-w")==0)
                 doWorkunit = true;
+            else if (strcmp(argv[i], "-a")==0)
+                doArchive = true;
             else
             {
                 usage(argv[0]);
@@ -48,6 +53,8 @@ int main(int argc, char **argv)
             }
         }
     }
+    if (!doArchive && !doManifestInfo && !doWorkunit)
+        doWorkunit = true;
     int filesSeen = 0;
     int errors = 0;
     for (int i = 1; i < argc; i++)
@@ -57,14 +64,30 @@ int main(int argc, char **argv)
             try
             {
                 filesSeen++;
-                if (doWorkunit || !doManifestInfo)
+                if (doWorkunit || doArchive)
                 {
+                    const char *filename = argv[i];
+                    const char *ext = pathExtension(filename);
                     StringBuffer xml;
-                    if (getWorkunitXMLFromFile(argv[i], xml))
+                    if (strisame(ext, ".xml"))
+                        xml.loadFile(filename, false);
+                    else
+                        getWorkunitXMLFromFile(filename, xml);
+                    if (xml.length())
                     {
                         Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
-                        exportWorkUnitToXML(wu, xml.clear(), true, false, true);
-                        printf("%s\n", xml.str());
+                        if (doWorkunit)
+                        {
+                            exportWorkUnitToXML(wu, xml.clear(), true, false, true);
+                            printf("%s\n", xml.str());
+                        }
+                        if (doArchive)
+                        {
+                            Owned<IConstWUQuery> query = wu->getQuery();
+                            SCMStringBuffer text;
+                            query->getQueryText(text);
+                            printf("%s\n", text.s.str());
+                        }
                     }
                     else
                     {
