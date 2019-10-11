@@ -191,6 +191,7 @@ CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activity
     input = NULL;
     processed = 0;
     rowAllocator = NULL;    
+    pClientCertificate.setown(createClientCertificate("myeclagent"));
 }
 
 void CHThorActivityBase::setInput(unsigned index, IHThorInput *_input)
@@ -7618,27 +7619,13 @@ const void *CHThorHttpRowCallActivity::nextRow()
 
 //---------------------------------------------------------------------------
 
-ClientCertificate* setCert()
-{
-    StringBuffer path(getenv("HOME"));
-    path.append(PATHSEPCHAR).append("certificate").append(PATHSEPCHAR).append("myeclagent").append(PATHSEPCHAR);
-    StringBuffer certpath(path), keypath(path);
-    certpath.append("certificate.pem");
-    keypath.append("key.pem");
-
-    ClientCertificate* certobj = new ClientCertificate();
-    certobj->certificate.set(certpath.str());
-    certobj->privateKey.set(keypath.str());
-    return certobj;
-}
-
 const void *CHThorSoapRowCallActivity::nextRow()
 {
     try
     {
         if (WSChelper == NULL)
         {
-            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, setCert(), queryDummyContextLogger(),NULL));
+            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCertificate, queryDummyContextLogger(),NULL));
             WSChelper->start();
         }
         return CHThorWSCRowCallActivity::nextRow();
@@ -7661,7 +7648,7 @@ void CHThorSoapRowActionActivity::execute()
 {
     try
     {
-        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, setCert(), queryDummyContextLogger(),NULL));
+        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, pClientCertificate, queryDummyContextLogger(),NULL));
         WSChelper->start();
         WSChelper->waitUntilDone();
     }
@@ -7687,7 +7674,7 @@ const void * CHThorSoapDatasetCallActivity::nextRow()
     {
         if (WSChelper == NULL)
         {
-            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, setCert(), queryDummyContextLogger(),NULL));
+            WSChelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCertificate, queryDummyContextLogger(),NULL));
             WSChelper->start();
         }
         OwnedConstRoxieRow ret = WSChelper->getRow();
@@ -7725,7 +7712,7 @@ void CHThorSoapDatasetActionActivity::execute()
 {
     try
     {
-        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, setCert(), queryDummyContextLogger(),NULL));
+        WSChelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, pClientCertificate, queryDummyContextLogger(),NULL));
         WSChelper->start();
         WSChelper->waitUntilDone();
     }

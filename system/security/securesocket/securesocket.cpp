@@ -133,6 +133,7 @@ public:
 
     X509* cert;
     StringBuffer CN;
+    bool verified = false;
 
     CCertificateInfo(X509* cert_) { cert = cert_; }
 
@@ -148,6 +149,10 @@ public:
     {
         return CN.str();
     }
+    virtual bool getVerified()
+    {
+        return verified;
+    }
 };
 
 class CSecureSocket : implements ISecureSocket, public CInterface
@@ -162,7 +167,6 @@ private:
     bool        m_isSecure;
     Owned<CCertificateInfo> m_remotecertinfo;
 private:
-    StringBuffer& get_cn(X509* cert, StringBuffer& cn);
     bool verify_cert(CCertificateInfo* certinfo);
 
 public:
@@ -488,86 +492,51 @@ CSecureSocket::~CSecureSocket()
     SSL_free(m_ssl);
 }
 
-StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
+StringBuffer& get_issuer_from_cert(X509* cert, StringBuffer& issuer)
 {
-    X509_NAME *subj;
-    char      data[256];
-    int       extcount;
-    int       found = 0;
+    issuer.clear();
 
-    if ((extcount = X509_get_ext_count(cert)) > 0)
+    char *s, buf[1024];
+
+    s = X509_NAME_oneline (X509_get_issuer_name (cert), buf, 1024);
+    if (s != nullptr)
+        issuer.append(buf);
+
+    return issuer;
+}
+
+StringBuffer& get_subj_from_cert(X509* cert, StringBuffer& subj)
+{
+    subj.clear();
+
+    char *s, buf[1024];
+
+    s = X509_NAME_oneline (X509_get_subject_name (cert), buf, 1024);
+    if (s != nullptr)
+        subj.append(buf);
+
+    return subj;
+}
+
+StringBuffer& get_cn_from_subj(const char* subj, StringBuffer& cn)
+{
+    cn.clear();
+    const char* cnstart = strstr(subj, "/CN=");
+    if (cnstart != nullptr)
     {
-        int i;
-
-        for (i = 0;  i < extcount;  i++)
-        {
-            const char              *extstr;
-            X509_EXTENSION    *ext;
-
-            ext = X509_get_ext(cert, i);
-            extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-
-            if (!strcmp(extstr, "subjectAltName"))
-            {
-                int                  j;
-                unsigned char        *data;
-                STACK_OF(CONF_VALUE) *val;
-                CONF_VALUE           *nval;
-#if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
-                const X509V3_EXT_METHOD    *meth;
-#else
-                X509V3_EXT_METHOD    *meth;
-#endif 
-                void                 *ext_str = NULL;
-
-                if (!(meth = X509V3_EXT_get(ext)))
-                    break;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-                data = ext->value->data;
-                auto length = ext->value->length;
-#else
-                data = X509_EXTENSION_get_data(ext)->data;
-                auto length = X509_EXTENSION_get_data(ext)->length;
-#endif
-#if (OPENSSL_VERSION_NUMBER > 0x00908000L) 
-                if (meth->it)
-                    ext_str = ASN1_item_d2i(NULL, (const unsigned char **)&data, length,
-                        ASN1_ITEM_ptr(meth->it));
-                else
-                    ext_str = meth->d2i(NULL, (const unsigned char **) &data, length);
-#elif (OPENSSL_VERSION_NUMBER > 0x00907000L)     
-                if (meth->it)
-                    ext_str = ASN1_item_d2i(NULL, (unsigned char **)&data, length,
-                        ASN1_ITEM_ptr(meth->it));
-                else
-                    ext_str = meth->d2i(NULL, (unsigned char **) &data, length);
-#else
-                    ext_str = meth->d2i(NULL, &data, length);
-#endif
-                val = meth->i2v(meth, ext_str, NULL);
-                for (j = 0;  j < sk_CONF_VALUE_num(val);  j++)
-                {
-                    nval = sk_CONF_VALUE_value(val, j);
-                    if (!strcmp(nval->name, "DNS"))
-                    {
-                        cn.append(nval->value);                     
-                        found = 1;
-                        break;
-                    }
-                }
-            }
-            if (found)
-                break;
-        }
+        const char* cnend = cnstart+4;
+        while (*cnend and *cnend != '/')
+            cnend++;
+        cn.append(cnend-cnstart-4, cnstart+4);
     }
+    return cn;
+}
 
-    if (!found && (subj = X509_get_subject_name(cert)) &&
-        X509_NAME_get_text_by_NID(subj, NID_commonName, data, 256) > 0)
-    {
-        data[255] = 0;
-        cn.append(data);
-    }
-
+StringBuffer& get_cn_from_cert(X509* cert, StringBuffer& cn)
+{
+    cn.clear();
+    StringBuffer subj;
+    get_cn_from_subj(get_subj_from_cert(cert, subj).str(), cn);
     return cn;
 }
 
@@ -576,37 +545,22 @@ bool CSecureSocket::verify_cert(CCertificateInfo* certinfo)
     if (!certinfo)
         return false;
     X509* cert = certinfo->cert;
+    certinfo->verified = false;
     StringBuffer& cn = certinfo->CN;
 
     DBGLOG ("peer's certificate:\n");
 
-    char *s, oneline[1024];
+    StringBuffer subj, issuer;
+    get_subj_from_cert(cert, subj);
+    get_issuer_from_cert(cert, issuer);
+    DBGLOG("\t subject: %s\n\t isser: %s", subj.str(), issuer.str());
 
-    s = X509_NAME_oneline (X509_get_subject_name (cert), oneline, 1024);
-    if(s != NULL)
-    {
-        DBGLOG ("\t subject: %s", oneline);
-    }
-
-    const char* cnstart = strstr(oneline, "/CN=");
-    if (cnstart != nullptr)
-    {
-        const char* cnend = cnstart+4;
-        while (*cnend and *cnend != '/')
-            cnend++;
-        cn.append(cnend-cnstart-4, cnstart+4);
-    }
-
-    s = X509_NAME_oneline (X509_get_issuer_name  (cert), oneline, 1024);
-    if(s != NULL)
-    {
-        DBGLOG ("\t issuer: %s", oneline);
-    }
-
-    //get_cn(cert, cn);
+    get_cn_from_subj(subj.str(), cn);
 
     if(cn.length() == 0)
         throw MakeStringException(-1, "cn of the certificate can't be found");
+    else
+        DBGLOG("\t cn: %s", cn.str());
 
     if(m_address_match)
     {
@@ -628,6 +582,7 @@ bool CSecureSocket::verify_cert(CCertificateInfo* certinfo)
     if (m_peers->contains("anyone") || m_peers->contains(cn.str()))
     {
         DBGLOG("%s among trusted peers", cn.str());
+        certinfo->verified = true;
         return true;
     }
     else
@@ -862,17 +817,17 @@ int verify_callback(int ok, X509_STORE_CTX *store)
         X509 *cert = X509_STORE_CTX_get_current_cert(store);
         int err = X509_STORE_CTX_get_error(store);
         
-        char issuer[256], subject[256];
-        X509_NAME_oneline(X509_get_issuer_name(cert), issuer, 256);
-        X509_NAME_oneline(X509_get_subject_name(cert), subject, 256);
+        StringBuffer issuer, subject;
+        get_issuer_from_cert(cert, issuer);
+        get_subj_from_cert(cert, subject);
         
-        if(accept_selfsigned && (stricmp(issuer, subject) == 0))
+        if(accept_selfsigned && issuer.length() > 0 && (stricmp(issuer.str(), subject.str()) == 0))
         {
-            DBGLOG("accepting selfsigned certificate, subject=%s", subject);
+            DBGLOG("accepting selfsigned certificate, subject=%s", subject.str());
             ok = true;
         }
         else
-            DBGLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer, subject,err,X509_verify_cert_error_string(err));
+            DBGLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer.str(), subject.str(), err, X509_verify_cert_error_string(err));
     }
     return ok;
 }
@@ -963,8 +918,7 @@ public:
         SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.str());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
-        //if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
-        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
+        if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile)<=0)
         {
             char errbuf[512];
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
@@ -1029,7 +983,6 @@ public:
         const char* certfile = config->queryProp("certificate");
         if(certfile && *certfile)
         {
-            //if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
             if (SSL_CTX_use_certificate_chain_file(m_ctx, certfile) <= 0)
             {
                 char errbuf[512];
@@ -1061,6 +1014,26 @@ public:
 
         if(m_verify)
         {
+            StringBuffer cn, domain;
+            FILE *fp = fopen(certfile, "r");
+            X509 *cert = nullptr;
+            if (fp)
+                cert = PEM_read_X509(fp, NULL, NULL, NULL);
+            else
+                IWARNLOG("Failed to open certificate file %s", certfile);
+            if (cert)
+            {
+                get_cn_from_cert(cert, cn);
+                if (cn.length() > 0)
+                {
+                    const char* dot = strchr(cn.str(), '.');
+                    if (dot)
+                        domain.append(dot+1);
+                }
+            }
+            else
+                IWARNLOG("Failed to parse certificate file %s", certfile);
+
             const char* capath = config->queryProp("verify/ca_certificates/@path");
             if(capath && *capath)
             {
@@ -1106,7 +1079,22 @@ public:
                 }
                 else
                 {
-                    m_peers->add(onepeer);
+                    if (strstr(onepeer, "{DOMAIN}")!= nullptr)
+                    {
+                        StringBuffer onebuf(onepeer);
+                        if (domain.length() > 0)
+                            onebuf.replaceString("{DOMAIN}", domain.str());
+                        else
+                        {
+                            onebuf.replaceString("{DOMAIN}", "");
+                            size_t len = onebuf.trim().length();
+                            if (onebuf.charAt(len-1) == '.')
+                                onebuf.setLength(len-1);
+                        }
+                        m_peers->add(onebuf.str());
+                    }
+                    else
+                        m_peers->add(onepeer);
                 }
                 free(onepeer);
             }

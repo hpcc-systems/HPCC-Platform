@@ -43,8 +43,7 @@ typedef enum espAuthState_
     authSucceeded,
     authPending,
     authTaskDone,
-    authFailed,
-    authNotRequired
+    authFailed
 } EspAuthState;
 
 struct EspAuthRequest

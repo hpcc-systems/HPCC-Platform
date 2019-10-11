@@ -17,14 +17,6 @@
 
 ###<REPLACE>###
 
-#TODO:
-# 1. Use fqdn as CN and hostname. Investigate: how to set up DNS? May need to check how kubernetes does it (CoreDNS?)
-# 2. Make sure intermediate CA works (bundle up user certificate and intermediate certificate)
-# 3. Add getComponent() to ICertificateInfo interface.
-# 4. Add cfssl source as submodule. (Build and start up on init ?)
-# 5. Genenrate from common privatekey for no-CA case.
-# 6. Use built-in verification better, better proof-of-concept use case.
-
 progname=setupPKI
 
 source ${INSTALL_DIR}/etc/init.d/hpcc_common
@@ -56,21 +48,6 @@ if [ ! -d ${homePath}/certificate ]; then
     mkdir -p ${homePath}/certificate
 fi
 
-#if [ ! -e ${homePath}/certificate/key.pem ]; then
-#    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
-#        1>/dev/null 2>&1
-#    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
-#        -out ${homePath}/certificate/public.key.pem
-#    chmod 0644 ${homePath}/certificate/public.key.pem
-#    rm -f ${homePath}/certificate/key.pem.pub
-#    printf "RSA key installed for user %-28s ..." "$user"
-#    log_success_msg
-#else
-#    printf "RSA keys are already installed for user %-15s ..." "$user"
-#    log_success_msg
-#fi
-
-#TODO: use ecdsa algo
 csrCfgTemplate='{
  "key": {
     "algo": "rsa",

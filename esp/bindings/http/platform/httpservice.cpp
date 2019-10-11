@@ -244,44 +244,9 @@ int CEspHttpServer::processRequest()
         else //user ID is in HTTP header
             ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
-        ISecureSocket* sock = dynamic_cast<ISecureSocket*>(&m_socket);
-        if (sock != nullptr)
-        {
-            DBGLOG("CATEST: Use certificate authentication for tls connections");
-            ICertificateInfo* certinfo = sock->queryRemoteCertInfo();
-            if (certinfo)
-            {
-                const char* cn = certinfo->getCN();
-                if (cn && *cn)
-                {
-                    DBGLOG("CATEST: CN=%s", cn);
-                    const char* dot = strchr(cn, '.');
-                    if (!dot)
-                        dot = cn + strlen(cn);
-                    const char* ptr = dot - 1;
-                    while (*ptr != '-' && ptr > cn)
-                        ptr--;
-                    if (*ptr == '-')
-                        ptr++;
-                    if (strncasecmp(ptr, "eclagent", 7) == 0) //Add allowed components here
-                    {
-                        DBGLOG("CATEST: Request is from eclagent, allow!");
-                        authState = authSucceeded;
-                    }
-                }
-            }
-            if (authState == authSucceeded)
-                DBGLOG("CATEST: authentication succeeded");
-            else
-                DBGLOG("CATEST: authentication failed");
-        }
-
-        if (authState != authSucceeded)
-            authState = checkUserAuth();
-
+        authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
             return 0;
-
 
         if (!stricmp(method.str(), GET_METHOD))
         {
@@ -959,7 +924,6 @@ EspAuthState CEspHttpServer::checkUserAuth()
     //Or no authentication is required for certain situations of not rootAuthRequired();
     //Or this is a user request for updating password.
     EspAuthState authState = preCheckAuth(authReq);
-
     if (authState != authUnknown)
         return authState;
 
@@ -1116,6 +1080,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
 
         if (authReq.authBinding->getDomainAuthType() == AuthUserNameOnly)
             return handleUserNameOnlyMode(authReq);
+        return authSucceeded;
     }
 
     if (!m_apport->rootAuthRequired() && strieq(authReq.httpMethod.str(), GET_METHOD) &&

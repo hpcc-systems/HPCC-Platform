@@ -48,6 +48,7 @@ enum SecureSocketType
 interface ICertificateInfo : implements IInterface
 {
      virtual const char* getCN() = 0;
+     virtual bool getVerified() = 0;
 };
 
 // One instance per connection

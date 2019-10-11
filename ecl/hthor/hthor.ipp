@@ -213,6 +213,7 @@ protected:
     IException * makeWrappedException(IException * e) const;
     IException * makeWrappedException(IException * e, char const * extra) const;
     IEngineRowAllocator *rowAllocator;      
+    Owned<ClientCertificate> pClientCertificate;
 
 public:
     IMPLEMENT_IINTERFACE;
