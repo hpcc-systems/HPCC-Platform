@@ -17036,8 +17036,23 @@ public:
 
     virtual void stop()
     {
-        ForEachItemIn(i, expandedStreams)
-            expandedStreams.item(i)->stop();
+        for (unsigned i=0; i < numInputs; i++)
+        {
+            IFinalRoxieInput * cur = inputArray[i];
+            CRoxieServerNWayInputBaseActivity *nWayInput = dynamic_cast<CRoxieServerNWayInputBaseActivity *>(cur);
+            if (nWayInput)
+            {
+                unsigned numRealInputs = cur->numConcreteOutputs();
+                for (unsigned j = 0; j < numRealInputs; j++)
+                {
+                    cur->queryConcreteOutputStream(j)->stop();
+                }
+            }
+            else
+            {
+                queryConcreteOutputStream(i)->stop();
+            }
+        }
         CRoxieServerMultiInputBaseActivity::stop();
     }
 

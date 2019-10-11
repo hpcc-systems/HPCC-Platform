@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noroxie
-
 rec := RECORD
  STRING10 name;
  STRING1 sex;
