@@ -8374,10 +8374,12 @@ public:
             sortAlgorithm = (sortFlags & TAFspill) ? spillingMergeSortAlgorithm : mergeSortAlgorithm;
         else if (stricmp(algorithmName, "parmergesort")==0)
             sortAlgorithm = (sortFlags & TAFspill) ? spillingParallelMergeSortAlgorithm : parallelMergeSortAlgorithm;
+#ifdef _USE_TBB
         else if (stricmp(algorithmName, "tbbqsort")==0)
             sortAlgorithm = tbbQuickSortAlgorithm;
         else if (stricmp(algorithmName, "tbbstableqsort")==0)
             sortAlgorithm = tbbStableQuickSortAlgorithm;
+#endif
         else
         {
             if (*algorithmName)
