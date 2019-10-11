@@ -3398,9 +3398,13 @@ protected:
             totalPartSz += size;
         }
         offset_t avgPartSz = totalPartSz / np;
-
-        maxSkew = (unsigned)(10000.0 * (((double)maxPartSz-avgPartSz)/avgPartSz));
-        minSkew = (unsigned)(10000.0 * ((avgPartSz-(double)minPartSz)/avgPartSz));
+        if (0 == avgPartSz)
+            minSkew = maxSkew = 0;
+        else
+        {
+            maxSkew = (unsigned)(10000.0 * (((double)maxPartSz-avgPartSz)/avgPartSz));
+            minSkew = (unsigned)(10000.0 * ((avgPartSz-(double)minPartSz)/avgPartSz));
+        }
 
         return true;
     }
