@@ -2107,12 +2107,14 @@ public:
         }
         forkthread.setown(new cForkThread(this));
         forkthread->start();
+        bool joined = false;
         {
             CriticalUnblock unblock(sect); 
             started.wait();
-            forkthread->join(50); // give a chance to fail
+            joined = forkthread->join(50); // give a chance to fail
         }
-        if (retcode==START_FAILURE) {   
+        // only check retcode if we were able to join
+        if ( (joined) && (retcode==START_FAILURE) ) {
             DBGLOG("%s: PIPE process '%s' failed to start", title.get()?title.get():"CLinuxPipeProcess", prog.get());
             forkthread.clear();
             return false;
