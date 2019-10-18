@@ -643,7 +643,6 @@ public:
         mid.serializeCompress(mdmb);
         mdl = mdmb.length();
         const byte *mdp=(const byte *)mdmb.bufferBase();
-        unsigned i = 0;
         class casyncfor2: public CAsyncFor
         {
             NodeArray &slaves;
@@ -914,7 +913,6 @@ public:
                     if (logging) 
                         ActPrintLog(activity, "  wanted = %" CF "d, %stotal = %" CF "d, loc = %" CF "d, locwanted = %" CF "d\n",wanted,(total!=stotal)?"scaled ":"",tot,loc,nodewanted);
 #endif
-                    bool isdone=false;
                     unsigned __int64 error = (loc>nodewanted)?(loc-nodewanted):(nodewanted-loc);
                     if (error>maxerror)
                         maxerror = error;
@@ -1051,7 +1049,6 @@ public:
     {
         // I think this dependent on row being same format as meta
 
-        unsigned numsplits=numnodes-1;
         CThorExpandingRowArray splits(*activity, keyIf, ers_allow);
         char *s=cosortfilenames;
         unsigned i;
@@ -1085,7 +1082,6 @@ public:
     void CalcPreviousPartition()
     {
         ActPrintLog(activity, "Previous partition");
-        unsigned numsplits=numnodes-1;
         CThorExpandingRowArray splits(*activity, keyIf, ers_allow);
         unsigned i;
         for(i=1;i<numnodes;i++)

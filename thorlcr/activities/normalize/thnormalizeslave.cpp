@@ -34,7 +34,6 @@ class NormalizeSlaveActivity : public CSlaveActivity
     unsigned curRow;
     unsigned numThisRow;
     bool anyThisGroup;
-    size32_t crcExtraSize;
     Owned<IEngineRowAllocator> allocator;
 
 

@@ -30,11 +30,9 @@ class CXmlWriteActivityMaster : public CWriteMasterBase
 {
     IHThorXmlWriteArg *helper;
     ThorActivityKind kind;
-    unsigned headerLength;
-    unsigned footerLength;
 
 public:
-    CXmlWriteActivityMaster(CMasterGraphElement *info, ThorActivityKind _kind) : CWriteMasterBase(info), kind(_kind), headerLength(0), footerLength(0)
+    CXmlWriteActivityMaster(CMasterGraphElement *info, ThorActivityKind _kind) : CWriteMasterBase(info), kind(_kind)
     {
         helper = (IHThorXmlWriteArg *)queryHelper();
     }

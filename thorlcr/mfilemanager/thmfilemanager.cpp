@@ -428,7 +428,7 @@ public:
                         {
                             Owned<IDistributedFilePart> part = f->getPart(p);
                             offset_t sz = part->getFileSize(false, false);
-                            if (-1 != sz)
+                            if ((offset_t)-1 != sz)
                                 job.addNodeDiskUsage(p, -(__int64)sz);
                         }
                     }
@@ -487,6 +487,8 @@ public:
                 case MachineOsLinux:
                 case MachineOsSolaris:
                     os = DFD_OSunix;
+                    break;
+                default:
                     break;
             };
 

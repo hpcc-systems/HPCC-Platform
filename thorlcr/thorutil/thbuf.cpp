@@ -155,7 +155,6 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
             mb.ensureCapacity(blocksize);
             {
                 SpinUnblock unblock(lock);
-                unsigned p = 0;
                 byte b;
                 for (unsigned i=0;i<csavein.rq->ordinality();i++) {
                     if (waiting)
@@ -224,7 +223,6 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
             assertex(fileio.get());
             size32_t rd = fileio->read(blk*(offset_t)blocksize,readBlockSize,buf);
             assertex(rd==readBlockSize);
-            unsigned p = 0;
             for (;;) {
                 byte b;
                 ds.read(sizeof(b),&b);
@@ -913,7 +911,7 @@ protected:
     unsigned maxPoolChunks;
     bool reuseRowSets;
 
-    inline const rowcount_t readerWait(COutput &output, const rowcount_t rowsRead)
+    inline rowcount_t readerWait(COutput &output, const rowcount_t rowsRead)
     {
         if (rowsRead == rowsWritten)
         {

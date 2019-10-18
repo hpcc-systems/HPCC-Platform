@@ -90,8 +90,8 @@ public:
     virtual void init() override
     {
         CDiskReadMasterVF::init();
-        IHThorDiskReadArg *helper = (IHThorDiskReadArg *)queryHelper();
 #if 0 // JCSMORE
+        IHThorDiskReadArg *helper = (IHThorDiskReadArg *)queryHelper();
         hash = helper->queryRehash();
 #endif
     }
@@ -120,8 +120,6 @@ public:
     }
     virtual void process() override
     {
-        IRecordSize *recordSize = helper->queryOutputMeta();
-
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(helper->queryOutputMeta());
         OwnedConstThorRow result = getAggregate(*this, container.queryJob().querySlaves(), *rowIf, *helper, mpTag);
         if (!result)

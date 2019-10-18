@@ -654,7 +654,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     };
     class CKeyLookupRequest : public CLookupRequest
     {
-        CKJService &service;
         Linked<CKMContainer> kmc;
 
         rowcount_t abortLimit = 0;
@@ -718,7 +717,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         const unsigned DEFAULT_KEYLOOKUP_MAXREPLYSZ = 0x100000;
     public:
         CKeyLookupRequest(CKJService &_service, CKeyLookupContext *_ctx, CKMContainer *_kmc, rank_t _sender, mptag_t _replyTag)
-            : CLookupRequest(_ctx->queryActivityCtx(), _sender, _replyTag), kmc(_kmc), service(_service)
+            : CLookupRequest(_ctx->queryActivityCtx(), _sender, _replyTag), kmc(_kmc)
         {
             allocator = activityCtx->queryLookupInputAllocator();
             deserializer = activityCtx->queryLookupInputDeserializer();
@@ -819,7 +818,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     };
     class CFetchLookupRequest : public CLookupRequest
     {
-        CKJService &service;
         Linked<CFetchContext> fetchContext;
         const unsigned defaultMaxFetchLookupReplySz = 0x100000;
         const IDynamicTransform *translator = nullptr;
@@ -872,8 +870,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     public:
         CFetchLookupRequest(CKJService &_service, CFetchContext *_fetchContext, rank_t _sender, mptag_t _replyTag)
             : CLookupRequest(_fetchContext->queryActivityCtx(), _sender, _replyTag),
-              fetchContext(_fetchContext), prefetchSource(fetchContext->queryPrefetchSource()),
-              service(_service)
+              fetchContext(_fetchContext), prefetchSource(fetchContext->queryPrefetchSource())
         {
             allocator = activityCtx->queryFetchInputAllocator();
             deserializer = activityCtx->queryFetchInputDeserializer();
@@ -932,12 +929,11 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     };
     class CRemoteLookupProcessor : public CSimpleInterfaceOf<IPooledThread>
     {
-        CKJService &service;
         Owned<CLookupRequest> lookupRequest;
         bool abortSoon = false;
 
     public:
-        CRemoteLookupProcessor(CKJService &_service) : service(_service)
+        CRemoteLookupProcessor(CKJService &_service)
         {
         }
     // IPooledThread impl.
@@ -1281,8 +1277,8 @@ public:
                     break;
                 assertex(currentJob);
                 KJServiceCmds cmd;
-                msg.read((byte &)cmd);
-                msg.read((unsigned &)replyTag);
+                readUnderlyingType<KJServiceCmds>(msg, cmd);
+                readUnderlyingType<mptag_t>(msg, replyTag);
                 switch (cmd)
                 {
                     case kjs_keyopen:
@@ -1300,7 +1296,7 @@ public:
                         msg.read(messageCompression);
                         keyLookupContext->queryActivityCtx()->setMessageCompression(messageCompression);
                         RecordTranslationMode translationMode;
-                        msg.read(reinterpret_cast<std::underlying_type<RecordTranslationMode>::type &> (translationMode));
+                        readUnderlyingType(msg, translationMode);
                         if (RecordTranslationMode::None != translationMode)
                         {
                             unsigned publishedFormatCrc;
@@ -1383,7 +1379,7 @@ public:
                         activityCtx->setMessageCompression(messageCompression);
 
                         RecordTranslationMode translationMode;
-                        msg.read(reinterpret_cast<std::underlying_type<RecordTranslationMode>::type &> (translationMode));
+                        readUnderlyingType(msg, translationMode);
                         if (RecordTranslationMode::None != translationMode)
                         {
                             unsigned publishedFormatCrc;
@@ -1397,7 +1393,6 @@ public:
                             else
                                 projectedFormat.set(publishedFormat);
 
-                            IHThorKeyedJoinArg *helper = activityCtx->queryHelper();
                             fetchContext->setTranslation(translationMode, publishedFormat, publishedFormatCrc, projectedFormat);
                         }
 
@@ -1432,7 +1427,6 @@ public:
                             continue;
                         }
 
-                        CActivityContext *activityCtx = fetchContext->queryActivityCtx();
                         Owned<CFetchLookupRequest> lookupRequest = new CFetchLookupRequest(*this, fetchContext, sender, replyTag);
 
                         size32_t requestSz;
@@ -1458,6 +1452,8 @@ public:
                         msg.clear();
                         break;
                     }
+                    default:
+                        throwUnexpected();
                 }
             }
             catch (IMP_Exception *e)
@@ -1725,10 +1721,10 @@ public:
         while (!stopped && queryNodeComm().recv(msg, 0, masterSlaveMpTag))
         {
             doReply = true;
-            msgids cmd;
             try
             {
-                msg.read((unsigned &)cmd);
+                msgids cmd;
+                readUnderlyingType<msgids>(msg, cmd);
                 switch (cmd)
                 {
                     case QueryInit:
@@ -2235,7 +2231,6 @@ public:
         if (item)
         {
             lookup.removeExact(item);
-            unsigned pos = fipList.find(item);
             fipList.dequeue(item);
             item->Release();
             write();

@@ -43,7 +43,6 @@ protected:
     rowcount_t aggregateToLimit()
     {
         rowcount_t total = 0;
-        ICommunicator &comm = queryJobChannel().queryJobComm();
         unsigned slaves = container.queryJob().querySlaves();
         unsigned s;
         for (s=0; s<slaves; s++)
@@ -185,7 +184,6 @@ protected:
                     else
                     {
                         // if not partitionable filter, all parts need to be used
-                        unsigned nparts = f->numParts();
                         for (unsigned p=0; p<f->numParts(); p++)
                             performPartLookup.replace(true, p);
                     }

@@ -13,6 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-reorder -Wno-unused-parameter -Wno-overloaded-virtual -Wno-delete-non-virtual-dtor")
+endif()
+
 add_subdirectory (activities)
 add_subdirectory (graph)
 add_subdirectory (master)

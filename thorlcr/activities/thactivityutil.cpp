@@ -488,13 +488,12 @@ static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICo
     StringBuffer primaryName;
     getPartFilename(partDesc, 0, primaryName);;
     RemoteFilename rfn;
-    IFileDescriptor &fileDesc = partDesc.queryOwner();
     unsigned copies = partDesc.numCopies();
     unsigned c=1;
     for (; c<copies; c++)
     {
         unsigned replicateCopy;
-        unsigned clusterNum = partDesc.copyClusterNum(c, &replicateCopy);
+        partDesc.copyClusterNum(c, &replicateCopy);
         rfn.clear();
         partDesc.getFilename(c, rfn);
         StringBuffer dstName;
@@ -561,13 +560,12 @@ static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICo
 void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc)
 {
     RemoteFilename rfn;
-    IFileDescriptor &fileDesc = partDesc.queryOwner();
     unsigned copies = partDesc.numCopies();
     unsigned c=1;
     for (; c<copies; c++)
     {
         unsigned replicateCopy;
-        unsigned clusterNum = partDesc.copyClusterNum(c, &replicateCopy);
+        partDesc.copyClusterNum(c, &replicateCopy);
         rfn.clear();
         partDesc.getFilename(c, rfn);
         StringBuffer dstName;

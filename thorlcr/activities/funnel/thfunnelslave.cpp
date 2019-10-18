@@ -117,7 +117,6 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
 
     CSlaveActivity &activity;
     CIArrayOf<CInputHandler> inputHandlers;
-    bool startInputs;
     Linked<IException> exception;
     unsigned eoss;
     StringAttr idStr;

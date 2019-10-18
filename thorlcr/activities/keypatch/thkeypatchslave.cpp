@@ -153,7 +153,7 @@ public:
         StringBuffer newIndexFilePath;
         Owned<IFile> ifile = createIFile(getPartFilename(*newIndexPart, 0, newIndexFilePath).str());
         offset_t sz = ifile->size();
-        if (-1 != sz)
+        if ((offset_t)-1 != sz)
             container.queryJob().queryIDiskUsage().increase(sz);
         mb.append(sz);
 
@@ -170,7 +170,7 @@ public:
             StringBuffer filePath;
             Owned<IFile> ifile = createIFile(getPartFilename(*newIndexTlkPart, 0, filePath).str());
             offset_t sz = ifile->size();
-            if (-1 != sz)
+            if ((offset_t)-1 != sz)
                 container.queryJob().queryIDiskUsage().increase(sz);
             mb.append(sz);
 

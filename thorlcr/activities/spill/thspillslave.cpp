@@ -137,7 +137,7 @@ public:
     {
         Owned<IFile> ifile = createIFile(fileName.str());
         offset_t sz = ifile->size();
-        if (-1 != sz)
+        if ((offset_t)-1 != sz)
             container.queryJob().queryIDiskUsage().increase(sz);        
         mb.append(getDataLinkCount()).append(compress?uncompressedBytesWritten:sz).append(sz);
         unsigned crc = compress?~0:fileCRC.get();

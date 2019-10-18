@@ -173,8 +173,6 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
         Owned<IBitSet> emptyIterationSlaves = createThreadSafeBitSet();
         unsigned loopEnds = 0;
         unsigned nodes = queryJob().querySlaves();
-        unsigned n = nodes;
-        bool allEmptyIterations = true;
         CMessageBuffer msg;
         for (;;)
         {
@@ -314,7 +312,7 @@ public:
         unsigned maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
         Owned<IThorGraphResults> loopResults = queryGraph().createThorGraphResults(maxIterations);
-        IThorResult *result = loopResults->createResult(*this, 0, this, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped));
+        loopResults->createResult(*this, 0, this, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped));
 
         helper->createParentExtract(extractBuilder);
 
@@ -361,7 +359,6 @@ public:
     virtual void createResult() = 0;
     virtual void process() override
     {
-        IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
         inputRowIf.setown(createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta()));
         createResult();
     }
@@ -394,7 +391,6 @@ public:
     }
     virtual void createResult()
     {
-        IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
         CGraphBase *graph = container.queryResultsGraph();
         graph->createGraphLoopResult(*this, inputRowIf, mergeResultTypes(thorgraphresult_distributed, thorgraphresult_grouped)); // NB graph owns result
     }

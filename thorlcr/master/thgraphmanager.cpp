@@ -457,14 +457,12 @@ void CJobManager::run()
 
     class CThorListener : public CSimpleInterface, implements IThreaded
     {
-        bool stopped;
         CThreaded threaded;
         mptag_t mptag;
-        CJobManager &jobManager;
+        bool stopped = false;
     public:
-        CThorListener(CJobManager &_jobManager, mptag_t _mptag) : threaded("CDaliConnectionValidator"), jobManager(_jobManager), mptag(_mptag)
+        CThorListener(mptag_t _mptag) : threaded("CDaliConnectionValidator"), mptag(_mptag)
         {
-            stopped = false;
             threaded.init(this);
         }
         ~CThorListener() { stop(); threaded.join(); }
@@ -494,7 +492,7 @@ void CJobManager::run()
                     PROGLOG("Unknown cmd = %s", cmd.get());
             }
         }
-    } stopThorListener(*this, MPTAG_THOR);
+    } stopThorListener(MPTAG_THOR);
     StringBuffer exclusiveLockName;
     Owned<IDaliMutex> exclLockDaliMutex;
     if (globals->getProp("@multiThorExclusionLockName",exclusiveLockName))
@@ -832,7 +830,6 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     }
     workunit.forceReload();
     StringAttr wuid(workunit.queryWuid());
-    const char *totalTimeStr = "Total thor time";
     cycle_t startCycles = get_cycles_now();
 
     Owned<IConstWUQuery> query = workunit.getQuery(); 

@@ -110,7 +110,7 @@
 
 enum ThorExceptionAction { tea_null, tea_warning, tea_abort, tea_shutdown };
 
-enum RegistryCode { rc_register, rc_deregister };
+enum RegistryCode:unsigned { rc_register, rc_deregister };
 
 #define createThorRow(size)         malloc(size)
 #define destroyThorRow(ptr)         free(ptr)
@@ -470,7 +470,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IExcep
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;
 extern graph_decl mptag_t kjServiceMpTag;
-enum SlaveMsgTypes { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };
+enum SlaveMsgTypes:unsigned { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };
 // Logging
 extern graph_decl const LogMsgJobInfo thorJob;
 
@@ -535,6 +535,12 @@ extern graph_decl bool isRemoteReadCandidate(const CActivityBase &activity, cons
 extern graph_decl void checkAndDumpAbortInfo(const char *cmd);
 
 extern graph_decl void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *expectedType, bool throwException);
+
+template <class T>
+inline void readUnderlyingType(MemoryBuffer &mb, T &v)
+{
+    mb.read(reinterpret_cast<typename std::underlying_type<T>::type &> (v));
+}
 
 #endif
 

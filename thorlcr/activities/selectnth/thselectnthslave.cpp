@@ -98,7 +98,6 @@ public:
         }
 
         rowcount_t rowN = (rowcount_t)helper->getRowToSelect();
-        IStartableEngineRowStream *lookAhead = nullptr;
         if (!isLocal && rowN)
         {
             if (ensureStartFTLookAhead(0))
