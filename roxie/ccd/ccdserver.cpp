@@ -2039,7 +2039,7 @@ protected:
     IEngineRowStream *inputStream;
     IRecordPullerCallback *helper;
     Semaphore started;                      // MORE: GH->RKC I'm pretty sure this can be deleted, since handled by RestartableThread
-    bool groupAtOnce, eof, eog;
+    bool groupAtOnce, eof, eog, stopped;
     CriticalSection crit;
 
 public:
@@ -2049,7 +2049,7 @@ public:
         input = NULL;
         inputStream = NULL;
         helper = NULL;
-        eof = eog = FALSE;
+        eof = eog = stopped = FALSE;
     }
 
     inline unsigned __int64 queryTotalCycles() const
@@ -2083,6 +2083,7 @@ public:
     {
         eof = false;
         eog = false;
+        stopped = false;
         input->start(parentExtractSize, parentExtract, paused);
         startJunction(junction);
         try
@@ -2134,10 +2135,17 @@ public:
                 inputStream->stop();
         }
         RestartableThread::join();
+        stopped = true;
     }
 
     void reset()
     {
+        if (!stopped)
+        {
+            DBGLOG("RecordPullerThread reset without stop");
+            assert(stopped);
+            stop();
+        }
         input->reset();
         resetJunction(junction);
     }
@@ -24559,6 +24567,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         processed = remote.processed;
         remote.processed = 0;
         puller.reset();
@@ -24567,7 +24576,6 @@ public:
             varFileInfo.clear();
             map.clear();
         }
-        CRoxieServerActivity::reset();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
