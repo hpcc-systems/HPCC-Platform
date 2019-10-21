@@ -71,7 +71,7 @@ EXPORT Definition3 := $.Definition2 + 5;
   //also available throughout its own module</programlisting>
   </sect2>
 
-  <sect2 id="Local">
+  <sect2 id="Local_Definition">
     <title>Local</title>
 
     <para>A definition without either the EXPORT or SHARED keywords is
