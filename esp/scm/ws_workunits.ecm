@@ -43,6 +43,13 @@ ESPenum EclDefinitionActions : string
     Publish("Publish"),
 };
 
+ESPenum ErrorMessageFormat : string
+{
+    XML("xml"),
+    JSON("json"),
+    Text("text")
+};
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -898,6 +905,7 @@ ESPrequest WULogFileRequest
     [min_ver("1.38")] string LogDate;
     [min_ver("1.38")] int SlaveNumber(1);
     [min_ver("1.55")] int64 SizeLimit(0);
+    [min_ver("1.77")] ESPenum ErrorMessageFormat ErrorMessageFormat;
     string PlainText;
 };
 

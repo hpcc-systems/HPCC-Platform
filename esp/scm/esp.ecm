@@ -52,7 +52,8 @@ typedef enum ESPSerializationFormat_
     ESPSerializationANY,
     ESPSerializationXML,
     ESPSerializationJSON,
-    ESPSerializationCSV
+    ESPSerializationCSV,
+    ESPSerializationTEXT
 } ESPSerializationFormat;
 
 typedef enum AuthType_
