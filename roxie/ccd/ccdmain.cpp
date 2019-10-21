@@ -730,6 +730,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             StringBuffer workunitName;
             globals->getProp("--loadWorkunit", workunitName);
             standAloneDll.setown(createQueryDll(workunitName));
+            runOnce = globals->getPropInt("--port", 0) == 0;
         }
         else
         {
