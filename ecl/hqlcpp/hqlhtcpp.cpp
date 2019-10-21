@@ -15582,7 +15582,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityProject(BuildCtx & ctx, IHqlEx
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHqlExpression * expr)
 {
-    IHqlExpression * dataset = expr->queryChild(0);
+    LinkedHqlExpr dataset = expr->queryChild(0);
+    if (dataset->isDatarow())
+        dataset.setown(createDatasetFromRow(LINK(dataset)));
     bool serialize = (expr->getOperator() == no_serialize);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);

@@ -9906,6 +9906,17 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             return QuickHqlTransformer::createTransformedBody(expr);
         }
         break;
+    case no_libraryinput:
+        {
+            //no_libraryinput are passed in in their serialized form.  But this transformation adds LCR to all records
+            //of the same type regardless of where they are used.
+            //Ideally it would be context depenedent, but I have no idea how to implement that currently, so for the
+            //moment ensure the no_libraryinput uses the serialized form, but then transform to in memory form.
+            OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
+            if (expr != transformed)
+                return ensureDeserialized(expr, transformed->queryType(), diskAtom);
+            return transformed.getClear();
+        }
     case no_output:
         //would this be a good idea for output to file?  output to pipe?
         if (false)
