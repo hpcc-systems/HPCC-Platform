@@ -4325,6 +4325,8 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     switch (op)
     {
     case no_newkeyindex:
+        if (!canDefinitelyProcessWithTranslator(expr->queryRecord()))
+            break;
         extra->sourceOp = no_compound_indexread;
         extra->uid.set(expr->queryAttribute(_uid_Atom));
         extra->mode = no_thor;
@@ -4333,6 +4335,8 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
         {
             IHqlExpression * mode = expr->queryChild(2);
             if (!mode)
+                break;
+            if (!canDefinitelyProcessWithTranslator(expr->queryRecord()))
                 break;
             switch (mode->getOperator())
             {

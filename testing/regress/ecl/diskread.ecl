@@ -72,7 +72,7 @@ DG_FlatFile_pl0 := PRELOAD(Files.DG_FlatFile);
 DG_FlatFileEvens_pl0 := PRELOAD(Files.DG_FlatFileEvens);
 //DG_CSVFile_pl0 := PRELOAD(Files.DG_CSVFile);
 //DG_XMLFile_pl0 := PRELOAD(Files.DG_XMLFile);
-DG_VarFile_pl0 := PRELOAD(Files.DG_VarFile);
+//DG_VarFile_pl0 := PRELOAD(Files.DG_VarFile);
 
 // straight disk count
 
@@ -80,7 +80,7 @@ count(DG_FlatFile_pl0);
 count(DG_FlatFileEvens_pl0);
 //count(DG_CSVFile_pl0);
 //count(DG_XMLFile_pl0);
-count(DG_VarFile_pl0);
+//count(DG_VarFile_pl0);
 
 // straight disk read
 
@@ -88,7 +88,7 @@ COUNT(DEDUP(DG_FlatFile_pl0, RECORD));
 COUNT(DEDUP(DG_FlatFileEvens_pl0, RECORD));
 //COUNT(DEDUP(DG_CSVFile_pl0, RECORD));
 //COUNT(DEDUP(DG_XMLFile_pl0, RECORD));
-COUNT(DEDUP(DG_VarFile_pl0, RECORD));
+//COUNT(DEDUP(DG_VarFile_pl0, RECORD));
 
 // filtered disk read
 
@@ -96,7 +96,7 @@ output(DG_FlatFile_pl0(DG_firstname='CLAIRE'));
 output(DG_FlatFileEvens_pl0(DG_firstname='CLAIRE'));
 //output(DG_CSVFile_pl0(DG_firstname='CLAIRE'));
 //output(DG_XMLFile_pl0(DG_firstname='CLAIRE'));
-output(DG_VarFile_pl0(DG_firstname='CLAIRE'));
+//output(DG_VarFile_pl0(DG_firstname='CLAIRE'));
 
 // keyed disk read
 

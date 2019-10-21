@@ -4069,3 +4069,82 @@ CHqlMetaProperty * queryMetaProperty(IHqlExpression * expr)
     CHqlExprMeta::addProperty(body, EPmeta, info);
     return info;
 }
+
+//--------------------------------------------------------------------------------------------------------------------
+
+inline bool isSelfSelect(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_select)
+        return false;
+    if (expr->queryChild(0)->getOperator() != no_selfref)
+        return false;
+    return true;
+}
+
+//This should possibly cache the results for a record using an attribute....
+bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
+{
+    dbgassertex(record->getOperator() == no_record);
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_field:
+        {
+            ITypeInfo * type = cur->queryType();
+            switch (type->getTypeCode())
+            {
+            case type_alien:
+            case type_any: // I doubt these ever occur...
+            case type_bitfield: // Need to check if these have been implemented
+                return false;
+            case type_row:
+                if (hasReferenceModifier(type))  // Never currently generated
+                    return false;
+                if (!canDefinitelyProcessWithTranslator(cur->queryRecord()))
+                    return false;
+                break;
+            case type_dictionary:
+            case type_groupedtable:
+            case type_table:
+                {
+                    //Check for weird versions of DATASET where the count/size are specified by another field.
+                    ForEachChild(j, cur)
+                    {
+                        IHqlExpression * attr = cur->queryChild(j);
+                        if (attr->isAttribute())
+                        {
+                            IAtom * name = attr->queryName();
+                            if ((name == countAtom) || (name == sizeofAtom))
+                                return false;
+                        }
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+        case no_ifblock:
+            {
+                IHqlExpression * cond = cur->queryChild(0);
+                node_operator condOp = cond->getOperator();
+                //Match the subset of the expressions that are supported by the record translation
+                //false positives are acceptable, false negatives are not
+                if ((condOp == no_eq) || (condOp == no_ne))
+                {
+                    //SELF.x [=|!=] constant
+                    IHqlExpression * lhs = cond->queryChild(0);
+                    IHqlExpression * rhs = cond->queryChild(1);
+                    if (isSelfSelect(lhs) && rhs->getOperator() == no_constant)
+                        return true;
+                }
+                else if (isSelfSelect(cond)) // SELF.someboolean
+                    return true;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}

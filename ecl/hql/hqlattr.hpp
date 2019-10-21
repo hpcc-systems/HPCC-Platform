@@ -49,6 +49,9 @@ extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr, IAtom *
 extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation);
 extern HQL_API IHqlExpression * getPackedRecord(IHqlExpression * expr);
 
+// Is it possible to process this record using the record translators.  May have false -ves, but no false +ves.
+extern HQL_API bool canDefinitelyProcessWithTranslator(IHqlExpression * record);
+
 //This returns a record that compares equal with another result if the normalized records will compare equal
 extern HQL_API IHqlExpression * getUnadornedRecordOrField(IHqlExpression * expr);
 
