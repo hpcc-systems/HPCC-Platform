@@ -83,10 +83,10 @@
           <para><emphasis role="bold">H</emphasis>igh <emphasis
           role="bold">P</emphasis>erformance <emphasis
           role="bold">C</emphasis>omputing <emphasis
-          role="bold">C</emphasis>luster (HPCC) Systems is a massively parallel
-          processing computing platform that solves Big Data problems. See
-          http://www.hpccsystems.com/Why-HPCC/How-it-works for more
-          details.</para>
+          role="bold">C</emphasis>luster (HPCC) Systems is a massively
+          parallel processing computing platform that solves Big Data
+          problems. See http://www.hpccsystems.com/Why-HPCC/How-it-works for
+          more details.</para>
         </footnote>. We will write code in ECL<footnote>
           <para><emphasis role="bold">E</emphasis>nterprise <emphasis
           role="bold">C</emphasis>ontrol <emphasis
@@ -101,8 +101,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>You have a running HPCC Systems platform. This can be a VM Edition or a single
-          or multinode HPCC Systems platform</para>
+          <para>You have a running HPCC Systems platform. This can be a VM
+          Edition or a single or multinode HPCC Systems platform</para>
         </listitem>
       </itemizedlist>
 
@@ -127,13 +127,14 @@
         </listitem>
 
         <listitem>
-          <para>Spray the file to a Data Refinery cluster HPCC Systems clusters
-          "spray" data into file parts on each node.</para>
+          <para>Spray the file to a Data Refinery cluster HPCC Systems
+          clusters "spray" data into file parts on each node.</para>
 
           <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
-          the relocation of a data file from one location to an HPCC Systems cluster.
-          The term spray was adopted due to the nature of the file movement --
-          the file is partitioned across all nodes within a cluster.</para>
+          the relocation of a data file from one location to an HPCC Systems
+          cluster. The term spray was adopted due to the nature of the file
+          movement -- the file is partitioned across all nodes within a
+          cluster.</para>
         </listitem>
 
         <listitem>
@@ -172,9 +173,9 @@
       <title>The Original Data</title>
 
       <para>In this scenario, we receive a structured data file containing
-      records with people's names and addresses. The HPCC Systems platform also supports
-      unstructured data, but this example is simpler. This file is documented
-      in the following table:</para>
+      records with people's names and addresses. The HPCC Systems platform
+      also supports unstructured data, but this example is simpler. This file
+      is documented in the following table:</para>
 
       <para></para>
 
@@ -270,8 +271,8 @@
         running on that server to enable file sprays and desprays.</para>
 
         <para>For smaller data files, you can use the upload/download file
-        utility in ECL Watch (a Web-based interface to your HPCC Systems platform).
-        The sample data file is ~100 mb.</para>
+        utility in ECL Watch (a Web-based interface to your HPCC Systems
+        platform). The sample data file is ~100 mb.</para>
 
         <orderedlist>
           <listitem>
@@ -279,9 +280,9 @@
             Systems<superscript>®</superscript> portal.</para>
 
             <para>The data file is available from links found on <ulink
-            url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink>.
-            The download is approximately 30 MB (compressed) and is available
-            in either ZIP or tar.gz format (<emphasis
+            url="https://hpccsystems.com/training/documentation/tutorials">https://hpccsystems.com/training/documentation/tutorials</ulink>
+            . The download is approximately 30 MB (compressed) and is
+            available in either ZIP or tar.gz format (<emphasis
             role="bold">OriginalPerson.tar.gz</emphasis> or <emphasis
             role="bold">OriginalPerson.zip</emphasis>)</para>
           </listitem>
@@ -295,7 +296,8 @@
             Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
             where nnn.nnn.nnn.nnn is your ESP<footnote>
                 <para>The ESP (Enterprise Services Platform) Server is the
-                communication layer server in you HPCC Systems environment.</para>
+                communication layer server in you HPCC Systems
+                environment.</para>
               </footnote> Server's IP address.</para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -386,8 +388,8 @@
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
         <title>Spray the Data File to your Thor Cluster</title>
 
-        <para>To use the data file in our HPCC Systems cluster, we must first "spray"
-        it to a Thor cluster. A <emphasis>spray</emphasis> or
+        <para>To use the data file in our HPCC Systems cluster, we must first
+        "spray" it to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the
         nature of the file movement -- the file is partitioned across all
