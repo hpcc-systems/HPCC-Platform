@@ -47,16 +47,25 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     #UNIQUENAME(bestNamePrefix);
     #UNIQUENAME(recLevel);
 
+    IMPORT DataPatterns;
     IMPORT Std;
 
-    LOCAL DATAREC_NAME := 'DataRec';
-    LOCAL LAYOUT_NAME := 'Layout';
+    // Attribute naming note:  In order to reduce symbol collisions with calling
+    // code, all LOCAL attributes are prefixed with two underscore characters;
+    // normally, a #UNIQUENAME would be used instead, but there is apparently
+    // a problem with using that for ECL attributes when another function
+    // macro is called (namely, Profile); using double underscores is not an
+    // optimal solution but the chance of symbol collision should at least be
+    // reduced
 
-    LOCAL StringRec := {STRING s};
+    LOCAL __DATAREC_NAME := 'DataRec';
+    LOCAL __LAYOUT_NAME := 'Layout';
+
+    LOCAL __StringRec := {STRING s};
 
     // Helper function for determining if old and new data types need
     // explicit type casting
-    LOCAL NeedCoercion(STRING oldType, STRING newType) := FUNCTION
+    LOCAL __NeedCoercion(STRING oldType, STRING newType) := FUNCTION
         GenericType(STRING theType) := MAP
             (
                 theType[..6] = 'string'                 =>  'string',
@@ -87,7 +96,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     // Build a dataset containing information about embedded records and
     // child datasets; we need to track the beginning and ending positions
     // of the fields defined within those structures
-    LOCAL ChildRecInfoLayout := RECORD
+    LOCAL __ChildRecInfoLayout := RECORD
         STRING      layoutType;
         STRING      layoutName;
         STRING      fieldName;
@@ -95,7 +104,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         UNSIGNED2   endPos;
     END;
 
-    LOCAL childRecInfo := DATASET
+    LOCAL __childRecInfo := DATASET
         (
             [
                 #SET(bestFieldStack, '')
@@ -135,12 +144,12 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                     #END
                 #END
             ],
-            ChildRecInfoLayout
+            __ChildRecInfoLayout
         );
 
     // Extract the original data type and position of the fields within the
     // input dataset
-    LOCAL FieldInfoLayout := RECORD
+    LOCAL __FieldInfoLayout := RECORD
         STRING      eclType;
         STRING      name;
         STRING      fullName;
@@ -150,7 +159,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         UNSIGNED2   position;
     END;
 
-    LOCAL fieldInfo0 := DATASET
+    LOCAL __fieldInfo0 := DATASET
         (
             [
                 #SET(bestFieldStack, '')
@@ -185,14 +194,14 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                     #END
                 #END
             ],
-            FieldInfoLayout
+            __FieldInfoLayout
         );
 
     // Attach the record end positions for embedded records and child datasets
-    LOCAL fieldInfo10 := JOIN
+    LOCAL __fieldInfo10 := JOIN
         (
-            fieldInfo0,
-            childRecInfo,
+            __fieldInfo0,
+            __childRecInfo,
             LEFT.name = RIGHT.fieldName AND LEFT.position = RIGHT.startPos,
             TRANSFORM
                 (
@@ -207,14 +216,14 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         );
 
     // Get the best data types from the Profile() function
-    LOCAL patternRes := DataPatterns.Profile(inFile, features := 'best_ecl_types', sampleSize := sampling);
+    LOCAL __patternRes := DataPatterns.Profile(inFile, features := 'best_ecl_types', sampleSize := sampling);
 
     // Append the derived 'best' data types to the field information we
     // already collected
-    LOCAL fieldInfo15 := JOIN
+    LOCAL __fieldInfo15 := JOIN
         (
-            fieldInfo10,
-            patternRes,
+            __fieldInfo10,
+            __patternRes,
             LEFT.fullName = RIGHT.attribute,
             TRANSFORM
                 (
@@ -230,9 +239,9 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
 
     // Determine fields that must have explicit coercion if we are supplying
     // transform information
-    LOCAL fieldInfo20 := PROJECT
+    LOCAL __fieldInfo20 := PROJECT
         (
-            fieldInfo15,
+            __fieldInfo15,
             TRANSFORM
                 (
                     {
@@ -240,12 +249,12 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                         STRING      bestAssignment
                     },
                     shouldRewriteType := ((LEFT.isDataset OR LEFT.isRecord) AND LEFT.bestAttributeType IN ['<unnamed>', 'table of <unnamed>']);
-                    tempDSName := DATAREC_NAME + '_' + INTFORMAT(COUNTER, 4, 1);
+                    tempDSName := __DATAREC_NAME + '_' + INTFORMAT(COUNTER, 4, 1);
                     SELF.eclType := IF(NOT shouldRewriteType, Std.Str.ToUpperCase(LEFT.eclType), tempDSName),
                     SELF.bestAttributeType := IF(NOT shouldRewriteType, LEFT.bestAttributeType, tempDSName),
                     SELF.bestAssignment := IF
                         (
-                            NeedCoercion(SELF.eclType, SELF.bestAttributeType),
+                            __NeedCoercion(SELF.eclType, SELF.bestAttributeType),
                             '    SELF.' + LEFT.name + ' := (' + Std.Str.ToUppercase(SELF.bestAttributeType) + ')r.' + LEFT.name + ';',
                             ''
                         ),
@@ -253,30 +262,30 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                 )
         );
 
-    LOCAL LayoutItems := RECORD(StringRec)
-        STRING                  fullName := '';
-        STRING                  bestAssignment := '';
+    LOCAL __LayoutItems := RECORD(__StringRec)
+        STRING                      fullName {DEFAULT('')};
+        STRING                      bestAssignment {DEFAULT('')};
     END;
 
-    LOCAL ChildRecLayout := RECORD
-        STRING                  layoutName;
-        UNSIGNED2               startPos;
-        UNSIGNED2               endPos;
-        UNSIGNED2               depth;
-        DATASET(LayoutItems)    items;
+    LOCAL __ChildRecLayout := RECORD
+        STRING                      layoutName;
+        UNSIGNED2                   startPos;
+        UNSIGNED2                   endPos;
+        UNSIGNED2                   depth;
+        DATASET(__LayoutItems)      items;
     END;
 
     // Function for creating ECL TRANSFORM assignment statements
-    LOCAL MakeRecDefinition(DATASET(RECORDOF(fieldInfo20)) ds, STRING layoutName, BOOLEAN useBest = TRUE) := FUNCTION
+    LOCAL __MakeRecDefinition(DATASET(RECORDOF(__fieldInfo20)) ds, STRING layoutName, BOOLEAN useBest = TRUE) := FUNCTION
         displayPrefix := IF(useBest, 'New', 'Old');
         displayedLayoutName := displayPrefix + layoutName;
-        RETURN DATASET([{displayedLayoutName + ' := RECORD'}], LayoutItems)
+        RETURN DATASET([{displayedLayoutName + ' := RECORD'}], __LayoutItems)
             & PROJECT
                 (
                     SORT(ds, position),
                     TRANSFORM
                         (
-                            LayoutItems,
+                            __LayoutItems,
                             attrType := IF(useBest, LEFT.bestAttributeType, LEFT.eclType);
                             attrPrefix := IF(LEFT.isDataset OR LEFT.isRecord, displayPrefix, '');
                             fullAttrType := attrPrefix + attrType;
@@ -292,23 +301,23 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                             SELF := LEFT
                         )
                 )
-            & DATASET([{'END;'}], LayoutItems);
+            & DATASET([{'END;'}], __LayoutItems);
     END;
 
     // Iteratively process embedded records and child dataset definitions,
     // extracting each into its own record
-    LOCAL ProcessChildRecs(DATASET(ChildRecLayout) layoutDS, UNSIGNED2 aDepth, BOOLEAN useBest = TRUE) := FUNCTION
-        bestNamedChildRecs := DENORMALIZE
+    LOCAL __ProcessChildRecs(DATASET(__ChildRecLayout) layoutDS, UNSIGNED2 aDepth, BOOLEAN useBest = TRUE) := FUNCTION
+        __bestNamedChildRecs := DENORMALIZE
             (
-                fieldInfo20(depth = (aDepth - 1) AND (isRecord OR isDataset)),
-                fieldInfo20(depth = aDepth),
+                __fieldInfo20(depth = (aDepth - 1) AND (isRecord OR isDataset)),
+                __fieldInfo20(depth = aDepth),
                 RIGHT.position BETWEEN LEFT.position + 1 AND LEFT.endPosition,
                 GROUP,
                 TRANSFORM
                     (
-                        ChildRecLayout,
+                        __ChildRecLayout,
                         SELF.layoutName := LEFT.bestAttributeType,
-                        SELF.items := MakeRecDefinition(ROWS(RIGHT), SELF.layoutName, useBest),
+                        SELF.items := __MakeRecDefinition(ROWS(RIGHT), SELF.layoutName, useBest),
                         SELF.startPos := LEFT.position,
                         SELF.endPos := LEFT.endPosition,
                         SELF.depth := aDepth,
@@ -317,120 +326,120 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                 ALL, ORDERED(TRUE)
             ) : ONWARNING(4531, IGNORE);
 
-        RETURN layoutDS + bestNamedChildRecs;
+        RETURN layoutDS + __bestNamedChildRecs;
     END;
 
     // Create a list of embedded records and child dataset definitions for the
     // original input dataset
-    LOCAL oldNamedChildRecs0 := LOOP
+    LOCAL __oldNamedChildRecs0 := LOOP
         (
-            DATASET([], ChildRecLayout),
-            MAX(fieldInfo20, depth),
-            ProcessChildRecs(ROWS(LEFT), MAX(fieldInfo20, depth) + 1 - COUNTER, FALSE)
+            DATASET([], __ChildRecLayout),
+            MAX(__fieldInfo20, depth),
+            __ProcessChildRecs(ROWS(LEFT), MAX(__fieldInfo20, depth) + 1 - COUNTER, FALSE)
         );
 
-    LOCAL oldNamedChildRecs := SORT(oldNamedChildRecs0, endPos, -startPos);
+    LOCAL __oldNamedChildRecs := SORT(__oldNamedChildRecs0, endPos, -startPos);
 
-    LOCAL topLevelOldRecDef := DATASET
+    LOCAL __topLevelOldRecDef := DATASET
         (
             [
                 {
-                    LAYOUT_NAME,
+                    __LAYOUT_NAME,
                     0,
                     0,
                     0,
-                    MakeRecDefinition(fieldInfo20(depth = 0), LAYOUT_NAME, FALSE)
+                    __MakeRecDefinition(__fieldInfo20(depth = 0), __LAYOUT_NAME, FALSE)
                 }
             ],
-            ChildRecLayout
+            __ChildRecLayout
         );
 
-    LOCAL allOldRecDefs := oldNamedChildRecs & topLevelOldRecDef;
+    LOCAL __allOldRecDefs := __oldNamedChildRecs & __topLevelOldRecDef;
 
     // Create a list of embedded records and child dataset definitions using the
     // the recommended ECL datatypes
-    LOCAL bestNamedChildRecs0 := LOOP
+    LOCAL __bestNamedChildRecs0 := LOOP
         (
-            DATASET([], ChildRecLayout),
-            MAX(fieldInfo20, depth),
-            ProcessChildRecs(ROWS(LEFT), MAX(fieldInfo20, depth) + 1 - COUNTER, TRUE)
+            DATASET([], __ChildRecLayout),
+            MAX(__fieldInfo20, depth),
+            __ProcessChildRecs(ROWS(LEFT), MAX(__fieldInfo20, depth) + 1 - COUNTER, TRUE)
         );
 
-    LOCAL bestNamedChildRecs := SORT(bestNamedChildRecs0, endPos, -startPos);
+    LOCAL __bestNamedChildRecs := SORT(__bestNamedChildRecs0, endPos, -startPos);
 
-    LOCAL topLevelBestRecDef := DATASET
+    LOCAL __topLevelBestRecDef := DATASET
         (
             [
                 {
-                    LAYOUT_NAME,
+                    __LAYOUT_NAME,
                     0,
                     0,
                     0,
-                    MakeRecDefinition(fieldInfo20(depth = 0), LAYOUT_NAME, TRUE)
+                    __MakeRecDefinition(__fieldInfo20(depth = 0), __LAYOUT_NAME, TRUE)
                 }
             ],
-            ChildRecLayout
+            __ChildRecLayout
         );
 
-    LOCAL allBestRecDefs := bestNamedChildRecs & topLevelBestRecDef;
+    LOCAL __allBestRecDefs := __bestNamedChildRecs & __topLevelBestRecDef;
 
     // Creates an ECL TRANSFORM function based on the collected information
     // about a record definition
-    LOCAL MakeTransforms(ChildRecLayout recInfo) := FUNCTION
-        RETURN DATASET(['New' + recInfo.layoutName + ' Make_New' + recInfo.layoutName + '(Old' + recInfo.layoutName + ' r) := TRANSFORM'], StringRec)
+    LOCAL __MakeTransforms(__ChildRecLayout recInfo) := FUNCTION
+        RETURN DATASET(['New' + recInfo.layoutName + ' Make_New' + recInfo.layoutName + '(Old' + recInfo.layoutName + ' r) := TRANSFORM'], __StringRec)
             & PROJECT
                 (
                     recInfo.items,
                     TRANSFORM
                         (
-                            StringRec,
+                            __StringRec,
                             assignment := LEFT.bestAssignment;
                             SELF.s := IF(assignment != '', assignment, SKIP)
                         )
                 )
-            & DATASET(['    SELF := r;'], StringRec)
-            & DATASET(['END;'], StringRec);
+            & DATASET(['    SELF := r;'], __StringRec)
+            & DATASET(['END;'], __StringRec);
     END;
 
-    LOCAL allTransforms := PROJECT
+    LOCAL __allTransforms := PROJECT
         (
-            allBestRecDefs,
+            __allBestRecDefs,
             TRANSFORM
                 (
                     {
-                        DATASET(StringRec)  lines
+                        DATASET(__StringRec)  lines
                     },
-                    SELF.lines := MakeTransforms(LEFT)
+                    SELF.lines := __MakeTransforms(LEFT)
                 )
         );
 
     // Create a dataset of STRINGS that contain record definitions for the
     // input dataset, TRANSFORMs for converting between the old and new
     // definitions, and a sample PROJECT for kicking it all off
-    LOCAL conditionalBR := #IF((BOOLEAN)textOutput) '<br/>' #ELSE '' #END;
+    LOCAL __conditionalBR := #IF((BOOLEAN)textOutput) '<br/>' #ELSE '' #END;
 
-    LOCAL oldRecDefsPlusTransforms := DATASET(['//----------' + conditionalBR], StringRec)
-        & PROJECT(allOldRecDefs.items, StringRec)
-        & DATASET(['//----------' + conditionalBR], StringRec)
-        & allTransforms.lines
-        & DATASET(['//----------' + conditionalBR], StringRec)
-        & DATASET(['oldDS := DATASET([], OldLayout);' + conditionalBR], StringRec)
-        & DATASET(['newDS := PROJECT(oldDS, Make_NewLayout(LEFT));' + conditionalBR], StringRec);
+    LOCAL __oldRecDefsPlusTransforms := DATASET(['//----------' + __conditionalBR], __StringRec)
+        & PROJECT(__allOldRecDefs.items, __StringRec)
+        & DATASET(['//----------' + __conditionalBR], __StringRec)
+        & __allTransforms.lines
+        & DATASET(['//----------' + __conditionalBR], __StringRec)
+        & DATASET(['oldDS := DATASET([], OldLayout);' + __conditionalBR], __StringRec)
+        & DATASET(['newDS := PROJECT(oldDS, Make_NewLayout(LEFT));' + __conditionalBR], __StringRec);
 
     // Combine old definitions and transforms conditionally
-    LOCAL conditionalOldStuff :=
+    LOCAL __conditionalOldStuff :=
         #IF((BOOLEAN)emitTransform)
-            oldRecDefsPlusTransforms
+            __oldRecDefsPlusTransforms
         #ELSE
-            DATASET([], StringRec)
+            DATASET([], __StringRec)
         #END;
 
-    LOCAL allOutput := PROJECT(allBestRecDefs.items, StringRec) & conditionalOldStuff;
+    LOCAL __allOutput := PROJECT(__allBestRecDefs.items, __StringRec) & __conditionalOldStuff;
 
     // Roll everything up to one string with HTML line breaks
-    LOCAL htmlString := ROLLUP
+    LOCAL __htmlString := ROLLUP
         (
-            allOutput,
+            __allOutput,
             TRUE,
             TRANSFORM
                 (
@@ -442,10 +451,10 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
 
     // Stuff the HTML result into a single record, wrapped with <pre> so it
     // looks right in the browser
-    LOCAL htmlResult := DATASET(['<pre>' + htmlString[1].s + '</pre>'], {STRING result__html});
+    LOCAL __htmlResult := DATASET(['<pre>' + __htmlString[1].s + '</pre>'], {STRING result__html});
 
     // Choose the result (dataset with each line a string, or a text blob)
-    LOCAL finalResult := #IF((BOOLEAN)textOutput) htmlResult #ELSE allOutput #END;
+    LOCAL __finalResult := #IF((BOOLEAN)textOutput) __htmlResult #ELSE __allOutput #END;
 
-    RETURN finalResult;
+    RETURN __finalResult;
 ENDMACRO;
