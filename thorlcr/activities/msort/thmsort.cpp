@@ -64,8 +64,8 @@ public:
         unsigned flags = helper->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
-            reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
+            Owned<IException> e = MakeActivityException(this, TE_UnsupportedSortOrder, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
+            reportExceptionToWorkunitCheckIgnore(container.queryJob().queryWorkUnit(), e);
         }
     }
 };
@@ -100,15 +100,15 @@ protected:
         unsigned flags = helper->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
-            reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
+            Owned<IException> e = MakeActivityException(this, TE_UnsupportedSortOrder, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
+            reportExceptionToWorkunitCheckIgnore(container.queryJob().queryWorkUnit(), e);
         }
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname)
         {
             Owned<IDistributedFile> coSortFile = queryThorFileManager().lookup(container.queryJob(), cosortlogname, false, false, false, container.activityIsCodeSigned());
             if (isFileKey(coSortFile))
-                throw MakeActivityException(this, 0, "Attempting to read index as a flat file: %s", cosortlogname.get());
+                throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", cosortlogname.get());
             addReadFile(coSortFile);
             Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
             unsigned o;

@@ -19,6 +19,8 @@
 //nohthor
 //class=spray
 
+#onwarning(10138, ignore);
+
 //version isSmallFile=true,isUnBallanced=false
 //version isSmallFile=true,isUnBallanced=true
 //version isSmallFile=false
