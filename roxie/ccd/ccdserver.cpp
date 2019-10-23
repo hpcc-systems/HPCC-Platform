@@ -13807,12 +13807,13 @@ public:
             rows->stop();
             rows.clear();
         }
-        CRoxieServerMultiInputBaseActivity::stop();
+        CRoxieServerMultiInputActivity::stop();
     }
 
     virtual void reset()
     {
         rows.clear();
+        CRoxieServerMultiInputActivity::reset();
     }
 
     virtual const void * nextRow()
