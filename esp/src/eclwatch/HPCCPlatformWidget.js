@@ -32,6 +32,7 @@ define([
     "src/ws_access",
     "src/WsSMC",
     "src/WsTopology",
+    "src/KeyValStore",
     "hpcc/DelayLoadWidget",
     "src/ws_machine",
     "hpcc/LockDialogWidget",
@@ -61,7 +62,7 @@ define([
     registry, Tooltip,
     UpgradeBar, ColorPicker,
     CodeMirror,
-    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, DelayLoadWidget, WsMachine, LockDialogWidget,
+    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, KeyValStore, DelayLoadWidget, WsMachine, LockDialogWidget,
     template) {
 
         declare("HPCCColorPicker", [ColorPicker], {
@@ -80,6 +81,7 @@ define([
             bannerContent: "",
             upgradeBar: null,
             storage: null,
+            ws_store: null,
 
             postCreate: function (args) {
                 this.inherited(arguments);
@@ -87,18 +89,23 @@ define([
                 this.logoutBtn = registry.byId(this.id + "Logout");
                 this.aboutDialog = registry.byId(this.id + "AboutDialog");
                 this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
+                this.setToolbarDialog = registry.byId(this.id + "SetToolbarDialog");
                 this.stackContainer = registry.byId(this.id + "TabContainer");
                 this.mainPage = registry.byId(this.id + "_Main");
                 this.errWarnPage = registry.byId(this.id + "_ErrWarn");
                 this.pluginsPage = registry.byId(this.id + "_Plugins");
                 this.operationsPage = registry.byId(this.id + "_OPS");
                 registry.byId(this.id + "SetBanner").set("disabled", true);
+                registry.byId(this.id + "SetToolbar").set("disabled", true);
                 this.sessionBackground = registry.byId(this.id + "SessionBackground");
                 this.unlockDialog = registry.byId(this.id + "UnlockDialog");
                 this.unlockUserName = registry.byId(this.id + "UnlockUserName");
                 this.unlockPassword = registry.byId(this.id + "UnlockPassword");
                 this.logoutConfirm = registry.byId(this.id + "LogoutConfirm");
                 this.unlockForm = registry.byId(this.id + "UnlockForm");
+                this.environmentTextCB = registry.byId(this.id + "EnvironmentTextCB");
+                this.environmentText = registry.byId(this.id + "EnvironmentText");
+                this.toolbarColor = registry.byId(this.id + "ToolbarColor");
 
                 this.upgradeBar = new UpgradeBar({
                     notifications: [],
@@ -219,9 +226,9 @@ define([
                     }
                 });
 
-                WsTopology.TpGetServerVersion().then(function(buildVersion) {
-                    context.build = WsSMC.parseBuildString(buildVersion);
-                });
+                // WsTopology.TpGetServerVersion().then(function(buildVersion) {
+                //     context.build = WsSMC.parseBuildString(buildVersion);
+                // });
 
                 this.activity = ESPActivity.Get();
                 this.activity.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
@@ -241,10 +248,40 @@ define([
                     context.checkMonitoring(topic.status);
                 });
                 this.storage = new ESPUtil.LocalStorage();
+                this.ws_store = KeyValStore.globalKeyValStore();
+
                 this.storage.on("storageUpdate", function(msg) {
                     context._onUpdateFromStorage(msg)
                 });
                 this.storage.setItem("Status", "Unlocked");
+
+                this.ws_store.get("HPCCPlatformWidget_Toolbar_Color").then(function(val) {
+                    if (val) {
+                        domStyle.set(context.id + "Titlebar", {
+                            "backgroundColor": val
+                        });
+                        context.toolbarColor.set("value", val);
+                    } else {
+                        context.toolbarColor.set("value", "#2196F3");
+                    }
+                });
+
+                this.ws_store.get("HPCCPlatformWidget_Toolbar_Text").then(function(val){
+                    if (val) {
+                        context.environmentText.set("value", val);
+                        context.environmentTextCB.set("value", true);
+                        var parent = domConstruct.create("div", {id: "BannerInnerText", class: "envrionmentText"}, searchUserMoreComponents, "before");
+                        domConstruct.create("span", {innerHTML: val}, parent);
+                    }
+                });
+
+                this.environmentTextCB.on("change", function(state) {
+                    if (state) {
+                        context.environmentText.set("disabled", false);
+                    } else {
+                        context.environmentText.set("value", "");
+                    }
+                });
             },
 
             _onUpdateFromStorage: function (msg){
@@ -282,6 +319,7 @@ define([
                 var context = this;
                 if (user == null) {
                     registry.byId(context.id + "SetBanner").set("disabled", false);
+                    registry.byId(context.id + "SetToolbar").set("disabled", false);
                     dojo.destroy(this.monitorStatus);
                 } else {
                     WsAccess.UserEdit({
@@ -294,6 +332,7 @@ define([
                             if (response.UserEditResponse.isLDAPAdmin === true){
                                 dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
+                                registry.byId(context.id + "SetToolbar").set("disabled", false);
                                 if (context.widget._OPS.refresh) {
                                     context.widget._OPS.refresh();
                                 }
@@ -305,6 +344,7 @@ define([
                                     if (item.name === "Administrators" || item.name === "Directory Administrators") {
                                         dojoConfig.isAdmin = true;
                                         registry.byId(context.id + "SetBanner").set("disabled", false);
+                                        registry.byId(context.id + "SetToolbar").set("disabled", false);
                                         if (context.widget._OPS.refresh) {
                                             context.widget._OPS.refresh();
                                         }
@@ -323,6 +363,24 @@ define([
                     dom.byId("UserDivider").textContent = " / ";
                     dom.byId("Lock").textContent = this.i18n.Lock;
                 }
+            },
+
+            setMainPagePreference: function () {
+                var context = this;
+                this.ws_store.set("HPCCPlatformWidget_Toolbar_Text", this.environmentText.get("value"));
+                this.ws_store.set("HPCCPlatformWidget_Toolbar_Color", this.toolbarColor.get("value"));
+                
+                if (this.environmentTextCB.get("checked")) {
+                    this.ws_store.get("HPCCPlatformWidget_Toolbar_Text").then(function(val){
+                        domConstruct.create("span", {innerHTML: val}, BannerEnvironmentText);
+                    });
+                }
+
+                this.ws_store.get("HPCCPlatformWidget_Toolbar_Color").then(function(val){
+                    domStyle.set(context.id + "Titlebar", {
+                        "backgroundColor": val
+                    });
+                });
             },
 
             //  Hitched actions  ---
@@ -532,6 +590,41 @@ define([
 
             _onSetBannerCancel: function (evt) {
                 this.setBannerDialog.hide();
+            },
+
+            _onSetToolbar: function (evt) {
+                this.setToolbarDialog.show();
+            },
+
+            _onSetToolbarOk: function (evt) {
+                this.setMainPagePreference();
+            },
+
+            _onSetToolbarCancel: function (evt) {
+              this.setToolbarDialog.hide();
+              this.environmentText.set("value", dojoConfig.mainPageTitle);
+            },
+
+            _onSetToolbarReset: function(evt) {
+                if (confirm(this.i18n.AreYouSureYouWantToResetTheme)) {
+                    this._onResetDefaultTheme();
+                    this._onSetToolbarCancel();
+                }
+            },
+
+            _onResetDefaultTheme: function (evt) {
+                this.ws_store.set("HPCCPlatformWidget_Toolbar_Color", "#2196F3");
+                this.toolbarColor.set("value", "#2196F3")
+                this.ws_store.set("HPCCPlatformWidget_Toolbar_Text", "");
+                this.environmentTextCB.set("checked", false);
+                this.environmentText.set("value", "");
+                domStyle.set(this.id + "Titlebar", {
+                    "backgroundColor": "#2196F3"
+                });
+                var customText = query("#BannerEnvironmentText", span);
+                if (customText) {
+                    domConstruct.destroy("BannerInnerText");
+                }
             },
 
             createStackControllerTooltip: function (widgetID, text) {
