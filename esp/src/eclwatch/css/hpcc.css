@@ -140,6 +140,14 @@ hr.dashedLine {
     margin-top: 6px;
 }
 
+.flat .envrionmentText {
+    float:left;
+    margin-top: 12px;
+    width:40%;
+    text-align: center;
+    font: bold 22px Lucida Sans, Lucida Grande, Arial;
+}
+
 .flat .glow :hover{
     background-color:rgb(118, 157, 192);
     border-radius: 4px;
@@ -176,6 +184,12 @@ hr.dashedLine {
     padding: 0px;
 }
 
+.flat .resetBtn .dijitButtonNode {
+    background-color: #ff0000;
+    font-weight: bold;
+    color: #fff;
+}
+
 .flat .glow .dijitToggleButton .dijitButtonNode {
     background: none;
     border:none;
@@ -185,9 +199,7 @@ hr.dashedLine {
 }
 
 .flat .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
-    border-width: 1px;
-    border-style: solid;
-    border-color: #759dc0;
+    border-width: 0px;
     margin: 0px;
     align-content:center;
 }
@@ -343,8 +355,9 @@ hr.dashedLine {
     .flat .hpccTitlebar {
         height:100px;
     }
-    .searchUserMoreComponents{
-        width:100%;
+    #BannerEnvironmentText{
+        width:25%;
+        display: none;
         margin-top:10px;
     }
     .seperator:first-child{
