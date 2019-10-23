@@ -5803,6 +5803,8 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
     SplitDatasetAttributeTransformer transformer;
     return transformer.split(dataset, attribute, queryNonAliased(expr));
 #else
+    //The following code only matches a subset of the possible expressions.  This can mean that some parts of the expression
+    //are replaced, and other parts are not - leading to some extract expressions accessing a row in two different ways!
     IHqlExpression * left = expr->queryChild(0);
     node_operator op = expr->getOperator();
     switch (op)
