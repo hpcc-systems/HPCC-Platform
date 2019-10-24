@@ -24,6 +24,7 @@ source ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
 homePath=$HOME/$user
+certPath=${homePath}/certificate
 sbin_path="${INSTALL_DIR}/sbin"
 envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
 
@@ -44,38 +45,23 @@ if [ -z ${compArray} ];then
    exit 3
 fi
 
-if [ ! -d ${homePath}/certificate ]; then
-    mkdir -p ${homePath}/certificate
+if [ ! -d ${certPath} ]; then
+    mkdir -p ${certPath}
 fi
 
-csrCfgTemplate='{
- "key": {
-    "algo": "rsa",
-    "size": 2048
- },
- "names": [
- {
- "C": "US",
- "L": "Boca Raton",
- "O": "HPCCSystems",
- "OU": "Platform"
- }
- ],
- "Hosts": ["localhost", "127.0.0.1"],'
 domainname=""
-if [ ! -e ${homePath}/certificate/cacert.pem ]; then
+if [ ! -e ${certPath}/cacert.pem ]; then
     if [ "${CALOCATION}" != "" ]; then
-        cfssl info -remote ${CALOCATION} | cfssljson -bare ${homePath}/certificate/cacert
+        cfssl info -remote ${CALOCATION} | cfssljson -bare ${certPath}/cacert
         printf "Retrieved CA certificate from CA Server.\n"
     else
         read -p "Domain Name [local]: " domainname
         if [ "$domainname" = "" ]; then
             domainname=local
         fi
-        genkeyCfg=${csrCfgTemplate}"
- \"CN\": \"CA."$domainname"\"
-}"
-        echo $genkeyCfg | cfssl genkey -initca - | cfssljson -bare ${homePath}/certificate/cacert
+        openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/cacert-key.pem -out ${certPath}/cacert.csr -subj "/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer/CN=ca.${domainname}"
+        chmod 400 ${certPath}/cacert-key.pem
+        openssl x509 -req -days 3650 -in ${certPath}/cacert.csr -signkey ${certPath}/cacert-key.pem -sha256 -out ${certPath}/cacert.pem
         printf "Generated self-signed CA certificate and privatekey.\n"
     fi
 fi
@@ -91,44 +77,36 @@ for i in "" ${compArray[@]} ; do
 
     echo $compName   $componentType
 
-    if [ ! -d ${homePath}/certificate/$compName ]; then
-        mkdir -p ${homePath}/certificate/$compName
+    if [ ! -d ${certPath}/$compName ]; then
+        mkdir -p ${certPath}/$compName
     fi
 
-    if [ ! -e ${homePath}/certificate/$compName/key.pem ]; then
-        #ssh-keygen -t rsa -N '' -f ${homePath}/certificate/$compName/key.pem \
-        #    1>/dev/null 2>&1
+    if [ ! -e ${certPath}/$compName/key.pem ]; then
         if [ "$domainname" =  "" ]; then
              read -p "Domain Name [local]: " domainname
              if [ "$domainname" = "" ]; then
                  domainname=local
              fi
         fi
-        cn="hpcc"
+        cn="hpcc.$domainname"
         if [ "$compName" != "" ]; then
-             cn="$compName-$componentType"
+             cn="$compName.$domainname"
         fi
-        csrCfg=${csrCfgTemplate}"
- \"CN\": \"$cn."$domainname"\"
-}"
-        echo $csrCfg
-        read -p "hit any key to continue: " tmpvar
-        echo $csrCfg | cfssl genkey - | cfssljson -bare ${homePath}/certificate/$compName/my
-        mv ${homePath}/certificate/$compName/my-key.pem ${homePath}/certificate/$compName/key.pem
-        openssl rsa -in ${homePath}/certificate/$compName/key.pem -pubout \
-            -out ${homePath}/certificate/$compName/public.key.pem
-        chmod 0644 ${homePath}/certificate/$compName/public.key.pem
-        rm -f ${homePath}/certificate/$compName/certificate.pem
+        compSubject="/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer/CN=${cn}"
+        read -p "Generating key for $cn, hit any key to continue: " tmpvar
+        openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/$compName/key.pem -out ${certPath}/$compName/my.csr -subj "$compSubject"
+        chmod 400 ${certPath}/$compName/cacert-key.pem
+        rm -f ${certPath}/$compName/certificate.pem
         printf "RSA key installed for user %-28s component %s ..." "$user" "$compName"
         log_success_msg
     else
         printf "RSA keys are already installed for user %-15s component %s ..." "$user" "$compName"
         log_success_msg
     fi
-    if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+    if [ ! -e ${certPath}/$compName/certificate.pem ]; then
         if [ "${CALOCATION}" = "" ]; then
-            cfssl sign -ca=${homePath}/certificate/cacert.pem -ca-key=${homePath}/certificate/cacert-key.pem ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
-            if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+            openssl x509 -req -days 1825 -in ${certPath}/$compName/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/$compName/certificate.pem
+            if [ ! -e ${certPath}/$compName/certificate.pem ]; then
                 printf "Failed to generate certificate for component %s\n" "$compName"
                 exit 1
             else
@@ -136,9 +114,8 @@ for i in "" ${compArray[@]} ; do
                 log_success_msg
             fi
         else
-            #openssl req -new -key ${homePath}/certificate/$compName/key.pem -out ${homePath}/certificate/$compName/csr.pem
-            cfssl sign -remote ${CALOCATION} ${homePath}/certificate/$compName/my.csr | cfssljson -bare ${homePath}/certificate/$compName/certificate
-            if [ ! -e ${homePath}/certificate/$compName/certificate.pem ]; then
+            cfssl sign -remote ${CALOCATION} ${certPath}/$compName/my.csr | cfssljson -bare ${certPath}/$compName/certificate
+            if [ ! -e ${certPath}/$compName/certificate.pem ]; then
                 printf "Failed to generate certificate for component %s\n" "$compName"
                 exit 1
             else
@@ -154,8 +131,8 @@ fi
 done
 
 if [ ! -e ${homePath}/.ssh/id_rsa ]; then
-    cp ${homePath}/certificate/key.pem ${homePath}/.ssh/id_rsa
-    ssh-keygen -f ${homePath}/certificate/public.key.pem -i -m PKCS8 > ${homePath}/.ssh/id_rsa.pub
+    cp ${certPath}/key.pem ${homePath}/.ssh/id_rsa
+    ssh-keygen -f ${certPath}/public.key.pem -i -m PKCS8 > ${homePath}/.ssh/id_rsa.pub
     cat ${homePath}/.ssh/id_rsa.pub >> ${homePath}/.ssh/authorized_keys
     printf "ssh keys installed for user %-12s ..." "$user"
     log_success_msg

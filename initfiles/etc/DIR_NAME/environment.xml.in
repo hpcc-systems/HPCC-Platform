@@ -288,7 +288,7 @@
           regenerateCredentials="false"
           requireAddressMatch="false"
           state=""
-          trustedPeers="myroxie-roxie.{DOMAIN}"/>
+          trustedPeers="myroxie.{DOMAIN}"/>
    <Authentication htpasswdFile="/etc/HPCCSystems/.htpasswd"
                    ldapAuthMethod="kerberos"
                    ldapConnections="10"
