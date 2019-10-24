@@ -1940,9 +1940,7 @@ bool CJobMaster::fireException(IException *e)
         case tea_warning:
         {
             LOG(MCwarning, thorJob, e);
-            ErrorSeverity mappedSeverity = workunit->getWarningSeverity(e->errorCode(), SeverityWarning);
-            if (mappedSeverity != SeverityIgnore)
-                reportExceptionToWorkunit(*workunit, e);
+            reportExceptionToWorkunitCheckIgnore(*workunit, e);
             break;
         }
         default:
@@ -2190,9 +2188,7 @@ bool CMasterGraph::fireException(IException *e)
         case tea_warning:
         {
             LOG(MCwarning, thorJob, e);
-            ErrorSeverity mappedSeverity = job.queryWorkUnit().getWarningSeverity(e->errorCode(), SeverityWarning);
-            if (mappedSeverity != SeverityIgnore)
-                reportExceptionToWorkunit(job.queryWorkUnit(), e);
+            reportExceptionToWorkunitCheckIgnore(job.queryWorkUnit(), e);
             break;
         }
         default:

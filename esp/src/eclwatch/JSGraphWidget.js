@@ -398,7 +398,7 @@ define([
                 arrayUtil.forEach(this.graphData.edges, function (item, idx) {
                     var source = item.getSource();
                     var target = item.getTarget();
-                    if (!this.option("vhidespills") || !target.isSpill()) {
+                    if (source && target && (!this.option("vhidespills") || !target.isSpill())) {
                         var label = this.format(labelTpl, item);
                         var tooltip = this.format(tooltipTpl, item);
                         var numSlaves = parseInt(item.NumSlaves);
@@ -423,29 +423,31 @@ define([
                             label += "\n(" + nlsHPCC.Spill + ")";
                             weight = 25;
                             strokeDasharray = "5,5,10,5";
-                            while (source.isSpill()) {
+                            while (source && source.isSpill()) {
                                 var inputs = source.getInVertices();
                                 source = inputs[0];
                             }
                         }
-                        if (!merge || !item.__widget) {
-                            item.__widget = new hpccGraph.Edge()
-                                .sourceVertex(source.__widget)
-                                .targetVertex(target.__widget)
-                                .targetMarker("arrow")
-                                .weight(weight)
-                                .strokeDasharray(strokeDasharray)
-                                ;
-                            item.__widget.__hpcc_globalID = item.__hpcc_id;
+                        if (source) {
+                            if (!merge || !item.__widget) {
+                                item.__widget = new hpccGraph.Edge()
+                                    .sourceVertex(source.__widget)
+                                    .targetVertex(target.__widget)
+                                    .targetMarker("arrow")
+                                    .weight(weight)
+                                    .strokeDasharray(strokeDasharray)
+                                    ;
+                                item.__widget.__hpcc_globalID = item.__hpcc_id;
+                            }
+                            item.__widget.text(label);
+                            item.__widget.tooltip(tooltip);
+                            item.__widget.classed({
+                                started: started && !finished && !active,
+                                finished: finished && !active,
+                                active: active
+                            });
+                            edges.push(item.__widget);
                         }
-                        item.__widget.text(label);
-                        item.__widget.tooltip(tooltip);
-                        item.__widget.classed({
-                            started: started && !finished && !active,
-                            finished: finished && !active,
-                            active: active
-                        });
-                        edges.push(item.__widget);
                     }
                 }, this);
                 if (this.option("subgraph")) {

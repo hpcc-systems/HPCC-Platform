@@ -37,15 +37,15 @@
 #define ECLYYSTYPE attribute
 #endif
 
-#define YY_DECL int HqlLex::doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
+#define YY_DECL int HqlLex::doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, LexerFlags lookupFlags, const short * activeState)
 
 #define register
 
-//#define DEBUG_TOKEN 
+//#define DEBUG_TOKEN
 
 #ifdef DEBUG_TOKEN
 #define TraceReturnToken(id) PrintLog("Returning " #id " %s", str(name))
-#else 
+#else
 #define TraceReturnToken(id)
 #endif
 
@@ -62,21 +62,21 @@
 #define setupdatepos        { lexer->setTokenPosition(returnToken); updatepos1; }
 extern void hex2str(char * target, const char * digits, unsigned len);
 
-#define LOOKUPSYM(sym)      (lookup && lexer->parserExpecting(sym, activeState))
+#define LOOKUPSYM(sym)      ((likely(lookupFlags & LEXresolve)) && lexer->parserExpecting(sym, activeState))
 #define RETURNSYM(sym)  \
         setupdatepos; \
-        int mapped = lookup ? lexer->mapToken(sym) : sym; \
+        int mapped = (likely(lookupFlags & LEXresolve)) ? lexer->mapToken(sym) : sym; \
         if (mapped && LOOKUPSYM(mapped)) return mapped; \
-        return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT)
-        
+        return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT)
+
 #define RETURNHARD(sym) \
         setupdatepos; return sym;
 
-int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText)
+int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, LexerFlags lookupFlags, const short * activeState, const char * tokenText)
 {
     if ((tokenText[0] == '$') && tokenText[1]==0)
         return '$';
-        
+
     /* check $ */
     IIdAtom * cname = createIdAtom(tokenText);
     IAtom * name = cname->queryLower();
@@ -89,14 +89,15 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool 
             return INTERNAL_READ_NEXT_TOKEN;
         }
     }
-    
-    IHqlExpression *expr; 
+
+    IHqlExpression *expr;
     //fprintf(stderr, "\nLookupSymbol %s\n",name->str());
     //Lookup expr last otherwise it leaks.
-    if ( !lookup  || lexer->macroGathering || lexer->skipNesting|| !(expr=lexer->lookupSymbol(cname,returnToken)))
+    if ( !(likely(lookupFlags & LEXresolve))  || lexer->macroGathering || lexer->skipNesting|| !(expr=lexer->lookupSymbol(cname,returnToken)))
     {
         TraceReturnToken(UNKNOWN_ID);
-        returnToken.setId(cname);
+        if (lookupFlags & (LEXidentifier|LEXresolve))
+            returnToken.setId(cname);
         return UNKNOWN_ID;
     }
 
@@ -108,26 +109,26 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool 
         if (alternative && alternative->queryValue())
             alternative->queryValue()->getStringValue(alternativeText);
         lexer->reportWarning(CategoryDeprecated, returnToken, ERR_DEPRECATED_ATTR, "Definition %s is marked as deprecated.  %s", str(name), alternativeText.str());
-    }                   
-    
+    }
+
 #if defined(TRACE_MACRO)
     PrintLog("MACRO>> set expr at %d:%d\n",lexer->yyLineNo,lexer->yyColumn);
 #endif
 
     if (expr->isMacro())
     {
-        int ret_id; 
-    
+        int ret_id;
+
         if (expr->isAction())
             ret_id = DEFINITIONS_MACRO;
         else
             ret_id = VALUE_MACRO;
-        
+
         OwnedHqlExpr ownedExpr = expr;
         lexer->pushMacro(expr);
         return ret_id;
     }
-    
+
     returnToken.setExpr(expr);
     node_operator op = expr->getOperator();
     int token = UNKNOWN_ID;
@@ -205,13 +206,13 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool 
             else if (op == no_typedef)
             {
                 token = TYPE_ID;
-            }                           
+            }
             else if (op == no_enum)
             {
                 token = ENUM_ID;
-            }                           
+            }
             else
-            { 
+            {
                 token = isFunction ? VALUE_FUNCTION : VALUE_ID;
             }
         }
@@ -226,13 +227,14 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, bool 
             break;
         }
     }
-    
+
     //This only returns a known token if the parser is expecting it at that point, otherwise it returns UNKNOWN_ID - if that
     //is expected.  It allows a much cleaner grammar, and solves issues with names clashing because they've already been used.
     if (!lexer->parserExpecting(token, activeState) && lexer->parserExpecting(UNKNOWN_ID, activeState))
     {
         returnToken.release();
-        returnToken.setId(cname);
+        if (likely(lookupFlags & LEXidentifier))
+            returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
 
@@ -271,10 +273,10 @@ xpathseq      ([^}\r\n])+
 %%
 
 "/*"                { setupdatepos; BEGIN(COMMENT); lexer->inComment = true; }
-<COMMENT>"*/"       { 
-                        updatepos1; 
-                        BEGIN(0); 
-                        lexer->inComment = false; 
+<COMMENT>"*/"       {
+                        updatepos1;
+                        BEGIN(0);
+                        lexer->inComment = false;
 
                         int startpos = returnToken.pos.position;
                         int endpos = lexer->yyPosition;
@@ -285,12 +287,12 @@ xpathseq      ([^}\r\n])+
 <COMMENT>\n         { updatepos1; lexer->updateNewline(); }
 <COMMENT>"*"        { updatepos1; }
 
-"*/"                { 
+"*/"                {
                         /* error pattern */
-                        setupdatepos; 
-                        assertex(!lexer->inComment); 
+                        setupdatepos;
+                        assertex(!lexer->inComment);
                         lexer->reportError(returnToken, ERR_COMMENT_NOTSTARTED,"Comment is not started: \"*/\" is illegal");
-                    }                   
+                    }
 
 "-----BEGIN PGP SIGNED MESSAGE-----"    { setupdatepos; BEGIN(PGPHEADER); lexer->inSignature = true; lexer->checkSignature(returnToken); }
 <PGPHEADER>^\n                          { setupdatepos; BEGIN(0); lexer->updateNewline(); lexer->inSignature = false; }
@@ -298,15 +300,15 @@ xpathseq      ([^}\r\n])+
 <PGPHEADER>[^\n]+                       { updatepos1; }
 <PGPHEADER>\n                           { updatepos1; lexer->updateNewline(); }
 "-----BEGIN PGP SIGNATURE-----"         { setupdatepos; BEGIN(PGPSIGN); lexer->inSignature = true; }
-<PGPSIGN>"-----END PGP SIGNATURE-----"  { updatepos1; BEGIN(0); lexer->inSignature = false; } 
+<PGPSIGN>"-----END PGP SIGNATURE-----"  { updatepos1; BEGIN(0); lexer->inSignature = false; }
 <PGPSIGN>[^\n]                          { updatepos1; }
 <PGPSIGN>\n                             { updatepos1; lexer->updateNewline(); }
 
 
 \r                  { updatepos1; }
-\n                  { 
+\n                  {
                         setupdatepos; lexer->updateNewline();
-                        
+
                         #if defined(TRACE_MACRO)
                             PrintLog("MACRO>> Newline occurs: now at %d:%d\n", lexer->yyLineNo, lexer->yyColumn);
                         #endif
@@ -328,21 +330,21 @@ xpathseq      ([^}\r\n])+
 <SLSL>[^\n]+        { updatepos1; }
 
 #ERROR              {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering || lexer->skipNesting)
                             return SKIPPED;
-                        lexer->doError(returnToken, true); 
+                        lexer->doError(returnToken, true);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #WARNING            {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering || lexer->skipNesting)
                             return SKIPPED;
-                        lexer->doError(returnToken, false); 
+                        lexer->doError(returnToken, false);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #FOR                {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
                         lexer->beginNestedHash(HashStmtFor);
@@ -351,11 +353,11 @@ xpathseq      ([^}\r\n])+
                             lexer->skipNesting++;
                             return SKIPPED;
                         }
-                        lexer->doFor(returnToken, false); 
+                        lexer->doFor(returnToken, false);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #FORALL             {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
                         lexer->beginNestedHash(HashStmtForAll);
@@ -364,11 +366,11 @@ xpathseq      ([^}\r\n])+
                             lexer->skipNesting++;
                             return SKIPPED;
                         }
-                        lexer->doFor(returnToken, true); 
+                        lexer->doFor(returnToken, true);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #LOOP               {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
                         lexer->beginNestedHash(HashStmtLoop);
@@ -377,20 +379,20 @@ xpathseq      ([^}\r\n])+
                             lexer->skipNesting++;
                             return SKIPPED;
                         }
-                        lexer->doLoop(returnToken); 
+                        lexer->doLoop(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #BREAK              {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
                         lexer->hasHashbreak = true;
                         if (lexer->skipNesting)
                             return SKIPPED;
-                        return HASHBREAK; 
+                        return HASHBREAK;
                     }
 #IF                 {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
                         lexer->beginNestedHash(HashStmtIf);
@@ -403,85 +405,85 @@ xpathseq      ([^}\r\n])+
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #EXPAND             {
-                        setupdatepos; 
-                        if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doExpand(returnToken); 
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering || !(lookupFlags & LEXexpand))
+                            return SKIPPED;
+                        lexer->doExpand(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#DECLARE            { 
-                        setupdatepos; 
+#DECLARE            {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doDeclare(returnToken); 
+                            return SKIPPED;
+                        lexer->doDeclare(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#SET                { 
-                        setupdatepos; 
+#SET                {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doSet(returnToken, false); 
+                            return SKIPPED;
+                        lexer->doSet(returnToken, false);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#TRACE              { 
-                        setupdatepos; 
+#TRACE              {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doTrace(returnToken); 
+                            return SKIPPED;
+                        lexer->doTrace(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#EXPORT             { 
-                        setupdatepos; 
+#EXPORT             {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doExport(returnToken, false); 
+                            return SKIPPED;
+                        lexer->doExport(returnToken, false);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#EXPORTXML              { 
-                        setupdatepos; 
+#EXPORTXML              {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doExport(returnToken, true); 
+                            return SKIPPED;
+                        lexer->doExport(returnToken, true);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#MANGLE             { 
-                        setupdatepos; 
+#MANGLE             {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doMangle(returnToken, false); 
+                            return SKIPPED;
+                        lexer->doMangle(returnToken, false);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#DEMANGLE           { 
-                        setupdatepos; 
+#DEMANGLE           {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doMangle(returnToken, true); 
+                            return SKIPPED;
+                        lexer->doMangle(returnToken, true);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#APPLY              { 
-                        setupdatepos; 
+#APPLY              {
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doApply(returnToken); 
+                            return SKIPPED;
+                        lexer->doApply(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #APPEND             {
-                        setupdatepos; 
-                        if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doSet(returnToken, true); 
-                        return INTERNAL_READ_NEXT_TOKEN;
-                    }
-#CONSTANT           { 
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
+                            return SKIPPED;
+                        lexer->doSet(returnToken, true);
+                        return INTERNAL_READ_NEXT_TOKEN;
+                    }
+#CONSTANT           {
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering)
+                            return SKIPPED;
                         return(HASH_CONSTANT);
                     }
 #IFDEFINED          {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
+                            return SKIPPED;
                         lexer->doDefined(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
@@ -489,58 +491,58 @@ xpathseq      ([^}\r\n])+
                         setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
-                        return lexer->doElse(returnToken, lookup, activeState, false);
+                        return lexer->doElse(returnToken, lookupFlags, activeState, false);
                     }
 #ELSEIF             {
                         setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
-                        return lexer->doElse(returnToken, lookup, activeState, true);
+                        return lexer->doElse(returnToken, lookupFlags, activeState, true);
                     }
 #ELSIF              {
                         setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
-                        return lexer->doElse(returnToken, lookup, activeState, true);
+                        return lexer->doElse(returnToken, lookupFlags, activeState, true);
                     }
 #ELIF               {
                         setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
-                        return lexer->doElse(returnToken, lookup, activeState, true);
+                        return lexer->doElse(returnToken, lookupFlags, activeState, true);
                     }
-#DEBUG              { 
+#DEBUG              {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_OPTION); 
+                            return SKIPPED;
+                        return(HASH_OPTION);
                     }
 #GETDATATYPE        {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doGetDataType(returnToken); 
+                            return SKIPPED;
+                        lexer->doGetDataType(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 
 #INMODULE           {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doInModule(returnToken); 
+                            return SKIPPED;
+                        lexer->doInModule(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ISVALID            {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        lexer->doIsValid(returnToken); 
+                            return SKIPPED;
+                        lexer->doIsValid(returnToken);
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
 #ISDEFINED          {
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
+                            return SKIPPED;
                         bool defined = lexer->doIsDefined(returnToken);
 //                      RETURNHARD(defined ? TOK_TRUE : TOK_FALSE);
                         lexer->pushText(defined ? "true" : "false");
@@ -554,48 +556,48 @@ xpathseq      ([^}\r\n])+
 #LINK               {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_LINK); 
+                            return SKIPPED;
+                        return(HASH_LINK);
                     }
-#ONWARNING          { 
+#ONWARNING          {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_ONWARNING); 
+                            return SKIPPED;
+                        return(HASH_ONWARNING);
                     }
-#OPTION             { 
+#OPTION             {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_OPTION); 
+                            return SKIPPED;
+                        return(HASH_OPTION);
                     }
-#STORED             { 
+#STORED             {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_STORED); 
+                            return SKIPPED;
+                        return(HASH_STORED);
                     }
-#TEXT               { 
-                        setupdatepos; 
-                        if (lexer->skipNesting || lexer->macroGathering || !lookup)
-                            return SKIPPED; 
-                        return lexer->doHashText(returnToken); 
+#TEXT               {
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering || !(likely(lookupFlags & LEXresolve)))
+                            return SKIPPED;
+                        return lexer->doHashText(returnToken);
                     }
 #UNIQUENAME         {
-                        setupdatepos; 
-                        if (lexer->skipNesting || lexer->macroGathering)
-                        {   
-                            //PrintLog("lexer->skipNesting #UNIQUENAME");
-                            return SKIPPED; 
-                        }
-                        lexer->doUniqueName(returnToken); 
-                        return INTERNAL_READ_NEXT_TOKEN;
-                    }
-#WORKUNIT           { 
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
-                            return SKIPPED; 
-                        return(HASH_WORKUNIT); 
+                        {
+                            //PrintLog("lexer->skipNesting #UNIQUENAME");
+                            return SKIPPED;
+                        }
+                        lexer->doUniqueName(returnToken);
+                        return INTERNAL_READ_NEXT_TOKEN;
+                    }
+#WORKUNIT           {
+                        setupdatepos;
+                        if (lexer->skipNesting || lexer->macroGathering)
+                            return SKIPPED;
+                        return(HASH_WORKUNIT);
                     }
 #WEBSERVICE         {
                         setupdatepos;
@@ -604,11 +606,12 @@ xpathseq      ([^}\r\n])+
                         return(HASH_WEBSERVICE);
                     }
 __LINE__            {
-                        setupdatepos; 
-                        returnToken.setExpr(createIntegerConstant(lexer->yyLineNo, false));
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createIntegerConstant(lexer->yyLineNo, false));
                         return (INTEGER_CONST);
                     }
-#REGION[^\n]*       { 
+#REGION[^\n]*       {
                         updatepos1;
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
@@ -616,19 +619,19 @@ __LINE__            {
                         updatepos1;
                         return INTERNAL_READ_NEXT_TOKEN;
                     }
-#END                { 
+#END                {
 //Place #END last so the specialised versions are hit first
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->macroGathering)
                             return SKIPPED;
-                        return lexer->doEnd(returnToken, lookup, activeState);
+                        return lexer->doEnd(returnToken, lookupFlags, activeState);
                     }
 #{letter}{alphanum}* {
 //Trap any unknown #commands
                         /* otherwise, unknown # command */
-                        setupdatepos; 
+                        setupdatepos;
                         if (lexer->skipNesting)
-                            return SKIPPED; 
+                            return SKIPPED;
                         StringBuffer msg("Unknown # command: ");
                         msg.append(CUR_TOKEN_TEXT);
                         lexer->reportError(returnToken, ERR_TMPLT_UNKNOWNCOMMAND, "%s", msg.str());
@@ -638,7 +641,7 @@ __LINE__            {
                         updatepos1;
                         return HASH_DOLLAR;
                     }
-        
+
 ABS                 { RETURNSYM(ABS); }
 ACOS                { RETURNSYM(ACOS); }
 AFTER               { RETURNSYM(AFTER); }
@@ -862,12 +865,12 @@ OPT                 { RETURNSYM(OPT); }
 __OPTION__          { RETURNSYM(__OPTION__); }
 ORDERED             { RETURNSYM(ORDERED); }
 OUTER               { RETURNSYM(OUTER); }
-OUTPUT              { 
+OUTPUT              {
                         //RETURNSYM(OUTPUT);
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                        return(OUTPUT); 
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
+                        return(OUTPUT);
                     }
 OVERWRITE           { RETURNSYM(OVERWRITE); }
 __OWNED__           { RETURNSYM(__OWNED__); }
@@ -915,9 +918,9 @@ RESTRICTED          { RETURNSYM(RESTRICTED); }
 RETRY               { RETURNSYM(RETRY); }
 RETURN              { RETURNSYM(RETURN); }
 RIGHT               { RETURNSYM(RIGHT); }
-RIGHT{digit}+       { 
-                        returnToken.setInt(str2uint64(CUR_TOKEN_LENGTH-5, (const char *)CUR_TOKEN_TEXT+5, 10)); 
-                        RETURNSYM(RIGHT_NN); 
+RIGHT{digit}+       {
+                        returnToken.setInt(str2uint64(CUR_TOKEN_LENGTH-5, (const char *)CUR_TOKEN_TEXT+5, 10));
+                        RETURNSYM(RIGHT_NN);
                     }
 ROLLUP              { RETURNSYM(ROLLUP); }
 ROUND               { RETURNSYM(ROUND); }
@@ -1014,38 +1017,43 @@ XMLUNICODE          { RETURNSYM(XMLUNICODE); }
 XPATH               { RETURNSYM(XPATH); }
 
 __DEBUG__       {
-                        setupdatepos; 
+                        setupdatepos;
                         return (__DEBUG__);
                     }
 __ECL_VERSION__     {
-                        setupdatepos; 
-                        returnToken.setExpr(createConstant(LANGUAGE_VERSION));
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXstring))
+                            returnToken.setExpr(createConstant(LANGUAGE_VERSION));
                         return (STRING_CONST);
                     }
 __ECL_VERSION_MAJOR__ {
-                        setupdatepos; 
-                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MAJOR, false));
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MAJOR, false));
                         return (INTEGER_CONST);
                     }
 __ECL_VERSION_MINOR__ {
-                        setupdatepos; 
-                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MINOR, false));
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MINOR, false));
                         return (INTEGER_CONST);
                     }
 __ECL_VERSION_SUBMINOR__ {
-                        setupdatepos; 
-                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
                         return (INTEGER_CONST);
                     }
 __ECL_LEGACY_MODE__ {
                         setupdatepos;
-                        returnToken.setExpr(createConstant(queryLegacyImportSemantics()));
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createConstant(queryLegacyImportSemantics()));
                         return (BOOL_CONST);
                     }
-__OS__              { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+__OS__              {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 #ifdef _WIN32
                         returnToken.setExpr(createConstant("windows"));
 #elif defined(__APPLE__)
@@ -1056,11 +1064,11 @@ __OS__              {
                         return (STRING_CONST);
                     }
 __STAND_ALONE__     {
-                        setupdatepos; 
+                        setupdatepos;
                         return (__STAND_ALONE__);
                     }
 __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
-                        
+
 {percent}{alphanumcolon}*{percent} {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
@@ -1091,44 +1099,44 @@ __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
                         lexer->doPreprocessorLookup(returnToken, true, 2);
                         return INTERNAL_READ_NEXT_TOKEN;
                     };
-INTEGER{digit}+ { 
-                      setupdatepos; 
-                      if (!lookup)
-                        return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+INTEGER{digit}+ {
+                      setupdatepos;
+                      if (!(likely(lookupFlags & LEXresolve)))
+                        return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                       unsigned size = atoi(CUR_TOKEN_TEXT+7);
                       if ((size == 0) || (size > 8))
                       {
                           lexer->reportError(returnToken, ERR_ILLSIZE_INT, "Invalid size for INTEGER type: can only be in range 1 to 8");
                           size = DEFAULT_INT_SIZE;
                       }
-                      returnToken.setType(makeIntType(size, true)); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(makeIntType(size, true));
+                      return(SIMPLE_TYPE);
                     }
-INTEGER             { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                        returnToken.setType(makeIntType(DEFAULT_INT_SIZE, true)); 
-                        return(SIMPLE_TYPE); 
+INTEGER             {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
+                        returnToken.setType(makeIntType(DEFAULT_INT_SIZE, true));
+                        return(SIMPLE_TYPE);
                     }
 SIZE_T              {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                         returnToken.setType(makeIntType(sizeof(size32_t), false));
                         return(SIMPLE_TYPE);
                     }
-BOOLEAN             { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                        returnToken.setType(makeBoolType()); 
-                        return(SIMPLE_TYPE); 
+BOOLEAN             {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
+                        returnToken.setType(makeBoolType());
+                        return(SIMPLE_TYPE);
                     }
-REAL{digit}+        { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+REAL{digit}+        {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                       unsigned size = atoi(CUR_TOKEN_TEXT+4);
                       switch (size)
                       {
@@ -1140,20 +1148,20 @@ REAL{digit}+        {
                           size = DEFAULT_REAL_SIZE;
                           break;
                       }
-                      returnToken.setType(makeRealType(size)); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(makeRealType(size));
+                      return(SIMPLE_TYPE);
                     }
-REAL                { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                        returnToken.setType(makeRealType(DEFAULT_REAL_SIZE)); 
+REAL                {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
+                        returnToken.setType(makeRealType(DEFAULT_REAL_SIZE));
                         return(SIMPLE_TYPE);
                     }
-DATA{digit}*        { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+DATA{digit}*        {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned size = lexer->getTypeSize(4);
                       ITypeInfo *dataType = makeDataType(size);
@@ -1162,13 +1170,13 @@ DATA{digit}*        {
                             lexer->reportError(returnToken, ERR_ILLSIZE_DATA, "Invalid size for DATA type");
                             dataType = makeDataType(0);
                       }
-                      returnToken.setType(dataType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(dataType);
+                      return(SIMPLE_TYPE);
                     }
-STRING{digit}*      { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+STRING{digit}*      {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned size = lexer->getTypeSize(6);
                       ITypeInfo *strType = makeStringType(size,NULL,NULL);
@@ -1177,14 +1185,14 @@ STRING{digit}*      {
                             lexer->reportError(returnToken, ERR_ILLSIZE_STRING, "Invalid size for STRING type");
                             strType = makeStringType(1, NULL, NULL);
                       }
-                      returnToken.setType(strType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(strType);
+                      return(SIMPLE_TYPE);
                     }
 UNICODE(_{letter}+)?{digit}* {
                       //Note letter includes _ so this include en_US etc.
-                      setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                      setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned digitstart = 7;
                       StringBuffer locale;
@@ -1203,20 +1211,20 @@ UNICODE(_{letter}+)?{digit}* {
                             lexer->reportError(returnToken, ERR_ILLSIZE_UNICODE, "Invalid size or locale for UNICODE type");
                             uniType = makeUnicodeType(1, 0);
                       }
-                      returnToken.setType(uniType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(uniType);
+                      return(SIMPLE_TYPE);
                     }
 UTF8(_{letter}+)?(_{digit}+)? {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned digitstart = 4;
                       StringBuffer locale;
                       if(CUR_TOKEN_TEXT[digitstart] == '_' && isalpha((unsigned char)CUR_TOKEN_TEXT[digitstart+1]))
                       {
                           digitstart++;
-                          while(islower((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper((unsigned char)CUR_TOKEN_TEXT[digitstart]) || 
+                          while(islower((unsigned char)CUR_TOKEN_TEXT[digitstart]) || isupper((unsigned char)CUR_TOKEN_TEXT[digitstart]) ||
                                 ((CUR_TOKEN_TEXT[digitstart] == '_') && isalpha((unsigned char)CUR_TOKEN_TEXT[digitstart+1])))
                               digitstart++;
                           getNormalizedLocaleName(digitstart-5, CUR_TOKEN_TEXT+5, locale);
@@ -1231,13 +1239,13 @@ UTF8(_{letter}+)?(_{digit}+)? {
                             lexer->reportError(returnToken, ERR_ILLSIZE_UNICODE, "Invalid size or locale for UTF8 type");
                             uniType = makeUtf8Type(1, 0);
                       }
-                      returnToken.setType(uniType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(uniType);
+                      return(SIMPLE_TYPE);
                     }
-VARSTRING{digit}*   { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+VARSTRING{digit}*   {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned size = lexer->getTypeSize(9);
                       ITypeInfo *vStrType = makeVarStringType(size);
@@ -1246,13 +1254,13 @@ VARSTRING{digit}*   {
                             lexer->reportError(returnToken, ERR_ILLSIZE_VARSTRING, "Invalid size for VARSTRING type");
                             vStrType = makeVarStringType(1);
                       }
-                      returnToken.setType(vStrType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(vStrType);
+                      return(SIMPLE_TYPE);
                     }
 VARUNICODE(_{letter}+)?{digit}* {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned digitstart = 10;
                       StringBuffer locale;
@@ -1271,40 +1279,40 @@ VARUNICODE(_{letter}+)?{digit}* {
                             lexer->reportError(returnToken, ERR_ILLSIZE_UNICODE, "Invalid size for VARUNICODE type");
                             vUniType = makeVarUnicodeType(1, 0);
                       }
-                      returnToken.setType(vUniType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(vUniType);
+                      return(SIMPLE_TYPE);
                     }
-QSTRING{digit}*     { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+QSTRING{digit}*     {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       unsigned size = lexer->getTypeSize(7);
                       ITypeInfo * type = makeQStringType(size);
                       assertex(type);
-                      returnToken.setType(type); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(type);
+                      return(SIMPLE_TYPE);
                     }
 DECIMAL             {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       returnToken.setType(makeDecimalType(MAX_DECIMAL_DIGITS,MAX_DECIMAL_PRECISION, true));
-                      return(SIMPLE_TYPE); 
+                      return(SIMPLE_TYPE);
                     }
 UDECIMAL             {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       returnToken.setType(makeDecimalType(MAX_DECIMAL_DIGITS,MAX_DECIMAL_PRECISION, true));
-                      return(SIMPLE_TYPE); 
+                      return(SIMPLE_TYPE);
                     }
 (U|u)?DECIMAL{digit}+(_{digit}+)? {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       bool isSigned = (CUR_TOKEN_TEXT[0] != 'U') && (CUR_TOKEN_TEXT[0] != 'u');
                       const char * trailing = isSigned ? CUR_TOKEN_TEXT+7 : CUR_TOKEN_TEXT+8;
@@ -1329,23 +1337,23 @@ UDECIMAL             {
                       }
 
                       ITypeInfo *decType = makeDecimalType(leading+places, places, isSigned);
-                      returnToken.setType(decType); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(decType);
+                      return(SIMPLE_TYPE);
                     }
 BITFIELD            {
                         /* error pattern: BITFIELD with no size */
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                        lexer->reportError(returnToken, ERR_ILLSIZE_BITFIELD, "Invalid size for BITFIELD type: a size must be specified");
-                       returnToken.setType(makeBitfieldType(1)); 
-                       return(SIMPLE_TYPE);     
+                       returnToken.setType(makeBitfieldType(1));
+                       return(SIMPLE_TYPE);
                     }
 BITFIELD{digit}+    {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       int size = atoi(CUR_TOKEN_TEXT+8);
                       if (size<=0 || size>64)
@@ -1358,13 +1366,13 @@ BITFIELD{digit}+    {
                       ITypeInfo * type = makeBitfieldType(size, int64.getClear());
                       assert(type!=NULL);
 
-                      returnToken.setType(type); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(type);
+                      return(SIMPLE_TYPE);
                     }
 BITFIELD{digit}+_{digit}+ {
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                       int size = atoi(CUR_TOKEN_TEXT+8);
                       const char * sep = strchr(CUR_TOKEN_TEXT+8, '_');
@@ -1389,41 +1397,41 @@ BITFIELD{digit}+_{digit}+ {
                       ITypeInfo * type = makeBitfieldType(size, makeIntType(baseSize,false));
                       assert(type!=NULL);
 
-                      returnToken.setType(type); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(type);
+                      return(SIMPLE_TYPE);
                     }
-RECORDSET           { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+RECORDSET           {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
 
                         returnToken.setType(makeTableType(NULL));
                         return(SIMPLE_TYPE);
                     }
-SWAPPED             { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+SWAPPED             {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                         return(SWAPPED);
                     }
-UNSIGNED{digit}+    { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+UNSIGNED{digit}+    {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                       unsigned size = atoi(CUR_TOKEN_TEXT+8);
                       if ((size == 0) || (size > 8))
                       {
                           lexer->reportError(returnToken, ERR_ILLSIZE_UNSIGNED, "Invalid size for UNSIGNED type: can only be 1 to 8");
                           size = DEFAULT_INT_SIZE;
                       }
-                      returnToken.setType(makeIntType(size, false)); 
-                      return(SIMPLE_TYPE); 
+                      returnToken.setType(makeIntType(size, false));
+                      return(SIMPLE_TYPE);
                     }
-UNSIGNED            { 
-                        setupdatepos; 
-                        if (!lookup)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                        return(UNSIGNED); 
+UNSIGNED            {
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)))
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
+                        return(UNSIGNED);
                     }
 
 TRUE                { RETURNSYM(TOK_TRUE); }
@@ -1450,14 +1458,14 @@ ENDMACRO            { setupdatepos; return(ENDMACRO); }
 ENDC\+\+            { setupdatepos; return(ENDCPP); }
 ENDEMBED            { setupdatepos; return(ENDEMBED); }
 ENCRYPTED           {
-                        setupdatepos; 
-                        if (!lookup || !LOOKUPSYM(ENCRYPTED) || lexer->macroGathering)
-                            return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        setupdatepos;
+                        if (!(likely(lookupFlags & LEXresolve)) || !LOOKUPSYM(ENCRYPTED) || lexer->macroGathering)
+                            return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                         lexer->processEncrypted();
                         return ENCRYPTED;
                     }
-FUNCTIONMACRO|MACRO { 
-                        setupdatepos; 
+FUNCTIONMACRO|MACRO {
+                        setupdatepos;
 
                         int tok;
                         ECLlocation startLocation;
@@ -1470,7 +1478,7 @@ FUNCTIONMACRO|MACRO {
                         bool inEmbed = false;
                         bool embedColonSeen = false;
                         unsigned embedParens = 0;
-                        while ((tok = lexer->yyLex(returnToken, false, activeState)) != ENDMACRO)
+                        while ((tok = lexer->yyLex(returnToken, LEXidentifier, activeState)) != ENDMACRO)
                         {
                             if (tok==EOF)
                             {
@@ -1513,10 +1521,10 @@ FUNCTIONMACRO|MACRO {
                         endpos = lexer->yyPosition;
                         if(complex || isFunctionMacro)
                             endpos -= 8; // remove the ENDMACRO token
-                        
-                        if (!lookup)
+
+                        if (!(likely(lookupFlags & LEXresolve)))
                             return MACRO;
-                        
+
                         // keep the orginal format info (like blanks, newlines) for macro
                         int len = endpos-startpos;
                         Owned<IFileContents> macroContents;
@@ -1552,13 +1560,13 @@ FUNCTIONMACRO|MACRO {
 #if defined(TRACE_MACRO)
                         PrintLog("MACRO>> macro defined in line %d, column %d\n", start.lineno, start.column);
 #endif
-                        
+
                         return complex ? COMPLEX_MACRO : MACRO;
                     }
-"BEGINC++"          { 
+"BEGINC++"          {
                         //Need to process using an exclusive start condition unlike MACRO because many
                         //tokens in C++ aren't legal in ECL, so lexer->yyLex() will generate errors.
-                        setupdatepos; 
+                        setupdatepos;
                         BEGIN(CPP);
                         lexer->inCpp = true;
                     }
@@ -1569,8 +1577,8 @@ FUNCTIONMACRO|MACRO {
                         while (memicmp(lexer->yyBuffer+endpos, "ENDC++", 6) != 0 && memicmp(lexer->yyBuffer+endpos, "ENDEMBED", 8) != 0)
                             endpos++;
                         const int lastpos = endpos + (tolower(lexer->yyBuffer[endpos+3])=='c' ? 6 : 8);
-                            
-                        updatepos1; 
+
+                        updatepos1;
                         BEGIN(0);
                         int startpos = returnToken.pos.position;
                         if (endpos-startpos >= 8 && memicmp(lexer->yyBuffer+startpos, "BEGINC++", 8)==0)
@@ -1590,17 +1598,20 @@ FUNCTIONMACRO|MACRO {
                         yyless(CUR_TOKEN_LENGTH - delta);
                         lexer->yyPosition -= delta;
                         lexer->yyColumn -= delta;
-                        OwnedHqlExpr cppText = createConstant(createUnicodeValue(lexer->yyBuffer+startpos, len, "", true, false));
-                        OwnedHqlExpr annotated = createLocationAnnotation(cppText.getClear(), returnToken.pos);
-                        OwnedHqlExpr options = extractCppBodyAttrs(len, lexer->yyBuffer+startpos);
-                        returnToken.setExpr(createComma(annotated.getClear(), options.getClear()));
+                        if (lookupFlags & LEXembed)
+                        {
+                            OwnedHqlExpr cppText = createConstant(createUnicodeValue(lexer->yyBuffer+startpos, len, "", true, false));
+                            OwnedHqlExpr annotated = createLocationAnnotation(cppText.getClear(), returnToken.pos);
+                            OwnedHqlExpr options = extractCppBodyAttrs(len, lexer->yyBuffer+startpos);
+                            returnToken.setExpr(createComma(annotated.getClear(), options.getClear()));
+                        }
                         return CPPBODY;
                     }
 <CPP>[^\n]+         { updatepos1; }
 <CPP>\n             { updatepos1; lexer->updateNewline(); }
 
-(d|D|q|Q|v|V|u|U|u8|U8)?"'''"  { 
-                        setupdatepos; 
+(d|D|q|Q|v|V|u|U|u8|U8)?"'''"  {
+                        setupdatepos;
                         BEGIN(MULTISTRING);
                         lexer->inMultiString = true;
                     }
@@ -1611,8 +1622,8 @@ FUNCTIONMACRO|MACRO {
                         while (memcmp(lexer->yyBuffer+endpos, "'''", 3) != 0)
                             endpos++;
                         const int lastpos = endpos + 3;
-                        
-                        updatepos1; 
+
+                        updatepos1;
                         BEGIN(0);
 
                         //Return any characters found after the closing '''
@@ -1620,7 +1631,10 @@ FUNCTIONMACRO|MACRO {
                         yyless(CUR_TOKEN_LENGTH - delta);
                         lexer->yyPosition -= delta;
                         lexer->yyColumn -= delta;
-                            
+
+                        if (!(likely(lookupFlags & LEXstring)))
+                            return STRING_CONST; // It doesn't mattter whether STRING or UNICODE is returned
+
                         int startpos = returnToken.pos.position;
                         if (lexer->yyBuffer[startpos] == 'u')
                         {
@@ -1644,7 +1658,7 @@ FUNCTIONMACRO|MACRO {
                             }
                             else
                                 unicodeValue.setown(createUnicodeValue(source.str(), source.length(), "", true, true));
-                            
+
                             returnToken.setExpr(createConstant(unicodeValue.getClear()));
                             return (UNICODE_CONST);
                         }
@@ -1663,15 +1677,15 @@ FUNCTIONMACRO|MACRO {
 "<="                { setupdatepos; return(LE) ; }
 "<"                 { setupdatepos; return(LT) ; }
 ">="                {
-                        //x.<y>= n  really wants to be processed as x.<y> = n, not x.<y >= 
+                        //x.<y>= n  really wants to be processed as x.<y> = n, not x.<y >=
                         if (LOOKUPSYM(GT) && !LOOKUPSYM(GE))
                         {
                             yyless(1);
-                            setupdatepos; 
-                            return(GT); 
+                            setupdatepos;
+                            return(GT);
                         }
-                        setupdatepos; 
-                        return(GE); 
+                        setupdatepos;
+                        return(GE);
                     }
 ">"                 { setupdatepos; return(GT) ; }
 "!="                { setupdatepos; return(NE) ; }
@@ -1688,82 +1702,107 @@ FUNCTIONMACRO|MACRO {
 
 0x{hexdigit}+U?     {
                         setupdatepos;
-                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
-                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
-                        returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT+2, 16), isSigned));
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                            unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
+                            returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT+2, 16), isSigned));
+                        }
                         return(INTEGER_CONST);
                     }
 {digit}{hexdigit}*XU? {
                         setupdatepos;
-                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
-                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
-                        returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT, 16), isSigned));
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                            unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
+                            returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT, 16), isSigned));
+                        }
                         return(INTEGER_CONST);
                     }
 0b{bindigit}+U?     {
                         setupdatepos;
-                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
-                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
-                        returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT+2, 2), isSigned));
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                            unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
+                            returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT+2, 2), isSigned));
+                        }
                         return(INTEGER_CONST);
                     }
 {bindigit}+BU?      {
                         setupdatepos;
-                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
-                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
-                        returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT, 2), isSigned));
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                            unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
+                            returnToken.setExpr(createIntegerConstant(str2uint64(len,(const char *)CUR_TOKEN_TEXT, 2), isSigned));
+                        }
                         return(INTEGER_CONST);
                     }
 {digit}+U?          {
                         setupdatepos;
-                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
-                        unsigned len = isSigned ? CUR_TOKEN_LENGTH : CUR_TOKEN_LENGTH-1;
-                        returnToken.setExpr(createIntegerConstant(str2uint64(len, (const char *)CUR_TOKEN_TEXT, 10), isSigned));
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                            unsigned len = isSigned ? CUR_TOKEN_LENGTH : CUR_TOKEN_LENGTH-1;
+                            returnToken.setExpr(createIntegerConstant(str2uint64(len, (const char *)CUR_TOKEN_TEXT, 10), isSigned));
+                        }
                         return(INTEGER_CONST);
                     }
-{digit}+(d|D)       { 
+{digit}+(d|D)       {
                         setupdatepos;
-                        unsigned digits = CUR_TOKEN_LENGTH-1;
-                        if (digits > MAX_DECIMAL_LEADING)
+                        if (likely(lookupFlags & LEXnumeric))
                         {
-                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many digits (>%d)", MAX_DECIMAL_LEADING);
-                            digits = MAX_DECIMAL_LEADING;
+                            unsigned digits = CUR_TOKEN_LENGTH-1;
+                            if (digits > MAX_DECIMAL_LEADING)
+                            {
+                                lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many digits (>%d)", MAX_DECIMAL_LEADING);
+                                digits = MAX_DECIMAL_LEADING;
+                            }
+                            Owned<ITypeInfo> type = makeDecimalType(digits, 0, true);
+                            IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
+                            returnToken.setExpr(createConstant(value));
                         }
-                        Owned<ITypeInfo> type = makeDecimalType(digits, 0, true);
-                        IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
-                        returnToken.setExpr(createConstant(value));
                         return(REAL_CONST);
                     }
-{digit}*\.{digit}+(d|D) { 
+{digit}*\.{digit}+(d|D) {
                         setupdatepos;
-                        const char * dot = strchr(CUR_TOKEN_TEXT, '.');
-                        unsigned before = (size32_t)(dot-CUR_TOKEN_TEXT);
-                        unsigned after = CUR_TOKEN_LENGTH-2 - before;
-                        if (before > MAX_DECIMAL_LEADING)
+                        if (likely(lookupFlags & LEXnumeric))
                         {
-                            lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many integral digits (>%d)", MAX_DECIMAL_LEADING);
-                            before = MAX_DECIMAL_LEADING;
-                            after = 0;
+                            const char * dot = strchr(CUR_TOKEN_TEXT, '.');
+                            unsigned before = (size32_t)(dot-CUR_TOKEN_TEXT);
+                            unsigned after = CUR_TOKEN_LENGTH-2 - before;
+                            if (before > MAX_DECIMAL_LEADING)
+                            {
+                                lexer->reportError(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant contains too many integral digits (>%d)", MAX_DECIMAL_LEADING);
+                                before = MAX_DECIMAL_LEADING;
+                                after = 0;
+                            }
+                            if (after > MAX_DECIMAL_PRECISION)
+                            {
+                                lexer->reportWarning(CategoryCast, returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_PRECISION);
+                                after = MAX_DECIMAL_PRECISION;
+                            }
+                            Owned<ITypeInfo> type = makeDecimalType(before+after, after, true);
+                            IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
+                            returnToken.setExpr(createConstant(value));
                         }
-                        if (after > MAX_DECIMAL_PRECISION)
-                        {
-                            lexer->reportWarning(CategoryCast, returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_PRECISION);
-                            after = MAX_DECIMAL_PRECISION;
-                        }
-                        Owned<ITypeInfo> type = makeDecimalType(before+after, after, true);
-                        IValue * value = type->castFrom(CUR_TOKEN_LENGTH-1, CUR_TOKEN_TEXT);
-                        returnToken.setExpr(createConstant(value));
                         return(REAL_CONST);
                     }
 {digit}+\.{digit}+((e|E)("+"|"-")?{digit}+)? {
-                        setupdatepos; 
-                        double value = strtod((const char *)CUR_TOKEN_TEXT, NULL);
-                        returnToken.setExpr(createConstant(value)); 
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                        {
+                            double value = strtod((const char *)CUR_TOKEN_TEXT, NULL);
+                            returnToken.setExpr(createConstant(value));
+                        }
                         return(REAL_CONST);
                     }
 \.{digit}+((e|E)("+"|"-")?{digit}+)? {
-                        setupdatepos; 
-                        returnToken.setExpr(createConstant((double) atof ((const char *)CUR_TOKEN_TEXT))); 
+                        setupdatepos;
+                        if (likely(lookupFlags & LEXnumeric))
+                            returnToken.setExpr(createConstant((double) atof ((const char *)CUR_TOKEN_TEXT)));
                         return(REAL_CONST);
                     }
 
@@ -1771,6 +1810,9 @@ FUNCTIONMACRO|MACRO {
                         int oldColumn = lexer->yyColumn; // in order to point out the exact position, old col needs to be saved.
                         int oldPosition = lexer->yyPosition;
                         setupdatepos;
+                        if (!(likely(lookupFlags & LEXstring)))
+                            return UNICODE_CONST;
+
                         StringBuffer msg;
                         bool utf8 = false;
                         unsigned start = 2;
@@ -1798,19 +1840,23 @@ FUNCTIONMACRO|MACRO {
                         }
                         else
                             unicodeValue.setown(createUnicodeValue(value, size, "", true, true));
-                        
+
                         returnToken.setExpr(createConstant(unicodeValue.getClear()));
                         return (UNICODE_CONST);
                     }
-                        
+
 
 (d|D|q|Q|v|V)?\'([^'\r\n\\]|\\[^\r\n])*\'/\' {
                         /* error pattern - a string immediately followed by a ' usually means someone thought they could use '' to escape a quote char */
                         /* It's usually going to hit a grammar error too, but patterns can legally be formed of two adjacent string tokens */
-                        lexer->reportWarning(CategoryMistake, returnToken, ERR_STRING_DOUBLE_QUOTE, "'' is not an escaped quote character: use \\' instead");
                         int oldColumn = lexer->yyColumn;
                         int oldPosition = lexer->yyPosition;
                         setupdatepos;
+
+                        if (!(likely(lookupFlags & LEXstring)))
+                            return UNICODE_CONST;
+
+                        lexer->reportWarning(CategoryMistake, returnToken, ERR_STRING_DOUBLE_QUOTE, "'' is not an escaped quote character: use \\' instead");
                         return lexer->processStringLiteral(returnToken, CUR_TOKEN_TEXT, CUR_TOKEN_LENGTH-1, oldColumn, oldPosition);
                     }
 
@@ -1818,86 +1864,106 @@ FUNCTIONMACRO|MACRO {
                         int oldColumn = lexer->yyColumn;
                         int oldPosition = lexer->yyPosition;
                         setupdatepos;
+
+                        if (!(likely(lookupFlags & LEXstring)))
+                            return UNICODE_CONST;
+
                         return lexer->processStringLiteral(returnToken, CUR_TOKEN_TEXT, CUR_TOKEN_LENGTH, oldColumn, oldPosition);
                     }
 
-(d|D|q|Q|u|U|v|V)?\'([^'\r\n\\]|\\[^\r\n])*(\\)? {  
+(d|D|q|Q|u|U|v|V)?\'([^'\r\n\\]|\\[^\r\n])*(\\)? {
                         /* error pattern */
                         setupdatepos;
-                        StringBuffer msg("String constant is not terminated: \"");
-                        unsigned len = CUR_TOKEN_LENGTH;
-                        if (len > 50)
-                            msg.append(50, CUR_TOKEN_TEXT).append("...");
-                        else
-                            msg.append(CUR_TOKEN_TEXT);
-                        msg.append("\"");
-                        lexer->reportError(returnToken, ERR_STRING_UNENDED, "%s", msg.str());
-                        // recovery 
-                        returnToken.setExpr(createBlankString());
-                        return STRING_CONST;                        
+                        if (likely(lookupFlags & LEXstring))
+                        {
+                            StringBuffer msg("String constant is not terminated: \"");
+                            unsigned len = CUR_TOKEN_LENGTH;
+                            if (len > 50)
+                                msg.append(50, CUR_TOKEN_TEXT).append("...");
+                            else
+                                msg.append(CUR_TOKEN_TEXT);
+                            msg.append("\"");
+                            lexer->reportError(returnToken, ERR_STRING_UNENDED, "%s", msg.str());
+                            // recovery
+                            returnToken.setExpr(createBlankString());
+                        }
+                        return STRING_CONST;
                     }
 
 \"([^"\r\n]|\\[\"])*(\")? {
                         /* error pattern */
                         setupdatepos;
-                        lexer->reportError(returnToken, ERR_STRING_ILLDELIMITER, "\" is not legal string delimiter; use ' instead");
-                        returnToken.setExpr(createBlankString());
+                        if (likely(lookupFlags & LEXstring))
+                        {
+                            lexer->reportError(returnToken, ERR_STRING_ILLDELIMITER, "\" is not legal string delimiter; use ' instead");
+                            returnToken.setExpr(createBlankString());
+                        }
                         return STRING_CONST;
                     }
-[xX]\'{hexpairs}\'  { 
+[xX]\'{hexpairs}\'  {
                         setupdatepos;
-                        unsigned len = (CUR_TOKEN_LENGTH-3)/2;    // round sign
-                        char *data =(char *)malloc(len+1);
-                        hex2str(data, (char *)CUR_TOKEN_TEXT+2, CUR_TOKEN_LENGTH-3);                        
-                        returnToken.setExpr(createConstant(createDataValue(data, len)));
-                        free(data);
+                        if (likely(lookupFlags & LEXstring))
+                        {
+                            unsigned len = (CUR_TOKEN_LENGTH-3)/2;    // round sign
+                            char *data =(char *)malloc(len+1);
+                            hex2str(data, (char *)CUR_TOKEN_TEXT+2, CUR_TOKEN_LENGTH-3);
+                            returnToken.setExpr(createConstant(createDataValue(data, len)));
+                            free(data);
+                        }
                         return (DATA_CONST);
                     }
 
-[xX]\'{err_hexpairs}\'  { 
+[xX]\'{err_hexpairs}\'  {
                         /* error pattern: odd hex data */
                         setupdatepos;
-                        lexer->reportWarning(CategorySyntax, returnToken, ERR_HEXDATA_ODDDIGITS,"hex data must have even number of hex digits");
-                        char* str = (char*)malloc(CUR_TOKEN_LENGTH-1);
-                        str[0] = '0'; // add a leading zero
-                        strncpy(str+1,(char*)CUR_TOKEN_TEXT+2,CUR_TOKEN_LENGTH-3);
-                        str[CUR_TOKEN_LENGTH-2] = 0;
-                        unsigned len = (CUR_TOKEN_LENGTH-2)/2;    // round sign
-                        char *data =(char *)malloc(len+1);
-                        
-                        hex2str(data, str, CUR_TOKEN_LENGTH-2);                     
-                        returnToken.setExpr(createConstant(createDataValue(data, len)));
-                        free(data);
-                        free(str);
+
+                        if (likely(lookupFlags & LEXstring))
+                        {
+                            lexer->reportWarning(CategorySyntax, returnToken, ERR_HEXDATA_ODDDIGITS,"hex data must have even number of hex digits");
+                            char* str = (char*)malloc(CUR_TOKEN_LENGTH-1);
+                            str[0] = '0'; // add a leading zero
+                            strncpy(str+1,(char*)CUR_TOKEN_TEXT+2,CUR_TOKEN_LENGTH-3);
+                            str[CUR_TOKEN_LENGTH-2] = 0;
+                            unsigned len = (CUR_TOKEN_LENGTH-2)/2;    // round sign
+                            char *data =(char *)malloc(len+1);
+
+                            hex2str(data, str, CUR_TOKEN_LENGTH-2);
+                            returnToken.setExpr(createConstant(createDataValue(data, len)));
+                            free(data);
+                            free(str);
+                        }
                         return (DATA_CONST);
                     }
 
-[xX]\'\'            { 
+[xX]\'\'            {
                         setupdatepos;
-                        returnToken.setExpr(createConstant(createDataValue(NULL, 0U)));
+                        if (likely(lookupFlags & LEXstring))
+                            returnToken.setExpr(createConstant(createDataValue(NULL, 0U)));
                         return (DATA_CONST);
                     }
- 
-[xX]\'([^'\r\n]|\\['])*\' { 
+
+[xX]\'([^'\r\n]|\\['])*\' {
                         /* error pattern: illegal char in hex data */
                         setupdatepos;
-                        StringBuffer msg;
-                        msg.append("hex data can only contains 0-9a-fA-F: ");
-                        msg.append(CUR_TOKEN_TEXT);
-                        lexer->reportError(returnToken, ERR_HEXDATA_ILL, "%s", msg.str());
+                        if (likely(lookupFlags & LEXstring))
+                        {
+                            StringBuffer msg;
+                            msg.append("hex data can only contains 0-9a-fA-F: ");
+                            msg.append(CUR_TOKEN_TEXT);
+                            lexer->reportError(returnToken, ERR_HEXDATA_ILL, "%s", msg.str());
 
-                        // recovering
-                        char data[2], str[3] = "00";
-                        
-                        hex2str((char*)data, (char*)str, 2);                        
-                        returnToken.setExpr(createConstant(createDataValue(data, 2)));
-                        
+                            // recovering
+                            char data[2], str[3] = "00";
+
+                            hex2str((char*)data, (char*)str, 2);
+                            returnToken.setExpr(createConstant(createDataValue(data, 2)));
+                        }
                         return (DATA_CONST);
                     }
-    
+
 (\$|{letter}){alphanum}* {
                         setupdatepos;
-                        return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                        return lookupIdentifierToken(returnToken, lexer, lookupFlags, activeState, CUR_TOKEN_TEXT);
                     }
 \357\273\277        {
                         setupdatepos;
@@ -1925,12 +1991,12 @@ FUNCTIONMACRO|MACRO {
                         lexer->onCloseBra();
                         return ']';
                     }
-{lcurly}            { 
+{lcurly}            {
                         setupdatepos;
                         lexer->onOpenBra();
                         return '{';
                     }
-{rcurly}            {   
+{rcurly}            {
                         setupdatepos;
                         lexer->onCloseBra();
                         return '}';

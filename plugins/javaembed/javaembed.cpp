@@ -437,6 +437,12 @@ public:
     {
         return checkException(JNIEnv::GetMethodID(clazz, name, sig));
     }
+    jmethodID GetMethodIDUnchecked(jclass clazz, const char *name, const char *sig)
+    {
+        jmethodID ret = JNIEnv::GetMethodID(clazz, name, sig);
+        ExceptionClear();
+        return ret;
+    }
     jmethodID GetStaticMethodID(jclass clazz, const char *name, const char *sig)
     {
         return checkException(JNIEnv::GetStaticMethodID(clazz, name, sig));
@@ -1856,10 +1862,9 @@ protected:
     }
     void setConstructor()
     {
-        constructor = JNIenv->GetMethodID(Class, "<init>", "()V");
+        constructor = JNIenv->GetMethodIDUnchecked(Class, "<init>", "()V");
         if (!constructor)
         {
-            JNIenv->ExceptionClear();
             jmethodID getNameMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(Class), "getName", "()Ljava/lang/String;" );
             jstring name = (jstring) JNIenv->CallObjectMethod(Class, getNameMethod);
             const char *nameText = JNIenv->GetStringUTFChars(name, NULL);

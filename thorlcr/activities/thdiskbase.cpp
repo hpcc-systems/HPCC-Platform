@@ -318,7 +318,6 @@ void CWriteMasterBase::publish()
                     partDesc->queryProperties().setPropInt64("@size", 0);
                     p++;
                 }
-                clusterIdx++;
             }
         }
         queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc, NULL);

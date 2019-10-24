@@ -805,7 +805,15 @@ void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeve
         else
             we->setSeverity(severity);
     }
-} 
+}
+
+void reportExceptionToWorkunitCheckIgnore(IConstWorkUnit &workunit, IException *e, ErrorSeverity severity)
+{
+    ErrorSeverity mappedSeverity = workunit.getWarningSeverity(e->errorCode(), severity);
+    if (SeverityIgnore == mappedSeverity)
+        return;
+    reportExceptionToWorkunit(workunit, e, mappedSeverity);
+}
 
 StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version)
 {
@@ -1527,10 +1535,11 @@ void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *
             return;
         if (!strieq(kind, expectedType))
         {
-            Owned<IThorException> e = MakeActivityException(activity, TE_FileFormatMismatch, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
+            Owned<IThorException> e = MakeActivityException(activity, TE_FileTypeMismatch, "File format mismatch reading file: '%s'. Expected type '%s', but file is type '%s'", file->queryLogicalName(), expectedType, kind);
             if (throwException)
                 throw e.getClear();
             e->setAction(tea_warning);
+            e->setSeverity(SeverityWarning);
             activity->fireException(e); // will propagate to workunit warning
         }
     }

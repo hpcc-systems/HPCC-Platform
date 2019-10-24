@@ -44,8 +44,31 @@ public:
             Owned<IException> e = MakeActivityWarning(&container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
             queryJobChannel().fireException(e);
         }
-        if (RecordTranslationMode::None == getTranslationMode(*this))
+        RecordTranslationMode translationMode = getTranslationMode(*this);
+        if (RecordTranslationMode::None != translationMode)
         {
+            /* Turn off translation if not "flat" or not RecordTranslationMode::AlwaysDisk
+             * NB: translation is turned off in slaves in this case too,
+             * turning off here, ensures format crc's are checked and any mismatch spotted
+             * with sensible error.
+             */
+
+            const char *kind = queryFileKind(file);
+            if (!strisame(kind, "flat") && (RecordTranslationMode::AlwaysDisk != translationMode))
+                translationMode = RecordTranslationMode::None;
+        }
+        if (RecordTranslationMode::None == translationMode)
+        {
+            unsigned dfsCrc;
+            if (file->getFormatCrc(dfsCrc) && helper->getDiskFormatCrc() != dfsCrc)
+            {
+                VStringBuffer fileStr("File: %s", file->queryLogicalName());
+                Owned<IThorException> e = MakeActivityException(this, TE_FormatCrcMismatch, "Automatic translation not available, and layout does not match published layout. %s", fileStr.str());
+                if (!queryContainer().queryJob().getWorkUnitValueInt("skipFileFormatCrcCheck", 0))
+                    throw e.getClear();
+                e->setAction(tea_warning);
+                fireException(e);
+            }
             if (recordSize->isFixedSize()) // fixed size
             {
                 if (0 != fileDesc->queryProperties().getPropInt("@recordSize"))

@@ -276,6 +276,28 @@ public:
             return recordTranslationModeHint;
         return queryFactory.queryOptions().enableFieldTranslation;
     }
+    FileFormatMode expectedFileMode() const
+    {
+        switch (kind)
+        {
+        case TAKcsvread:
+        case TAKcsvfetch:
+            return FileFormatMode::csv;
+        case TAKxmlread:
+        case TAKxmlfetch:
+            return FileFormatMode::xml;
+        case TAKdiskread:
+        case TAKdisknormalize:
+        case TAKdiskaggregate:
+        case TAKdiskcount:
+        case TAKdiskgroupaggregate:
+        case TAKdiskexists:
+            return FileFormatMode::flat;
+        default:
+            assert(false);
+            return FileFormatMode::flat;
+        }
+    }
 };
 
 extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile);

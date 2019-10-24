@@ -2255,7 +2255,7 @@ protected:
     bool persistent;
     bool grouped;
     bool isCodeSigned = false;
-    enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml } readType = rt_unknown;
+    enum ReadType:byte { rt_unknown, rt_binary, rt_csv, rt_xml, rt_json } readType = rt_unknown;
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     unsigned __int64 stopAfter = 0;
     unsigned __int64 remoteLimit = 0;
@@ -2272,6 +2272,7 @@ protected:
     IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
     RowFilter actualFilter;               // This refers to the actual disk layout
 
+    void checkFileType(IDistributedFile *file);
     void close();
     virtual void open();
     void resolve();

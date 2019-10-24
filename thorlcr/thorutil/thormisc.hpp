@@ -466,6 +466,8 @@ extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);
 extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, ErrorSeverity severity=SeverityWarning);
+extern graph_decl void reportExceptionToWorkunitCheckIgnore(IConstWorkUnit &workunit, IException *e, ErrorSeverity severity=SeverityWarning);
+
 
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;
