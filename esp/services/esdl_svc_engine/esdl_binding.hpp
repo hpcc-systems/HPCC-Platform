@@ -82,6 +82,10 @@ private:
     MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
     Owned<CEsdlCustomTransform> m_serviceLevelRequestTransform;
     bool m_serviceLevelCrtFail = false;
+    using MethodAccessMap = MapStringTo<SecAccessFlags>;
+    using MethodAccessMaps = MapStringTo<Owned<MethodAccessMap> >;
+    MethodAccessMaps            m_methodAccessMaps;
+    StringBuffer                m_defaultFeatureAuth;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;

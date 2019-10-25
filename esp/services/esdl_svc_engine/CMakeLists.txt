@@ -63,6 +63,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/tools/hidl #TAccessMapGenerator
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DESDL_ENGINE_EXPORTS )
