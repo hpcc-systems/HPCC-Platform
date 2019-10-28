@@ -2489,7 +2489,7 @@ public:
             MemoryBufferBuilder aBuilder(buf, 0);
             FetchVirtualFieldCallback fieldCallback(fetch->pos);
             translator->translate(aBuilder, fieldCallback, rawBuffer);
-            rawBuffer = reinterpret_cast<const byte *>(buf.toByteArray());
+            rawBuffer = aBuilder.getSelf();
         }
 
         CriticalBlock procedure(transformCrit);
@@ -3681,7 +3681,7 @@ public:
             MemoryBufferBuilder aBuilder(buf, 0);
             FetchVirtualFieldCallback fieldCallback(pos);
             translator->translate(aBuilder, fieldCallback, row);
-            row = reinterpret_cast<const byte *>(buf.toByteArray());
+            row = aBuilder.getSelf();
         }
         if(match(fetch->ms, row))
         {

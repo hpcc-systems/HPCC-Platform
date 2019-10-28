@@ -8769,7 +8769,7 @@ const void *CHThorDiskReadActivity::nextRow()
                         {
                             MemoryBufferBuilder aBuilder(translated, 0);
                             translator->translate(aBuilder, *this, next);
-                            next = reinterpret_cast<const byte *>(translated.toByteArray());
+                            next = aBuilder.getSelf();
                         }
                         if (likely(helper.canMatch(next)))
                             thisSize = helper.transform(outBuilder.ensureRow(), next);
