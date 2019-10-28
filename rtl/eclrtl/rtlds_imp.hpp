@@ -678,11 +678,11 @@ class ECLRTL_API MemoryBufferBuilder : public RtlRowBuilderBase
 {
 public:
     MemoryBufferBuilder(MemoryBuffer & _buffer, unsigned _minSize)
-        : buffer(&_buffer), minSize(_minSize)
+        : buffer(&_buffer), minSize(_minSize ? _minSize : 1U)
     {
     }
 
-    MemoryBufferBuilder(unsigned _minSize) : minSize(_minSize)
+    MemoryBufferBuilder(unsigned _minSize) : minSize(_minSize ? _minSize : 1U)
     {
     }
 
