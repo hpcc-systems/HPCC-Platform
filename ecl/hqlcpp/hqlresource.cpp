@@ -2216,7 +2216,7 @@ bool ResourceGraphLink::isRedundantLink()
 void ResourceGraphLink::trace(const char * name)
 {
 #ifdef TRACE_RESOURCING
-    IERRLOG("%s: %lx source(%lx,%lx) sink(%lx,%lx) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
+    IERRLOG("%s: %p source(%p,%p) sink(%p,%p) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
              linkKind == SequenceLink ? "sequence" : "");
 #endif
 }
