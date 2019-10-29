@@ -1,0 +1,392 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Math_Library">
+  <title><emphasis>Suporte a Math</emphasis></title>
+
+  <para>Esta seção cobre as funções matemáticas comuns na biblioteca
+  padrão.</para>
+
+  <para></para>
+
+  <sect1 id="Infinity">
+    <title>Infinity</title>
+
+    <para><emphasis role="bold">STD.Math.Infinity<indexterm>
+        <primary>STD.Math.Infinity</primary>
+      </indexterm><indexterm>
+        <primary>Math.Infinity</primary>
+      </indexterm><indexterm>
+        <primary>Infinity</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna um valor "infinito" REAL.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">Infinity </emphasis>retorna um valor
+    "infinito".</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+myValue := STD.Math.Infinity;
+myValue;
+</programlisting>
+
+    <para>Ver também: <link linkend="isInfinite">isInfinite</link></para>
+  </sect1>
+
+  <sect1 id="NaN">
+    <title>NaN</title>
+
+    <para><emphasis role="bold">STD.Math.NaN<indexterm>
+        <primary>STD.Math.NaN</primary>
+      </indexterm><indexterm>
+        <primary>Math.NaN</primary>
+      </indexterm><indexterm>
+        <primary>NaN</primary>
+      </indexterm></emphasis><emphasis>;</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna um valor NaN (Not a Number) sem sinalização.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">NaN </emphasis> retorna um valor
+    NaN (Not a Number) sem sinal.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+myValue := STD.Math.NaN;
+myValue;
+</programlisting>
+
+    <para>Ver também: <link linkend="isNaN">IsNan</link></para>
+  </sect1>
+
+  <sect1 id="isInfinite">
+    <title>isInfinite</title>
+
+    <para><emphasis role="bold">STD.Math.isInfinite<indexterm>
+        <primary>STD.Math.isInfinite</primary>
+      </indexterm><indexterm>
+        <primary>Math.isInfinite</primary>
+      </indexterm><indexterm>
+        <primary>isInfinite</primary>
+      </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>val</emphasis></entry>
+
+            <entry>O valor a ser testado.</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna um BOOLEAN indicando se um valor real é
+            infinito (positivo ou negativo).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">isInfinite </emphasis> retorna se
+    um valor real é infinito (positivo ou negativo).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+a := STD.Math.Infinity ;
+b := 42.1;
+STD.Math.isInfinite(a); //true
+STD.Math.isInfinite(b); //false
+</programlisting>
+
+    <para>Ver também: <link linkend="Infinity">Infinity, </link><link
+    linkend="isFinite">isFinite</link></para>
+  </sect1>
+
+  <sect1 id="isNaN">
+    <title>isNaN</title>
+
+    <para><emphasis role="bold">STD.Math.isNaN<indexterm>
+        <primary>STD.Math.isNaN</primary>
+      </indexterm><indexterm>
+        <primary>Math.isNaN</primary>
+      </indexterm><indexterm>
+        <primary>isNaN</primary>
+      </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>val</emphasis></entry>
+
+            <entry>O valor a ser testado.</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna um BOOLEAN indicando se um valor real é um valor de NaN
+            (not a number).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">isNaN </emphasis>retorna se
+    um valor real é um valor de NaN (não um número).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+a := STD.Math.NaN ;
+b := 42.1;
+STD.Math.isNaN(a); //true
+STD.Math.isNaN(b); //false
+</programlisting>
+
+    <para>Ver também: <link linkend="NaN">NaN,</link><link linkend="isFinite">
+    isFinite</link></para>
+  </sect1>
+
+  <sect1 id="isFinite">
+    <title>isFinite</title>
+
+    <para><emphasis role="bold">STD.Math.isFinite<indexterm>
+        <primary>STD.Math.isFinite</primary>
+      </indexterm><indexterm>
+        <primary>Math.isFinite</primary>
+      </indexterm><indexterm>
+        <primary>isFinite</primary>
+      </indexterm>(</emphasis> <emphasis>val</emphasis><emphasis>);</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>val</emphasis></entry>
+
+            <entry>O valor a ser testado.</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna um BOOLEAN indicando se um valor real é
+            um valor válido (nem infinito, nem NaN).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O <emphasis role="bold">isFinite </emphasis>a função isFinite retorna se
+    um valor real é um valor válido (nem infinito nem NaN).</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+a := STD.Math.Infinity ;
+b := STD.Math.NaN;
+c := 42.1;
+STD.Math.isFinite(a); //false
+STD.Math.isFinite(b); //false
+STD.Math.isFinite(c); //true
+</programlisting>
+
+    <para>Ver também: <link linkend="isNaN">isNaN ,</link><link
+    linkend="isInfinite">isInfinite</link></para>
+  </sect1>
+
+  <sect1 id="FMod">
+    <title>FMod</title>
+
+    <para><emphasis role="bold">STD.Math.FMod<indexterm>
+        <primary>STD.Math.FMod</primary>
+      </indexterm><indexterm>
+        <primary>Math.FMod</primary>
+      </indexterm><indexterm>
+        <primary>FMod</primary>
+      </indexterm>(</emphasis> <emphasis>numer, denom);</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>numer</emphasis></entry>
+
+            <entry>O numerador</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>denom</emphasis></entry>
+
+            <entry>O denominador</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna o restante em numer/denom de ponto flutuante
+            (arredondado para zero).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">FMod</emphasis> retorna o
+    restante em numer/denom de ponto flutuante (arredondado para zero). </para>
+
+    <para>Se denom for zero, o resultado dependerá do indicador divideByZero:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Se definido como zero ou não definido, retorna zero. </para>
+      </listitem>
+
+      <listitem>
+        <para>Se definido como "nan", retorna um valor NaN sem sinal.</para>
+      </listitem>
+
+      <listitem>
+        <para>Se definido como "fail", gera uma exceção.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">#OPTION ('divideByZero', 'nan'); //divide by zero creates a quiet NaN
+IMPORT STD;
+STD.Math.FMod(5.1, 3.0);  // 2.1
+STD.Math.FMod(-5.1, 3.0); // -2.1
+STD.Math.FMod(5.1, 0);    // NaN
+</programlisting>
+
+    <para></para>
+  </sect1>
+
+  <sect1 id="FMatch">
+    <title>FMatch</title>
+
+    <para><emphasis role="bold">STD.Math.FMatch<indexterm>
+        <primary>STD.Math.FMatch</primary>
+      </indexterm><indexterm>
+        <primary>Math.FMatch</primary>
+      </indexterm><indexterm>
+        <primary>FMatch</primary>
+      </indexterm>(</emphasis> <emphasis>a, b, epsilon);</emphasis>
+    <emphasis></emphasis></para>
+
+    <para></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>a</emphasis></entry>
+
+            <entry>O primeiro valor.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>b</emphasis></entry>
+
+            <entry>O segundo valor.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>epsilon</emphasis></entry>
+
+            <entry>A margem de erro permitida.</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis></emphasis></entry>
+
+            <entry>Retorna se dois valores de ponto flutuante são iguais,
+            dentro da margem do erro epsilon.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">FMatch</emphasis> retorna se
+    dois valores de ponto flutuante são iguais, dentro da margem do erro
+    epsilon.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.Math.FMatch(2.6,2.2,0.5); //true
+STD.Math.FMatch(2.6,2.2,0.3); //false</programlisting>
+
+    <para></para>
+  </sect1>
+</chapter>

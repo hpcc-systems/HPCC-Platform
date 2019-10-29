@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UniqueTZAbbreviations">
+  <!--This is a template for STD library method mod files-->
+
+  <title>UniqueTZAbbreviations</title>
+
+  <para><emphasis
+  role="bold">STD.Date.TimeZone.UniqueTZAbbreviations<indexterm>
+      <primary>STD.Date.TimeZone.UniqueTZAbbreviations</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.UniqueTZAbbreviations</primary>
+    </indexterm><indexterm>
+      <primary>UniqueTZAbbreviations</primary>
+    </indexterm>(</emphasis> <emphasis></emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>Um novo DATASET({STRING5 tzAbbrev}) contendo as abreviações exclusivas do
+          fuso horário.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis
+  role="bold">STD.Date.TimeZone.UniqueTZAbbreviations</emphasis> retorna
+  uma lista de abreviações de fuso horário exclusivas do dataset
+  codificado no módulo TimeZone. Todas as abreviações estão em maiúsculas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.UniqueTZAbbreviations();</programlisting>
+
+  <para></para>
+</sect1>

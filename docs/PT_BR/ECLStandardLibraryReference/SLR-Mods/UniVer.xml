@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UniVersion">
+  <title>Version</title>
+
+  <para><emphasis role="bold">STD.Uni.Version<indexterm>
+      <primary>STD.Uni.Version</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Version</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>Version retorna um valor STRING (e.x., '55.1').</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">Version </emphasis>retorna a
+  versão da biblioteca International Components for Unicode (ICU)
+  instalada.</para>
+
+  <para>Exemplo:</para>
+
+  <para><graphic align="left"
+  fileref="../../images/UniVersionChineseChars.jpg" /></para>
+
+  <para></para>
+</sect1>

@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AppendTZOffset">
+  <title>AppendTZOffset</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.AppendTZOffset<indexterm>
+      <primary>STD.Date.TimeZone.AppendTZOffset</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.AppendTZOffset</primary>
+    </indexterm><indexterm>
+      <primary>AppendTZOffset</primary>
+    </indexterm>(</emphasis> <emphasis>infile, timeZoneAbbrevField,
+  newOffsetField,</emphasis> [<emphasis>fromLocationField</emphasis>,
+  ][<emphasis>toTimeZoneAbbrev</emphasis>, ] [<emphasis>toLocation</emphasis>
+  ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>infile</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O dataset a ser processado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeZoneAbbrevField</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O campo no inFile que contém a abreviação
+          de fuso horário a ser usada para correspondência; os valores nesse campo devem estar em
+          maiúsculas. Não, esta não é uma lei real.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newOffsetField</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O campo a ser anexado ao inFile que conterá o
+          número de segundos de deslocamento do UTC. Não, esta não é uma lei real.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocationField</emphasis></entry>
+
+          <entry>OPCIONAL. O campo no inFile que contém o local do fuso horário
+          para aquele citado por timeZoneAbbrevField. Isso não é
+          uma string. O valor padrão é nulo (indicando que não há campo de
+          localização do fuso horário).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OPCIONAL. A abreviação do fuso horário para uso em todos
+          os cálculos, como uma string. Padrões para ‘UTC’</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha 
+          toTimeZoneAbbrev; se um local não for fornecido ou for uma sequência vazia
+          , o primeiro registro correspondente a TimeZoneAbbrev será usado. O padrão
+          é uma sequência vazia</entry>
+        </row>
+
+        <row>
+          <entry>Retorna:</entry>
+
+          <entry>Um novo dataset com a mesma definição de registro do inFile, mas
+          com quatro novos campos adicionados. Os novos campos são nomeados com base no
+          nome fornecido como o atributo newOffsetField. Os campos anexados
+          são:<programlisting>INTEGER4 &lt;newOffsetField&gt;            // Offset, in seconds, between original 
+                                     //time zone and toTimeZoneAbbrev 
+BOOLEAN  &lt;newOffsetField&gt;_is_valid   // TRUE if &lt;newOffsetField&gt; contains a 
+                                     // valid value
+                                     // If &lt;newOffsetField&gt;_is_valid is FALSE 
+                                     // then &lt;newOffsetField&gt; will be zero.
+STRING5  &lt;newOffsetField&gt;_tz         // The value of toTimeZoneAbbrev
+STRING15 &lt;newOffsetField&gt;_location   // The time zone location for 
+                                     // &lt;newOffsetField&gt;_tz. </programlisting></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O <emphasis role="bold">STD.Date.TimeZone.AppendTZOffset</emphasis>
+ pega um conjunto de dados que contém uma abreviação de fuso horário e local
+  opcionais e anexa quatro novos atributos ao dataset que contêm informações úteis
+  para converter um valor de tempo em outro fuso horário.</para>
+
+  <para>Isso pode ser útil como uma etapa de ETL, em que os dados de hora são comuns em
+  relação a um fuso horário específico (por exemplo, UTC). As ações nessa
+  macro de função são conceitualmente semelhantes a SecondsBetweenTZ (), mas aplicadas a
+  um conjunto de dados inteiro e um pouco mais eficientemente.</para>
+
+  <para><emphasis role="bold">Observação:</emphasis> Para que essa
+  macro de função seja executada corretamente, o código de chamada deve importar a biblioteca
+  STD.</para>
+
+  <?hard-pagebreak ?>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+ds := DATASET ([
+               {120000, 'CT'},
+               {120000, 'ET'}
+               ],{Std.Date.Time_t time, STRING tz});
+utcOffsetDS := Std.Date.TimeZone.AppendTZOffset(ds, tz, seconds_to_utc);
+OUTPUT(utcOffsetDS, NAMED('offset_to_utc_result'));
+ 
+ptOffsetDS := Std.Date.TimeZone.AppendTZOffset (ds, tz, seconds_to_pacific_time,
+                                                toTimeZoneAbbrev := 'PT', 
+                                                toLocation := 'NORTH AMERICA');
+OUTPUT(ptOffsetDS, NAMED('offset_to_pacific_time_result'));</programlisting>
+
+  <para>Ver também: <link
+  linkend="AppendTZAdjustedTime">AppendTZAdjustedTime</link> , <link
+  linkend="SecondsBetweenTZ">SecondsBetweenTZ</link></para>
+</sect1>

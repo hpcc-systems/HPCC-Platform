@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="session-management" role="nobrk">
+  <title>Gerenciamento de Sessões</title>
+
+  <para>A versão 7.0 do HPCC Platform apresenta o novo recurso de segurança do 
+  Gerenciamento de Sessão ESP. Isto funciona como muitas aplicações bancárias,
+  onde depois de um período de inatividade configurável você é avisado com um 
+  pop-up "Você está prestes a ser bloqueado". Se nenhuma ação for tomada, a
+  sessão será bloqueada e você precisará inserir suas credenciais para
+  desbloquear e retomar. Uma sessão permanece ativa enquanto houver interação 
+  regular do usuário. Após um período de inatividade, você é alertado de que 
+  sua sessão está prestes a ser bloqueada. As sessões são armazenadas em 
+  cookies e compartilhadas entre as abas e instâncias de cada navegador. A 
+  atividade em qualquer instância estenderá toda a duração da sessão. Além 
+  disso, uma opção de menu Logout permite que você feche sua sessão quando 
+  terminar.</para>
+
+  <sect2 id="faq">
+    <title>FAQ</title>
+
+    <orderedlist>
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Por que nós implementamos 
+	esse recurso?</para>
+
+        <para><emphasis role="strong">A</emphasis>: O principal motivo é
+        reforçar a segurança. Os navegadores e o IDE deixados abertos depois 
+	de horas e no fim de semana são um risco de segurança. Além disso, 
+	isso reduz a carga desnecessária no ESP, pois não atualizará 
+	automaticamente as sessões do ECLWatch inativas.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Quanto tempo dura uma
+        sessão inativa?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Seu administrador pode
+        configurar isso usando o Configuration Manager. A configuração padrão 
+	são de duas horas de inatividade.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: A atualização automática 
+        de workunits e gráficos ativos estende sua sessão de ESP?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não, apenas as ações do 
+	usuário, como digitação ou cliques do mouse, estendem uma 
+	sessão.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Terei que fazer o login no
+        ECLWatch?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, assim como você faz
+        atualmente.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Terei que fazer o login no 
+	ECL IDE?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, mas você já deveria 
+	estar. Não há alterações perceptíveis aqui apenas nos bastidores onde
+        você está sendo autenticado.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Terei que fazer o login no
+        Configuration Manager?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Quais credenciais devo
+        usar para fazer login?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Use suas credenciais
+        atribuídas.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Posso me desconectar do 
+	ECL Watch?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, há um link para
+        logout disponível. Você pode fazer logoff e não bloquear a sessão após 
+	um período configurável de inatividade.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Minhas sessões serão
+        desconectadas devido à inatividade?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não. Depois de um período
+        de inatividade configurável, sua sessão é bloqueada. Você precisa 
+	desbloquear para retomar sua sessão.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para><emphasis role="strong">Q</emphasis>: Quanto tempo até minha 
+	senha expirar?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Isso depende das políticas 
+	do seu sistema e do gerenciador de segurança configurado.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Conseguirei alterar uma
+        senha expirada?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, com a nova tela de 
+	login, você pode inserir IDs usados anteriormente ou inserir um ID
+	diferente. Você pode ter tantas sessões de usuário ativas a qualquer 
+	momento quanto permitido pelos recursos do seu sistema.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Posso fazer login 
+	simultaneamente com credenciais diferentes?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, usando abas
+        diferentes em um único navegador, várias instâncias do mesmo navegador 
+	ou várias instâncias de diferentes navegadores.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Existe uma opção para 
+	permanecer conectado indefinidamente e/ou não ter tempo de 
+	inatividade?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Perderei dados se obtiver
+        o logout automático?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não. Você não foi
+        desconectado. Sua sessão será bloqueada. Qualquer coisa digitada em 
+	qualquer campo (como uma caixa de pesquisa) que não tenha sido enviada 
+	ou inserida poderá ser perdida. No entanto, como a sessão em si é 
+	bloqueada, é improvável que quaisquer dados sejam perdidos.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: As minhas unidades de
+        trabalho enfileiradas e programadas serão executadas quando eu estiver 
+	bloqueado?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim, a sessão aplica-se 
+	apenas às comunicações ESP/ECL IDE e ESP/ECLWatch.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Os utilitários de linha de
+        comando do HPCC serão afetados?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Possivelmente. Se você 
+	configurou o AuthPerSessionOnly, os utilitários de linha de comando 
+	não funcionarão. Se AuthPerSessionOnly não estiver ativado, os 
+	utilitários de linha de comando não serão afetados.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: A atualização automática 
+	no ECLWatch redefine o cronômetro de expiração da sessão?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não. Apenas as interações 
+	ativas, como cliques do mouse e teclas pressionadas, prolongam o tempo 
+	limite. Observe que a rolagem não estende o o tempo de 
+	expiração.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Se eu estiver conectado à
+        mesma conta usando várias abas em um navegador ou várias instâncias do 
+	mesmo navegador, posso ser bloqueado de um, mas não dos outros?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não, a atividade é 
+	rastreada por suas credenciais. A atividade em uma aba ou instância 
+	estende a sessão para todas.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Se eu fizer login na mesma 
+	conta usando navegadores diferentes (por exemplo, Firefox e Chrome), 
+	eles compartilham o mesmo tempo limite da sessão?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Não. Como cada navegador 
+	tem seu próprio armazenamento de cookies, a atividade em um não se
+        estende ao outro.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Posso voltar 
+	automaticamente para a tela do ECLWatch onde eu estava quando fui 
+	bloqueado automaticamente?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim. A intenção é bloquear
+        sua sessão e não desconectá-lo completamente. Desbloquear sua sessão
+        deve retorná-lo ao mesmo ponto quando sua sessão estiver 
+	bloqueada.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Conseguirei alterar uma 
+	senha expirada?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Sim. Você é redirecionado 
+	para uma página onde você pode redefinir sua senha.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: O acesso ao ECLWatch
+        requer SSL/TLS e HTTPS?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Esses protocolos de 
+	segurança já estão disponíveis para o administrador do HPCC 
+	configurar. Embora não seja necessário para o gerenciamento de
+	sessões, esperamos que eles estejam habilitados no momento.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: As minhas chamadas SOAP
+        programáticas utilizando ESP terão algum impacto?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Talvez. Se você tiver
+        configurado AuthPerSessionOnly, as chamadas SOAP não funcionarão. Se o 
+	seu sistema não estiver configurado dessa forma, as chamadas SOAP
+        programáticas continuarão a funcionar como fazem agora.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="strong">Q</emphasis>: Quando verei as mudanças 
+	no Session Management (Gerenciamento de Sessões)?</para>
+
+        <para><emphasis role="strong">A</emphasis>: Você pode configurar seu
+        sistema para usar o Session Management como parte do HPCC Versão 
+	7.0.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+</sect1>
