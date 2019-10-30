@@ -1293,7 +1293,7 @@ interface IDistributedFile;
 
 interface IWorkUnit : extends IConstWorkUnit
 {
-    virtual void clearExceptions() = 0;
+    virtual void clearExceptions(const char *source=nullptr) = 0;
     virtual void commit() = 0;
     virtual IWUException * createException() = 0;
     virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log=NULL) = 0;

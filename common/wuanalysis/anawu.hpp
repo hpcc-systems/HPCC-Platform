@@ -28,5 +28,5 @@ struct WuAnalyseOptions
 };
 
 void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options);
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu);
 #endif

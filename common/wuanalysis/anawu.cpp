@@ -414,9 +414,15 @@ void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options)
     analyser.update(wu);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu)
 {
     WorkunitAnalyser analyser(options);
     analyser.analyse(wu);
     analyser.print();
+    if (updatewu)
+    {
+        Owned<IWorkUnit> lockedwu = &(wu->lock());
+        lockedwu->clearExceptions("Workunit Analyser");
+        analyser.update(lockedwu);
+    }
 }
