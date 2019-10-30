@@ -1,0 +1,10 @@
+# run as ansible-playbook stop_hpcc.yaml --extra-vars "hosts=dali"
+# run as ansible-playbook stop_hpcc.yaml --extra-vars "hosts=non-dali"
+# run as ansible-playbook stop_hpcc.yaml --extra-vars "hosts=hpcc"
+---
+- name: Execute a script.
+  hosts: '{{ hosts }}'
+  remote_user: 'hpcc'
+  tasks:
+     - name: Execute the script
+       command: sudo /etc/init.d/hpcc-init stop

@@ -1,0 +1,50 @@
+version: "3"
+services:
+  support:
+    image: hpccsystems/hpcc:7-rc
+    networks:
+      - ovnet
+  esp:
+    image: hpccsystems/hpcc:7-rc
+    ports:
+      - "8010:8010"
+      - "8002:8002"
+      - "9876:9876"
+    networks:
+      - ovnet
+  admin:
+    image: hpccsystems/hpcc-m:7-admin-s
+    ports:
+      - "8015:8015"
+    # privileged: true
+    # tty: true
+    environment:
+     #- HOST_IP=172.17.0.1
+      - TOPOLOGY=default
+    networks:
+      - ovnet
+  thor-mythor:
+    image: hpccsystems/hpcc:7-rc
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+  roxie-myroxie:
+    image: hpccsystems/hpcc:7-rc
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8081:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - ovnet
+networks:
+  ovnet:

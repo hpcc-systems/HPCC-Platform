@@ -1,0 +1,21 @@
+FROM hpccsystems/hpcc-base:7-bionic
+
+COPY hpccsystems-platform* .
+RUN set -ex; \
+   apt-get update; \
+   apt-get install -y iputils-ping curl xterm libarchive13 gpg ; \
+   groupadd hpcc && useradd -s /bin/bash -r -m -d /home/hpcc -g hpcc -c "hpcc Runtime User" hpcc ; \
+   export PLATFORM_PACKAGE=$(ls hpccsystems-platform*); \
+   dpkg -i "${PLATFORM_PACKAGE}" ; \
+   rm -rf "${PLATFORM_PACKAGE}"
+
+
+EXPOSE 8010 8002 8015 9876 18010 18002 18015 19876
+
+#COPY id_rsa* /home/hpcc/.ssh/
+
+#RUN cp -r /home/hpcc/.ssh ~/
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+CMD ["/usr/sbin/sshd", "-D"]

@@ -1,0 +1,80 @@
+version: "3"
+services:
+  support:
+    image: hpccsystems/hpcc:7-rc
+    # privileged: true
+    # tty: true
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  esp:
+    image: hpccsystems/hpcc:7-rc
+    ports:
+      - "8010:8010"
+    # privileged: true
+    # tty: true
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  admin:
+    image: hpccsystems/hpcc-m:7-admin
+    ports:
+      - "8015:8015"
+    # privileged: true
+    # tty: true
+    environment:
+     # - SLAVES_PER_NODE=1
+     # - DOWNLOAD_URL=https://github.com/xwang2713/HPCC-Docker
+     # - DOWNLOAD_METHOD=git
+     # Usually this docker0 network card
+      - HOST_IP=172.17.0.1
+     #- TOPLOGY=<topology 1 name>%<cluster 1 name>:<process 1>@<process name>,<process 2>@<process name>...;<cluster 2 name>:...# <topology 2 name>%...
+     #- TOPOLOGY=topology%thor:EclAgentProcess@myeclagent,EclCCServerProcess@myeclccserver,ThorCluster@mythor,EclScheduerProcess@myeclscheduler;roxie:RoxieCluster@myroxie,EclCCServerProcess@myeclccserver,EclSchedulerProcess@myeclscheduler;thor_roxie:EclCCServerProcess@myeclccserver,Thorcluster@mythor,RoxieCluster@myroxie,EclSchedulerProcess@myeclscheduler
+      - TOPOLOGY=default
+     #- THOR_MYTHOR_OPTS="nodeGroup=mythor"
+     #- INSTANCE_THOR_MYTHOR_OPTS="xxx=yyy"
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  # thor slave. If want to define thor master use thormaster-<name>
+  thor-mythor:
+    image: hpccsystems/hpcc:7-rc
+   # privileged: true
+   # tty: true
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  roxie-myroxie:
+    image: hpccsystems/hpcc:7-rc
+   # privileged: true
+   # tty: true
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - ovnet
+networks:
+  ovnet:
+
+volumes:
+   # default location: /var/lib/docker/volumes/<app_name>_<volume name>
+  data:

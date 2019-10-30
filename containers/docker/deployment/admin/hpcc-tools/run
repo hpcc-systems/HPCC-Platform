@@ -1,0 +1,51 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(dirname $0)
+
+function usage()
+{
+
+ cat <<EOF
+    Usage: $(basename $0) <options>
+      <options>:
+      -D: run sshd with "-D"
+      -e: environment, such as kube, swarm, azure, gce, etc. Only kube and swarm are currently supported.
+      -h: print this help
+
+EOF
+   exit 2
+}
+
+environment=swarm
+run_sshd_foreground=false
+
+# Process command-line parameters
+while getopts "*De:h" arg
+do
+   case $arg in
+      D) run_sshd_foreground=true
+         ;;
+      e) environment=${OPTARG}
+         ;;
+      h) usage
+         ;;
+      ?)
+         echo "Unknown option $OPTARG"
+         usage
+         ;;
+   esac
+done
+
+
+[ ! -e ~/.ssh/id_rsa ] && cp -r /home/hpcc/.ssh ~/
+if [ "${run_sshd_foreground}" = "true" ]
+then
+  /usr/sbin/sshd -D
+else
+  service ssh start
+  if [ "${environment}" = "kube" ]
+  then
+     ${SCRIPT_DIR}/kube/events_watcher.py
+
+  fi
+fi

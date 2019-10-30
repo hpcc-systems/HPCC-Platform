@@ -1,0 +1,10 @@
+# run as ansible-playbook push_env.yaml --extra-vars "hosts=hpcc"
+---
+- name: Execute a script.
+  hosts: '{{ hosts }}'
+  remote_user: 'hpcc'
+  tasks:
+     - name: Transfer the environment.xml
+       copy: src=/etc/HPCCSystems/source/environment.xml dest=/etc/HPCCSystems/ mode=0644
+     #- name: Change the owner to user hpcc
+     #  command: chown hpcc:hpcc /etc/HPCCSystems/environment.xml

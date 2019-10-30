@@ -1,0 +1,8 @@
+# run as ansible-playbook set_hpcc_owner.yaml --extra-vars "hosts=roxie"
+---
+- name: Execute a script.
+  hosts: '{{ hosts }}'
+  remote_user: 'root'
+  tasks:
+     - name: Execute the script
+       command: chown -R hpcc:hpcc /var/lib/HPCCSystems/hpcc-data

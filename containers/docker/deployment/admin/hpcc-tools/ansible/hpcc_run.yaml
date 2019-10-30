@@ -1,0 +1,10 @@
+# run as ansible-playbook hpcc_run.yaml --extra-vars "action=stop"
+# run as ansible-playbook hpcc_run.yaml --extra-vars "action=start"
+# run as ansible-playbook hpcc_run.yaml --extra-vars "action=restart"
+---
+- name: Execute a script.
+  hosts: 'dali'
+  remote_user: 'root'
+  tasks:
+     - name: Execute the script
+       command: bash /opt/HPCCSystems/sbin/hpcc-run '{{action}}'

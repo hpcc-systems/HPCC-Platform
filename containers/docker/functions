@@ -1,0 +1,14 @@
+#!/bin/bash
+
+info()
+{
+  printf "%s\\n" "$@"
+}
+
+fatal()
+{
+  printf "**********\\n"
+  printf "Fatal Error: %s\\n" "$@"
+  printf "**********\\n"
+  exit 1
+}

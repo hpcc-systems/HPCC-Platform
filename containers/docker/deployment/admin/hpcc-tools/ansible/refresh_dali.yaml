@@ -1,0 +1,8 @@
+# run as ansible-playbook refresh_dali.yaml"
+---
+- name: Execute a script.
+  hosts: 'dali'
+  remote_user: 'hpcc'
+  tasks:
+     - name: Execute the script
+       command: rm -rf /var/lib/HPCCSystems/myroxie/slaves; rm -rf /var/lib/HPCCSystems/mythor/slaves; rm -rf /var/lib/HPCCSystems/mythor/uslaves

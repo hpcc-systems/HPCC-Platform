@@ -1,0 +1,61 @@
+version: "3"
+services:
+  support:
+    image: hpccsystems/hpcc-m:7-rc4-fb
+    networks:
+      - ovnet
+  esp:
+    image: hpccsystems/hpcc-m:7-rc4-fb
+    ports:
+      - "8010:8010"
+      - "8002:8002"
+      - "9876:9876"
+    networks:
+      - ovnet
+  admin:
+    image: hpccsystems/hpcc-m:7-admin-s
+    ports:
+      - "8015:8015"
+    # privileged: true
+    # tty: true
+    environment:
+     #- HOST_IP=172.17.0.1
+      - TOPOLOGY=default
+    networks:
+      - ovnet
+  thor-mythor:
+    image: hpccsystems/hpcc-m:7-rc4-fb
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+  roxie-myroxie:
+    image: hpccsystems/hpcc-m:7-rc4-fb
+    deploy:
+      replicas: 2
+    networks:
+      - ovnet
+  elk:
+    # need set before start: sudo sysctl -w vm.max_map_count=262144
+    image: sebp/elk
+    ports:
+      - "9200:9200"
+      - "5601:5601"
+      - "5644:5644"
+    deploy:
+      replicas: 1
+    networks:
+      - ovnet
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8081:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - ovnet
+networks:
+  ovnet:

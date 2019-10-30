@@ -1,0 +1,52 @@
+version: "3"
+services:
+  esp:
+    image: hpccsystems/hpcc-m:7-rc
+    ports:
+      - "8010:8010"
+    # privileged: true
+    # tty: true
+    deploy:
+      replicas: 1
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  node:
+    image: hpccsystems/hpcc-m:7-rc
+    #ports:
+    #  - "8010:8010"
+    # privileged: true
+    # tty: true
+    deploy:
+      replicas: 5
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+  admin:
+    image: hpccsystems/hpcc-m:7-admin
+    ports:
+      - "8015:8015"
+    # privileged: true
+    # tty: true
+    environment:
+     # - SLAVES_PER_NODE=1
+      - SUPPORT_NODES=1
+      - ROXIE_NODES=2
+      - THOR_NODES=2
+     # - DOWNLOAD_URL=https://github.com/xwang2713/HPCC-Docker
+     # - DOWNLOAD_METHOD=git
+     # Usually this docker0 network card
+      - HOST_IP=172.17.0.1
+    networks:
+      - ovnet
+    volumes:
+      - data:/hpcc-data
+
+networks:
+  ovnet:
+  bridge:
+
+volumes:
+  data:
