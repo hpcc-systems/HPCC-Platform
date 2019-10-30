@@ -47,9 +47,9 @@ IF (NOT R_FOUND)
   IF(EXISTS "${RCPP_INCLUDE_DIR}/Rcpp/config.h")
     #Rcpp/config.h
     #define RCPP_VERSION Rcpp_Version(0,12,3)
-    FILE(STRINGS "${RCPP_INCLUDE_DIR}/Rcpp/config.h" version_string REGEX "#define RCPP_VERSION Rcpp_Version\\(")
+    FILE(STRINGS "${RCPP_INCLUDE_DIR}/Rcpp/config.h" version_string REGEX "#define RCPP_VERSION[ ]+Rcpp_Version\\(")
     #major
-    STRING(REGEX REPLACE "#define RCPP_VERSION Rcpp_Version\\(" "" major "${version_string}")
+    STRING(REGEX REPLACE "#define RCPP_VERSION[ ]+Rcpp_Version\\(" "" major "${version_string}")
     STRING(REGEX REPLACE ",[0-9]+,[0-9]+\\)" "" major "${major}")
     #minor
     STRING(REGEX REPLACE "#define RCPP_VERSION Rcpp_Version\\([0-9]+," "" minor "${version_string}")
