@@ -35,6 +35,7 @@ set (    SRCS
          anacommon.hpp
          anarule.hpp
          anawu.hpp
+         anaerrorcodes.hpp
     )
 
 include_directories (
