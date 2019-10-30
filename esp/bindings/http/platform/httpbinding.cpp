@@ -2027,6 +2027,10 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
     {
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
+
+    //There is an exception. So close socket connection right after sending the response to avoid more file upload.
+    response->setPersistentEligible(false);
+
     return onFinishUpload(ctx, request, response, serv, method, fileNames, files, me);
 }
 
