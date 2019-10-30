@@ -247,7 +247,7 @@ void WuScope::getAttr(StringBuffer & result, WuAttr attr) const
 {
     StringBuffer name;
     name.append('@').append(queryWuAttributeName(attr));
-    attrs->getProp(result, name);
+    attrs->getProp(name, result);
 }
 
 void WuScope::trace(unsigned indent) const
