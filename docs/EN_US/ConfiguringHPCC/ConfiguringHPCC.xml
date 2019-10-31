@@ -65,11 +65,11 @@
     <title>Using Configuration Manager</title>
 
     <para>Configuration Manager is the utility with which we configure the
-    HPCC Systems platform. The HPCC Systems platform's configuration is stored in an XML file
-    named <emphasis role="bold">environment.xml</emphasis>. When you install a
-    package, a default single-node environment.xml is generated. After that,
-    you can use the Configuration Manager to modify it and add nodes and
-    configure components.</para>
+    HPCC Systems platform. The HPCC Systems platform's configuration is stored
+    in an XML file named <emphasis role="bold">environment.xml</emphasis>.
+    When you install a package, a default single-node environment.xml is
+    generated. After that, you can use the Configuration Manager to modify it
+    and add nodes and configure components.</para>
 
     <para>The Configuration Manager Wizard creates a similar file, but after
     it is generated, you must rename it and put it into place on each
@@ -81,8 +81,8 @@
     View, it is a good idea to start with a wizard generated configuration and
     use Advanced View to finish it.</para>
 
-    <para>This document will guide you through configuring an HPCC Systems environment
-    using the Configuration Manager.</para>
+    <para>This document will guide you through configuring an HPCC Systems
+    environment using the Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
       <title>Running the Configuration Manager</title>
@@ -90,7 +90,8 @@
       <para>This document will guide you through configuring an HPCC Systems
       environment using the Configuration Manager.</para>
 
-      <para>The HPCC Systems package should already be installed on ALL nodes.</para>
+      <para>The HPCC Systems package should already be installed on ALL
+      nodes.</para>
 
       <para>You can use any tool or shell script you choose.</para>
 
@@ -123,13 +124,14 @@
         </listitem>
       </orderedlist>
 
-      <para>There are different ways to configure your HPCC Systems platform. You can
-      use the <emphasis role="bold">Generate environment wizard</emphasis> and
-      use that environment or experienced users can then use the <emphasis
-      role="bold">Advanced View</emphasis> for more specific customization.
-      There is also the option of using <emphasis role="bold">Create blank
-      environment</emphasis> to generate an empty environment that you could
-      then go in and add only the components you would want.</para>
+      <para>There are different ways to configure your HPCC Systems platform.
+      You can use the <emphasis role="bold">Generate environment
+      wizard</emphasis> and use that environment or experienced users can then
+      use the <emphasis role="bold">Advanced View</emphasis> for more specific
+      customization. There is also the option of using <emphasis
+      role="bold">Create blank environment</emphasis> to generate an empty
+      environment that you could then go in and add only the components you
+      would want.</para>
 
       <sect2 id="Env_Wizard">
         <title>Environment Wizard</title>
@@ -159,8 +161,8 @@
           <listitem>
             <para>Press the Next button.</para>
 
-            <para>Next you will need to define the IP addresses that your HPCC Systems
-            platform will be using.</para>
+            <para>Next you will need to define the IP addresses that your HPCC
+            Systems platform will be using.</para>
           </listitem>
 
           <listitem>
@@ -284,8 +286,8 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>Keep in mind, that your HPCC Systems configuration may be
-                different depending on your needs. For example, you may not
+                <entry>Keep in mind, that your HPCC Systems configuration may
+                be different depending on your needs. For example, you may not
                 need a Roxie or you may need several smaller Roxie clusters.
                 In addition, in a production [Thor] system, you would ensure
                 that Thor and Roxie nodes are dedicated and have no other
@@ -306,8 +308,8 @@
 
               <para>Stop the HPCC Systems platform.</para>
 
-              <para>If it is running stop the HPCC Systems platform (on every node),
-              using a command such as this:</para>
+              <para>If it is running stop the HPCC Systems platform (on every
+              node), using a command such as this:</para>
 
               <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                           xpointer="element(/1)"
@@ -339,8 +341,9 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Be sure the HPCC Systems platform is stopped before attempting to
-                        copy the environment.xml file.</entry>
+                        <entry>Be sure the HPCC Systems platform is stopped
+                        before attempting to copy the environment.xml
+                        file.</entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -395,8 +398,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <para>You may want to use a script to push out the XML file to
               all nodes. See the <emphasis>Example Scripts</emphasis> section
               in the Appendix of the <emphasis role="bluebold">Installing and
-              Running the HPCC Systems Platform</emphasis> document. You can use the
-              scripts as a model to create your own script to copy the
+              Running the HPCC Systems Platform</emphasis> document. You can
+              use the scripts as a model to create your own script to copy the
               environment.xml file out to all your nodes.</para>
             </listitem>
 
@@ -432,8 +435,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>If it is running, stop the HPCC Systems platform using this command on
-          every node:</para>
+          <para>If it is running, stop the HPCC Systems platform using this
+          command on every node:</para>
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                       xpointer="element(/1)"
@@ -466,8 +469,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>You can use this command to confirm HPCC Systems processes
-                    are stopped: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
+                    <entry>You can use this command to confirm HPCC Systems
+                    processes are stopped: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -698,8 +701,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <title>Software Section</title>
 
       <para>Use the software components section to configure software
-      components of the HPCC Systems platform. Most software components are actual
-      running processes; however, some are just definitions used by the
+      components of the HPCC Systems platform. Most software components are
+      actual running processes; however, some are just definitions used by the
       system. These definitions are used by the configuration
       generator.</para>
 
@@ -1232,8 +1235,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>Drop Zone</title>
 
         <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your HPCC Systems installation. The drop zone is a logical
-        combination of a path and one or more servers.</para>
+        transferred to or from your HPCC Systems installation. The drop zone
+        is a logical combination of a path and one or more servers.</para>
 
         <para>Multiple drop zones allow you to configure different top level
         folders for one or more servers. Multiple servers for a single drop
@@ -1842,10 +1845,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             integration</emphasis>
           </para>
 
-          <para>HPCC Systems provides a mechanism to integrate ELK (ElasticSearch,
-          Logstash, and Kibana) based visualizations into ECL Watch. This
-          feature can be configured and enabled through the HPCC Systems Configuration
-          manager.</para>
+          <para>HPCC Systems provides a mechanism to integrate ELK
+          (ElasticSearch, Logstash, and Kibana) based visualizations into ECL
+          Watch. This feature can be configured and enabled through the HPCC
+          Systems Configuration manager.</para>
 
           <para>To configure the ELK Log Visualization component, click and
           expand the <emphasis role="bold">ESP Service</emphasis> link on the
@@ -1929,6 +1932,78 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
+
+        <sect3 id="CFGESP_WsStore" role="brk">
+          <title>Ws_Store</title>
+
+          <para>One instance of ws_store is included with ECL Watch, but you
+          can choose to add another ws_store ESP Service to your HPCC Systems
+          platform.</para>
+
+          <para>To add the ws_store service. <graphic
+          fileref="images/CM-WsStore.jpg" vendor="configmgrSS" /></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Right click on the <emphasis
+                role="bold">Software</emphasis> component in the <emphasis
+                role="bold">Navigator</emphasis> panel (on the right side),
+                choose <emphasis role="bold">New ESP Services</emphasis> then
+                <emphasis role="bold">ws_store</emphasis> from the drop
+                list.</para>
+              </listitem>
+
+              <listitem>
+                <para>Configure the ws_store attributes as required.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </orderedlist>The following values are the configurable attributes
+          for ws_store:</para>
+
+          <!--WsECL-Include-ZXX-2-->
+
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp_service_wsstore.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESPWS.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+        </sect3>
+
+        <sect3 id="CFGESP-WsSql" role="brk">
+          <title>Ws_SQL</title>
+
+          <para>You can choose to add the ws_sql ESP Service to your HPCC
+          Systems platform.</para>
+
+          <para>To add the ws_sql service:</para>
+
+          <para>
+            <orderedlist>
+              <listitem>
+                <para>Right click on the <emphasis
+                role="bold">Software</emphasis> component in the <emphasis
+                role="bold">Navigator</emphasis> panel (on the right side),
+                choose <emphasis role="bold">New ESP Services</emphasis> then
+                <emphasis role="bold">ws_sql</emphasis> from the drop
+                list.</para>
+              </listitem>
+
+              <listitem>
+                <para>Configure the ws_sql by providing the name of the
+                service.</para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </orderedlist>
+          </para>
+        </sect3>
       </sect2>
 
       <sect2 id="FTSlave-Process" role="brk">
@@ -2010,8 +2085,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         LDAPServer Installation in ConfigManager. For a complete description
         of how to add LDAP Authentication see <emphasis>Using LDAP
         Authentication</emphasis> section in the <emphasis
-        role="bluebold">Installing and Running The HPCC Systems Platform</emphasis>
-        document.</para>
+        role="bluebold">Installing and Running The HPCC Systems
+        Platform</emphasis> document.</para>
 
         <para>
           <graphic fileref="images/LDAP_004.jpg" />
@@ -2031,8 +2106,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           added the LDAP computers in the Hardware section. For a complete
           description of how to add LDAP Authentication see <emphasis>Using
           LDAP Authentication</emphasis> section in the <emphasis
-          role="bluebold">Installing and Running The HPCC Systems Platform</emphasis>
-          document.</para>
+          role="bluebold">Installing and Running The HPCC Systems
+          Platform</emphasis> document.</para>
 
           <orderedlist>
             <listitem>
@@ -2055,26 +2130,27 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>The HPCC Systems Administrator's account</title>
 
-          <para>You can set up an HPCC Systems Administrator's account with limited
-          administrative rights. The HPCC Systems Administrator does not have to be an
-          LDAP Administrator's account. This allows the HPCC Systems Administrator to
-          be able to set up users, groups, and set permissions in HPCC Systems without
-          having rights to perform other LDAP administrative functions. To use
-          this feature: <orderedlist>
+          <para>You can set up an HPCC Systems Administrator's account with
+          limited administrative rights. The HPCC Systems Administrator does
+          not have to be an LDAP Administrator's account. This allows the HPCC
+          Systems Administrator to be able to set up users, groups, and set
+          permissions in HPCC Systems without having rights to perform other
+          LDAP administrative functions. To use this feature: <orderedlist>
               <listitem>
                 <para>Create an LDAP group to contain all the HPCC
                 Administrator users. For example: "HPCCAdminGroup"</para>
               </listitem>
 
               <listitem>
-                <para>In the HPCC Systems configuration manager navigate to this (LDAP
-                Server Process) page and enter the HPCC Systems Administrator group
-                name as the value in the <emphasis
+                <para>In the HPCC Systems configuration manager navigate to
+                this (LDAP Server Process) page and enter the HPCC Systems
+                Administrator group name as the value in the <emphasis
                 role="bold">adminGroupName</emphasis> field.</para>
               </listitem>
 
               <listitem>
-                <para>Add (HPCC Systems Administrator) users to this new group.</para>
+                <para>Add (HPCC Systems Administrator) users to this new
+                group.</para>
               </listitem>
 
               <listitem>
@@ -2827,86 +2903,104 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </tgroup>
           </informaltable>
         </para>
+      </sect2>
 
-        <sect3 id="Propogate-configuration-changes" role="brk">
-          <title>Distribute Configuration Changes to all Nodes</title>
+      <sect2 id="CFG_TopoServer" role="brk">
+        <title>Topo Server</title>
 
-          <para>Once your environment is set up as desired, you must copy the
-          configuration file to the other nodes.</para>
+        <para>This TopoServer Process is configured through the <emphasis>Topo
+        Server - mytoposerver</emphasis> from configuration manager. You
+        define the instances and then set the configuration attributes.</para>
 
-          <para />
+        <para>
+          <graphic fileref="images/CM-TopoSrvr.jpg" />
+        </para>
 
-          <orderedlist>
-            <listitem>
-              <para>If it is running, stop the system</para>
+        <!--TopoServer-Include-->
 
-              <para>
-                <informaltable colsep="1" frame="all" rowsep="1">
-                  <?dbfo keep-together="always"?>
+        <xi:include href="../XMLGeneration/xml/toposerver.xsd.mod.xml"
+                    xpointer="xpointer(//*[@id='topo.svr'])"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </sect2>
 
-                  <tgroup cols="2">
-                    <colspec colwidth="49.50pt" />
+      <sect2 id="Propogate-configuration-changes" role="brk">
+        <title>Distribute Configuration Changes to all Nodes</title>
 
-                    <colspec />
+        <para>Once your environment is set up as desired, you must copy the
+        configuration file to the other nodes.</para>
 
-                    <tbody>
-                      <row>
-                        <entry>
-                          <inlinegraphic fileref="images/caution.png" />
-                        </entry>
+        <para />
 
-                        <entry>Be sure system is stopped before attempting to
-                        copy the Environment.xml file.</entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </informaltable>
-              </para>
-            </listitem>
+        <orderedlist>
+          <listitem>
+            <para>If it is running,, stop the system</para>
 
-            <listitem>
-              <para>Back up the original environment.xml file</para>
+            <para>
+              <informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
 
-              <programlisting># for example
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>
+                        <inlinegraphic fileref="images/caution.png" />
+                      </entry>
+
+                      <entry>Be sure system is stopped before attempting to
+                      copy the Environment.xml file.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>Back up the original environment.xml file</para>
+
+            <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
 
-              <para>Note: the "live environment.xml file is located in your
-              <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
-              ConfigManager works on files in <emphasis
-              role="bold">/etc/HPCCSystems/source</emphasis> directory. You
-              must copy from this location to make an environment.xml file
-              active.</para>
-            </listitem>
+            <para>Note: the "live environment.xml file is located in your
+            <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
+            ConfigManager works on files in <emphasis
+            role="bold">/etc/HPCCSystems/source</emphasis> directory. You must
+            copy from this location to make an environment.xml file
+            active.</para>
+          </listitem>
 
-            <listitem>
-              <para>Copy the NewEnvironment.xml file from the source directory
-              to the /etc/HPCCSystems and rename the file to
-              environment.xml</para>
+          <listitem>
+            <para>Copy the NewEnvironment.xml file from the source directory
+            to the /etc/HPCCSystems and rename the file to
+            environment.xml</para>
 
-              <programlisting># for example
+            <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-              <para />
-            </listitem>
+            <para />
+          </listitem>
 
-            <listitem>
-              <para>Copy the /etc/HPCCSystems/environment.xml to the
-              /etc/HPCCSystems/ on every node.</para>
+          <listitem>
+            <para>Copy the /etc/HPCCSystems/environment.xml to the
+            /etc/HPCCSystems/ on every node.</para>
 
-              <para />
-            </listitem>
+            <para />
+          </listitem>
 
-            <listitem>
-              <para>Restart the HPCC Systems platform</para>
+          <listitem>
+            <para>Restart the HPCC Systems platform</para>
 
-              <para>You might prefer to script this process, especially if you
-              have many nodes. See the Example Scripts section in the Appendix
-              of the Installing_and_RunningtheHPCCPlatform document. You can
-              use the scripts as a model to create your own script to copy the
-              environment.xml file out to all your nodes.</para>
-            </listitem>
-          </orderedlist>
-        </sect3>
+            <para>You might prefer to script this process, especially if you
+            have many nodes. See the Example Scripts section in the Appendix
+            of the Installing_and_RunningtheHPCCPlatform document. You can use
+            the scripts as a model to create your own script to copy the
+            environment.xml file out to all your nodes.</para>
+          </listitem>
+        </orderedlist>
       </sect2>
     </sect1>
   </chapter>

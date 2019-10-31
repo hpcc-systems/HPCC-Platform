@@ -22,6 +22,12 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspService">
         <xs:complexType>
+	<!--DOC-AutoGen-Code-->
+	<xs:annotation>
+      <xs:appinfo>
+         <docid>WSOD.t01</docid>
+      </xs:appinfo>
+   </xs:annotation>
             <xs:sequence>
                 <xs:element name="RemoteNScfg" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
