@@ -92,6 +92,9 @@
     <!-- getThorNodeDali -->
     <xsl:template name="getThorNodeDali">
         <xsl:param name="thorNode"/>
+        <xsl:if test="not(/Environment/Software/ThorCluster[@name=$thorNode])">
+          <xsl:message terminate="yes">Thor cluster specified in ThorNode: <xsl:value-of select="$thorNode"/> has not been declared in this environment</xsl:message>
+        </xsl:if>
         <xsl:for-each select="/Environment/Software/ThorCluster[@name=$thorNode]">
             <xsl:call-template name="getDaliServers">
                 <xsl:with-param name="daliServer" select="@daliServers"/>
