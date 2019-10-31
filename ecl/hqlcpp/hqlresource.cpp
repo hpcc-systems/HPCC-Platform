@@ -3926,7 +3926,11 @@ void EclResourcer::deriveUsageCounts(IHqlExpression * expr)
         if (ctx && expr->isDatarow())
         {
             if ((getNumActivityArguments(expr) != 0) && ctx->queryAssociation(expr, AssocRow, nullptr))
-                insideNeverSplit = true;
+            {
+                // Ensure the expression is returned unmodified, so that the value that is already calculated is matched
+                info->containsActivity = false;
+                return;
+            }
         }
 
         switch (expr->getOperator())

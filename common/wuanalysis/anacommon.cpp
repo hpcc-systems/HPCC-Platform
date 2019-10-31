@@ -34,12 +34,15 @@ int PerformanceIssue::compareCost(const PerformanceIssue & other) const
 
 void PerformanceIssue::print() const
 {
-    printf("[%" I64F "dms] %s: %s\n", statUnits2msecs(cost), scope.str(), comment.str());
+    StringBuffer out;
+    formatStatistic(out, cost, SMeasureTimeNs);
+    printf("[%s] E%d %s: %s\n", out.str(), errorCode, scope.str(), comment.str());
 }
 
 void PerformanceIssue::createException(IWorkUnit * wu)
 {
     Owned<IWUException> we = wu->createException();
+    we->setExceptionCode(errorCode);
     we->setSeverity(SeverityInformation);
     we->setScope(scope.str());
     we->setPriority((unsigned) statUnits2msecs(cost));
@@ -47,9 +50,10 @@ void PerformanceIssue::createException(IWorkUnit * wu)
     we->setExceptionSource("Workunit Analyser");
 }
 
-void PerformanceIssue::set(stat_type _cost, const char * msg, ...)
+void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _cost, const char * msg, ...)
 {
     cost = _cost;
+    errorCode = _errorCode;
     va_list args;
     va_start(args, msg);
     comment.valist_appendf(msg, args);

@@ -21,6 +21,7 @@
 #include "jliball.hpp"
 #include "wuattr.hpp"
 #include "eclhelper.hpp"
+#include "anaerrorcodes.hpp"
 
 #ifdef WUANALYSIS_EXPORTS
     #define WUANALYSIS_API DECL_EXPORT
@@ -66,11 +67,12 @@ public:
     void print() const;
     void createException(IWorkUnit * we);
 
-    void set(stat_type _cost, const char * msg, ...) __attribute__((format(printf, 3, 4)));
+    void set(AnalyzerErrorCode _errorCode, stat_type _cost, const char * msg, ...) __attribute__((format(printf, 4, 5)));
     void setScope(const char *_scope) { scope.set(_scope); }
     stat_type getCost() const         { return cost; }
 
 private:
+    AnalyzerErrorCode errorCode;
     StringAttr scope;
     stat_type cost = 0;      // number of nanoseconds lost as a result.
     StringBuffer comment;

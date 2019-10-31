@@ -82,8 +82,29 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Press the <emphasis role="bold">Submit</emphasis> button at the
-        bottom of this page to start preflight.</para>
+        <para>Expand the folder for the System Server then check the box next
+        to the desired component(s).</para>
+
+        <para><figure>
+            <title>Select System Servers</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/PF-SysSrv01.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>With the servers selected, the preflight action button activates
+        and you can press it to display the preflight options.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Check or uncheck any desired options then Press the <emphasis
+        role="bold">Submit</emphasis> button to start preflight.</para>
 
         <para><figure>
             <title>Submit</title>
@@ -105,7 +126,7 @@
       displays.</para>
 
       <para><figure>
-          <title>System Component Inforamtion</title>
+          <title>System Component Information</title>
 
           <mediaobject>
             <imageobject>
@@ -113,38 +134,23 @@
                          vendor="eclwatchSS" />
             </imageobject>
           </mediaobject>
-        </figure>This screen displays information on several system
-      components. This information indicates whether several components are
+        </figure>This screen displays information about the selected system
+      components. This information indicates whether the components are
       actually running appropriately. The resulting page shows useful
-      information about each component. The component name, the condition, the
-      component state, how long the component has been up and running, the
-      amount of disk usage, memory usage and other information is available at
-      a glance.</para>
+      information about each component. The component name, location,
+      condition, the component state, how long the component has been up and
+      running, the amount of disk usage, memory usage and other information is
+      available at a glance.</para>
 
-      <?hard-pagebreak ?>
-
-      <para>If there are any failed components, they are highlighted in
-      orange, indicating they are not ready.</para>
-
-      <figure>
-        <title>Failed Component</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-sysfail.jpg"
-                       vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
+      <para>If there are any alerts, the component(s) are highlighted,
+      indicating they require further attention.</para>
     </sect2>
   </sect1>
 
   <sect1 id="Preflight_Target_Clusters">
     <title>Preflight Target Clusters</title>
 
-    <para>Use the Target Clusters link to preflight all your clusters at once.
-    To preflight clusters individually, see the following <emphasis>Preflight
-    Thor</emphasis> or <emphasis>Preflight Roxie</emphasis> sections.</para>
+    <para>Use the Target Clusters link to preflight all your clusters.</para>
 
     <orderedlist>
       <listitem>
@@ -163,15 +169,22 @@
             </mediaobject>
           </figure></para>
 
-        <para>This displays all of your system Clusters.</para>
+        <para>This displays a detailed listing of all your systems'
+        Clusters.</para>
       </listitem>
 
       <listitem>
-        <para>Click to check on the <emphasis role="bold">Select All /
-        None</emphasis> box, to select all of the clusters.</para>
+        <para>Click on the select all check box, in the top row on the left
+        side, to select all of the target clusters.</para>
 
-        <para>Optionally, you can just check the box(es) next to the
-        cluster(s) you want to check.</para>
+        <para>Optionally, you can just check the box(es) next to only the
+        cluster(s) you want to preflight. If you choose to preflight all
+        Target Clusters, you do not need to preflight Thor and Roxie
+        separately as detailed below. </para>
+
+        <para>With the clusters selected, the preflight action button
+        activates and you can press it to display the preflight
+        options.</para>
 
         <para><figure>
             <title>Select Target Clusters</title>
@@ -186,8 +199,9 @@
       </listitem>
 
       <listitem>
-        <para>Press the <emphasis role="bold">Submit</emphasis> button at the
-        bottom of the page to start preflight.</para>
+        <para>Select or de-select any desired options, then press the
+        <emphasis role="bold">Submit</emphasis> button at the bottom to start
+        preflight.</para>
 
         <para><figure>
             <title>Submit</title>
@@ -198,6 +212,10 @@
               </imageobject>
             </mediaobject>
           </figure></para>
+
+        <para><emphasis role="bold">NOTE</emphasis>: Depending on the size of
+        your system, there could be a slight delay in displaying the
+        results.</para>
       </listitem>
     </orderedlist>
 
@@ -205,7 +223,7 @@
       <title>EXPECTED RESULTS:</title>
 
       <para>After pressing <emphasis role="bold">Submit</emphasis>, a screen
-      similar to the following should display.<figure>
+      similar to the following should display. <figure>
           <title>Target Cluster Information</title>
 
           <mediaobject>
@@ -217,23 +235,11 @@
       nodes. This information can help to indicate if everything is operating
       normally or can help to point out any potential concerns.</para>
 
-      <para>If there are any failed components or notable alerts, they are
-      highlighted in orange. These alerts usually require some
-      attention.</para>
+      <para>If there are any notable alerts, they are highlighted. These
+      alerts usually require some attention.</para>
 
-      <figure>
-        <title>Failed Component</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>If you have any orange fields you should examine the specified
-      component further. It is indicative of some kind of problem or
-      abnormality.</para>
+      <para>If you have any alerts you should examine the specified component
+      further. It is indicative of some kind of problem or abnormality.</para>
     </sect2>
   </sect1>
 
@@ -259,11 +265,11 @@
       </listitem>
 
       <listitem>
-        <para>Click on the <emphasis role="bold">mythor</emphasis>
-        link.</para>
+        <para>Expand the Thor cluster by clicking on the arrow next to the
+        <emphasis role="bold">ThorCluster</emphasis> link.</para>
 
         <para><figure>
-            <title>mythor link</title>
+            <title>Thor Cluster link</title>
 
             <mediaobject>
               <imageobject>
@@ -275,15 +281,20 @@
       </listitem>
 
       <listitem>
-        <para>Check the <emphasis role="bold">Select All</emphasis> checkbox
-        (if necessary).</para>
+        <para>Check the box next to any individual nodes to examine or check
+        the <emphasis role="bold">Select All</emphasis> checkbox in the first
+        row.</para>
       </listitem>
 
       <listitem>
-        <para>Press the <emphasis role="bold">Submit</emphasis> button to
-        start preflight.</para>
+        <para>With the systems selected, the preflight action button activates
+        and you can press it to display the preflight options.</para>
+      </listitem>
 
-        <para><figure>
+      <listitem>
+        <para>Select or de-select any desired options, then press the
+        <emphasis role="bold">Submit</emphasis> button at the bottom to start
+        preflight. <figure>
             <title>Submit</title>
 
             <mediaobject>
@@ -298,56 +309,23 @@
     <sect2 id="Expected_Results_Data_Refinery">
       <title>EXPECTED RESULTS:</title>
 
-      <para>After pressing Submit, a screen similar to the following should
-      display.</para>
+      <para>After pressing Submit, a screen similar to the following
+      displays.</para>
 
       <para><figure>
-          <title>ESP mythor system component information</title>
+          <title>Cluster Process results</title>
 
           <mediaobject>
             <imageobject>
               <imagedata fileref="../../images/CSimg07.jpg" />
             </imageobject>
           </mediaobject>
-        </figure>This screen displays information on your Thor cluster. This
+        </figure>This displays information on your selected cluster(s). This
       information can help to indicate if everything is operating normally or
       can help to point out any potential concerns.</para>
 
-      <para><informaltable colsep="1" frame="all" rowsep="1">
-          <?dbfo keep-together="always"?>
-
-          <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
-
-            <colspec />
-
-            <tbody>
-              <row>
-                <entry><inlinegraphic
-                fileref="../../images/tip.jpg" /></entry>
-
-                <entry>If your system has more than 1 Thor cluster, repeat
-                these steps for each cluster.</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable></para>
-
-      <?hard-pagebreak ?>
-
-      <para>If there are any failed nodes or notable alerts, they are
-      highlighted in orange. The orange alerts usually require some additional
-      attention.</para>
-
-      <figure>
-        <title>Failed Component</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
+      <para>If there are any notable alerts, they are highlighted. The alerts
+      usually require some additional attention.</para>
     </sect2>
   </sect1>
 
@@ -372,9 +350,9 @@
       </listitem>
 
       <listitem>
-        <para>Click on the <emphasis role="bold">myroxie</emphasis> link.
-        <figure>
-            <title>myroxie link</title>
+        <para>Expand the Roxie cluster by clicking on the arrow next to the
+        <emphasis role="bold">RoxieCluster</emphasis> link.<figure>
+            <title>RoxieCluster link</title>
 
             <mediaobject>
               <imageobject>
@@ -385,8 +363,28 @@
       </listitem>
 
       <listitem>
-        <para>Press the <emphasis role="bold">Submit</emphasis> button to
-        start preflight.</para>
+        <para>Check the box next to any individual nodes to examine or check
+        the <emphasis role="bold">Select All</emphasis> checkbox in the first
+        row.</para>
+      </listitem>
+
+      <listitem>
+        <para>With the systems selected, the preflight action button activates
+        and you can press it to display the preflight options.</para>
+      </listitem>
+
+      <listitem>
+        <para>Select or de-select any desired options, then press the
+        <emphasis role="bold">Submit</emphasis> button at the bottom to start
+        preflight. <figure>
+            <title>Submit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg03.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
       </listitem>
     </orderedlist>
 
@@ -409,25 +407,8 @@
       <para>This indicates whether the Roxie nodes are running, and some
       additional information about them.</para>
 
-      <informaltable colsep="1" frame="all" rowsep="1">
-        <?dbfo keep-together="always"?>
-
-        <tgroup cols="2">
-          <colspec colwidth="49.50pt" />
-
-          <colspec />
-
-          <tbody>
-            <row>
-              <entry><inlinegraphic
-              fileref="../../images/OSSgr3.png" /></entry>
-
-              <entry>If your system has more than 1 Roxie cluster, repeat
-              these steps for each cluster.</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </informaltable>
+      <para>If there are any notable alerts, they are highlighted. The alerts
+      usually require some additional attention.</para>
     </sect2>
   </sect1>
 </chapter>

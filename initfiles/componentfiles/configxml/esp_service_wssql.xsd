@@ -20,6 +20,11 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspService">
         <xs:complexType>
+		      <xs:annotation>
+                <xs:appinfo>
+                    <docid>WSSQL.t2</docid>
+                </xs:appinfo>
+              </xs:annotation>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>

@@ -24,7 +24,7 @@
         <!--DOC-Autobuild-code-->
 	 <xs:annotation>
 	    <xs:appinfo>
-		<docid>topo.server</docid>
+		<docid>topo.svr</docid>
 	    </xs:appinfo>
 	 </xs:annotation>  
             <xs:sequence>
