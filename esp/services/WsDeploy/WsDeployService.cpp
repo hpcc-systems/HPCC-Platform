@@ -339,7 +339,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     if (!strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
       throw MakeStringException(-1, "Another browser window already has write access on machine '%s'. Please use that window.", sbUserIp.str());
   }  
-  else if (strcmp(cmd, "SaveEnvironmentAs"))
+  else if (strcmp(cmd, "SaveEnvironmentAs") != 0)
     checkForRefresh(context, &req.getReqInfo(), true);
 
   if (!stricmp(cmd, "Deploy"))
