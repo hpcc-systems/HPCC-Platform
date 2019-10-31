@@ -63,9 +63,9 @@ public:
 
             IWuEdge * inputEdge = activity.queryInput(0);
             if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
-                result.set(cost, "DISTRIBUTE output skew is worse than input skew (%s)", activity.queryName());
+                result.set(ANA_DISTRIB_SKEW_INPUT_ID, cost, "DISTRIBUTE output skew is worse than input skew (%s)", activity.queryName());
             else
-                result.set(cost, "Significant skew in DISTRIBUTE output (%s)", activity.queryName());
+                result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, cost, "Significant skew in DISTRIBUTE output (%s)", activity.queryName());
             return true;
         }
         return false;
@@ -151,9 +151,9 @@ public:
             auto edgeMaxSkew = edge ? edge->getStatRaw(StNumRowsProcessed, StSkewMax) : 0;
             // If difference between ioSkew and edgeMaxSkew > 0.05%, then child record likely to have caused skew
             if (ioMaxSkew > edgeMaxSkew && (ioMaxSkew-edgeMaxSkew) > ioMaxSkew/200)
-                results.set(cost, "Significant skew in child records causes uneven %s time (%s)", category, activity.queryName());
+                results.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in child records causes uneven %s time (%s)", category, activity.queryName());
             else
-                results.set(cost, "Significant skew in records causes uneven %s time (%s)", category, activity.queryName());
+                results.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time (%s)", category, activity.queryName());
             return true;
         }
         return false;
