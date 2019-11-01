@@ -1373,6 +1373,9 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         if (conn)
         {
             Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(req.getName());
+            if (clusterInfo == nullptr)
+                throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Target Cluster name provided: '%s'", req.getName());
+
             SCMStringBuffer thorQueues;
             clusterInfo->getThorQueue(thorQueues);
             resp.setName(req.getName());
