@@ -727,6 +727,12 @@ enum node_operator : unsigned short {
         no_fromjson,
         no_tojson,
         no_matched_injoin,
+        no_httppost,
+        no_httppost_ds,
+        no_new_httppost,
+        no_new_httppost_ds,
+        no_httpaction_ds,
+        no_new_httpaction_ds,
         no_last_op,
 
 //These never get created as IHqlExpressions....
@@ -1330,6 +1336,7 @@ extern HQL_API IHqlExpression *createConstant(__int64 constant, ITypeInfo * owne
 extern HQL_API IHqlExpression *createUtf8Constant(const char *constant);
 extern HQL_API IHqlExpression *createBlankString();
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset);
+extern HQL_API IHqlExpression *createDatasetFromCommaList(node_operator op, IHqlExpression *list);
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset, IHqlExpression *elist);
 extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);       // inScope should only be set internally.
 extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);

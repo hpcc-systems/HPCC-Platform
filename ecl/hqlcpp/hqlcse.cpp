@@ -589,7 +589,9 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
     case no_newkeyindex:
     case no_fail:
     case no_activetable:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_id2blob:
     case no_embedbody:

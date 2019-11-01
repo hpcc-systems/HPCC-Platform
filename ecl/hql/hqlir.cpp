@@ -496,6 +496,12 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,assertwild);
     EXPAND_CASE(no,recordlist);
     EXPAND_CASE(no,hashmd5);
+    EXPAND_CASE(no,httppost);
+    EXPAND_CASE(no,httppost_ds);
+    EXPAND_CASE(no,new_httppost);
+    EXPAND_CASE(no,new_httppost_ds);
+    EXPAND_CASE(no,httpaction_ds);
+    EXPAND_CASE(no,new_httpaction_ds);
     EXPAND_CASE(no,soapcall);
     EXPAND_CASE(no,soapcall_ds);
     EXPAND_CASE(no,newsoapcall);

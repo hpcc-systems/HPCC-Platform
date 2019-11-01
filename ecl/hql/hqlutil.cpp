@@ -2302,7 +2302,9 @@ bool isDistributedSourceActivity(IHqlExpression * expr)
     case no_null:
     case no_all:
     case no_select:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_compound_childread:
     case no_compound_childnormalize:
@@ -2334,7 +2336,9 @@ bool isSourceActivity(IHqlExpression * expr, bool ignoreCompound)
     case no_xmlproject:
 //  case no_all:
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_rows:
     case no_allnodes:
@@ -2390,7 +2394,9 @@ bool isSinkActivity(IHqlExpression * expr)
     case no_definesideeffect:
     //case no_callsideeffect:       //??
         return true;
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_if:
     case no_null:

@@ -810,6 +810,9 @@ class ECLRTL_API CThorSoapActionArg : public CThorSinkArgOf<IHThorSoapActionArg>
     virtual const char * getInputIteratorPath() override;
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) override;
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) override;
+    virtual unsigned getRequestFlags() override;
+    virtual const char * getRequestHeader() override;
+    virtual const char * getRequestFooter() override;
 };
 
 class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
@@ -836,6 +839,9 @@ class ECLRTL_API CThorSoapCallArg : public CThorArgOf<IHThorSoapCallArg>
     virtual const char * getInputIteratorPath() override;
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) override;
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) override;
+    virtual unsigned getRequestFlags() override;
+    virtual const char * getRequestHeader() override;
+    virtual const char * getRequestFooter() override;
 };
 
 typedef CThorSoapCallArg CThorHttpCallArg;

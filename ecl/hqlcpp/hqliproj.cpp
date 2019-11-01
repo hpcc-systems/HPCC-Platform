@@ -2114,7 +2114,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return NonActivity;
     case no_allnodes:
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_libraryinput:
     case no_thisnode:
@@ -2127,7 +2129,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         if (hasActivityType(expr))
             return FixedInputActivity;
         return NonActivity;
+    case no_httppost_ds:
     case no_soapcall_ds:
+    case no_new_httppost_ds:
     case no_newsoapcall_ds:
     case no_output:
     case no_distribution:

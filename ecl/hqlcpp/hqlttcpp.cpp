@@ -8280,6 +8280,7 @@ void NewScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
     case no_distributer:
     case no_within:
     case no_notwithin:
+    case no_httpaction_ds:
     case no_soapaction_ds:
     case no_returnresult:
         activityDepth++;
@@ -9567,6 +9568,8 @@ IHqlExpression * NestedSelectorNormalizer::createTransformed(IHqlExpression * ex
         case no_notwithin:
         case no_output:
         case no_createset:
+        case no_httpaction_ds:
+        case no_new_httpaction_ds:
         case no_soapaction_ds:
         case no_newsoapaction_ds:
         case no_returnresult:
@@ -12950,10 +12953,16 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         return removeDefaultsFromExpr(expr, 3, no_newparse);
     case no_xmlparse:
         return removeDefaultsFromExpr(expr, 2, no_newxmlparse);
+    case no_httppost:
+        return removeDefaultsFromExpr(expr, 2, no_new_httppost);
     case no_soapcall:
         return removeDefaultsFromExpr(expr, 2, no_newsoapcall);
+    case no_httppost_ds:
+        return removeDefaultsFromExpr(expr, 3, no_new_httppost_ds);
     case no_soapcall_ds:
         return removeDefaultsFromExpr(expr, 3, no_newsoapcall_ds);
+    case no_httpaction_ds:
+        return removeDefaultsFromExpr(expr, 3, no_new_httpaction_ds);
     case no_soapaction_ds:
         return removeDefaultsFromExpr(expr, 3, no_newsoapaction_ds);
 #ifdef OPTIMIZE_IMPLICIT_CAST

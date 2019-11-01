@@ -347,10 +347,14 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_topn:
     case no_newxmlparse:
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
+    case no_httppost_ds:
     case no_soapcall_ds:
     case no_newsoapcall:
+    case no_new_httppost:
     case no_newsoapcall_ds:
+    case no_new_httppost_ds:
     case no_quantile:
     case no_nonempty:
     case no_filtergroup:
@@ -543,6 +547,8 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_parallel:
     case no_actionlist:
     case no_orderedactionlist:
+    case no_httpaction_ds:
+    case no_new_httpaction_ds:
     case no_soapaction_ds:
     case no_newsoapaction_ds:
     case no_keydiff:
@@ -3018,6 +3024,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_newparse:
     case no_xmlparse:
     case no_newxmlparse:
+    case no_httppost:
+    case no_httppost_ds:
+    case no_new_httppost:
+    case no_new_httppost_ds:
     case no_soapcall:
     case no_soapcall_ds:
     case no_newsoapcall:
@@ -3096,7 +3106,10 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
         return getRecordCountInfo(expr->queryChild(1));
     default:
         if (expr->isDataset())
-            UNIMPLEMENTED_XY("Record count calculation for operator", getOpString(op));
+        {
+            char buffer [33];
+            UNIMPLEMENTED_XY("Record count calculation for operator", ltoa(op, buffer, 10));
+        }
         if (expr->isDatarow())
             info.setSingleRow();
         else

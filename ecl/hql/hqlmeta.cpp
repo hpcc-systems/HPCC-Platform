@@ -1990,7 +1990,9 @@ CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
     case no_id2blob:
     case no_embedbody:
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_datasetfromrow:
     case no_datasetfromdictionary:
@@ -2102,7 +2104,9 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
     case no_id2blob:
     case no_embedbody:
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
     case no_datasetfromrow:
     case no_datasetfromdictionary:
@@ -2657,7 +2661,9 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             break;
         }
     case no_soapcall_ds:
+    case no_httppost_ds:
     case no_newsoapcall_ds:
+    case no_new_httppost_ds:
         meta.preserveGrouping(dataset);
         break;
     case no_parse:
@@ -3190,9 +3196,11 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
             break;
         }
     case no_httpcall:
+    case no_httppost:
     case no_soapcall:
         recordArg = 3;
         break;
+    case no_new_httppost:
     case no_newsoapcall:
         recordArg = 4;
         break;
@@ -3200,10 +3208,12 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         recordArg = 3;
         nowGrouped = isGrouped(datasetType);
         break;
+    case no_httppost_ds:
     case no_soapcall_ds:
         recordArg = 4;
         nowGrouped = isGrouped(datasetType);
         break;
+    case no_new_httppost_ds:
     case no_newsoapcall_ds:
         recordArg = 5;
         nowGrouped = isGrouped(datasetType);

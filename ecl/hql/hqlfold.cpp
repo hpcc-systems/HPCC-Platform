@@ -6670,9 +6670,13 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_newparse:
     case no_newxmlparse:
     case no_rollupgroup:
+    case no_httppost:
     case no_soapcall:
+    case no_new_httppost:
     case no_newsoapcall:
+    case no_httppost_ds:
     case no_soapcall_ds:
+    case no_new_httppost_ds:
     case no_newsoapcall_ds:
     case no_parse:
     case no_xmlparse:

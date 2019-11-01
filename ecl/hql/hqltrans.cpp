@@ -3540,6 +3540,8 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_output:
     case no_writespill:
     case no_createset:
+    case no_httpaction_ds:
+    case no_new_httpaction_ds:
     case no_soapaction_ds:
     case no_newsoapaction_ds:
     case no_returnresult:

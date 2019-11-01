@@ -1853,8 +1853,11 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             break;
         }
         case no_httpcall:
+        case no_httppost:
         case no_soapcall:
+        case no_httppost_ds:
         case no_soapcall_ds:
+        case no_new_httppost_ds:
         case no_newsoapcall_ds:
         {
             IHqlExpression * resultFormat = queryNewColumnProvider(expr);

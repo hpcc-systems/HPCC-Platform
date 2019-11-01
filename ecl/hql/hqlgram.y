@@ -2688,59 +2688,37 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createValue(no_orderedactionlist, makeVoidType(), actions), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ')'
+    | HTTPCALL soapOrHttpCallActionParams
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->checkSoapRecord($7);
-                            $$.setExpr(createValue(no_soapcall, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
+                            $$.setExpr(createValueFromCommaList(no_httppost, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' soapFlags ')'
+    | SOAPCALL soapOrHttpCallActionParams
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->checkSoapRecord($7);
-                            $$.setExpr(createValueF(no_soapcall, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), NULL), $1);
+                            $$.setExpr(createValueFromCommaList(no_soapcall, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ')'
+    | HTTPCALL soapOrHttpCallActionTransformParams
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_newsoapcall, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr()), $1);
+                            $$.setExpr(createValueFromCommaList(no_new_httppost, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')'
+    | SOAPCALL soapOrHttpCallActionTransformParams
                         {
-                            parser->normalizeExpression($3, type_stringorunicode, false);
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            $$.setExpr(createValueF(no_newsoapcall, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), NULL), $1);
+                            $$.setExpr(createValueFromCommaList(no_newsoapcall, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ')' endTopLeftFilter endSelectorSequence
+    | HTTPCALL soapOrHttpCallActionFilterParams
                         {
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->normalizeExpression($7, type_stringorunicode, false);
-                            parser->checkSoapRecord($9);
-                            $$.setExpr(createValueF(no_soapaction_ds, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $12.getExpr(), NULL), $1);
+                            $$.setExpr(createValueFromCommaList(no_httpaction_ds, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | SOAPCALL soapOrHttpCallActionFilterParams
                         {
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->normalizeExpression($7, type_stringorunicode, false);
-                            parser->checkSoapRecord($9);
-                            $$.setExpr(createValueF(no_soapaction_ds, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $14.getExpr(), NULL), $1);
+                            $$.setExpr(createValueFromCommaList(no_soapaction_ds, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ')' endTopLeftFilter endSelectorSequence
+    | HTTPCALL soapOrHttpCallActionFilterTransformParams
                         {
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->normalizeExpression($7, type_stringorunicode, false);
-                            $$.setExpr(createValueF(no_newsoapaction_ds, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $14.getExpr(), NULL));
-                            $$.setPosition($1);
+                            $$.setExpr(createValueFromCommaList(no_new_httpaction_ds, makeVoidType(), $2.getExpr()), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | SOAPCALL soapOrHttpCallActionFilterTransformParams
                         {
-                            parser->normalizeExpression($5, type_stringorunicode, false);
-                            parser->normalizeExpression($7, type_stringorunicode, false);
-                            $$.setExpr(createValueF(no_newsoapaction_ds, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $13.getExpr(), $16.getExpr(), NULL));
-                            $$.setPosition($1);
+                            $$.setExpr(createValueFromCommaList(no_newsoapaction_ds, makeVoidType(), $2.getExpr()), $1);
                         }
     | KEYDIFF '(' dataSet ',' dataSet ',' expression keyDiffFlags ')'
                         {
@@ -2861,6 +2839,129 @@ actionStmt
     ;
 
 
+optionalSoapFlags
+    :                   { $$.setNullExpr(); }
+    | ',' soapFlags
+                        {
+                            $$.inherit($2);
+                        }
+    ;
+
+httpMarkupOptions
+    : httpMarkupOption
+    | httpMarkupOptions ',' httpMarkupOption
+                        {   $$.setExpr(createComma($1.getExpr(), $3.getExpr())); }
+    ;
+
+httpMarkupOption
+    : NOROOT            {   $$.setExpr(createAttribute(noRootAtom)); }
+    | HEADING '(' expression optCommaExpression ')'
+                        {
+                            //Markup heading is the root level heading, SOAPCALL/HTTPCALL heading is once per row for batched requests
+                            parser->normalizeExpression($3, type_string, false);
+                            if ($4.queryExpr())
+                                parser->normalizeExpression($4, type_string, false);
+                            $$.setExpr(createExprAttribute(headingAtom, $3.getExpr(), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
+soapOrHttpCallActionParams
+    : '(' expression ',' expression ',' recordDef optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2, type_stringorunicode, false);
+                            parser->normalizeExpression($4, type_stringorunicode, false);
+                            parser->checkSoapRecord($6);
+                            $$.setExpr(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $7.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallRowParams
+    : '(' expression ',' expression ',' recordDef ',' recordDef optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2);
+                            parser->normalizeExpression($4);
+                            parser->checkSoapRecord($6);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $9.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallActionTransformParams
+    : '(' expression ',' expression ',' recordDef ',' transform  optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2, type_stringorunicode, false);
+                            parser->normalizeExpression($4, type_stringorunicode, false);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $9.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallRowTransformParams
+    : '(' expression ',' expression ',' recordDef ',' transform ',' recordDef optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2);
+                            parser->normalizeExpression($4);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $10.getExpr(), $11.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallActionFilterParams
+    : '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef optionalSoapFlags ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($4, type_stringorunicode, false);
+                            parser->normalizeExpression($6, type_stringorunicode, false);
+                            parser->checkSoapRecord($8);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $9.getExpr(), $12.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallActionFilterTransformParams
+    : '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform optionalSoapFlags ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($4, type_stringorunicode, false);
+                            parser->normalizeExpression($6, type_stringorunicode, false);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $10.getExpr(), $11.getExpr(), $14.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallDatasetParams
+    : '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2);
+                            parser->normalizeExpression($4);
+                            parser->checkSoapRecord($6);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $10.getExpr()), $12.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallDatasetTransformParams
+    : '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' optionalSoapFlags ')'
+                        {
+                            parser->normalizeExpression($2);
+                            parser->normalizeExpression($4);
+                            parser->checkSoapRecord($6);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $12.getExpr(), $14.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallDatasetFilterParams
+    : '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' optionalSoapFlags ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($4);
+                            parser->normalizeExpression($6);
+                            parser->checkSoapRecord($8);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), $12.getExpr(), $14.getExpr(), $17.getExpr()), $1);
+                        }
+    ;
+
+soapOrHttpCallDatasetFilterTransformParams
+    : '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' optionalSoapFlags ')' endTopLeftFilter endSelectorSequence
+                        {
+                            parser->normalizeExpression($4);
+                            parser->normalizeExpression($6);
+                            parser->checkSoapRecord($8);
+                            $$.setExpr(createComma(createComma($2.getExpr(), $4.getExpr(), $6.getExpr(), $8.getExpr()), createComma($10.getExpr(), $14.getExpr(), $16.getExpr(), $19.getExpr())), $1);
+                        }
+    ;
 
 failAction
     : FAIL '(' expression ',' expression ')'
@@ -3609,6 +3710,26 @@ soapFlag
     | GROUP             {
                             $$.setExpr(createAttribute(groupAtom));
                             $$.setPosition($1);
+                        }
+    | XML_TOKEN         {
+                            $$.setExpr(createAttribute(xmlAtom));
+                            $$.setPosition($1);
+                        }
+    | XML_TOKEN '(' httpMarkupOptions ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(xmlAtom, args), $1);
+                        }
+    | JSON_TOKEN        {
+                            $$.setExpr(createAttribute(jsonAtom));
+                            $$.setPosition($1);
+                        }
+    | JSON_TOKEN '(' httpMarkupOptions ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(jsonAtom, args), $1);
                         }
     | MERGE '(' expression ')'
                         {
@@ -7607,34 +7728,27 @@ simpleDataRow
                             IHqlExpression * ds = createDataset(no_httpcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr()));
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' recordDef ')'
+    | SOAPCALL soapOrHttpCallRowParams
                         {
-                            parser->normalizeExpression($3);
-                            parser->checkSoapRecord($7);
-                            IHqlExpression * ds = createDataset(no_soapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr()));
-                            $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
-                        }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' recordDef ',' soapFlags ')'
-                        {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            parser->checkSoapRecord($7);
-                            IHqlExpression * ds = createDataset(no_soapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr()));
+                            IHqlExpression * ds = createDatasetFromCommaList(no_soapcall, $2.getExpr());
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ')'
+    | HTTPCALL soapOrHttpCallRowParams
                         {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            IHqlExpression * ds = createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr()));
+                            IHqlExpression * ds = createDatasetFromCommaList(no_httppost, $2.getExpr());
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ',' soapFlags ')'
+    | SOAPCALL soapOrHttpCallRowTransformParams
                         {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            IHqlExpression * ds = createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), createComma($9.getExpr(), $11.getExpr(), $13.getExpr())));
+                            IHqlExpression * ds = createDatasetFromCommaList(no_newsoapcall, $2.getExpr());
+                            $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
+                        }
+    | HTTPCALL soapOrHttpCallRowTransformParams
+                        {
+                            IHqlExpression * ds = createDatasetFromCommaList(no_new_httppost, $2.getExpr());
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                         }
@@ -9578,67 +9692,51 @@ simpleDataSet
                                 parser->reportError(ERR_PARSER_CANNOTRECOVER,$1,"SKIP is only valid inside a TRANSFORM");
                             $$.setExpr(createDataset(no_skip, $3.getExpr()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')'
+    | SOAPCALL soapOrHttpCallDatasetParams
                         {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            parser->checkSoapRecord($7);
-                            $$.setExpr(createDataset(no_soapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $11.getExpr())));
-                            $$.setPosition($1);
-                        }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')'
-                        {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            parser->checkSoapRecord($7);
-                            $$.setExpr(createDataset(no_soapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $11.getExpr(), $14.getExpr())));
+                            $$.setExpr(createDatasetFromCommaList(no_soapcall, $2.getExpr()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')'
+    | HTTPCALL soapOrHttpCallDatasetParams
                         {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            $$.setExpr(createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr())));
-                            $$.setPosition($1);
-                        }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')'
-                        {
-                            parser->normalizeExpression($3);
-                            parser->normalizeExpression($5);
-                            $$.setExpr(createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($13.getExpr(), $16.getExpr()))));
+                            $$.setExpr(createDatasetFromCommaList(no_httppost, $2.getExpr()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
+    | SOAPCALL soapOrHttpCallDatasetTransformParams
                         {
-                            parser->normalizeExpression($5);
-                            parser->normalizeExpression($7);
-                            parser->checkSoapRecord($9);
-                            $$.setExpr(createDataset(no_soapcall_ds, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($13.getExpr(), $17.getExpr()))));
-                            $$.setPosition($1);
-                        }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
-                        {
-                            parser->normalizeExpression($5);
-                            parser->normalizeExpression($7);
-                            parser->checkSoapRecord($9);
-                            $$.setExpr(createDataset(no_soapcall_ds, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($13.getExpr(), $16.getExpr(), $19.getExpr()))));
+                            $$.setExpr(createDatasetFromCommaList(no_newsoapcall, $2.getExpr()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
+    | HTTPCALL soapOrHttpCallDatasetTransformParams
                         {
-                            parser->normalizeExpression($5);
-                            parser->normalizeExpression($7);
-                            $$.setExpr(createDataset(no_newsoapcall_ds, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($11.getExpr(), $15.getExpr(), $19.getExpr()))));
+                            $$.setExpr(createDatasetFromCommaList(no_new_httppost, $2.getExpr()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | SOAPCALL soapOrHttpCallDatasetFilterParams
                         {
-                            parser->normalizeExpression($5);
-                            parser->normalizeExpression($7);
-                            $$.setExpr(createDataset(no_newsoapcall_ds, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($11.getExpr(), $15.getExpr(), $18.getExpr(), $21.getExpr()))));
+                            $$.setExpr(createDatasetFromCommaList(no_soapcall_ds, $2.getExpr()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
+                            $$.setPosition($1);
+                        }
+    | HTTPCALL soapOrHttpCallDatasetFilterParams
+                        {
+                            $$.setExpr(createDatasetFromCommaList(no_httppost_ds, $2.getExpr()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
+                            $$.setPosition($1);
+                        }
+    | SOAPCALL soapOrHttpCallDatasetFilterTransformParams
+                        {
+                            $$.setExpr(createDatasetFromCommaList(no_newsoapcall_ds, $2.getExpr()));
+                            parser->checkOnFailRecord($$.queryExpr(), $1);
+                            $$.setPosition($1);
+                        }
+    | HTTPCALL soapOrHttpCallDatasetFilterTransformParams
+                        {
+                            $$.setExpr(createDatasetFromCommaList(no_new_httppost_ds, $2.getExpr()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }

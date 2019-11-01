@@ -80,7 +80,9 @@ extern IHqlExpression * internalAttrExpr;
     case no_buildindex:\
     case no_distribution:\
     case no_newsoapcall:\
+    case no_new_httppost:\
     case no_newsoapcall_ds:\
+    case no_new_httpaction_ds:\
     case no_newsoapaction_ds:\
     case no_keydiff:\
     case no_keypatch:\
