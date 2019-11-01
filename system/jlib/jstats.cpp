@@ -377,7 +377,14 @@ static StringBuffer & formatLoad(StringBuffer & out, unsigned __int64 value)
 static StringBuffer & formatSkew(StringBuffer & out, unsigned __int64 value)
 {
     //Skew stored as 10000 = perfect, display as percentage
-    return out.appendf("%.2f%%", ((double)(__int64)value) / 100.0);
+    const __int64 sval = (__int64) value;
+    const double percent = ((double)sval) / 100.0;
+    if (sval >= 10000 || sval <= -10000) // For values >= 100%, whole numbers
+        return out.appendf("%.0f%%", percent);
+    else if (sval >= 1000 || sval <= -1000) // For values >= 10%, 1 decimal point
+        return out.appendf("%.1f%%", percent);
+    else                                 // Anything < 10%, 2 decimal points
+        return out.appendf("%.2f%%", percent);
 }
 
 static StringBuffer & formatIPV4(StringBuffer & out, unsigned __int64 value)
