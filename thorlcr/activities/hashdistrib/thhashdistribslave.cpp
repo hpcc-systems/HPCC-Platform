@@ -3849,8 +3849,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
 
     IThorDataLink *inL = nullptr;
     IThorDataLink *inR = nullptr;
-    IEngineRowStream *leftInputStream = nullptr;
-    IEngineRowStream *rightInputStream = nullptr;
     MemoryBuffer ptrbuf;
     IHThorHashJoinArg *joinargs;
     Owned<IJoinHelper> joinhelper;
@@ -3903,7 +3901,7 @@ public:
         ICompare *icompareR = joinargs->queryCompareRight();
         if (!lhsDistributor)
             lhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, false, this, "LHS"));
-        Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), leftInputStream, ihashL, icompareL, nullptr);
+        Owned<IRowStream> reader = lhsDistributor->connect(queryRowInterfaces(inL), queryInputStream(0), ihashL, icompareL, nullptr);
         Owned<IThorRowLoader> loaderL = createThorRowLoader(*this, ::queryRowInterfaces(inL), icompareL, stableSort_earlyAlloc, rc_allDisk, SPILL_PRIORITY_HASHJOIN);
         loaderL->setTracingPrefix("Join left");
         strmL.setown(loaderL->load(reader, abortSoon));
@@ -3915,9 +3913,9 @@ public:
         leftdone = true;
         if (!rhsDistributor)
             rhsDistributor.setown(createHashDistributor(this, queryJobChannel().queryJobComm(), mptag2, false, false, this, "RHS"));
-        reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), rightInputStream, ihashR, icompareR, nullptr));
+        reader.setown(rhsDistributor->connect(queryRowInterfaces(inR), queryInputStream(1), ihashR, icompareR, nullptr));
         Owned<IThorRowLoader> loaderR = createThorRowLoader(*this, ::queryRowInterfaces(inR), icompareR, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_HASHJOIN);;
-        loaderL->setTracingPrefix("Join right");
+        loaderR->setTracingPrefix("Join right");
         strmR.setown(loaderR->load(reader, abortSoon));
         loaderR.clear();
         reader.clear();
