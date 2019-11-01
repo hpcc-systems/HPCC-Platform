@@ -1,0 +1,49 @@
+<Dataset name='Result 1'>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+ <Row><name>WILMA</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>ERROR: blacklisted socket</name><pic>01020304</pic><r>4294967295</r><novalue>0</novalue></Row>
+ <Row><name>ERROR: blacklisted socket</name><pic>01020304</pic><r>4294967295</r><novalue>0</novalue></Row>
+ <Row><name>FRED</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>LORRAINE</name><pic>0102030405</pic><r>2</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+ <Row><name>RICHARD</name><pic>0102</pic><r>1</r><novalue>0</novalue></Row>
+ <Row><name>WILMA</name><pic>5432</pic><r>3</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><name>ERROR: ReceivedRoxieException: (You asked me to fail)</name><pic>01020304</pic><r>1</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>ERROR: ReceivedRoxieException: (Unknown query soapbaseNOSUCHQUERY)</name><pic>01020304</pic><r>1403</r><novalue>0</novalue></Row>
+ <Row><name>ERROR: ReceivedRoxieException: (Unknown query soapbaseNOSUCHQUERY)</name><pic>01020304</pic><r>1403</r><novalue>0</novalue></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>1</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>2</Result_9></Row>
+</Dataset>

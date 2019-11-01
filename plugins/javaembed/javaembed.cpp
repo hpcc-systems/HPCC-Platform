@@ -2483,6 +2483,7 @@ public:
     virtual void finalize() override
     {
     }
+    virtual void checkDelimiter() override                        {}
 
     virtual IInterface *saveLocation() const {return nullptr;}
     virtual void rewindTo(IInterface *loc)

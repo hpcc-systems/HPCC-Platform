@@ -803,6 +803,9 @@ protected:
     IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, attribute & errpos);
     void checkOutputRecord(attribute & errpos, bool outerLevel);
     void checkSoapRecord(attribute & errpos);
+    IHqlExpression * processHttpMarkupFlag(__int64 op);
+    IHqlExpression * processHttpMarkupFlag(__int64 op, IHqlExpression *flags);
+    IHqlExpression * processHttpMarkupFlag(__int64 op, IHqlExpression *flags, IHqlExpression *p1);
     IHqlExpression * checkOutputRecord(IHqlExpression *record, const attribute & errpos, bool & allConstant, bool outerLevel);
     void checkDefaultValueVirtualAttr(const attribute &errpos, IHqlExpression * attrs);
 

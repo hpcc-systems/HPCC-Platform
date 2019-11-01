@@ -1,12 +1,22 @@
 <Dataset name='soapcallResult'>
- <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;&lt;soap:Body&gt;&lt;HttpEcho&gt;&lt;Name&gt;Doe, Joe&lt;/Name&gt;
-&lt;ADL&gt;999999&lt;/ADL&gt;
-&lt;score&gt;88.88&lt;/score&gt;
-&lt;/HttpEcho&gt;&lt;/soap:Body&gt;&lt;/soap:Envelope&gt;</Content></Row>
+ <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+ &lt;soap:Body&gt;
+  &lt;HttpEcho&gt;
+   &lt;Name&gt;Doe, Joe&lt;/Name&gt;
+   &lt;ADL&gt;999999&lt;/ADL&gt;
+   &lt;score&gt;88.88&lt;/score&gt;
+  &lt;/HttpEcho&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</Content></Row>
 </Dataset>
 <Dataset name='proxyResult'>
- <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;&lt;soap:Body&gt;&lt;HttpEcho&gt;&lt;Name&gt;Doe, Joe&lt;/Name&gt;
-&lt;ADL&gt;999999&lt;/ADL&gt;
-&lt;score&gt;88.88&lt;/score&gt;
-&lt;/HttpEcho&gt;&lt;/soap:Body&gt;&lt;/soap:Envelope&gt;</Content></Row>
+ <Row><Method>POST</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>StoredHeader: StoredHeaderDefault</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalHeaderValue</Header></Headers><Content>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;soap:Envelope xmlns:soap=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+ &lt;soap:Body&gt;
+  &lt;HttpEcho&gt;
+   &lt;Name&gt;Doe, Joe&lt;/Name&gt;
+   &lt;ADL&gt;999999&lt;/ADL&gt;
+   &lt;score&gt;88.88&lt;/score&gt;
+  &lt;/HttpEcho&gt;
+ &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;</Content></Row>
 </Dataset>
