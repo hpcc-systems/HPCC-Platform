@@ -3754,6 +3754,21 @@ public:
     {
         return new CDaliWuGraphStats(getWritableProgressConnection(graphName, _wfid), creatorType, creator, _wfid, graphName, subgraph);
     }
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
+    {
+        connection->queryRoot()->setPropTree(nullptr, LINK(wuTree));
+        loadPTree(connection->getRoot());
+
+        if (!graphProgressTree)
+            return;
+
+        VStringBuffer xpath("/GraphProgress/%s", queryWuid());
+        Owned<IRemoteConnection> progressConn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
+        if (!progressConn)
+            throw MakeStringException(0, "Failed to access %s.", xpath.str());
+
+        progressConn->queryRoot()->setPropTree(nullptr, LINK(graphProgressTree));
+    }
 
 protected:
     IRemoteConnection *getProgressConnection() const
@@ -4041,6 +4056,12 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
+    virtual StringBuffer &getThorGroup(StringBuffer &str) const
+            { return c->getThorGroup(str); }
+    virtual void setThorGroup(const char *thorGroup)
+            { return c->setThorGroup(thorGroup); }
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
+            { return c->import(wuTree, graphProgressTree); }
 
 
     virtual void clearExceptions()
@@ -4845,11 +4866,10 @@ CWorkUnitFactory::~CWorkUnitFactory()
 {
 }
 
-IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app,
-    const char *scope, ISecManager *secmgr, ISecUser *secuser, IPropertyTree *wuXML)
+IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
     checkWuScopeSecAccess(scope, secmgr, secuser, SecAccess_Write, "Create", true, true);
-    Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, wuXML, secmgr, secuser);
+    Owned<CLocalWorkUnit> cw = _createWorkUnit(wuid, secmgr, secuser);
     if (scope)
         cw->setWuScope(scope);  // Note - this may check access rights and throw exception. Is that correct? We might prefer to only check access once, and this will check on the lock too...
     cw->setDistributedAccessToken(secuser ? secuser->getName() : "");//create and sign the workunit distributed access token
@@ -4859,8 +4879,7 @@ IWorkUnit* CWorkUnitFactory::createNamedWorkUnit(const char *wuid, const char *a
     return ret;
 }
 
-IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, ISecManager *secmgr,
-    ISecUser *secuser, IPropertyTree *wuXML)
+IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, ISecManager *secmgr, ISecUser *secuser)
 {
     StringBuffer wuid("W");
     char result[32];
@@ -4871,7 +4890,7 @@ IWorkUnit* CWorkUnitFactory::createWorkUnit(const char *app, const char *scope, 
     wuid.append(result);
     if (workUnitTraceLevel > 1)
         DBGLOG("createWorkUnit created %s", wuid.str());
-    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, scope, secmgr, secuser, wuXML);
+    IWorkUnit* ret = createNamedWorkUnit(wuid.str(), app, scope, secmgr, secuser);
     if (workUnitTraceLevel > 1)
         DBGLOG("createWorkUnit created %s", ret->queryWuid());
     addTimeStamp(ret, SSTglobal, NULL, StWhenCreated);
@@ -5070,7 +5089,7 @@ IWorkUnit *CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const
     {
         StringAttr zapReportFileName, user, wuid;
         StringBuffer unzipDir, unzipDateTime;
-        Owned<IPTree> wuTree;
+        Owned<IPTree> wuTree, graphProgressTree;
 
         bool findZAPFile(const char *mask, bool optional, StringBuffer &fileName)
         {
@@ -5143,35 +5162,35 @@ IWorkUnit *CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const
                 }
             }
         }
-        void readGraphProgressFileToWUPTree()
+        void readGraphProgressFileToPTree()
         {
             StringBuffer fileName;
             if (!findZAPFile("ZAPReport_*.graphprogress", true, fileName))
                 return;
-            Owned<IPropertyTree> graphProgressTree = createPTreeFromXMLFile(fileName);
+            graphProgressTree.setown(createPTreeFromXMLFile(fileName));
             if (!graphProgressTree)
                 throw MakeStringException(WUERR_InvalidUserInput, "Failed to retrieving ZAPReport_*.graphprogress.");
-            wuTree->addPropTree("GraphProgress", graphProgressTree.getClear());
         }
     public:
         CImportWorkUnitHelper(const char *_zapReportFileName, const char *_user)
             : zapReportFileName(_zapReportFileName), user(_user) { };
 
+        void setWUID(const char *_wuid)
+        {
+            wuid.set(_wuid);
+        }
         IPTree *queryWUPTree()
         {
             return wuTree;
         }
+        IPTree *querygraphProgressPTree()
+        {
+            return graphProgressTree;
+        }
         void setUNZIPDir(const IPropertyTree *directories, const char *component, const char *instance)
         {   //Set a unique unzip folder inside the component's data folder
             getConfigurationDirectory(directories, "data", component, instance, unzipDir);
-            unzipDir.append(PATHSEPSTR).append(zapReportFileName.length() - 4, zapReportFileName);
-            if (!user.isEmpty())
-                unzipDir.append("_").append(user);
-
-            CDateTime dt;
-            dt.setNow();
-            dt.getString(unzipDateTime);
-            unzipDir.append("_").append(dt.getTimeStamp());
+            unzipDir.append(PATHSEPSTR).append(wuid.get());
         }
         int unzipZAPReport(const char *zapReportFilePath, const char *zapReportPassword)
         {
@@ -5199,10 +5218,10 @@ IWorkUnit *CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const
                 zipCommand.appendf("%s -P %s -d %s", zapReportFileName.get(), zapReportPassword, unzipDir.str());
             return (system(zipCommand.str()));
         }
-        void buildWUPTreesFromZAPReport()
+        void buildPTreesFromZAPReport()
         {
             readWUXMLFileToPTree();
-            wuid.set(wuTree->queryName());
+            wuTree->renameProp("/", wuid.get()); //renameProp(nullptr, wuid.get()) not work: renameProp: cannot rename self, renameProp has to rename in context of a parent
             setImportDebugAttribute();
 
             StringBuffer localIP, unzipDirWithIP("//");
@@ -5217,15 +5236,18 @@ IWorkUnit *CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const
             //update QueryAssociatedFiles in WU XML;
             updateWUQueryAssociatedFilesAttrs(localIP);
 
-            readGraphProgressFileToWUPTree();
+            readGraphProgressFileToPTree();
         }
     };
 
     CImportWorkUnitHelper helper(zapReportFileName, user);
+    Owned<IWorkUnit> newWU = createWorkUnit(app, user, secMgr, secUser);
+    helper.setWUID(newWU->queryWuid());
     helper.setUNZIPDir(directories, component, instance);
     helper.unzipZAPReport(zapReportFilePath, zapReportPassword);
-    helper.buildWUPTreesFromZAPReport();
-    return createWorkUnit(app, user, secMgr, secUser, LINK(helper.queryWUPTree()));
+    helper.buildPTreesFromZAPReport();
+    newWU->import(helper.queryWUPTree(), helper.querygraphProgressPTree());
+    return newWU.getClear();
 }
 
 int CWorkUnitFactory::setTracingLevel(int newLevel)
@@ -5556,44 +5578,15 @@ public:
         return "Dali";
     }
 
-    virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, IPropertyTree *wuXML, ISecManager *secmgr, ISecUser *secuser)
+    virtual CLocalWorkUnit *_createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
     {
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         IRemoteConnection *conn;
         conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
-        if (!wuXML)
-        {
-            conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-            conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
-            conn->queryRoot()->setProp("@totalThorTime", "");
-        }
-        else
-        {
-            Owned<IPropertyTree> wuXMLPTree(wuXML);
-
-            IPropertyTree *root = conn->queryRoot();
-            const char *wuidUnique = root->queryName();
-            wuXMLPTree->renameProp("/", wuidUnique);
-
-            Owned<IPropertyTree> progressPTree = pruneBranch(wuXMLPTree, "GraphProgress[1]");
-            if (progressPTree)
-            {
-                VStringBuffer xpath("/GraphProgress/%s", wuidUnique);
-                Owned<IRemoteConnection> progressConn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
-                if (progressConn)
-                {
-                    IPropertyTree *progressRoot = progressConn->queryRoot();
-                    if (progressRoot->hasChildren())
-                        WARNLOG("_createWorkUnit WUID %s graphprogress already exists, replacing", wuidUnique);
-                    progressRoot->setPropTree(nullptr, progressPTree.getClear());
-                }
-            }
-
-            if (root->hasChildren())
-                WARNLOG("_createWorkUnit WUID %s replacing wuXML", wuidUnique);
-            root->setPropTree(nullptr, wuXMLPTree.getClear());
-        }
+        conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
+        conn->queryRoot()->setProp("@totalThorTime", "");
         return new CDaliWorkUnit(conn, secmgr, secuser);
     }
 
@@ -6224,19 +6217,17 @@ public:
         return baseFactory->getUniqueValues(field, prefix, result);
     }
 
-    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user,
-        ISecManager *secMgr, ISecUser *secUser, IPropertyTree *wuXML)
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->createNamedWorkUnit(wuid, app, user, secMgr, secUser, wuXML);
+        return baseFactory->createNamedWorkUnit(wuid, app, user, secMgr, secUser);
     }
-    virtual IWorkUnit* createWorkUnit(const char *app, const char *user, ISecManager *secMgr,
-        ISecUser *secUser, IPropertyTree *wuXML)
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser)
     {
         if (!secMgr) secMgr = defaultSecMgr.get();
         if (!secUser) secUser = defaultSecUser.get();
-        return baseFactory->createWorkUnit(app, user, secMgr, secUser, wuXML);
+        return baseFactory->createWorkUnit(app, user, secMgr, secUser);
     }
     virtual bool deleteWorkUnit(const char * wuid, ISecManager *secMgr, ISecUser *secUser)
     {
@@ -10216,6 +10207,18 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const
 {
     return new CWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph);
+}
+
+StringBuffer &CLocalWorkUnit::getThorGroup(StringBuffer &str) const
+{
+    p->getProp("@thorGroupName", str);
+    return str;
+}
+
+void CLocalWorkUnit::setThorGroup(const char *thorGroup)
+{
+    if (!isEmptyString(thorGroup))
+        p->setProp("@thorGroupName", thorGroup);
 }
 
 void CLocalWUGraph::setName(const char *str)

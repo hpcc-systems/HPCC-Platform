@@ -1286,6 +1286,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
+    virtual StringBuffer & getThorGroup(StringBuffer & str) const = 0;
 };
 
 
@@ -1373,6 +1374,8 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultBool(const char *name, unsigned sequence, bool val) = 0;
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
+    virtual void setThorGroup(const char *thorGroup) = 0;
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree = nullptr) = 0;
 };
 
 
@@ -1473,8 +1476,7 @@ typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 interface IWorkUnitFactory : extends IPluggableFactory
 {
-    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL,
-        ISecUser *secuser = NULL, IPropertyTree *wuXML = nullptr) = 0;
+    virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * importWorkUnit(const char *zapReportFileName, const char *zapReportFilePath, const char *zapReportPassword,
         const IPropertyTree *directories, const char *component, const char *instance, const char *app, const char *user,
         ISecManager *secMgr, ISecUser *secUser) = 0;
@@ -1485,8 +1487,7 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociatedFiles) = 0;
     virtual int setTracingLevel(int newlevel) = 0;
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope,
-        ISecManager *secmgr = NULL, ISecUser *secuser = NULL, IPropertyTree *wuXML = nullptr) = 0;
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char * scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsSorted(WUSortField sortorder, WUSortField * filters, const void * filterbuf,
                                                         unsigned startoffset, unsigned maxnum, __int64 * cachehint, unsigned *total,

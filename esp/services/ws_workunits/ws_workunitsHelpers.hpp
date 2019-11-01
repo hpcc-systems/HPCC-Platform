@@ -232,8 +232,8 @@ public:
     StringBuffer& getWorkunitProcessLogPath(const char* process, StringBuffer& path);
     unsigned getNumberOfSlavesByClusterName();
     unsigned getNumberOfSlavesFromZAPFiles();
-    void getWorkunitLogFromZAPFile(IFile* iFile, const char* fileName, MemoryBuffer& buf, const char* outFile);
-    void getWorkunitThorSlaveLogFromZAPFile(const char* thorProcess, const char* logDate, int slaveNum, MemoryBuffer& buf, const char* outFile);
+    void getWorkunitLogSingleFile(IFile* iFile, const char* fileName, MemoryBuffer& buf, const char* outFile);
+    void getWorkunitThorSlaveLogSingleFile(const char* thorProcess, const char* logDate, int slaveNum, MemoryBuffer& buf, const char* outFile);
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
 
     IPropertyTree* getWorkunitArchive();

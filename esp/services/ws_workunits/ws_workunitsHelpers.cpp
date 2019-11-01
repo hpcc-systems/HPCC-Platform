@@ -1140,7 +1140,9 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
             uniqueProcesses.setValue(processName.str(), true);
 
             StringBuffer groupName;
-            getClusterThorGroupName(groupName, processName.str());
+            cw->getThorGroup(groupName);
+            if (groupName.isEmpty())
+                getClusterThorGroupName(groupName, processName.str());
 
             Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
             ForEach (*thorLogs)
@@ -1955,7 +1957,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
 
     if (debugImportedStr.length()) //WU imported from a ZAP report
     {
-        getWorkunitLogFromZAPFile(rFile, fileName, buf, outFile);
+        getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
         return;
     }
 
@@ -2039,14 +2041,13 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",fileName);
 
     if (debugImportedStr.length()) //WU imported from a ZAP report
-        getWorkunitLogFromZAPFile(rFile, fileName, buf, outFile);
+        getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
     else
         readWorkunitLog(rFile, buf, outFile);
 }
 
-void WsWuInfo::getWorkunitLogFromZAPFile(IFile* iFile, const char* fileName, MemoryBuffer& buf, const char* outFile)
+void WsWuInfo::getWorkunitLogSingleFile(IFile* iFile, const char* fileName, MemoryBuffer& buf, const char* outFile)
 {
-    //This is a WU from ZAP report. The thor log only contains the log lines related to this WU.
     //The whole log file should be sent back. 
     if (!isEmptyString(outFile))
     {
@@ -2055,6 +2056,7 @@ void WsWuInfo::getWorkunitLogFromZAPFile(IFile* iFile, const char* fileName, Mem
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", outFile);
 
         copyFile(oFile, iFile);
+        return;
     }
 
     OwnedIFileIO io = iFile->openShared(IFOread,IFSHfull);
@@ -2128,7 +2130,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
 {
     if (debugImportedStr.length()) //WU imported from a ZAP report
     {
-        getWorkunitThorSlaveLogFromZAPFile(process, logDate, slaveNum, buf, outFile);
+        getWorkunitThorSlaveLogSingleFile(process, logDate, slaveNum, buf, outFile);
         return;
     }
 
@@ -2145,18 +2147,18 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
     getWorkunitThorSlaveLog(nodeGroup, ipAddress, logDate, logDir.str(), slaveNum, buf, outFile, forDownload);
 }
 
-void WsWuInfo::getWorkunitThorSlaveLogFromZAPFile(const char* thorProcess, const char* logDate, int slaveNum,
+void WsWuInfo::getWorkunitThorSlaveLogSingleFile(const char* thorProcess, const char* logDate, int slaveNum,
     MemoryBuffer& buf, const char* outFile)
 {
-    StringBuffer zapWUFolder;
-    getWorkunitProcessLogPath("Thor", zapWUFolder);
+    StringBuffer logPath;
+    getWorkunitProcessLogPath("Thor", logPath);
 
-    VStringBuffer logFileName("%s%c%s_thorslave.%u.%s.log", zapWUFolder.str(), PATHSEPCHAR, thorProcess, slaveNum, logDate);
+    VStringBuffer logFileName("%s%c%s_thorslave.%u.%s.log", logPath.str(), PATHSEPCHAR, thorProcess, slaveNum, logDate);
     Owned<IFile> logfile = createIFile(logFileName);
     if (!logfile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", logFileName.str());
 
-    getWorkunitLogFromZAPFile(logfile, logFileName, buf, outFile);
+    getWorkunitLogSingleFile(logfile, logFileName, buf, outFile);
 }
 
 void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char* outFile)

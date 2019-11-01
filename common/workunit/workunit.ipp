@@ -277,6 +277,9 @@ public:
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
+    virtual StringBuffer &getThorGroup(StringBuffer &str) const;
+    virtual void setThorGroup(const char *thorGroup);
+    virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
 
     virtual const char *queryJobName() const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;
@@ -620,7 +623,7 @@ public:
 
     // interface IWorkUnitFactory - some are left for derived classes
 
-    virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser, IPropertyTree *wuXML);
+    virtual IWorkUnit * createWorkUnit(const char * app, const char * user, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * importWorkUnit(const char *zapReportFileName, const char *zapReportFilePath, const char *zapReportPassword,
         const IPropertyTree *directories, const char *component, const char *instance, const char *app, const char *user,
         ISecManager *secMgr, ISecUser *secUser);
@@ -630,8 +633,7 @@ public:
     virtual IWorkUnit * updateWorkUnit(const char * wuid, ISecManager *secmgr, ISecUser *secuser);
     virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated);
     virtual int setTracingLevel(int newlevel);
-    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope,
-        ISecManager *secmgr, ISecUser *secuser, IPropertyTree *wuXML);
+    virtual IWorkUnit * createNamedWorkUnit(const char * wuid, const char * app, const char *scope, ISecManager *secmgr, ISecUser *secuser);
     virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual IConstWorkUnitIterator* getWorkUnitsSorted(WUSortField sortorder, // field to sort by
@@ -660,7 +662,7 @@ protected:
     void reportAbnormalTermination(const char *wuid, WUState &state, SessionId agent);
 
     // These need to be implemented by the derived classes
-    virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, IPropertyTree *wuXML, ISecManager *secmgr, ISecUser *secuser) = 0;
+    virtual CLocalWorkUnit* _createWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;
     virtual CLocalWorkUnit* _openWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for read access
     virtual CLocalWorkUnit* _updateWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser) = 0;  // for write access
     virtual bool _restoreWorkUnit(IPTree *pt, const char *wuid) = 0;
