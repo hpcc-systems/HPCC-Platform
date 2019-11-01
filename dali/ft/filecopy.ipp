@@ -117,7 +117,7 @@ public:
     offset_t                offset;
     offset_t                size;               // expanded size
     offset_t                psize;              // physical (compressed) size
-    unsigned                headerSize;
+    offset_t                headerSize;
     offset_t                xmlHeaderLength;
     offset_t                xmlFooterLength;
     unsigned                crc;
