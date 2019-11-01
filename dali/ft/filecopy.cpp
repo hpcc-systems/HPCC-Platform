@@ -1759,7 +1759,18 @@ void FileSprayer::derivePartitionExtra()
 void FileSprayer::displayPartition()
 {
     ForEachItemIn(idx, partition)
+    {
         partition.item(idx).display();
+
+#ifdef _DEBUG
+        LOG(MCdebugInfoDetail, unknownJob,
+                     "   Header size: %d, XML header size: %" I64F "d, XML footer size: %" I64F "d",
+                     sources.item(partition.item(idx).whichInput).headerSize,
+                     sources.item(partition.item(idx).whichInput).xmlHeaderLength,
+                     sources.item(partition.item(idx).whichInput).xmlFooterLength
+        );
+#endif
+    }
 }
 
 
@@ -3003,26 +3014,30 @@ void FileSprayer::spray()
 bool FileSprayer::isSameSizeHeaderFooter()
 {
     bool retVal = true;
-    unsigned whichHeaderInput = 0;
-    bool isEmpty = true;
-    headerSize = 0;
-    footerSize = 0;
 
     if (sources.ordinality() == 0)
         return retVal;
+
+    unsigned whichHeaderInput = 0;
+//    bool isEmpty = true;
+
+    headerSize = sources.item(whichHeaderInput).xmlHeaderLength;
+    footerSize = sources.item(whichHeaderInput).xmlFooterLength;
+
+
 
     ForEachItemIn(idx, partition)
     {
         PartitionPoint & cur = partition.item(idx);
         if (cur.inputLength && (idx+1 == partition.ordinality() || partition.item(idx+1).whichOutput != cur.whichOutput))
         {
-            if (isEmpty)
-            {
-                headerSize = sources.item(whichHeaderInput).xmlHeaderLength;
-                footerSize = sources.item(cur.whichInput).xmlFooterLength;
-                isEmpty = false;
-                continue;
-            }
+//            if (isEmpty)
+//            {
+//                headerSize = sources.item(whichHeaderInput).xmlHeaderLength;
+//                footerSize = sources.item(cur.whichInput).xmlFooterLength;
+//                isEmpty = false;
+//                continue;
+//            }
 
             if (headerSize != sources.item(whichHeaderInput).xmlHeaderLength)
             {
