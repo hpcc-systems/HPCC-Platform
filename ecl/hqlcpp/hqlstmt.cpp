@@ -796,9 +796,9 @@ void BuildCtx::walkAssociations(AssocKind searchMask, IAssociationVisitor & visi
         if (searchStmts->associationMask & searchMask)
         {
             CIArray & defs = searchStmts->defs;
-            ForEachItemInRev(idx, searchStmts->defs)
+            ForEachItemInRev(idx, defs)
             {
-                HqlExprAssociation & cur = (HqlExprAssociation &)searchStmts->defs.item(idx);
+                HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
                 if (cur.getKind() & searchMask)
                 {
                     if (visitor.visit(cur))

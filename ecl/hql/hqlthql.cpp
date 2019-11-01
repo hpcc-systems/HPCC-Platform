@@ -1156,7 +1156,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 s.append("RECORD");
                 indent++;
             }
-            bool hadAttr = false;
+
             //Slightly weird.  no_record inside a record imply inheritance, and have a slightly different syntax.
             //Should probably be expanded when the graph is normalized...
             ForEachChild(i2, expr)
@@ -1170,7 +1170,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     else
                         createPseudoSymbol(s, "record__", child);
                     s.append(")");
-                    hadAttr = true;
                 }
             }
                 
@@ -1181,7 +1180,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 {
                     s.append(",");
                     toECL(child, s, false, inType, 0);
-                    hadAttr = true;
                 }
             }
             if (!fieldsInline)
@@ -2674,8 +2672,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                         toECL(expr->queryChild(i), s, false, inType);
                     }
                     s.append(")");
-                    break;
                 }
+                break;
             }
         case no_sequence:
             if (expr->queryName())
@@ -3571,7 +3569,7 @@ StringBuffer &expandDotLiteral(StringBuffer &s, const char *f)
         case '\"':
         case '\'':
             s.append('\\');
-            // fall into...
+            // fallthrough
         default:
             if (chars++ > 1000)
                 return s;

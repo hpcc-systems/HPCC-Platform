@@ -2186,7 +2186,7 @@ unsigned getCardinality(IHqlExpression * expr)
                 if (cardinality)
                     return (unsigned)getIntValue(cardinality);
             }
-            //fall through:
+            //fallthrough
         default:
             return expr->queryType()->getCardinality();
         }
@@ -2241,7 +2241,7 @@ const char * const magnitudeText[] = {
     "disk",
     "unknown"
 };
-inline RowCountMagnitude getRowCountMagnitude(__int64 num)
+inline RowCountMagnitude getRowCountMagnitude(unsigned __int64 num)
 {
     if (num == 0)
         return RCMnone;

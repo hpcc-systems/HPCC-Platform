@@ -635,7 +635,7 @@ class SourceBuilder
 {
 public:
     SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : tableExpr(_tableExpr), translator(_translator), newInputMapping(false)
+        : tableExpr(_tableExpr), newInputMapping(false), translator(_translator)
     { 
         nameExpr.setown(foldHqlExpression(_nameExpr));
         needDefaultTransform = true; 

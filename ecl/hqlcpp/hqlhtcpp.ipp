@@ -188,8 +188,8 @@ protected:
 
 public:
     HqlCppTranslator & translator;
-    unsigned     activityId;
-    unsigned     numChildQueries;
+    unsigned     activityId = 0;
+    unsigned     numChildQueries = 0;
     ThorActivityKind kind;
     HqlExprAttr  activityExpr;
     LinkedHqlExpr sourceFileSequence;
@@ -202,8 +202,8 @@ public:
     StringAttr   graphLabel;
     StringBuffer baseClassExtra;
     MetaInstance meta;
-    IIdAtom *        implementationClassName;
-    ABoundActivity* table;
+    IIdAtom *        implementationClassName = nullptr;
+    ABoundActivity* table = nullptr;
     bool         isMember;
     bool         instanceIsLocal;
     bool         isCoLocal;
@@ -226,8 +226,8 @@ public:
     LocationArray locations;
 
     Linked<IPropertyTree> graphNode;
-    IHqlStmt *   classStmt;
-    IHqlStmt *   classGroupStmt;
+    IHqlStmt *   classStmt = nullptr;
+    IHqlStmt *   classGroupStmt = nullptr;
     BuildCtx    classctx;
     BuildCtx    createctx;
     BuildCtx    startctx;

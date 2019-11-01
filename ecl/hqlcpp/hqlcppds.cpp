@@ -564,7 +564,6 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_matchrow:
         return doBuildRowMatchRow(ctx, expr, true);
     case no_getgraphresult:
-    {
         if (expr->hasAttribute(externalAtom))
         {
             OwnedHqlExpr translated = translateGetGraphResult(ctx, expr);
@@ -574,8 +573,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
             bindRow(ctx, expr, boundRow->queryBound());
             return selector.getClear();
         }
-        //fall through
-    }
+        // fallthrough
     case no_call:
     case no_externalcall:
     case no_alias:
@@ -607,7 +605,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_select:
         {
 #ifdef _DEBUG
-            IHqlExpression * field = expr->queryChild(1);
+            IHqlExpression * field __attribute__((unused)) = expr->queryChild(1); // to simplify viewing in a debugger
 #endif
             Owned<IReferenceSelector> selector;
             if (isNewSelector(expr))
@@ -701,7 +699,7 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
     case no_select:
         {
 #ifdef _DEBUG
-            IHqlExpression * field = expr->queryChild(1);
+            IHqlExpression * field __attribute__((unused)) = expr->queryChild(1); // to simplify viewing in a debugger
 #endif
             Owned<IReferenceSelector> selector = buildNewOrActiveRow(ctx, expr->queryChild(0), isNewSelector(expr));
             return selector->select(ctx, expr);
@@ -1875,7 +1873,6 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
     {
-        bool insideChild = insideChildQuery(ctx);
         resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, isInsideChildQuery, unlimitedResources));
     }
     else
@@ -2533,6 +2530,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 //---------------------------------------------------------------------------
 // Dataset assignment - to temp
 
+#if 0 // calling code is currently commented out
 static bool isWorthAssigningDirectly(BuildCtx & ctx, const CHqlBoundTarget & /*target*/, IHqlExpression * expr)
 {
     //target parameter is currently unused - it should be used to check that linkcounted attributes match etc.
@@ -2541,6 +2539,7 @@ static bool isWorthAssigningDirectly(BuildCtx & ctx, const CHqlBoundTarget & /*t
     //A poor approximation.  Could also include function calls if the is-link-counted matches.
     return ::canEvaluateInline(&ctx, expr);
 }
+#endif
 
 void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
@@ -3325,7 +3324,6 @@ void HqlCppTranslator::buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppData
 
     unsigned maxRows = transforms->numChildren();
     unsigned row;
-    const bool copyConstantRows = true;//getFieldCount(expr->queryRecord()) > 2;
     for (row = 0; row < maxRows; row++)
     {
         IHqlExpression * transform = transforms->queryChild(row);
@@ -3498,6 +3496,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         }
 
         target->finishRow(iterctx, targetRow);
+        iterctx.removeAssociation(skipAssociation);     //remove it in case keeping hold of it causes issues.
     }
 }
 

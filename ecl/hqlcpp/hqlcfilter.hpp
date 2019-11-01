@@ -56,7 +56,7 @@ struct BuildFilterState
 };
 
 
-class CppFilterExtractor : public FilterExtractor
+class CppFilterExtractor final : public FilterExtractor
 {
 public:
     CppFilterExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool isDiskRead, bool forceValueSets);

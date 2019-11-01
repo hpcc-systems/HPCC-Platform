@@ -43,6 +43,10 @@ include_directories (
          ./../../system/jlib 
     )
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor -Wimplicit-fallthrough=3")
+endif()
+
 ADD_DEFINITIONS( -D_USRDLL -DDEFTYPE_EXPORTS )
 
 HPCC_ADD_LIBRARY( deftype SHARED ${SRCS} )

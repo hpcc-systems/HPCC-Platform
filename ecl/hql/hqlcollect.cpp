@@ -57,7 +57,7 @@ public:
 class CEclSource : public CInterfaceOf<IEclSource>
 {
 public:
-    CEclSource(IIdAtom * _eclId, EclSourceType _type) : eclId(_eclId), type(_type) { }
+    CEclSource(IIdAtom * _eclId, EclSourceType _type) : type(_type), eclId(_eclId)  { }
 
 //interface IEclSource
     virtual IProperties * getProperties() { return NULL; }

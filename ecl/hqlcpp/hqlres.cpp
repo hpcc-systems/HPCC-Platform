@@ -493,7 +493,7 @@ void ResourceManager::finalize()
 
 void ResourceManager::putbytes(int h, const void *b, unsigned len)
 {
-    int written = _write(h, b, len);
+    unsigned written = _write(h, b, len);
     assertex(written == len);
     totalbytes += len;
 }

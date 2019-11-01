@@ -501,6 +501,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                         forceConstant = true;
                         break;
                     }
+                    // fallthrough
                 default:
                     onlyStored = false;
                     break;
@@ -586,6 +587,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                                 getFriendlyTypeStr(replacementType, replacementTypeText);
                                 translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                             }
+                            // fallthrough
                         default:
                             replacement.setown(ensureExprType(replacement, exprType));
                         }
@@ -1018,7 +1020,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         {
             if (functionCallIsActivity(expr))
                 return OptionYes;
-            YesNoOption bodyOption = normalizeThor(expr->queryBody()->queryFunctionDefinition());
+            //YesNoOption bodyOption = normalizeThor(expr->queryBody()->queryFunctionDefinition());
             //do Something with it
             break;
         }
@@ -5098,7 +5100,6 @@ IHqlExpression * OptimizeActivityTransformer::optimizeCompare(IHqlExpression * l
     {
         if (lhs->getOperator() == no_count)
         {
-            IHqlExpression * ds = lhs->queryChild(0);
             HqlExprArray args;
             unwindChildren(args, lhs);
             OwnedHqlExpr ret = createValue(no_exists, makeBoolType(), args);
@@ -5790,18 +5791,6 @@ void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, SharedHqlExp
 }
 
 //------------------------------------------------------------------------
-
-static bool isStored(IHqlExpression * set)
-{
-    switch (set->getOperator())
-    {
-    case no_setresult:
-    case no_ensureresult:
-    case no_output:
-        return matchesConstantValue(queryAttributeChild(set, sequenceAtom, 0), ResultSequenceStored);
-    }
-    return false;
-}
 
 static bool isTrivialStored(IHqlExpression * set)
 {
@@ -12506,7 +12495,6 @@ IHqlExpression * HqlTreeNormalizer::transformTransform(IHqlExpression * expr)
 
 IHqlExpression * HqlTreeNormalizer::transformIfAssert(node_operator newOp, IHqlExpression * expr)
 {
-    unsigned max = expr->numChildren();
     HqlExprArray children;
     bool same = transformChildren(expr, children);
     if ((expr->hasAttribute(assertAtom) || (options.assertSortedDistributed && (newOp != no_assertgrouped))) && !options.removeAsserts)
@@ -13566,7 +13554,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         if (options.outputRowsAsDatasets && expr->queryChild(0)->isDatarow())
         {
             HqlExprArray args;
-            bool same = transformChildren(expr, args);
+            transformChildren(expr, args);
             args.replace(*createDatasetFromRow(LINK(&args.item(0))), 0);
             return createValue(no_output, makeVoidType(), args);
         }
@@ -13876,8 +13864,6 @@ void hoistNestedCompound(HqlCppTranslator & translator, WorkflowArray & workflow
 
 //---------------------------------------------------------------------------
 
-static IHqlExpression * substituteClusterSize(unsigned numNodes, IHqlExpression * expr, ICodegenContextCallback * ctxCallback, IWorkUnit * wu);
-
 static HqlTransformerInfo clusterSubstitueTransformerInfo("ClusterSubstitueTransformer");
 class ClusterSubstitueTransformer : public NewHqlTransformer
 {
@@ -13958,12 +13944,6 @@ protected:
     IWorkUnit * wu;
     OwnedHqlExpr clusterSizeValue;
 };
-
-IHqlExpression * substituteClusterSize(unsigned numNodes, IHqlExpression * expr, ICodegenContextCallback * ctxCallback, IWorkUnit * wu)
-{
-    ClusterSubstitueTransformer transformer(numNodes, ctxCallback, wu);
-    return transformer.transformRoot(expr);
-}
 
 void HqlCppTranslator::checkWorkflowDuplication(HqlExprArray & exprs)
 {

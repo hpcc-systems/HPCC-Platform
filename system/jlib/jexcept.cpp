@@ -1722,7 +1722,7 @@ IError *createError(IPropertyTree * tree)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void IErrorReceiver::ThrowStringException(int code,const char *format, ...) const
+void IErrorReceiver::throwStringExceptionV(int code,const char *format, ...) const
 {
     va_list args;
     va_start(args, format);

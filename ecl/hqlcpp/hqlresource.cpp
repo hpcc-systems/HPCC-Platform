@@ -554,7 +554,6 @@ protected:
             return;
         }
 
-        IHqlExpression * body = expr->queryBody();
         if (alreadyVisited(expr))
             return;
 
@@ -5635,7 +5634,6 @@ void EclResourcer::extractSharedInputs(CSplitterInfo & connections, ResourceGrap
     ForEachItemIn(i, connections.externalSources)
     {
         IHqlExpression & cur = connections.externalSources.item(i);
-        ResourcerInfo * info = queryResourceInfo(&cur);
         if (connections.isBalancedSplitter(&cur))
         {
             //Add two entries for compatibility with old code.
@@ -5690,6 +5688,7 @@ void EclResourcer::spotUnbalancedSplitters(const HqlExprArray & exprs)
 // PASS6: Merge sub graphs that can share resources and don't have dependencies
 // MORE: Once sources are merged, should try merging between trees.
 
+#if 0 // Unused function
 static bool conditionsMatch(const HqlExprArray & left, const HqlExprArray & right)
 {
     if (left.ordinality() != right.ordinality())
@@ -5702,6 +5701,7 @@ static bool conditionsMatch(const HqlExprArray & left, const HqlExprArray & righ
     }
     return true;
 }
+#endif
 
 
 bool EclResourcer::queryMergeGraphLink(ResourceGraphLink & link)
@@ -6092,6 +6092,8 @@ void EclResourcer::moveExternalSpillPoints()
 //------------------------------------------------------------------------------------------
 // PASS9: Create a new expression tree representing the information
 
+#if 0
+//Function not currently used
 static IHqlExpression * getScalarReplacement(CChildDependent & cur, ResourcerInfo * hoistedInfo, IHqlExpression * replacement)
 {
     //First skip any wrappers which are there to cause things to be hoisted.
@@ -6128,7 +6130,7 @@ static IHqlExpression * getScalarReplacement(CChildDependent & cur, ResourcerInf
     IHqlExpression * record = replacement->queryRecord();
     return createNewSelectExpr(LINK(replacement), LINK(record->queryChild(0)));
 }
-
+#endif
 
 IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, ResourceGraphInfo * ownerGraph, bool expandInParent, bool defineSideEffect)
 {

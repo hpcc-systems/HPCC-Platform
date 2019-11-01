@@ -18,20 +18,6 @@
 #include "hqlwuerr.hpp"
 
 
-static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom * modulename, IIdAtom * attributename, int lineno, int column)
-{
-    out.append(str(modulename));
-    if (attributename)
-        out.append('.').append(str(attributename));
-    
-    if(lineno && column)
-        out.append('(').append(lineno).append(',').append(column).append(')');
-    out.append(" : ");
-
-    out.append(errNo).append(": ").append(msg);
-}
-
-
 class CompoundErrorReceiver : implements IErrorReceiver, public CInterface
 {
 public:

@@ -147,6 +147,20 @@ add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp
     DEPENDS hqllex.l
 )
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor -Wimplicit-fallthrough=3")
+
+  #Compiler complains about a memcpy of a structure that contains a union
+  if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0.0")
+    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=class-memaccess")
+  endif()
+
+  #Compiler complains about an unused function yyunput
+  set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-function")
+  #gcc incorrectly thinks that a function that never returns can fall through
+  set_source_files_properties (hqlfilter.cpp PROPERTIES COMPILE_FLAGS " -Wimplicit-fallthrough=0")
+endif()
+
 if (WIN32)
     set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS "/Od")
 endif()

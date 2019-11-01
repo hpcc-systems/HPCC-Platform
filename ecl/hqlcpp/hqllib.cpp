@@ -47,7 +47,7 @@ static IHqlExpression * queryLibraryInputSequence(IHqlExpression * expr)
     return arg;
 }
 
-HqlCppLibrary::HqlCppLibrary(HqlCppTranslator & _translator, IHqlExpression * libraryInterface, ClusterType _clusterType) : translator(_translator), inputMapper(libraryInterface), clusterType(_clusterType)
+HqlCppLibrary::HqlCppLibrary(HqlCppTranslator & _translator, IHqlExpression * libraryInterface, ClusterType _clusterType) : translator(_translator), clusterType(_clusterType), inputMapper(libraryInterface)
 {
     assertex(libraryInterface->getOperator() == no_funcdef);
     scopeExpr = libraryInterface->queryChild(0);

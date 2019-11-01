@@ -964,11 +964,6 @@ static node_operator queryCompoundOp(IHqlExpression * expr)
     throwUnexpectedOp(expr->getOperator());
 }
 
-static int compareHqlExprPtr(IInterface * * left, IInterface * * right) 
-{
-    return *left == *right ? 0 : *left < *right ? -1 : +1;
-}
-
 inline bool hasActivityType(IHqlExpression * expr)
 {
     return (expr->isDataset() || expr->isDatarow() || expr->isDictionary());
@@ -1288,7 +1283,7 @@ ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _trans
     allowActivity = true;
     options.insertProjectCostLevel = 0;
     if (transOptions.reduceNetworkTraffic)
-        options.insertProjectCostLevel = (transOptions.insertProjectCostLevel != (unsigned)-1) ? transOptions.insertProjectCostLevel : CostNetworkCopy;
+        options.insertProjectCostLevel = (transOptions.insertProjectCostLevel != (unsigned)-1) ? transOptions.insertProjectCostLevel : (unsigned)CostNetworkCopy;
 }
 
 
@@ -2950,8 +2945,8 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.append(*complexExtra->createOutputProject(transformed->queryChild(0)));
                 transformed.setown(transformed->clone(args));
                 logChange("Project output from compound", expr, complexExtra->outputFields);
-                break;
             }
+            break;
         }
     case CompoundableActivity:
         {
@@ -3225,12 +3220,12 @@ void ImplicitProjectTransformer::percolateFields()
 
 IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
 {
-    cycle_t time1 = msTick();
+    //cycle_t time1 = msTick();
     analyse(expr, 0);           // gather a list of activities, and link them together.
-    cycle_t time2 = msTick();
+    //cycle_t time2 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.analyse", time2-time1);
     percolateFields();
-    cycle_t time3 = msTick();
+    //cycle_t time3 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.percolate", time3-time2);
     switch (targetClusterType)
     {
@@ -3248,14 +3243,14 @@ IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
             insertProjects();
         break;
     }
-    cycle_t time4 = msTick();
+    //cycle_t time4 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.reduceData", time4-time3);
     finalizeFields();
-    cycle_t time5 = msTick();
+    //cycle_t time5 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.finalize", time5-time4);
     //traceActivities();
     OwnedHqlExpr ret = transformRoot(expr);
-    cycle_t time6 = msTick();
+    //cycle_t time6 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.transform", time6-time5);
     return ret.getClear();
 }

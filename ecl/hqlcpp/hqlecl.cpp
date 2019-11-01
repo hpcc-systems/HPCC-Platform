@@ -440,7 +440,6 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             return generateFullFieldUsageStatistics(translator, query.expr);
         }
 
-        bool ok = false;
         try
         {
             if (!translator.buildCpp(*code, query))
@@ -535,7 +534,6 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     CCycleTimer elapsedTimer;
     addTimeStamp(wu, SSTcompilestage, "compile:write c++", StWhenStarted);
 
-    unsigned numExtraFiles = translator.getNumExtraCppFiles();
     bool isMultiFile = translator.spanMultipleCppFiles();
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
 

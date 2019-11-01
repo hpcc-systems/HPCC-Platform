@@ -1162,8 +1162,8 @@ protected:
     void checkMatch(IHqlExpression * select);
 
 protected:
-    LinkedHqlExpr selector;
     HqlExprCopyArray & selects;
+    LinkedHqlExpr selector;
 };
 
 

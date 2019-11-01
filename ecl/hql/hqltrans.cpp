@@ -37,8 +37,10 @@
  //#define TRACE_DEEP_SCOPES
 #endif
 
+#ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
 static unsigned transformerDepth;
 static CLargeMemoryAllocator * transformerHeap;
+#endif
 
 #define ALLOCATOR_MIN_PAGES     10
 
@@ -920,6 +922,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
     case no_getresult:
         if (!expr->queryRecord())
             break;
+        //fallthrough
     case no_newtransform:
     case no_transform:
     case no_rowsetrange:
@@ -1326,7 +1329,7 @@ void NewHqlTransformer::analyseExpr(IHqlExpression * expr)
         {
             IHqlExpression * ds = expr->queryChild(0);
 #ifdef _DEBUG
-            IHqlExpression * field = expr->queryChild(1);
+            IHqlExpression * field __attribute__((unused)) = expr->queryChild(1);  // to simplify viewing in a debugger
 #endif
             if (isNewSelector(expr))
                 analyseExpr(ds);
@@ -4763,7 +4766,7 @@ void SplitterVerifier::analyseExpr(IHqlExpression * expr)
         {
 #ifdef _DEBUG
             IHqlExpression * id = expr->queryAttribute(_uid_Atom);
-            unsigned idValue = (id ? (unsigned)getIntValue(id->queryChild(0)) : 0);
+            unsigned idValue __attribute__((unused)) = (id ? (unsigned)getIntValue(id->queryChild(0)) : 0);  // to simplify viewing in a debugger
 #endif
             unsigned splitSize = (unsigned)getIntValue(expr->queryChild(1), 0);
             if (extra->useCount > splitSize)

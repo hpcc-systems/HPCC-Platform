@@ -50,8 +50,8 @@ protected:
 
 protected:
     HqlCppTranslator & translator;
-    BuildCtx & declarectx;
     BuildCtx & nestedctx;
+    BuildCtx & declarectx;
 };
 
 

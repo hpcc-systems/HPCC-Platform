@@ -777,7 +777,6 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
     else
     {
         unsigned maxRowSize = row->getMaxSize();
-        unsigned fixedSize = totalSize.getFixedSize();
 
         //This removes calls that can be constant folded - a bit confusing in the generated code sometimes..
         if (!row->queryBuilder() && !totalSize.queryVarSize())
@@ -3108,7 +3107,7 @@ void CXmlColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IR
 inline int doAlign(unsigned value, unsigned align) { return (value + align-1) & ~(align-1); }
 
 ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _key, IHqlExpression * _record, unsigned _id, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals, bool _useAccessClass)
-: root(NULL, NULL, _record), key(_key), id(_id)
+: id(_id), key(_key), root(NULL, NULL, _record)
 { 
     record = _record;
     prior = NULL;

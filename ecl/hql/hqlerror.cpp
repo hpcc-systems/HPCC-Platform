@@ -191,7 +191,6 @@ public:
         const char * filename = error->getFilename();
         unsigned line = error->getLine();
         unsigned column = error->getColumn();
-        unsigned position = error->getPosition();
 
         StringBuffer msg;
         error->errorMessage(msg);

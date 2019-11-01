@@ -843,7 +843,7 @@ static bool canConsume(const ParseInformation & options, unsigned nextChar, unsi
     rtlThrowNoUnicode();
 #endif
 
-    return (nextChar == tolower(matcherChar)) || (nextChar == toupper(matcherChar));
+    return (nextChar == (unsigned)tolower(matcherChar)) || (nextChar == (unsigned)toupper(matcherChar));
 }
 
 bool HqlRegexExpr::canConsume(unsigned nextChar)

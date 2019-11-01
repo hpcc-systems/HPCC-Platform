@@ -750,7 +750,7 @@ void CseScopeInfo::calcCommonLocation()
     {
         CseScopeInfo *firstParentExtra = firstParent;
         parent = firstParentExtra;
-        CseScopeInfo * parentPath = parent ? parent->queryValidPath() : nullptr;
+        //CseScopeInfo * parentPath = parent ? parent->queryValidPath() : nullptr;
         moved = firstParent->hasMoved();
         ForEachItemIn(i, parents)
         {

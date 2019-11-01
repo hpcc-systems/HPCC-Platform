@@ -88,12 +88,6 @@ static int compareSymbolsByPosition(IInterface * const * pleft, IInterface * con
     return stricmp(str(left->queryName()), str(right->queryName()));
 }
 
-static void setNonZeroPropInt(IPropertyTree * tree, const char * path, int value)
-{
-    if (value)
-        tree->setPropInt(path, value);
-}
-
 static void expandRecordSymbolsMeta(IPropertyTree *, IHqlExpression *);
 
 void expandType(IPropertyTree * def, ITypeInfo * type)
@@ -153,8 +147,8 @@ void expandType(IPropertyTree * def, ITypeInfo * type)
                 IPropertyTree * ptype = ptree->addPropTree("Type");
                 expandType(ptype, params->queryChild(i)->queryType());
             }
-            //fallthrough
         }
+            //fallthrough
         case type_set:
         case type_row:
         case type_pattern:

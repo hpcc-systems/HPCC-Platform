@@ -133,8 +133,8 @@ public:
     }
 
 protected:
-    Owned<ICollationInfo> collation;
     Owned<ICharsetInfo> charset;
+    Owned<ICollationInfo> collation;
 };
 
 class CUnicodeTypeInfo : public CTypeInfo
@@ -327,7 +327,7 @@ protected:
     bool  typeIsSigned;
 
 public:
-    enum { UNKNOWN_DIGITS = 0xff };
+    static constexpr byte UNKNOWN_DIGITS = 0xff;
     IValue * createValueFromStack(void);
 
     CDecimalTypeInfo(unsigned _digits, unsigned _prec, bool _isSigned);

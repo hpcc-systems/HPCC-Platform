@@ -77,10 +77,10 @@ protected:
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct ECLRTL_API RtlBoolTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlBoolTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlBoolTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
@@ -98,10 +98,10 @@ protected:
     bool getBool(const void * ptr) const;
 };
 
-struct ECLRTL_API RtlRealTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlRealTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlRealTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildReal(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, double val) const override;
@@ -122,10 +122,10 @@ private:
     inline double value(const void * self) const;
 };
 
-struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlIntTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlIntTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
@@ -146,13 +146,13 @@ struct ECLRTL_API RtlIntTypeInfo : public RtlTypeInfoBase
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlBlobTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlBlobTypeInfo final : public RtlTypeInfoBase
 {
     // Used for values stored in blobs. The child type represents the original type
     constexpr inline RtlBlobTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child)
     : RtlTypeInfoBase(_fieldType, _length), child(_child)
     {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
@@ -177,10 +177,10 @@ private:
     const RtlTypeInfo *child = nullptr;
 };
 
-struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlSwapIntTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlSwapIntTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
@@ -204,7 +204,7 @@ struct ECLRTL_API RtlSwapIntTypeInfo : public RtlTypeInfoBase
 struct ECLRTL_API RtlKeyedIntTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlKeyedIntTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo *_child) : RtlTypeInfoBase(_fieldType, _length), child(_child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
@@ -230,10 +230,10 @@ private:
     const RtlTypeInfo *child = nullptr;
 };
 
-struct ECLRTL_API RtlPackedIntTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlPackedIntTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlPackedIntTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -255,10 +255,10 @@ struct ECLRTL_API RtlPackedIntTypeInfo : public RtlTypeInfoBase
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlStringTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlStringTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -281,10 +281,10 @@ struct ECLRTL_API RtlStringTypeInfo : public RtlTypeInfoBase
     virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
 };
 
-struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlDataTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlDataTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -306,10 +306,10 @@ struct ECLRTL_API RtlDataTypeInfo : public RtlTypeInfoBase
     virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
 };
 
-struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlVarStringTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlVarStringTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -330,10 +330,10 @@ struct ECLRTL_API RtlVarStringTypeInfo : public RtlTypeInfoBase
     virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 };
 
-struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlQStringTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlQStringTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -355,10 +355,10 @@ struct ECLRTL_API RtlQStringTypeInfo : public RtlTypeInfoBase
     virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const override;
 };
 
-struct ECLRTL_API RtlDecimalTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlDecimalTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlDecimalTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -378,10 +378,10 @@ struct ECLRTL_API RtlDecimalTypeInfo : public RtlTypeInfoBase
     size32_t calcSize() const;
 };
 
-struct ECLRTL_API RtlCharTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlCharTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlCharTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
@@ -396,11 +396,11 @@ struct ECLRTL_API RtlCharTypeInfo : public RtlTypeInfoBase
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlUnicodeTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlUnicodeTypeInfo final : public RtlTypeInfoBase
 {
 public:
     constexpr inline RtlUnicodeTypeInfo(unsigned _fieldType, unsigned _length, const char * _locale) : RtlTypeInfoBase(_fieldType, _length), locale(_locale) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -426,11 +426,11 @@ protected:
     const char * locale;
 };
 
-struct ECLRTL_API RtlVarUnicodeTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlVarUnicodeTypeInfo final : public RtlTypeInfoBase
 {
 public:
     constexpr inline RtlVarUnicodeTypeInfo(unsigned _fieldType, unsigned _length, const char * _locale) : RtlTypeInfoBase(_fieldType, _length), locale(_locale) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -456,11 +456,11 @@ protected:
     const char * locale;
 };
 
-struct ECLRTL_API RtlUtf8TypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlUtf8TypeInfo final : public RtlTypeInfoBase
 {
 public:
     constexpr inline RtlUtf8TypeInfo(unsigned _fieldType, unsigned _length, const char * _locale) : RtlTypeInfoBase(_fieldType, _length), locale(_locale) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -485,10 +485,10 @@ protected:
     const char * locale;
 };
 
-struct ECLRTL_API RtlRecordTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlRecordTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlRecordTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlTypeInfoBase(_fieldType, _length), fields(_fields) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
     const RtlFieldInfo * const * fields;                // null terminated
 
     virtual size32_t getMinSize() const override;
@@ -526,10 +526,10 @@ struct ECLRTL_API RtlCompoundTypeInfo : public RtlTypeInfoBase
 };
 
 
-struct ECLRTL_API RtlSetTypeInfo : public RtlCompoundTypeInfo
+struct ECLRTL_API RtlSetTypeInfo final : public RtlCompoundTypeInfo
 {
     constexpr inline RtlSetTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -542,10 +542,10 @@ struct ECLRTL_API RtlSetTypeInfo : public RtlCompoundTypeInfo
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlRowTypeInfo : public RtlCompoundTypeInfo
+struct ECLRTL_API RtlRowTypeInfo final : public RtlCompoundTypeInfo
 {
     constexpr inline RtlRowTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -558,10 +558,10 @@ struct ECLRTL_API RtlRowTypeInfo : public RtlCompoundTypeInfo
 };
 
 
-struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
+struct ECLRTL_API RtlDatasetTypeInfo final : public RtlCompoundTypeInfo
 {
     constexpr inline RtlDatasetTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -575,11 +575,11 @@ struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
 };
 
 
-struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
+struct ECLRTL_API RtlDictionaryTypeInfo final : public RtlCompoundTypeInfo
 {
     constexpr inline RtlDictionaryTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child)
     : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -669,10 +669,10 @@ struct ECLRTL_API RtlDynamicIfBlockTypeInfo final : public RtlSerialIfBlockTypeI
     void setParent(const RtlRecordTypeInfo * _rowType) { rowType = _rowType; }
 };
 
-struct ECLRTL_API RtlBitfieldTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlBitfieldTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlBitfieldTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;
@@ -693,10 +693,10 @@ protected:
     unsigned __int64 unsignedValue(const void * self) const;
 };
 
-struct ECLRTL_API RtlUnimplementedTypeInfo : public RtlTypeInfoBase
+struct ECLRTL_API RtlUnimplementedTypeInfo final : public RtlTypeInfoBase
 {
     constexpr inline RtlUnimplementedTypeInfo(unsigned _fieldType, unsigned _length) : RtlTypeInfoBase(_fieldType, _length) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t getMinSize() const override;
     virtual size32_t size(const byte * self, const byte * selfrow) const override;
@@ -714,11 +714,11 @@ struct ECLRTL_API RtlUnimplementedTypeInfo : public RtlTypeInfoBase
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
 };
 
-struct ECLRTL_API RtlAlienTypeInfo : public RtlCompoundTypeInfo
+struct ECLRTL_API RtlAlienTypeInfo final : public RtlCompoundTypeInfo
 {
 public:
     constexpr inline RtlAlienTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
-    virtual void doDelete() const final override { delete this; }
+    virtual void doDelete() const override { delete this; }
 
     virtual size32_t buildInt(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, __int64 val) const override;
     virtual size32_t buildString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t size, const char *value) const override;

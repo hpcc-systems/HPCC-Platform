@@ -127,7 +127,7 @@ protected:
     {
         if (!cacheTree)
             return false;
-        if (optionHash != cacheTree->getPropInt64("@hash"))
+        if (optionHash != (hash64_t)cacheTree->getPropInt64("@hash"))
             return false;
         return EclCachedDefinition::calcUpToDate(optionHash);
     }
@@ -395,8 +395,8 @@ protected:
     void createArchiveItem(const char * fullName, IEclSource * original);
 
 protected:
+    IEclCachedDefinitionCollection * collection = nullptr;
     Linked<IPropertyTree> archive;
-    IEclCachedDefinitionCollection * collection;
 };
 
 

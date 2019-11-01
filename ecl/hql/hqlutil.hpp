@@ -875,9 +875,9 @@ public:
     bool conditionAllEqualities;
 protected:
     //The expression is assumed to outlast this class instance => doesn't used linked
-    IHqlExpression * cond;
     IHqlExpression * lhs;
     IHqlExpression * rhs;
+    IHqlExpression * cond;
     IHqlExpression * seq;
     IHqlExpression * atmostAttr;
     LinkedHqlExpr left;
