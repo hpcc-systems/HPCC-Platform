@@ -2092,13 +2092,15 @@ public:
         title.clear();
         prog.set(_prog);
         dir.set(_dir);
-        if (_title) {
+        if (_title)
+        {
             title.set(_title);
             PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize);
         }
         CheckAllowedProgram(prog,allowedprogs);
         retcode = 0;
-        if (forkthread) {
+        if (forkthread)
+        {
             {
                 CriticalUnblock unblock(sect); 
                 forkthread->join();
@@ -2107,18 +2109,23 @@ public:
         }
         forkthread.setown(new cForkThread(this));
         forkthread->start();
+        bool joined = false;
         {
             CriticalUnblock unblock(sect); 
             started.wait();
-            forkthread->join(50); // give a chance to fail
+            joined = forkthread->join(50); // give a chance to fail
         }
-        if (retcode==START_FAILURE) {   
+        // only check retcode if we were able to join
+        if ( (joined) && (retcode==START_FAILURE) )
+        {
             DBGLOG("%s: PIPE process '%s' failed to start", title.get()?title.get():"CLinuxPipeProcess", prog.get());
             forkthread.clear();
             return false;
         }
-        if (stderrbufsize) {
-            if (stderrbufferthread) {
+        if (stderrbufsize)
+        {
+            if (stderrbufferthread)
+            {
                 stderrbufferthread->stop();
                 delete stderrbufferthread;
             }
