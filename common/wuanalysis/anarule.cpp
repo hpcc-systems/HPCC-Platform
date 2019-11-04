@@ -30,7 +30,6 @@ public:
     {
         return (activity.getAttr(WaKind) == kind);
     }
-
 protected:
     ThorActivityKind kind;
 };
@@ -63,9 +62,10 @@ public:
 
             IWuEdge * inputEdge = activity.queryInput(0);
             if (inputEdge && (inputEdge->getStatRaw(StNumRowsProcessed, StSkewMax) < rowsMaxSkew))
-                result.set(ANA_DISTRIB_SKEW_INPUT_ID, cost, "DISTRIBUTE output skew is worse than input skew (%s)", activity.queryName());
+                result.set(ANA_DISTRIB_SKEW_INPUT_ID, cost, "DISTRIBUTE output skew is worse than input skew");
             else
-                result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, cost, "Significant skew in DISTRIBUTE output (%s)", activity.queryName());
+                result.set(ANA_DISTRIB_SKEW_OUTPUT_ID, cost, "Significant skew in DISTRIBUTE output");
+            updateInformation(result, activity);
             return true;
         }
         return false;
@@ -128,7 +128,7 @@ public:
         return false;
     }
 
-    virtual bool check(PerformanceIssue & results, IWuActivity & activity, const WuAnalyseOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
     {
         stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
         stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
@@ -151,9 +151,10 @@ public:
             auto edgeMaxSkew = edge ? edge->getStatRaw(StNumRowsProcessed, StSkewMax) : 0;
             // If difference between ioSkew and edgeMaxSkew > 0.05%, then child record likely to have caused skew
             if (ioMaxSkew > edgeMaxSkew && (ioMaxSkew-edgeMaxSkew) > ioMaxSkew/200)
-                results.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in child records causes uneven %s time (%s)", category, activity.queryName());
+                result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in child records causes uneven %s time", category);
             else
-                results.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time (%s)", category, activity.queryName());
+                result.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
+            updateInformation(result, activity);
             return true;
         }
         return false;
