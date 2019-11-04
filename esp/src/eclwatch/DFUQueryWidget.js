@@ -713,8 +713,9 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
-                ESPUtil.goToPageUserPreference(this.workunitsGrid, "DFUQueryWidget");
-                this.workunitsGrid.startup();
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "DFUQueryWidget_GridRowsPerPage").then(function(){
+                    context.workunitsGrid.startup();
+                });
 
                 this.copyGrid.createGrid({
                     idProperty: "Name",

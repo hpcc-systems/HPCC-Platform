@@ -451,8 +451,9 @@ define([
                         context.downloadToList.set("disabled", true);
                     }
                 });
-                ESPUtil.goToPageUserPreference(this.workunitsGrid, "GetDFUWorkunitsWidget");
-                this.workunitsGrid.startup();
+                ESPUtil.goToPageUserPreference(this.workunitsGrid, "GetDFUWorkunitsWidget_GridRowsPerPage").then(function(){
+                    context.workunitsGrid.startup();
+                });
             },
 
             refreshGrid: function (clearSelection) {

@@ -14,6 +14,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "src/Utility",
+    "src/ESPUtil",
 
     "dojo/text!../templates/GridDetailsWidget.html",
 
@@ -27,7 +28,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, Memory, Observable,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-    _TabContainerWidget, Utility,
+    _TabContainerWidget, Utility, ESPUtil,
     template) {
         return declare("GridDetailsWidget", [_TabContainerWidget], {
             templateString: template,
@@ -137,7 +138,9 @@ define([
                 this.grid.onSelectionChanged(function (event) {
                     context._refreshActionState();
                 });
-                this.grid.startup();
+                ESPUtil.goToPageUserPreference(this.grid, this.id + "_GridRowsPerPage" ).then(function(){
+                    context.grid.startup();
+                });
             },
 
             getTitle: function () {

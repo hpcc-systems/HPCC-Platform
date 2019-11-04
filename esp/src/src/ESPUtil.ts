@@ -38,6 +38,7 @@ import { select as d3Select } from "d3-selection";
 import { Pagination } from "./Pagination";
 
 import { declareDecorator } from './DeclareDecorator';
+import { userKeyValStore } from "./KeyValStore";
 
 declare const dojo;
 
@@ -297,21 +298,25 @@ export var LocalStorage = dojo.declare([Evented], {
 });
 
 export function goToPageUserPreference(gridName, key) {
-    var context = this;
-    var initUserPref = this.LocalStorage.prototype.getItem(key, "Number");
-    if (initUserPref) {
-        gridName.rowsPerPage = initUserPref;
-        gridName._updateRowsPerPageOption();
-    }
+    var store = userKeyValStore();
+    var defaultValue = 50;
+    var retVal = store.get(key).then(function(count){
+        if (count) {
+            defaultValue = +count;
+            gridName.rowsPerPage = defaultValue;
+            gridName._updateRowsPerPageOption();
+        }
+    });
+
     aspect.after(gridName, 'gotoPage', function (deferred, args) {
         return deferred.then(function () {
-            var currentUserPref = context.LocalStorage.prototype.getItem(key, "Number");
             var currentGridValue = gridName.rowsPerPage;
-            if (currentUserPref !== currentGridValue) {
-                context.LocalStorage.prototype.setItem(key, currentGridValue);
+            if (defaultValue !== currentGridValue) {
+                store.set(key, currentGridValue);
             }
         });
     });
+    return retVal;
 }
 
 export var MonitorLockClick = dojo.declare([Evented], {

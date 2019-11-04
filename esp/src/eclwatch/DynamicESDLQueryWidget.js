@@ -192,7 +192,6 @@ define([
                     context.deleteButton.set("disabled", true);
                 }
             });
-
             return retVal;
         },
 

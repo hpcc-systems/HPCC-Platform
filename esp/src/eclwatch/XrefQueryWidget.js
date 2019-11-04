@@ -126,7 +126,6 @@ define([
                         context._onRowDblClick(item);
                     }
                 });
-
                 return retVal;
             },
 
