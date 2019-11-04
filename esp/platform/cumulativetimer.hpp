@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "jutil.hpp"
+#include "esp.hpp"
 
 // Utility class for tracking cumulative elapsed time. Once instantiated, an
 // instance's total time can be updated multiple times. When used with the
@@ -49,6 +50,8 @@ public:
     {
     }
 
+    inline void setLogLevel(const LogLevel _logLevel) { logLevel = _logLevel; };
+    inline LogLevel getLogLevel() const { return logLevel; }
     inline unsigned __int64 getTotalMillis() const { return mTotalTime; }
     inline void reset() { mTotalTime = 0; }
 
@@ -102,6 +105,7 @@ private:
 
     unsigned __int64 mNestingDepth;
     unsigned __int64 mTotalTime;
+    LogLevel logLevel;
 
 private:
     CumulativeTimer& operator =(const CumulativeTimer&) = delete;

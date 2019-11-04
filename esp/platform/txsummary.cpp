@@ -38,7 +38,6 @@ CTxSummary::CTxSummary(unsigned creationTime)
 
 CTxSummary::~CTxSummary()
 {
-    log();
     clear();
 }
 
@@ -66,7 +65,7 @@ bool CTxSummary::contains(const char* key) const
     return __contains(key);
 }
 
-bool CTxSummary::append(const char* key, const char* value)
+bool CTxSummary::append(const char* key, const char* value, const LogLevel logLevel)
 {
     VALIDATE_KEY(key);
 
@@ -75,11 +74,11 @@ bool CTxSummary::append(const char* key, const char* value)
     if (__contains(key))
         return false;
 
-    m_entries.push_back({key, value});
+    m_entries.push_back({key, value, logLevel});
     return true;
 }
 
-bool CTxSummary::set(const char* key, const char* value)
+bool CTxSummary::set(const char* key, const char* value, const LogLevel logLevel)
 {
     VALIDATE_KEY(key);
 
@@ -87,9 +86,12 @@ bool CTxSummary::set(const char* key, const char* value)
     Entries::iterator it = find_if(m_entries.begin(), m_entries.end(), MATCH_KEY);
 
     if (it != m_entries.end())
+    {
         it->value.set(value);
+        it->logLevel = logLevel;
+    }
     else
-        m_entries.push_back({key, value});
+        m_entries.push_back({key, value, logLevel});
 
     return true;
 }
@@ -110,7 +112,7 @@ CumulativeTimer* CTxSummary::queryTimer(const char* name)
     return timer;
 }
 
-bool CTxSummary::updateTimer(const char* name, unsigned long long delta)
+bool CTxSummary::updateTimer(const char* name, unsigned long long delta, const LogLevel logLevel)
 {
     Owned<CumulativeTimer> timer;
 
@@ -120,15 +122,19 @@ bool CTxSummary::updateTimer(const char* name, unsigned long long delta)
         return false;
 
     timer->add(delta);
+    timer->setLogLevel(logLevel);
     return true;
 }
 
-void CTxSummary::serialize(StringBuffer& buffer) const
+void CTxSummary::serialize(StringBuffer& buffer, const LogLevel logLevel) const
 {
     CriticalBlock block(m_sync);
 
     for (const Entry& entry : m_entries)
     {
+        if (entry.logLevel > logLevel)
+            continue;
+
         if (entry.value.length())
             buffer.appendf("%s=%s;", entry.key.str(), entry.value.str());
         else
@@ -137,16 +143,17 @@ void CTxSummary::serialize(StringBuffer& buffer) const
 
     for (const std::pair<TimerKey, TimerValue>& entry : m_timers)
     {
-        buffer.appendf("%s=%" I64F "ums;", entry.first.str(), entry.second->getTotalMillis());
+        if (entry.second->getLogLevel() <= logLevel)
+            buffer.appendf("%s=%" I64F "ums;", entry.first.str(), entry.second->getTotalMillis());
     }
 }
 
-void CTxSummary::log()
+void CTxSummary::log(const LogLevel logLevel)
 {
     if (__contains("user") || __contains("req"))
     {
         StringBuffer summary;
-        serialize(summary);
+        serialize(summary, logLevel);
         DBGLOG("TxSummary[%s]", summary.str());
     }
 }

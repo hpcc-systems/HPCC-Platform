@@ -22,6 +22,7 @@
 #include "jmutex.hpp"
 #include "cumulativetimer.hpp"
 #include "tokenserialization.hpp"
+#include "esp.hpp"
 #include "esphttp.hpp"
 #include <list>
 #include <map>
@@ -51,21 +52,23 @@ public:
     virtual unsigned getElapsedTime() const;
 
     // Appends all summary entries to the given buffer.
-    virtual void serialize(StringBuffer& buffer) const;
+    virtual void serialize(StringBuffer& buffer, const LogLevel logLevel = LogMin) const;
 
     // Adds the unique key and value to the end of the summary.
     // Returns true if the key value pair are added to the summary. Returns
     // false if the key is NULL, empty, or not unique within the summary.
-    virtual bool append(const char* key, const char* value);
+    virtual bool append(const char* key, const char* value, const LogLevel logLevel = LogMin);
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-    bool append(const char* key, const TValue& value, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+    bool append(const char* key, const TValue& value, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer(), const LogLevel logLevel = LogMin);
 
     // Updates the value associated with an existing key, or appends the key
     // and value to the summary if it is not already found. Returns false if
     // the key is NULL or empty. Returns true otherwise.
-    virtual bool set(const char* key, const char* value);
+    virtual bool set(const char* key, const char* value, const LogLevel logLevel = LogMin);
     template <typename TValue, typename TSuffix = const char*, class TSerializer = TokenSerializer>
-    bool set(const char* key, const TValue& value, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer());
+    bool set(const char* key, const TValue& value, const TSuffix& suffix = "", const TSerializer& serializer = TSerializer(), const LogLevel logLevel = LogMin);
+
+    void log(const LogLevel logLevel);
 
     // Fetches an existing or new instance of a named CumulativeTime. The name
     // must not be NULL or empty, but it may be a duplicate of an existing
@@ -75,20 +78,20 @@ public:
 
     // Adds the given milliseconds to an existing or new named CumulativeTimer.
     // The same conditions as for getTimer apply.
-    virtual bool updateTimer(const char* name, unsigned long long delta);
+    virtual bool updateTimer(const char* name, unsigned long long delta, const LogLevel logLevel = LogMin);
 
 protected:
     // Log the summary contents on destruction.
     ~CTxSummary();
 
 private:
-    void log();
     bool __contains(const char* key) const;
 
     struct Entry
     {
         StringAttr key;
         StringAttr value;
+        LogLevel logLevel;
     };
 
     using Entries = std::list<Entry>;
@@ -105,22 +108,22 @@ private:
 
 // Convenience wrapper of the default append method.
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::append(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer)
+inline bool CTxSummary::append(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer, const LogLevel logLevel)
 {
     StringBuffer buffer;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, buffer);
-    return append(key, serializer.str(buffer));
+    return append(key, serializer.str(buffer), logLevel);
 }
 
 // Convenience wrapper of the default set method.
 template <typename TValue, typename TSuffix, class TSerializer>
-inline bool CTxSummary::set(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer)
+inline bool CTxSummary::set(const char* key, const TValue& value, const TSuffix& suffix, const TSerializer& serializer, const LogLevel logLevel)
 {
     StringBuffer buffer;
     serializer.serialize(value, buffer);
     serializer.serialize(suffix, buffer);
-    return set(key, serializer.str(buffer));
+    return set(key, serializer.str(buffer), logLevel);
 }
 
 #endif // TXSUMMARY_HPP
