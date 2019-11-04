@@ -1087,17 +1087,15 @@ void FileSprayer::calculateMany2OnePartition()
     const char *partSeparator = srcFormat.getPartSeparatorString();
     offset_t partSeparatorLength = ( partSeparator == nullptr ? 0 : strlen(partSeparator));
     offset_t lastContentLength = 0;
-    offset_t contentLength = 0;
     ForEachItemIn(idx, sources)
     {
         FilePartInfo & cur = sources.item(idx);
         RemoteFilename curFilename;
         curFilename.set(cur.filename);
         setCanAccessDirectly(curFilename);
-        if (partSeparator)
+        if (cur.size)
         {
-            contentLength = (cur.size > cur.xmlHeaderLength + cur.xmlFooterLength  + partSeparatorLength ? cur.size - cur.xmlHeaderLength - cur.xmlFooterLength - partSeparatorLength : 0);
-            if (contentLength)
+            if (partSeparator)
             {
                 if (lastContentLength)
                 {
@@ -1105,14 +1103,10 @@ void FileSprayer::calculateMany2OnePartition()
                     part.whichOutput = 0;
                     partition.append(part);
                 }
-                lastContentLength = contentLength;
+                lastContentLength = cur.size;
             }
-        }
-        else
-            contentLength = (cur.size > cur.headerSize ? cur.size - cur.headerSize : 0);
-
-        if (contentLength)
             partition.append(*new PartitionPoint(idx, 0, cur.headerSize, cur.size, cur.size));
+        }
     }
 
     if (srcFormat.isCsv())
@@ -1616,7 +1610,11 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
                 }
                 cur.headerSize += (unsigned)cur.xmlHeaderLength;
                 if (cur.size >= cur.xmlHeaderLength + cur.xmlFooterLength)
+                {
                     cur.size -= (cur.xmlHeaderLength + cur.xmlFooterLength);
+                    if (cur.size <= srcFormat.rowTag.length()) // implies there's a header and footer but no rows (whitespace only)
+                        cur.size = 0;
+                }
                 else
                     throwError3(DFTERR_InvalidXmlPartSize, cur.size, cur.xmlHeaderLength, cur.xmlFooterLength);
             }
