@@ -111,6 +111,12 @@ if [[ $* != '' ]]; then
                 ;;
         esac
     done
+    shift $((OPTIND -1))
+fi
+
+#If the filename is provided without -q, default to compiling just that query
+if [[ $* != '' ]]; then
+    query="$*"
 fi
 
 if [[ $eclcc != '' ]]; then
