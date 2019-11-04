@@ -286,6 +286,10 @@ public:
         case TAKxmlread:
         case TAKxmlfetch:
             return FileFormatMode::xml;
+        case TAKjsonread:
+        case TAKjsonfetch:
+            return FileFormatMode::json;
+        case TAKfetch:
         case TAKdiskread:
         case TAKdisknormalize:
         case TAKdiskaggregate:
@@ -294,7 +298,10 @@ public:
         case TAKdiskexists:
             return FileFormatMode::flat;
         default:
-            assert(false);
+#ifdef _DEBUG
+            DBGLOG("UNEXPECTED kind %d", (int) kind);
+            PrintStackReport();
+#endif
             return FileFormatMode::flat;
         }
     }
