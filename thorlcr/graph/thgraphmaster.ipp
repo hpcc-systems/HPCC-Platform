@@ -291,6 +291,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
 protected:
     ProgressInfoArray progressInfo;
     CTimingInfo timingInfo;
+    CThorStats blockedTime;
     IBitSet *notedWarnings;
 
     void addReadFile(IDistributedFile *file, bool temp=false);
@@ -303,6 +304,7 @@ public:
     ~CMasterActivity();
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
+    virtual void deserializeActivityStats(unsigned node, MemoryBuffer &mb);
     virtual void getActivityStats(IStatisticGatherer & stats);
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
     virtual void init();

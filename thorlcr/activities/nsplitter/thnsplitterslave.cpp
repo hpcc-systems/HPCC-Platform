@@ -295,7 +295,7 @@ public:
             else
                 break;
         }
-        ActivityTimer t(totalCycles, queryTimeActivities());
+        ActivityTimer t(slaveTimerStats, queryTimeActivities());
 
         pagedOut = false;
         OwnedConstThorRow row;
@@ -455,7 +455,7 @@ CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _ou
 // IStartableEngineRowStream
 void CSplitterOutput::start()
 {
-    ActivityTimer s(totalCycles, activity.queryTimeActivities());
+    ActivityTimer s(slaveTimerStats, activity.queryTimeActivities());
     started = true;
     activity.prepareInput();
     if (1 == activity.activeOutputCount)
@@ -475,7 +475,7 @@ void CSplitterOutput::stop()
 
 const void *CSplitterOutput::nextRow()
 {
-    ActivityTimer t(totalCycles, activity.queryTimeActivities());
+    ActivityTimer t(slaveTimerStats, activity.queryTimeActivities());
     if (rec == max) // NB: max will be RCMAX if activeOutputCount == 1
         max = activity.writeahead(max, activity.queryAbortSoon(), writeBlockSem, outIdx);
     const void *row = activity.nextRow(outIdx, rec); // pass ptr to max if need more

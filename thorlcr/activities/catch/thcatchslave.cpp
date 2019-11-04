@@ -55,12 +55,12 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CCatchSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!eos)
         {
             try
@@ -98,7 +98,7 @@ public:
         {
             try
             {
-                ActivityTimer t(totalCycles, timeActivities);
+                ActivityTimer t(slaveTimerStats, timeActivities);
                 OwnedConstThorRow ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (ret && wasCompleteMatch)
                     dataLinkIncrement();
@@ -206,14 +206,14 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CCatchSlaveActivityBase::start();
         running = gathered = false;
         grouped = input->isGrouped();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eos)
             return NULL;
         if (!gathered)

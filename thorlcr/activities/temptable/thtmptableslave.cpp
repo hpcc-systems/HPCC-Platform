@@ -52,7 +52,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         __uint64 numRows = helper->numRows();
         // local when generated from a child query (the range is per node, don't split)
@@ -80,7 +80,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon)
             return NULL;
         while (currentRow < maxRow) {

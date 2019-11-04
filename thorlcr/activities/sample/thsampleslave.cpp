@@ -36,7 +36,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eogNext = false;
         anyThisGroup = false;
@@ -46,7 +46,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         while(!abortSoon)
         {
             OwnedConstThorRow row = inputStream->nextRow();

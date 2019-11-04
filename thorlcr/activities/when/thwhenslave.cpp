@@ -95,7 +95,7 @@ public:
     virtual bool isGrouped() const override { return input->isGrouped(); }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow row(inputStream->nextRow());
         if (!row)
             return NULL;

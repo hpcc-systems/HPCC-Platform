@@ -97,7 +97,7 @@ public:
     CATCH_NEXTROW()
     {
         assertex(rows);
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow row = rows->nextRow();
         if (row)
             dataLinkIncrement();

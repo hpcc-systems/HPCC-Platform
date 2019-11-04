@@ -35,7 +35,7 @@ public:
     }
     STRAND_CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;)
         {
             if (parent.queryAbortSoon())
@@ -264,7 +264,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         preload = helper->getLookahead();
         if (!preload)
@@ -283,7 +283,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)

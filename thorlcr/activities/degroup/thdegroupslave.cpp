@@ -32,13 +32,13 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         if(!input->isGrouped()) ActPrintLog("DEGROUP: Degrouping non-grouped input!");
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!abortSoon)
         {
             OwnedConstThorRow row = inputStream->ungroupedNextRow();
@@ -58,7 +58,7 @@ public:
     }
     virtual const void *nextRowGENoCatch(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!abortSoon)
         {
             OwnedConstThorRow row = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);

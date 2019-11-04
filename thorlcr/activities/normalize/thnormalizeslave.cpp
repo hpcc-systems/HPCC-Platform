@@ -49,7 +49,7 @@ public:
     }
     virtual void start() override
     { 
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         numThisRow = 0;
         curRow = 0;
@@ -57,7 +57,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;)
         {
             while (curRow == numThisRow)
@@ -123,14 +123,14 @@ public:
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         anyThisGroup = false;
         curChildRow = NULL;
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;) {
             while(!curChildRow) {
                 curRow = 0;
@@ -211,13 +211,13 @@ public:
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         anyThisGroup = false;
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;)
         {
             if (!curParent)

@@ -87,7 +87,7 @@ void ProcessSlaveActivity::threadmain()
 
             // set lastCycles to 0 to signal not processing
             unsigned __int64 finalCycles = lastCycles.exchange(0);
-            totalCycles.totalCycles += get_cycles_now()-finalCycles;
+            slaveTimerStats.totalCycles += get_cycles_now()-finalCycles;
         }
         else
             process();
@@ -175,7 +175,7 @@ void ProcessSlaveActivity::serializeStats(MemoryBuffer &mb)
             //Update lastCycles to the current number of cycles - unless it has been set to 0 in the meantime
             //Use std::memory_order_relaxed because there is no requirement for other variables to be synchronized.
             if (lastCycles.compare_exchange_strong(curCycles, nowCycles, std::memory_order_relaxed))
-                totalCycles.totalCycles += nowCycles-curCycles;
+                slaveTimerStats.totalCycles += nowCycles-curCycles;
         }
     }
 #endif

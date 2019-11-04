@@ -143,7 +143,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eof = false;
     }
@@ -154,7 +154,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon || eof)
             return NULL;
         eof = true;
@@ -240,7 +240,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         aggrowif.setown(createRowInterfaces(helper->queryAggregateRecordSize()));
         partResult.setAllocator(aggrowif->queryRowAllocator()).ensureRow();
@@ -265,7 +265,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (inputStopped) // JCSMORE - this should not be necessary, nextRow() should never be called after stop()
             return NULL;
         OwnedConstThorRow row = inputStream->ungroupedNextRow();
