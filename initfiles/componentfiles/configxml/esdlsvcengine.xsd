@@ -60,6 +60,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="defaultFeatureAuth" type="xs:string" use="optional" default="${service}Access:FULL">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Feature access required when not specified dynamically. Accepts the same markup as auth_feature attributes, or NO_DEFAULT when each definition and binding combination must specify security.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

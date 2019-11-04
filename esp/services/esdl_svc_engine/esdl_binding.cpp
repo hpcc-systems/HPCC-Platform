@@ -38,9 +38,72 @@
 #include "build-config.h"
 #include "jsmartsock.ipp"
 #include "esdl_monitor.hpp"
+#include "EsdlAccessMapGenerator.hpp"
 
 #include "loggingagentbase.hpp"
 #include "httpclient.ipp"
+
+class EsdlSvcReporter : public EsdlDefReporter
+{
+protected:
+    void reportSelf(Flags flag, const char* component, const char* level, const char* msg) const override
+    {
+        const LogMsgCategory* catPtr = nullptr;
+        switch (flag & ReportCategoryMask)
+        {
+        case ReportDisaster:  catPtr = &MCdisaster; break;
+        case ReportAError:    catPtr = &MCauditError; break;
+        case ReportIError:    catPtr = &MCinternalError; break;
+        case ReportOError:    catPtr = &MCoperatorError; break;
+        case ReportUError:    catPtr = &MCuserError; break;
+        case ReportIWarning:  catPtr = &MCinternalWarning; break;
+        case ReportOWarning:  catPtr = &MCoperatorWarning; break;
+        case ReportUWarning:  catPtr = &MCuserWarning; break;
+        case ReportDProgress: catPtr = &MCdebugProgress; break;
+        case ReportOProgress: catPtr = &MCoperatorProgress; break;
+        case ReportUProgress: catPtr = &MCuserProgress; break;
+        case ReportDInfo:     catPtr = &MCdebugInfo; break;
+        case ReportOInfo:     catPtr = &MCoperatorInfo; break;
+        case ReportUInfo:     catPtr = &MCuserInfo; break;
+        case ReportStats:     catPtr = &MCstats; break;
+        default: return;
+        }
+        LOG(*catPtr, "%s [%s]: %s", level, component, msg);
+    }
+};
+
+static const char* Scope_EsdlService = "EsdlService";
+static const char* Scope_EsdlMethod = "EsdlMethod";
+static const char* Scope_BindingService = "BindingService";
+static const char* Scope_BindingMethod = "BindingMethod";
+static const char* Var_Service = "service";
+static const char* Var_Method = "method";
+#define ANNOTATION_AUTH_FEATURE "auth_feature"
+
+// The scope mapper and level mapper instances could be static service members, but enabling the
+// declaration of these types in the header requires inclusion of headers that unnecessarily affect
+// other projects that include this class' header.
+static EsdlAccessMapScopeMapper g_scopeMapper({Scope_EsdlService, Scope_EsdlMethod, Scope_BindingService, Scope_BindingMethod});
+static EsdlAccessMapLevelMapper g_levelMapper;
+// The reporter helper provides for construction and initialization of a shared IEsdlDefReporter
+// instance. If in the future, however, it is decided that service instances need control of the
+// reporter flags, the helper would be replaced by a local instance of a reporter.
+struct ReporterHelper
+{
+    ReporterHelper()
+    {
+        m_reporter.setown(new EsdlSvcReporter());
+        m_reporter->setFlags(IEsdlDefReporter::ReportMethod | IEsdlDefReporter::ReportUserAudience | IEsdlDefReporter::ReportErrorClass, true);
+    }
+
+    IEsdlDefReporter* getLink() const
+    {
+        return m_reporter.getLink();
+    }
+
+    Owned<IEsdlDefReporter> m_reporter;
+};
+static ReporterHelper g_reporterHelper;
 
 /*
  * trim xpath at first instance of element
@@ -204,6 +267,12 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
             m_serviceNameSpaceBase.set(DEFAULT_ESDLBINDING_URN_BASE);
 
         m_usesURLNameSpace = startsWith(m_serviceNameSpaceBase.str(), "http://") ? true : false;
+
+        const char* defaultFeatureAuth = srvcfg->queryProp("@defaultFeatureAuth");
+        if (isEmptyString(defaultFeatureAuth))
+            m_defaultFeatureAuth.append("${service}Access:full");
+        else if (!strieq(defaultFeatureAuth, "no_default"))
+            m_defaultFeatureAuth.append(defaultFeatureAuth);
 
         xpath.setf("EspBinding[@service=\"%s\"]", service); //get this service's binding cfg
         m_oEspBindingCfg.set(espcfg->queryPropTree(xpath.str()));
@@ -413,8 +482,14 @@ static void ensureMergeOrderedEsdlTransform(Owned<IPropertyTree> &dest, IPropert
 
 void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 {
-    VStringBuffer xpath("Definition[@esdlservice='%s']/Methods", service);
-    IPropertyTree *target_cfg = cfg->queryPropTree(xpath.str());
+    VStringBuffer xpath("Definition[@esdlservice='%s']", service);
+    IPropertyTree *definition_cfg = cfg->queryPropTree(xpath);
+    if (nullptr == definition_cfg)
+    {
+        DBGLOG("ESDL Binding: While configuring method targets: service definition not found for %s", service);
+        return;
+    }
+    IPropertyTree *target_cfg = definition_cfg->queryPropTree("Methods");
     DBGLOG("ESDL Binding: configuring method targets for esdl service %s", service);
 
     if (target_cfg)
@@ -456,13 +531,37 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 
         MapStringToMyClass<IEspPlugin> localCppPluginMap;
 
+        IEsdlDefService* svcDef = m_esdl->queryService(service);
+        if (!svcDef)
+            throw MakeStringException(-1, "ESDL binding - service '%s' not in definition!", service);
+        const char*      svcAuthDef  = svcDef->queryProp(ANNOTATION_AUTH_FEATURE);
+        const char*      svcAuthBnd  = definition_cfg->queryProp("@" ANNOTATION_AUTH_FEATURE);
+        m_methodAccessMaps.kill();
+
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
         {
             IPropertyTree &methodCfg = iter->query();
             const char *method = methodCfg.queryProp("@name");
             if (!method || !*method)
-                throw MakeStringException(-1, "ESDL binding - found target method entry without name!");
+                throw MakeStringException(-1, "ESDL binding - found %s target method entry without name!", service);
+            IEsdlDefMethod* mthDef = svcDef->queryMethodByName(method);
+            if (!mthDef)
+                throw MakeStringException(-1, "ESDL binding - found %s target method entry '%s' not in definition!", service, method);
+
+            Owned<MethodAccessMap> authMap(new MethodAccessMap());
+            EsdlAccessMapReporter  reporter(*authMap.get(), g_reporterHelper.getLink());
+            EsdlAccessMapGenerator generator(g_scopeMapper, g_levelMapper, reporter);
+            generator.setVariable(Var_Service, service);
+            generator.setVariable(Var_Method, method);
+            generator.insertScope(Scope_EsdlService, svcAuthDef);
+            generator.insertScope(Scope_EsdlMethod, mthDef->queryMetaData(ANNOTATION_AUTH_FEATURE));
+            generator.insertScope(Scope_BindingService, svcAuthBnd);
+            generator.insertScope(Scope_BindingMethod, methodCfg.queryProp("@" ANNOTATION_AUTH_FEATURE));
+            if (!m_defaultFeatureAuth.isEmpty())
+                generator.setDefaultSecurity(m_defaultFeatureAuth);
+            if (generator.generateMap())
+                m_methodAccessMaps.setValue(mthDef->queryMethodName(), authMap.getLink());
 
             m_methodCRTransformErrors.remove(method);
             m_customRequestTransformMap.remove(method);
@@ -572,10 +671,11 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
     IEsdlCustomTransform *crt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
 
-    MapStringTo<SecAccessFlags>&  methaccessmap = const_cast<MapStringTo<SecAccessFlags>&>(mthdef.queryAccessMap());
-    if (methaccessmap.ordinality() > 0)
+    Owned<MethodAccessMap>* authMap = m_methodAccessMaps.getValue(mthdef.queryMethodName());
+    if (authMap != nullptr && authMap->get() != nullptr)
     {
-        if (!context.validateFeaturesAccess(methaccessmap, false))
+        MethodAccessMap& methaccessmap = *authMap->get();
+        if (methaccessmap.ordinality() > 0 && !context.validateFeaturesAccess(methaccessmap, false))
         {
             StringBuffer features;
             HashIterator iter(methaccessmap);
