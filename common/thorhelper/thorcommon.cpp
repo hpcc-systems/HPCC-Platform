@@ -1776,6 +1776,7 @@ void ActivityTimeAccumulator::addStatistics(IStatisticGatherer & builder) const
         builder.addStatistic(StTimeElapsed, elapsed());
         builder.addStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
         builder.addStatistic(StTimeFirstExecute, latency());
+        builder.addStatistic(StTimeBlocked, cycle_to_nanosec(blockedCycles));
     }
 }
 
@@ -1787,6 +1788,7 @@ void ActivityTimeAccumulator::addStatistics(CRuntimeStatisticCollection & merged
         merged.mergeStatistic(StTimeElapsed, elapsed());
         merged.mergeStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
         merged.mergeStatistic(StTimeFirstExecute, latency());
+        merged.mergeStatistic(StTimeBlocked, cycle_to_nanosec(blockedCycles));
     }
 }
 
@@ -1809,6 +1811,7 @@ void ActivityTimeAccumulator::merge(const ActivityTimeAccumulator & other)
             if (endCycles < other.endCycles)
                 endCycles = other.endCycles;
             totalCycles += other.totalCycles;
+            blockedCycles += other.blockedCycles;
         }
         else
             *this = other;

@@ -1197,6 +1197,7 @@ public:
 
                 if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
                 {
+                    BlockedActivityTimer t(totalCycles, timeActivities);
                     Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);
                     BooleanOnOff onOff(merging);
                     aggregateStream.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggStream, mpTag));
@@ -1219,6 +1220,11 @@ public:
         }
         eoi = true;
         return NULL;
+    }
+    virtual void serializeActivityStats(MemoryBuffer &mb) override
+    {
+        PARENT::serializeActivityStats(mb);
+        mb.append((unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
     }
 };
 

@@ -546,10 +546,15 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     return _totalCycles-inputCycles;
 }
 
+void CSlaveActivity::serializeActivityStats(MemoryBuffer &mb)
+{
+    mb.append((unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+}
+
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 {
     CriticalBlock b(crit);
-    mb.append((unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+    serializeActivityStats(mb);
     ForEachItemIn(i, outputs)
     {
         IThorDataLink *output = queryOutput(i);

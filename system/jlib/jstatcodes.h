@@ -229,6 +229,8 @@ enum StatisticKind
     StCycleTotalCycles,
     StSizeOsDiskRead,
     StSizeOsDiskWrite,
+    StTimeBlocked,
+    StCycleBlockedCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

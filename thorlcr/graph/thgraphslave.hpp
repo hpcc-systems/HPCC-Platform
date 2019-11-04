@@ -49,6 +49,7 @@ public:
     ActivityTimeAccumulator &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryTotalCycles() const { return totalCycles.totalCycles; }
     unsigned __int64 queryEndCycles() const { return totalCycles.endCycles; }
+    unsigned __int64 queryBlockedCycles() const { return totalCycles.blockedCycles; }
 };
 
 class CEdgeProgress
@@ -252,6 +253,7 @@ public:
     void stopInput(unsigned index, const char *extra=NULL);
     void stopAllInputs();
     virtual void serializeStats(MemoryBuffer &mb);
+    virtual void serializeActivityStats(MemoryBuffer &mb);
     void debugRequest(unsigned edgeIdx, MemoryBuffer &msg);
     bool canStall() const;
     bool isFastThrough() const;
@@ -277,6 +279,7 @@ public:
         return consumerOrdered;
     }
     virtual unsigned __int64 queryTotalCycles() const { return COutputTiming::queryTotalCycles(); }
+    virtual unsigned __int64 queryBlockedCycles() const { return COutputTiming::queryBlockedCycles();}
     virtual unsigned __int64 queryEndCycles() const { return COutputTiming::queryEndCycles(); }
     virtual void debugRequest(MemoryBuffer &msg) override;
 

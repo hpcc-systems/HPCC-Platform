@@ -244,9 +244,12 @@ CActivityBase *createDiskCountActivityMaster(CMasterGraphElement *info)
 
 class CDiskGroupAggregateActivityMaster : public CDiskReadMasterVF
 {
+    Owned<CThorStats> blockedTime;
 public:
+
     CDiskGroupAggregateActivityMaster(CMasterGraphElement *info) : CDiskReadMasterVF(info)
     {
+        blockedTime.setown(new CThorStats(queryJob(), StTimeBlocked));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
     }
@@ -255,6 +258,18 @@ public:
         CDiskReadMasterVF::serializeSlaveData(dst, slave);
         if (!container.queryLocalOrGrouped())
             dst.append(mpTag);
+    }
+    void deserializeActivityStats(unsigned node, MemoryBuffer &mb)
+    {
+        CDiskReadMasterVF::deserializeActivityStats(node, mb);
+        unsigned __int64 blockedNs;
+        mb.read(blockedNs);
+        blockedTime->set(node, blockedNs);
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats)
+    {
+        CDiskReadMasterVF::getActivityStats(stats);
+        blockedTime->getStats(stats,false);
     }
 };
 

@@ -515,15 +515,20 @@ void CMasterActivity::reset()
 void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
     CriticalBlock b(progressCrit); // don't think needed
-    unsigned __int64 localTimeNs;
-    mb.read(localTimeNs);
-    timingInfo.set(node, localTimeNs);
+    deserializeActivityStats(node, mb);
     rowcount_t count;
     ForEachItemIn(p, progressInfo)
     {
         mb.read(count);
         progressInfo.item(p).set(node, count);
     }
+}
+
+void CMasterActivity::deserializeActivityStats(unsigned node, MemoryBuffer &mb)
+{
+    unsigned __int64 localTimeNs;
+    mb.read(localTimeNs);
+    timingInfo.set(node, localTimeNs);
 }
 
 void CMasterActivity::getActivityStats(IStatisticGatherer & stats)

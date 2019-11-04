@@ -303,6 +303,7 @@ public:
     ~CMasterActivity();
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
+    virtual void deserializeActivityStats(unsigned node, MemoryBuffer &mb);
     virtual void getActivityStats(IStatisticGatherer & stats);
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
     virtual void init();

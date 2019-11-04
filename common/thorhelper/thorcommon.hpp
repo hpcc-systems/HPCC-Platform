@@ -235,6 +235,7 @@ public:
     cycle_t endCycles;   // Wall clock time of last entry to this activity
     unsigned __int64 firstRow; // Timestamp of first row (nanoseconds since epoch)
     cycle_t firstExitCycles;    // Wall clock time of first exit from this activity
+    cycle_t blockedCycles;  // Time spent blocked
 
     // Return the total amount of time (in nanoseconds) spent in this activity (first entry to last exit)
     inline unsigned __int64 elapsed() const { return cycle_to_nanosec(endCycles-startCycles); }
@@ -253,6 +254,7 @@ public:
         endCycles = 0;
         firstRow = 0;
         firstExitCycles = 0;
+        blockedCycles = 0;
     }
 };
 
@@ -320,6 +322,33 @@ public:
             cycle_t nowCycles = get_cycles_now();
             cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator += elapsedCycles;
+        }
+    }
+};
+
+class BlockedActivityTimer
+{
+    unsigned __int64 startCycles;
+    ActivityTimeAccumulator &accumulator;
+protected:
+    const bool enabled;
+    bool isFirstRow;
+public:
+    BlockedActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled)
+    : accumulator(_accumulator), enabled(_enabled), isFirstRow(false)
+    {
+        if (enabled)
+            startCycles = get_cycles_now();
+        else
+            startCycles = 0;
+    }
+
+    ~BlockedActivityTimer()
+    {
+        if (enabled)
+        {
+            cycle_t elapsedCycles = get_cycles_now() - startCycles;
+            accumulator.blockedCycles += elapsedCycles;
         }
     }
 };
