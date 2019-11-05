@@ -30,11 +30,9 @@ class CXmlWriteActivityMaster : public CWriteMasterBase
 {
     IHThorXmlWriteArg *helper;
     ThorActivityKind kind;
-    unsigned headerLength;
-    unsigned footerLength;
 
 public:
-    CXmlWriteActivityMaster(CMasterGraphElement *info, ThorActivityKind _kind) : CWriteMasterBase(info), kind(_kind), headerLength(0), footerLength(0)
+    CXmlWriteActivityMaster(CMasterGraphElement *info, ThorActivityKind _kind) : CWriteMasterBase(info), kind(_kind)
     {
         helper = (IHThorXmlWriteArg *)queryHelper();
     }
@@ -70,19 +68,12 @@ public:
         }
         else
         {
-            StringBuffer supplied(helper->getHeader());
-            size32_t headerLength = supplied.length();
-            if (headerLength == 0 )
-                headerLength = supplied.set(DEFAULTXMLHEADER).newline().length();
-
-            props.setPropInt(FPheaderLength, headerLength);
-
-            supplied.set(helper->getFooter());
-            size32_t footerLength = supplied.length();
-            if (footerLength == 0 )
-                footerLength = supplied.set(DEFAULTXMLFOOTER).newline().length();
-
-            props.setPropInt(FPfooterLength, footerLength);
+            const char *header = helper->getHeader();
+            size32_t headerLen = header ? strlen(header) : strlen(DEFAULTXMLHEADER)+1; // DEFAULTXMLHEADER+'\n' is default output in slave
+            props.setPropInt(FPheaderLength, headerLen);
+            const char *footer = helper->getFooter();
+            size32_t footerLen = footer ? strlen(footer) : strlen(DEFAULTXMLFOOTER)+1; // DEFAULTXMLFOOTER+'\n' is default output in slave
+            props.setPropInt(FPfooterLength, footerLen);
         }
     }
 };
