@@ -467,6 +467,9 @@ export function resolve(hpccWidget, callback) {
         case "EventScheduleWorkunitWidget":
             require(["hpcc/EventScheduleWorkunitWidget"], doLoad);
             break;
+        case "FileBloomsWidget":
+            require(["hpcc/FileBloomsWidget"], doLoad);
+            break;
         case "FileBelongsToWidget":
             require(["hpcc/FileBelongsToWidget"], doLoad);
             break;
