@@ -31,7 +31,6 @@ define([
             init: function (params, route) {
                 if (this.inherited(arguments))
                     return;
-                this.initalized = false;
                 this.params = params;
                 this.setColumns(params);
                 this.refresh(params, route);
@@ -42,7 +41,6 @@ define([
             },
 
             createGrid: function (domID) {
-                var context = this;
                 dojo.destroy(this.id + "Open");
                 dojo.destroy(this.id + "RemovableSeperator2");
 
@@ -67,10 +65,53 @@ define([
 
             setColumns: function (params) {
                 var context = this;
+                var finalColumns;
                 var dynamicColumns = {
                     Location: {label: this.i18n.Location, id: this.i18n.Location, width: 350},
                     Component: {label: this.i18n.Component, id: this.i18n.Component, width: 275},
-                    ComputerUpTime: { label: this.i18n.ComputerUpTime, width: 75 }
+                    Condition: {label: this.i18n.Condition,
+                        renderCell: function(object, value, node, options) {
+                            var conditionConversion = value;
+                            switch (conditionConversion) {
+                                case 'Unknown':
+                                case 'Warning':
+                                case 'Minor':
+                                case 'Major':
+                                case 'Critical':
+                                case 'Fatal':
+                                    domClass.add(node, "ErrorCell");
+                                break;
+                            }
+                            node.innerText = conditionConversion || "";
+                        }
+                    },
+                    State: {label: this.i18n.State,
+                        renderCell: function(object, value, node, options) {
+                            var stateConversion = value;
+                            switch (stateConversion) {
+                                case 'Unknown':
+                                case 'Starting':
+                                case 'Stopping':
+                                case 'Suspended':
+                                case 'Recycling':
+                                case 'Busy':
+                                case 'NA':
+                                    domClass.add(node, "ErrorCell");
+                                break;
+                            }
+                            node.innerText = stateConversion || "";
+                        }
+                    },
+                    ProcessesDown: {label: this.i18n.ProcessesDown,
+                        renderCell: function(object, value, node, options) {
+                            var checkProcess = value;
+                            if (checkProcess) {
+                                domClass.add(node, "ErrorCell");
+                            }
+                            node.innerText = checkProcess || "";
+                        }
+                    },
+                    ComputerUpTime: {label: this.i18n.ComputerUpTime}
                 }
 
                 function handleResponse(response, dynamicColumns) {
@@ -86,7 +127,7 @@ define([
                                     renderCell: function(object, value, node, options) {
                                         switch (request > value && value !== 0) {
                                             case true:
-                                                domClass.add(node, "WarningCell");
+                                                domClass.add(node, "ErrorCell");
                                             break;
                                         }
                                         if (swap && value !== 0) {
@@ -113,51 +154,9 @@ define([
                     }
 
                     var finalColumns = params.Columns.Item;
+
                     for (var index in finalColumns) {
                         var clean = this.cleanColumn(finalColumns[index]);
-
-                        if (clean === "Condition") {
-                            lang.mixin(dynamicColumns, {
-                                "Condition": {
-                                    label: this.i18n.Condition,
-                                    renderCell: function(object, value, node, options) {
-                                        switch (value) {
-                                            case 'Unknown':
-                                            case 'Warning':
-                                            case 'Minor':
-                                            case 'Major':
-                                            case 'Critical':
-                                            case 'Fatal':
-                                                domClass.add(node, "WarningCell");
-                                            break;
-                                        }
-                                        node.innerText = value || "";
-                                    }
-                                }
-                            });
-                        }
-
-                        if (clean === "State") {
-                            lang.mixin(dynamicColumns, {
-                                "State": {
-                                    label: this.i18n.State,
-                                    renderCell: function(object, value, node, options) {
-                                        switch (value) {
-                                            case 'Unknown':
-                                            case 'Starting':
-                                            case 'Stopping':
-                                            case 'Suspended':
-                                            case 'Recycling':
-                                            case 'Busy':
-                                            case 'NA':
-                                                domClass.add(node, "WarningCell");
-                                            break;
-                                        }
-                                        node.innerText = value || "";
-                                    }
-                                }
-                            });
-                        }
 
                         if (clean === "CPULoad") {
                             var request = params.RequestInfo.CpuThreshold;
@@ -167,7 +166,7 @@ define([
                                     renderCell: function (object, value, node, options) {
                                         switch (request < value) {
                                             case true:
-                                                domClass.add(node, "WarningCell");
+                                                domClass.add(node, "ErrorCell");
                                             break;
                                         }
                                         node.innerText = value + "%";
@@ -186,7 +185,7 @@ define([
                                             case "Not attached to DALI...":
                                             case "empty state hash ...":
                                             case "Node State: not ok ...":
-                                                domClass.add(node, "WarningCell");
+                                                domClass.add(node, "ErrorCell");
                                             break;
                                         }
                                         node.innerText = value || "N/A";
@@ -218,8 +217,11 @@ define([
                         }) : "";
                         lang.mixin(dynamicRowsObj, {
                             Location: row.Address + " " + row.ComponentPath,
-                            Component: row.DisplayType + "[" + row.ComponentName + "]",
-                            ComputerUpTime: row.UpTime
+                            Component: row.DisplayType === "null" ? row.ComponentName  + "[" + row.ComponentName + "]" : row.DisplayType + "[" + row.ComponentName + "]",
+                            ComputerUpTime: row.UpTime,
+                            Condition: ESPPreflight.getCondition(row.ComponentInfo.Condition),
+                            State: ESPPreflight.getState(row.ComponentInfo.State),
+                            ProcessesDown: row.ComponentInfo.Condition === 2 ? row.ComponentName : ""
                         });
                         if (row.Processors) {
                             arrayUtil.forEach(row.Processors.ProcessorInfo, function (processor, idx) {
@@ -266,7 +268,8 @@ define([
                                 lang.mixin(dynamicRowsObj, {
                                     Condition: ESPPreflight.getCondition(setRows.ComponentInfo.Condition),
                                     State: ESPPreflight.getState(setRows.ComponentInfo.State),
-                                    UpTime: setRows.ComponentInfo.UpTime
+                                    UpTime: setRows.ComponentInfo.UpTime,
+                                    ProcessesDown: setRows.Running ? setRows.Running.SWRunInfo[0].Name : ""
                                 });
                             }
                             if (setRows.Processors) {

@@ -136,22 +136,8 @@ define([
             this.inherited(arguments);
             this.openButton = registry.byId(this.id + "Open");
             this.refreshButton = registry.byId(this.id + "Refresh");
-            this.configurationButton = registry.byId(this.id + "Configuration");
-
             this.machineFilter = new MachineInformationWidget({});
-
-            this.configurationButton = new Button({
-                label: "Open Configuration",
-                onClick: function(event) {
-                    context._onOpenConfiguration();
-                }
-            });
-
             this.machineFilter.placeAt(this.openButton.domNode, "after");
-            this.configurationButton.placeAt(this.openButton.domNode, "after");
-
-            new ToolbarSeparator().placeAt(this.machineFilter.domNode, "before");
-
             this.machineFilter.machineForm.set("style", "width:500px;");
             dojo.destroy(this.id + "Open");
 
@@ -172,7 +158,11 @@ define([
                         width: 20,
                         selectorType: 'checkbox',
                         disabled: function (item) {
-                            return !item.Configuration;
+                            if (!item.Configuration || item.Type === "LDAPServerProcess") {
+                                return true;
+                            } else {
+                                return false;
+                            }
                         },
                     }),
                     Configuration: {
@@ -186,7 +176,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             if (object.Directory) {
                                 domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' />" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
+                                node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
                             }
                         },
                     },
@@ -294,10 +284,7 @@ define([
             });
 
             retVal.on(".dgrid-row:dblclick", function (evt) {
-                if (context._onRowDblClick) {
-                    var item = retVal.row(evt).data;
-                    context._onRowDblClick(item);
-                }
+                event.preventDefault();
             });
 
             retVal.on(".dgrid-cell .gridClick:click", function (evt) {
@@ -403,16 +390,13 @@ define([
 
             for (var i = 0; i < selection.length; ++i) {
                 if (selection[i] && selection[i].type === "clusterProcess") {
-                    isCluster = true;
                     isNode = false;
                 } else {
-                    isCluster = false;
                     isNode = true;
                 }
             }
 
             this.openButton.set("disabled", !isNode);
-            this.configurationButton.set("disabled", !isCluster);
         },
 
         ensureConfigurationPane: function (id, params) {
