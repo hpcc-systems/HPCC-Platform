@@ -90,7 +90,7 @@ void PerformanceIssue::setLocation(const char * definition)
         filename.append(p1-definition, definition);
     line = atoi(p1+1);
     column = atoi(comma+1);
-    if (line < 0 || column < 0)
+    if (line==0 || column==0)
     {
         line=0;
         column=0;
