@@ -83,7 +83,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         if (strcmp(eqTHORMACHINES,ClusterType) == 0)
         {
             bool multiSlaves = false;
-            getMachineList(eqThorMasterProcess,path.str(),"", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqThorMasterProcess, path.str(), "", ClusterDirectory, MachineList);
             getThorSlaveMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
             unsigned count = MachineList.length();
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
@@ -95,24 +95,24 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         }
         else if (strcmp(eqHOLEMACHINES,ClusterType) == 0)
         {
-            getMachineList(eqHoleSocketProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(eqHoleProcessorProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(eqHoleControlProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(eqHoleCollatorProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleSocketProcess, path.str(), "", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleProcessorProcess, path.str(), "", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleControlProcess, path.str(), "", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleCollatorProcess, path.str(), "", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
         else if (strcmp(eqROXIEMACHINES,ClusterType) == 0)
         {
-            getMachineList("RoxieServerProcess",path.str(),"", ClusterDirectory, MachineList, &machineNames);
+            getMachineList(clientVersion, "RoxieServerProcess", path.str(), "", ClusterDirectory, MachineList, &machineNames);
         }
         else if (strcmp(eqMACHINES,ClusterType) == 0)
         {
             //load a list of available machines.......
-            getMachineList("Computer","/Environment/Hardware","", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, "Computer", "/Environment/Hardware", "", ClusterDirectory, MachineList);
         }
         else if (strcmp("AVAILABLEMACHINES",ClusterType) == 0)
         {
-            getMachineList("Computer","/Environment/Hardware",eqMachineAvailablability, ClusterDirectory, MachineList);
+            getMachineList(clientVersion, "Computer", "/Environment/Hardware", eqMachineAvailablability, ClusterDirectory, MachineList);
         }
         else if (strcmp("DROPZONE",ClusterType) == 0)
         {
@@ -121,7 +121,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         else if (strcmp("STANDBYNNODE",ClusterType) == 0)
         {
             getThorSpareMachineList(clientVersion, ClusterName, ClusterDirectory, MachineList);
-            getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
         else if (strcmp("THORSPARENODES",ClusterType) == 0)
         {
@@ -129,7 +129,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         }
         else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
         {
-            getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
+            getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
     }
     catch(IException* e){   
@@ -1439,8 +1439,8 @@ bool CTpWrapper::checkMultiSlavesFlag(const char* clusterName)
     return cluster->getPropBool("@multiSlaves");
 }
 
-void CTpWrapper::appendMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
-    const char* machineType, unsigned& processNumber, const char* directory, IArrayOf<IEspTpMachine>& machineList)
+void CTpWrapper::appendThorMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
+    const char* machineType, unsigned& processNumber, unsigned channels, const char* directory, IArrayOf<IEspTpMachine>& machineList)
 {
     StringBuffer netAddress;
     node.endpoint().getIpText(netAddress);
@@ -1473,6 +1473,9 @@ void CTpWrapper::appendMachineList(double clientVersion, IConstEnvironment* cons
         machineInfo->setOS(MachineOsUnknown);
     }
 
+    if (clientVersion >= 1.30)
+        machineInfo->setChannels(channels);
+
     machineList.append(*machineInfo.getLink());
 }
 
@@ -1480,16 +1483,7 @@ void CTpWrapper::getThorSlaveMachineList(double clientVersion, const char* clust
 {
     try
     {
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IGroup> nodeGroup = getClusterProcessNodeGroup(clusterName, "ThorCluster");
-        if (!nodeGroup || (nodeGroup->ordinality() == 0))
-            return;
-
-        unsigned processNumber = 0;
-        Owned<INodeIterator> gi = nodeGroup->getIterator();
-        ForEach(*gi)
-            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSlaveProcess, processNumber, directory, machineList);
+        getThorMachineList(clientVersion, clusterName, directory, true, machineList);
     }
     catch(IException* e)
     {
@@ -1511,27 +1505,7 @@ void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clust
     try
     {
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> root = &constEnv->getPTree();
-
-        VStringBuffer path("Software/ThorCluster[@name=\"%s\"]", clusterName);
-        Owned<IPropertyTree> cluster= root->getPropTree(path.str());
-        if (!cluster)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
-        StringBuffer groupName;
-        getClusterSpareGroupName(*cluster, groupName);
-        if (groupName.length() < 1)
-            return;
-
-        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
-        if (!nodeGroup || (nodeGroup->ordinality() == 0))
-            return;
-
-        unsigned processNumber = 0;
-        Owned<INodeIterator> gi = nodeGroup->getIterator();
-        ForEach(*gi)
-            appendMachineList(clientVersion, constEnv, gi->query(), clusterName, eqThorSpareProcess, processNumber, directory, machineList);
+        getThorMachineList(clientVersion, clusterName, directory, false, machineList);
     }
     catch(IException* e)
     {
@@ -1548,12 +1522,44 @@ void CTpWrapper::getThorSpareMachineList(double clientVersion, const char* clust
     return;
 }
 
-void CTpWrapper::getMachineList(const char* MachineType,
-                                const char* ParentPath,
-                                const char* Status,
-                                          const char* Directory,
-                                IArrayOf<IEspTpMachine> &MachineList,
-                                set<string>* pMachineNames/*=NULL*/)
+void CTpWrapper::getThorMachineList(double clientVersion, const char* clusterName, const char* directory,
+    bool slaveNode, IArrayOf<IEspTpMachine>& machineList)
+{
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IPropertyTree> root = &constEnv->getPTree();
+
+    VStringBuffer path("Software/%s[@name=\"%s\"]", eqThorCluster, clusterName);
+    Owned<IPropertyTree> cluster= root->getPropTree(path.str());
+    if (!cluster)
+        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+    Owned<IGroup> nodeGroup;
+    if (slaveNode)
+    {
+        nodeGroup.setown(getClusterProcessNodeGroup(clusterName, eqThorCluster));
+    }
+    else
+    {
+        StringBuffer groupName;
+        getClusterSpareGroupName(*cluster, groupName);
+        if (groupName.length() < 1)
+            return;
+        nodeGroup.setown(queryNamedGroupStore().lookup(groupName.str()));
+    }
+    if (!nodeGroup || (nodeGroup->ordinality() == 0))
+        return;
+
+    unsigned processNumber = 0;
+    unsigned channels = cluster->getPropInt("@channelsPerSlave", 1);
+    Owned<INodeIterator> gi = nodeGroup->getIterator();
+    ForEach(*gi)
+        appendThorMachineList(clientVersion, constEnv, gi->query(), clusterName,
+            slaveNode? eqThorSlaveProcess : eqThorSpareProcess, processNumber, channels, directory, machineList);
+}
+
+void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, const char* ParentPath,
+    const char* Status, const char* Directory, IArrayOf<IEspTpMachine>& MachineList, set<string>* pMachineNames/*=NULL*/)
 {
     try
     {
@@ -1569,6 +1575,9 @@ void CTpWrapper::getMachineList(const char* MachineType,
         IPropertyTree* root = root0->queryPropTree( xpath );
         if (!root)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
+
+        bool hasPropChannelsPerNode = root->hasProp("@channelsPerNode");
+        int channels = root->getPropInt("@channelsPerNode");
 
         Owned<IPropertyTreeIterator> machines= root->getElements(MachineType);
         const char* nodenametag = getNodeNameTag(MachineType);
@@ -1595,6 +1604,8 @@ void CTpWrapper::getMachineList(const char* MachineType,
 
                     if (Directory && *Directory)
                         machineInfo.setDirectory(Directory);
+                    if (hasPropChannelsPerNode && (clientVersion >= 1.30))
+                        machineInfo.setChannels(channels);
 
                     MachineList.append(machineInfo);
                 }
