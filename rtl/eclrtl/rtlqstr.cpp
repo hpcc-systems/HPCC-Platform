@@ -512,10 +512,12 @@ void rtlQStrToQStr(size32_t outlen, char * out, size32_t inlen, const char * in)
     size32_t inSize = QStrSize(inlen);
     size32_t outSize = QStrSize(outlen);
     if (inSize >= outSize)
-        memcpy(out, in, outSize);
+    {
+        memcpy_iflen(out, in, outSize);
+    }
     else
     {
-        memcpy(out, in, inSize);
+        memcpy_iflen(out, in, inSize);
         memset(out+inSize, 0, outSize-inSize);
     }
 }
@@ -524,7 +526,7 @@ void rtlQStrToQStrX(unsigned & outlen, char * & out, unsigned inlen, const char 
 {
     size32_t inSize = QStrSize(inlen);
     char * data  = (char *)malloc(inSize);
-    memcpy(data, in, inSize);
+    memcpy_iflen(data, in, inSize);
 
     outlen = inlen;
     out = data;
@@ -536,7 +538,7 @@ int rtlCompareQStrQStr(size32_t llen, const void * left, size32_t rlen, const vo
     size32_t rsize = QStrSize(rlen);
     if (lsize < rsize)
     {
-        int ret = memcmp(left, right, lsize);
+        int ret = memcmp_iflen(left, right, lsize);
         if (ret == 0)
         {
             const byte * r = (const byte *)right;
@@ -549,7 +551,7 @@ int rtlCompareQStrQStr(size32_t llen, const void * left, size32_t rlen, const vo
         }
         return ret;
     }
-    int ret = memcmp(left, right, rsize);
+    int ret = memcmp_iflen(left, right, rsize);
     if (ret == 0)
     {
         const byte * l = (const byte *)left;

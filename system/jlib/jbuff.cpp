@@ -174,7 +174,10 @@ MemoryAttr::MemoryAttr(const MemoryAttr & src)
 
 void MemoryAttr::set(size_t _len, const void * _ptr)
 {
-    memcpy(allocate(_len), _ptr, _len);
+    if (_len)
+        memcpy(allocate(_len), _ptr, _len);
+    else
+        clear();
 }
 
 
@@ -525,10 +528,13 @@ MemoryBuffer & MemoryBuffer::append(const unsigned char * value)
 
 MemoryBuffer & MemoryBuffer::append(unsigned len, const void * value)
 {
-    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
-    _realloc(newLen);
-    memcpy(buffer + curLen, value, len);
-    curLen += len;
+    if (likely(len))
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+        _realloc(newLen);
+        memcpy(buffer + curLen, value, len);
+        curLen += len;
+    }
     return *this;
 }
 

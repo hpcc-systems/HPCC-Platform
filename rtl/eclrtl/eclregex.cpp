@@ -106,7 +106,7 @@ public:
         {
             outlen = subs[n].second - subs[n].first;
             out = (char *)rtlMalloc(outlen);
-            memcpy(out, subs[n].first, outlen);
+            memcpy_iflen(out, subs[n].first, outlen);
         }
         else
         {
@@ -200,7 +200,7 @@ public:
         }
         outlen = tgt.length();
         out = (char *)rtlMalloc(outlen);
-        memcpy(out, tgt.data(), outlen);
+        memcpy_iflen(out, tgt.data(), outlen);
     }
 
     IStrRegExprFindInstance * find(const char * str, size32_t from, size32_t len, bool needToKeepSearchString) const
