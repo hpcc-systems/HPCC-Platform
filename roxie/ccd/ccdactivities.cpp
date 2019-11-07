@@ -4413,7 +4413,7 @@ public:
     {
         unsigned expectedCrc = helper->getDiskFormatCrc();
         unsigned projectedCrc = helper->getProjectedFormatCrc();
-        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), basefactory->expectedFileMode()));
+        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), FileFormatMode::flat));
         files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
