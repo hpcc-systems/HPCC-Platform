@@ -153,12 +153,16 @@ void reportAbstractModule(IErrorReceiver & errors, IHqlExpression * expr, const 
         }
     }
 
+    StringBuffer name;
+    if (expr->queryId())
+        name.append(" (").append(str(expr->queryId())).append(")");
+
     if (fieldText.length())
-        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (%s undefined)", fieldText.str());
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE%s in this context (%s undefined)", name.str(), fieldText.str());
     else if (expr->hasAttribute(interfaceAtom))
-        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE%s in this context (INTERFACE must be instantiated)", name.str());
     else
-        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE%s in this context", name.str());
 }
 
 IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr)

@@ -264,6 +264,7 @@ class HQL_API QuickExpressionReplacer : public QuickHqlTransformer
 {
 public:
     QuickExpressionReplacer();
+    QuickExpressionReplacer(HqlTransformerInfo & _info) : QuickHqlTransformer(_info, NULL) {}
 
     void setMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
 };

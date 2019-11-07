@@ -4637,8 +4637,11 @@ switch (op)
         break;
     case no_funcdef:
         {
-            assertex(queryType()->getTypeCode() == type_function && queryChild(1) && queryChild(1)->getOperator() == no_sortlist);
+            IHqlExpression * formals = queryChild(1);
+            assertex(queryType()->getTypeCode() == type_function && queryChild(1) && formals->getOperator() == no_sortlist);
             assertex(queryType()->queryChildType() == queryChild(0)->queryType());
+            ForEachChild(i, formals)
+                assertex(formals->queryChild(i)->getOperator() == no_param);
             break;
         }
     case no_setresult:
@@ -9270,6 +9273,23 @@ void CHqlLibraryInstance::sethash()
 
 //==============================================================================================================
 
+//Replace expressions, but do not replace parameters
+static HqlTransformerInfo quickNoParamExpressionReplacerInfo("QuickNoParamExpressionReplacer");
+class HQL_API QuickNoParamExpressionReplacer : public QuickExpressionReplacer
+{
+public:
+    QuickNoParamExpressionReplacer() : QuickExpressionReplacer(quickNoParamExpressionReplacerInfo)
+    {
+    }
+    virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_param)
+            return LINK(expr);
+        return QuickExpressionReplacer::createTransformedBody(expr);
+    }
+};
+
+
 //Each function instance needs to have a unique set of parameters
 static IHqlExpression * cloneFunction(IHqlExpression * expr)
 {
@@ -9280,7 +9300,7 @@ static IHqlExpression * cloneFunction(IHqlExpression * expr)
     if (formals->numChildren() == 0)
         return LINK(expr);
 
-    QuickExpressionReplacer replacer;
+    QuickNoParamExpressionReplacer replacer;
     ForEachChild(i, formals)
     {
         IHqlExpression * formal = formals->queryChild(i);
@@ -11913,7 +11933,8 @@ protected:
                 if (oldModule != newModule)
                 {
                     IIdAtom * selectedName = expr->queryChild(3)->queryId();
-                    newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryAttribute(_location_Atom)));
+                    IHqlExpression * location = newModule->queryAttribute(_location_Atom);
+                    newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, location));
 
                     HqlDummyLookupContext dummyctx(ctx.errors);
                     IHqlScope * newScope = newModule->queryScope();
