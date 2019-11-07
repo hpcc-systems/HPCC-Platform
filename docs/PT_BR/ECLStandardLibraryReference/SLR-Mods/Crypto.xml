@@ -1,0 +1,1285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Crypto">
+  <title><emphasis>Suporte a Criptografia</emphasis></title>
+
+  <para>Esta seção fornece suporte para executar funções criptográficas nos
+  dados em ECL.</para>
+
+  <sect1>
+    <title>Visão geral da Biblioteca Criptográfica</title>
+
+    <para>Existem três classes de Algoritmos Criptográficos na Biblioteca
+    Criptográfica: Funções de hashing, algoritmos Symmetric-Key e algoritmos
+    Asymmetric-Key.</para>
+
+    <para><emphasis role="bold">Funções de Hashing</emphasis>:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Útil para verificar a integridade dos dados</para>
+      </listitem>
+
+      <listitem>
+        <para>Transforma grandes dados de tamanho variáveis em pequenos de
+        tamanho fixo</para>
+      </listitem>
+
+      <listitem>
+        <para>Impossível reverter um hash de volta aos dados originais
+        (unidirecional)</para>
+      </listitem>
+
+      <listitem>
+        <para>Rápido.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Veja também: <link
+    linkend="SupportedHashAlgorithms">SupportedHashAlgorithms</link></para>
+
+    <para><emphasis role="bold">Algoritmos Symmetric-Key:</emphasis></para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Usa uma única chave compartilhada para
+        criptografar/descriptografar dados</para>
+      </listitem>
+
+      <listitem>
+        <para>Suporte a algoritmos de bloco</para>
+      </listitem>
+
+      <listitem>
+        <para>Rápido.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Veja também: <link
+    linkend="SupportedSymmetricCipherAlgorithms">SupportedSymmetricCipherAlgorithms</link></para>
+
+    <para><emphasis role="bold">Algoritmos de Asymmetric-Key
+    </emphasis>(Também conhecido como algoritmos de chave pública ou
+    PKI):</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Par de chaves pública e privada matematicamente
+        associadas</para>
+      </listitem>
+
+      <listitem>
+        <para>Usado para criptografar/descriptografar dados</para>
+      </listitem>
+
+      <listitem>
+        <para>Usado para criar assinaturas digitais</para>
+      </listitem>
+
+      <listitem>
+        <para>Comparativamente mais lento</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Veja também: <link
+    linkend="SupportedPublicKeyAlgorithms">SupportedPublicKeyAlgorithms</link></para>
+  </sect1>
+
+  <sect1 id="SupportedHashAlgorithms">
+    <title>SupportedHashAlgorithms</title>
+
+    <para><emphasis role="bold">STD.Crypto.SupportedHashAlgorithms<indexterm>
+        <primary>STD.Crypto.SupportedHashAlgorithms</primary>
+      </indexterm><indexterm>
+        <primary>Crypto.SupportedHashAlgorithms</primary>
+      </indexterm><indexterm>
+        <primary>SupportedHashAlgorithms</primary>
+      </indexterm>(</emphasis> <emphasis/><emphasis>);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>CONJUNTO DE STRINGs contendo todos os algoritmos de hash
+            suportados</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">SupportedHashAlgorithms
+    </emphasis>retorna o conjunto de algoritmos de hash suportados</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.Crypto.SupportedHashAlgorithms(); //returns SET of STRINGs</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="SupportedSymmetricCipherAlgorithms">
+    <title>SupportedSymmetricCipherAlgorithms</title>
+
+    <para><emphasis
+    role="bold">STD.Crypto.SupportedSymmetricCipherAlgorithms<indexterm>
+        <primary>STD.Crypto.</primary>
+      </indexterm><indexterm>
+        <primary>Crypto.SupportedSymmetricCipherAlgorithms</primary>
+      </indexterm>(</emphasis> <emphasis/><emphasis>);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>SET OF STRINGs contendo todos os algoritmos Cipher
+            suportados</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">SupportedSymmetricCipherAlgorithms
+    </emphasis>retorna o conjunto de algoritmos de Cipher suportados</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.Crypto.SupportedSymmetricCipherAlgorithms(); //returns SET of STRINGs</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="SupportedPublicKeyAlgorithms">
+    <title>Algoritmos de Chave Pública Suportados</title>
+
+    <para><emphasis
+    role="bold">STD.Crypto.SupportedPublicKeyAlgorithms<indexterm>
+        <primary>STD.Crypto.SupportedPublicKeyAlgorithms</primary>
+      </indexterm><indexterm>
+        <primary>Crypto.SupportedPublicKeyAlgorithms</primary>
+      </indexterm><indexterm>
+        <primary>SupportedPublicKeyAlgorithms</primary>
+      </indexterm>(</emphasis> <emphasis/><emphasis>);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>SET OF STRINGs contendo todos os algoritmos de chave
+            pública suportados</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">SupportedPublicKeyAlgorithms
+    </emphasis>retorna o conjunto de algoritmos de chave pública
+    suportados</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+STD.Crypto.SupportedPublicKeyAlgorithms(); //returns SET of STRINGs</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="hashing">
+    <title>Módulo Hashing</title>
+
+    <para><emphasis>myHashModule</emphasis> :=<emphasis role="bold">
+    STD.Crypto.Hashing(</emphasis><emphasis>hashAlgorithm</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Hashing</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myHashModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Hashing</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>hashAlgorithm</emphasis></entry>
+
+            <entry>O algoritmo de hashing a ser usado, retornado por <link
+            linkend="SupportedHashAlgorithms">SupportedHashAlgorithms()</link></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Um módulo Hashing é definido na ECL. As definições de função
+    subsequentes usam as definições de módulo especificadas na definição do
+    módulo Hashing.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">Import STD;
+
+//Hashing module definition
+myHashModuleSha512 := Std.Crypto.Hashing('sha512'); 
+myHashModuleSha256 := Std.Crypto.Hashing('sha256'); 
+
+DATA hash1 := myHashModuleSha512.Hash((DATA)'The quick brown fox jumps over the lazy dog');
+DATA hash2 := myHashModuleSha256.Hash((DATA)'The quick brown fox jumps over the lazy dog');
+
+OUTPUT(hash1);
+OUTPUT(hash2);</programlisting>
+  </sect1>
+
+  <sect1 id="hash_crypto">
+    <title>Hash</title>
+
+    <para><emphasis>myHashModule</emphasis><emphasis
+    role="bold">.Hash(</emphasis><emphasis>inputData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Hash</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myHashModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Hashing</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>inputData</emphasis></entry>
+
+            <entry>Os dados para o hash no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Conteúdo em hash no formato DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Hash cria um hash do
+    <emphasis>inputData</emphasis>fornecido, usando o algoritmo de hash
+    definido no módulo Hashing.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">Import STD;
+
+//Hashing module definition
+myHashModuleSha512 := Std.Crypto.Hashing('sha512'); 
+myHashModuleSha256 := Std.Crypto.Hashing('sha256'); 
+
+DATA hash1 := myHashModuleSha512.Hash((DATA)'The quick brown fox jumps over the lazy dog');
+DATA hash2 := myHashModuleSha256.Hash((DATA)'The quick brown fox jumps over the lazy dog');
+
+OUTPUT(hash1);
+OUTPUT(hash2);</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="SymmetricEncryptionModule">
+    <title>Módulo SymmetricEncryption</title>
+
+    <para><emphasis>mySymEncModule</emphasis> :=<emphasis role="bold">
+    STD.Crypto.SymmetricEncryption(</emphasis><emphasis>algorithm,
+    passphrase)<indexterm>
+        <primary>SymmetricEncryption</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>mySymEncModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Symmetric Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>algorithm</emphasis></entry>
+
+            <entry>O algoritmo a ser usado, retornado por <link
+            linkend="SupportedSymmetricCipherAlgorithms">SupportedSymmetricCipherAlgorithms()</link></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>passphrase</emphasis></entry>
+
+            <entry>A senha usada para criptografia/descriptografia</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Um módulo Symmetric Encryption é definido na ECL. As definições de
+    função subsequentes usam as opções especificadas na definição do módulo de
+    Symmetric Encryption</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+//Symmetric Encryption module definition
+mySymEncModule := Std.Crypto.SymmetricEncryption('aes-256-cbc',
+                                                 '12345678901234567890123456789012'); 
+
+//encrypt/decrypt string literals
+STRING myStr := 'The quick brown fox jumps over the lazy dog';
+DATA   encryptedStr := mySymEncModule.Encrypt((DATA)myStr);
+STRING decryptedStr := (STRING)mySymEncModule.Decrypt(encryptedStr) ;
+
+OUTPUT(myStr); 
+OUTPUT(decryptedStr);</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="EncryptSymmetric">
+    <title>Encrypt (Symmetric)</title>
+
+    <para><emphasis>mySymEncModule</emphasis><emphasis
+    role="bold">.Encrypt(</emphasis><emphasis>inputData</emphasis><emphasis
+    role="bold">)</emphasis><indexterm>
+        <primary>Encrypt</primary>
+      </indexterm>;</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>mySymEncModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Symmetric Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>inputData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Conteúdo criptografado no formato DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Encrypt criptografa os <emphasis>inputData</emphasis>
+    fornecidos, usando as opções definidas no módulo de Symmetric
+    Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+//Symmetric Encryption module definition
+mySymEncModule := Std.Crypto.SymmetricEncryption('aes-256-cbc',
+                                                 '12345678901234567890123456789012'); 
+
+//encrypt/decrypt string literals
+STRING myStr := 'The quick brown fox jumps over the lazy dog';
+DATA   encryptedStr := mySymEncModule.Encrypt((DATA)myStr);
+STRING decryptedStr := (STRING)mySymEncModule.Decrypt(encryptedStr) ;
+
+OUTPUT(myStr); 
+OUTPUT(decryptedStr);</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="DecryptSymmetric">
+    <title>Decrypt (Symmetric)</title>
+
+    <para><emphasis>mySymEncModule</emphasis><emphasis
+    role="bold">.Decrypt(</emphasis><emphasis>encryptedData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Decrypt</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>mySymEncModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Symmetric Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>encryptedData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Conteúdo descriptografado no formato DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Decrypt descriptografa o <emphasis>encryptedData</emphasis>
+    fornecido usando as opções definidas no módulo Symmetric
+    Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+//Symmetric Encryption module definition
+mySymEncModule := Std.Crypto.SymmetricEncryption('aes-256-cbc',
+                                                 '12345678901234567890123456789012'); 
+
+//encrypt/decrypt string literals
+STRING myStr := 'The quick brown fox jumps over the lazy dog';
+DATA   encryptedStr := mySymEncModule.Encrypt((DATA)myStr);
+STRING decryptedStr := (STRING)mySymEncModule.Decrypt(encryptedStr) ;
+
+OUTPUT(myStr); 
+OUTPUT(decryptedStr);</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="PublicKeyEncryptionModule">
+    <title>Módulo PublicKeyEncryption</title>
+
+    <para><emphasis>myPKEModule</emphasis> :=<emphasis role="bold">
+    STD.Crypto.PublicKeyEncryption(</emphasis><emphasis>pkAlgorithm,
+    publicKeyFile, privateKeyFile, passphrase)<indexterm>
+        <primary>PublicKeyEncryption</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pkAlgorithm</emphasis></entry>
+
+            <entry>O algoritmo a ser usado, retornado por <link
+            linkend="SupportedPublicKeyAlgorithms">SupportedPublicKeyAlgorithms()</link></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>publicKeyFile</emphasis></entry>
+
+            <entry>A especificação de arquivo do arquivo de chave pública
+            formatada pelo PEM</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>privateKeyFile</emphasis></entry>
+
+            <entry>A especificação de arquivo do arquivo de chave privada
+            formatada pelo PEM</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>passphrase</emphasis></entry>
+
+            <entry>A senha usada para criptografia, descriptografia,
+            assinatura, verificação</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Um módulo de Chave Pública Criptografia é definido na ECL. As
+    definições de função subsequentes usam as opções definidas no módulo
+    Public Key Encryption para executar criptografia
+    assimétrica/descriptografia/verificação de assinatura/assinatura
+    digital</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+privKeyFile := '/var/lib/HPCCSystems/myesp/test.key';
+pubKeyFile :=  '/var/lib/HPCCSystems/myesp/test.key.pub';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', pubKeyFile, privKeyFile,''); 
+
+DATA encrypted := myPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+
+OUTPUT( (STRING)myPKEModule.Decrypt(encrypted) );
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="EncryptPublicKeyEncryption">
+    <title>Encrypt (PKE)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.Encrypt(</emphasis><emphasis>inputData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Encrypt</primary>
+      </indexterm>;</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>myPKEModule</emphasis></entry>
+
+              <entry>O nome da estrutura do módulo Public Key
+              Encryption</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>inputData</emphasis></entry>
+
+              <entry>Os dados a serem criptografados no formato DATA</entry>
+            </row>
+
+            <row>
+              <entry>Retorno:<emphasis/></entry>
+
+              <entry>Conteúdo criptografado no formato DATA</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>A função Criptografar criptografa o
+    <emphasis>inputData</emphasis> fornecidos usando as opções especificadas
+    na definição do módulo Public Key Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+privKeyFile := '/var/lib/HPCCSystems/myesp/test.key';
+pubKeyFile :=  '/var/lib/HPCCSystems/myesp/test.key.pub';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', pubKeyFile, privKeyFile,''); 
+
+DATA encrypted := myPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+
+OUTPUT( (STRING)myPKEModule.Decrypt(encrypted) );
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="DecryptPublicKeyEncryption">
+    <title>Decrypt (PKE)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.Decrypt(</emphasis><emphasis>encryptedData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Decrypt</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>encryptedData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Conteúdo descriptografado no formato DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Decrypt descriptografa o <emphasis>encryptedData</emphasis>
+    fornecidos, usando as opções especificadas na definição do módulo Public
+    Key Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+privKeyFile := '/var/lib/HPCCSystems/myesp/test.key';
+pubKeyFile :=  '/var/lib/HPCCSystems/myesp/test.key.pub';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', pubKeyFile, privKeyFile,''); 
+
+DATA encrypted := myPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+
+OUTPUT( (STRING)myPKEModule.Decrypt(encrypted) );
+</programlisting>
+  </sect1>
+
+  <sect1 id="SignPublicKeyEncryption">
+    <title>Sign (PKE)</title>
+
+    <para><emphasis>mySymEncModule</emphasis><emphasis
+    role="bold">.Sign(</emphasis><emphasis>encryptedData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Sign</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>inputData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Assinatura digital computada</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Sign cria uma assinatura digital do
+    <emphasis>inputData</emphasis>fornecido, usando as opções especificadas na
+    definição do módulo Public Key Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+privKeyFile := '/var/lib/HPCCSystems/myesp/test.key';
+pubKeyFile :=  '/var/lib/HPCCSystems/myesp/test.key.pub';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', pubKeyFile, privKeyFile,''); 
+
+DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
+OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps'));</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="VerifySignaturePublicKeyEncryption">
+    <title>VerifySignature (PKE)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.VerifySignature(</emphasis><emphasis>signature,
+    signedData</emphasis><emphasis role="bold">)<indexterm>
+        <primary>VerifySignature</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>signature</emphasis></entry>
+
+            <entry>A assinatura digital para verificar</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>signedData</emphasis></entry>
+
+            <entry>Dados usados para criar a assinatura no formato
+            DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um valor BOOLEAN para indicar a verificação</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função VerifySignature verifica a <emphasis>assinatura</emphasis>
+    digital fornecida usando as opções especificadas na definição do módulo
+    Public Key Encryption.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+privKeyFile := '/var/lib/HPCCSystems/myesp/test.key';
+pubKeyFile :=  '/var/lib/HPCCSystems/myesp/test.key.pub';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryption('RSA', pubKeyFile, privKeyFile,''); 
+
+DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
+OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps')); </programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="PublicKeyEncryptionFromBufferModule">
+    <title>Módulo PublicKeyEncryptionFromBuffer</title>
+
+    <para><emphasis>myPKEModule</emphasis> :=<emphasis role="bold">
+    STD.Crypto.PublicKeyEncryptionFromBuffer(</emphasis><emphasis>pkAlgorithm,
+    publicKeyFile, privateKeyFile, passphrase)<indexterm>
+        <primary>PublicKeyEncryption</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption From
+            Buffer</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pkAlgorithm</emphasis></entry>
+
+            <entry>O algoritmo a ser usado, retornado por <link
+            linkend="SupportedPublicKeyAlgorithms">SupportedPublicKeyAlgorithms()</link></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>publicKeyBuff</emphasis></entry>
+
+            <entry>Buffer de chave pública em formato PEM</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>privateKeyBuff</emphasis></entry>
+
+            <entry>Buffer de chave privada em formato PEM</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>passphrase</emphasis></entry>
+
+            <entry>A senha usada para criptografia, descriptografia,
+            assinatura, verificação</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Um módulo de Public Key Encryption é definido na ECL. As definições
+    de funções subsequentes usam as opções definidas no módulo Public Key
+    Encryption From Buffer para executar a criptografia
+    assimétrica/descriptografia/assinatura digital/verificação de
+    assinatura.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+STRING publicKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
+'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
+'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
+'BHqlMDydw9aHOQG17CB30GYsw3Lf8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoy' + '\n' +
+'hIR9MexCldF+3WM/X0IX0ApSs7kuVPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv' + '\n' +
+'/oKj6q7kInEIvhLiGfcm3bpTzWQ66zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3' + '\n' +
+'J6Tk4NY3NySWzE/2/ZOWxZdR79XC+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0' + '\n' +
+'bwIDAQAB' + '\n' +
+'-----END PUBLIC KEY-----';
+
+STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
+'MIIEowIBAAKCAQEAr64RncTp5pV0KMnWRAofod+3AUS/IDngT39j3Iovv9aI2N8g' + '\n' +
+'4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeEBHqlMDydw9aHOQG17CB30GYsw3Lf' + '\n' +
+'8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoyhIR9MexCldF+3WM/X0IX0ApSs7ku' + '\n' +
+'VPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv/oKj6q7kInEIvhLiGfcm3bpTzWQ6' + '\n' +
+'6zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3J6Tk4NY3NySWzE/2/ZOWxZdR79XC' + '\n' +
+'+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0bwIDAQABAoIBAQCnGAtNYkOOu8wW' + '\n' +
+'F5Oid3aKwnwPytF211WQh3v2AcFU17qle+SMRi+ykBL6+u5RU5qH+HSc9Jm31AjW' + '\n' +
+'V1yPrdYVZInFjYIJCPzorcXY5zDOmMAuzg5PBVV7VhUA0a5GZck6FC8AilDUcEom' + '\n' +
+'GCK6Ul8mR9XELBFQ6keeTo2yDu0TQ4oBXrPBMN61uMHCxh2tDb2yvl8Zz+EllADG' + '\n' +
+'70pztRWNOrCzrC+ARlmmDfYOUgVFtZin53jq6O6ullPLzhkm3/+QFRGYWsFgQB6J' + '\n' +
+'Z9HJtW5YB47RT5RbLHKXeMc6IJW+d+5HrzgTdK79P7wAZk8JCIDyHe2AaNAUzc/G' + '\n' +
+'sB0cNeURAoGBAOKtaVFa6z2F4Q+koMBXCt4m7dCJnaC+qthF249uEOIBeF3ds9Fq' + '\n' +
+'f0jhhvuV0OcN8lYbR/ZlYRJDUs6mHh/2BYSkdeaLKojXTxKR2bA4xQk5dtJCdoPf' + '\n' +
+'0c15AlTgOYk2oNXP/azDICJYT/cdvIdUL9P4IoZthu1FjwG266GacEnNAoGBAMZn' + '\n' +
+'1wRUXS1dbqemoc+g48wj5r3/qsIG8PsZ2Y8W+oYW7diNA5o6acc8YPEWE2RbJDbX' + '\n' +
+'YEADBnRSdzzOdo0JEj4VbNZEtx6nQhBOOrtYKnnqHVI/XOz3VVu6kedUKdBR87KC' + '\n' +
+'eCzO1VcEeZtsTHuLO4t7NmdHGqNxTV+jLvzBoQsrAoGAI+fOD+nz6znirYSpRe5D' + '\n' +
+'tW67KtYxlr28+CcQoUaQ/Au5kjzE9/4DjXrT09QmVAMciNEnc/sZBjiNzFf525wv' + '\n' +
+'wZP/bPZMVYKtbsaVkdlcNJranHGUrkzswbxSRzmBQ5/YmCWrDAuYcnhEqmMWcuU9' + '\n' +
+'8jiS13JP9hOXlHDyIBYDhV0CgYBV6TznuQgnzp9NpQ/H8ijxilItz3lHTu4mLMlR' + '\n' +
+'9mdAjMkszdLTg5uuE+z+N8rp17VUseoRjb3LvLG4+MXIyDbH/0sDdPm+IjqvCNDR' + '\n' +
+'spmh9MgBh0JbsbWaZK0s9/qrI/FcSLZ04JLsfRmTPU/Y5y8/dHjYO6fDQhp44RZF' + '\n' +
+'iCqNxQKBgHf7KZIOKgV4YNyphk1UYWHNz8YY5o7WtaQ51Q+kIbU8PRd9rqJLZyk2' + '\n' +
+'tKf8e6z+wtKjxi8GKQzE/IdkQqiFmB1yEjjRHQ81WS+K5NnjN1t0IEscJqOAwv9s' + '\n' +
+'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
+'-----END RSA PRIVATE KEY-----';
+
+//PKE Encryption module definition
+MyPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', PublicKey, PrivateKey, '');
+
+DATA encrypted := MyPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+OUTPUT( (STRING)MyPKEModule.Decrypt(encrypted));
+</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="EncryptPublicKeyEncryptionFromBuffer">
+    <title>Encrypt (PKE From Buffer)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.Encrypt(</emphasis><emphasis>inputData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Encrypt</primary>
+      </indexterm>;</emphasis></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>myPKEModule</emphasis></entry>
+
+              <entry>O nome da estrutura do módulo Public Key
+              Encryption</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>inputData</emphasis></entry>
+
+              <entry>Os dados a serem criptografados no formato DATA</entry>
+            </row>
+
+            <row>
+              <entry>Retorno:<emphasis/></entry>
+
+              <entry>Conteúdo criptografado no formato DATA</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>A função Criptografar criptografa o <emphasis>inputData</emphasis>
+    fornecido, usando as opções especificadas na definição do módulo Public
+    Key Encryption From Buffer.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+STRING publicKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
+'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
+'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
+'BHqlMDydw9aHOQG17CB30GYsw3Lf8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoy' + '\n' +
+'hIR9MexCldF+3WM/X0IX0ApSs7kuVPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv' + '\n' +
+'/oKj6q7kInEIvhLiGfcm3bpTzWQ66zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3' + '\n' +
+'J6Tk4NY3NySWzE/2/ZOWxZdR79XC+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0' + '\n' +
+'bwIDAQAB' + '\n' +
+'-----END PUBLIC KEY-----';
+
+STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
+'MIIEowIBAAKCAQEAr64RncTp5pV0KMnWRAofod+3AUS/IDngT39j3Iovv9aI2N8g' + '\n' +
+'4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeEBHqlMDydw9aHOQG17CB30GYsw3Lf' + '\n' +
+'8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoyhIR9MexCldF+3WM/X0IX0ApSs7ku' + '\n' +
+'VPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv/oKj6q7kInEIvhLiGfcm3bpTzWQ6' + '\n' +
+'6zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3J6Tk4NY3NySWzE/2/ZOWxZdR79XC' + '\n' +
+'+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0bwIDAQABAoIBAQCnGAtNYkOOu8wW' + '\n' +
+'F5Oid3aKwnwPytF211WQh3v2AcFU17qle+SMRi+ykBL6+u5RU5qH+HSc9Jm31AjW' + '\n' +
+'V1yPrdYVZInFjYIJCPzorcXY5zDOmMAuzg5PBVV7VhUA0a5GZck6FC8AilDUcEom' + '\n' +
+'GCK6Ul8mR9XELBFQ6keeTo2yDu0TQ4oBXrPBMN61uMHCxh2tDb2yvl8Zz+EllADG' + '\n' +
+'70pztRWNOrCzrC+ARlmmDfYOUgVFtZin53jq6O6ullPLzhkm3/+QFRGYWsFgQB6J' + '\n' +
+'Z9HJtW5YB47RT5RbLHKXeMc6IJW+d+5HrzgTdK79P7wAZk8JCIDyHe2AaNAUzc/G' + '\n' +
+'sB0cNeURAoGBAOKtaVFa6z2F4Q+koMBXCt4m7dCJnaC+qthF249uEOIBeF3ds9Fq' + '\n' +
+'f0jhhvuV0OcN8lYbR/ZlYRJDUs6mHh/2BYSkdeaLKojXTxKR2bA4xQk5dtJCdoPf' + '\n' +
+'0c15AlTgOYk2oNXP/azDICJYT/cdvIdUL9P4IoZthu1FjwG266GacEnNAoGBAMZn' + '\n' +
+'1wRUXS1dbqemoc+g48wj5r3/qsIG8PsZ2Y8W+oYW7diNA5o6acc8YPEWE2RbJDbX' + '\n' +
+'YEADBnRSdzzOdo0JEj4VbNZEtx6nQhBOOrtYKnnqHVI/XOz3VVu6kedUKdBR87KC' + '\n' +
+'eCzO1VcEeZtsTHuLO4t7NmdHGqNxTV+jLvzBoQsrAoGAI+fOD+nz6znirYSpRe5D' + '\n' +
+'tW67KtYxlr28+CcQoUaQ/Au5kjzE9/4DjXrT09QmVAMciNEnc/sZBjiNzFf525wv' + '\n' +
+'wZP/bPZMVYKtbsaVkdlcNJranHGUrkzswbxSRzmBQ5/YmCWrDAuYcnhEqmMWcuU9' + '\n' +
+'8jiS13JP9hOXlHDyIBYDhV0CgYBV6TznuQgnzp9NpQ/H8ijxilItz3lHTu4mLMlR' + '\n' +
+'9mdAjMkszdLTg5uuE+z+N8rp17VUseoRjb3LvLG4+MXIyDbH/0sDdPm+IjqvCNDR' + '\n' +
+'spmh9MgBh0JbsbWaZK0s9/qrI/FcSLZ04JLsfRmTPU/Y5y8/dHjYO6fDQhp44RZF' + '\n' +
+'iCqNxQKBgHf7KZIOKgV4YNyphk1UYWHNz8YY5o7WtaQ51Q+kIbU8PRd9rqJLZyk2' + '\n' +
+'tKf8e6z+wtKjxi8GKQzE/IdkQqiFmB1yEjjRHQ81WS+K5NnjN1t0IEscJqOAwv9s' + '\n' +
+'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
+'-----END RSA PRIVATE KEY-----';
+
+//PKE Encryption module definition
+MyPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', PublicKey, PrivateKey, '');
+
+DATA encrypted := MyPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+OUTPUT( (STRING)MyPKEModule.Decrypt(encrypted));</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="DecryptPublicKeyEncryptionFromBuffer">
+    <title>Decrypt (PKE From Buffer)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.Decrypt(</emphasis><emphasis>encryptedData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Decrypt</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>encryptedData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Conteúdo descriptografado no formato DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Decrypt descriptografa o <emphasis>encryptedData</emphasis>
+    fornecidos, usando as opções especificadas na definição do módulo Public
+    Key Encryption From Buffer.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+STRING publicKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
+'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
+'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
+'BHqlMDydw9aHOQG17CB30GYsw3Lf8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoy' + '\n' +
+'hIR9MexCldF+3WM/X0IX0ApSs7kuVPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv' + '\n' +
+'/oKj6q7kInEIvhLiGfcm3bpTzWQ66zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3' + '\n' +
+'J6Tk4NY3NySWzE/2/ZOWxZdR79XC+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0' + '\n' +
+'bwIDAQAB' + '\n' +
+'-----END PUBLIC KEY-----';
+
+STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
+'MIIEowIBAAKCAQEAr64RncTp5pV0KMnWRAofod+3AUS/IDngT39j3Iovv9aI2N8g' + '\n' +
+'4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeEBHqlMDydw9aHOQG17CB30GYsw3Lf' + '\n' +
+'8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoyhIR9MexCldF+3WM/X0IX0ApSs7ku' + '\n' +
+'VPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv/oKj6q7kInEIvhLiGfcm3bpTzWQ6' + '\n' +
+'6zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3J6Tk4NY3NySWzE/2/ZOWxZdR79XC' + '\n' +
+'+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0bwIDAQABAoIBAQCnGAtNYkOOu8wW' + '\n' +
+'F5Oid3aKwnwPytF211WQh3v2AcFU17qle+SMRi+ykBL6+u5RU5qH+HSc9Jm31AjW' + '\n' +
+'V1yPrdYVZInFjYIJCPzorcXY5zDOmMAuzg5PBVV7VhUA0a5GZck6FC8AilDUcEom' + '\n' +
+'GCK6Ul8mR9XELBFQ6keeTo2yDu0TQ4oBXrPBMN61uMHCxh2tDb2yvl8Zz+EllADG' + '\n' +
+'70pztRWNOrCzrC+ARlmmDfYOUgVFtZin53jq6O6ullPLzhkm3/+QFRGYWsFgQB6J' + '\n' +
+'Z9HJtW5YB47RT5RbLHKXeMc6IJW+d+5HrzgTdK79P7wAZk8JCIDyHe2AaNAUzc/G' + '\n' +
+'sB0cNeURAoGBAOKtaVFa6z2F4Q+koMBXCt4m7dCJnaC+qthF249uEOIBeF3ds9Fq' + '\n' +
+'f0jhhvuV0OcN8lYbR/ZlYRJDUs6mHh/2BYSkdeaLKojXTxKR2bA4xQk5dtJCdoPf' + '\n' +
+'0c15AlTgOYk2oNXP/azDICJYT/cdvIdUL9P4IoZthu1FjwG266GacEnNAoGBAMZn' + '\n' +
+'1wRUXS1dbqemoc+g48wj5r3/qsIG8PsZ2Y8W+oYW7diNA5o6acc8YPEWE2RbJDbX' + '\n' +
+'YEADBnRSdzzOdo0JEj4VbNZEtx6nQhBOOrtYKnnqHVI/XOz3VVu6kedUKdBR87KC' + '\n' +
+'eCzO1VcEeZtsTHuLO4t7NmdHGqNxTV+jLvzBoQsrAoGAI+fOD+nz6znirYSpRe5D' + '\n' +
+'tW67KtYxlr28+CcQoUaQ/Au5kjzE9/4DjXrT09QmVAMciNEnc/sZBjiNzFf525wv' + '\n' +
+'wZP/bPZMVYKtbsaVkdlcNJranHGUrkzswbxSRzmBQ5/YmCWrDAuYcnhEqmMWcuU9' + '\n' +
+'8jiS13JP9hOXlHDyIBYDhV0CgYBV6TznuQgnzp9NpQ/H8ijxilItz3lHTu4mLMlR' + '\n' +
+'9mdAjMkszdLTg5uuE+z+N8rp17VUseoRjb3LvLG4+MXIyDbH/0sDdPm+IjqvCNDR' + '\n' +
+'spmh9MgBh0JbsbWaZK0s9/qrI/FcSLZ04JLsfRmTPU/Y5y8/dHjYO6fDQhp44RZF' + '\n' +
+'iCqNxQKBgHf7KZIOKgV4YNyphk1UYWHNz8YY5o7WtaQ51Q+kIbU8PRd9rqJLZyk2' + '\n' +
+'tKf8e6z+wtKjxi8GKQzE/IdkQqiFmB1yEjjRHQ81WS+K5NnjN1t0IEscJqOAwv9s' + '\n' +
+'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
+'-----END RSA PRIVATE KEY-----';
+
+//PKE Encryption module definition
+MyPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', PublicKey, PrivateKey, '');
+
+DATA encrypted := MyPKEModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+OUTPUT( (STRING)MyPKEModule.Decrypt(encrypted));</programlisting>
+  </sect1>
+
+  <sect1 id="SignPublicKeyEncryptionFromBuffer">
+    <title>Sign (PKE (PKE From Buffer)</title>
+
+    <para><emphasis>mySymEncModule</emphasis><emphasis
+    role="bold">.Sign(</emphasis><emphasis>encryptedData</emphasis><emphasis
+    role="bold">)<indexterm>
+        <primary>Sign</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>inputData</emphasis></entry>
+
+            <entry>Os dados a serem criptografados no formato DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Dados usados para criar a assinatura no formato
+            DATA</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função Sign cria uma assinatura digital do <emphasis>
+    inputData</emphasis> fornecido, usando as opções especificadas na
+    definição do módulo Public Key Encryption From Buffer.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+STRING publicKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
+'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
+'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
+'BHqlMDydw9aHOQG17CB30GYsw3Lf8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoy' + '\n' +
+'hIR9MexCldF+3WM/X0IX0ApSs7kuVPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv' + '\n' +
+'/oKj6q7kInEIvhLiGfcm3bpTzWQ66zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3' + '\n' +
+'J6Tk4NY3NySWzE/2/ZOWxZdR79XC+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0' + '\n' +
+'bwIDAQAB' + '\n' +
+'-----END PUBLIC KEY-----';
+
+STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
+'MIIEowIBAAKCAQEAr64RncTp5pV0KMnWRAofod+3AUS/IDngT39j3Iovv9aI2N8g' + '\n' +
+'4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeEBHqlMDydw9aHOQG17CB30GYsw3Lf' + '\n' +
+'8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoyhIR9MexCldF+3WM/X0IX0ApSs7ku' + '\n' +
+'VPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv/oKj6q7kInEIvhLiGfcm3bpTzWQ6' + '\n' +
+'6zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3J6Tk4NY3NySWzE/2/ZOWxZdR79XC' + '\n' +
+'+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0bwIDAQABAoIBAQCnGAtNYkOOu8wW' + '\n' +
+'F5Oid3aKwnwPytF211WQh3v2AcFU17qle+SMRi+ykBL6+u5RU5qH+HSc9Jm31AjW' + '\n' +
+'V1yPrdYVZInFjYIJCPzorcXY5zDOmMAuzg5PBVV7VhUA0a5GZck6FC8AilDUcEom' + '\n' +
+'GCK6Ul8mR9XELBFQ6keeTo2yDu0TQ4oBXrPBMN61uMHCxh2tDb2yvl8Zz+EllADG' + '\n' +
+'70pztRWNOrCzrC+ARlmmDfYOUgVFtZin53jq6O6ullPLzhkm3/+QFRGYWsFgQB6J' + '\n' +
+'Z9HJtW5YB47RT5RbLHKXeMc6IJW+d+5HrzgTdK79P7wAZk8JCIDyHe2AaNAUzc/G' + '\n' +
+'sB0cNeURAoGBAOKtaVFa6z2F4Q+koMBXCt4m7dCJnaC+qthF249uEOIBeF3ds9Fq' + '\n' +
+'f0jhhvuV0OcN8lYbR/ZlYRJDUs6mHh/2BYSkdeaLKojXTxKR2bA4xQk5dtJCdoPf' + '\n' +
+'0c15AlTgOYk2oNXP/azDICJYT/cdvIdUL9P4IoZthu1FjwG266GacEnNAoGBAMZn' + '\n' +
+'1wRUXS1dbqemoc+g48wj5r3/qsIG8PsZ2Y8W+oYW7diNA5o6acc8YPEWE2RbJDbX' + '\n' +
+'YEADBnRSdzzOdo0JEj4VbNZEtx6nQhBOOrtYKnnqHVI/XOz3VVu6kedUKdBR87KC' + '\n' +
+'eCzO1VcEeZtsTHuLO4t7NmdHGqNxTV+jLvzBoQsrAoGAI+fOD+nz6znirYSpRe5D' + '\n' +
+'tW67KtYxlr28+CcQoUaQ/Au5kjzE9/4DjXrT09QmVAMciNEnc/sZBjiNzFf525wv' + '\n' +
+'wZP/bPZMVYKtbsaVkdlcNJranHGUrkzswbxSRzmBQ5/YmCWrDAuYcnhEqmMWcuU9' + '\n' +
+'8jiS13JP9hOXlHDyIBYDhV0CgYBV6TznuQgnzp9NpQ/H8ijxilItz3lHTu4mLMlR' + '\n' +
+'9mdAjMkszdLTg5uuE+z+N8rp17VUseoRjb3LvLG4+MXIyDbH/0sDdPm+IjqvCNDR' + '\n' +
+'spmh9MgBh0JbsbWaZK0s9/qrI/FcSLZ04JLsfRmTPU/Y5y8/dHjYO6fDQhp44RZF' + '\n' +
+'iCqNxQKBgHf7KZIOKgV4YNyphk1UYWHNz8YY5o7WtaQ51Q+kIbU8PRd9rqJLZyk2' + '\n' +
+'tKf8e6z+wtKjxi8GKQzE/IdkQqiFmB1yEjjRHQ81WS+K5NnjN1t0IEscJqOAwv9s' + '\n' +
+'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
+'-----END RSA PRIVATE KEY-----';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', publicKey, privateKey,''); 
+
+DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
+OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps'));</programlisting>
+  </sect1>
+
+  <sect1 id="VerifySignaturePublicKeyEncryptionFromBuffer">
+    <title>VerifySignature (PKE From Buffer)</title>
+
+    <para><emphasis>myPKEModule</emphasis><emphasis
+    role="bold">.VerifySignature(</emphasis><emphasis>signature,
+    signedData</emphasis><emphasis role="bold">)<indexterm>
+        <primary>VerifySignature</primary>
+      </indexterm>;</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myPKEModule</emphasis></entry>
+
+            <entry>O nome da estrutura do módulo Public Key Encryption</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>signature</emphasis></entry>
+
+            <entry>A assinatura digital para verificar</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>signedData</emphasis></entry>
+
+            <entry>Dados usados para criar a assinatura no formato
+            DATA</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um valor BOOLEAN para indicar a verificação</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função VerifySignature verifica a <emphasis>assinatura</emphasis>
+    digital fornecida usando as opções especificadas na definição do módulo
+    Public Key Encryption From Buffer.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+STRING publicKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
+'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
+'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
+'BHqlMDydw9aHOQG17CB30GYsw3Lf8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoy' + '\n' +
+'hIR9MexCldF+3WM/X0IX0ApSs7kuVPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv' + '\n' +
+'/oKj6q7kInEIvhLiGfcm3bpTzWQ66zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3' + '\n' +
+'J6Tk4NY3NySWzE/2/ZOWxZdR79XC+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0' + '\n' +
+'bwIDAQAB' + '\n' +
+'-----END PUBLIC KEY-----';
+
+STRING privateKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
+'MIIEowIBAAKCAQEAr64RncTp5pV0KMnWRAofod+3AUS/IDngT39j3Iovv9aI2N8g' + '\n' +
+'4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeEBHqlMDydw9aHOQG17CB30GYsw3Lf' + '\n' +
+'8iZo7RC7ocQE3OcRzH0eBkOryW6X3efWnMoyhIR9MexCldF+3WM/X0IX0ApSs7ku' + '\n' +
+'VPVG4Yj202+1FVO/XNwjMukJG5ASuxpYAQvv/oKj6q7kInEIvhLiGfcm3bpTzWQ6' + '\n' +
+'6zVz3z/huLbEXEy5oj2fQaC5E3s5mdpk/CW3J6Tk4NY3NySWzE/2/ZOWxZdR79XC' + '\n' +
+'+goNL6v/5gPI8B/a3Z8OeM2PfSZwPMnVuvU0bwIDAQABAoIBAQCnGAtNYkOOu8wW' + '\n' +
+'F5Oid3aKwnwPytF211WQh3v2AcFU17qle+SMRi+ykBL6+u5RU5qH+HSc9Jm31AjW' + '\n' +
+'V1yPrdYVZInFjYIJCPzorcXY5zDOmMAuzg5PBVV7VhUA0a5GZck6FC8AilDUcEom' + '\n' +
+'GCK6Ul8mR9XELBFQ6keeTo2yDu0TQ4oBXrPBMN61uMHCxh2tDb2yvl8Zz+EllADG' + '\n' +
+'70pztRWNOrCzrC+ARlmmDfYOUgVFtZin53jq6O6ullPLzhkm3/+QFRGYWsFgQB6J' + '\n' +
+'Z9HJtW5YB47RT5RbLHKXeMc6IJW+d+5HrzgTdK79P7wAZk8JCIDyHe2AaNAUzc/G' + '\n' +
+'sB0cNeURAoGBAOKtaVFa6z2F4Q+koMBXCt4m7dCJnaC+qthF249uEOIBeF3ds9Fq' + '\n' +
+'f0jhhvuV0OcN8lYbR/ZlYRJDUs6mHh/2BYSkdeaLKojXTxKR2bA4xQk5dtJCdoPf' + '\n' +
+'0c15AlTgOYk2oNXP/azDICJYT/cdvIdUL9P4IoZthu1FjwG266GacEnNAoGBAMZn' + '\n' +
+'1wRUXS1dbqemoc+g48wj5r3/qsIG8PsZ2Y8W+oYW7diNA5o6acc8YPEWE2RbJDbX' + '\n' +
+'YEADBnRSdzzOdo0JEj4VbNZEtx6nQhBOOrtYKnnqHVI/XOz3VVu6kedUKdBR87KC' + '\n' +
+'eCzO1VcEeZtsTHuLO4t7NmdHGqNxTV+jLvzBoQsrAoGAI+fOD+nz6znirYSpRe5D' + '\n' +
+'tW67KtYxlr28+CcQoUaQ/Au5kjzE9/4DjXrT09QmVAMciNEnc/sZBjiNzFf525wv' + '\n' +
+'wZP/bPZMVYKtbsaVkdlcNJranHGUrkzswbxSRzmBQ5/YmCWrDAuYcnhEqmMWcuU9' + '\n' +
+'8jiS13JP9hOXlHDyIBYDhV0CgYBV6TznuQgnzp9NpQ/H8ijxilItz3lHTu4mLMlR' + '\n' +
+'9mdAjMkszdLTg5uuE+z+N8rp17VUseoRjb3LvLG4+MXIyDbH/0sDdPm+IjqvCNDR' + '\n' +
+'spmh9MgBh0JbsbWaZK0s9/qrI/FcSLZ04JLsfRmTPU/Y5y8/dHjYO6fDQhp44RZF' + '\n' +
+'iCqNxQKBgHf7KZIOKgV4YNyphk1UYWHNz8YY5o7WtaQ51Q+kIbU8PRd9rqJLZyk2' + '\n' +
+'tKf8e6z+wtKjxi8GKQzE/IdkQqiFmB1yEjjRHQ81WS+K5NnjN1t0IEscJqOAwv9s' + '\n' +
+'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
+'-----END RSA PRIVATE KEY-----';
+
+//PKE Encryption module definition
+myPKEModule := STD.Crypto.PublicKeyEncryptionFromBuffer('RSA', publicKey, privateKey,''); 
+
+DATA signature := myPKEModule.Sign((DATA)'The quick brown fox jumps');
+OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox jumps'));</programlisting>
+  </sect1>
+</chapter>

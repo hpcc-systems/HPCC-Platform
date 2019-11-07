@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TZDataForLocation">
+  <!--This is a template for STD library method mod files-->
+
+  <title>TZDataForLocation</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.TZDataForLocation<indexterm>
+      <primary>STD.Date.TimeZone.TZDataForLocation</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.TZDataForLocation</primary>
+    </indexterm><indexterm>
+      <primary>TZDataForLocation</primary>
+    </indexterm>(</emphasis> <emphasis>location </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O nome do local a ser pesquisado; deve ser uma
+          sequência maiúscula não vazia. </entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>Um novo DATASET(STRING5 tzAbbrev, INTEGER4 secondsOffset)
+          contendo os registros encontrados para o local especificado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis
+  role="bold">STD.Date.TimeZone.TZDataForLocation</emphasis> retorna
+  os registros de fuso horário para um determinado local.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.TZDataForLocation('ASIA');</programlisting>
+
+  <para>Ver também: <link linkend="FindTZData">FindTZData</link></para>
+</sect1>

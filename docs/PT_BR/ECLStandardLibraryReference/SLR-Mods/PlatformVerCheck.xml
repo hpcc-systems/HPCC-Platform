@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PlatformVersionCheck">
+  <title>PlatformVersionCheck</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.PlatformVersionCheck(
+  </emphasis><emphasis>v</emphasis><emphasis role="bold">
+  );</emphasis><indexterm>
+      <primary>STD.System.Util.PlatformVersionCheck(</primary>
+    </indexterm><indexterm>
+      <primary>System.Util.PlatformVersionCheck(</primary>
+    </indexterm> <indexterm>
+      <primary>PlatformVersionCheck(</primary>
+    </indexterm></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>v</emphasis></entry>
+
+          <entry>Obrigatório. A versão mínima da plataforma no formato xx.xx.xx,
+          xx.xx, ou xx (em que xx é um número inteiro e não precisa ser
+          preenchido com zero); caracteres extras à direita (como o '-1' no
+          exemplo abaixo) são ignorados.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>TRUE se a versão atual da plataforma for igual ou superior
+          ao argumento, caso contrário, FALSE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">PlatformVersionCheck </emphasis>testa
+  uma string de versão completa em relação às constantes individuais da versão
+  da plataforma para determinar se a versão da plataforma é pelo menos tão alta quanto o
+  argumento. Esta função é avaliada em tempo de compilação se o argumento for uma
+  constante. Isso o torna útil para incorporar declarações #IF (),
+  como mostrado no exemplo.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+#IF(STD.System.Util.PlatformVersionCheck('8.2.0-1'))
+  OUTPUT('Platform check TRUE');
+#ELSE
+  OUTPUT('Platform check FALSE');
+#END</programlisting>
+</sect1>

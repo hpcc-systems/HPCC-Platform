@@ -5,7 +5,8 @@
   <title>Guia do Administrador do HPCC System</title>
 
   <bookinfo>
-    <title>Guia do Administrador do HPCC System</title>
+    <title>Guia do Administrador do HPCC
+    Systems<superscript>®</superscript></title>
 
     <mediaobject>
       <imageobject>
@@ -136,9 +137,9 @@
       <sect2 id="HPCC_Clusters" role="brk">
         <title>Clusters</title>
 
-        <para>O ambiente do HPCC contém clusters que você define e usa de
-        acordo com as suas necessidades. Os tipos de clusters usados no HPCC
-        são:</para>
+        <para>O ambiente do HPCC Systems contém clusters que você define e usa
+        de acordo com as suas necessidades. Os tipos de clusters usados pelo
+        HPCC são:</para>
 
         <sect3 id="SysAdm_Thor_Cluster">
           <title>Thor</title>
@@ -1169,7 +1170,7 @@
 
       <para>O envrionment.conf padrão:</para>
 
-      <para><programlisting>## HPCC Systems default environment configuration file 
+      <para><programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=/etc/HPCCSystems
@@ -1224,12 +1225,12 @@ jvmoptions=-XX:-UsePerfData
 # Enabling both may lead to unpredicatable results
 # including segfaults or undefined symbol errors.
 #
-# If you would prefer to use python 3 and disable python2, change the line below to read
-#  additionalPlugins=python3
+# If you would prefer to use python 2 and disable python3, change the line below to read
+#  additionalPlugins=python2
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).
 # Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
-additionalPlugins=python2
+additionalPlugins=python3
 
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToLocalTime">
+  <!--This is a template for STD library method mod files-->
+
+  <title>ToLocalTime</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.ToLocalTime<indexterm>
+      <primary>STD.Date.TimeZone.ToLocalTime</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.ToLocalTime</primary>
+    </indexterm><indexterm>
+      <primary>ToLocalTime</primary>
+    </indexterm>(</emphasis> <emphasis>utcTime, toTimeZoneAbbrev,
+  </emphasis>[<emphasis>toLocation</emphasis> ]<emphasis role="bold">
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>utcTime</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O valor da hora UTC (no formato Time_t) para
+          ajuste.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. A abreviação do fuso horário designada como ponto
+          final; deve ser uma sequência maiúscula não vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha t
+          toTimeZoneAbbrev; se um local não for fornecido ou for uma sequência vazia
+          , o primeiro registro correspondente a TimeZoneAbbrev será usado.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>O valor da hora UTC fornecido (no formato <link
+          linkend="Time_Data_Types">Time_t</link>) ajustado para o fuso
+          horário definido por toTimeZoneAbbrev e toLocation; se o fuso horário
+          não puder ser encontrado, o valor da hora original será retornado
+          inalterado</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">STD.Date.TimeZone.ToLocalTime</emphasis>
+  converte um horário UTC em um horário designado por uma
+  abreviação de fuso horário e local opcional.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.ToLocalTime(205246,'CST','NORTH AMERICA');</programlisting>
+
+  <para>Ver também: <link linkend="AdjustTimeTZ">AdjustTimeTZ</link>, <link
+  linkend="ToUTCTime">ToUTCTime</link></para>
+</sect1>

@@ -837,14 +837,13 @@
         <sect3 id="ECLWatch_ECLWorkunitsHelpersTab">
           <title>Aba Helpers</title>
 
-          <para>A aba Helpers exibe vários elementos úteis. Os quais mostram o
-          ECL. O XML da workunit. Consulta arquivada, a DLL. S.O.., log do
-          Thor, log do agente ECL e log escravo do Thor. Os arquivos de log
-          relevantes. Se um log Roxy registrar apenas as seções relevantes
-          para a workunit selecionada.</para>
-
-          <para>Ao analisar o log em uma workunit, ele mostra apenas a parte
-          que é relativa a essa workunit.</para>
+          <para>A aba Helpers exibe vários elementos úteis de uma           
+          workunit, que pode incluir: o código ECL enviado, o XML da Workunit,
+                     a consulta arquivada, a DLL (SO), os arquivos C ++
+          gerados,            o log Thor, os logs escravos Thor, o log do ECL
+          Agent e o            Log do compilador. Os arquivos de log mostram
+          apenas a parte que            pertence à workunit
+          selecionada.</para>
         </sect3>
 
         <sect3 id="WUDetails_ECL__TAB">
@@ -1606,12 +1605,11 @@
         information.</para>
 
         <para>Marque a caixa Protected para proteger o arquivo contra exclusão
-        ou          expiração.</para>
+        ou expiração.</para>
 
-        <para>O valor do Tipo de Chave é exibido apenas se o arquivo for um
-        ÍNDICE. Chave          O tipo pode ter três valores possíveis:
-        Distributed (Distribuído), Local ou          Particionado
-        (Partitioned).</para>
+        <para>O valor do Key Type é exibido apenas se o arquivo for um ÍNDICE.
+        O type pode ter três valores possíveis: Distributed (Distribuído),
+        Local ou Particionado (Partitioned).</para>
 
         <para>A página Logical Files Detail (Detalhes dos Arquivos lógicos)
         mostra detalhes específicos para o arquivo selecionado. Selecione o

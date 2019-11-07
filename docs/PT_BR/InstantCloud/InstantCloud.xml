@@ -49,7 +49,9 @@
 
       <para/>
 
-      <para><emphasis role="redbold"/></para>
+      <para>
+        <emphasis role="redbold"/>
+      </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -124,13 +126,9 @@
     desnecessário. </emphasis><emphasis role="redbold">Todos os custos da AWS
     são de sua total responsabilidade.</emphasis></para>
 
-    <para>Estamos trabalhando com a Amazon para aprimorar os processos de
-    configuração. <emphasis role="bold">Em breve, teremos um guia que mostrará
-    como executar um cluster do HPCC Systems em um ambiente do tipo Amazon
-    Elastic Map Reduce (EMR).</emphasis> Esperamos que esse método seja mais
-    robusto e fácil de configurar e operar. Além disso, o HPCC Systems está
-    desenvolvendo seu próprio Enterprise Cloud, mas esse projeto ainda não
-    está pronto para ser lançado.</para>
+    <para>O Instant Cloud está sendo atualizado para fornecer serviços
+    gerenciados      como Amazon Elastic Map Reduce (EMR). Integração S3,     
+    elasticidade, backup e recuperação são recursos em consideração.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <?dbfo keep-together="always"?>

@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UniqueTZLocations">
+  <!--This is a template for STD library method mod files-->
+
+  <title>UniqueTZLocations</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.UniqueTZLocations<indexterm>
+      <primary>STD.Date.TimeZone.UniqueTZLocations</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.UniqueTZLocations</primary>
+    </indexterm><indexterm>
+      <primary>UniqueTZLocations</primary>
+    </indexterm>(</emphasis> <emphasis></emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>Um novo DATASET ({STRING name}) contendo os nomes de locais
+          exclusivos.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis
+  role="bold">STD.Date.TimeZone.UniqueTZLocations</emphasis>Retorna uma
+  lista de nomes de locais exclusivos do dataset codificado. Todos os nomes estão em
+  maiúsculas.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.UniqueTZLocations();</programlisting>
+
+  <para></para>
+</sect1>

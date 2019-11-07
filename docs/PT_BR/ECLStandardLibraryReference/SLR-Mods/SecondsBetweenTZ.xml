@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SecondsBetweenTZ">
+  <!--This is a template for STD library method mod files-->
+
+  <title>SecondsBetweenTZ</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.SecondsBetweenTZ<indexterm>
+      <primary>STD.Date.TimeZone.SecondsBetweenTZ</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.SecondsBetweenTZ</primary>
+    </indexterm><indexterm>
+      <primary>SecondsBetweenTZ</primary>
+    </indexterm>(</emphasis> <emphasis>fromTimeZoneAbbrev, toTimeZoneAbbrev,
+  </emphasis> [<emphasis>fromLocation</emphasis>, ]
+  [<emphasis>toLocation</emphasis> ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>fromTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. A abreviação do fuso horário designada como ponto
+          final; deve ser uma sequência maiúscula não vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. A abreviação do fuso horário designada como ponto
+          final; deve ser uma sequência maiúscula não vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha o
+          fromTimeZoneAbbrev se um local não for fornecido ou for uma string
+          vazia, o primeiro registro correspondente a TimeZoneAbbrev será
+          usado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha 
+          toTimeZoneAbbrev; se um local não for fornecido ou for uma sequência vazia
+          , o primeiro registro correspondente a TimeZoneAbbrev será usado.</entry>
+        </row>
+
+        <row>
+          <entry>Retorna:</entry>
+
+          <entry>O número de segundos entre os dois fusos horários; retorna
+          zero se um dos fusos horários não puder ser encontrado</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis
+  role="bold">STD.Date.TimeZone.SecondsBetweenTZ</emphasis> calcula
+  o deslocamento, em segundos, entre dois fusos horários diferentes. Cada fuso horário é
+  designado por uma abreviação de fuso horário necessária e um nome de local
+  opcional. O resultado é o número de segundos (que podem ser positivos ou
+  negativos) que precisariam ser aplicados a uma hora ao viajar de
+  <emphasis>fromTimeZoneAbbrev</emphasis> para 
+  <emphasis>toTimeZoneAbbrev</emphasis>..</para>
+
+  <para>Esteja ciente de que alguns fusos horários representam explicitamente o horário de
+  verão, portanto, é totalmente possível alterar não apenas os fusos horários, mas também a observância do
+  horário de verão em uma única chamada</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">MPORT STD;
+STD.Date.TimeZone.SecondsBetweenTZ('CST','IST','NORTH AMERICA','');</programlisting>
+
+  <para>Ver também: <link linkend="AdjustTimeTZ">AdjustTimeTZ</link></para>
+</sect1>

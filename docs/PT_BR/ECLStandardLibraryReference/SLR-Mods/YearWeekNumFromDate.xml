@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="YearWeekNumFromDate">
+  <title>YearWeekNumFromDate</title>
+
+  <para><emphasis role="bold">STD.Date.YearWeekNumFromDate<indexterm>
+      <primary>STD.YearWeekNumFromDate</primary>
+    </indexterm><indexterm>
+      <primary>YearWeekNumFromDate</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">date,
+  startingDayOfWeek)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A data (no formato Date_t) para a qual calcular o número da
+          semana.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>startingDayOfWeek)</emphasis></entry>
+
+          <entry>Opcional, o número do índice do primeiro dia da semana, 1 a 7,
+          em que 1 = domingo. O padrão é 1.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>O número da semana 1-based da data,
+          relativo ao início do ano da data.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para> A função <emphasis role="bold">YearWeekNumFromDate </emphasis> retorna
+  o número da semana 1-based no ano da data. A semana 1
+  sempre contém o primeiro dia do ano e a semana 2 começa no dia da semana
+  seguinte indicado pelo valor de
+  <emphasis>startingDayOfWeek</emphasis>. </para>
+
+  <para>Esta não é uma implementação ISO-8601 que calcular números de semanas
+  ("week dates").</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+startDate := STD.Date.Today();
+weekNum := STD.Date.YearWeekNumFromDate(startDate,2);
+weekNum;
+</programlisting>
+
+  <para>Ver também: <link
+  linkend="MonthWeekNumFromDate">MonthWeekNumFromDate</link></para>
+</sect1>
