@@ -91,6 +91,7 @@ enum class FileFormatMode
     flat,
     csv,
     xml,
+    json,
     index
 };
 

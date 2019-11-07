@@ -3769,7 +3769,7 @@ public:
             translator->translate(aBuilder, fieldCallback, diskRow);
             //  note the swapped parameters - left and right map to input and raw differently for JOIN vs FETCH
             IHThorFetchArg *h = (IHThorFetchArg *) helper;
-            return h->transform(rowBuilder, buf.toByteArray(), inputData, rawpos);
+            return h->transform(rowBuilder, aBuilder.getSelf(), inputData, rawpos);
         }
         else
         {
@@ -4413,7 +4413,7 @@ public:
     {
         unsigned expectedCrc = helper->getDiskFormatCrc();
         unsigned projectedCrc = helper->getProjectedFormatCrc();
-        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), basefactory->expectedFileMode()));
+        translators.setown(varFileInfo->getTranslators(projectedCrc, helper->queryProjectedDiskRecordSize(), expectedCrc, helper->queryDiskRecordSize(), basefactory->getEnableFieldTranslation(), FileFormatMode::flat));
         files.setown(varFileInfo->getIFileIOArray(isOpt, packet->queryHeader().channel));
     }
 
@@ -4464,7 +4464,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
             MemoryBufferBuilder aBuilder(buf, 0);
             FetchVirtualFieldCallback fieldCallback(headerPtr->fpos);
             translator->translate(aBuilder, fieldCallback, rawRHS);
-            rawRHS = (const byte *) buf.toByteArray();
+            rawRHS = aBuilder.getSelf();
         }
 
         inputData = &headerPtr->rhsdata[0];

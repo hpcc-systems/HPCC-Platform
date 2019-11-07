@@ -471,7 +471,7 @@ protected:
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
             translator->translate(aBuilder, *this, row);
-            return reinterpret_cast<const byte *>(buf.toByteArray());
+            return aBuilder.getSelf();
         }
         else
             return row.queryRow();
@@ -1153,7 +1153,7 @@ public:
                     buf.setLength(0);
                     MemoryBufferBuilder aBuilder(buf, 0);
                     translator->translate(aBuilder, unexpectedVirtualFieldCallback, keySearcher->queryRow().queryRow()); // MORE - could pass in partially-resolved RtlRow
-                    return (const byte *) buf.toByteArray();
+                    return aBuilder.getSelf();
                 }
                 else
                     return keySearcher->queryRow().queryRow();

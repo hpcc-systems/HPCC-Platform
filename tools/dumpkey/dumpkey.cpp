@@ -323,7 +323,7 @@ int main(int argc, const char **argv)
                         MemoryBufferBuilder aBuilder(buf, 0);
                         if (translator->translate(aBuilder, callback, buffer))
                         {
-                            outmeta->toXML((const byte *) buf.toByteArray(), *writer.get());
+                            outmeta->toXML(aBuilder.getSelf(), *writer.get());
                             printf("%s\n", writer->str());
                             writer->clear();
                         }
