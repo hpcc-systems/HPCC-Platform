@@ -26,7 +26,11 @@
   role="bold">] </emphasis>,<emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
+  <emphasis>dfuServerQueue</emphasis>
+  <emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis>
+  <emphasis
   role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -52,7 +56,10 @@
   role="bold">]</emphasis>, <emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
+  <emphasis>dfuServerQueue</emphasis>
+  <emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis
   role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -166,6 +173,14 @@
 
           <entry>Name of target DFU Server queue. Default is '' (empty) for
           the first DFU queue in the environment.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noSplit</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating to not
+          split a file part to multiple target parts. Default is
+          FALSE.</entry>
         </row>
 
         <row>
