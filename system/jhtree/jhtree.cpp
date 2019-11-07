@@ -460,7 +460,7 @@ public:
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
             layoutSize = layoutTrans->translate(aBuilder, unexpectedFieldCallback, reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer()));
-            return reinterpret_cast<byte const *>(buf.toByteArray());
+            return aBuilder.getSelf();
         }
         else
             return reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer());

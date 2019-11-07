@@ -1229,7 +1229,7 @@ public:
                         translateBuf.setLength(0);
                         MemoryBufferBuilder rowBuilder(translateBuf, 0);
                         translator->translate(rowBuilder, *fieldCallback, row);
-                        row = reinterpret_cast<const byte *>(translateBuf.toByteArray());
+                        row = rowBuilder.getSelf();
                     }
                     return row;
                 }
