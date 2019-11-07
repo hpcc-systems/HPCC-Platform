@@ -149,6 +149,6 @@ OUTPUT(j3);
 OUTPUT(combined);
 </programlisting>
 
-  <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
+  <para>Ver também: <link linkend="GROUP_function">GROUP</link>, <link
   linkend="COMBINE">COMBINE</link></para>
 </sect1>

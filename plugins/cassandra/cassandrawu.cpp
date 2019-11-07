@@ -2752,11 +2752,11 @@ public:
         CPersistedWorkUnit::_loadExceptions();
     }
 
-    virtual void clearExceptions()
+    virtual void clearExceptions(const char * source=nullptr)
     {
         CriticalBlock b(crit);
         noteDirty("*Exceptions/Exception", wuExceptionsMappings);
-        CPersistedWorkUnit::clearExceptions();
+        CPersistedWorkUnit::clearExceptions(source);
     }
 
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const

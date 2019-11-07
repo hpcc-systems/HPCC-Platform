@@ -349,7 +349,7 @@ public:
     virtual IStringVal & getAbortBy(IStringVal & str) const;
     virtual unsigned __int64 getAbortTimeStamp() const;
 
-    void clearExceptions();
+    void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();
     void addProcess(const char *type, const char *instance, unsigned pid, const char *log);

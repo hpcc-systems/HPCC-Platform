@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AdjustTimeTZ">
+  <!--This is a template for STD library method mod files-->
+
+  <title>AdjustTimeTZ</title>
+
+  <para><emphasis role="bold">STD.Date.TimeZone.AdjustTimeTZ<indexterm>
+      <primary>STD.Date.TimeZone.AdjustTimeTZ</primary>
+    </indexterm><indexterm>
+      <primary>TimeZone.AdjustTimeTZ</primary>
+    </indexterm><indexterm>
+      <primary>AdjustTimeTZ</primary>
+    </indexterm>(</emphasis> <emphasis>time,fromTimeZoneAbbrev,
+  toTimeZoneAbbrev, </emphasis> [<emphasis>fromLocation</emphasis>, ]
+  [<emphasis>toLocation</emphasis> ]<emphasis role="bold"> )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>time</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. O valor da hora (no formato Time_t) para
+          ajustar.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. A abreviação do fuso horário em que se supõe que o valor da 
+          <emphasis>hora</emphasis> esteja; deve ser uma sequência maiúscula
+          não vazia</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toTimeZoneAbbrev</emphasis></entry>
+
+          <entry>OBRIGATÓRIO. A abreviação do fuso horário designada como ponto
+          final; deve ser uma sequência maiúscula não vazia.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fromLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha o
+          fromTimeZoneAbbrev se um local não for fornecido ou for uma string
+          vazia, o primeiro registro correspondente a TimeZoneAbbrev será
+          usado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>toLocation</emphasis></entry>
+
+          <entry>OPCIONAL. O nome do local que acompanha 
+          toTimeZoneAbbrev; se um local não for fornecido ou for uma sequência vazia
+          , o primeiro registro correspondente a TimeZoneAbbrev será usado.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>O valor de tempo fornecido (no formato <link
+          linkend="Time_Data_Types">Time_t</link>) ajustado pela
+          diferença entre os dois fusos horários especificados; se um fuso horário
+          não puder ser encontrado, o valor da hora original será retornado
+          inalterado.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">STD.Date.TimeZone.AdjustTimeTZ</emphasis>
+ ajusta um determinado valor de tempo Time_t para outro fuso horário. O horário especificado
+  e o fuso horário de destino são designados por uma abreviação de fuso horário necessário
+  e um nome de local opcional.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.Date.TimeZone.AdjustTimeTZ(205246,'CST','IST','NORTH AMERICA','');</programlisting>
+
+  <para>Ver também: <link linkend="AdjustTimeTZ">SecondsBetweenTZ</link></para>
+</sect1>

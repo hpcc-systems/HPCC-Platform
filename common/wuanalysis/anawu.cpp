@@ -247,7 +247,7 @@ void WuScope::getAttr(StringBuffer & result, WuAttr attr) const
 {
     StringBuffer name;
     name.append('@').append(queryWuAttributeName(attr));
-    attrs->getProp(result, name);
+    attrs->getProp(name, result);
 }
 
 void WuScope::trace(unsigned indent) const
@@ -414,9 +414,15 @@ void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options)
     analyser.update(wu);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu)
 {
     WorkunitAnalyser analyser(options);
     analyser.analyse(wu);
     analyser.print();
+    if (updatewu)
+    {
+        Owned<IWorkUnit> lockedwu = &(wu->lock());
+        lockedwu->clearExceptions("Workunit Analyser");
+        analyser.update(lockedwu);
+    }
 }

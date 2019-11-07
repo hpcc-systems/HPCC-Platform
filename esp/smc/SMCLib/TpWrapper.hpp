@@ -139,6 +139,10 @@ private:
     void appendTpDropZone(double clientVersion, IConstEnvironment* constEnv, IConstDropZoneInfo& dropZoneInfo, IArrayOf<IConstTpDropZone>& list);
     void appendTpSparkThor(double clientVersion, IConstEnvironment* constEnv, IConstSparkThorInfo& sparkThorInfo, IArrayOf<IConstTpSparkThor>& list);
     void appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines);
+    void getThorMachineList(double clientVersion, const char* clusterName, const char* directory,
+        bool slaveNode, IArrayOf<IEspTpMachine>& machineList);
+    void appendThorMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
+         const char* machineType, unsigned& processNumber, unsigned channels, const char* directory, IArrayOf<IEspTpMachine>& machineList);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -152,16 +156,10 @@ public:
     void getCluster(const char* ClusterType,IPropertyTree& returnRoot);
     void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory, 
                                         IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess, const char* ClusterName = NULL);
-    void getMachineList( const char* MachineType,
-                        const char* MachinePath,
-                        const char* Status,
-                                const char* Directory,
-                        IArrayOf<IEspTpMachine> &MachineList, 
-                        set<string>* pMachineNames=NULL);
+    void getMachineList(double clientVersion, const char* MachineType, const char* MachinePath, const char* Status,
+        const char* Directory, IArrayOf<IEspTpMachine>& MachineList, set<string>* pMachineNames=nullptr);
     void getThorSpareMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList);
     void getThorSlaveMachineList(double clientVersion, const char* clusterName, const char* directory, IArrayOf<IEspTpMachine>& machineList);
-    void appendMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
-         const char* machineType, unsigned& processNumber, const char* directory, IArrayOf<IEspTpMachine>& machineList);
     bool checkMultiSlavesFlag(const char* clusterName);
     void getDropZoneMachineList(double clientVersion, bool ECLWatchVisibleOnly, IArrayOf<IEspTpMachine> &MachineList);
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);

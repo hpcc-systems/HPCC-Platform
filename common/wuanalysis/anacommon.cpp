@@ -14,6 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+#include <string.h>
 #include "anacommon.hpp"
 #include "workunit.hpp"
 
@@ -36,7 +37,12 @@ void PerformanceIssue::print() const
 {
     StringBuffer out;
     formatStatistic(out, cost, SMeasureTimeNs);
-    printf("[%s] E%d %s: %s\n", out.str(), errorCode, scope.str(), comment.str());
+    printf("[%s] E%d \"%s\" %s ", out.str(), errorCode,  comment.str(), scope.str());
+    if (filename.length()>0)
+        printf("%s", filename.str());
+    if (line>0 && column>0)
+        printf("(%u,%u)", line, column);
+    printf("\n");
 }
 
 void PerformanceIssue::createException(IWorkUnit * wu)
@@ -46,7 +52,16 @@ void PerformanceIssue::createException(IWorkUnit * wu)
     we->setSeverity(SeverityInformation);
     we->setScope(scope.str());
     we->setPriority((unsigned) statUnits2msecs(cost));
-    we->setExceptionMessage(comment.str());
+    if (line>0 && column>0)
+    {
+        we->setExceptionLineNo(line);
+        we->setExceptionColumn(column);
+    }
+    if (filename.length()>0)
+        we->setExceptionFileName(filename);
+    StringBuffer s(comment);        // Append scope to comment as scope column is not visible in ECLWatch
+    s.appendf(" (%s)", scope.str());
+    we->setExceptionMessage(s.str());
     we->setExceptionSource("Workunit Analyser");
 }
 
@@ -59,3 +74,26 @@ void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _cost, const 
     comment.valist_appendf(msg, args);
     va_end(args);
 }
+
+void PerformanceIssue::setLocation(const char * definition)
+{
+    const char *p1 = strchr(definition,'(');
+    if (!p1)
+        return;
+    const char *comma = strchr(p1+1,',');
+    if (!comma)
+        return;
+    const char *p2 = strchr(comma+1,')');
+    if (!p2)
+        return;
+    if (p1>definition) // have filename
+        filename.append(p1-definition, definition);
+    line = atoi(p1+1);
+    column = atoi(comma+1);
+    if (line < 0 || column < 0)
+    {
+        line=0;
+        column=0;
+        IERRLOG("Error parsing Definition for line and column: %s", definition);
+    }
+};

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="getGlobalId">
+  <title>getGlobalId</title>
+
+  <para><emphasis role="bold">STD.System.Log.getGlobalId<indexterm>
+      <primary>STD.System.Log.getGlobalId</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.getGlobalId</primary>
+    </indexterm> <indexterm>
+      <primary>Log.getGlobalId</primary>
+    </indexterm> <indexterm>
+      <primary>getGlobalId</primary>
+    </indexterm>(</emphasis>)</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>getGlobalId retorna o Global Id</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O <emphasis role="bold">getGlobalId </emphasis>obtém o Global Id
+  associado à consulta ou workunit atual. Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Log.getGlobalId();    
+</programlisting>
+</sect1>

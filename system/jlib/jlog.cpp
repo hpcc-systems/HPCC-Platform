@@ -90,7 +90,7 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 
 class LoggingFieldColumns
 {
-    const EnumMapping MsgFieldMap[15] =
+    const EnumMapping MsgFieldMap[16] =
     {
         { MSGFIELD_msgID,     "MsgID    " },
         { MSGFIELD_audience,  "Audience " },
@@ -106,7 +106,8 @@ class LoggingFieldColumns
         { MSGFIELD_node,      "Node                " },
         { MSGFIELD_job,       "JobID  " },
         { MSGFIELD_user,      "UserID  " },
-        { MSGFIELD_component, "Compo " }
+        { MSGFIELD_component, "Compo " },
+        { MSGFIELD_quote,     "Quoted "}
     };
     const unsigned sizeMsgFieldMap = arraysize(MsgFieldMap);
 public:

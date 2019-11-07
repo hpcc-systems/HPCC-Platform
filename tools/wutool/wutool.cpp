@@ -221,7 +221,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     else if (stricmp(action, "analyze")==0)
     {
         WuAnalyseOptions options; // TODO: allow options to be set from from command line parameters
-        analyseAndPrintIssues(&w, options);
+        analyseAndPrintIssues(&w, options, globals->getPropBool("UPDATEWU"));
     }
     else if (stricmp(action, "dump")==0)
     {

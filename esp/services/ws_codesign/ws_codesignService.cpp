@@ -34,20 +34,13 @@ void Cws_codesignEx::init(IPropertyTree *cfg, const char *process, const char *s
     StringBuffer xpath;
     xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     m_serviceCfg.setown(cfg->getPropTree(xpath.str()));
-
-    StringBuffer output, errmsg;
-    int ret = runExternalCommand(output, errmsg, "gpg --version", "");
-    if (ret != 0)
-        throw MakeStringException(-1, "Error running gpg: %s", errmsg.str());
-
-    isGPGv1 = strstr(output.str(), "gpg (GnuPG) 1.");
 }
 
 void Cws_codesignEx::clearPassphrase(const char* key)
 {
     StringBuffer output, errmsg;
     VStringBuffer cmd("gpg-connect-agent \"clear_passphrase --mode=normal %s\" /bye", key);
-    runExternalCommand(output, errmsg, cmd.str(), "");
+    runExternalCommand(output, errmsg, cmd.str(), nullptr);
 }
 
 bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSignResponse &resp)
@@ -69,11 +62,19 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
     }
 
     StringBuffer cmd, output, errmsg;
+
+    int ret = runExternalCommand(output, errmsg, "gpg --version", nullptr);
+    if (ret != 0)
+        throw MakeStringException(-1, "Error running gpg: %s", errmsg.str());
+    bool isGPGv1 = strstr(output.str(), "gpg (GnuPG) 1.");
+
+    output.clear();
+    errmsg.clear();
     if (isGPGv1)
         cmd.appendf("gpg --list-secret-keys \"%s\"", keyid.str());
     else
         cmd.appendf("gpg --list-secret-keys --with-keygrip \"%s\"", keyid.str());
-    int ret = runExternalCommand(output, errmsg, cmd.str(), "");
+    ret = runExternalCommand(output, errmsg, cmd.str(), nullptr);
     if (ret != 0 || strstr(output.str(), keyid.str()) == nullptr)
     {
         resp.setErrMsg("Key not found");

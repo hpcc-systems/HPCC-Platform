@@ -127,7 +127,7 @@
 &lt;/Environment&gt;
 </programlisting></para>
 
-    <para>Hosts can be specified by hostname or IP address. </para>
+    <para>Hosts can be specified by hostname or IP address.</para>
 
     <para>Roles must be one of the following supported roles:</para>
 
@@ -235,6 +235,18 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       <para>(found in /opt/HPCCSystems/bin/)</para>
 
       <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+    </sect3>
+
+    <sect3>
+      <title>Update Dali without restarting</title>
+
+      <para>To update whitelist information in Dali without restarting, use
+      the <emphasis role="bold">updtdalienv</emphasis> command line
+      tool</para>
+
+      <para>(found in /opt/HPCCSystems/bin/)</para>
+
+      <para><programlisting>updtdalienv &lt;environment-xml-file&gt; -i &lt;dali-ip&gt; </programlisting></para>
     </sect3>
 
     <sect3 role="brk">

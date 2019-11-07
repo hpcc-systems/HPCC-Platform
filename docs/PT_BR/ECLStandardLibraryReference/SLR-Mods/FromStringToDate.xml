@@ -23,15 +23,14 @@
         <row>
           <entry><emphasis>date_text</emphasis></entry>
 
-          <entry>A string a ser convertida</entry>
+          <entry>A string a ser convertida.</entry>
         </row>
 
         <row>
-          <entry><emphasis>formato</emphasis></entry>
+          <entry><emphasis>format</emphasis></entry>
 
-          <entry>. O formato da string de entrada. Consulte a documentação de
-          strftime para obter detalhes (&lt;ulink
-          url="http://strftime.org/"&gt;http://strftime.org/&lt;/ulink&gt;)<ulink
+          <entry>O formato da string de entrada. Consulte a documentação de
+          strftime para obter detalhes (<ulink
           url="http://strftime.org/">http://strftime.org/</ulink>)</entry>
         </row>
 
@@ -47,9 +46,11 @@
   </informaltable>
 
   <para>A função <emphasis role="bold">FromStringToDate</emphasis> converte
-  uma string em Date_t usando o formato de string relevante. A data resultante
-  deve ser representável dentro do calendário gregoriano após o ano
-  1600.</para>
+  uma string em Date_t usando o formato de string relevante.</para>
+
+  <para>Se a data resultante tiver que ser representável dentro do calendário
+  Gregoriano após o ano 1600, você deve usar a função
+  Std.Date.IsValidGregorianDate() para determinar sua validade.</para>
 
   <para><programlisting>Supported characters:
 
@@ -68,7 +69,7 @@ Common date formats
     American    '%m/%d/%Y'  mm/dd/yyyy
     Euro        '%d/%m/%Y'  dd/mm/yyyy
     Iso format  '%Y-%m-%d'  yyyy-mm-dd
-    Iso basic   'Y%m%d'     yyyymmdd
+    Iso basic   '%Y%m%d'     yyyymmdd
                 '%d-%b-%Y'  dd-mon-yyyy    e.g., '21-Mar-1954'
 </programlisting></para>
 
@@ -86,5 +87,6 @@ D4:= STD.Date.FromStringToDate('29/4/1974', '%d/%m/%Y');
     //D4 contains 19740429
  </programlisting>
 
-  <para/>
+  <para>Veja também: <link
+  linkend="IsValidGregorianDate">IsValidGregorianDate</link></para>
 </sect1>

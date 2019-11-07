@@ -2792,11 +2792,15 @@ public:
 
             if (rhsDistributor)
             {
+                // NB: if rhsDistributor is in use, its stream is already consumed by processDistRight()
                 rhsDistributor->disconnect(true);
                 rhsDistributor->join();
             }
             if (lhsDistributor)
             {
+                // If LHS distributor is in use, must signal stop to ensure distributor doesn't stall in receiver
+                if (left)
+                    left->stop();
                 lhsDistributor->disconnect(true);
                 lhsDistributor->join();
             }

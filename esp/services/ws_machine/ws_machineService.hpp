@@ -683,6 +683,7 @@ class CGetMachineInfoData
 
     StringArray                     roxieClusters;
     BoolHash                        uniqueRoxieClusters;
+    MapStringTo<int>                channelsMap;
 
 public:
     CGetMachineInfoUserOptions& getOptions()
@@ -719,6 +720,10 @@ public:
         roxieClusters.append(clusterName);
         uniqueRoxieClusters.setValue(clusterName, true);
     }
+
+    MapStringTo<int>& getChannelsMap() { return channelsMap; };
+    void addToChannelsMap(const char* key, int channels) { channelsMap.setValue(key, channels); };
+    int* getChannels(const char* key) { return channelsMap.getValue(key); };
 };
 
 const unsigned MACHINE_USAGE_MAX_CACHE_SIZE = 8;
@@ -903,7 +908,7 @@ private:
     void getThorProcesses(IConstEnvironment* constEnv,  IPropertyTree* cluster, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses);
     const char* getProcessTypeFromMachineType(const char* machineType);
     void readSettingsForTargetClusters(IEspContext& context, StringArray& targetClusters, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
-    void readTargetClusterProcesses(IPropertyTree& targetClusters, const char* processType, BoolHash& uniqueProcesses, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
+    void readTargetClusterProcesses(IEspContext& context, IPropertyTree& targetClusters, const char* processType, BoolHash& uniqueProcesses, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
     void setTargetClusterInfo(IPropertyTree* pTargetClusterTree, IArrayOf<IEspMachineInfoEx>& machineArray, IArrayOf<IEspTargetClusterInfo>& targetClusterInfoList);
 
     void buildPreflightCommand(IEspContext& context, CMachineInfoThreadParam* pParam, StringBuffer& preflightCommand);
@@ -983,6 +988,7 @@ private:
     bool readComponentUsageCache(IEspContext& context, const char* id, IEspGetComponentUsageResponse& resp);
     bool readTargetClusterUsageCache(IEspContext& context, const char* id, IEspGetTargetClusterUsageResponse& resp);
     bool readNodeGroupUsageCache(IEspContext& context, const char* id, IEspGetNodeGroupUsageResponse& resp);
+    void addChannels(CGetMachineInfoData& machineInfoData, IPropertyTree* envRoot, const char* componentType, const char* componentName);
 
     //Still used in StartStop/Rexec, so keep them for now.
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };

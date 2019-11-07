@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="getLocalId">
+  <title>getLocalId</title>
+
+  <para><emphasis role="bold">STD.System.Log.getLocalId<indexterm>
+      <primary>STD.System.Log.getLocalId</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.getLocalId</primary>
+    </indexterm> <indexterm>
+      <primary>Log.getLocalId</primary>
+    </indexterm> <indexterm>
+      <primary>getLocalId</primary>
+    </indexterm>(</emphasis>)</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>getLocalId retorna o Local Id.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>O <emphasis role="bold">getLocalId </emphasis>obtém o Local ID
+  associado à consulta ou unidade de trabalho atual. Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.System.Log.getLocalId();    
+</programlisting>
+</sect1>
