@@ -24,7 +24,6 @@ class Cws_codesignEx : public Cws_codesign
 {
 private:
     Owned<IPropertyTree> m_serviceCfg;
-    bool isGPGv1 = false;
     void clearPassphrase(const char* key);
 public:
     IMPLEMENT_IINTERFACE
