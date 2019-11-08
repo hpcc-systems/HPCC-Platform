@@ -78,6 +78,7 @@ define({root:
     CancelAll: "Cancel All",
     CancelAllMessage: "Abort running jobs and clear queue. Do you wish to continue?",
     Chart: "Chart",
+    Channel: "Channel",
     CheckAllNodes: "Check All Nodes",
     CheckFilePermissions: "Check File Permissions",
     CheckSingleNode: "Check Single Node",
