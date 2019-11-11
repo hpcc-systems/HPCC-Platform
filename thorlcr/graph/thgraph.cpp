@@ -2792,7 +2792,7 @@ void CJobBase::endJob()
     {
         jobChannels.kill(); // avoiding circular references. Kill before other CJobBase components are destroyed that channels reference.
         ::Release(userDesc);
-        callThreadTerminationHooks(); // must call any installed thread termination functions, before unloading plugins
+        callThreadTerminationHooks(true); // must call any installed thread termination functions, before unloading plugins // MORE - this is a bit dodgy if we ever reuse a thread that has java embeds on
         ::Release(pluginMap);
 
         traceMemUsage();

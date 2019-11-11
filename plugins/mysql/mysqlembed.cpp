@@ -1378,14 +1378,14 @@ static bool mysqlInitialized = false;
 static __thread bool mysqlThreadInitialized = false;
 static CriticalSection initCrit;
 
-static void terminateMySqlThread()
+static void terminateMySqlThread(bool isPooled)
 {
     MySQLConnection::clearThreadCache();
     mysql_thread_end();
     mysqlThreadInitialized = false;  // In case it was a threadpool thread...
     if (threadHookChain)
     {
-        (*threadHookChain)();
+        (*threadHookChain)(isPooled);
         threadHookChain = NULL;
     }
 }
@@ -1673,7 +1673,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter() override {}
+    virtual void enter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
 protected:
     void lazyExecute()

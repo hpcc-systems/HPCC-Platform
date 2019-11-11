@@ -1829,7 +1829,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter() override {}
+    virtual void enter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
 
 protected:
