@@ -170,7 +170,8 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
             IWARNLOG("Receive Monitor Packet: wrong size, got %d, less than HeartBeatPacketHeader size", read);
             return 0;
         }
-        memcpy(&hb, mb.readDirect(sizeof(HeartBeatPacketHeader)), sizeof(HeartBeatPacketHeader));
+        //Cast is to avoid warning about writing to an object with non trivial copy assignment
+        memcpy(reinterpret_cast<void *>(&hb), mb.readDirect(sizeof(HeartBeatPacketHeader)), sizeof(HeartBeatPacketHeader));
         if (read != hb.packetSize)  // check for corrupt packets
         {
             IWARNLOG("Receive Monitor Packet: wrong size, expected %d, got %d", hb.packetSize, read);
@@ -294,7 +295,6 @@ public:
             Owned<ISocket> sock = ISocket::udp_connect(getFixedPort(masterEp.port, TPORT_watchdog), ipStr.str());
             // send empty packet, stopped set, will cease reading
             HeartBeatPacketHeader hb;
-            memset(&hb, 0, sizeof(hb));
             hb.packetSize = sizeof(HeartBeatPacketHeader);
             sock->write(&hb, sizeof(HeartBeatPacketHeader));
             sock->close();

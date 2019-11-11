@@ -601,7 +601,7 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
         parsortvecstableinplace(rows, n, compare, stableTablePtr, maxCores);
     }
     else
-        parqsortvec((void **const)rows, n, compare, maxCores);
+        parqsortvec((void **)rows, n, compare, maxCores);
 }
 
 inline const void **CThorExpandingRowArray::_allocateRowTable(rowidx_t num, unsigned maxSpillCost)
@@ -966,7 +966,7 @@ bool CThorExpandingRowArray::resize(rowidx_t requiredRows, unsigned maxSpillCost
 void CThorExpandingRowArray::sort(ICompare &compare, unsigned maxCores)
 {
     if (numRows>1)
-        doSort(numRows, (void **const)rows, compare, maxCores);
+        doSort(numRows, (void **)rows, compare, maxCores);
 }
 
 void CThorExpandingRowArray::reorder(rowidx_t start, rowidx_t num, rowidx_t *neworder)
@@ -1361,7 +1361,7 @@ void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
     rowidx_t n = numCommitted();
     if (n>1)
     {
-        void **const rows = (void **const)getBlock(n);
+        void ** rows = (void **)getBlock(n);
         doSort(n, rows, compare, maxCores);
     }
 }

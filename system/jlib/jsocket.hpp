@@ -76,9 +76,9 @@ enum JSOCKET_ERROR_CODES {
 //
 class jlib_decl IpAddress
 {
-    unsigned netaddr[4];
+    unsigned netaddr[4] = { 0, 0, 0, 0 };
 public:
-    IpAddress()                                         { ipset(NULL); }
+    IpAddress() = default;
     IpAddress(const IpAddress& other)                   { ipset(other); }
     explicit IpAddress(const char *text)                { ipset(text); }
     
@@ -140,11 +140,11 @@ extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);
 class jlib_decl SocketEndpoint : extends IpAddress
 {
 public:
-    SocketEndpoint()                                            { set(NULL,0); };
+    SocketEndpoint() = default;
     SocketEndpoint(const char *name,unsigned short _port=0)     { set(name,_port); };
     SocketEndpoint(unsigned short _port)                        { setLocalHost(_port); };
     SocketEndpoint(unsigned short _port, const IpAddress & _ip) { set(_port,_ip); };          
-    SocketEndpoint(const SocketEndpoint &other) : IpAddress(other) { port = other.port; }
+    SocketEndpoint(const SocketEndpoint &other) = default;
 
     void deserialize(MemoryBuffer & in);
     void serialize(MemoryBuffer & out) const;
@@ -168,8 +168,9 @@ public:
 
     unsigned hash(unsigned prev) const;
     
-    unsigned short port;
-
+    unsigned short port = 0;
+    // Ensure that all the bytes in the data structure are initialised to avoid complains from valgrind when it is written to a socket
+    unsigned short portPadding = 0;
 };
 
 class jlib_decl SocketEndpointArray : public StructArrayOf<SocketEndpoint>
