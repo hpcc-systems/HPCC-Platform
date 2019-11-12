@@ -46,7 +46,7 @@ static const char * compatibleVersions[] = {
 static const char *version = "Java Embed Helper 1.0.0";
 
 #ifdef _DEBUG
-//#define TRACE_GLOBALREF
+#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
 //#define CHECK_JNI
 //#define FORCE_GC
@@ -482,6 +482,15 @@ public:
         checkException();
         return result;
     }
+    jlong CallIntMethod(jobject obj, jmethodID methodID, ...) {
+        va_list args;
+        jlong result;
+        va_start(args,methodID);
+        result = functions->CallIntMethodV(this,obj,methodID,args);
+        va_end(args);
+        checkException();
+        return result;
+    }
     jboolean CallBooleanMethod(jobject obj, jmethodID methodID, ...)
     {
         va_list args;
@@ -735,6 +744,8 @@ static jclass arrayListClass;
 static jmethodID arrayList_toArray;
 static jmethodID arrayList_constructor;
 static jmethodID arrayList_add;
+static jmethodID arrayList_size;
+static jmethodID arrayList_get;
 static jclass langStringClass;
 static jclass netURLClass;
 static jmethodID netURL_constructor;
@@ -777,6 +788,8 @@ static void setupGlobals(CheckedJNIEnv *J)
         arrayListClass = J->FindGlobalClass("java/util/ArrayList");
         arrayList_constructor = J->GetMethodID(arrayListClass, "<init>", "()V");
         arrayList_add = J->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
+        arrayList_size = J->GetMethodID(arrayListClass, "size", "()I");
+        arrayList_get = J->GetMethodID(arrayListClass, "get", "(I)Ljava/lang/Object;");
         arrayList_toArray = J->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
 
         langStringClass = J->FindGlobalClass("java/lang/String");
@@ -821,10 +834,21 @@ static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz
  * and use the instance created by the first thread.
  *
  */
-class PersistedObject : public MappingBase
+
+class PersistedObjectBase : public MappingBase
 {
 public:
-    PersistedObject(const char *_name) : name(_name) {}
+    CriticalSection crit;
+    StringAttr name;
+    virtual const void * getKey() const { return name; }
+    virtual void setInstance(jobject instance) = 0;
+    virtual jobject getInstance() const = 0;
+};
+
+class PersistedObject : public PersistedObjectBase
+{
+public:
+    PersistedObject(const char *_name) : PersistedObjectBase(_name) {}
     ~PersistedObject()
     {
         if (instance)
@@ -835,15 +859,46 @@ public:
             queryJNIEnv()->DeleteGlobalRef(instance);
         }
     }
-    CriticalSection crit;
+    virtual void setInstance(jobject _instance) override
+    {
+        instance = _instance;
+    }
+    virtual jobject getInstance() const override
+    {
+        return instance;
+    }
     jobject instance = nullptr;
-    StringAttr name;
-    virtual const void * getKey() const { return name; }
 };
+
+class MultiPersistedObject : public PersistedObjectBase
+{
+public:
+    MultiPersistedObject(const char *_name) : PersistedObjectBase(_name) {}
+    ~MultiPersistedObject()
+    {
+        for (jobject instance : instances)
+        {
+#ifdef TRACE_GLOBALREF
+            DBGLOG("DeleteGlobalRef(multiconstructed): %p", instance);
+#endif
+            queryJNIEnv()->DeleteGlobalRef(instance);
+        }
+    }
+    virtual void setInstance(jobject _instance) override
+    {
+        instances.push_back(_instance);
+    }
+    virtual jobject getInstance() const override
+    {
+        return nullptr;
+    }
+    std::vector<jobject> instances;
+};
+
 
 class PersistedObjectCriticalBlock
 {
-    PersistedObject *obj = nullptr;
+    PersistedObjectBase *obj = nullptr;
 public:
     inline PersistedObjectCriticalBlock()
     {
@@ -853,7 +908,7 @@ public:
         if (obj)
             obj->crit.leave();
     }
-    inline void enter(PersistedObject *_obj)
+    inline void enter(PersistedObjectBase *_obj)
     {
         // Note that the object should be locked before we are called
         assertex(!obj);
@@ -864,7 +919,7 @@ public:
         if (obj)
         {
             if (instance)
-                obj->instance = instance;
+                obj->setInstance(instance);
             obj->crit.leave();
             obj = nullptr;
         }
@@ -873,13 +928,12 @@ public:
     {
         return obj != nullptr;
     }
-    jobject getInstance()
+    jobject getInstance() const
     {
         assertex(obj);
-        return obj->instance;
+        return obj->getInstance();
     }
 };
-
 
 // Use a global object to ensure that the Java VM  is initialized once only.
 // We would like to create it lazily for two reasons:
@@ -911,7 +965,7 @@ static StringBuffer &appendClassPath(StringBuffer &classPath)
 static class JavaGlobalState
 {
 public:
-    JavaGlobalState() : persistedObjects(false)
+    JavaGlobalState()
     {
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
 
@@ -1009,39 +1063,47 @@ public:
         // We don't attempt to destroy the Java VM, as it's buggy...
     }
 
-    PersistedObject *getGlobalObject(CheckedJNIEnv *JNIenv, const char *name)
+    PersistedObjectBase *getGlobalObject(CheckedJNIEnv *JNIenv, const char *name, bool singleton)
     {
-        PersistedObject *p;
+        PersistedObjectBase *p;
         {
             CriticalBlock b(hashCrit);
-            p = persistedObjects.find(name);
+            p = persistedObjects[singleton].find(name);
             if (!p)
             {
-                p = new PersistedObject(name);
-                persistedObjects.replaceOwn(*p);
+                if (singleton)
+                    p = new PersistedObject(name);
+                else
+                    p = new MultiPersistedObject(name);
+                persistedObjects[singleton].replaceOwn(*p);
             }
         }
         p->crit.enter();  // outside the hashCrit block, otherwise I think there is a possibility of deadlock
         return p;
     }
 
-    void doUnregister(const char *key)
+    void doUnregister(const char *key, bool singleton)
     {
         CriticalBlock b(hashCrit);
-        persistedObjects.remove(key);
+        PersistedObjectBase *p = persistedObjects[singleton].find(key);
+        persistedObjects[singleton].remove(key);
+#ifdef FORCE_GC
+        forceGC(queryJNIEnv());
+#endif
     }
     static void unregister(const char *key);
     JavaVM *javaVM;       /* denotes a Java VM */
 private:
     CriticalSection hashCrit;
-    StringMapOf<PersistedObject> persistedObjects;
+    StringMapOf<PersistedObjectBase> persistedObjects[2] = { false, false };
 
 } *globalState;
 
 void JavaGlobalState::unregister(const char *key)
 {
     // Remove a class that was persisted via : PERSIST options - it has come to the end of its life
-    globalState->doUnregister(key);
+    globalState->doUnregister(key, false);
+    globalState->doUnregister(key, true);
 }
 
 #ifdef _WIN32
@@ -3268,6 +3330,8 @@ public:
                         break;
                     }
                 }
+                else if (strieq(optName, "singleton"))
+                    singleton = true;
                 else
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
@@ -4183,14 +4247,20 @@ public:
             {
                 if (streq(methodName, "<init>"))
                 {
-                    if (!instance)
+                    if (!instance || !singleton)
                     {
                         if (persistMode == persistNone)
                             throw MakeStringException(0, "Cannot return object without persist");
                         StringBuffer scopeKey;
                         getScopeKey(scopeKey);
                         PersistedObjectCriticalBlock persistBlock;
-                        persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey));
+                        persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey, singleton));
+                        // In the explicitly-called constructor case, there are two usage models
+                        // In one, the object constructed is a singleton (for a given persist scope, for a given globalScope key).
+                        // In the other, we create a new object each time the constructor is called.
+                        // In both, the persist is controlling the lifetime of the object we construct
+                        // In singleton mode, the instance stored in the persistedObject is the object itself
+                        // In non-singleton mode, the instance in the persistedObject is a Java array (so when that is released, all objects are released with it)
                         instance = persistBlock.getInstance();
                         if (instance)
                             persistBlock.leave();
@@ -4200,7 +4270,7 @@ public:
 #ifdef TRACE_GLOBALREF
                             StringBuffer myClassName;
                             getClassNameForObject(JNIenv, myClassName, instance);
-                            DBGLOG("Constructed object %p of class %s", instance, myClassName.str());
+                            DBGLOG("Constructed singleton object %p of class %s", instance, myClassName.str());
 #endif
                             if (persistMode==persistQuery || persistMode==persistWorkunit || persistMode==persistChannel)
                             {
@@ -4292,7 +4362,7 @@ public:
     }
     virtual void exit() override
     {
-        if (persistMode==persistNone)
+        if (persistMode==persistNone || !singleton)
             instance = 0;  // otherwise we leave it for next call as it saves a lot of time looking it up
         JNIenv->PopLocalFrame(nullptr);
         iterators.kill();
@@ -4443,7 +4513,7 @@ protected:
                     // If a persist scope is specified, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
                     assertex(classname.length());  // MORE - what does this imply?
                     getScopeKey(scopeKey);
-                    persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey));
+                    persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey, true));
                     instance = persistBlock.getInstance();
                     if (instance)
                         persistBlock.leave();
@@ -4597,6 +4667,7 @@ protected:
     StringBuffer classname;
     IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
     bool nonStatic = false;
+    bool singleton = false;
     jobject instance = nullptr; // class instance of object to call methods on
     const IThorActivityContext *activityContext = nullptr;
 
