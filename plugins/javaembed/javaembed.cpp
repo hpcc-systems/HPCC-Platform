@@ -3280,7 +3280,10 @@ public:
     ~JavaEmbedImportContext()
     {
         DBGLOG("Unloading");
-        endThread(); // probably already done
+        if (javaClass)
+            JNIenv->DeleteGlobalRef(javaClass);
+        if (classLoader)
+            JNIenv->DeleteGlobalRef(classLoader);
     }
 
     virtual void endThread() override
@@ -4573,16 +4576,17 @@ protected:
         case persistGlobal:
             ret.append("global");
             break;
-            // Fall into
         case persistWorkunit:
             engine->getQueryId(ret, true);
             break;
         case persistChannel:
             ret.append(nodeNum).append('.');
+            // Fall into
         case persistQuery:
             engine->getQueryId(ret, false);
             break;
         }
+        DBGLOG("getScopeKey returns %s", ret.str());
         return ret;
     }
 
@@ -4613,7 +4617,7 @@ protected:
     // These point to the current arg/signature byte as we are binding
     int argcount = 0;
     jvalue args[MAX_JNI_ARGS];
-    const char *argsig = nullptr;  // A pointer within signature
+    const char *argsig = nullptr;  // A pointer within signature
 
     void reinit()
     {
