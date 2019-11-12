@@ -35,6 +35,9 @@
 #include "esdl_def.hpp"
 #include "enginecontext.hpp"
 
+#include <map>
+#include <string>
+
 #ifndef _WIN32
  #include <sys/resource.h>
 #endif
@@ -48,8 +51,8 @@ static const char *version = "Java Embed Helper 1.0.0";
 #ifdef _DEBUG
 #define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
-//#define CHECK_JNI
-//#define FORCE_GC
+#define CHECK_JNI
+#define FORCE_GC
 /* Note - if you enable CHECK_JNI and see output like:
  *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
  * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
@@ -843,6 +846,8 @@ public:
     virtual const void * getKey() const { return name; }
     virtual void setInstance(jobject instance) = 0;
     virtual jobject getInstance() const = 0;
+    virtual void remove(std::map<jobject, std::pair<std::string, bool>> &allObjects) const = 0;
+    virtual bool removeObject(jobject instance) = 0;
 };
 
 class PersistedObject : public PersistedObjectBase
@@ -867,6 +872,15 @@ public:
     {
         return instance;
     }
+    virtual void remove(std::map<jobject, std::pair<std::string, bool>> &allObjects) const override
+    {
+        allObjects.erase(instance);
+    }
+    virtual bool removeObject(jobject _instance) override
+    {
+        throwUnexpected();
+    }
+private:
     jobject instance = nullptr;
 };
 
@@ -876,23 +890,43 @@ public:
     MultiPersistedObject(const char *_name) : PersistedObjectBase(_name) {}
     ~MultiPersistedObject()
     {
-        for (jobject instance : instances)
+        for (auto instance : instances)
         {
 #ifdef TRACE_GLOBALREF
-            DBGLOG("DeleteGlobalRef(multiconstructed): %p", instance);
+            DBGLOG("DeleteGlobalRef(multiconstructed): %p", instance.first);
 #endif
-            queryJNIEnv()->DeleteGlobalRef(instance);
+            queryJNIEnv()->DeleteGlobalRef(instance.first);
         }
     }
     virtual void setInstance(jobject _instance) override
     {
-        instances.push_back(_instance);
+        instances[_instance] = _instance;
     }
     virtual jobject getInstance() const override
     {
         return nullptr;
     }
-    std::vector<jobject> instances;
+    virtual void remove(std::map<jobject, std::pair<std::string, bool>> &allObjects) const override
+    {
+        for (auto instance : instances)
+            allObjects.erase(instance.first);
+    }
+    virtual bool removeObject(jobject _instance) override
+    {
+        auto found = instances.find(_instance);
+        if (found != instances.end())
+        {
+#ifdef TRACE_GLOBALREF
+            DBGLOG("DeleteGlobalRef(multiconstructed): %p", found->first);
+#endif
+            queryJNIEnv()->DeleteGlobalRef(found->first);
+            instances.erase(found);
+            return true;
+        }
+        return false;
+    }
+private:
+    std::map<jobject, jobject> instances;
 };
 
 
@@ -1082,10 +1116,44 @@ public:
         return p;
     }
 
+    void noteGlobalObject(jobject obj, const char *name, bool singleton)
+    {
+        CriticalBlock b(hashCrit);
+        allObjects[obj] = { name, singleton };
+    }
+
+    bool releaseGlobalObject(jobject obj)
+    {
+        CriticalBlock b(hashCrit);
+        auto found = allObjects.find(obj);
+        if (found != allObjects.end())
+        {
+            const char *globalKey = found->second.first.c_str();
+            bool singleton = found->second.second;
+            bool ret;
+            if (singleton)
+                ret = persistedObjects[true].remove(globalKey);
+            else
+            {
+                PersistedObjectBase *p = persistedObjects[false].find(globalKey);
+                ret = p && p->removeObject(obj);
+            }
+
+#ifdef FORCE_GC
+            forceGC(queryJNIEnv());
+#endif
+            return ret;
+        }
+        else
+            return false;
+    }
+
     void doUnregister(const char *key, bool singleton)
     {
         CriticalBlock b(hashCrit);
         PersistedObjectBase *p = persistedObjects[singleton].find(key);
+        if (p)
+            p->remove(allObjects);
         persistedObjects[singleton].remove(key);
 #ifdef FORCE_GC
         forceGC(queryJNIEnv());
@@ -1096,7 +1164,7 @@ public:
 private:
     CriticalSection hashCrit;
     StringMapOf<PersistedObjectBase> persistedObjects[2] = { false, false };
-
+    std::map<jobject, std::pair<std::string, bool>> allObjects;
 } *globalState;
 
 void JavaGlobalState::unregister(const char *key)
@@ -3331,7 +3399,7 @@ public:
                     }
                 }
                 else if (strieq(optName, "singleton"))
-                    singleton = true;
+                    singleton = strToBool(val);
                 else
                     throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
             }
@@ -4277,6 +4345,7 @@ public:
                                 assertex(engine);
                                 engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
                             }
+                            globalState->noteGlobalObject(instance, scopeKey, singleton);
                             persistBlock.leave(instance);
                         }
                     }
@@ -5097,6 +5166,11 @@ extern DECL_EXPORT void checkImport(size32_t & __lenResult, char * & __result, c
     }
     __lenResult = result.length();
     __result = result.detach();
+}
+
+extern DECL_EXPORT bool releaseObject(uint64_t obj)
+{
+    return globalState->releaseGlobalObject((jobject) obj);
 }
 
 } // namespace

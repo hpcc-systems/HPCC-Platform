@@ -20,11 +20,15 @@ EXPORT Language := SERVICE : plugin('javaembed')
   DATA precompile(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='precompile',fold;
   STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='syntaxCheck',fold;
   STRING checkImport(const varstring funcname, UTF8 importString, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='javaembed',entrypoint='checkImport',fold;
+
+  boolean releaseObject(unsigned obj):cpp,pure,namespace='javaembed',entrypoint='releaseObject';
+
 END;
 EXPORT getEmbedContext := Language.queryEmbedContext;
 EXPORT precompile := Language.precompile;
 EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT checkImport := Language.checkImport;
+EXPORT release := Language.releaseObject;
 EXPORT boolean supportsImport := true;
 EXPORT boolean supportsScript := true;
 EXPORT boolean threadlocal := true;
