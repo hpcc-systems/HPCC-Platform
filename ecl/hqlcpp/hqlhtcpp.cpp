@@ -9598,7 +9598,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     if (options.optimizeResourcedProjects)
     {
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), projectBeforeSpill);
-        traceExpression("AfterResourcedImplicit", resourced);
+        traceExpression("AfterResourcedImplicit", optimized);
         checkNormalized(optimized);
 
         if (optimized != resourced)
