@@ -27,5 +27,5 @@ EXPORT syntaxCheck := Language.syntaxCheck;
 EXPORT checkImport := Language.checkImport;
 EXPORT boolean supportsImport := true;
 EXPORT boolean supportsScript := true;
-EXPORT boolean threadlocal := true;  // MORE - if Iset this to false, the PERSIST(THREAD) version fails - but this will be set to false by compiler in some cases
+EXPORT boolean threadlocal := true;
 EXPORT boolean singletonEmbedContext := true;
