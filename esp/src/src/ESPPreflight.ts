@@ -248,6 +248,7 @@ var ClusterProcessesList = declare([ESPRequest.Store], {
             displayName: row.Name,
             type: "machine",
             Component: row.Type,
+            Channel: row.Channels,
             Domain: row.Domain,
             Directory: "",
             Parent: this.parent

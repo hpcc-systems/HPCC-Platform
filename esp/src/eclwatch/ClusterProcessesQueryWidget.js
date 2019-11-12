@@ -187,6 +187,11 @@ define([
                         sortable: false,
                         width: 100
                     },
+                    Channel: {
+                        label: this.i18n.Channel,
+                        sortable: false,
+                        width: 100
+                    },
                     Directory: {
                         label: this.i18n.Directory,
                         sortable: false,
