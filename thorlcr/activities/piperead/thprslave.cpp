@@ -38,6 +38,7 @@ protected:
     bool eof, pipeFinished;
     unsigned retcode;
     unsigned flags;
+    Owned<IException> verifyPipeException;
 
 protected:
 
@@ -119,9 +120,10 @@ protected:
                     }
                 }
                 if (START_FAILURE == retcode) // PIPE process didn't start at all, START_FAILURE is our own error code
-                    throw MakeActivityException(this, TE_PipeReturnedFailure, "Process failed to start: %s - PIPE(%s)", stdError.str(), pipeCommand.get());
+                    verifyPipeException.setown(MakeActivityException(this, TE_PipeReturnedFailure, "Process failed to start: %s - PIPE(%s)", stdError.str(), pipeCommand.get()));
                 else
-                    throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get());
+                    verifyPipeException.setown(MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d:%s - PIPE(%s)", retcode, stdError.str(), pipeCommand.get()));
+                throw verifyPipeException.getLink();
             }
         }
     }
@@ -478,7 +480,8 @@ public:
         Owned<IException> wrexc = pipeWriter->joinExc();
         PARENT::stop();
         verifyPipe();
-        if (wrexc)
+        Owned<IException> hadVerifyPipeException = verifyPipeException.getClear(); // ensured cleared in case in CQ
+        if (wrexc && !hadVerifyPipeException)
             throw wrexc.getClear();
         if (retcode!=0 && !(flags & TPFnofail))
             throw MakeActivityException(this, TE_PipeReturnedFailure, "Process returned %d", retcode);
