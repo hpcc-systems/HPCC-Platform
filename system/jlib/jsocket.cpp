@@ -7001,3 +7001,5 @@ IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc
     return new CWhiteListHandler(populateFunc, roleFormatFunc);
 }
 
+static_assert(sizeof(IpAddress) == 16, "check size of IpAddress");
+static_assert(sizeof(SocketEndpoint) == 20, "check size of SocketEndpoint");

@@ -274,12 +274,7 @@ IStartableEngineRowStream *createRowStreamLookAhead(CSlaveActivity *activity, IE
 
 void initMetaInfo(ThorDataLinkMetaInfo &info)
 {
-    memset(&info,0,sizeof(info));
-    //info.rowsdone = xx;
-    info.totalRowsMin = 0;          
-    info.totalRowsMax = -1; // rely on inputs to set
-    info.spilled = (offset_t)-1;
-    info.byteTotal = (offset_t)-1;
+    info = {}; // Reset to default values.
 }
 
 void calcMetaInfoSize(ThorDataLinkMetaInfo &info, IThorDataLink *link)

@@ -40,8 +40,6 @@ class CGraphProgressHandlerBase : public CSimpleInterface, implements ISlaveWatc
     {
         MemoryBuffer sendMb, progressMb;
         HeartBeatPacketHeader hb;
-        //clear struct, to avoid spurious warnings when serializing raw [unpacked] struct
-        memset(&hb, 0, sizeof(HeartBeatPacketHeader));
         hb.sender = self;
         hb.tick++;
         size32_t progressSizePos = (byte *)&hb.progressSize - (byte *)&hb;
@@ -201,7 +199,8 @@ public:
     virtual void sendData(MemoryBuffer &mb)
     {
         HeartBeatPacketHeader hb;
-        memcpy(&hb, mb.toByteArray(), sizeof(HeartBeatPacketHeader));
+        //Cast is to avoid warning about writing to an object with non trivial copy assignment
+        memcpy(reinterpret_cast<void *>(&hb), mb.toByteArray(), sizeof(HeartBeatPacketHeader));
         if (hb.packetSize > UDP_DATA_MAX)
         {
             IWARNLOG("Progress packet too big! progress lost");
