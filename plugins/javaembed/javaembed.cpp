@@ -49,10 +49,10 @@ static const char * compatibleVersions[] = {
 static const char *version = "Java Embed Helper 1.0.0";
 
 #ifdef _DEBUG
-#define TRACE_GLOBALREF
+//#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
-#define CHECK_JNI
-#define FORCE_GC
+//#define CHECK_JNI
+//#define FORCE_GC
 /* Note - if you enable CHECK_JNI and see output like:
  *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
  * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
@@ -747,8 +747,6 @@ static jclass arrayListClass;
 static jmethodID arrayList_toArray;
 static jmethodID arrayList_constructor;
 static jmethodID arrayList_add;
-static jmethodID arrayList_size;
-static jmethodID arrayList_get;
 static jclass langStringClass;
 static jclass netURLClass;
 static jmethodID netURL_constructor;
@@ -791,8 +789,6 @@ static void setupGlobals(CheckedJNIEnv *J)
         arrayListClass = J->FindGlobalClass("java/util/ArrayList");
         arrayList_constructor = J->GetMethodID(arrayListClass, "<init>", "()V");
         arrayList_add = J->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
-        arrayList_size = J->GetMethodID(arrayListClass, "size", "()I");
-        arrayList_get = J->GetMethodID(arrayListClass, "get", "(I)Ljava/lang/Object;");
         arrayList_toArray = J->GetMethodID(arrayListClass, "toArray", "()[Ljava/lang/Object;" );
 
         langStringClass = J->FindGlobalClass("java/lang/String");
@@ -3344,7 +3340,6 @@ public:
     JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options, const IThorActivityContext *_activityContext)
     : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), activityContext(_activityContext)
     {
-        DBGLOG("Loading");
         argcount = 0;
         argsig = NULL;
         nonStatic = (instance != nullptr);
@@ -3411,7 +3406,6 @@ public:
     }
     ~JavaEmbedImportContext()
     {
-        DBGLOG("Unloading");
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
         if (classLoader)
@@ -3420,7 +3414,6 @@ public:
 
     virtual void endThread() override
     {
-        DBGLOG("endThread");
         instance = nullptr;
         if (javaClass)
         {
@@ -4305,7 +4298,6 @@ public:
 
     virtual void callFunction()
     {
-        DBGLOG("callFunction");
         try
         {
             if (*argsig != ')')
@@ -4725,7 +4717,6 @@ protected:
             engine->getQueryId(ret, false);
             break;
         }
-        DBGLOG("getScopeKey returns %s", ret.str());
         return ret;
     }
 
