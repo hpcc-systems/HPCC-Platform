@@ -153,6 +153,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@ActivityInfoCacheSeconds) != ''">
                 <ActivityInfoCacheSeconds><xsl:value-of select="@ActivityInfoCacheSeconds"/></ActivityInfoCacheSeconds>
             </xsl:if>
+            <xsl:if test="string(@ActivityInfoCacheAutoRebuildSeconds) != ''">
+                <ActivityInfoCacheAutoRebuildSeconds><xsl:value-of select="@ActivityInfoCacheAutoRebuildSeconds"/></ActivityInfoCacheAutoRebuildSeconds>
+            </xsl:if>
             <xsl:if test="string(@enableLogDaliConnection) != ''">
                 <LogDaliConnection><xsl:value-of select="@enableLogDaliConnection"/></LogDaliConnection>
             </xsl:if>

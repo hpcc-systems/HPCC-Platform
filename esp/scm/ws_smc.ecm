@@ -157,6 +157,8 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.12")] bool SuperUser(false);
     [min_ver("1.12")] string AccessRight;
     [min_ver("1.14")] ESParray<ESPstruct ServerJobQueue> ServerJobQueues;
+    [min_ver("1.22")] string ActivityTime;
+    [min_ver("1.22")] bool DaliDetached;
 };
 
 ESPrequest SMCIndexRequest
@@ -399,7 +401,7 @@ ESPresponse [exceptions_inline] LockQueryResponse
     int NumLocks;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.21"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.22"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);

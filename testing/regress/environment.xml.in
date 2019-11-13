@@ -536,6 +536,7 @@
              port="8877"/>
   </SashaServerProcess>
   <EspService ActivityInfoCacheSeconds="10"
+              ActivityInfoCacheAutoRebuildSeconds="120"
               allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
               build="_"
