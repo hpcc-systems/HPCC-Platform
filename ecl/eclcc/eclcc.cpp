@@ -1664,6 +1664,9 @@ void EclCC::processFile(EclCompileInstance & instance)
         instance.archive.setown(createAttributeArchive());
 
     instance.wu.setown(createLocalWorkUnit(NULL));
+    //Record the version of the compiler in the workunit, but not when regression testing (to avoid spurious differences)
+    if (!optBatchMode)
+        instance.wu->setDebugValue("eclcc_compiler_version", LANGUAGE_VERSION, true);
     if (optSaveQueryText)
     {
         Owned<IWUQuery> q = instance.wu->updateQuery();
