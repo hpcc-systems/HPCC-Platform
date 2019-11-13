@@ -46,22 +46,9 @@ define([
             this.inherited(arguments);
             this.openButton = registry.byId(this.id + "Open");
             this.refreshButton = registry.byId(this.id + "Refresh");
-            this.configurationButton = registry.byId(this.id + "Configuration");
 
             this.machineFilter = new MachineInformationWidget({});
-
-            this.configurationButton = new Button({
-                label: this.i18n.OpenConfiguration,
-                onClick: function(event) {
-                    context._onOpenConfiguration()
-                }
-            });
-
             this.machineFilter.placeAt(this.openButton.domNode, "after");
-            this.configurationButton.placeAt(this.openButton.domNode, "after");
-
-            new ToolbarSeparator().placeAt(this.machineFilter.domNode, "before");
-
             this.machineFilter.machineForm.set("style", "width:500px;");
             this.machineFilter.disable(true);
 
@@ -213,10 +200,7 @@ define([
             });
 
             retVal.on(".dgrid-row:dblclick", function (evt) {
-                if (context._onRowDblClick) {
-                    var item = retVal.row(evt).data;
-                    context._onRowDblClick(item);
-                }
+                event.preventDefault();
             });
 
             retVal.on(".dgrid-cell:click", function(evt){
@@ -279,29 +263,13 @@ define([
         refreshActionState: function () {
             var selection = this.grid.getSelected();
             var isTarget = false;
-            var isProcess = false;
 
             for (var i = 0; i < selection.length; ++i) {
-                if (selection.length > 1) {
-                    if (selection[i].type) {
-                        isTarget = false;
-                        isProcess = false;
-                    } else if (!selection[i].type) {
-                        isTarget = true;
-                        isProcess = false;
-                    }    
-                } else {
-                    if (selection[i] && selection[i].type === "targetClusterProcess") {
-                        isTarget = true;
-                        isProcess = false;
-                    } else {
-                        isTarget = false;
-                        isProcess = true;
-                    }
+                if (selection) {
+                    isTarget = true;
                 }
             }
             this.machineFilter.disable(!isTarget);
-            this.configurationButton.set("disabled", !isProcess);
         },
 
         ensureConfigurationPane: function (id, params) {

@@ -244,7 +244,7 @@ var ClusterProcessesList = declare([ESPRequest.Store], {
     preProcessRow: function (row) {
         lang.mixin(row, {
             Platform: this.getOS(row.OS),
-            hpcc_id: row.Name + "_" + row.ProcessNumber,
+            hpcc_id: row.Name + "_" + row.Netaddress + "_" + row.Directory,
             displayName: row.Name,
             type: "machine",
             Component: row.Type,
