@@ -20,10 +20,6 @@ IMPORT Java;
 //version forceNonThread=false
 //version forceNonThread=true
 
-// Disabled on thor and hthor for now as the threading rules, and the resetting of instances between graphs, are different
-
-//nohthor
-//nothor
 
 import ^ as root;
 forceNonThread := #IFDEFINED(root.forceNonThread, false);
@@ -82,7 +78,7 @@ implicit(STRING p, STRING s) := MODULE
 
   // The sequential test runs sequentially for ones that are supposed to interact across threads (otherwise results are indeterminate)
 
-  EXPORT stest := SEQUENTIAL (
+  EXPORT stest := ORDERED (
     output(p + ': sequential');
     output(project(nofold(dataset([{1}], r)), transform(r, self.a := accumulate(LEFT.a))));
     output(project(nofold(dataset([{2}], r)), transform(r, self.a := accumulate(LEFT.a))));
@@ -98,7 +94,8 @@ gc() := EMBED(Java)
     System.gc();
   }
 ENDEMBED;
-sequential(
+
+ORDERED (
   implicit('','').ptest;
   implicit('','').stest;
   implicit('thread','').ptest;
