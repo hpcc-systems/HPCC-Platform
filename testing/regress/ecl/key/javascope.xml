@@ -88,18 +88,3 @@
 <Dataset name='Result 30'>
  <Row><a>52</a></Row>
 </Dataset>
-<Dataset name='Result 31'>
- <Row><Result_31>global: sequential</Result_31></Row>
-</Dataset>
-<Dataset name='Result 32'>
- <Row><a>1</a></Row>
-</Dataset>
-<Dataset name='Result 33'>
- <Row><a>3</a></Row>
-</Dataset>
-<Dataset name='Result 34'>
- <Row><a>6</a></Row>
-</Dataset>
-<Dataset name='Result 35'>
- <Row><a>52</a></Row>
-</Dataset>

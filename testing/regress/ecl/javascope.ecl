@@ -20,6 +20,11 @@ IMPORT Java;
 //version forceNonThread=false
 //version forceNonThread=true
 
+// Disabled on thor and hthor for now as the threading rules, and the resetting of instances between graphs, are different
+
+//nohthor
+//nothor
+
 import ^ as root;
 forceNonThread := #IFDEFINED(root.forceNonThread, false);
 
@@ -100,7 +105,7 @@ sequential(
   implicit('channel','').stest;
   implicit('query','').stest;
   implicit('workunit','').stest;
-  implicit('global','').stest;
+//  implicit('global','').stest;
 //  gc();
 );
 
