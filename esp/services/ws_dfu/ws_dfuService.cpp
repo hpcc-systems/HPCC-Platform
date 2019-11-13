@@ -516,7 +516,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
         else
         {
             Owned<IEspSpaceItem> item64 = createSpaceItem();
-            if (stricmp(countby, COUNTBY_OWNER))
+            if (!strieq(countby, COUNTBY_OWNER))
             {
                 if (scopeName)
                     item64->setName(scopeName);

@@ -222,7 +222,7 @@ void Esdl2Base::serialize_attributes(StringBuffer &out)
         const char *key = piter->getPropKey();
         if (key && *key)
         {
-            if (stricmp(key, "base_type"))
+            if (stricmp(key, "base_type") != 0)
             {
                 const char *value = m_def->queryProp(key);
                 if (value && *value)
