@@ -3135,7 +3135,11 @@ public:
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
     {
         if (workUnit)
-            result.append(workUnit->queryWuid()); // In workunit mode, this works for both shared and non-shared variants
+        {
+            if (isShared)
+                result.append('Q');
+            result.append(workUnit->queryWuid());
+        }
         else if (isShared)
             result.append('Q').append(factory->queryHash());
         else
