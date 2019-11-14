@@ -837,6 +837,7 @@ static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz
 class PersistedObjectBase : public MappingBase
 {
 public:
+    PersistedObjectBase(const char *_name) : name(_name) {}
     CriticalSection crit;
     StringAttr name;
     virtual const void * getKey() const { return name; }
@@ -2475,6 +2476,7 @@ public:
     }
     void endThread()
     {
+        persistedObjects.kill();
         ForEachItemIn(idx, contexts)
         {
             auto &context = contexts.item(idx);
@@ -4423,7 +4425,7 @@ public:
     }
     virtual void exit() override
     {
-        if (persistMode==persistNone || !singleton)
+        if (persistMode==persistNone || (!singleton && strsame(methodName, "<init>")))
             instance = 0;  // otherwise we leave it for next call as it saves a lot of time looking it up
         JNIenv->PopLocalFrame(nullptr);
         iterators.kill();
@@ -4727,7 +4729,7 @@ protected:
     StringBuffer classname;
     IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
     bool nonStatic = false;
-    bool singleton = false;
+    bool singleton = true;
     jobject instance = nullptr; // class instance of object to call methods on
     const IThorActivityContext *activityContext = nullptr;
 
@@ -4748,7 +4750,7 @@ protected:
     // These point to the current arg/signature byte as we are binding
     int argcount = 0;
     jvalue args[MAX_JNI_ARGS];
-    const char *argsig = nullptr;  // A pointer within signature
+    const char *argsig = nullptr;  // A pointer within signature
 
     void reinit()
     {

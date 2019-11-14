@@ -163,7 +163,7 @@ MCached * createConnection(ICodeContext * ctx, const char * options)
         cachedConnection = new MemCachedPlugin::MCached(ctx, options);
         if (!threadHooked)
         {
-        threadHookChain = addThreadTermFunc(releaseContext);
+            threadHookChain = addThreadTermFunc(releaseContext);
             threadHooked = true;
         }
         return LINK(cachedConnection);
