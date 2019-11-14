@@ -1347,6 +1347,59 @@ bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool cr
     return checkLogicalName(dlfn, user, readreq, createreq, allowquery, specialnotallowedmsg);
 }
 
+const char *OFSTR = "_of_";
+
+//Pattern: "/path/thorslave.*_of_m.yyyy-mm-dd[+x].log"
+bool readSlaveLogPattern(const char *pattern, unsigned &numberOfSlaveLogs, StringArray &logDates)
+{
+    const char *tail = pathTail(pattern);
+    if (!tail)
+        return false; //Should not happen
+
+    const char *numberOfSlaveLogsStrPtr = strstr(tail, OFSTR);
+    if (!numberOfSlaveLogsStrPtr)
+        return false; //Should not happen
+
+    numberOfSlaveLogsStrPtr += strlen(OFSTR);
+    const char *datePtr = strchr(numberOfSlaveLogsStrPtr, '.');
+    if (!datePtr)
+        return false; //Should not happen
+
+    StringBuffer numberOfSlaveLogsStr;
+    numberOfSlaveLogsStr.append(datePtr - numberOfSlaveLogsStrPtr, numberOfSlaveLogsStrPtr);
+    numberOfSlaveLogs = atoi(numberOfSlaveLogsStr);
+
+    if (strlen(++datePtr) < 10)
+        return true; //log single file, ex: "/var/log/HPCCSystems/mythor/W20191113-140205/thorslave.*_of_50.log"
+
+    StringBuffer logDate;
+    logDate.append(10, datePtr);
+    logDates.append(logDate);
+
+    datePtr += 10;
+    if (datePtr[0] == '.')
+        return true; //ex: "/var/log/HPCCSystems/mythor/thorslave.*_of_50.2019-11-11.log"
+
+    //ex: "/var/log/HPCCSystems/mythor/thorslave.*_of_50.2019-11-11+n.log"
+    const char *extPtr = strchr(++datePtr, '.');
+    if (!extPtr)
+        return false; //Should not happen
+
+    StringBuffer numberOfDaysStr;
+    numberOfDaysStr.append(extPtr - datePtr, datePtr);
+    unsigned numberOfDays = atoi(numberOfDaysStr);
+
+    CDateTime dt;
+    dt.setDateString(logDate);
+    unsigned dayMinutes= 24*60;
+    while (numberOfDays--)
+    {
+        dt.adjustTime(dayMinutes);
+        dt.getDateString(logDate.clear());
+        logDates.append(logDate);
+    }
+    return true;
+}
 
 /*
  * This class removes all files marked for deletion during transactions.

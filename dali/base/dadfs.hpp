@@ -840,6 +840,7 @@ inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->q
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
+extern da_decl bool readSlaveLogPattern(const char *pattern, unsigned &numberOfSlaveLogs, StringArray &logDates);
 
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;

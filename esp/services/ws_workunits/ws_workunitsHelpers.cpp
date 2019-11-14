@@ -1049,7 +1049,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getWorkflow(info, flags);
 }
 
-StringBuffer& WsWuInfo::getWorkunitProcessLogPath(const char* process, StringBuffer& path)
+StringBuffer& WsWuInfo::getWorkunitProcessLogPath(const char *process, StringBuffer &path)
 {
     Owned<IPropertyTreeIterator> procs = cw->getProcesses(process, nullptr);
     if (!procs->first())
@@ -1064,47 +1064,6 @@ StringBuffer& WsWuInfo::getWorkunitProcessLogPath(const char* process, StringBuf
     return path;
 }
 
-unsigned WsWuInfo::getNumberOfSlavesByClusterName()
-{
-    StringAttr clusterName(cw->queryClusterName());
-    if (!clusterName.length()) //Cluster name may not be set yet
-        return 0;
-
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
-    if (!clusterInfo)
-    {
-        IWARNLOG("Cannot find TargetClusterInfo for workunit %s", cw->queryWuid());
-        return 0;
-    }
-
-    return clusterInfo->getNumberOfSlaveLogs();
-}
-
-unsigned WsWuInfo::getNumberOfSlavesFromZAPFiles()
-{
-    StringBuffer zapWUFolderPath;
-    getWorkunitProcessLogPath("Thor", zapWUFolderPath);
-
-    unsigned numberOfSlaves = 0;
-    Owned<IFile> zapFileFolder = createIFile(zapWUFolderPath);
-    Owned<IDirectoryIterator> thorSlaveFiles = zapFileFolder->directoryFiles("*_thorslave.*");
-    ForEach(*thorSlaveFiles)
-    {
-        const char* pStr = strstr(thorSlaveFiles->query().queryFilename(), "_thorslave.");
-        pStr += 11;
-        const char* slaveNumStrEnd = strchr(pStr, '.');
-        if (!slaveNumStrEnd)
-            continue;
-
-        StringBuffer slaveNumStr;
-        slaveNumStr.append(slaveNumStrEnd - pStr, pStr);
-        unsigned slaveNum = atoi(slaveNumStr);
-        if (slaveNum > numberOfSlaves)
-            numberOfSlaves = slaveNum;
-    }
-    return numberOfSlaves;
-}
-
 unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount)
 {
     unsigned countThorLog = 0;
@@ -1112,46 +1071,16 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     IArrayOf<IConstThorLogInfo> thorLogList;
     if (cw->getWuidVersion() > 0)
     {
-        unsigned numberOfSlaveLogs = 0;
-        StringAttr thorMasterLogDateSearchString;
-        if (debugImportedStr.length()) //WU imported from a ZAP report
+        IArrayOf<IConstWUThorLogInfo> wuThorLogs;
+        cw->getWUThorLogInfo(wuThorLogs);
+
+        unsigned numberOfSlaveLogs = cw->getNumberOfThorSlaves();
+        ForEachItemIn(i, wuThorLogs)
         {
-            numberOfSlaveLogs = getNumberOfSlavesFromZAPFiles();
-            thorMasterLogDateSearchString.set("_thormaster.");
-        }
-        else
-        {
-            numberOfSlaveLogs = getNumberOfSlavesByClusterName();
-            thorMasterLogDateSearchString.set("/thormaster.");
-        }
-
-        BoolHash uniqueProcesses;
-        Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
-        ForEach (*thorInstances)
-        {
-            SCMStringBuffer processName;
-            thorInstances->str(processName);
-            if (processName.length() < 1)
-                continue;
-            bool* found = uniqueProcesses.getValue(processName.str());
-            if (found && *found)
-                continue;
-
-            uniqueProcesses.setValue(processName.str(), true);
-
-            StringBuffer groupName;
-            cw->getThorGroup(groupName);
-            if (groupName.isEmpty())
-                getClusterThorGroupName(groupName, processName.str());
-
-            Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
-            ForEach (*thorLogs)
+            IConstWUThorLogInfo &logInfo = wuThorLogs.item(i);
+            helpersCount++;
+            if (flags & WUINFO_IncludeHelpers)
             {
-                SCMStringBuffer logName;
-                thorLogs->str(logName);
-                if (logName.length() < 1)
-                    continue;
-
                 countThorLog++;
 
                 StringBuffer fileType;
@@ -1160,44 +1089,29 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 else
                     fileType.appendf("%s%d", File_ThorLog, countThorLog);
 
-                helpersCount++;
-                if (flags & WUINFO_IncludeHelpers)
+                Owned<IEspECLHelpFile> h = createECLHelpFile();
+                const char *logName = logInfo.getLogName();
+                h->setName(logName);
+                h->setDescription(logInfo.getProcessName());
+                h->setType(fileType.str());
+                if (version >= 1.43)
                 {
-                    Owned<IEspECLHelpFile> h= createECLHelpFile("","");
-                    h->setName(logName.str());
-                    h->setDescription(processName.str());
-                    h->setType(fileType.str());
-                    if (version >= 1.43)
-                    {
-                        offset_t fileSize;
-                        if (getFileSize(logName.str(), NULL, fileSize))
-                            h->setFileSize(fileSize);
-                    }
-                    helpers.append(*h.getLink());
+                    offset_t fileSize;
+                    if (getFileSize(logName, nullptr, fileSize))
+                        h->setFileSize(fileSize);
                 }
-
-                if (version < 1.38)
-                    continue;
-
-                const char* pStr = logName.str();
-                const char* ppStr = strstr(pStr, thorMasterLogDateSearchString.get());
-                if (!ppStr)
-                {
-                    IWARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
-                    continue;
-                }
-
-                ppStr += 12;
-                StringBuffer logDate(ppStr);
-                logDate.setLength(10);
-
-                Owned<IEspThorLogInfo> thorLog = createThorLogInfo("","");
-                thorLog->setProcessName(processName.str());
-                thorLog->setClusterGroup(groupName.str());
-                thorLog->setLogDate(logDate.str());
-                thorLog->setNumberSlaves(numberOfSlaveLogs);
-                thorLogList.append(*thorLog.getLink());
+                helpers.append(*h.getLink());
             }
+
+            if (version < 1.38)
+                continue;
+
+            Owned<IEspThorLogInfo> thorLog = createThorLogInfo();
+            thorLog->setProcessName(logInfo.getProcessName());
+            thorLog->setClusterGroup(logInfo.getGroupName());
+            thorLog->setLogDate(logInfo.getLogDate());
+            thorLog->setNumberSlaves(numberOfSlaveLogs);
+            thorLogList.append(*thorLog.getLink());
         }
     }
     else //legacy wuid
@@ -1955,7 +1869,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     if(!rFile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open file %s.", fileName);
 
-    if (debugImportedStr.length()) //WU imported from a ZAP report
+    if (logSingleFile)
     {
         getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
         return;
@@ -2040,7 +1954,7 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const
     if (!rFile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",fileName);
 
-    if (debugImportedStr.length()) //WU imported from a ZAP report
+    if (logSingleFile)
         getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
     else
         readWorkunitLog(rFile, buf, outFile);
@@ -2128,7 +2042,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
     const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
     MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
-    if (debugImportedStr.length()) //WU imported from a ZAP report
+    if (logSingleFile)
     {
         getWorkunitThorSlaveLogSingleFile(process, logDate, slaveNum, buf, outFile);
         return;

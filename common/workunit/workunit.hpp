@@ -1184,6 +1184,15 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
 };
 
+
+interface IConstWUThorLogInfo : extends IInterface
+{
+    virtual const char *getLogName() const = 0;
+    virtual const char *getProcessName() const = 0;
+    virtual const char *getGroupName() const = 0;
+    virtual const char *getLogDate() const = 0;
+};
+
 interface IConstWorkUnit : extends IConstWorkUnitInfo
 {
     virtual bool aborting() const = 0;
@@ -1286,7 +1295,10 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
-    virtual StringBuffer & getThorGroup(StringBuffer & str) const = 0;
+    virtual StringBuffer & getSlaveLogPattern(StringBuffer & str) const = 0;
+    virtual bool logSingleFile() const = 0;
+    virtual unsigned getNumberOfThorSlaves() const = 0;
+    virtual void getWUThorLogInfo(IArrayOf<IConstWUThorLogInfo> & thorLogs) const = 0;
 };
 
 
@@ -1374,7 +1386,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultBool(const char *name, unsigned sequence, bool val) = 0;
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
-    virtual void setThorGroup(const char *thorGroup) = 0;
+    virtual void setSlaveLogPattern(const char *pattern) = 0;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree = nullptr) = 0;
 };
 

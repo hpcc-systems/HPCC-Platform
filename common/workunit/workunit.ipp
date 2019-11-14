@@ -277,8 +277,11 @@ public:
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
-    virtual StringBuffer &getThorGroup(StringBuffer &str) const;
-    virtual void setThorGroup(const char *thorGroup);
+    virtual StringBuffer &getSlaveLogPattern(StringBuffer &str) const;
+    virtual void setSlaveLogPattern(const char *pattern);
+    virtual bool logSingleFile() const;
+    virtual unsigned getNumberOfThorSlaves() const;
+    virtual void getWUThorLogInfo(IArrayOf<IConstWUThorLogInfo> &thorLogs) const;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
 
     virtual const char *queryJobName() const;

@@ -1961,7 +1961,7 @@ IFile* CHttpRequest::createUploadFile(const char * netAddress, const char* fileP
 {
     StringBuffer tmpFileName(filePath);
     if (tmpFileName.charAt(tmpFileName.length() - 1) != PATHSEPCHAR)
-        tmpFileName.append(PATHSEPCHAR);
+        addPathSepChar(tmpFileName);
     tmpFileName.append(pathTail(fileName));
     fileNameWithPath.set(tmpFileName);
     tmpFileName.append(".part");

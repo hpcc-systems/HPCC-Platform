@@ -4056,10 +4056,16 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
-    virtual StringBuffer &getThorGroup(StringBuffer &str) const
-            { return c->getThorGroup(str); }
-    virtual void setThorGroup(const char *thorGroup)
-            { return c->setThorGroup(thorGroup); }
+    virtual StringBuffer &getSlaveLogPattern(StringBuffer &str) const
+            { return c->getSlaveLogPattern(str); }
+    virtual void setSlaveLogPattern(const char *pattern)
+            { return c->setSlaveLogPattern(pattern); }
+    virtual bool logSingleFile() const
+            { return c->logSingleFile(); }
+    virtual unsigned getNumberOfThorSlaves() const
+            { return c->getNumberOfThorSlaves(); }
+    virtual void getWUThorLogInfo(IArrayOf<IConstWUThorLogInfo> &wuThorLogs) const
+            { c->getWUThorLogInfo(wuThorLogs); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -6396,6 +6402,40 @@ public:
     virtual bool isValid() { return it->isValid(); }
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryProp(name)); return s; }
 };
+
+//==========================================================================================
+
+class CWUThorLogInfo: public CSimpleInterface, implements IConstWUThorLogInfo
+{
+    StringAttr processName;
+    StringAttr groupName;
+    StringAttr logName;
+    StringAttr logDate;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CWUThorLogInfo(const char *_logName, const char *_processName, const char *_groupName, const char *_logDate)
+        : logName(_logName), processName(_processName), groupName(_groupName), logDate(_logDate) {};
+
+    virtual const char *getLogName() const
+    {
+        return logName.get();
+    }
+    virtual const char *getProcessName() const
+    {
+        return processName.get();
+    }
+    virtual const char *getGroupName() const
+    {
+        return groupName.get();
+    }
+    virtual const char *getLogDate() const
+    {
+        return logDate.get();
+    }
+};
+
 //==========================================================================================
 
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
@@ -10209,16 +10249,143 @@ IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreat
     return new CWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph);
 }
 
-StringBuffer &CLocalWorkUnit::getThorGroup(StringBuffer &str) const
+StringBuffer &CLocalWorkUnit::getSlaveLogPattern(StringBuffer &str) const
 {
-    p->getProp("@thorGroupName", str);
+    p->getProp("@slaveLogPattern", str);
     return str;
 }
 
-void CLocalWorkUnit::setThorGroup(const char *thorGroup)
+void CLocalWorkUnit::setSlaveLogPattern(const char *pattern)
 {
-    if (!isEmptyString(thorGroup))
-        p->setProp("@thorGroupName", thorGroup);
+    if (!isEmptyString(pattern))
+        p->setProp("@slaveLogPattern", pattern);
+}
+
+bool CLocalWorkUnit::logSingleFile() const
+{
+    if (hasDebugValue("imported"))
+        return true;
+    return false;
+}
+
+unsigned CLocalWorkUnit::getNumberOfThorSlaves() const
+{
+    unsigned numberOfThorSlaves = 0;
+    StringBuffer slaveLogPattern;
+    getSlaveLogPattern(slaveLogPattern);
+    if (!slaveLogPattern.isEmpty())
+    {
+        StringArray logDates;
+        readSlaveLogPattern(slaveLogPattern, numberOfThorSlaves, logDates);
+        return numberOfThorSlaves;
+    }
+
+    if (!hasDebugValue("imported")) //standard WU
+    {
+        StringAttr clusterName(queryClusterName());
+        if (!clusterName.length())
+        { //Cluster name may not be set yet
+            IWARNLOG("Cluster name may not be set for workunit %s", queryWuid());
+            return 0;
+        }
+
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
+        if (clusterInfo)
+            return clusterInfo->getNumberOfSlaveLogs();
+
+        IWARNLOG("Cannot find TargetClusterInfo for workunit %s", queryWuid());
+        return 0;
+    }
+
+    //WU imported from a ZAP report
+    Owned<IPropertyTreeIterator> procs = getProcesses("Thor", nullptr);
+    if (!procs->first())
+    {
+        IWARNLOG("No Thor process found for workunit %s", queryWuid());
+        return 0;
+    }
+
+    StringBuffer logSpec, zapWUFolderPath;
+    procs->query().getProp("@log", logSpec);
+    splitFilename(logSpec, nullptr, &zapWUFolderPath, nullptr, nullptr);
+
+    const char *slaveLogKeyWord = "_thorslave.";
+    Owned<IFile> zapFileFolder = createIFile(zapWUFolderPath);
+    Owned<IDirectoryIterator> thorSlaveFiles = zapFileFolder->directoryFiles("*_thorslave.*");
+    ForEach(*thorSlaveFiles)
+    {
+        const char *pStr = strstr(thorSlaveFiles->query().queryFilename(), slaveLogKeyWord);
+        pStr += strlen(slaveLogKeyWord);
+        const char *slaveNumStrEnd = strchr(pStr, '.');
+        if (!slaveNumStrEnd)
+            continue;
+
+        StringBuffer slaveNumStr;
+        slaveNumStr.append(slaveNumStrEnd - pStr, pStr);
+        unsigned slaveNum = atoi(slaveNumStr);
+        if (slaveNum > numberOfThorSlaves)
+            numberOfThorSlaves = slaveNum;
+    }
+    return numberOfThorSlaves;
+}
+
+void CLocalWorkUnit::getWUThorLogInfo(IArrayOf<IConstWUThorLogInfo> &wuThorLogs) const
+{
+    StringAttr thorMasterLogDateSearchString;
+    if (hasDebugValue("imported")) //WU imported from a ZAP report
+        thorMasterLogDateSearchString.set("_thormaster.");
+    else
+        thorMasterLogDateSearchString.set("/thormaster.");
+
+    MapStringTo<bool> uniqueProcesses;
+    Owned<IStringIterator> thorInstances = getProcesses("Thor");
+    ForEach (*thorInstances)
+    {
+        SCMStringBuffer processName;
+        thorInstances->str(processName);
+        if (processName.length() < 1)
+            continue;
+
+        bool *found = uniqueProcesses.getValue(processName.str());
+        if (found && *found)
+            continue;
+
+        uniqueProcesses.setValue(processName.str(), true);
+
+        StringBuffer groupName;
+        getClusterThorGroupName(groupName, processName.str());
+
+        Owned<IStringIterator> thorLogs = getLogs("Thor", processName.str());
+        ForEach (*thorLogs)
+        {
+            SCMStringBuffer logName;
+            thorLogs->str(logName); //The name of Thor Master log which contains the log date. 
+            if (logName.length() < 1)
+                continue;
+
+            const char *pStr = logName.str();
+            const char *datePtr = strstr(pStr, thorMasterLogDateSearchString.get());
+            if (!datePtr)
+            {
+                IWARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
+                continue;
+            }
+
+            datePtr += thorMasterLogDateSearchString.length();
+            if (strlen(datePtr) < 10) //log single file
+            {
+                Owned<CWUThorLogInfo> thorLog = new CWUThorLogInfo(logName.str(), processName.str(), groupName, "");
+                wuThorLogs.append(*thorLog.getLink());
+                continue;
+            }
+
+            StringBuffer logDate;
+            logDate.append(10, datePtr);
+
+            Owned<CWUThorLogInfo> thorLog = new CWUThorLogInfo(logName.str(), processName.str(), groupName, logDate);
+            wuThorLogs.append(*thorLog.getLink());
+        }
+    }
 }
 
 void CLocalWUGraph::setName(const char *str)
