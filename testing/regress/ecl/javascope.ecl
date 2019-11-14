@@ -17,6 +17,9 @@
 
 IMPORT Java;
 
+//class=embedded
+//class=3rdparty
+
 //version forceNonThread=false
 //version forceNonThread=true
 

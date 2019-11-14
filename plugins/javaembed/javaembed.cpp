@@ -2336,6 +2336,7 @@ public:
         // the Java thread
         contexts.kill();
         persistedObjects.kill();
+        loaders.kill();
         // According to the Java VM 1.7 docs, "A native thread attached to
         // the VM must call DetachCurrentThread() to detach itself before
         // exiting."
@@ -2388,9 +2389,41 @@ public:
         p->crit.enter();  // needed to keep code common between local/global cases
         return p;
     }
+
+    jobject createThreadClassLoader(const char *classPath, const char *classname, size32_t bytecodeLen, const byte *bytecode)
+    {
+        if (bytecodeLen || (classPath && *classPath))
+        {
+            jstring jClassPath = (classPath && *classPath) ? JNIenv->NewStringUTF(classPath) : nullptr;
+            jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
+            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, jClassPath, getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
+            assertex(contextClassLoaderObj);
+            return contextClassLoaderObj;
+        }
+        else
+        {
+            return getSystemClassLoader();
+        }
+    }
+    jobject getThreadClassLoader(const char *classPath, const char *classname, size32_t bytecodeLen, const byte *bytecode)
+    {
+        StringBuffer key(classname);
+        if (classPath && *classPath)
+            key.append('!').append(classPath);
+        PersistedObject *p;
+        p = loaders.find(key);
+        if (!p)
+        {
+            p = new PersistedObject(key);
+            p->instance = JNIenv->NewGlobalRef(createThreadClassLoader(classPath, classname, bytecodeLen, bytecode), "cachedClassLoader");
+            loaders.replaceOwn(*p);
+        }
+        return p->instance;
+    }
 private:
     IArrayOf<IEmbedFunctionContext> contexts;
     StringMapOf<PersistedObject> persistedObjects = { false };
+    StringMapOf<PersistedObject> loaders = { false };
 };
 
 class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
@@ -3692,7 +3725,7 @@ public:
                 if (classLoader)
                 {
                     JNIenv->DeleteGlobalRef(classLoader);
-                    javaClass = nullptr;
+                    classLoader = nullptr;
                 }
                 loadFunction(classpath, 0, nullptr);
             }
@@ -4314,22 +4347,6 @@ protected:
         return s.append(methodName);
     }
 
-    jobject createThreadClassLoader(const char *classPath, size32_t bytecodeLen, const byte *bytecode)
-    {
-        if (bytecodeLen || (classPath && *classPath))
-        {
-            jstring jClassPath = (classPath && *classPath) ? JNIenv->NewStringUTF(classPath) : nullptr;
-            jobject helperName = JNIenv->NewStringUTF(helperLibraryName);
-            jobject contextClassLoaderObj = JNIenv->CallStaticObjectMethod(customLoaderClass, clc_newInstance, jClassPath, sharedCtx->getSystemClassLoader(), bytecodeLen, (uint64_t) bytecode, helperName);
-            assertex(contextClassLoaderObj);
-            return contextClassLoaderObj;
-        }
-        else
-        {
-            return sharedCtx->getSystemClassLoader();
-        }
-    }
-
     jobject createInstance()
     {
         jmethodID constructor;
@@ -4407,7 +4424,7 @@ protected:
                 {
                     if (!classname)
                         throw MakeStringException(MSGAUD_user, 0, "Invalid import name - Expected classname.methodname:signature");
-                    classLoader = JNIenv->NewGlobalRef(createThreadClassLoader(classpath, bytecodeLen, bytecode), "classLoader");
+                    classLoader = JNIenv->NewGlobalRef(sharedCtx->getThreadClassLoader(classpath, classname, bytecodeLen, bytecode), "classLoader");
                     sharedCtx->setThreadClassLoader(classLoader);
 
                     jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
