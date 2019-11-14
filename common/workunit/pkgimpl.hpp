@@ -57,7 +57,7 @@ public:
     {
         ForEachItemIn(idx, subFiles)
         {
-            if (stricmp(subFiles.item(idx).queryProp("@value"), subname))
+            if (strieq(subFiles.item(idx).queryProp("@value"), subname))
                 return idx;
         }
         return NotFound;

@@ -38,7 +38,7 @@
   </informaltable>
 
   <para>The <emphasis role="bold">SetColumnMapping </emphasis>function defines
-  how the data in the fields of the <emphasis>file</emphasis> mist be
+  how the data in the fields of the <emphasis>file</emphasis> must be
   transformed between the actual data storage format and the input format used
   to query that data.</para>
 

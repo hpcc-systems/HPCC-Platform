@@ -82,7 +82,7 @@ bool getCrcFromPartProps(IPropertyTree &fileattr,IPropertyTree &props, unsigned 
     }
     // NB: old @crc keys and compressed were not crc of file but of data within.
     const char *kind = props.queryProp("@kind");
-    if (kind&&strcmp(kind,"key")) // key part
+    if (strsame(kind,"key")) // key part
         return false;
     bool blocked;
     if (isCompressed(fileattr,&blocked)) {

@@ -91,6 +91,10 @@ if (USE_BOOST_REGEX)
     endif ()
 endif ()
 
+if ((CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0.0))
+  set_source_files_properties(eclrtl.cpp PROPERTIES COMPILE_FLAGS -fno-tree-vectorize)
+endif ()
+
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
 if(CENTOS_6_BOOST)

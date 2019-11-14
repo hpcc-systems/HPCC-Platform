@@ -2660,13 +2660,13 @@ public:
         if (running)
             throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
         output->outputBeginNested("Variables", true);
-        if (!type || stricmp(type, "temporary"))
+        if (!type || strieq(type, "temporary"))
         {
             output->outputBeginNested("Temporary", true);
             ctx->printResults(output, name, (unsigned) ResultSequenceInternal);
             output->outputEndNested("Temporary");
         }
-        if (!type || stricmp(type, "global"))
+        if (!type || strieq(type, "global"))
         {
             output->outputBeginNested("Global", true);
             ctx->printResults(output, name, (unsigned) ResultSequenceStored);
@@ -3136,7 +3136,11 @@ public:
     virtual StringBuffer &getQueryId(StringBuffer &result, bool isShared) const
     {
         if (workUnit)
-            result.append(workUnit->queryWuid()); // In workunit mode, this works for both shared and non-shared variants
+        {
+            if (isShared)
+                result.append('Q');
+            result.append(workUnit->queryWuid());
+        }
         else if (isShared)
             result.append('Q').append(factory->queryHash());
         else

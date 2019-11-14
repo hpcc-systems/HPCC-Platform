@@ -489,7 +489,7 @@ void CEnvGen::addUpdateAttributesFromString(IPropertyTree *updateTree, const cha
      sbValue.replaceString("[equal]", "=");
 
      StringArray newOldValues;
-     if (strcmp(keyValues[1], ""))
+     if (strcmp(keyValues[1], "") != 0)
      {
         newOldValues.appendList(sbValue.str(), ATTR_V_SEP);
         pAttr->addProp("@value", newOldValues[0]);

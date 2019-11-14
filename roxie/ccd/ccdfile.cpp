@@ -1984,7 +1984,7 @@ public:
     {
         ForEachItemIn(idx, subNames)
         {
-            if (stricmp(subNames.item(idx), subname))
+            if (strieq(subNames.item(idx), subname))
                 return idx;
         }
         return NotFound;

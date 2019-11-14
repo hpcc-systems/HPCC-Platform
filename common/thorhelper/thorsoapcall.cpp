@@ -884,7 +884,7 @@ public:
         if (wscType == SThttp)
         {
             service.toUpperCase();  //GET/PUT/POST
-            if (strcmp(service.str(), "GET"))
+            if (strcmp(service.str(), "GET") != 0)
                 throw MakeStringException(0, "HTTPCALL Only 'GET' http method currently supported");
             OwnedRoxieString acceptTypeSupplied(helper->getAcceptType()); // text/html, text/xml, etc
             acceptType.set(acceptTypeSupplied);

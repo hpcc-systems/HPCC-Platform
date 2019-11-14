@@ -1818,7 +1818,16 @@ void CTpWrapper::appendTpMachine(double clientVersion, IConstEnvironment* constE
 
     Owned<IEspTpMachine> machine = createTpMachine();
     machine->setName(name.str());
-    machine->setNetaddress(networkAddress.str());
+
+    if (networkAddress.length() > 0)
+    {
+        IpAddress ipAddr;
+        ipAddr.ipset(networkAddress.str());
+
+        StringBuffer networkAddressStr;
+        ipAddr.getIpText(networkAddressStr);
+        machine->setNetaddress(networkAddressStr);
+    }
     machine->setPort(instanceInfo.getPort());
     machine->setOS(machineInfo->getOS());
     machine->setDirectory(directory.str());

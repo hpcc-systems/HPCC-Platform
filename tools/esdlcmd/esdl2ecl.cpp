@@ -71,7 +71,7 @@ public:
             if (typeEntry && *typeEntry)
             {
                 const char *src = (*typeEntry)->src.get();
-                if (stricmp(src, localsrc))
+                if (stricmp(src, localsrc) != 0)
                 {
                     const char *finger = src;
                     if (!strnicmp(finger, "wsm_", 4))

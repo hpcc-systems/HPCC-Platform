@@ -17,12 +17,12 @@
                     <input id="${id}AutoRefresh" title="${i18n.AutoRefreshIncrement}:" name="AutoRefresh" placeholder="${i18n.AutoRefreshEvery}" colspan="2" value="5" checked data-dojo-type="dijit.form.NumberTextBox" />
                     <input id="${id}CpuThreshold" title="${i18n.WarnIfCPUUsageIsOver}:" name="CpuThreshold"  placeholder="${i18n.EnterAPercentage}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
                     <input id="${id}MemThreshold" title="${i18n.WarnIfAvailableMemoryIsUnder}:" name="MemThreshold"  placeholder="${i18n.EnterAPercentageOrMB}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
-                    <select data-dojo-type="dijit.form.Select" id="${id}MemThresholdType" class="miniSelect">
+                    <select data-dojo-type="dijit.form.Select" id="${id}MemThresholdType" name="MemThresholdType" class="miniSelect">
                         <option colspan="1" value="0" selected="true">%</option>
                         <option colspan="1" value="1" selected="true">MB</option>
                     </select>
                     <input id="${id}DiskThreshold" title="${i18n.WarnIfAvailableDiskSpaceIsUnder}:" name="DiskThreshold"  placeholder="${i18n.EnterAPercentageOrMB}" colspan="2" value="95" checked data-dojo-type="dijit.form.ValidationTextBox" />
-                    <select data-dojo-type="dijit.form.Select" id="${id}DiskThresholdType" class="miniSelect">
+                    <select data-dojo-type="dijit.form.Select" id="${id}DiskThresholdType" name="DiskThresholdType" class="miniSelect">
                         <option colspan="1" value="0" selected="true">%</option>
                         <option colspan="1" value="1" selected="true">MB</option>
                     </select>

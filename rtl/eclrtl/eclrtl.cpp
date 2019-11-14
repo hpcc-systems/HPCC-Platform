@@ -378,11 +378,14 @@ bool vunicodeNeedsNormalize(UChar * in, UErrorCode * err)
 
 void unicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
-    unsigned len = unorm_normalize(in, inlen, UNORM_NFC, 0, buff, inlen, err);
-    while(len<inlen) buff[len++] = 0x0020;
-    memcpy(in, buff, inlen * sizeof(UChar));
-    free(buff);
+    if (inlen)
+    {
+        UChar * buff = (UChar *)rtlMalloc(inlen*sizeof(UChar));
+        unsigned len = unorm_normalize(in, inlen, UNORM_NFC, 0, buff, inlen, err);
+        while(len<inlen) buff[len++] = 0x0020;
+        memcpy(in, buff, inlen * sizeof(UChar));
+        free(buff);
+    }
 }
 
 void vunicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
@@ -452,7 +455,7 @@ void unicodeNormalizedCopy(UChar * out, UChar * in, unsigned len)
     if(unicodeNeedsNormalize(len, in, &err))
         unorm_normalize(in, len, UNORM_NFC, 0, out, len, &err);
     else
-        memcpy(out, in, len);
+        memcpy_iflen(out, in, len);
 }
 
 void normalizeUnicodeString(UnicodeString const & in, UnicodeString & out)
@@ -495,6 +498,9 @@ UChar unicodeSpace = 0x0020;
 
 void codepageBlankFill(char const * codepage, char * out, size_t len)
 {
+    if (len == 0)
+        return;
+
     CriticalBlock b(ubcCrit);
     MemoryAttr * cached = unicodeBlankCache->getValue(codepage);
     if(cached)
@@ -598,11 +604,13 @@ NO_SANITIZE("undefined") __int64 rtlRoundUp(double x)
 #define intToStringNBody() \
     unsigned len = numtostr(temp, val); \
     if (len > l) \
-        memset(t,'*',l); \
+    { \
+        memset_iflen(t,'*',l); \
+    } \
     else \
     { \
-        memcpy(t,temp,len); \
-        memset(t+len, ' ', l-len); \
+        memcpy_iflen(t,temp,len); \
+        memset_iflen(t+len, ' ', l-len); \
     }
 
 
@@ -674,11 +682,13 @@ void rtlInt8ToStrX(size32_t & l, char * & t, __int64 val)
     unsigned len = numtostr(astr, val); \
     rtlStrToEStr(sizeof(estr),estr,len,astr); \
     if (len > l) \
-        memset(t,0x2A,l); \
+    { \
+        memset_iflen(t,0x2A,l); \
+    } \
     else \
     { \
-        memcpy(t,estr,len); \
-        memset(t+len, '@', l-len); \
+        memcpy_iflen(t,estr,len); \
+        memset_iflen(t+len, '@', l-len); \
     }
 
 void rtl_l42en(size32_t l, char * t, unsigned val)
@@ -824,7 +834,7 @@ double rtlStrToReal(size32_t l, const char * t)
 {
     MemoryAttr heapMem;
     char * temp = (char *)CONDSTACKALLOC(heapMem, l+1);
-    memcpy(temp, t, l);
+    memcpy_iflen(temp, t, l);
     temp[l] = 0;
     return rtlVStrToReal(temp);
 }
@@ -863,6 +873,9 @@ double rtlUnicodeToReal(size32_t l, UChar const * t)
 
 static void truncFixedReal(size32_t l, char * t, StringBuffer & temp)
 {
+    if (l == 0)
+        return;
+
     const char * str = temp.str();
     unsigned len = temp.length();
     if (len > l)
@@ -1190,6 +1203,9 @@ bool rtlVStrToBool(const char * t)
 
 void holeIntFormat(size32_t maxlen, char * target, __int64 value, unsigned width, unsigned flags)
 {
+    if (maxlen == 0)
+        return;
+
     StringBuffer result;
     if (flags & 1)
         result.appendf("%0*" I64F "d", width, value);
@@ -1207,7 +1223,7 @@ void holeIntFormat(size32_t maxlen, char * target, __int64 value, unsigned width
 
 void holeRealFormat(size32_t maxlen, char * target, double value, unsigned width, unsigned places)
 {
-    if ((int) width <= 0)
+    if (((int) width <= 0) || (maxlen == 0))
         return;
 
     const unsigned tempSize = 500;
@@ -1287,16 +1303,22 @@ bool rtlDataToBool(unsigned len, const void * _src)
 
 void rtlBoolToData(unsigned tlen, void * tgt, bool src)
 {
-    memset(tgt, 0, tlen);
-    if (src)
-        ((char *)tgt)[tlen-1] = 1;
+    if (likely(tlen))
+    {
+        memset(tgt, 0, tlen);
+        if (src)
+            ((char *)tgt)[tlen-1] = 1;
+    }
 }
 
 void rtlBoolToStr(unsigned tlen, void * tgt, bool src)
 {
-    memset(tgt, ' ', tlen);
-    if (src)
-        ((char *)tgt)[tlen-1] = '1';
+    if (likely(tlen))
+    {
+        memset(tgt, ' ', tlen);
+        if (src)
+            ((char *)tgt)[tlen-1] = '1';
+    }
 }
 
 void rtlBoolToVStr(char * tgt, bool src)
@@ -1337,7 +1359,7 @@ void rtlDataToData(unsigned tlen, void * tgt, unsigned slen, const void * src)
 {
     if (slen > tlen)
         slen = tlen;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     if (tlen > slen)
         memset((char *)tgt+slen, 0, tlen-slen);
 }
@@ -1346,7 +1368,7 @@ void rtlStrToData(unsigned tlen, void * tgt, unsigned slen, const void * src)
 {
     if (slen > tlen)
         slen = tlen;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     if (tlen > slen)
         memset((char *)tgt+slen, 0, tlen-slen);
 }
@@ -1355,7 +1377,7 @@ void rtlStrToStr(unsigned tlen, void * tgt, unsigned slen, const void * src)
 {
     if (slen > tlen)
         slen = tlen;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     if (tlen > slen)
         memset((char *)tgt+slen, ' ', tlen-slen);
 }
@@ -1364,7 +1386,7 @@ void rtlStrToVStr(unsigned tlen, void * tgt, unsigned slen, const void * src)
 {
     if ((slen >= tlen) && (tlen != 0))
         slen = tlen-1;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     *((char *)tgt+slen)=0;
 }
 
@@ -1399,7 +1421,7 @@ void rtlEStrToEStr(unsigned tlen, void * tgt, unsigned slen, const void * src)
 {
     if (slen > tlen)
         slen = tlen;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     if (tlen > slen)
         memset((char *)tgt+slen, '@', tlen-slen);
 }
@@ -1429,7 +1451,7 @@ char *rtlCreateQuotedString(unsigned _len_tgt,char * tgt)
     // Add ' at start and end. MORE! also needs to handle embedded quotes
     char * result = (char *)rtlMalloc(_len_tgt + 3);
     result[0] = '\'';
-    memcpy(result+1, tgt, _len_tgt);
+    memcpy_iflen(result+1, tgt, _len_tgt);
     result[_len_tgt+1] = '\'';
     result[_len_tgt+2] = 0;
     return result;
@@ -1463,7 +1485,7 @@ void rtlConcat(unsigned & tlen, char * * tgt, ...)
         if (len+1==0)
             break;
         char * str = va_arg(args, char *);
-        memcpy(cur, str, len);
+        memcpy_iflen(cur, str, len);
         cur += len;
     }
     va_end(args);
@@ -1497,7 +1519,7 @@ void rtlConcatVStr(char * * tgt, ...)
         if (len+1==0)
             break;
         char * str = va_arg(args, char *);
-        memcpy(cur, str, len);
+        memcpy_iflen(cur, str, len);
         cur += len;
     }
     va_end(args);
@@ -1603,7 +1625,7 @@ void rtlConcatStrF(unsigned tlen, void * _tgt, int fill, ...)
             break;
         const char * str = va_arg(args, const char *);
         unsigned copyLen = len + offset > tlen ? tlen - offset : len;
-        memcpy(tgt+offset, str, copyLen);
+        memcpy_iflen(tgt+offset, str, copyLen);
         offset += copyLen;
     }
     va_end(args);
@@ -1616,6 +1638,9 @@ void rtlConcatStrF(unsigned tlen, void * _tgt, int fill, ...)
 
 void rtlConcatVStrF(unsigned tlen, char * tgt, ...)
 {
+    if (unlikely(tlen == 0))
+        return;
+
     va_list args;
 
     unsigned offset = 0;
@@ -1627,7 +1652,7 @@ void rtlConcatVStrF(unsigned tlen, char * tgt, ...)
             break;
         const char * str = va_arg(args, const char *);
         unsigned copyLen = len + offset > tlen ? tlen - offset : len;
-        memcpy(tgt+offset, str, copyLen);
+        memcpy_iflen(tgt+offset, str, copyLen);
         offset += copyLen;
     }
     va_end(args);
@@ -1690,7 +1715,7 @@ unsigned rtlConcatStrToStr(unsigned tlen, char * tgt, unsigned idx, unsigned sle
     unsigned len = tlen-idx;
     if (len > slen)
         len = slen;
-    memcpy(tgt+idx, src, len);
+    memcpy_iflen(tgt+idx, src, len);
     return idx+len;
 }
 
@@ -1780,7 +1805,7 @@ void rtlConcatExtend(unsigned & tlen, char * & tgt, unsigned slen, const char * 
 {
     unsigned len = tlen + slen;
     tgt = (char *)rtlRealloc(tgt, len);
-    memcpy(tgt+tlen, src, slen);
+    memcpy_iflen(tgt+tlen, src, slen);
     tlen = len;
 }
 
@@ -1788,7 +1813,7 @@ void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const
 {
     unsigned len = tlen + slen;
     tgt = (UChar *)rtlRealloc(tgt, len * sizeof(UChar));
-    memcpy(tgt+tlen, src, slen * sizeof(UChar));
+    memcpy_iflen(tgt+tlen, src, slen * sizeof(UChar));
     tlen = len;
 }
 
@@ -1829,7 +1854,7 @@ void * doSubStrFT(unsigned & tlen, unsigned slen, const void * src, unsigned fro
 
     unsigned copylen = to - from;
     char * buffer = (char *)rtlMalloc(len);
-    memcpy(buffer, (byte *)src+from, copylen);
+    memcpy_iflen(buffer, (byte *)src+from, copylen);
     if (copylen < len)
         memset(buffer+copylen, fillChar, len-copylen);
     tlen = len;
@@ -1842,7 +1867,7 @@ void rtlSubStrFX(unsigned & tlen, char * & tgt, unsigned slen, const char * src,
 
     tlen = slen-from;
     tgt = (char *) rtlMalloc(tlen);
-    memcpy(tgt, src+from, tlen);
+    memcpy_iflen(tgt, src+from, tlen);
 }
 
 void rtlSubStrFTX(unsigned & tlen, char * & tgt, unsigned slen, const char * src, unsigned from, unsigned to)
@@ -1860,7 +1885,7 @@ void rtlSubStrFT(unsigned tlen, char * tgt, unsigned slen, const char * src, uns
     unsigned copylen = to - from;
     if (copylen > tlen)
         copylen = tlen;
-    memcpy(tgt, (const char *)src+from, copylen);
+    memcpy_iflen(tgt, (const char *)src+from, copylen);
     if (copylen < tlen)
         memset(tgt+copylen, fillChar, tlen-copylen);
 }
@@ -1873,7 +1898,7 @@ void rtlSubDataFT(unsigned tlen, void * tgt, unsigned slen, const void * src, un
     unsigned copylen = to - from;
     if (copylen > tlen)
         copylen = tlen;
-    memcpy(tgt, (char *)src+from, copylen);
+    memcpy_iflen(tgt, (char *)src+from, copylen);
     if (copylen < tlen)
         memset((byte*)tgt+copylen, 0, tlen-copylen);
 }
@@ -1889,7 +1914,7 @@ void rtlSubDataFX(unsigned & tlen, void * & tgt, unsigned slen, const void * src
 
     tlen = slen-from;
     tgt = (char *) rtlMalloc(tlen);
-    memcpy(tgt, (const byte *)src+from, tlen);
+    memcpy_iflen(tgt, (const byte *)src+from, tlen);
 }
 
 void rtlUnicodeSubStrFTX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar const * src, unsigned from, unsigned to)
@@ -1900,7 +1925,7 @@ void rtlUnicodeSubStrFTX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar co
 
     tgt = (UChar *)rtlMalloc(tlen*2);
     unsigned copylen = to - from;
-    memcpy(tgt, src+from, copylen*2);
+    memcpy_iflen(tgt, src+from, copylen*2);
     while(copylen<tlen)
         tgt[copylen++] = 0x0020;
 }
@@ -1911,7 +1936,7 @@ void rtlUnicodeSubStrFX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar con
 
     tlen = slen - from;
     tgt = (UChar *)rtlMalloc(tlen*2);
-    memcpy(tgt, src+from, tlen*2);
+    memcpy_iflen(tgt, src+from, tlen*2);
 }
 
 
@@ -2109,7 +2134,7 @@ inline void rtlTrimUtf8Start(unsigned & trimLen, size32_t & trimSize, size32_t l
 inline char * rtlDupSubString(const char * src, unsigned len)
 {
     char * buffer = (char *)rtlMalloc(len + 1);
-    memcpy(buffer, src, len);
+    memcpy_iflen(buffer, src, len);
     buffer[len] = 0;
     return buffer;
 }
@@ -2117,7 +2142,7 @@ inline char * rtlDupSubString(const char * src, unsigned len)
 inline UChar * rtlDupSubUnicode(UChar const * src, unsigned len)
 {
     UChar * buffer = (UChar *)rtlMalloc((len + 1) * 2);
-    memcpy(buffer, src, len*2);
+    memcpy_iflen(buffer, src, len*2);
     buffer[len] = 0x00;
     return buffer;
 }
@@ -2126,16 +2151,19 @@ inline void rtlCopySubStringV(size32_t tlen, char * tgt, unsigned slen, const ch
 {
     if (slen >= tlen)
         slen = tlen-1;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     tgt[slen] = 0;
 }
 
 //not yet used, but would be needed for assignment to string rather than vstring
 inline void rtlCopySubString(size32_t tlen, char * tgt, unsigned slen, const char * src, char fill)
 {
+    if (unlikely(tlen == 0))
+        return;
+
     if (slen > tlen)
         slen = tlen;
-    memcpy(tgt, src, slen);
+    memcpy_iflen(tgt, src, slen);
     memset(tgt + slen, fill, tlen-slen);
 }
 
@@ -2606,7 +2634,7 @@ ECLRTL_API void rtlAssignTrimUnicodeLeftV(size32_t tlen, UChar * tgt, unsigned s
     rtlTrimUnicodeLeft(len, str, slen, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2619,7 +2647,7 @@ ECLRTL_API void rtlAssignTrimVUnicodeLeftV(size32_t tlen, UChar * tgt, const UCh
     rtlTrimVUnicodeLeft(len, str, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2632,7 +2660,7 @@ ECLRTL_API void rtlAssignTrimUnicodeRightV(size32_t tlen, UChar * tgt, unsigned 
     rtlTrimUnicodeRight(len, str, slen, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2645,7 +2673,7 @@ ECLRTL_API void rtlAssignTrimVUnicodeRightV(size32_t tlen, UChar * tgt, const UC
     rtlTrimVUnicodeRight(len, str, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2658,7 +2686,7 @@ ECLRTL_API void rtlAssignTrimUnicodeBothV(size32_t tlen, UChar * tgt, unsigned s
     rtlTrimUnicodeBoth(len, str, slen, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2671,7 +2699,7 @@ ECLRTL_API void rtlAssignTrimVUnicodeBothV(size32_t tlen, UChar * tgt, const UCh
     rtlTrimVUnicodeBoth(len, str, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2684,7 +2712,7 @@ ECLRTL_API void rtlAssignTrimUnicodeAllV(size32_t tlen, UChar * tgt, unsigned sl
     rtlTrimUnicodeAll(len, str, slen, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2697,7 +2725,7 @@ ECLRTL_API void rtlAssignTrimVUnicodeAllV(size32_t tlen, UChar * tgt, const UCha
     rtlTrimVUnicodeAll(len, str, src);
     if (len >= tlen)
         len = tlen-1;
-    memcpy(tgt, str, len*2);
+    memcpy_iflen(tgt, str, len*2);
     tgt[len] = 0;
     rtlFree(str);
 }
@@ -2710,7 +2738,7 @@ int rtlCompareStrStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
     unsigned len = l1;
     if (len > l2)
         len = l2;
-    int diff = memcmp(p1, p2, len);
+    int diff = memcmp_iflen(p1, p2, len);
     if (diff == 0)
     {
         if (len != l1)
@@ -2748,7 +2776,7 @@ int rtlCompareDataData(unsigned l1, const void * p1, unsigned l2, const void * p
     unsigned len = l1;
     if (len > l2)
         len = l2;
-    int diff = memcmp(p1, p2, len);
+    int diff = memcmp_iflen(p1, p2, len);
     if (diff == 0)
     {
         if (l1 > l2)
@@ -2764,7 +2792,7 @@ int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p
     unsigned len = l1;
     if (len > l2)
         len = l2;
-    int diff = memcmp(p1, p2, len);
+    int diff = memcmp_iflen(p1, p2, len);
     if (diff == 0)
     {
         if (len != l1)
@@ -3600,7 +3628,7 @@ void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UC
     escapeUnicode(inlen, in, outbuff);
     outlen = outbuff.length();
     out = (char *)rtlMalloc(outlen);
-    memcpy(out, outbuff.str(), outlen);
+    memcpy_iflen(out, outbuff.str(), outlen);
 }
 
 bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
@@ -3678,7 +3706,7 @@ bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char con
 {
     if (inlen > outlen)
         inlen = outlen;
-    memcpy(out, in, inlen);
+    memcpy_iflen(out, in, inlen);
     if (inlen < outlen)
         memset(out+inlen, ' ', outlen-inlen);
     return true;
@@ -3712,7 +3740,7 @@ bool rtlCodepageToCodepage(StringBuffer & out, unsigned maxoutlen, unsigned inle
 void rtlStrToDataX(unsigned & tlen, void * & tgt, unsigned slen, const void * src)
 {
     void * data  = rtlMalloc(slen);
-    memcpy(data, src, slen);
+    memcpy_iflen(data, src, slen);
 
     tgt = data;
     tlen = slen;
@@ -3721,7 +3749,7 @@ void rtlStrToDataX(unsigned & tlen, void * & tgt, unsigned slen, const void * sr
 void rtlStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const void * src)
 {
     char * data  = (char *)rtlMalloc(slen);
-    memcpy(data, src, slen);
+    memcpy_iflen(data, src, slen);
 
     tgt = data;
     tlen = slen;
@@ -3730,7 +3758,7 @@ void rtlStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const void * src
 char * rtlStrToVStrX(unsigned slen, const void * src)
 {
     char * data  = (char *)rtlMalloc(slen+1);
-    memcpy(data, src, slen);
+    memcpy_iflen(data, src, slen);
     data[slen] = 0;
     return data;
 }
@@ -4948,7 +4976,7 @@ unsigned rtlUtf8Char(const void * data)
 void rtlUnicodeToUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar const *in)
 {
     if(inlen>outlen) inlen = outlen;
-    memcpy(out, in, inlen*2);
+    memcpy_iflen(out, in, inlen*2);
     while(inlen<outlen)
         out[inlen++] = 0x0020;
 }
@@ -4956,7 +4984,7 @@ void rtlUnicodeToUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar con
 void rtlUnicodeToVUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar const *in)
 {
     if((inlen>=outlen) && (outlen != 0)) inlen = outlen-1;
-    memcpy(out, in, inlen*2);
+    memcpy_iflen(out, in, inlen*2);
     out[inlen] = 0x0000;
 }
 
@@ -4973,14 +5001,14 @@ void rtlVUnicodeToVUnicode(size32_t outlen, UChar * out, UChar const *in)
 void rtlUnicodeToUnicodeX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar const * src)
 {
     tgt  = (UChar *)rtlMalloc(slen*2);
-    memcpy(tgt, src, slen*2);
+    memcpy_iflen(tgt, src, slen*2);
     tlen = slen;
 }
 
 UChar * rtlUnicodeToVUnicodeX(unsigned slen, UChar const * src)
 {
     UChar * data  = (UChar *)rtlMalloc((slen+1)*2);
-    memcpy(data, src, slen*2);
+    memcpy_iflen(data, src, slen*2);
     data[slen] = 0x0000;
     return data;
 }
@@ -5016,7 +5044,7 @@ void rtlUtf8ToUtf8(size32_t outlen, char * out, size32_t inlen, const char *in)
             break;
         offset += nextSize;
     }
-    memcpy(out, in, offset);
+    memcpy_iflen(out, in, offset);
     if (offset != outsize)
         memset(out+offset, ' ', outsize-offset);
 }
@@ -5025,7 +5053,7 @@ void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char 
 {
     unsigned insize = rtlUtf8Size(inlen, in);
     char * buffer = (char *)rtlMalloc(insize);
-    memcpy(buffer, in, insize);
+    memcpy_iflen(buffer, in, insize);
     outlen = inlen;
     out = buffer;
 }
@@ -5054,6 +5082,9 @@ unsigned rtlUnicodeStrlen(UChar const * str)
 
 void rtlUtf8ToData(size32_t outlen, void * out, size32_t inlen, const char *in)
 {
+    if (unlikely(outlen == 0))
+        return;
+
     unsigned insize = rtlUtf8Size(inlen, in);
     if (insize >= outlen)
         rtlCodepageToCodepage(outlen, (char *)out, insize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
@@ -5262,7 +5293,7 @@ ECLRTL_API void rtlUtf8SubStrFTX(unsigned & tlen, char * & tgt, unsigned slen, c
     unsigned copySize = rtlUtf8Size(copylen, src+startOffset);
 
     char * buffer = (char *)rtlMalloc(copySize + fillSize);
-    memcpy(buffer, (byte *)src+startOffset, copySize);
+    memcpy_iflen(buffer, (byte *)src+startOffset, copySize);
     if (fillSize)
         memset(buffer+copySize, ' ', fillSize);
     tlen = len;
@@ -5277,7 +5308,7 @@ ECLRTL_API void rtlUtf8SubStrFX(unsigned & tlen, char * & tgt, unsigned slen, ch
     unsigned copySize = rtlUtf8Size(len, src+startOffset);
 
     char * buffer = (char *)rtlMalloc(copySize);
-    memcpy(buffer, (byte *)src+startOffset, copySize);
+    memcpy_iflen(buffer, (byte *)src+startOffset, copySize);
     tlen = len;
     tgt = buffer;
 }
@@ -5353,13 +5384,16 @@ ECLRTL_API unsigned rtlConcatUtf8ToUtf8(unsigned tlen, char * tgt, unsigned offs
     //normalization is done in the space filling routine at the end
     unsigned ssize = rtlUtf8Size(slen, src);
     assertex(tlen * UTF8_MAXSIZE >= offset+ssize);
-    memcpy(tgt+offset, src, ssize);
+    memcpy_iflen(tgt+offset, src, ssize);
     return offset + ssize;
 
 }
 
 ECLRTL_API void rtlUtf8SpaceFill(unsigned tlen, char * tgt, unsigned offset)
 {
+    if (unlikely(tlen == 0))
+        return;
+
     const byte * src = (const byte *)tgt;
     for (unsigned i=0; i<offset; i++)
     {
@@ -5489,13 +5523,16 @@ ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLe
     outlen = fieldLen;
     out = (char *)rtlMalloc(fieldLen);
     if (len >= compareLen)
-        memcpy(out, str, compareLen);
+    {
+        memcpy_iflen(out, str, compareLen);
+    }
     else
     {
-        memcpy(out, str, len);
+        memcpy_iflen(out, str, len);
         memset(out+len, pad, compareLen-len);
     }
-    memset(out + compareLen, fill, fieldLen-compareLen);
+    if (fieldLen > compareLen)
+        memset(out + compareLen, fill, fieldLen-compareLen);
 }
 
 
@@ -5562,14 +5599,17 @@ ECLRTL_API void rtlCreateUnicodeRange(size32_t & outlen, UChar * & out, unsigned
     outlen = fieldLen;
     out = (UChar *)rtlMalloc(fieldLen*sizeof(UChar));
     if (len >= compareLen)
-        memcpy(out, str, compareLen*sizeof(UChar));
+    {
+        memcpy_iflen(out, str, compareLen*sizeof(UChar));
+    }
     else
     {
-        memcpy(out, str, len * sizeof(UChar));
+        memcpy_iflen(out, str, len * sizeof(UChar));
         while (len != compareLen)
             out[len++] = ' ';
     }
-    memset(out + compareLen, fill, (fieldLen-compareLen) * sizeof(UChar));
+    if (fieldLen > compareLen)
+        memset(out + compareLen, fill, (fieldLen-compareLen) * sizeof(UChar));
 }
 
 ECLRTL_API void rtlCreateUnicodeRangeLow(size32_t & outlen, UChar * & out, unsigned fieldLen, unsigned compareLen, size32_t len, const UChar * str)

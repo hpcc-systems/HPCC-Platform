@@ -1076,8 +1076,11 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
                     Owned<IPTree> gws = createPTree("gateways", 0);
                     Owned<IPTree> soapTree = createPTreeFromXMLString(soapmsg.append("</soap:Envelope>"), ipt_ordered);
                     StringBuffer xpath(baseXpath);
+                    StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
 
-                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, "row");
+                    if (rowName.isEmpty())
+                        rowName.append("row");
+                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, rowName);
                     xpath.replaceString("{$query}", tgtQueryName);
                     xpath.replaceString("{$method}", mthdef.queryMethodName());
                     xpath.replaceString("{$service}", srvdef.queryName());
