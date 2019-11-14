@@ -635,6 +635,9 @@ public:
     inline void DeleteGlobalRef(jobject val)
     {
         JNIEnv::DeleteGlobalRef(val);
+#ifdef FORCE_GC
+        forceGC(this);
+#endif
     }
     inline jobject NewGlobalRef(jobject val, const char *)
     {
@@ -822,6 +825,16 @@ class PersistedObject : public MappingBase
 {
 public:
     PersistedObject(const char *_name) : name(_name) {}
+    ~PersistedObject()
+    {
+        if (instance)
+        {
+#ifdef TRACE_GLOBALREF
+            DBGLOG("DeleteGlobalRef(singleton): %p", instance);
+#endif
+            queryJNIEnv()->DeleteGlobalRef(instance);
+        }
+    }
     CriticalSection crit;
     jobject instance = nullptr;
     StringAttr name;
@@ -1015,14 +1028,6 @@ public:
     void doUnregister(const char *key)
     {
         CriticalBlock b(hashCrit);
-        PersistedObject *p = persistedObjects.find(key);
-        if (p && p->instance)
-        {
-            queryJNIEnv()->DeleteGlobalRef(p->instance);
-#ifdef FORCE_GC
-            forceGC(queryJNIEnv());
-#endif
-        }
         persistedObjects.remove(key);
     }
     static void unregister(const char *key);
@@ -2327,9 +2332,10 @@ public:
     }
     ~JavaThreadContext()
     {
-        // Make sure all thread-local function contexts are destroyed before we detach from
+        // Make sure all thread-local function contexts and saved objects are destroyed before we detach from
         // the Java thread
         contexts.kill();
+        persistedObjects.kill();
         // According to the Java VM 1.7 docs, "A native thread attached to
         // the VM must call DetachCurrentThread() to detach itself before
         // exiting."
@@ -2368,8 +2374,23 @@ public:
         // Note - this object is thread-local so no need for a critsec
         contexts.append(*ctx);
     }
+
+    PersistedObject *getLocalObject(CheckedJNIEnv *JNIenv, const char *name)
+    {
+        // Note - this object is thread-local so no need for a critsec
+        PersistedObject *p;
+        p = persistedObjects.find(name);
+        if (!p)
+        {
+            p = new PersistedObject(name);
+            persistedObjects.replaceOwn(*p);
+        }
+        p->crit.enter();  // needed to keep code common between local/global cases
+        return p;
+    }
 private:
     IArrayOf<IEmbedFunctionContext> contexts;
+    StringMapOf<PersistedObject> persistedObjects = { false };
 };
 
 class JavaXmlBuilder : implements IXmlWriterExt, public CInterface
@@ -3212,12 +3233,6 @@ public:
     }
     ~JavaEmbedImportContext()
     {
-        if (persistMode == persistThread)
-        {
-            StringBuffer scopeKey;
-            getScopeKey(scopeKey);
-            JavaGlobalState::unregister(scopeKey);
-        }
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
         if (classLoader)
@@ -4110,7 +4125,7 @@ public:
                         StringBuffer scopeKey;
                         getScopeKey(scopeKey);
                         PersistedObjectCriticalBlock persistBlock;
-                        persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                        persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey));
                         instance = persistBlock.getInstance();
                         if (instance)
                             persistBlock.leave();
@@ -4125,7 +4140,7 @@ public:
                             if (persistMode==persistQuery || persistMode==persistWorkunit || persistMode==persistChannel)
                             {
                                 assertex(engine);
-                                engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode!=persistQuery);
+                                engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
                             }
                             persistBlock.leave(instance);
                         }
@@ -4377,7 +4392,7 @@ protected:
                     // If a persist scope is specified, we may want to use a pre-existing object. If we do we share its classloader, class, etc.
                     assertex(classname.length());  // MORE - what does this imply?
                     getScopeKey(scopeKey);
-                    persistBlock.enter(globalState->getGlobalObject(JNIenv, scopeKey));
+                    persistBlock.enter(persistMode==persistThread ? sharedCtx->getLocalObject(JNIenv, scopeKey) : globalState->getGlobalObject(JNIenv, scopeKey));
                     instance = persistBlock.getInstance();
                     if (instance)
                         persistBlock.leave();
@@ -4421,7 +4436,7 @@ protected:
                         if (persistMode==persistQuery || persistMode==persistWorkunit || persistMode==persistChannel)
                         {
                             assertex(engine);
-                            engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode!=persistQuery);
+                            engine->onTermination(JavaGlobalState::unregister, scopeKey.str(), persistMode==persistWorkunit);
                         }
                         persistBlock.leave(instance);
                     }
@@ -4510,12 +4525,12 @@ protected:
         case persistGlobal:
             ret.append("global");
             break;
-        case persistChannel:
-            ret.append(nodeNum).append('.');
             // Fall into
         case persistWorkunit:
             engine->getQueryId(ret, true);
             break;
+        case persistChannel:
+            ret.append(nodeNum).append('.');
         case persistQuery:
             engine->getQueryId(ret, false);
             break;
