@@ -1,0 +1,90 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>: parallel</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><a>1</a></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><a>2</a></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><a>3</a></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><a>30</a></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>: sequential</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><a>1</a></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><a>2</a></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><a>3</a></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><a>30</a></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>thread: parallel</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><a>1</a></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><a>2</a></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><a>3</a></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><a>40</a></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>channel: sequential</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><a>1</a></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><a>3</a></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><a>6</a></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><a>52</a></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>query: sequential</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><a>1</a></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><a>3</a></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><a>6</a></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><a>52</a></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>workunit: sequential</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><a>37</a></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><a>39</a></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><a>42</a></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><a>124</a></Row>
+</Dataset>
