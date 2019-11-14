@@ -4380,7 +4380,6 @@ protected:
                     try
                     {
                         javaClass = (jclass) JNIenv->CallObjectMethod(classLoader, loadClassMethod, JNIenv->NewStringUTF(classname));
-                        DBGLOG("Using javaClass %p from classLoader %p", javaClass, classLoader);
                     }
                     catch (IException *E)
                     {
