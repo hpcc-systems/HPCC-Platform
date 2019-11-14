@@ -1130,7 +1130,7 @@ void LRTableBuilder::finished(unsigned rootId)
     table.rootState = rootId;
     table.numExtraActions = extraActions.ordinality();
     table.extraActions = new LRAction[table.numExtraActions];
-    memcpy(table.extraActions, extraActions.getArray(), sizeof(unsigned) * table.numExtraActions);
+    memcpy_iflen(table.extraActions, extraActions.getArray(), sizeof(unsigned) * table.numExtraActions);
 }
 
 

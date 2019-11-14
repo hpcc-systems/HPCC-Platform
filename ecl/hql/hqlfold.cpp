@@ -4981,8 +4981,11 @@ static IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
         return LINK(expr);
     }
 
-    const void * data = value->queryValue();
     unsigned size = type->getSize();
+    if (size == 0)
+        return LINK(expr);
+
+    const void * data = value->queryValue();
     unsigned stringLen = type->getStringLen();
 
     MemoryAttr lower(size);

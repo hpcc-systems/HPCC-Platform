@@ -229,7 +229,7 @@ int rtlReadSwapInt2(const void * _data)
 
 int rtlReadSwapInt3(const void * _data)                     
 { 
-    const signed char * scdata = (const signed char *)_data;
+    const unsigned char * scdata = (const unsigned char *)_data;
     int temp = scdata[0] << 16;
     _cpyrev2(&temp, scdata+1);
     return temp;
@@ -244,8 +244,8 @@ int rtlReadSwapInt4(const void * _data)
 
 __int64 rtlReadSwapInt5(const void * _data)                     
 { 
-    const signed char * scdata = (const signed char *)_data;
-    __int64 temp = ((__int64)scdata[0]) << 32;
+    const unsigned char * scdata = (const unsigned char *)_data;
+    __int64 temp = ((__uint64)scdata[0]) << 32;
     _cpyrev4(&temp, scdata+1);
     return temp;
 }
@@ -253,7 +253,7 @@ __int64 rtlReadSwapInt5(const void * _data)
 __int64 rtlReadSwapInt6(const void * _data)                     
 { 
     const signed char * scdata = (const signed char *)_data;
-    __int64 temp = ((__int64)scdata[0]) << 40;
+    __int64 temp = ((__uint64)scdata[0]) << 40;
     _cpyrev5(&temp, scdata+1);
     return temp;
 }
@@ -261,7 +261,7 @@ __int64 rtlReadSwapInt6(const void * _data)
 __int64 rtlReadSwapInt7(const void * _data)                     
 { 
     const signed char * scdata = (const signed char *)_data;
-    __int64 temp = ((__int64)scdata[0]) << 48;
+    __int64 temp = ((__uint64)scdata[0]) << 48;
     _cpyrev6(&temp, scdata+1);
     return temp;
 }

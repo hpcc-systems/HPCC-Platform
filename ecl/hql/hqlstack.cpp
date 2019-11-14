@@ -140,7 +140,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
             unsigned argSize = castParam->getSize();
             const void * text = castParam->queryValue();
             str = (char *)malloc(argSize);
-            memcpy(str, text, argSize);
+            memcpy_iflen(str, text, argSize);
 
             // For STRINGn, len doens't need to be passed in.
             if(argType->getSize() == UNKNOWN_LENGTH)
