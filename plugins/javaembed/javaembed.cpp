@@ -2555,10 +2555,10 @@ public:
         if (!p)
         {
             p = new PersistedObject(key);
-            p->instance = JNIenv->NewGlobalRef(createThreadClassLoader(classPath, classname, bytecodeLen, bytecode), "cachedClassLoader");
+            p->setInstance(JNIenv->NewGlobalRef(createThreadClassLoader(classPath, classname, bytecodeLen, bytecode), "cachedClassLoader"));
             loaders.replaceOwn(*p);
         }
-        return p->instance;
+        return p->getInstance();
     }
 private:
     IArrayOf<IJavaEmbedFunctionContext> contexts;
