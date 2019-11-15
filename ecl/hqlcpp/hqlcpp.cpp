@@ -12124,7 +12124,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
     if (threadlocal)
         funcctx.addQuoted("EmbedContextBlock __b(__ctx, ctx);");
     else
-    funcctx.addQuoted("EmbedContextBlock __b(__ctx);");
+        funcctx.addQuoted("EmbedContextBlock __b(__ctx);");
     OwnedHqlExpr ctxVar = createVariable("__ctx", makeBoolType());
 
     HqlExprArray scriptArgs;

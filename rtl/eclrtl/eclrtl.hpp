@@ -848,8 +848,9 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)=0;
     virtual void loadCompiledScript(size32_t len, const void *script) = 0;
     // If reusing a context, need to call these before using/after using
-    virtual void enter(ICodeContext *ctx = nullptr) = 0;
+    virtual void enter() = 0;
     virtual void exit() = 0;
+    virtual void reenter(ICodeContext *ctx) = 0;
 };
 
 class EmbedContextBlock
@@ -857,11 +858,11 @@ class EmbedContextBlock
 public:
     EmbedContextBlock(IEmbedFunctionContext *_ctx) : ctx(_ctx)
     {
-        ctx->enter(nullptr);
+        ctx->enter();
     }
     EmbedContextBlock(IEmbedFunctionContext *_ctx, ICodeContext *codeCtx) : ctx(_ctx)
     {
-        ctx->enter(codeCtx);
+        ctx->reenter(codeCtx);
     }
     ~EmbedContextBlock()
     {

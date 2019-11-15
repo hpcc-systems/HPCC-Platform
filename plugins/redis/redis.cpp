@@ -277,7 +277,7 @@ static void releaseAllCachedContexts(bool isPooled)
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
+        (*threadHookChain)(isPooled);
     }
 }
 //The following class is here to ensure destruction of the cachedConnection within the main thread

@@ -896,7 +896,8 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter(ICodeContext *codeCtx) override {}
+    virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void importFunction(size32_t lenChars, const char *utf)
     {

@@ -570,7 +570,8 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter(ICodeContext *codeCtx) override {}
+    virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
 protected:
     sqlite3_value *getScalarResult()

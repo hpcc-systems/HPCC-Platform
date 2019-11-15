@@ -49,7 +49,7 @@ static const char *version = "Java Embed Helper 1.0.0";
 //#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
 //#define CHECK_JNI
-#define FORCE_GC
+//#define FORCE_GC
 /* Note - if you enable CHECK_JNI and see output like:
  *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
  * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
@@ -3212,8 +3212,8 @@ private:
 class JavaEmbedImportContext : public CInterfaceOf<IJavaEmbedFunctionContext>
 {
 public:
-    JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options, const IThorActivityContext *_activityContext)
-    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), activityContext(_activityContext)
+    JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned _flags, const char *options, const IThorActivityContext *_activityContext)
+    : sharedCtx(_sharedCtx), JNIenv(sharedCtx->JNIenv), instance(_instance), flags(_flags), activityContext(_activityContext)
     {
         argcount = 0;
         argsig = NULL;
@@ -4275,13 +4275,22 @@ public:
         }
         reinit();
     }
-    virtual void enter(ICodeContext *codeCtx) override
+    virtual void enter() override
+    {
+        reenter(nullptr);
+    }
+    virtual void reenter(ICodeContext *codeCtx) override
     {
         // If we rejig codegen to only call loadCompiledScript etc at construction time, then this will need to do the reinit()
         // until we do, it's too early
 
         if (codeCtx)
             engine = codeCtx->queryEngineContext();
+        else if (flags & EFthreadlocal && persistMode > persistThread)
+        {
+            StringBuffer s;
+            throw MakeStringException(0, "javaembed: In method %s: Workunit must be recompiled to support this persist mode", getReportName(s).str());
+        }
 
         // Create a new frame for local references and increase the capacity
         // of those references to 64 (default is 16)
@@ -4292,11 +4301,11 @@ public:
     {
         if (persistMode==persistNone)
             instance = 0;  // otherwise we leave it for next call as it saves a lot of time looking it up
-        JNIenv->PopLocalFrame(nullptr);
         iterators.kill();
 #ifdef FORCE_GC
         forceGC(JNIenv);
 #endif
+        JNIenv->PopLocalFrame(nullptr);
     }
 
 protected:
@@ -4597,6 +4606,7 @@ protected:
     jobject instance = nullptr; // class instance of object to call methods on
     const IThorActivityContext *activityContext = nullptr;
 
+    unsigned flags = 0;
     unsigned nodeNum = 0;
     StringAttr globalScopeKey;
     PersistMode persistMode = persistNone;  // Defines the lifetime of the java object for which this is called.
@@ -4637,8 +4647,8 @@ static void releaseContext(bool isPooled)
         threadContext->endThread();
         if (!isPooled)
         {
-        delete threadContext;
-        threadContext = NULL;
+            delete threadContext;
+            threadContext = NULL;
         }
     }
     if (threadHookChain)

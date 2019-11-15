@@ -355,7 +355,7 @@ RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
         // NB: May need to revisit if not on a jlib Thread.
         if (!threadHooked)
         {
-        prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+            prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
             threadHooked = true;
         }
     }

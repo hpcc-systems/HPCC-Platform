@@ -1835,7 +1835,8 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter(ICodeContext *codeCtx) override {}
+    virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void setActivityOptions(const IThorActivityContext *ctx) override
     {
@@ -1909,7 +1910,8 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter(ICodeContext *codeCtx) override {}
+    virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void callFunction()
     {
