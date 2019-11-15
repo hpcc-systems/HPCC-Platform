@@ -258,7 +258,7 @@ public :
 
     Owned<Connection> connection;
 };
-static void releaseAllCachedContexts()
+static void releaseAllCachedContexts(bool isPooled)
 {
     if (cachedConnection)
     {
@@ -278,9 +278,7 @@ static void releaseAllCachedContexts()
     if (threadHookChain)
     {
         (*threadHookChain)();
-        threadHookChain = nullptr;
     }
-    threadHooked = false;
 }
 //The following class is here to ensure destruction of the cachedConnection within the main thread
 //as this is not handled by the thread hook mechanism.

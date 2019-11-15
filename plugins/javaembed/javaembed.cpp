@@ -49,7 +49,7 @@ static const char *version = "Java Embed Helper 1.0.0";
 //#define TRACE_GLOBALREF
 //#define TRACE_CLASSFILE
 //#define CHECK_JNI
-//#define FORCE_GC
+#define FORCE_GC
 /* Note - if you enable CHECK_JNI and see output like:
  *   WARNING in native method: JNI call made without checking exceptions when required to from CallObjectMethodV
  * where for 'from' may be any of several functions, then the cause is likely to be a missing call to checkException()
@@ -2319,6 +2319,11 @@ public:
 // the C++ thread and the java threading library, ensuring that we register/unregister as needed,
 // and that any thread_local function contexts are destroyed before we detach from the java thread
 
+interface IJavaEmbedFunctionContext : public IEmbedFunctionContext
+{
+    virtual void endThread() = 0;
+};
+
 class JavaThreadContext
 {
 public:
@@ -2342,7 +2347,15 @@ public:
         // exiting."
         globalState->javaVM->DetachCurrentThread();
     }
-
+    void endThread()
+    {
+        persistedObjects.kill();
+        ForEachItemIn(idx, contexts)
+        {
+            auto &context = contexts.item(idx);
+            context.endThread();
+        }
+    }
     jobject getSystemClassLoader()
     {
         jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, cl_getSystemClassLoader);
@@ -2370,7 +2383,7 @@ public:
         JavaObjectXmlWriter x(JNIenv, result, name, *esdl, esdlservice, *writer);
         x.write();
     }
-    void registerContext(IEmbedFunctionContext *ctx)
+    void registerContext(IJavaEmbedFunctionContext *ctx)
     {
         // Note - this object is thread-local so no need for a critsec
         contexts.append(*ctx);
@@ -2421,7 +2434,7 @@ public:
         return p->instance;
     }
 private:
-    IArrayOf<IEmbedFunctionContext> contexts;
+    IArrayOf<IJavaEmbedFunctionContext> contexts;
     StringMapOf<PersistedObject> persistedObjects = { false };
     StringMapOf<PersistedObject> loaders = { false };
 };
@@ -3196,7 +3209,7 @@ private:
 // Objects of class JavaEmbedImportContext are created locally for each call of a function, or thread-local to persist from one call to the next.
 // Methods in here do not need to be thread-safe
 
-class JavaEmbedImportContext : public CInterfaceOf<IEmbedFunctionContext>
+class JavaEmbedImportContext : public CInterfaceOf<IJavaEmbedFunctionContext>
 {
 public:
     JavaEmbedImportContext(ICodeContext *codeCtx, JavaThreadContext *_sharedCtx, jobject _instance, unsigned flags, const char *options, const IThorActivityContext *_activityContext)
@@ -3270,6 +3283,21 @@ public:
             JNIenv->DeleteGlobalRef(javaClass);
         if (classLoader)
             JNIenv->DeleteGlobalRef(classLoader);
+    }
+    virtual void endThread() override
+    {
+        instance = nullptr;
+        if (javaClass)
+        {
+            JNIenv->DeleteGlobalRef(javaClass);
+            javaClass = nullptr;
+        }
+        if (classLoader)
+        {
+            JNIenv->DeleteGlobalRef(classLoader);
+            classLoader = nullptr;
+        }
+        javaMethodID = nullptr;
     }
 
     virtual bool getBooleanResult()
@@ -4247,13 +4275,17 @@ public:
         }
         reinit();
     }
-    virtual void enter() override
+    virtual void enter(ICodeContext *codeCtx) override
     {
         // If we rejig codegen to only call loadCompiledScript etc at construction time, then this will need to do the reinit()
         // until we do, it's too early
 
+        if (codeCtx)
+            engine = codeCtx->queryEngineContext();
+
         // Create a new frame for local references and increase the capacity
         // of those references to 64 (default is 16)
+
         JNIenv->PushLocalFrame(64);
     }
     virtual void exit() override
@@ -4598,17 +4630,20 @@ protected:
 static __thread JavaThreadContext* threadContext;  // We reuse per thread, for speed
 static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext()
+static void releaseContext(bool isPooled)
 {
     if (threadContext)
     {
+        threadContext->endThread();
+        if (!isPooled)
+        {
         delete threadContext;
         threadContext = NULL;
+        }
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
-        threadHookChain = NULL;
+        (*threadHookChain)(isPooled);
     }
 }
 

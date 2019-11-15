@@ -896,7 +896,7 @@ public:
     {
         throwUnexpected();
     }
-    virtual void enter() override {}
+    virtual void enter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
@@ -937,7 +937,7 @@ protected:
 static __thread V8JavascriptEmbedFunctionContext * theFunctionContext;  // We reuse per thread, for speed
 static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext()
+static void releaseContext(bool isPooled)
 {
     if (theFunctionContext)
     {
@@ -946,8 +946,7 @@ static void releaseContext()
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
-        threadHookChain = NULL;
+        (*threadHookChain)(isPooled);
     }
 }
 
