@@ -803,6 +803,7 @@ interface IRowStream;
 ECLRTL_API IRowStream * createRowStream(size32_t count, const byte * * rowset);
 
 //-----------------------------------------------------------------------------
+interface ICodeContext;
 struct RtlTypeInfo;
 class ARowBuilder;
 interface IEmbedFunctionContext : extends IInterface
@@ -849,6 +850,7 @@ interface IEmbedFunctionContext : extends IInterface
     // If reusing a context, need to call these before using/after using
     virtual void enter() = 0;
     virtual void exit() = 0;
+    virtual void reenter(ICodeContext *ctx) = 0;
 };
 
 class EmbedContextBlock
@@ -857,6 +859,10 @@ public:
     EmbedContextBlock(IEmbedFunctionContext *_ctx) : ctx(_ctx)
     {
         ctx->enter();
+    }
+    EmbedContextBlock(IEmbedFunctionContext *_ctx, ICodeContext *codeCtx) : ctx(_ctx)
+    {
+        ctx->reenter(codeCtx);
     }
     ~EmbedContextBlock()
     {
@@ -873,7 +879,6 @@ interface IEmbedServiceContext : extends IInterface
 
 enum EmbedFlags { EFembed = 1, EFimport = 2, EFnoreturn = 4, EFnoparams = 8, EFthreadlocal = 16 }; // For createFunctionContext flags
 
-interface ICodeContext;
 interface IThorActivityContext;
 interface IEmbedContext : extends IInterface
 {

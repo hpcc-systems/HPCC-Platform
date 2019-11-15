@@ -457,6 +457,7 @@ namespace couchbaseembed
                UNSUPPORTED("loadCompiledScript");
            }
            virtual void enter() override {}
+           virtual void reenter(ICodeContext *codeCtx) override {}
            virtual void exit() override {}
        protected:
            void execute();

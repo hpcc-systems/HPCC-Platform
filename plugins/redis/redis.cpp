@@ -258,7 +258,7 @@ public :
 
     Owned<Connection> connection;
 };
-static void releaseAllCachedContexts()
+static void releaseAllCachedContexts(bool isPooled)
 {
     if (cachedConnection)
     {
@@ -277,10 +277,8 @@ static void releaseAllCachedContexts()
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
-        threadHookChain = nullptr;
+        (*threadHookChain)(isPooled);
     }
-    threadHooked = false;
 }
 //The following class is here to ensure destruction of the cachedConnection within the main thread
 //as this is not handled by the thread hook mechanism.
@@ -288,7 +286,7 @@ static class MainThreadCachedConnection
 {
 public :
     MainThreadCachedConnection() { }
-    ~MainThreadCachedConnection() { releaseAllCachedContexts(); }
+    ~MainThreadCachedConnection() { releaseAllCachedContexts(false); }
 } mainThread;
 
 Connection::Connection(ICodeContext * ctx, const char * _options, const char * _ip, int _port, bool parseOptions, int _database, const char * password, unsigned _timeout, bool selectDB)

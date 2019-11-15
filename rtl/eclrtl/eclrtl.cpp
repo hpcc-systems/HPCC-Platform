@@ -334,15 +334,15 @@ private:
 typedef MapStringTo<RTLUnicodeConverter, char const *> MapStrToUnicodeConverter;
 static __thread MapStrToUnicodeConverter *unicodeConverterMap = NULL;
 static __thread ThreadTermFunc prevThreadTerminator = NULL;
+static __thread bool threadHooked = false;
 
-static void clearUnicodeConverterMap()
+static void clearUnicodeConverterMap(bool isPooled)
 {
     delete unicodeConverterMap;
     unicodeConverterMap = NULL;  // Important to clear, as this is called when threadpool threads end...
     if (prevThreadTerminator)
     {
-        (*prevThreadTerminator)();
-        prevThreadTerminator = NULL;
+        (*prevThreadTerminator)(isPooled);
     }
 }
 
@@ -353,7 +353,11 @@ RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
         unicodeConverterMap = new MapStrToUnicodeConverter;
         // Use thread terminator hook to clear them up on thread exit.
         // NB: May need to revisit if not on a jlib Thread.
-        prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+        if (!threadHooked)
+        {
+            prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+            threadHooked = true;
+        }
     }
     RTLUnicodeConverter * conv = unicodeConverterMap->getValue(codepage);
     if(!conv)

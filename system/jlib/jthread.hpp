@@ -60,15 +60,15 @@ extern jlib_decl unsigned threadLogID();  // for use in logging
 // so the hook function should clear any variables if necessary rather than assuming that they will be cleared
 // at thread startup time.
 
-typedef void (*ThreadTermFunc)();
+typedef void (*ThreadTermFunc)(bool isPooled);
 extern jlib_decl ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm);
-extern jlib_decl void callThreadTerminationHooks();
+extern jlib_decl void callThreadTerminationHooks(bool isPooled);
 
 //An exception safe way of ensuring that the thread termination hooks are called.
 class jlib_decl QueryTerminationCleanup
 {
 public:
-    inline ~QueryTerminationCleanup() { callThreadTerminationHooks(); }
+    inline ~QueryTerminationCleanup() { callThreadTerminationHooks(true); }
 };
 
 class jlib_decl Thread : public CInterface, public IThread

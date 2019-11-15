@@ -144,7 +144,7 @@ public :
     }
 } mainThread;
 
-static void releaseContext()
+static void releaseContext(bool isPooled)
 {
     if (cachedConnection)
     {
@@ -153,10 +153,8 @@ static void releaseContext()
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
-        threadHookChain = NULL;
+        (*threadHookChain)(isPooled);
     }
-    threadHooked = false;
 }
 MCached * createConnection(ICodeContext * ctx, const char * options)
 {
