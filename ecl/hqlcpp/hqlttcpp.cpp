@@ -8504,7 +8504,7 @@ bool AutoScopeMigrateInfo::addGraph(unsigned graph)
 
 bool AutoScopeMigrateInfo::doAutoHoist(IHqlExpression * transformed, bool minimizeWorkunitTemporaries)
 {
-    if (useCount == 0)
+    if ((useCount == 0) || neverHoist)
         return false;
 
     node_operator op = original->getOperator();
@@ -8564,7 +8564,48 @@ AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCpp
     globalTarget = NULL;
 }
 
-void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
+//Ensure all input activities are marked as never hoisting, but child activities are unaffected
+void AutoScopeMigrateTransformer::ensureNeverHoisted(IHqlExpression * expr)
+{
+    for (;;)
+    {
+        AutoScopeMigrateInfo * extra = queryBodyExtra(expr);
+        if (extra->neverHoist)
+            return;
+        extra->neverHoist = true;
+        if (getNumActivityArguments(expr) != 1)
+            return;
+        expr = expr->queryChild(0);
+    }
+}
+
+//If an expression must be part of a compound source operation, ensure that the input
+//dataset is never hoisted, otherwise it will cause a later cannot key error.
+void AutoScopeMigrateTransformer::analysePass0(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_keyedlimit:
+        ensureNeverHoisted(expr);
+        break;
+    case no_hqlproject:
+    case no_newusertable:
+    case no_aggregate:
+    case no_newaggregate:
+        if (expr->hasAttribute(keyedAtom))
+            ensureNeverHoisted(expr);
+        break;
+    case no_filter:
+        if (filterIsKeyed(expr))
+            ensureNeverHoisted(expr);
+        break;
+    }
+
+    if (!alreadyVisited(expr))
+        NewHqlTransformer::analyseExpr(expr);
+}
+
+void AutoScopeMigrateTransformer::analysePass1(IHqlExpression * expr)
 {
     AutoScopeMigrateInfo * extra = queryBodyExtra(expr);
     if (isConditional)
@@ -8585,6 +8626,19 @@ void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
     unsigned savedDepth = activityDepth;
     doAnalyseExpr(expr);
     activityDepth = savedDepth;
+}
+
+void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
+{
+    switch (pass)
+    {
+    case 0:
+        analysePass0(expr);
+        break;
+    case 1:
+        analysePass1(expr);
+        break;
+    }
 }
 
 void AutoScopeMigrateTransformer::doAnalyseConditionalExpr(IHqlExpression * expr, unsigned firstConditional)
