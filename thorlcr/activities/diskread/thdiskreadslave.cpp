@@ -961,6 +961,7 @@ public:
                     break;
                 hadElement = true;
                 helper->processRow(row, nextrow); // can change row size TBD
+                t.flushTimesIntermittantly();
             }
         }
         eoi = true;
@@ -1090,6 +1091,7 @@ public:
                     totalCount += helper->numValid(nextrow);
                     if (totalCount > stopAfter)
                         break;
+                t.flushTimesIntermittantly();
                 }
                 if (totalCount > stopAfter)
                     break;
@@ -1204,6 +1206,7 @@ public:
                         if (!nextrow)
                             break;
                         helper->processRow(nextrow, this);
+                        t.flushTimesIntermittantly();
                     }
                 }
                 gathered = true;

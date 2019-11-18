@@ -451,6 +451,7 @@ public:
                 streams.append(*createUngroupStream(queryInputStream(i)));
             else
                 streams.append(*LINK(queryInputStream(i)));
+            s.flushTimesIntermittantly();
         }
         Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
         out.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), helper->queryCompare(), helper->dedup(), linkcounter));

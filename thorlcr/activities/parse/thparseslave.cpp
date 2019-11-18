@@ -108,6 +108,7 @@ public:
 
             processRecord(curRow.get());
             rowIter->first();
+            t.flushTimesIntermittantly();
         }
         
         return NULL;

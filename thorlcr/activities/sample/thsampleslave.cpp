@@ -67,6 +67,7 @@ public:
                 return row.getClear();
             }
             numToSkip--;
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

@@ -91,6 +91,7 @@ public:
                 dataLinkIncrement();
                 return row.finalizeRowClear(sizeGot);
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

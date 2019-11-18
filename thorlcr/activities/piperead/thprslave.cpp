@@ -221,6 +221,7 @@ public:
                     dataLinkIncrement();
                     return ret.getClear();
                 }
+                t.flushTimesIntermittantly();
             }
         }
         catch(IException *e) // trying to catch OsException here should we not have a IOSException?
@@ -461,6 +462,7 @@ public:
             }
             pipeVerified.signal();
             firstRead = true;
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

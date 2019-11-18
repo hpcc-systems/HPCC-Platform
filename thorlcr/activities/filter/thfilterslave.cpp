@@ -99,6 +99,7 @@ public:
                 dataLinkIncrement();
                 return row.getClear();
             }
+            t.flushTimesIntermittantly();
         }
         return nullptr;
     }
@@ -226,6 +227,7 @@ public:
                 anyThisGroup = true;
                 return ret.finalizeRowClear(sz);
             }
+            t.flushTimesIntermittantly();
         }
         anyThisGroup = false;
         return NULL;
@@ -307,6 +309,7 @@ public:
             }
             else
                 abortSoon = true; // eof
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }
@@ -333,6 +336,7 @@ public:
                     dataLinkIncrement();
                     return row.getClear();
                 }
+                t.flushTimesIntermittantly();
             }
             groupStream.clear();
             //nextRowGE never returns an end of group marker. JCSMORE - Is this right?

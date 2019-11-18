@@ -3230,10 +3230,12 @@ public:
                         currentInput.setown(nextInput.getClear());
                         break;
                     }
+                    t.flushTimesIntermittantly();
                 }
                 assertex(currentInput);
                 distInput = currentInput;
             }
+            t.flushTimesIntermittantly();
         }
     }
 

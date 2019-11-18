@@ -118,6 +118,7 @@ public:
                             OwnedConstThorRow ret = row.finalizeRowClear(sizeGot);
                             return ret.getClear();
                         }
+                        t.flushTimesIntermittantly();
                     }
                 }
                 nxt.setown(inputStream->nextRow());
@@ -129,6 +130,7 @@ public:
                 helper->getSearchText(len, searchStr, nxt);
                 OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
                 xmlParser.setown(createXMLParse(searchStr, len, xmlIteratorPath, *this, ptr_noRoot, helper->requiresContents()));
+                t.flushTimesIntermittantly();
             }
         }
         catch (IOutOfMemException *e)

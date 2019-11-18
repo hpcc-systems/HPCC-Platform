@@ -437,6 +437,7 @@ public:
                     current = NULL;
                     break;
                 }
+                t.flushTimesIntermittantly();
             }
         }
         return NULL;
@@ -484,6 +485,7 @@ public:
                 ActPrintLog("COMBINE(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
+            s.flushTimesIntermittantly();
         }
         dataLinkStart();
     }
@@ -522,6 +524,7 @@ public:
                     }
                     eog = true;
                 }
+                t.flushTimesIntermittantly();
             }
             if (err)
             {
@@ -585,6 +588,7 @@ public:
                 ActPrintLog("REGROUP(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                 throw;
             }
+            s.flushTimesIntermittantly();
         }
         dataLinkStart();
     }
@@ -613,6 +617,7 @@ public:
                 break;
             }
             current = queryInputStream(curinput);
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

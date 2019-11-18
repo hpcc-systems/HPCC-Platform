@@ -32,6 +32,7 @@
 static unsigned const defaultDaliResultOutputMax = 2000; // MB
 static unsigned const defaultDaliResultLimit = 10; // MB
 static unsigned const defaultMaxCsvRowSize = 10; // MB
+static cycle_t defaultFlushTimerInterval = nanosec_to_cycle(1000000000); // Cycles
 
 
 #define OPT_OUTPUTLIMIT_LEGACY    "outputLimit"             // OUTPUT Mb limit (legacy property name, renamed to outputLimitMb in 5.2)
@@ -256,7 +257,6 @@ public:
 };
 
 #ifdef TIME_ACTIVITIES
-
 class ActivityTimer
 {
     unsigned __int64 startCycles;
@@ -281,8 +281,7 @@ public:
         else
             startCycles = 0;
     }
-
-    ~ActivityTimer()
+    void flushTimes()
     {
         if (enabled)
         {
@@ -290,9 +289,19 @@ public:
             accumulator.endCycles = nowCycles;
             cycle_t elapsedCycles = nowCycles - startCycles;
             accumulator.totalCycles += elapsedCycles;
+            startCycles = nowCycles;
             if (isFirstRow)
                 accumulator.firstExitCycles = nowCycles;
         }
+    }
+    inline void flushTimesIntermittantly()
+    {
+        if (get_cycles_now() - (cycle_t) startCycles > defaultFlushTimerInterval)
+            flushTimes();
+    }
+    ~ActivityTimer()
+    {
+        flushTimes();
     }
 };
 
@@ -326,6 +335,8 @@ public:
 struct ActivityTimer
 {
     inline ActivityTimer(ActivityTimeAccumulator &_accumulator, const bool _enabled) { }
+    inline void flushTimes() { }
+    inline void flushTimesIntermittantly() {}
 };
 struct SimpleActivityTimer
 {

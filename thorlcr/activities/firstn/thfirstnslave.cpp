@@ -199,6 +199,7 @@ public:
                 }
                 if (countThisGroup)
                     break; // return eog and reset
+                t.flushTimesIntermittantly();
             }
         }
         countThisGroup = 0;
@@ -360,6 +361,7 @@ public:
                         return NULL;
                     }
                     skipped++;
+                    t.flushTimesIntermittantly();
                 }
             }
             if (getDataLinkCount() < limit)

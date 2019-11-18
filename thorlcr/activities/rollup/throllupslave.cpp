@@ -382,6 +382,7 @@ public:
             }
             if (!keepLeft || (keepBest && (compareBest->docompare(kept,next) > 0)))
                 kept.setown(next.getClear());
+            t.flushTimesIntermittantly();
         }
         OwnedConstThorRow ret = kept.getClear();
         kept.setown(next.getClear());
@@ -437,6 +438,7 @@ public:
                     eos = true;
                 return NULL;
             }
+            t.flushTimesIntermittantly();
         }
     }
 };
@@ -519,6 +521,7 @@ public:
                 kept.set(keptTransformed);
             else
                 kept.setown(next.getClear());
+             t.flushTimesIntermittantly();
         }
         OwnedConstThorRow row = keptTransformed.getClear();
         kept.setown(next.getClear());
@@ -589,6 +592,7 @@ public:
                     dataLinkIncrement();
                     return row.finalizeRowClear(sz);
                 }
+                t.flushTimesIntermittantly();
             }
         }
         catch (IException *e)

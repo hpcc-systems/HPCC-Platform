@@ -68,6 +68,7 @@ public:
                 rowsProcessed++;
                 return rowBuilder.finalizeRowClear(outSize);
             }
+            t.flushTimesIntermittantly();
         }
     }
 };
@@ -313,6 +314,7 @@ public:
                     return out.finalizeRowClear(outSize);
                 }
             }
+            t.flushTimesIntermittantly();
         }
     }
     void abort()

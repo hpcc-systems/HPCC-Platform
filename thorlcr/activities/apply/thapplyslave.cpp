@@ -47,6 +47,7 @@ public:
                     break;
                 helper->apply(r);
                 processed++;
+                t.flushTimesIntermittantly();
             }
             if (container.queryLocalOrGrouped() || firstNode())
                 helper->end();

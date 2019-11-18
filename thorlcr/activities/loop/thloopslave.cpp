@@ -321,6 +321,7 @@ public:
                     }
                     ++loopPendingCount;
                     loopPending->putRow(ret.getClear());
+                    t.flushTimesIntermittantly();
                 }
                 if (abortSoon)
                     break;
@@ -431,6 +432,7 @@ public:
                 ++loopCounter;
                 if ((container.getKind() == TAKloopcount) && (loopCounter > maxIterations))
                     finishedLooping = true; // NB: will finish when loopPending has been consumed
+                t.flushTimesIntermittantly();
             }
         }
         return NULL;

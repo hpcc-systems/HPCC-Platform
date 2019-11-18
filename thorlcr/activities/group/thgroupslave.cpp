@@ -115,6 +115,7 @@ public:
                         break;
                     }
                     next.setown(next2.getClear());
+                    s.flushTimesIntermittantly();
                 }
             }
             writer.clear();

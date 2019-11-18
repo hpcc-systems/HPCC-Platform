@@ -73,6 +73,7 @@ public:
                 }
                 curRow = 0;
                 numThisRow = helper->numExpandedRows(row);
+                t.flushTimesIntermittantly();
             }
             if (abortSoon) 
                 return NULL;
@@ -83,6 +84,7 @@ public:
                 dataLinkIncrement();
                 return ret.finalizeRowClear(sz);
             }
+            t.flushTimesIntermittantly();
         }
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
@@ -146,6 +148,7 @@ public:
                         return NULL;
                 }
                 curChildRow = cursor->first(childBuf);
+                t.flushTimesIntermittantly();
             }
 
             RtlDynamicRowBuilder ret(allocator);
@@ -157,6 +160,7 @@ public:
                 anyThisGroup = true;
                 return ret.finalizeRowClear(sz);
             }
+            t.flushTimesIntermittantly();
         }
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
@@ -235,6 +239,7 @@ public:
                 dataLinkIncrement();
                 return ret.getClear();
             }
+            t.flushTimesIntermittantly();
         }
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override

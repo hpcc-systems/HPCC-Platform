@@ -81,6 +81,7 @@ public:
                 anyThisGroup = true;
                 return ret.finalizeRowClear(sizeGot);
             }
+            t.flushTimesIntermittantly();
         }
         count = 0;
         anyThisGroup = false;
@@ -212,6 +213,7 @@ public:
                 dataLinkIncrement();
                 return ret.finalizeRowClear(sizeGot);
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

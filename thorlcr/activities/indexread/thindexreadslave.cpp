@@ -981,6 +981,7 @@ public:
                         noteStats(indexInput->querySeeks(), indexInput->queryScans());
                         helper->processRow(key, this);
                         callback.finishedRow();
+                        t.flushTimesIntermittantly();
                     }
                     if (keyManager)
                         resetManager(keyManager);
@@ -1304,6 +1305,7 @@ public:
                     OwnedConstThorRow row = createNextRow();
                     if (row)
                         return row.getClear();
+                    t.flushTimesIntermittantly();
                 }
             }
 
@@ -1328,7 +1330,9 @@ public:
                     eoi = true;
                     return nullptr;
                 }
+                t.flushTimesIntermittantly();
             }
+            t.flushTimesIntermittantly();
         }
     }
 };
@@ -1388,6 +1392,7 @@ public:
             hadElement = true;
             helper->processRow(row, r);
             callback.finishedRow();
+            t.flushTimesIntermittantly();
         }
         if (container.queryLocalOrGrouped())
         {

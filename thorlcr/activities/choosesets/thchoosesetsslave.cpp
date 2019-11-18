@@ -91,6 +91,7 @@ public:
                 dataLinkIncrement();
                 return row.getClear();
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;        
     }
@@ -198,6 +199,7 @@ public:
                     dataLinkIncrement();
                     return row.getClear();
                 }
+                t.flushTimesIntermittantly();
             }
         }
         if (!container.queryLocalOrGrouped() && !lastNode())
@@ -440,6 +442,7 @@ public:
                         return row.getClear();
                     }
                 }
+                t.flushTimesIntermittantly();
             }
         }
         return NULL;        
@@ -518,6 +521,7 @@ public:
                         return row.getClear();
                     }       
                 }
+                t.flushTimesIntermittantly();
             }
         }
         return NULL;        

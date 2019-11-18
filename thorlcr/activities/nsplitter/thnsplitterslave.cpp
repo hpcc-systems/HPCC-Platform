@@ -326,6 +326,7 @@ public:
             }
             smartBuf->putRow(row.getClear(), this); // can block if mem limited, but other readers can progress which is the point
             ++recsReady;
+            t.flushTimesIntermittantly();
         }
         return recsReady;
     }

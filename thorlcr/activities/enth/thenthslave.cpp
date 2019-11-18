@@ -162,6 +162,7 @@ public:
                 dataLinkIncrement();
                 return row.getClear();
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;        
     }
@@ -254,6 +255,7 @@ public:
                 dataLinkIncrement();
                 return row.getClear();          
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;        
     }

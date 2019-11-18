@@ -165,6 +165,7 @@ public:
                         }
                         if (0==N)
                             break;
+                        t.flushTimesIntermittantly();
                     }
                     if ((N!=0)&&createDefaultIfFail)
                     {

@@ -387,6 +387,7 @@ void CSlaveActivity::startAllInputs()
             ActPrintLog("External(%" ACTPF "d): Error staring input %d", container.queryId(), i);
             throw;
         }
+        s.flushTimesIntermittantly();
     }
 }
 

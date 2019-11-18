@@ -2554,6 +2554,7 @@ public:
                         waitingForDoneGroups = true;
                     }
                     waitingForDoneGroupsSem.wait();
+                    t.flushTimesIntermittantly();  // Need this even though time is spent blocked
                 }
                 bool eog = false;
                 if (preserveGroups)
@@ -2667,6 +2668,7 @@ public:
                 dataLinkIncrement();
                 return ret.getClear();
             }
+            t.flushTimesIntermittantly();
         }
         return nullptr;
     }

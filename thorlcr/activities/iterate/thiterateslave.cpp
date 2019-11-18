@@ -153,6 +153,7 @@ public:
                 prev.setown(ret.finalizeRowClear(sz));
                 return prev.getLink();
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }
@@ -237,6 +238,7 @@ public:
                 left.setown(nextl.finalizeRowClear(szl));
                 return left.getLink();
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

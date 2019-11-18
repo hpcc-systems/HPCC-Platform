@@ -59,6 +59,7 @@ public:
                     if (!row)
                         break;
                     sz = helper->processNext(out, row);
+                    t.flushTimesIntermittantly();
                 }
             }
             if (!input->isGrouped())

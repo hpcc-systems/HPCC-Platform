@@ -84,6 +84,7 @@ public:
                 anyThisGroup = true;
                 return r;
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }
@@ -168,6 +169,7 @@ public:
                 anyThisGroup = true;
                 return ret.finalizeRowClear(thisSize);
             }
+            t.flushTimesIntermittantly();
         }
         return NULL;
     }

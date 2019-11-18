@@ -2418,6 +2418,7 @@ public:
                         }
                     }
                 }
+                t.flushTimesIntermittantly();
             }
         }
         return NULL;

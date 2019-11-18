@@ -174,6 +174,7 @@ public:
                     if (!next)
                         break;
                     sz = helper->processNext(resultcr, next);
+                    t.flushTimesIntermittantly();
                 }
             }
         }
