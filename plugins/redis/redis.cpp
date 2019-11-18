@@ -286,7 +286,7 @@ static class MainThreadCachedConnection
 {
 public :
     MainThreadCachedConnection() { }
-    ~MainThreadCachedConnection() { releaseAllCachedContexts(); }
+    ~MainThreadCachedConnection() { releaseAllCachedContexts(false); }
 } mainThread;
 
 Connection::Connection(ICodeContext * ctx, const char * _options, const char * _ip, int _port, bool parseOptions, int _database, const char * password, unsigned _timeout, bool selectDB)
