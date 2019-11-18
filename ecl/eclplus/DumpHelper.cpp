@@ -21,8 +21,7 @@ static bool processExceptions(const IMultiException* excep)
 {
     if (excep && excep->ordinality())
     {
-        unsigned i = 0;
-        while (i < excep->ordinality())
+        ForEachItemIn(i, *excep)
         {
             StringBuffer msg;
             excep->item(i).errorMessage(msg);
@@ -80,6 +79,7 @@ bool DumpHelper::doit(FILE * fp)
             Owned<IClientWULogFileRequest> req = wuclient->createWUFileRequest();
             req->setWuid(wuid);
             req->setType("XML");
+            req->setErrorMessageFormat(CErrorMessageFormat_XML);
             Owned<IClientWULogFileResponse> resp = wuclient->WUFile(req);
             if(!resp)
             {

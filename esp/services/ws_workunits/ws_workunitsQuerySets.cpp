@@ -124,6 +124,7 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
         req->setQuery(query);
     if (wuid && *wuid)
         req->setWuid(wuid);
+    req->setErrorMessageFormat(CErrorMessageFormat_XML);
     req->setType("xml");
     Owned<IClientWULogFileResponse> resp = ws->WUFile(req);
     if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
