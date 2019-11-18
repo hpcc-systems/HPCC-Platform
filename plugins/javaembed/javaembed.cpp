@@ -811,8 +811,12 @@ static void setupGlobals(CheckedJNIEnv *J)
 
 static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz, const char *funcName)
 {
+    StringBuffer sig;
     jstring result = (jstring) J->CallStaticObjectMethod(customLoaderClass, clc_getSignature, clazz, J->NewStringUTF(funcName));
-    return J->getString(ret, result);
+    J->getString(sig, result);
+    sig.replace('.', '/');
+    ret.set(sig);
+    return ret;
 }
 
 /**
