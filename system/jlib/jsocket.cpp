@@ -6911,6 +6911,7 @@ public:
                 out.append(it.second);
             out.newline();
         }
+        out.newline().appendf("Whitelisting is currently: %s", enabled ? "enabled" : "disabled").newline();
         return out;
     }
     virtual void refresh() override
