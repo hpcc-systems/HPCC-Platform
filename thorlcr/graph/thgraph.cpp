@@ -1727,6 +1727,13 @@ void CGraphBase::abort(IException *e)
 
         abortException.set(e);
         aborted = true;
+
+        if (!job.getOptBool("coreOnAbort", false))
+        {
+            // prevent dtors throwing ... __verbose_terminate_handler()->abort()->raise()->core files
+            setProcessAborted(true);
+        }
+
         graphCancelHandler.cancel(0);
 
         if (0 == containers.count())
