@@ -258,6 +258,7 @@ EXPORT TestDate := MODULE
     ASSERT(Date.AdjustCalendar(20170201, month_delta:=24) = 20190201);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=1) = 20010228);
     ASSERT(Date.AdjustCalendar(20000229, year_delta:=4) = 20040229);
+    ASSERT(Date.AdjustCalendar(20191103, day_delta:=5) = 20191108); // HPCC-23124
 
     ASSERT(vSeconds + vLocalTimeZoneOffset BETWEEN vSecondsLocal-1 AND vSecondsLocal+1);
 
@@ -270,9 +271,11 @@ EXPORT TestDate := MODULE
 
     ASSERT(Date.DatesForMonth(20141215).startDate = 20141201);
     ASSERT(Date.DatesForMonth(20141215).endDate = 20141231);
+    ASSERT(Date.DatesForMonth(20191103).endDate = 20191130); // HPCC-23124
 
     ASSERT(Date.DatesForWeek(20141030).startDate = 20141026);
     ASSERT(Date.DatesForWeek(20141030).endDate = 20141101);
+    ASSERT(Date.DatesForWeek(20191103).endDate = 20191109); // HPCC-23124
 
     ASSERT(Date.IsValidDate(vDate, 2014, 2050));
     ASSERT(NOT Date.IsValidDate(vDate, 2000, 2010));
