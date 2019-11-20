@@ -709,19 +709,20 @@ private:
 class AutoScopeMigrateInfo : public NewTransformInfo
 {
 public:
-    AutoScopeMigrateInfo(IHqlExpression * _original) : NewTransformInfo(_original) { useCount = 0; condUseCount = 0; manyGraphs = false; firstUseIsConditional = false; firstUseIsSequential = false; globalInsideChild = false; lastGraph = 0; }
+    AutoScopeMigrateInfo(IHqlExpression * _original) : NewTransformInfo(_original) { }
 
     bool addGraph(unsigned graph);
     bool doAutoHoist(IHqlExpression * transformed, bool minimizeWorkunitTemporaries);
 
 public:
-    unsigned    useCount;
-    unsigned    condUseCount;
-    unsigned    lastGraph;
-    bool manyGraphs;
-    bool firstUseIsConditional;
-    bool firstUseIsSequential;
-    bool globalInsideChild;
+    unsigned    useCount = 0;
+    unsigned    condUseCount = 0;
+    unsigned    lastGraph = 0;
+    bool manyGraphs = false;
+    bool firstUseIsConditional = false;
+    bool firstUseIsSequential = false;
+    bool globalInsideChild = false;
+    bool neverHoist = false;
 };
 
 class AutoScopeMigrateTransformer : public NewHqlTransformer
@@ -738,6 +739,10 @@ protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(AutoScopeMigrateInfo, expr); }
 
+    void analysePass0(IHqlExpression * expr);
+    void analysePass1(IHqlExpression * expr);
+
+    void ensureNeverHoisted(IHqlExpression * expr);
     IHqlExpression * hoist(IHqlExpression * expr, IHqlExpression * hoisted);
     IHqlExpression * transformCond(IHqlExpression * expr);
     void doAnalyseExpr(IHqlExpression * expr);
