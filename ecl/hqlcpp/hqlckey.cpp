@@ -1338,6 +1338,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
             flags.append("|FFvarfilename");
         if (hasDynamicFilename(info.queryFile()))     
             flags.append("|FFdynamicfilename");
+        if (isNonConstantAndQueryInvariant(info.queryFileFilename()))
+            flags.append("|FFinvariantfilename");
     }
 
     if (flags.length())

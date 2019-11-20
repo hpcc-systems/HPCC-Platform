@@ -2984,6 +2984,7 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (onlyExistsAggreate) flags.append("|TDRaggregateexists");
     if (monitorsForGrouping) flags.append("|TDRgroupmonitors");
     if (!nameExpr->isConstant()) flags.append("|TDXvarfilename");
+    if (isNonConstantAndQueryInvariant(nameExpr)) flags.append("|TDRinvariantfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TDXdynamicfilename");
     if (isUnfilteredCount) flags.append("|TDRunfilteredcount");
     if (isVirtualLogicalFilenameUsed || transformUsesVirtualLogicalFilename)
@@ -4083,6 +4084,7 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (onlyExistsAggreate) flags.append("|TIRaggregateexists");
     if (monitorsForGrouping) flags.append("|TIRgroupmonitors");
     if (!nameExpr->isConstant()) flags.append("|TIRvarfilename");
+    if (isNonConstantAndQueryInvariant(nameExpr)) flags.append("|TIRinvariantfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TIRdynamicfilename");
     if (requiresOrderedMerge) flags.append("|TIRorderedmerge");
     if (translator.queryOptions().createValueSets)
@@ -4920,6 +4922,8 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         flags.append("|FFvarfilename");
     if (translator.hasDynamicFilename(tableExpr))     
         flags.append("|FFdynamicfilename");
+    if (isNonConstantAndQueryInvariant(nameExpr))
+        flags.append("|FFinvariantfilename");
 
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFetchFlags", flags.str()+1);
