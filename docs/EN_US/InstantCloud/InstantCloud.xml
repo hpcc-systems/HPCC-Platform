@@ -121,7 +121,7 @@
 
     <para>Instant Cloud is being updated to provide managed services
     functionality like Amazon Elastic Map Reduce (EMR). S3 integration,
-    elasticity, backup, and recovery are features under consideration. </para>
+    elasticity, backup, and recovery are features under consideration.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <?dbfo keep-together="always"?>
@@ -853,9 +853,9 @@
               target cluster.</para>
 
               <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
-              component of your HPCC Systems. It is a disk based massively parallel
-              computer cluster, optimized for sorting, manipulating, and
-              transforming massive data.</para>
+              component of your HPCC Systems. It is a disk based massively
+              parallel computer cluster, optimized for sorting, manipulating,
+              and transforming massive data.</para>
 
               <para><figure>
                   <title>Select target</title>
@@ -1036,7 +1036,9 @@ OUTPUT(L);</programlisting></para>
         <title>Download the word list</title>
 
         <para>We will download the word list from <ulink
-        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink>
+        Look for a link to the <emphasis role="bold">2of12.txt</emphasis> file
+        on that page. </para>
 
         <para><orderedlist>
             <listitem>
@@ -1056,19 +1058,19 @@ OUTPUT(L);</programlisting></para>
         <title>Load the Dictionary File to your Landing Zone</title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC Systems Thor cluster. A Landing Zone is a
-        storage location attached to your HPCC Systems. It has a utility running to
-        facilitate file spraying to a cluster.</para>
+        which it can be sprayed to your HPCC Systems Thor cluster. A Landing
+        Zone is a storage location attached to your HPCC Systems. It has a
+        utility running to facilitate file spraying to a cluster.</para>
 
         <para>For smaller data files, maximum of 2GB, you can use the
         upload/download file utility in ECL Watch. This data file is only ~400
         kb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC Systems Thor cluster. The power of the HPCC Systems comes from its ability
-        to assign multiple processors to work on different portions of the
-        data file in parallel. Even though the VM Edition only has a single
-        node, the data must be sprayed to the cluster.</para>
+        in the HPCC Systems Thor cluster. The power of the HPCC Systems comes
+        from its ability to assign multiple processors to work on different
+        portions of the data file in parallel. Even though the VM Edition only
+        has a single node, the data must be sprayed to the cluster.</para>
 
         <orderedlist>
           <listitem>
@@ -1144,8 +1146,8 @@ OUTPUT(L);</programlisting></para>
         <title>Spray the Data File to your <emphasis>Thor
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Systems Thor system, we must "spray" it
-        to all the nodes. A <emphasis>spray</emphasis> or
+        <para>To use the data file in our HPCC Systems Thor system, we must
+        "spray" it to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
         cluster.</para>
@@ -1485,7 +1487,8 @@ s3cmd --configure
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
         <listitem>
-          <para>The <emphasis role="bold">HPCC Systems Data Tutorial</emphasis></para>
+          <para>The <emphasis role="bold">HPCC Systems Data
+          Tutorial</emphasis></para>
         </listitem>
 
         <listitem>
@@ -1495,7 +1498,8 @@ s3cmd --configure
 
         <listitem>
           <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
-          learn how to configure an HPCC Systems platform using Advanced View.</para>
+          learn how to configure an HPCC Systems platform using Advanced
+          View.</para>
         </listitem>
 
         <listitem>
