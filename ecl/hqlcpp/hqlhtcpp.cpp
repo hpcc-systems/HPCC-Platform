@@ -19530,7 +19530,6 @@ bool HqlCppTranslator::needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
-    case no_datasetfromrow:
     case no_rows:
     case no_libraryinput:
     case no_fail:
@@ -19629,6 +19628,7 @@ bool HqlCppTranslator::needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_globalscope:
     case no_extractresult:
     case no_pure:
+    case no_datasetfromrow:
         return needsRealThor(expr->queryChild(0), flags);
 
     case no_call:
@@ -19644,6 +19644,9 @@ bool HqlCppTranslator::needsRealThor(IHqlExpression *expr, unsigned flags)
 
     case no_fetch:
         return needsRealThor(expr->queryChild(1), flags);
+
+    case no_inlinetable:
+        return expr->hasAttribute(distributedAtom) || expr->hasAttribute(localAtom) || !expr->queryChild(0)->isConstant();
 
     case no_output:
         {
