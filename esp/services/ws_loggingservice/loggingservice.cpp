@@ -52,7 +52,7 @@ bool CWsLoggingServiceEx::init(const char* service, const char* type, IPropertyT
             continue;
         }
         logAgent->init(agentName, agentType, &ptree, process);
-        IUpdateLogThread* logThread = createUpdateLogThread(&ptree, service, agentName, logAgent);
+        IUpdateLogThread* logThread = createUpdateLogThread(&ptree, service, agentName, nullptr, logAgent);
         if(!logThread)
             throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
 

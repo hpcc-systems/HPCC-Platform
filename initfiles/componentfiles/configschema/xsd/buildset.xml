@@ -71,6 +71,7 @@
           <AuthenticateFeature description="Access to ESDL configuration service" path="ESDLConfigAccess" resource="ESDLConfigAccess" service="ws_esdlconfig"/>
           <AuthenticateFeature description="Access to ELK integration service" path="WsELKAccess" resource="WsELKAccess" service="ws_elk"/>
           <AuthenticateFeature description="Access to WS STORE service" path="WsStoreAccess" resource="WsStoreAccess" service="ws_store"/>
+          <AuthenticateFeature description="Access to WS Decoupled Log service" path="WsDecoupledLogAccess" resource="WsDecoupledLogAccess" service="ws_decoupledlogging"/>
           <AuthenticateFeature description="Access to sign ECL code" path="CodeSignAccess" resource="CodeSignAccess" service="ws_codesign"/>
           <ProcessFilters>
             <Platform name="Windows">

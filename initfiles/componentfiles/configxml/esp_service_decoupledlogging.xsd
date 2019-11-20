@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="EspService">
+        <xs:complexType>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                        <tooltip>The build name to be deployed</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="required" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <title>Transaction Log Service Name</title>
+                        <required>true</required>
+                        <tooltip>Name for this Transaction Log web service interface.</tooltip>
+                        <autogenforwizard>1</autogenforwizard>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional" default="Transaction Log Based Web Service Interface">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <title>Transaction Log Service Description</title>
+                        <tooltip>Describes each Transaction Log web service interface</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+
+            <xs:sequence>
+                <xs:element name="LoggingManager" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:appinfo>
+                            <title>ESP Logging Managers</title>
+                        </xs:appinfo>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="LoggingManager" type="loggingmanagerType" use="required">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>Specifies the Logging Manager.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

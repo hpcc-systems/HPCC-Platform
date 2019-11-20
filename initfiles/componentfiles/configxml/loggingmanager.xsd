@@ -64,6 +64,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="FailSafeLogsMask" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>A pattern of characters and wildcards used to match Failsafe file names.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
 
       <xs:sequence>
         <xs:element name="ESPLoggingAgent" maxOccurs="unbounded">
