@@ -96,6 +96,7 @@ public:
     bool readLogRequest(CLogRequestInFile* file, StringBuffer& logRequest);
     virtual void loadSendLogs(GuidSet& ACKSet, GuidMap& MissedLogs, unsigned long& total_missed);//
     virtual void loadAckedLogs(GuidSet& ReceiveMap);//
+    virtual bool readALogLine(IFileIO* fileIO, offset_t& readPos, MemoryBuffer& data);
 };
 
 class CSendLogSerializer : public CLogSerializer

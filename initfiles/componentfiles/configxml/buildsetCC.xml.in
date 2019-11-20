@@ -213,6 +213,10 @@
                         path="WsStoreAccess"
                         resource="WsStoreAccess"
                         service="ws_store"/>
+                    <AuthenticateFeature description="Access to ws Decoupled Log service"
+                        path="WsDecoupledLogAccess"
+                        resource="WsDecoupledLogAccess"
+                        service="ws_decoupledlogging"/>
                     <AuthenticateFeature description="Access to sign ECL code"
                         path="CodeSignAccess"
                         resource="CodeSignAccess"
@@ -406,6 +410,25 @@
                 path="componentfiles/loggingmanager"
                 processName="LoggingManager"
                 schema="loggingmanager.xsd"/>
+            <BuildSet deployable="no"
+                installSet="deploy_map.xml"
+                name="WsDecoupledLog"
+                path="componentfiles/ws_decoupledlogging"
+                processName="EspService"
+                schema="esp_service_decoupledlogging.xsd">
+                <Properties bindingType="EsdlBinding"
+                    defaultPort="8053"
+                    defaultResourcesBasedn="ou=EspServices,ou=ecl"
+                    defaultSecurePort="18053"
+                    plugin="ws_decoupledlogging"
+                    type="WsDecoupledLog">
+                    <Authenticate access="Access"
+                         description="DecoupledLogServiceAccess"
+                         path="/"
+                         required="Read"
+                         resource="Access"/>
+                </Properties>
+            </BuildSet>
             <BuildSet deployable="no"
                 installSet="deploy_map.xml"
                 name="wslogging"

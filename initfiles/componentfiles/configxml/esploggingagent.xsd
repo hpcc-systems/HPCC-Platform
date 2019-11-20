@@ -8,6 +8,7 @@
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
   <xs:include schemaLocation="environment.xsd"/>
+
   <xs:element name="ESPLoggingAgent">
     <xs:complexType>
       <xs:annotation>
@@ -58,6 +59,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attributeGroup ref="DecoupledLogging"/>
       <xs:attribute name="MaxServerWaitingSeconds" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
@@ -234,7 +236,14 @@
   </xs:element>
 
   <xs:attributeGroup name="ESPServer">
-    <xs:attribute name="ESPServer" type="espprocessType" use="required">
+    <xs:attribute name="ESPLoggingUrl" type="xs:string" use="optional" default="">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>The URL of a remote ESP service the logging request is sent to.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ESPServer" type="espprocessType" use="optional">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Specifies the ESPServer process.</tooltip>
@@ -255,6 +264,37 @@
           <viewType>password</viewType>
           <tooltip>Specifies the user's password for accessing the ESPServer.</tooltip>
           <required>true</required>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="DecoupledLogging">
+    <xs:attribute name="AckedFiles" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>A file listing the tank file names which have been acked in a Logging Agent.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="AckedLogRequests" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>A file listing the Log Request GUIDs which have been acked in a Logging Agent.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ReadRequestWaitingSeconds" type="xs:nonNegativeInteger" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Define how often a Logging thread checks logging requests from tank files.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="PendingLogBufferSize" type="xs:nonNegativeInteger" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Buffer size of Pending Logging requests. The buffer will be flushed when reaching the size.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

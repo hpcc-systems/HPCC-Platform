@@ -303,6 +303,7 @@ interface IEspLogAgentVariantIterator : extends IIteratorOf<const IEspLogAgentVa
 
 interface IEspLogAgent : extends IInterface
 {
+    virtual const char * getName() = 0;
     virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process) = 0;
     virtual bool initVariants(IPropertyTree* cfg) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
@@ -395,7 +396,7 @@ public:
     CLogAgentBase() { services[0] = LGSTterm; };
     virtual ~CLogAgentBase() {};
 
-public:
+    virtual const char * getName() { return agentName.get(); };
     bool initVariants(IPropertyTree* cfg) override;
     IEspLogAgentVariantIterator* getVariants() const override;
 protected:
