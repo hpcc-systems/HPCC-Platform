@@ -19403,6 +19403,7 @@ IHqlExpression * HqlCppTranslator::extractGlobalCSE(IHqlExpression * expr)
     HqlExprArray exprs;
     unwindCommaCompound(exprs, expr);
     transformer.analyseArray(exprs, 0);
+    transformer.analyseArray(exprs, 1);
     if (!transformer.worthTransforming())
         return LINK(expr);
 
@@ -19469,6 +19470,7 @@ void HqlCppTranslator::spotGlobalCSE(HqlExprArray & exprs)
     AutoScopeMigrateTransformer transformer(wu(), *this);
 
     transformer.analyseArray(exprs, 0);
+    transformer.analyseArray(exprs, 1);
     if (transformer.worthTransforming())
     {
         transformer.transformRoot(exprs, results);
