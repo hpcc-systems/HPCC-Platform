@@ -1136,7 +1136,7 @@ IValue *CEnumeratedTypeInfo::castFrom(size32_t len, const char * text)
     if (len<baselen)
     {
         char *pad = (char *)temp.allocate(baselen);
-        memcpy(pad, text, len);
+        memcpy_iflen(pad, text, len);
         memset(pad+len, ' ', baselen-len);
         text = pad;
     }

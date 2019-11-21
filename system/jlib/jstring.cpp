@@ -158,7 +158,7 @@ void StringBuffer::_realloc(size_t newLen)
             throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Failed to realloc = %zu, oldMax = %zu", newMax, maxLen);
         }
         if (useInternal())
-            memcpy(newStr, internalBuffer, curLen);
+            memcpy_iflen(newStr, internalBuffer, curLen);
         buffer = newStr;
         maxLen = newMax;
     }
@@ -172,7 +172,7 @@ char * StringBuffer::detach()
     if (buffer == internalBuffer)
     {
         result = (char *)malloc(curLen+1);
-        memcpy(result, buffer, curLen);
+        memcpy_iflen(result, buffer, curLen);
     }
     else
     {
@@ -205,26 +205,32 @@ StringBuffer & StringBuffer::append(unsigned char value)
 
 StringBuffer & StringBuffer::append(const char * value)
 {
-    if (value)
+    if (likely(value))
     {
         size_t SourceLen = strlen(value);
         
-        ensureCapacity(SourceLen);
-        memcpy(buffer + curLen, value, SourceLen);
-        curLen += SourceLen;
+        if (likely(SourceLen))
+        {
+            ensureCapacity(SourceLen);
+            memcpy(buffer + curLen, value, SourceLen);
+            curLen += SourceLen;
+        }
     }
     return *this;
 }
 
 StringBuffer & StringBuffer::append(size_t len, const char * value)
 {
-    if (len)
+    if (likely(len))
     {
         unsigned truncLen = (unsigned)len;
         assertex(truncLen == len); // MORE: StringBuffer should use size_t throughout
-        ensureCapacity(truncLen);
-        memcpy(buffer + curLen, value, truncLen);
-        curLen += truncLen;
+        if (likely(truncLen))
+        {
+            ensureCapacity(truncLen);
+            memcpy(buffer + curLen, value, truncLen);
+            curLen += truncLen;
+        }
     }
     return *this;
 }
@@ -236,9 +242,12 @@ StringBuffer & StringBuffer::append(const unsigned char * value)
 
 StringBuffer & StringBuffer::append(const char * value, size_t offset, size_t len)
 {
-    ensureCapacity(len);
-    memcpy(buffer + curLen, value+offset, len);
-    curLen += len;
+    if (likely(len))
+    {
+        ensureCapacity(len);
+        memcpy(buffer + curLen, value+offset, len);
+        curLen += len;
+    }
     return *this;
 }
 
@@ -529,7 +538,7 @@ char * StringBuffer::reserveTruncate(size_t size)
             char * newStr = (char *)malloc(newMax);
             if (!newStr)
                 throw MakeStringException(-1, "StringBuffer::_realloc: Failed to realloc newMax = %zu, oldMax = %zu", newMax, maxLen);
-            memcpy(newStr, buffer, curLen);
+            memcpy_iflen(newStr, buffer, curLen);
             buffer = newStr;
             maxLen = newMax;
         }
@@ -650,8 +659,11 @@ StringBuffer & StringBuffer::insert(size_t offset, const char * value)
     if (!value) return *this;
     
     size_t len = strlen(value);
-    _insert(offset, len);
-    memcpy(buffer + offset, value, len);
+    if (likely(len))
+    {
+        _insert(offset, len);
+        memcpy(buffer + offset, value, len);
+    }
     return *this;
 }
 
@@ -1058,7 +1070,7 @@ String::String(const char * value)
 String::String(const char * value, int offset, int _count)
 {
   text = (char *)malloc(_count+1);
-  memcpy(text, value+offset, _count);
+  memcpy_iflen(text, value+offset, _count);
   text[_count]=0;
 }
 
@@ -1131,12 +1143,12 @@ bool String::equalsIgnoreCase(const String & value) const
 
 void String::getBytes(int srcBegin, int srcEnd, void * dest, int dstBegin) const
 {
-  memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
+    memcpy_iflen((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
 }
 
 void String::getChars(int srcBegin, int srcEnd, void * dest, int dstBegin) const
 {
-  memcpy((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
+    memcpy_iflen((char *)dest+dstBegin, text+srcBegin, srcEnd-srcBegin);
 }
 
 int String::hashCode() const
@@ -1371,7 +1383,7 @@ void StringAttr::set(const char * _text, size_t _len)
 {
     char * oldtext = text;
     text = (char *)malloc(_len+1);
-    memcpy(text, _text, _len);
+    memcpy_iflen(text, _text, _len);
     text[_len] = 0;
     free(oldtext);
 }

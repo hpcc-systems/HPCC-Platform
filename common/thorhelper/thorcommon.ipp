@@ -614,7 +614,7 @@ public:
     virtual void put(size32_t len, const void * ptr)
     {
         assertex(pos+len <= maxSize);
-        memcpy(buffer+pos, ptr, len);
+        memcpy_iflen(buffer+pos, ptr, len);
         pos += len;
     }
     virtual size32_t beginNested(size32_t count)
