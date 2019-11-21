@@ -300,7 +300,7 @@ class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
     EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false), optUpdateDfs(false),
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(300000), optAllowForeign(false), optUpdateDfs(false),
         optUpdateSuperfiles(false), optUpdateCloneFrom(false), optDontAppendCluster(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
@@ -410,6 +410,7 @@ public:
     }
     virtual int processCMD()
     {
+        CTimeMon mon(optMsToWait);
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
@@ -417,12 +418,20 @@ public:
         else if (!doDeploy(*this, client, optMsToWait, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive))
             return 1;
 
+        unsigned remaining = 0;
+        if (mon.timedout(&remaining))
+        {
+            fputs("\nTimed out during deployment, query not published\n", stderr);
+            return 1;
+        }
+
         StringBuffer descr;
         if (optVerbose)
             fprintf(stdout, "\nPublishing %s\n", wuid.str());
 
+        unsigned clientRemaining = remaining + 100; //give the ESP method time to return from timeout before hard client stop
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
-        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+        setCmdRequestTimeouts(req->rpc(), clientRemaining, optWaitConnectMs, optWaitReadSec);
         req->setWuid(wuid.str());
         if (optDeletePrevious)
             req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
@@ -437,7 +446,7 @@ public:
             req->setCluster(optTargetCluster.get());
         req->setRemoteDali(optDaliIP.get());
         req->setSourceProcess(optSourceProcess);
-        req->setWait(optMsToWait);
+        req->setWait(remaining);
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
