@@ -811,8 +811,12 @@ static void setupGlobals(CheckedJNIEnv *J)
 
 static StringAttr & getSignature(StringAttr &ret, CheckedJNIEnv *J, jclass clazz, const char *funcName)
 {
+    StringBuffer sig;
     jstring result = (jstring) J->CallStaticObjectMethod(customLoaderClass, clc_getSignature, clazz, J->NewStringUTF(funcName));
-    return J->getString(ret, result);
+    J->getString(sig, result);
+    sig.replace('.', '/');
+    ret.set(sig);
+    return ret;
 }
 
 /**
@@ -1087,6 +1091,7 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
 enum PersistMode
 {
     persistNone,
+    persistSupplied,
     persistThread,
     persistChannel,
     persistWorkunit,
@@ -3378,6 +3383,8 @@ public:
     {
         if (*returnType=='V' && strieq(methodName, "<init>"))
             return (unsigned __int64) result.l;
+        if (*returnType=='L' && JNIenv->IsSameObject(result.l, instance) && persistMode != persistNone)
+            return (unsigned __int64) instance;
         StringBuffer s;
         throw makeStringExceptionV(MSGAUD_user, 0, "javaembed: In method %s: Unsigned results not supported", getReportName(s).str()); // Java doesn't support unsigned
     }
@@ -3737,6 +3744,7 @@ public:
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: Null value passed for \"this\"", getReportName(s).str());
             }
             instance = (jobject) val;
+            persistMode = persistSupplied;
             if (JNIenv->GetObjectRefType(instance) != JNIGlobalRefType)
             {
                 StringBuffer s;
