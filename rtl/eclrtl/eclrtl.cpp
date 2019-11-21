@@ -334,15 +334,15 @@ private:
 typedef MapStringTo<RTLUnicodeConverter, char const *> MapStrToUnicodeConverter;
 static __thread MapStrToUnicodeConverter *unicodeConverterMap = NULL;
 static __thread ThreadTermFunc prevThreadTerminator = NULL;
+static __thread bool threadHooked = false;
 
-static void clearUnicodeConverterMap()
+static void clearUnicodeConverterMap(bool isPooled)
 {
     delete unicodeConverterMap;
     unicodeConverterMap = NULL;  // Important to clear, as this is called when threadpool threads end...
     if (prevThreadTerminator)
     {
-        (*prevThreadTerminator)();
-        prevThreadTerminator = NULL;
+        (*prevThreadTerminator)(isPooled);
     }
 }
 
@@ -353,7 +353,11 @@ RTLUnicodeConverter * queryRTLUnicodeConverter(char const * codepage)
         unicodeConverterMap = new MapStrToUnicodeConverter;
         // Use thread terminator hook to clear them up on thread exit.
         // NB: May need to revisit if not on a jlib Thread.
-        prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+        if (!threadHooked)
+        {
+            prevThreadTerminator = addThreadTermFunc(clearUnicodeConverterMap);
+            threadHooked = true;
+        }
     }
     RTLUnicodeConverter * conv = unicodeConverterMap->getValue(codepage);
     if(!conv)
@@ -5148,7 +5152,7 @@ void rtlStrToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *
     outlen = rtlUtf8Length(outsize, out);
 }
 
-#if U_ICU_VERSION_MAJOR_NUM<50
+#if U_ICU_VERSION_MAJOR_NUM<53
 static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
     rtlDataAttr uleft(llen*sizeof(UChar));
@@ -5162,7 +5166,7 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
 #ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
-#if U_ICU_VERSION_MAJOR_NUM>=50
+#if U_ICU_VERSION_MAJOR_NUM>=53
     size_t lSize = rtlUtf8Size(llen, left);
     while (lSize && (left[lSize-1] == ' '))
         lSize--;

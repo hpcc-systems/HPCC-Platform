@@ -270,7 +270,7 @@ private:
 static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
 static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext()
+static void releaseContext(bool isPooled)
 {
     if (threadContext)
     {
@@ -279,8 +279,7 @@ static void releaseContext()
     }
     if (threadHookChain)
     {
-        (*threadHookChain)();
-        threadHookChain = NULL;
+        (*threadHookChain)(isPooled);
     }
 }
 
@@ -1844,6 +1843,7 @@ public:
         throwUnexpected();
     }
     virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void setActivityOptions(const IThorActivityContext *ctx) override
     {
@@ -1918,6 +1918,7 @@ public:
         throwUnexpected();
     }
     virtual void enter() override {}
+    virtual void reenter(ICodeContext *codeCtx) override {}
     virtual void exit() override {}
     virtual void callFunction()
     {

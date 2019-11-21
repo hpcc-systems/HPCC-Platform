@@ -48,25 +48,24 @@ ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm)
     return old;
 }
 
-void callThreadTerminationHooks()
+void callThreadTerminationHooks(bool isPooled)
 {
     if (threadTerminationHook)
     {
-        (*threadTerminationHook)();
-        threadTerminationHook = NULL;
+        (*threadTerminationHook)(isPooled);
     }
 }
 
 PointerArray *exceptionHandlers = NULL;
 MODULE_INIT(INIT_PRIORITY_JTHREAD)
 {
-    if (threadTerminationHook)
-        (*threadTerminationHook)();  // May be too late :(
     exceptionHandlers = new PointerArray();
     return true;
 }
 MODULE_EXIT()
 {
+    if (threadTerminationHook)
+        (*threadTerminationHook)(false);  // May be too late :(
     delete exceptionHandlers;
 }
 
@@ -276,7 +275,7 @@ int Thread::begin()
         handleException(MakeStringException(0, "Unknown exception in Thread %s", getName()));
     }
 #endif
-    callThreadTerminationHooks();
+    callThreadTerminationHooks(false);
 #ifdef _WIN32
 #ifndef _DEBUG
     CloseHandle(hThread);   // leak handle when debugging, 
@@ -928,7 +927,7 @@ public:
                 handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
-            callThreadTerminationHooks();    // Reset any pre-thread state.
+            callThreadTerminationHooks(true);    // Reset any per-thread state.
         } while (parent.notifyStopped(this));
         return 0;
     }

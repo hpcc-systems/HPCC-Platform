@@ -3905,7 +3905,18 @@ void EclResourcer::deriveUsageCounts(IHqlExpression * expr)
     if (info->numUses)
     {
         if (insideNeverSplit || insideSteppedNeverSplit)
+        {
             info->neverSplit = true;
+            //If this expression should never be split, ensure no input datasets are split, otherwise
+            //a input expression that has already been visited on another path may expect the result to be
+            //spilled, but no spill write will be generated.
+            IHqlExpression * cur = expr;
+            while (getNumActivityArguments(cur) == 1)
+            {
+                cur = cur->queryChild(0);
+                queryResourceInfo(cur)->neverSplit = true;
+            }
+        }
 
         if (info->isAlreadyInScope || info->isActivity || !info->containsActivity)
         {
