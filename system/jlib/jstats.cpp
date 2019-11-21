@@ -877,6 +877,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(Total) },
     { SIZESTAT(OsDiskRead) },
     { SIZESTAT(OsDiskWrite) },
+    { TIMESTAT(Blocked) },
+    { CYCLESTAT(Blocked) }
 };
 
 

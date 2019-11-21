@@ -34,14 +34,14 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eof = false;
         ungroupedExistsAggregate = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon || eof)
             return NULL;
         RtlDynamicRowBuilder out(queryRowAllocator());

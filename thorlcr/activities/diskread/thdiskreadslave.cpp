@@ -621,7 +621,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         if (helper->getFlags() & TDRlimitskips)
             limit = RCMAX;
@@ -651,7 +651,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (NULL == out) // guard against, but shouldn't happen
             return NULL;
         OwnedConstThorRow ret = out->nextRow();
@@ -782,7 +782,7 @@ public:
     }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         if (helper->getFlags() & TDRlimitskips)
             limit = RCMAX;
@@ -806,7 +806,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!out)
             return NULL;
         OwnedConstThorRow ret = out->nextRow();
@@ -916,7 +916,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         eoi = hadElement = false;
     }
@@ -930,7 +930,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eoi)
             return NULL;
         RtlDynamicRowBuilder row(allocator);
@@ -1029,7 +1029,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         stopAfter = (rowcount_t)helper->getChooseNLimit();
         if (!helper->hasFilter())
@@ -1051,7 +1051,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eoi)
             return NULL;
         unsigned __int64 totalCount = 0;
@@ -1150,7 +1150,7 @@ public:
 // IThorDataLink
     virtual void start()
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityRecord::start();
         gathered = eoi = false;
         localAggTable.setown(createRowAggregator(*this, *helper, *helper));
@@ -1172,7 +1172,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eoi)
             return NULL;
         if (!gathered)

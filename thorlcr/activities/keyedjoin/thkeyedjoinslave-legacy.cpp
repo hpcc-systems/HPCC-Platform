@@ -2093,7 +2093,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         assertex(inputs.ordinality() == 1);
         PARENT::start();
 
@@ -2199,7 +2199,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!abortSoon && !eos)
         {
             for (;;)

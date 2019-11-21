@@ -75,7 +75,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         ActPrintLog(rolloverEnabled ? "GROUP: is global" : "GROUP: is local");
         PARENT::start();
         eogNext = prevEog = eof = false;
@@ -136,7 +136,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eogNext || eof)
         {
             eogNext = false;

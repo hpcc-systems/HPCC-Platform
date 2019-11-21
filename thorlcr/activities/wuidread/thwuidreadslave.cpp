@@ -71,7 +71,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eogPending = false;
         if (container.queryLocal() || firstNode())
@@ -79,7 +79,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon || rowSource.eos())
             return NULL;
 

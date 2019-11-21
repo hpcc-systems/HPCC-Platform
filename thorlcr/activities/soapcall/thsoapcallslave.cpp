@@ -53,7 +53,7 @@ public:
     // IThorDataLink methods
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eof = false;
         if (container.queryLocalOrGrouped() || firstNode())
@@ -83,7 +83,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!eof && wscHelper.get())
         {
             OwnedConstThorRow row = wscHelper->getRow();
@@ -150,7 +150,7 @@ public:
     // IThorDataLink methods
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         eof = false;
         wscHelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, container.queryJob().queryContextLogger(), NULL));
@@ -168,7 +168,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow row = wscHelper->getRow();
         if (row)
         {

@@ -208,7 +208,7 @@ public:
     }
     CATCH_NEXTROW()
     {   
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eof || abortSoon)
             return NULL;
         try
@@ -245,7 +245,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
         IThorRowInterfaces *_inrowif = needTransform ? inrowif.get() : this;
@@ -378,7 +378,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
         readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
@@ -402,7 +402,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (eof || abortSoon)
             return NULL;
         for (;;)

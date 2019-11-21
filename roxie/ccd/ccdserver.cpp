@@ -937,7 +937,7 @@ protected:
 
     mutable CRuntimeStatisticCollection stats;
     MapStringToMyClass<ThorSectionTimer> functionTimers;
-    ActivityTimeAccumulator totalCycles;
+    ActivityTimeAccumulator activityStats;
     IProbeManager *probeManager = NULL;
     unsigned processed;
     unsigned numStarts = 0;
@@ -1115,7 +1115,7 @@ public:
     {
         CriticalBlock cb(statscrit);
         processed += strandProcessed;
-        totalCycles.merge(strandCycles);
+        activityStats.merge(strandCycles);
     }
     inline void ensureRowAllocator()
     {
@@ -1193,7 +1193,7 @@ public:
         if (rowAllocator)
             rowAllocator->gatherStats(merged);
 
-        totalCycles.addStatistics(merged);
+        activityStats.addStatistics(merged);
         merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
     }
 
@@ -1376,12 +1376,12 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles.totalCycles;
+        return activityStats.totalCycles;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = totalCycles.totalCycles;
+        __int64 ret = activityStats.totalCycles;
         if (input) ret -= input->queryTotalCycles();
         if (ret < 0) 
             ret = 0;
@@ -1775,7 +1775,7 @@ protected:
     CRoxieServerActivity &parent;
     IEngineRowAllocator *rowAllocator;
     IEngineRowStream *inputStream;
-    ActivityTimeAccumulator totalCycles;
+    ActivityTimeAccumulator activityStats;
     mutable CRuntimeStatisticCollection stats;
     unsigned processed = 0;
     unsigned numProcessedLastGroup = 0;
@@ -1802,7 +1802,7 @@ public:
     {
         processed = 0;
         numProcessedLastGroup = 0;
-        totalCycles.reset();
+        activityStats.reset();
     }
     virtual void stop()
     {
@@ -1812,10 +1812,10 @@ public:
                 inputStream->stop();
 
             parent.stop();
-            //It would be preferrable to move totalCycles (+processed?) to gatherStats(), but because of
+            //It would be preferrable to move activityStats (+processed?) to gatherStats(), but because of
             //the way firstRow is associated with startCycles it would require an extra parameter
             //which is not consistent with the other gatherStats() calls, or extra logic in the stats classes.
-            parent.mergeStrandStats(processed, totalCycles);
+            parent.mergeStrandStats(processed, activityStats);
         }
         stopped = true;
     }
@@ -1837,7 +1837,7 @@ public:
         if (rowAllocator)
             rowAllocator->gatherStats(mergedStats);
     }
-    const ActivityTimeAccumulator&  queryTimings() const { return totalCycles; }
+    const ActivityTimeAccumulator&  queryTimings() const { return activityStats; }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1877,11 +1877,11 @@ public:
     virtual void reset()
     {
         assertex(active==0);
-        totalCycles.reset();
+        activityStats.reset();
         ForEachItemIn(idx, strands)
         {
             strands.item(idx).reset();
-            totalCycles.merge(strands.item(idx).queryTimings());
+            activityStats.merge(strands.item(idx).queryTimings());
         }
         resetJunction(splitter);
         CRoxieServerActivity::reset();
@@ -2600,9 +2600,9 @@ public:
         __int64 inputCycles = input->queryTotalCycles();
         __int64 input1Cycles = input1->queryTotalCycles();
         if (puller)
-            ret = totalCycles.totalCycles - (inputCycles > input1Cycles ? inputCycles : input1Cycles);
+            ret = activityStats.totalCycles - (inputCycles > input1Cycles ? inputCycles : input1Cycles);
         else
-            ret = totalCycles.totalCycles - (inputCycles + input1Cycles);
+            ret = activityStats.totalCycles - (inputCycles + input1Cycles);
         if (ret < 0) 
             ret = 0;
         return ret;
@@ -2693,7 +2693,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles.totalCycles;
+        __int64 localCycles = activityStats.totalCycles;
         for (unsigned i = 0; i < numInputs; i++)
             localCycles -= inputArray[i]->queryTotalCycles();
         if (localCycles < 0)
@@ -2872,7 +2872,7 @@ public:
             {
                 start(parentExtractSize, parentExtract, false);
                 {
-                    ActivityTimer t(totalCycles, timeActivities); // unfortunately this is not really best place for seeing in debugger.
+                    ActivityTimer t(activityStats, timeActivities); // unfortunately this is not really best place for seeing in debugger.
                     onExecute();
                 }
                 stop();
@@ -5315,7 +5315,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -5392,7 +5392,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -5463,7 +5463,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -5539,7 +5539,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -5609,7 +5609,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -5685,7 +5685,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         for (;;)
         {
@@ -5831,7 +5831,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void *ret =helper.next();
         if (ret)
         {
@@ -5888,7 +5888,7 @@ public:
         {
             start(parentExtractSize, parentExtract, false);
             {
-                ActivityTimer t(totalCycles, timeActivities);
+                ActivityTimer t(activityStats, timeActivities);
                 MemoryBuffer result;
                 IRecordSize * inputMeta = input->queryOutputMeta();
                 for (;;)
@@ -5977,7 +5977,7 @@ public:
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         // Filtering empty rows, returns the next valid row
         while (curRow < numRows)
         {
@@ -6024,7 +6024,7 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
         }
         virtual const void * nextRow()
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             //Return rows while the current section is active
             while (curRow < maxRows)
             {
@@ -6073,7 +6073,7 @@ class CRoxieServerStrandedInlineTableActivity : public CRoxieServerStrandedActiv
         }
         virtual const void * nextRow()
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             for (;;)
             {
                 //Return rows while the current section is active
@@ -6206,7 +6206,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         Linked<IWorkUnitRowReader> useReader;
         {
             CriticalBlock b(readerCrit);
@@ -6656,7 +6656,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         Linked<IEngineRowStream> useIter;
         {
             CriticalBlock b(iterCrit);
@@ -6726,7 +6726,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRow();
         if (next)
         {
@@ -6996,7 +6996,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         Linked<IEngineRowStream> useStream;
         {
             CriticalBlock b(iterCrit);
@@ -7164,7 +7164,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -7263,7 +7263,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next;
         for (;;)
         {
@@ -7295,7 +7295,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next;
         for (;;)
         {
@@ -7398,7 +7398,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (first)
         {
             kept = inputStream->nextRow();
@@ -7584,7 +7584,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (first)
         {
             calcNextDedupAll();
@@ -7803,7 +7803,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (keepBest)
         {
             if (eof)
@@ -7924,7 +7924,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!readFirstRow)
         {
             left.setown(inputStream->nextRow());
@@ -8021,7 +8021,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             while (curRow == numThisRow)
@@ -8153,7 +8153,7 @@ public:
 
     const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if (!buffer)
@@ -8254,7 +8254,7 @@ public:
 
     const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if (!curParent)
@@ -8396,7 +8396,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!readInput)
         {
             if (sortAlgorithm == unknownSortAlgorithm)
@@ -8568,7 +8568,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -8761,7 +8761,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void *ret = inputStream->nextRow();
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
@@ -8780,7 +8780,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void *ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && prev && compare->docompare(prev, ret) > 0)
         {
@@ -9082,7 +9082,7 @@ public:
             CriticalBlock b2(crit2);  // but only one puller gets to read the head
             if (curIdx == headIdx) // test again now that we have it
             {
-                ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
+                ActivityTimer t(activityStats, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
                 if (readError)
                     throw readError.getLink();  // Read exceptions are only throw if you try to read past the row where they happened
 
@@ -9126,7 +9126,7 @@ public:
         }
 
         CriticalBlock b(crit);
-        ActivityTimer t(totalCycles, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
+        ActivityTimer t(activityStats, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right
         unsigned lidx = curIdx - tailIdx;
         idx++;
         if (!lidx)
@@ -9434,7 +9434,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -9595,7 +9595,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         while (!waitForPipe())
         {
             if (!pipe)
@@ -9947,7 +9947,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         assertex(rows != NULL);
         const void * next = rows->nextRow();
         if (next)
@@ -10010,7 +10010,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)
@@ -10045,7 +10045,7 @@ public:
     {
         //Could assert that this isn't grouped
         // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -10175,7 +10175,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if (eof)
@@ -10214,7 +10214,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -10330,7 +10330,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         CriticalBlock b(ecrit);
         if (exception)
             throw(exception.getLink());
@@ -10359,7 +10359,7 @@ public:
         {
             try
             {
-                ActivityTimer t(totalCycles, timeActivities);
+                ActivityTimer t(activityStats, timeActivities);
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
                 helper.action();
@@ -10480,7 +10480,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)
@@ -10574,7 +10574,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done)
             return NULL;
 
@@ -10673,7 +10673,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (gathered.ordinality() == 0)
         {
             curIndex = 0;
@@ -10883,7 +10883,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         const void * ret;
@@ -10951,7 +10951,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -11010,7 +11010,7 @@ class CRoxieServerStrandedAggregateActivity : public CRoxieServerStrandedActivit
         }
         virtual const void * nextRow() override
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             if (eof || isAborting())
                 return NULL;
 
@@ -11313,7 +11313,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -11402,7 +11402,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         const void * ret = inputStream->ungroupedNextRow();
@@ -11415,7 +11415,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -11502,7 +11502,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         if (processed==choosenLimit)
@@ -11620,7 +11620,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         return inputStream->nextRow();
     }
 };
@@ -12904,7 +12904,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             switch (state)
@@ -13487,7 +13487,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)
@@ -13562,7 +13562,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!curStream)
             return NULL;  // eof
         const void * next = curStream->nextRow();
@@ -13692,7 +13692,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!foundInput)
         {
             foundInput = true;
@@ -13818,7 +13818,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         assertex(rows);
         const void * next = rows->nextRow();
         if (next)
@@ -14068,7 +14068,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (first)
         {
             permute();
@@ -14158,7 +14158,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -14237,7 +14237,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             ConstPointerArray group;
@@ -14329,7 +14329,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             const void * left = inputStream->nextRow();
@@ -14470,7 +14470,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -14564,7 +14564,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)
@@ -14638,7 +14638,7 @@ class CRoxieServerStrandedProjectActivity : public CRoxieServerStrandedActivity
         }
         virtual const void * nextRow()
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             for (;;)
             {
                 OwnedConstRoxieRow in = inputStream->nextRow();
@@ -14717,7 +14717,7 @@ class CRoxieServerProjectActivity : public CRoxieServerActivity
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             OwnedConstRoxieRow in = inputStream->nextRow();
@@ -14913,7 +14913,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         for (;;)
@@ -15167,7 +15167,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         unsigned emptyIterations = 0;
@@ -15498,7 +15498,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if (eof)
@@ -15919,7 +15919,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!evaluated)
         {
             executeEntireGraph();
@@ -16171,7 +16171,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * ret = resultStream->nextRow();
         if (ret)
             processed++;
@@ -16662,7 +16662,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles.totalCycles;
+        __int64 localCycles = activityStats.totalCycles;
         ForEachItemIn(i, selectedInputs)
         {
             localCycles -= selectedInputs.item(i)->queryTotalCycles();
@@ -17168,7 +17168,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = merger.nextRow();
         if (next)
             processed++;
@@ -17177,7 +17177,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = merger.nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -17281,7 +17281,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = processor.nextRow();
         if (next)
             processed++;
@@ -17290,7 +17290,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * next = processor.nextGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (next)
             processed++;
@@ -17466,7 +17466,7 @@ public:
 
     const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!selectedStream)
             return NULL;
         return selectedStream->nextRow();
@@ -17487,7 +17487,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!selectedStream)
             return NULL;
         return selectedStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
@@ -17683,7 +17683,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             right.setown(inputStream->nextRow());
@@ -17771,7 +17771,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
 
         try
         {
@@ -17887,7 +17887,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (first)
         {
             next = inputStream->nextRow();
@@ -17987,7 +17987,7 @@ public:
 
     const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         const void *ret;
@@ -18087,7 +18087,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done)
             return NULL;
         done = true;
@@ -18403,7 +18403,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (limitedhelper)
         {
             while(!eof) //limited match join
@@ -19007,7 +19007,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if(!table)
             loadRight();
         switch (activityKind)
@@ -19548,7 +19548,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if(!started)
         {
             started = true;
@@ -19870,7 +19870,7 @@ public:
 
     virtual const void * nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         if (curIndex >= sortedCount)
@@ -19933,7 +19933,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * ret = inputStream->nextRow();
         if (ret)
         {
@@ -19950,7 +19950,7 @@ public:
     }
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret)
         {
@@ -20039,7 +20039,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!started)
             pullInput();
         if (buff.isItem(index))
@@ -20126,7 +20126,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         try
         {
             const void *ret = inputStream->nextRow();
@@ -20150,7 +20150,7 @@ public:
     {
         try
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             const void * ret = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
             if (ret && wasCompleteMatch)
                 processed++;
@@ -20233,7 +20233,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!started)
             pullInput();
         if (buff.isItem(index))
@@ -20357,7 +20357,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (!started)
             pullInput();
         if (buff.isItem(index))
@@ -20460,7 +20460,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void *row = inputStream->nextRow();
         if (row)
         {
@@ -20472,7 +20472,7 @@ public:
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - will need rethinking once we rethink the nextRowGE interface for global smart-stepping.
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         const void * row = inputStream->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (row)
         {
@@ -20599,7 +20599,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (active)
         {
             const void *ret = active->nextRow();
@@ -20704,7 +20704,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = totalCycles.totalCycles;
+        __int64 localCycles = activityStats.totalCycles;
         if (inputTrue) // if conditional input cannot assume inputTrue
             localCycles -= inputTrue->queryTotalCycles();
         if (inputFalse)
@@ -20775,7 +20775,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         IEngineRowStream *in = cond ? streamTrue  : streamFalse;
         if (in)
         {
@@ -20920,7 +20920,7 @@ public:
     {
         bool cond;
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             cond = helper.getCondition();
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
@@ -21095,7 +21095,7 @@ public:
     {
         try
         {
-            ActivityTimer t(totalCycles, timeActivities); // bit of a waste of time....
+            ActivityTimer t(activityStats, timeActivities); // bit of a waste of time....
             const void *ret = inputStream->nextRow();
             if (!ret)
             {
@@ -21275,7 +21275,7 @@ class CRoxieServerStrandedParseActivity : public CRoxieServerStrandedActivity
         }
         virtual const void * nextRow()
         {
-            ActivityTimer t(totalCycles, timeActivities);
+            ActivityTimer t(activityStats, timeActivities);
             for (;;)
             {
                 if (rowIter->isValid())
@@ -21750,7 +21750,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if(xmlParser)
@@ -22097,7 +22097,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22289,7 +22289,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22403,7 +22403,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22492,7 +22492,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         else if (useRemote())
@@ -22598,7 +22598,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         done = true;
 
@@ -22725,7 +22725,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
         processed++;
@@ -22789,7 +22789,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done)
             return NULL;
 
@@ -23312,7 +23312,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         try
         {
             const void *ret = remote.nextRow();
@@ -23603,7 +23603,7 @@ public:
 
     virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         try
         {
             unsigned seeklen = 0;
@@ -23878,7 +23878,7 @@ public:
 
     virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
         if (firstRead)
@@ -24139,7 +24139,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         done = true;
         size32_t rowSize = meta.getFixedSize();
@@ -24269,7 +24269,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         done = true;
         unsigned __int64 totalCount = 0;
@@ -24401,7 +24401,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         done = true;
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
@@ -24507,7 +24507,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (done) return NULL;
         const void * ret = gatherMerged();
         processed++;
@@ -24672,7 +24672,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if (eof)
             return NULL;
 
@@ -25390,7 +25390,7 @@ public:
     bool eof;
     bool isSimple;
     bool allPulled;
-    ActivityTimeAccumulator totalCycles;
+    ActivityTimeAccumulator activityStats;
     unsigned activityId;
     RecordPullerThread &puller;
     SafeQueueOf<const void, true> injected; // Used in isSimple mode
@@ -25423,7 +25423,7 @@ public:
     {
         eof = false;
         joinProcessed = 0;
-        totalCycles.totalCycles = 0;
+        activityStats.totalCycles = 0;
         allPulled = false;
         assertex(ready.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
@@ -25453,12 +25453,12 @@ public:
 
     virtual unsigned __int64 queryTotalCycles() const
     {
-        return totalCycles.totalCycles;
+        return activityStats.totalCycles;
     }
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         for (;;)
         {
             if (eof)
@@ -26018,7 +26018,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = remote.totalCycles.totalCycles;
+        __int64 localCycles = remote.activityStats.totalCycles;
         localCycles -= puller.queryTotalCycles(); // MORE - debatable... but probably fair.
         if (localCycles < 0)
             localCycles = 0;
@@ -26043,8 +26043,8 @@ public:
 
     virtual void reset()
     {
-        totalCycles.totalCycles = remote.totalCycles.totalCycles;
-        remote.totalCycles.totalCycles = 0;
+        activityStats.totalCycles = remote.activityStats.totalCycles;
+        remote.activityStats.totalCycles = 0;
         processed = remote.joinProcessed;
         remote.joinProcessed = 0;
         defaultRight.clear();
@@ -26894,7 +26894,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if(eof) return NULL;
 
         if (soaphelper == NULL)
@@ -27030,7 +27030,7 @@ public:
 
     virtual const void *nextRow()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(activityStats, timeActivities);
         if(eof) return NULL;
 
         if (soaphelper == NULL)
@@ -28181,7 +28181,7 @@ class TestInput : public CInterface, implements IFinalRoxieInput, implements IEn
     unsigned endSeen;
     bool eof;
     unsigned count;
-    ActivityTimeAccumulator totalCycles;
+    ActivityTimeAccumulator activityStats;
     size32_t recordSize;
     unsigned activityId;
 
@@ -28245,7 +28245,7 @@ public:
     virtual unsigned queryId() const { return activityId; };
     virtual const void *nextRow() 
     {
-        ActivityTimer t(totalCycles, ctx->queryOptions().timeActivities);
+        ActivityTimer t(activityStats, ctx->queryOptions().timeActivities);
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
         if (eof)
@@ -28283,8 +28283,8 @@ public:
             return true;
         return false;
     }
-    virtual unsigned __int64 queryTotalCycles() const { return totalCycles.totalCycles; }
-    virtual unsigned __int64 queryLocalCycles() const { return totalCycles.totalCycles; }
+    virtual unsigned __int64 queryTotalCycles() const { return activityStats.totalCycles; }
+    virtual unsigned __int64 queryLocalCycles() const { return activityStats.totalCycles; }
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
     {
         return NULL;

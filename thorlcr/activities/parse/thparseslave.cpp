@@ -63,7 +63,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
     }
     virtual void stop() override
@@ -85,7 +85,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         while (!abortSoon) {
             if (rowIter->isValid()) {
                 anyThisGroup = true;

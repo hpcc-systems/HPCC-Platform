@@ -35,14 +35,14 @@ public:
 // IThorDataLink methods
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         if (ensureStartFTLookAhead(0))
             setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PULL_SMART_BUFFER_SIZE, true, false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
     }
     const void * nextRow() override
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow row = inputStream->nextRow();
         if (!row)
             return NULL;

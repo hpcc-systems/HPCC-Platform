@@ -40,7 +40,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         anyThisGroup = false;
         eogNext = false;    
@@ -51,7 +51,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;) {
             if(abortSoon)
                 break;          
@@ -124,7 +124,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         RtlDynamicRowBuilder r(rightAllocator);
         size32_t sz = helper->createInitialRight(r);  
@@ -135,7 +135,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;) {
             if(abortSoon)
                 break;          

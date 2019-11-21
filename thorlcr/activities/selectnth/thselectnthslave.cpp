@@ -81,7 +81,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
 
         lookaheadN = RCMAX;
         startN = 0; // set by initN()
@@ -129,7 +129,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow ret;
         Owned<IException> exception;
         if (first) // only return 1!

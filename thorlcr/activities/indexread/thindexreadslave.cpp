@@ -646,7 +646,7 @@ public:
     // IThorDataLink
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         keyedProcessed = 0;
         if (!eoi)
@@ -862,7 +862,7 @@ public:
 // IThorDataLink
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
 
         needTransform = helper->needTransform();
 
@@ -902,7 +902,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
@@ -1027,7 +1027,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         localAggTable.setown(createRowAggregator(*this, *helper, *helper));
         localAggTable->init(queryRowAllocator());
@@ -1037,7 +1037,7 @@ public:
 // IRowStream
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (done)
             return NULL;
         if (!gathered)
@@ -1153,7 +1153,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
 
         // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
         initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
@@ -1172,7 +1172,7 @@ public:
 // IRowStream
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (done)
             return nullptr;
         done = true;
@@ -1328,7 +1328,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
 
         // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
         initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
@@ -1352,7 +1352,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (RCMAX != keyedLimitCount)
         {
             bool limitHit;
@@ -1447,7 +1447,7 @@ public:
     virtual bool isGrouped() const override { return false; }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         hadElement = false;
         done = false;
@@ -1456,7 +1456,7 @@ public:
 // IRowStream
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (done)
             return nullptr;
         done = true;

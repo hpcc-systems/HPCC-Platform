@@ -41,7 +41,7 @@ public:
                 helper->start();
             while(!abortSoon)
             {
-                ActivityTimer t(totalCycles, timeActivities);
+                ActivityTimer t(slaveTimerStats, timeActivities);
                 OwnedConstThorRow r = inputStream->ungroupedNextRow();
                 if (!r)
                     break;

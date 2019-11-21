@@ -369,7 +369,7 @@ public:
 // IThorDataLink impl.
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
 
         if (!keyRowAllocator && fetchBaseHelper->extractAllJoinFields())
@@ -493,7 +493,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon)
             return NULL;
 

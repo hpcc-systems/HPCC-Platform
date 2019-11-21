@@ -52,7 +52,7 @@ interface IAggregateTable : extends IInterface
     virtual IRowStream *getRowStream(bool sorted) = 0;
 };
 IAggregateTable *createRowAggregator(CActivityBase &activity, IHThorHashAggregateExtra &extra, IHThorRowAggregator &helper);
-IRowStream *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, IRowStream *localAggTable, mptag_t mptag);
+IRowStream *mergeLocalAggs(Owned<IHashDistributor> &distributor, CSlaveActivity &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, IRowStream *localAggTable, mptag_t mptag);
 
 activityslaves_decl CActivityBase *createHashDistributeSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createNWayDistributeSlave(CGraphElementBase *container);

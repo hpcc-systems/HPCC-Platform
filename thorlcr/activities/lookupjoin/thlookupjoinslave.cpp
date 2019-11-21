@@ -1699,7 +1699,7 @@ protected:
     using PARENT::broadcaster;
     using PARENT::inputs;
     using PARENT::queryHelper;
-    using PARENT::totalCycles;
+    using PARENT::slaveTimerStats;
     using PARENT::timeActivities;
     using PARENT::fireException;
     using PARENT::lookupNextRow;
@@ -2734,7 +2734,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!gotRHS)
         {
             getRHS(false);
@@ -3320,7 +3320,7 @@ public:
 // IThorSlaveActivity overloaded methods
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (!gotRHS)
             getRHS(false);
         OwnedConstThorRow row = lookupNextRow();

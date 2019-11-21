@@ -184,7 +184,7 @@ public:
 // IThorDataLink
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         // NB: topNLimit shouldn't be stupid size, resourcing will guarantee this
         __int64 _topNLimit = helper->getLimit();
@@ -211,7 +211,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (abortSoon || eos)
             return NULL;
         if (NULL == out)

@@ -69,13 +69,13 @@ public:
     LocalChooseSetsActivity(CGraphElementBase *container) : BaseChooseSetsActivity(container) { }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         ActPrintLog("CHOOSESETS: Is Local");
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;)
         {
             OwnedConstThorRow row = inputStream->ungroupedNextRow();
@@ -151,7 +151,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         ActPrintLog("CHOOSESETS: Is Global");
         PARENT::start();
 
@@ -172,7 +172,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (first) 
         {
             first = false;
@@ -283,7 +283,7 @@ public:
     }
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         ActPrintLog("CHOOSESETS: Is Global");
         if (counts)
         {
@@ -413,7 +413,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (first) 
         {
             first = false;
@@ -492,7 +492,7 @@ public:
     }
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         if (first) 
         {
             first = false;

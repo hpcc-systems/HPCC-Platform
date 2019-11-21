@@ -237,7 +237,7 @@ public:
 // IThorDataLink
     virtual void start() override
     {
-        ActivityTimer s(totalCycles, timeActivities);
+        ActivityTimer s(slaveTimerStats, timeActivities);
         CDiskReadSlaveActivityBase::start();
         out = createSequentialPartHandler(partHandler, partDescs, false);
     }
@@ -253,7 +253,7 @@ public:
 
     CATCH_NEXTROW()
     {
-        ActivityTimer t(totalCycles, timeActivities);
+        ActivityTimer t(slaveTimerStats, timeActivities);
         OwnedConstThorRow row = out->nextRow();
         if (!row)
             return NULL;
