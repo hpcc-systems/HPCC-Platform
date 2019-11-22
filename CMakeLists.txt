@@ -500,6 +500,8 @@ if(PLATFORM OR CLIENTTOOLS OR REMBED)
     install(FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime)
 endif()
 
+add_subdirectory(devel)
+
 #uninstall target
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
