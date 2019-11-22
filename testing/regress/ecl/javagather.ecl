@@ -113,7 +113,7 @@ sr := record
   DATA obj;    // serialized object
 end;
 
-tomerge := DISTRIBUTE(PROJECT(accumulated, TRANSFORM(sr, SELF.obj := j1.serialize(LEFT.obj))), 0);
+tomerge := DISTRIBUTE(PROJECT(accumulated(obj != 0), TRANSFORM(sr, SELF.obj := j1.serialize(LEFT.obj))), 0);
 
 // tomerge has serialized all the java objects for each channel's results, and brought them together onto
 // node 0 to combine the results. Note the NOFOLD(accumulated) - without this, the compiler may decide that
