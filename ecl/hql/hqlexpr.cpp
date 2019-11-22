@@ -7852,6 +7852,10 @@ IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePat
     return CHqlLocationAnnotation::createLocationAnnotation(ownedBody, sourcePath, lineno, column);
 }
 
+IHqlExpression * forceCreateLocationAnnotation(IHqlExpression * _ownedBody, const ECLlocation & _location)
+{
+    return CHqlLocationAnnotation::createLocationAnnotation(_ownedBody, _location.sourcePath, _location.lineno, _location.column);
+}
 
 extern HQL_API bool okToAddAnnotation(IHqlExpression * expr)
 {

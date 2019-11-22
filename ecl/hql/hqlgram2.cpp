@@ -1044,7 +1044,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     else
         result.setown(createValue(no_embedbody, LINK(type), args));
 
-    result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
+    result.setown(forceCreateLocationAnnotation(result.getClear(), errpos.pos));
 
     if (queryParametered())  // MORE - this code should be in checkEmbedBody?
     {
@@ -9885,7 +9885,7 @@ IHqlExpression * HqlGram::checkEmbedBody(const attribute & errpos, DefineIdSt * 
                                 err = strchr(err, ':') + 1;
                                 while (isspace(*err))
                                     err++;
-                                pos.lineno = embedText->getStartLine()+line-1;
+                                pos.lineno = body->getStartLine()+line-1;
                                 pos.column = col;
                                 pos.position = 0;
                             }
