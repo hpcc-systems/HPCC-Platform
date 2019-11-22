@@ -1921,6 +1921,9 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         graphLabel.clear();
         if (expr != tableExpr)
         {
+            if (isGrouped(expr))
+                graphLabel.append("Grouped\n");
+
             IHqlExpression * cur = expr;
             bool isProjected = false;
             for (;;)
