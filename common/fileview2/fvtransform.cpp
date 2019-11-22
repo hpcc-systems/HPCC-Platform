@@ -252,7 +252,7 @@ void ViewFieldECLTransformer::transform(unsigned & lenTarget, char * & target, u
     unsigned size = rtlUtf8Size(len, data);
     lenTarget = len;
     target = (char *)rtlMalloc(size);
-    memcpy(target, data, size);
+    memcpy_iflen(target, data, size);
 }
 
 void ViewFieldECLTransformer::transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source)

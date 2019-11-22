@@ -138,7 +138,7 @@ public:
 
         assertex(offsetMapSz == sizeof(FPosTableEntry) * offsetCount);
         offsetTable = new FPosTableEntry[offsetCount];
-        memcpy(offsetTable, offsetMap, offsetMapSz);
+        memcpy_iflen(offsetTable, offsetMap, offsetMapSz);
         unsigned c;
         for (c=0; c<offsetCount; c++)
         {

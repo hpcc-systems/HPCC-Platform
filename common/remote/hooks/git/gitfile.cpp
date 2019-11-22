@@ -102,7 +102,7 @@ public:
             return 0;
         if (pos+len > buf.length())
             len = buf.length()-pos;
-        memcpy(data, buf.toByteArray()+pos, len);
+        memcpy_iflen(data, buf.toByteArray()+pos, len);
         return len;
     }
     virtual offset_t size()

@@ -186,7 +186,7 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
     {
         RoxieOutputRowArrayLock block(*this);
         oldRows = rows;
-        memcpy(newRows, oldRows+firstRow, (numRows - firstRow) * sizeof(void*));
+        memcpy_iflen(newRows, oldRows+firstRow, (numRows - firstRow) * sizeof(void*));
         numRows -= firstRow;
         commitRows -= firstRow;
         firstRow = 0;

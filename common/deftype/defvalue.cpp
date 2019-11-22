@@ -236,7 +236,7 @@ VarStringValue::VarStringValue(unsigned len, const char *v, ITypeInfo *_type) : 
     else
     {
         char * temp = (char *)checked_malloc(typeLen+1, DEFVALUE_MALLOC_FAILED);
-        memcpy(temp, v, len);
+        memcpy_iflen(temp, v, len);
         temp[len] = 0;
         val.set(temp, typeLen);
         free(temp);
@@ -264,7 +264,7 @@ void VarStringValue::toMem(void *target)
             copyLen = typeLen - 1;
     
         memcpy(target, val.get(), copyLen);
-        memset((char *)target+copyLen, 0, (typeLen-copyLen));
+        memset_iflen((char *)target+copyLen, 0, (typeLen-copyLen));
     }
     else {
         memcpy(target, val.get(), copyLen + 1);

@@ -214,7 +214,7 @@ void XmlDatasetColumnProvider::getUtf8X(size32_t & len, char * & target, const c
     const char * value = row->queryProp(path);
     size32_t size = value ? (size32_t)strlen(value) : 0;
     target = (char *)malloc(size);
-    memcpy(target, value, size);
+    memcpy_iflen(target, value, size);
     len = rtlUtf8Length(size, target);
 }
 
@@ -453,7 +453,7 @@ void XmlSetColumnProvider::getStringX(size32_t & len, char * & target, const cha
     const char * value = row->queryProp(NULL);
     len = value ? (size32_t)strlen(value) : 0;
     target = (char *)malloc(len);
-    memcpy(target, value, len);
+    memcpy_iflen(target, value, len);
     //MORE: utf8->ascii?
 }
 
@@ -480,7 +480,7 @@ void XmlSetColumnProvider::getUtf8X(size32_t & len, char * & target, const char 
     const char * value = row->queryProp(NULL);
     size32_t size = value ? (size32_t)strlen(value) : 0;
     target = (char *)malloc(size);
-    memcpy(target, value, size);
+    memcpy_iflen(target, value, size);
     len = rtlUtf8Length(size, value);
 }
 
