@@ -1,0 +1,24 @@
+#!/bin/bash
+cat << EOM
+
+Welcome to HPCCSystems Platform Docker Version $VERSION
+
+EclWatch: http://localhost:<mapped port on host>
+The <mapped port on host> is the one when this container is
+started with option "-p <host port>:8010"
+
+
+EOM
+
+echo "Start sshd ..."
+service ssh start
+
+echo ""
+echo "Start HPCCSystems Platform ..."
+echo ""
+
+/etc/init.d/hpcc-init start
+
+VERSION=$(dpkg -l | grep hpccsystems-platform | awk '{print $3}')
+
+bash

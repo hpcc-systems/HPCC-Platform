@@ -29,6 +29,7 @@ RUN set -x \
 
 
 
+COPY start-hpcc /usr/local/bin/
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 CMD ["/usr/sbin/sshd", "-D"]
