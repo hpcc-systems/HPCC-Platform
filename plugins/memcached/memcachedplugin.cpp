@@ -125,7 +125,6 @@ typedef Owned<MCached> OwnedMCached;
 static const unsigned MAX_TYPEMISMATCHCOUNT = 10;
 
 static __thread MCached * cachedConnection;
-static __thread ThreadTermFunc threadHookChain;
 static __thread bool threadHooked;
 
 //The following class is here to ensure destruction of the cachedConnection within the main thread
@@ -144,17 +143,15 @@ public :
     }
 } mainThread;
 
-static void releaseContext(bool isPooled)
+static bool releaseContext(bool isPooled)
 {
     if (cachedConnection)
     {
         cachedConnection->Release();
         cachedConnection = NULL;
     }
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    threadHooked = false;
+    return false;
 }
 MCached * createConnection(ICodeContext * ctx, const char * options)
 {
@@ -163,7 +160,7 @@ MCached * createConnection(ICodeContext * ctx, const char * options)
         cachedConnection = new MemCachedPlugin::MCached(ctx, options);
         if (!threadHooked)
         {
-            threadHookChain = addThreadTermFunc(releaseContext);
+            addThreadTermFunc(releaseContext);
             threadHooked = true;
         }
         return LINK(cachedConnection);

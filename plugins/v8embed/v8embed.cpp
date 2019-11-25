@@ -936,19 +936,15 @@ protected:
 };
 
 static __thread V8JavascriptEmbedFunctionContext * theFunctionContext;  // We reuse per thread, for speed
-static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext(bool isPooled)
+static bool releaseContext(bool isPooled)
 {
     if (theFunctionContext)
     {
         ::Release(theFunctionContext);
         theFunctionContext = NULL;
     }
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    return false;
 }
 
 class V8JavascriptEmbedContext : public CInterfaceOf<IEmbedContext>
@@ -968,7 +964,7 @@ public:
         if (!theFunctionContext)
         {
             theFunctionContext = new V8JavascriptEmbedFunctionContext;
-            threadHookChain = addThreadTermFunc(releaseContext);
+            addThreadTermFunc(releaseContext);
         }
         theFunctionContext->setActivityContext(activityContext);
         return LINK(theFunctionContext);

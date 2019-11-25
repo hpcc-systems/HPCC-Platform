@@ -58,7 +58,6 @@ static __thread Connection * cachedSubscriptionConnection = nullptr;
 #define DUMMY_PORT 0
 
 static CriticalSection critsec;
-static __thread ThreadTermFunc threadHookChain = nullptr;
 static __thread bool threadHooked = false;
 static int connectionCachingLevel = ALLOW_CONNECTION_CACHING;
 static std::atomic<bool> connectionCachingLevelChecked(false);
@@ -258,7 +257,7 @@ public :
 
     Owned<Connection> connection;
 };
-static void releaseAllCachedContexts(bool isPooled)
+static bool releaseAllCachedContexts(bool isPooled)
 {
     if (cachedConnection)
     {
@@ -275,10 +274,8 @@ static void releaseAllCachedContexts(bool isPooled)
         cachedSubscriptionConnection->Release();
         cachedSubscriptionConnection = nullptr;
     }
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    threadHooked = false;
+    return false;
 }
 //The following class is here to ensure destruction of the cachedConnection within the main thread
 //as this is not handled by the thread hook mechanism.
@@ -762,7 +759,7 @@ static void addThreadHook()
 {
     if (!threadHooked)
     {
-        threadHookChain = addThreadTermFunc(releaseAllCachedContexts);
+        addThreadTermFunc(releaseAllCachedContexts);
         threadHooked = true;
     }
 }
