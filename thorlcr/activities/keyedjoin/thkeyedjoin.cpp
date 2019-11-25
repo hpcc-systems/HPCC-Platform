@@ -24,6 +24,7 @@
 
 #include "../fetch/thfetchcommon.hpp"
 #include "../hashdistrib/thhashdistrib.ipp"
+#include "thkeyedjoincommon.hpp"
 #include "thkeyedjoin.ipp"
 #include "jhtree.hpp"
 
@@ -46,7 +47,6 @@ class CKeyedJoinMaster : public CMasterActivity
     // CMap contains mappings and lists of parts for each slave
     class CMap
     {
-        static const unsigned partMask = 0x00ffffff;
     public:
         std::vector<unsigned> allParts;
         std::vector<std::vector<unsigned>> slavePartMap; // vector of slave parts (IPartDescriptor's slavePartMap[<slave>] serialized to each slave)
@@ -152,7 +152,7 @@ class CKeyedJoinMaster : public CMasterActivity
                         for (unsigned c=0; c<part->numCopies(); c++)
                         {
                             INode *partNode = part->queryNode(c);
-                            unsigned partCopy = p | (c << 24);
+                            unsigned partCopy = p | (c << partBits);
                             unsigned start=nextGroupStartPos;
                             unsigned gn=start;
                             do
@@ -180,6 +180,14 @@ class CKeyedJoinMaster : public CMasterActivity
                                             nextGroupStartPos = gn+1;
                                             if (nextGroupStartPos == groupSize)
                                                 nextGroupStartPos = 0;
+
+                                            /* NB: normally if the part is within the cluster, the copy will be 0 (i.e. primary)
+                                             * But it's possible that a non-primary copy from another logical cluster is local to
+                                             * this cluster, in which case, must capture which copy it is here in the map, so the
+                                             * slaves can send the requests to the correct slave and tell it to deal with the
+                                             * correct copy.
+                                             */
+                                            mappedPos |= (c << slaveBits); // encode which copy into mappedPos
                                         }
                                         else if (allLocal) // all slaves get all locally accessible parts
                                             slaveParts.push_back(partCopy);
