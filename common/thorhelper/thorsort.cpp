@@ -94,7 +94,7 @@ void tbbqsortstable(void ** rows, size_t n, const ICompare & compare, void ** te
     {
 #ifdef _USE_TBB
         void * * * rowsAsIndex = (void * * *)rows;
-        memcpy(temp, rows, n * sizeof(void*));
+        memcpy_iflen(temp, rows, n * sizeof(void*));
 
         for(unsigned i=0; i<n; ++i)
             rowsAsIndex[i] = temp+i;

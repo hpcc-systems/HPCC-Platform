@@ -1189,7 +1189,7 @@ size32_t RtlStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset, c
         if (isEbcdic())
             rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);
         else
-            memcpy(dest+sizeof(size32_t), value, size);
+            memcpy_iflen(dest+sizeof(size32_t), value, size);
         offset += size+sizeof(size32_t);
     }
     else
@@ -1493,7 +1493,7 @@ size32_t RtlDataTypeInfo::buildString(ARowBuilder &builder, size32_t offset, con
         builder.ensureCapacity(offset+size+sizeof(size32_t), queryName(field));
         byte *dest = builder.getSelf()+offset;
         rtlWriteInt4(dest, size);
-        memcpy(dest+sizeof(size32_t), value, size);
+        memcpy_iflen(dest+sizeof(size32_t), value, size);
         offset += size+sizeof(size32_t);
     }
     else
@@ -1717,7 +1717,7 @@ size32_t RtlVarStringTypeInfo::buildString(ARowBuilder &builder, size32_t offset
         if (isEbcdic())
             rtlStrToEStr(size, (char *) dest, size, (char *)value);
         else
-            memcpy(dest, value, size);
+            memcpy_iflen(dest, value, size);
         dest[size] = '\0';
         offset += size+1;
     }
@@ -2374,7 +2374,7 @@ size32_t RtlUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
         builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
         byte *dest = builder.getSelf()+offset;
         rtlWriteInt4(dest, sizeInChars);  // NOTE - in chars!
-        memcpy(dest+sizeof(size32_t), value, sizeInBytes);
+        memcpy_iflen(dest+sizeof(size32_t), value, sizeInBytes);
         offset += sizeInBytes+sizeof(size32_t);
     }
     else
@@ -2679,7 +2679,7 @@ size32_t RtlVarUnicodeTypeInfo::build(ARowBuilder &builder, size32_t offset, con
         size32_t sizeInBytes = (sizeInChars+1) * sizeof(UChar);
         builder.ensureCapacity(offset+sizeInBytes, queryName(field));
         UChar *dest = (UChar *) (builder.getSelf()+offset);
-        memcpy(dest, value, sizeInBytes - sizeof(UChar));
+        memcpy_iflen(dest, value, sizeInBytes - sizeof(UChar));
         dest[sizeInChars] = 0;
         offset += sizeInBytes;
     }
@@ -2705,7 +2705,7 @@ size32_t RtlVarUnicodeTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset,
         size32_t sizeInBytes = (usize+1) * sizeof(UChar);
         builder.ensureCapacity(offset+sizeInBytes, queryName(field));
         UChar *dest = (UChar *) (builder.getSelf()+offset);
-        memcpy(dest, uvalue.getustr(), sizeInBytes - sizeof(UChar));
+        memcpy_iflen(dest, uvalue.getustr(), sizeInBytes - sizeof(UChar));
         dest[usize] = 0;
         offset += sizeInBytes;
     }
@@ -2894,7 +2894,7 @@ size32_t RtlUtf8TypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const
     builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
     byte *dest = builder.getSelf()+offset;
     rtlWriteSize32t(dest, sizeInChars);  // NOTE - in chars!
-    memcpy(dest+sizeof(size32_t), value, sizeInBytes);
+    memcpy_iflen(dest+sizeof(size32_t), value, sizeInBytes);
     return offset + sizeInBytes+sizeof(size32_t);
 }
 
@@ -2910,7 +2910,7 @@ size32_t RtlUtf8TypeInfo::buildString(ARowBuilder &builder, size32_t offset, con
     builder.ensureCapacity(offset+sizeInBytes+sizeof(size32_t), queryName(field));
     byte *dest = builder.getSelf()+offset;
     rtlWriteSize32t(dest, sizeInChars);  // NOTE - in chars!
-    memcpy((dest+sizeof(size32_t)), temp.getstr(), sizeInBytes);
+    memcpy_iflen((dest+sizeof(size32_t)), temp.getstr(), sizeInBytes);
     return offset + sizeInBytes+sizeof(size32_t);
 }
 
@@ -3035,7 +3035,7 @@ void RtlUtf8TypeInfo::setBound(void * buffer, const byte * value, size32_t subLe
         //Generally cannot work for variable length fields - since always possible to create a larger value
         //Default does not work for real types, or variable length signed integers
         assertex(fill == 0);
-        memset(dst, fill, minSize);
+        memset_iflen(dst, fill, minSize);
     }
 }
 

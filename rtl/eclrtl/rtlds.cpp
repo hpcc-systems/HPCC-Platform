@@ -89,7 +89,7 @@ void RtlDatasetBuilder::getData(size32_t & len, void * & data)
     flushDataset();
     len = totalSize;
     data = malloc(totalSize);
-    memcpy(data, buffer, totalSize);
+    memcpy_iflen(data, buffer, totalSize);
 }
 
 
@@ -1032,7 +1032,7 @@ public:
     virtual void put(size32_t len, const void * ptr)
     {
         byte * data = builder.ensureCapacity(offset + len, "");
-        memcpy(data+offset, ptr, len);
+        memcpy_iflen(data+offset, ptr, len);
         offset += len;
     }
 
@@ -1738,7 +1738,7 @@ void rtlSetToSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool inI
     outIsAll = inIsAll;
     outLen = inLen;
     outData = malloc(inLen);
-    memcpy(outData, inData, inLen);
+    memcpy_iflen(outData, inData, inLen);
 }
 
 
@@ -1754,8 +1754,8 @@ void rtlAppendSetX(bool & outIsAll, size32_t & outLen, void * & outData, bool le
     {
         outLen = leftLen+rightLen;
         outData = malloc(outLen);
-        memcpy(outData, leftData, leftLen);
-        memcpy((byte*)outData+leftLen, rightData, rightLen);
+        memcpy_iflen(outData, leftData, leftLen);
+        memcpy_iflen((byte*)outData+leftLen, rightData, rightLen);
     }
 }
 

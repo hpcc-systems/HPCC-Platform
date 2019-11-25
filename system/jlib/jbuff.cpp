@@ -412,7 +412,7 @@ void *MemoryBuffer::detach()
         ret = buffer;
     }
     else {
-        ret = memcpy(checked_malloc(curLen,-3), buffer, curLen);
+        ret = memcpy_iflen(checked_malloc(curLen,-3), buffer, curLen);
     }
     init();
     return ret;
@@ -605,42 +605,54 @@ MemoryBuffer & MemoryBuffer::appendPacked(unsigned __int64 value)
 MemoryBuffer & MemoryBuffer::append(const MemoryBuffer & value)
 {
     size32_t SourceLen = value.length();
-    unsigned newLen = checkMemoryBufferOverflow(curLen, SourceLen);
-    _realloc(newLen);
-    memcpy(buffer + curLen, value.toByteArray(), SourceLen);
-    curLen += SourceLen;
+    if (likely(SourceLen))
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, SourceLen);
+        _realloc(newLen);
+        memcpy(buffer + curLen, value.toByteArray(), SourceLen);
+        curLen += SourceLen;
+    }
     return *this;
 }
 
 MemoryBuffer & MemoryBuffer::appendBytes(unsigned char value, unsigned count)
 {
-    unsigned newLen = checkMemoryBufferOverflow(curLen, count);
-    _realloc(newLen);
-    memset(buffer+curLen, value, count);
-    curLen+=count;
+    if (likely(count))
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, count);
+        _realloc(newLen);
+        memset(buffer+curLen, value, count);
+        curLen+=count;
+    }
     return *this;
 }
 
 MemoryBuffer & MemoryBuffer::appendEndian(size32_t len, const void * value)
 {
-    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
-    _realloc(newLen);
-    
-    if (swapEndian)
-        _cpyrevn(buffer + curLen, value, len);
-    else
-        memcpy(buffer + curLen, value, len);
-    
-    curLen += len;
+    if (likely(len))
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+        _realloc(newLen);
+
+        if (swapEndian)
+            _cpyrevn(buffer + curLen, value, len);
+        else
+            memcpy(buffer + curLen, value, len);
+
+        curLen += len;
+    }
     return *this;
 }
 
 MemoryBuffer & MemoryBuffer::appendSwap(size32_t len, const void * value)
 {
-    unsigned newLen = checkMemoryBufferOverflow(curLen, len);
-    _realloc(newLen);
-    _cpyrevn(buffer + curLen, value, len);
-    curLen += len;
+    if (likely(len))
+    {
+        unsigned newLen = checkMemoryBufferOverflow(curLen, len);
+        _realloc(newLen);
+        _cpyrevn(buffer + curLen, value, len);
+        curLen += len;
+    }
     return *this;
 }
 
@@ -721,9 +733,12 @@ MemoryBuffer & MemoryBuffer::read(const char * &value)
 
 MemoryBuffer & MemoryBuffer::read(size32_t len, void * value)
 {
-    CHECKREADPOS(len);
-    memcpy(value, buffer + readPos, len);
-    readPos += len;
+    if (likely(len))
+    {
+        CHECKREADPOS(len);
+        memcpy(value, buffer + readPos, len);
+        readPos += len;
+    }
     return *this;
 }
 
@@ -827,7 +842,7 @@ MemoryBuffer & MemoryBuffer::skip(unsigned len)
 void MemoryBuffer::writeDirect(size32_t pos,size32_t len,const void *buf)
 {
     assertex(pos+len<=curLen); // does not extend
-    memcpy(buffer+pos,buf,len);
+    memcpy_iflen(buffer+pos,buf,len);
 }
 
 void MemoryBuffer::writeEndianDirect(size32_t pos,size32_t len,const void *buf)
@@ -836,7 +851,7 @@ void MemoryBuffer::writeEndianDirect(size32_t pos,size32_t len,const void *buf)
     if (swapEndian)
         _cpyrevn(buffer+pos,buf,len);
     else
-        memcpy(buffer+pos,buf,len);
+        memcpy_iflen(buffer+pos,buf,len);
 }
 
 
@@ -846,7 +861,7 @@ MemoryBuffer & MemoryBuffer::readEndian(size32_t len, void * value)
     if (swapEndian)
         _cpyrevn(value, buffer + readPos, len);
     else
-        memcpy(value, buffer + readPos, len);
+        memcpy_iflen(value, buffer + readPos, len);
     
     readPos += len;
     return *this;
@@ -911,7 +926,7 @@ MemoryBuffer & MemoryBuffer::reset(size32_t pos)
 #if 0
 void MemoryBuffer::getBytes(int srcBegin, int srcEnd, char * target)
 {
-    memcpy(target, buffer + srcBegin, srcEnd - srcBegin);
+    memcpy_iflen(target, buffer + srcBegin, srcEnd - srcBegin);
 }
 
 MemoryBuffer & MemoryBuffer::remove(unsigned start, unsigned len)

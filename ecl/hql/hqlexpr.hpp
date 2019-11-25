@@ -1377,6 +1377,7 @@ extern HQL_API IHqlExpression * createAliasOwn(IHqlExpression * expr, IHqlExpres
 inline IHqlExpression * createAlias(IHqlExpression * expr, IHqlExpression * attr) { return createAliasOwn(LINK(expr), LINK(attr)); }
 extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * _ownedBody, const ECLlocation & _location);
 extern HQL_API IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePath * sourcePath, int lineno, int column);
+extern HQL_API IHqlExpression * forceCreateLocationAnnotation(IHqlExpression * _ownedBody, const ECLlocation & _location);
 extern HQL_API IHqlExpression * createMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
 extern HQL_API IHqlExpression * createParseMetaAnnotation(IHqlExpression * _ownedBody, HqlExprArray & _args);
 extern HQL_API IHqlExpression * createWarningAnnotation(IHqlExpression * _ownedBody, IError * _ownedWarning);

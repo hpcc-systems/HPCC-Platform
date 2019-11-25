@@ -830,7 +830,7 @@ public:
                                 nr++;
                             rightgroup.removeRows(0,nr);
                             rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
-                            memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            memset_iflen(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
                         }
                         else
                             rightgroup.kill();
@@ -892,7 +892,7 @@ public:
                                 nextR();
                             }
                             rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
-                            memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
+                            memset_iflen(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
                             if (!hitatmost&&rightgroup.ordinality())
                                 state = JSmatch;
                             else if (cmp<0)
@@ -1524,7 +1524,7 @@ public:
         bool *rmatched = NULL;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
-            memset(rmatched,0,rgroup.ordinality());
+            memset_iflen(rmatched,0,rgroup.ordinality());
         }
         ForEachItemIn(leftidx,work.lgroup)
         {
