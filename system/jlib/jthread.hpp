@@ -60,8 +60,8 @@ extern jlib_decl unsigned threadLogID();  // for use in logging
 // so the hook function should clear any variables if necessary rather than assuming that they will be cleared
 // at thread startup time.
 
-typedef void (*ThreadTermFunc)(bool isPooled);
-extern jlib_decl ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm);
+typedef bool (*ThreadTermFunc)(bool isPooled);
+extern jlib_decl void addThreadTermFunc(ThreadTermFunc onTerm);
 extern jlib_decl void callThreadTerminationHooks(bool isPooled);
 
 //An exception safe way of ensuring that the thread termination hooks are called.

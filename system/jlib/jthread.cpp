@@ -39,21 +39,28 @@
 
 //#define NO_CATCHALL
 
-static __thread ThreadTermFunc threadTerminationHook;
+//static __thread ThreadTermFunc threadTerminationHook;
+static thread_local std::vector<ThreadTermFunc> threadTermHooks;
 
-ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm)
+void addThreadTermFunc(ThreadTermFunc onTerm)
 {
-    ThreadTermFunc old = threadTerminationHook;
-    threadTerminationHook = onTerm;
-    return old;
+    for (auto hook: threadTermHooks)
+    {
+        if (hook==onTerm)
+            return;
+    }
+    threadTermHooks.push_back(onTerm);
 }
 
 void callThreadTerminationHooks(bool isPooled)
 {
-    if (threadTerminationHook)
+    std::vector<ThreadTermFunc> keepHooks;
+    for (auto hook: threadTermHooks)
     {
-        (*threadTerminationHook)(isPooled);
+        if ((*hook)(isPooled) && isPooled)
+           keepHooks.push_back(hook);
     }
+    threadTermHooks.swap(keepHooks);
 }
 
 PointerArray *exceptionHandlers = NULL;
@@ -64,8 +71,10 @@ MODULE_INIT(INIT_PRIORITY_JTHREAD)
 }
 MODULE_EXIT()
 {
-    if (threadTerminationHook)
-        (*threadTerminationHook)(false);  // May be too late :(
+    for (auto hook: threadTermHooks)
+    {
+        (*hook)(false);  // May be too late :(
+    }
     delete exceptionHandlers;
 }
 
