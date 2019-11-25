@@ -262,19 +262,15 @@ private:
 };
 
 static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
-static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext(bool isPooled)
+static bool releaseContext(bool isPooled)
 {
     if (threadContext)
     {
         delete threadContext;
         threadContext = NULL;
     }
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    return false;
 }
 
 // Use a global object to ensure that the Python interpreter is initialized on main thread
@@ -609,7 +605,7 @@ static void checkThreadContext()
         if (!globalState.isInitialized())
             rtlFail(0, "Python not initialized");
         threadContext = new PythonThreadContext;
-        threadHookChain = addThreadTermFunc(releaseContext);
+        addThreadTermFunc(releaseContext);
     }
 }
 

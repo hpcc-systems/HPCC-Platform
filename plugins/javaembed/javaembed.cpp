@@ -4646,9 +4646,8 @@ protected:
 };
 
 static __thread JavaThreadContext* threadContext;  // We reuse per thread, for speed
-static __thread ThreadTermFunc threadHookChain;
 
-static void releaseContext(bool isPooled)
+static bool releaseContext(bool isPooled)
 {
     if (threadContext)
     {
@@ -4658,11 +4657,10 @@ static void releaseContext(bool isPooled)
             delete threadContext;
             threadContext = NULL;
         }
+        else
+            return true;
     }
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    return false;
 }
 
 static JavaThreadContext *queryContext()
@@ -4670,7 +4668,7 @@ static JavaThreadContext *queryContext()
     if (!threadContext)
     {
         threadContext = new JavaThreadContext;
-        threadHookChain = addThreadTermFunc(releaseContext);
+        addThreadTermFunc(releaseContext);
     }
     return threadContext;
 }

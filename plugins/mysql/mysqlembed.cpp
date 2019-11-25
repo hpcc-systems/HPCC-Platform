@@ -1372,21 +1372,16 @@ protected:
 
 // Each call to a MySQL function will use a new MySQLEmbedFunctionContext object
 
-static __thread ThreadTermFunc threadHookChain;
-
 static bool mysqlInitialized = false;
 static __thread bool mysqlThreadInitialized = false;
 static CriticalSection initCrit;
 
-static void terminateMySqlThread(bool isPooled)
+static bool terminateMySqlThread(bool isPooled)
 {
     MySQLConnection::clearThreadCache();
     mysql_thread_end();
     mysqlThreadInitialized = false;  // In case it was a threadpool thread...
-    if (threadHookChain)
-    {
-        (*threadHookChain)(isPooled);
-    }
+    return false;
 }
 
 static void initializeMySqlThread()
@@ -1402,7 +1397,7 @@ static void initializeMySqlThread()
             }
         }
         mysql_thread_init();
-        threadHookChain = addThreadTermFunc(terminateMySqlThread);
+        addThreadTermFunc(terminateMySqlThread);
         mysqlThreadInitialized = true;
     }
 }
