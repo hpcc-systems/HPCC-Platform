@@ -129,6 +129,7 @@ void jlib_decl *setSEHtoExceptionHandler(IExceptionHandler *handler); // sets ha
 void jlib_decl setTerminateOnSEHInSystemDLLs(bool set=true);
 void jlib_decl setTerminateOnSEH(bool set=true);
 
+void jlib_decl setProcessAborted(bool _abortVal);
 
 __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * file, unsigned line) __attribute__((noreturn));
 __declspec(noreturn) void jlib_decl throwUnexpectedException(const char * where, const char * file, unsigned line) __attribute__((noreturn));
