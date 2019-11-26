@@ -32,7 +32,7 @@
 static unsigned const defaultDaliResultOutputMax = 2000; // MB
 static unsigned const defaultDaliResultLimit = 10; // MB
 static unsigned const defaultMaxCsvRowSize = 10; // MB
-extern jlib_decl const cycle_t defaultFlushTimerInterval;
+extern THORHELPER_API const cycle_t defaultFlushTimerInterval;
 
 
 #define OPT_OUTPUTLIMIT_LEGACY    "outputLimit"             // OUTPUT Mb limit (legacy property name, renamed to outputLimitMb in 5.2)

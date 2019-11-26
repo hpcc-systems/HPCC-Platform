@@ -42,7 +42,7 @@
 
 #define ROWAGG_PERROWOVERHEAD (sizeof(AggregateRowBuilder))
 
-defaultFlushTimerInterval = nanosec_to_cycle(1000000000); // Cycles
+const cycle_t defaultFlushTimerInterval = nanosec_to_cycle(1000000000); // Cycles
 
 void AggregateRowBuilder::Link() const { LinkRoxieRow(this); }
 bool AggregateRowBuilder::Release() const { ReleaseRoxieRow(this); return false; }  // MORE - return value is iffy
