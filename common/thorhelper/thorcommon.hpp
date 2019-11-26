@@ -32,7 +32,7 @@
 static unsigned const defaultDaliResultOutputMax = 2000; // MB
 static unsigned const defaultDaliResultLimit = 10; // MB
 static unsigned const defaultMaxCsvRowSize = 10; // MB
-static cycle_t defaultFlushTimerInterval = nanosec_to_cycle(1000000000); // Cycles
+extern jlib_decl const cycle_t defaultFlushTimerInterval;
 
 
 #define OPT_OUTPUTLIMIT_LEGACY    "outputLimit"             // OUTPUT Mb limit (legacy property name, renamed to outputLimitMb in 5.2)
@@ -281,27 +281,32 @@ public:
         else
             startCycles = 0;
     }
-    void flushTimes()
+    inline void flushTimes(cycle_t nowCycles)
+    {
+        accumulator.endCycles = nowCycles;
+        accumulator.totalCycles += (nowCycles - startCycles);
+    }
+    inline void flushTimesIntermittantly()
     {
         if (enabled)
         {
             cycle_t nowCycles = get_cycles_now();
-            accumulator.endCycles = nowCycles;
-            cycle_t elapsedCycles = nowCycles - startCycles;
-            accumulator.totalCycles += elapsedCycles;
-            startCycles = nowCycles;
-            if (isFirstRow)
-                accumulator.firstExitCycles = nowCycles;
+            if (nowCycles - (cycle_t) startCycles > defaultFlushTimerInterval)
+            {
+                flushTimes(nowCycles);
+                startCycles = nowCycles;
+            }
         }
-    }
-    inline void flushTimesIntermittantly()
-    {
-        if (get_cycles_now() - (cycle_t) startCycles > defaultFlushTimerInterval)
-            flushTimes();
     }
     ~ActivityTimer()
     {
-        flushTimes();
+        if (enabled)
+        {
+            const cycle_t nowCycles = get_cycles_now();
+            flushTimes(nowCycles);
+            if (isFirstRow)
+                accumulator.firstExitCycles = nowCycles;
+        }
     }
 };
 
