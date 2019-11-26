@@ -694,6 +694,9 @@ void CJobManager::run()
         { 
             reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false); 
         }
+
+        // reset for next job
+        setProcessAborted(false);
     }
     delete dp;
     jobq.clear();

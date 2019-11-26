@@ -1101,6 +1101,12 @@ static void throwSigSegV()
 }
 #endif
 
+static std::atomic<bool> processAborted { false };
+void jlib_decl setProcessAborted(bool _abortVal)
+{
+    processAborted = _abortVal;
+}
+
 NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *extra)
 {
     static byte nested=0;
@@ -1354,7 +1360,10 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
         if ( SEHHandler->fireException(new CSEHException(signum,s.str())) )
             return;
     }
-    raise(signum);
+    if ( (SIGABRT == signum) && (processAborted) )
+        _exit(128 + SIGABRT);
+    else
+        raise(signum);
 #endif
     nested--;
 }

@@ -796,12 +796,21 @@ public:
     }
     ~CThorSorter()
     {
-        stop();
-        ActPrintLog(activity, "Joining Sort Slave Server");
-        verifyex(threaded.join(10*60*1000));
-        myendpoint.set(NULL,0);
-        rowArray.kill();
-        ActPrintLog(activity, "~CThorSorter");
+        try
+        {
+            stop();
+            ActPrintLog(activity, "Joining Sort Slave Server");
+            verifyex(threaded.join(10*60*1000));
+            myendpoint.set(NULL,0);
+            rowArray.kill();
+            ActPrintLog(activity, "~CThorSorter");
+        }
+        catch (IException *e)
+        {
+            e->Release();
+        }
+        // do we ignore other exceptions (...) here ?
+        // if so, we may have std::terminate call abort() ...
     }
 // ISortSlaveMP
     virtual bool Connect(unsigned _partno, unsigned _numnodes)

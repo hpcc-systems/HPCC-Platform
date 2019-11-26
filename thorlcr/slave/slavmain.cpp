@@ -1641,10 +1641,19 @@ public:
     }
     ~CJobListener()
     {
-        for (unsigned sc=1; sc<channelsPerSlave; sc++)
-            mpServers.item(sc).stop();
-        mpServers.kill();
-        stop();
+        try
+        {
+            for (unsigned sc=1; sc<channelsPerSlave; sc++)
+                mpServers.item(sc).stop();
+            mpServers.kill();
+            stop();
+        }
+        catch (IException *e)
+        {
+            e->Release();
+        }
+        // do we ignore other exceptions (...) here ?
+        // if so, we may have std::terminate call abort() ...
     }
     void stop()
     {
@@ -1863,6 +1872,10 @@ public:
                         }
                         jobs.removeExact(job);
                         PROGLOG("QueryDone, removed %s from jobs", key.get());
+
+                        // reset for next job
+                        setProcessAborted(false);
+
                         if (exception)
                             throw exception.getClear(); // NB: this will cause exception to be part of the reply to master
 
