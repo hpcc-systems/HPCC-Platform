@@ -1,4 +1,10 @@
 #!/bin/bash
+
+run_bash=true
+[ "$1" = "-d" ] && run_bash=false
+
+VERSION=$(dpkg -l | grep hpccsystems-platform | awk '{print $3}')
+
 cat << EOM
 
 Welcome to HPCCSystems Platform Docker Version $VERSION
@@ -10,8 +16,11 @@ started with option "-p <host port>:8010"
 
 EOM
 
-echo "Start sshd ..."
-service ssh start
+if [ "$run_bash" = "true" ]
+then
+  echo "Start sshd ..."
+  service ssh start
+fi
 
 echo ""
 echo "Start HPCCSystems Platform ..."
@@ -19,6 +28,10 @@ echo ""
 
 /etc/init.d/hpcc-init start
 
-VERSION=$(dpkg -l | grep hpccsystems-platform | awk '{print $3}')
 
-bash
+if [ "$run_bash" = "true" ]
+then
+  bash
+else
+  /usr/sbin/sshd -D
+fi
