@@ -1054,7 +1054,7 @@ public:
             r->getResultUnicode(MemoryBuffer2IDataVal(result));
             tlen = result.length()/2;
             tgt = (UChar *)malloc(tlen*2);
-            memcpy(tgt, result.toByteArray(), tlen*2);
+            memcpy_iflen(tgt, result.toByteArray(), tlen*2);
         );
     }
     virtual char * getResultVarString(const char * stepname, unsigned sequence) override
