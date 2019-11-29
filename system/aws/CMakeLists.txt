@@ -14,21 +14,26 @@ if(USE_AWS)
         SOURCE_DIR ${AWS_SDK_CPP_SOURCE_DIR}
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp
         CMAKE_ARGS -DCUSTOM_MEMORY_MANAGEMENT:string=0 -DCMAKE_CXX_FLAGS=${EXTERNAL_SQS_CXX_FLAGS}
-        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH} aws-cpp-sdk-sqs
+        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH} aws-cpp-sdk-sqs aws-cpp-sdk-s3
         INSTALL_COMMAND "")
 
     include(GNUInstallDirs)
     set(AWS_DEP_LIBDIR ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/.deps/install/${CMAKE_INSTALL_LIBDIR})
     add_library(aws-cpp-sdk-core SHARED IMPORTED GLOBAL)
     add_library(aws-cpp-sdk-sqs SHARED IMPORTED GLOBAL)
+    add_library(aws-cpp-sdk-s3 SHARED IMPORTED GLOBAL)
+
     set_property(TARGET aws-cpp-sdk-core
         PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so)
     set_property(TARGET aws-cpp-sdk-sqs
         PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so)
+    set_property(TARGET aws-cpp-sdk-s3
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so)
     add_dependencies(aws-cpp-sdk-core aws-sdk-cpp)
     add_dependencies(aws-cpp-sdk-sqs aws-sdk-cpp)
+    add_dependencies(aws-cpp-sdk-s3 aws-sdk-cpp)
 
-    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${AWS_DEP_LIBDIR}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs\")")
+    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${AWS_DEP_LIBDIR}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3\")")
     install(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/aws-sdk-cpp/LICENSE.txt
         DESTINATION "."
@@ -44,6 +49,7 @@ if(USE_AWS)
     install(PROGRAMS
         ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so
         ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so
+        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so
         ${AWS_DEP_LIBDIR}/libaws-c-common.so.1.0.0
         ${AWS_DEP_LIBDIR}/libaws-c-common.so
         ${AWS_DEP_LIBDIR}/libaws-c-common.so.0unstable
