@@ -207,6 +207,9 @@ const char *RFCStrings[] =
     RFCText(RFCreadfilteredblob),
     RFCText(RFCStreamRead),
     RFCText(RFCStreamReadTestSocket),
+    RFCText(RFCStreamGeneral),
+    RFCText(RFCStreamReadJSON),
+    RFCText(RFCmaxnormal),
 };
 
 static const char *getRFCText(RemoteFileCommandType cmd)
@@ -765,6 +768,7 @@ interface IRemoteActivity : extends IInterface
     virtual void serializeCursor(MemoryBuffer &tgt) const = 0;
     virtual void restoreCursor(MemoryBuffer &src) = 0;
     virtual bool isGrouped() const = 0;
+    virtual void flushStatistics(CClientStats &stats) = 0;
     virtual IRemoteReadActivity *queryIsReadActivity() { return nullptr; }
     virtual IRemoteWriteActivity *queryIsWriteActivity() { return nullptr; }
 };
@@ -1042,7 +1046,7 @@ public:
     IRemoteActivity *queryActivity() const { return activity; }
     ICompressor *queryCompressor() const { return compressor; }
 
-    void process(IPropertyTree *requestTree, MemoryBuffer &restMb, MemoryBuffer &responseMb)
+    void process(IPropertyTree *requestTree, MemoryBuffer &restMb, MemoryBuffer &responseMb, CClientStats &stats)
     {
         if (requestTree->hasProp("replyLimit"))
             replyLimit = requestTree->getPropInt64("replyLimit", defaultDaFSReplyLimitKB) * 1024;
@@ -1064,6 +1068,7 @@ public:
             processRead(requestTree, responseMb);
         else if (activity->queryIsWriteActivity())
             processWrite(requestTree, restMb, responseMb);
+        activity->flushStatistics(stats);
 
         if (outFmt_Binary != format)
         {
@@ -1185,6 +1190,10 @@ public:
     {
         throwUnexpected();
     }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        throwUnexpected();
+    }
     virtual IRemoteReadActivity *queryIsReadActivity()
     {
         return this;
@@ -1213,7 +1222,7 @@ public:
 };
 
 
-class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity
+class CRemoteStreamReadBaseActivity : public CRemoteDiskBaseActivity, implements IFileSerialStreamCallback
 {
     typedef CRemoteDiskBaseActivity PARENT;
 
@@ -1227,6 +1236,7 @@ protected:
     // virtual field values
     unsigned partNum = 0;
     offset_t baseFpos = 0;
+    unsigned __int64 bytesRead = 0;
 
     virtual bool refreshCursor()
     {
@@ -1271,7 +1281,7 @@ protected:
                 compressed = false;
             }
         }
-        inputStream.setown(createFileSerialStream(iFileIO, startPos));
+        inputStream.setown(createFileSerialStream(iFileIO, startPos, (offset_t)-1, (size32_t)-1, this));
 
         opened = true;
         eofSeen = false;
@@ -1283,6 +1293,11 @@ protected:
         opened = false;
         eofSeen = true;
     }
+// IFileSerialStreamCallback impl.
+    virtual void process(offset_t ofs, size32_t sz, const void *buf) override
+    {
+        bytesRead += sz;
+    }
 public:
     CRemoteStreamReadBaseActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : PARENT(config, fileDesc)
     {
@@ -1291,6 +1306,12 @@ public:
 
         partNum = config.getPropInt("virtualFields/partNum");
         baseFpos = (offset_t)config.getPropInt64("virtualFields/baseFpos");
+    }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        // NB: will be called by same thread that is reading.
+        stats.addRead(bytesRead);
+        bytesRead = 0;
     }
 // IVirtualFieldCallback impl.
     virtual unsigned __int64 getFilePosition(const void * row) override
@@ -1961,6 +1982,10 @@ public:
     {
         input->restoreCursor(src);
     }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        input->flushStatistics(stats);
+    }
     virtual IRemoteReadActivity *queryIsReadActivity()
     {
         return this;
@@ -2033,6 +2058,10 @@ public:
         isTlk = config.getPropBool("isTlk");
         allowPreload = config.getPropBool("allowPreload");
         fileCrc = config.getPropInt("crc");
+    }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        // TBD, IKeyCursor should probably have a getStatistic(StatisticKind kind) implementation
     }
 };
 
@@ -2123,6 +2152,7 @@ protected:
     StringAttr fileName; // physical filename
     Linked<IOutputMetaData> meta;
     unsigned __int64 processed = 0;
+    unsigned __int64 bytesWritten = 0;
     bool opened = false;
     bool eofSeen = false;
 
@@ -2175,6 +2205,12 @@ public:
     virtual void write(size32_t sz, const void *rowData) override
     {
         throwUnexpected(); // method should be implemented in derived classes.
+    }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        // NB: will be called by same thread that is writing.
+        stats.addWrite(bytesWritten);
+        bytesWritten = 0;
     }
     virtual IRemoteWriteActivity *queryIsWriteActivity()
     {
@@ -2243,6 +2279,7 @@ public:
     {
         checkOpen();
         iFileIOStream->write(sz, rowData);
+        bytesWritten += sz;
     }
     virtual void serializeCursor(MemoryBuffer &tgt) const override
     {
@@ -4262,12 +4299,12 @@ public:
             extracted.item(i).serialize(reply);
     }
 
-    void cmdStreamGeneral(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdStreamGeneral(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         size32_t jsonSz;
         msg.read(jsonSz);
         Owned<IPropertyTree> requestTree = createPTreeFromJSONString(jsonSz, (const char *)msg.readDirect(jsonSz));
-        cmdStreamCommon(requestTree, msg, reply, client);
+        cmdStreamCommon(requestTree, msg, reply, client, stats);
     }
 
     /* Notes on protocol:
@@ -4302,7 +4339,7 @@ public:
      * "fileName" is only used for unsecured non signed connections (normally forbidden), and specifies the fully qualified path to a physical file.
      *
      */
-    void cmdStreamCommon(IPropertyTree *requestTree, MemoryBuffer &rest, MemoryBuffer &reply, CRemoteClientHandler &client)
+    void cmdStreamCommon(IPropertyTree *requestTree, MemoryBuffer &rest, MemoryBuffer &reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         /* Example JSON request:
          *
@@ -4554,7 +4591,7 @@ public:
         }
 
         if (cursorHandle)
-            remoteRequest->process(requestTree, rest, reply);
+            remoteRequest->process(requestTree, rest, reply, stats);
         else
         {
             const char *outputFmtStr = requestTree->queryProp("format");
@@ -4585,23 +4622,23 @@ public:
         }
     }
 
-    void cmdStreamReadCommon(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdStreamReadCommon(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         size32_t jsonSz = msg.remaining();
         Owned<IPropertyTree> requestTree = createPTreeFromJSONString(jsonSz, (const char *)msg.readDirect(jsonSz));
-        cmdStreamCommon(requestTree, msg, reply, client);
+        cmdStreamCommon(requestTree, msg, reply, client, stats);
     }
 
 
     // NB: JSON header to message, for some requests (e.g. write), there will be trailing raw data (e.g. row data)
 
-    void cmdStreamReadStd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdStreamReadStd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         reply.append(RFEnoerror); // gets patched if there is a follow on error
-        cmdStreamReadCommon(msg, reply, client);
+        cmdStreamReadCommon(msg, reply, client, stats);
     }
 
-    void cmdStreamReadJSON(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdStreamReadJSON(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         /* NB: exactly the same handling as cmdStreamReadStd(RFCStreamRead) for now,
          * may want to differentiate later
@@ -4609,13 +4646,13 @@ public:
          * errorcode = 0 means no error
          */
         reply.append(RFEnoerror); // gets patched if there is a follow on error
-        cmdStreamReadCommon(msg, reply, client);
+        cmdStreamReadCommon(msg, reply, client, stats);
     }
 
-    void cmdStreamReadTestSocket(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    void cmdStreamReadTestSocket(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CClientStats &stats)
     {
         reply.append('J');
-        cmdStreamReadCommon(msg, reply, client);
+        cmdStreamReadCommon(msg, reply, client, stats);
     }
 
     // legacy version
@@ -4793,26 +4830,26 @@ public:
                 {
                     checkAuthorizedStreamCommand(*client);
                     reply.append(RFEnoerror); // gets patched if there is a follow on error
-                    cmdStreamGeneral(msg, reply, *client);
+                    cmdStreamGeneral(msg, reply, *client, *stats);
                     break;
                 }
                 case RFCStreamRead:
                 {
                     checkAuthorizedStreamCommand(*client);
-                    cmdStreamReadStd(msg, reply, *client);
+                    cmdStreamReadStd(msg, reply, *client, *stats);
                     break;
                 }
                 case RFCStreamReadJSON:
                 {
                     checkAuthorizedStreamCommand(*client);
-                    cmdStreamReadJSON(msg, reply, *client);
+                    cmdStreamReadJSON(msg, reply, *client, *stats);
                     break;
                 }
                 case RFCStreamReadTestSocket:
                 {
                     testSocketFlag = true;
                     checkAuthorizedStreamCommand(*client);
-                    cmdStreamReadTestSocket(msg, reply, *client);
+                    cmdStreamReadTestSocket(msg, reply, *client, *stats);
                     break;
                 }
             default:
