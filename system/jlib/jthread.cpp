@@ -41,15 +41,26 @@
 
 //static __thread ThreadTermFunc threadTerminationHook;
 static thread_local std::vector<ThreadTermFunc> threadTermHooks;
+static std::vector<ThreadTermFunc> mainThreadTermHooks;
+
+struct MainThreadIdHelper
+{
+    ThreadId tid;
+    MainThreadIdHelper()
+    {
+        tid = GetCurrentThreadId();
+    }
+} mainThreadIdHelper;
 
 void addThreadTermFunc(ThreadTermFunc onTerm)
 {
-    for (auto hook: threadTermHooks)
+    auto &termHooks = (GetCurrentThreadId() == mainThreadIdHelper.tid) ? mainThreadTermHooks : threadTermHooks;
+    for (auto hook: termHooks)
     {
         if (hook==onTerm)
             return;
     }
-    threadTermHooks.push_back(onTerm);
+    termHooks.push_back(onTerm);
 }
 
 void callThreadTerminationHooks(bool isPooled)
@@ -71,7 +82,7 @@ MODULE_INIT(INIT_PRIORITY_JTHREAD)
 }
 MODULE_EXIT()
 {
-    for (auto hook: threadTermHooks)
+    for (auto hook: mainThreadTermHooks)
     {
         (*hook)(false);  // May be too late :(
     }
