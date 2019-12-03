@@ -41,26 +41,45 @@
 
 //static __thread ThreadTermFunc threadTerminationHook;
 static thread_local std::vector<ThreadTermFunc> threadTermHooks;
+static std::vector<ThreadTermFunc> mainThreadTermHooks;
 
+static struct MainThreadIdHelper
+{
+    ThreadId tid;
+    MainThreadIdHelper()
+    {
+        tid = GetCurrentThreadId();
+    }
+} mainThreadIdHelper;
+
+/*
+ * NB: Thread termination hook functions are tracked using a thread local vector (threadTermHooks).
+ * However, hook functions installed on the main thread must be tracked separately in a non thread local vector (mainThreadTermHooks).
+ * This is because thread local variables are destroyed before atexit functions are called and therefore before ModuleExitObjects().
+ * The hooks tracked by mainThreadTermHooks are called by the MODULE_EXIT below.
+ */
 void addThreadTermFunc(ThreadTermFunc onTerm)
 {
-    for (auto hook: threadTermHooks)
+    auto &termHooks = (GetCurrentThreadId() == mainThreadIdHelper.tid) ? mainThreadTermHooks : threadTermHooks;
+    for (auto hook: termHooks)
     {
         if (hook==onTerm)
             return;
     }
-    threadTermHooks.push_back(onTerm);
+    termHooks.push_back(onTerm);
 }
 
 void callThreadTerminationHooks(bool isPooled)
 {
     std::vector<ThreadTermFunc> keepHooks;
-    for (auto hook: threadTermHooks)
+
+    auto &termHooks = (GetCurrentThreadId() == mainThreadIdHelper.tid) ? mainThreadTermHooks : threadTermHooks;
+    for (auto hook: termHooks)
     {
         if ((*hook)(isPooled) && isPooled)
            keepHooks.push_back(hook);
     }
-    threadTermHooks.swap(keepHooks);
+    termHooks.swap(keepHooks);
 }
 
 PointerArray *exceptionHandlers = NULL;
@@ -71,10 +90,7 @@ MODULE_INIT(INIT_PRIORITY_JTHREAD)
 }
 MODULE_EXIT()
 {
-    for (auto hook: threadTermHooks)
-    {
-        (*hook)(false);  // May be too late :(
-    }
+    callThreadTerminationHooks(false);
     delete exceptionHandlers;
 }
 
