@@ -1437,21 +1437,208 @@ IHqlExpression * HqlGram::leaveService(const attribute & errpos)
 
 //-----------------------------------------------------------------------------
 
+static HqlTransformerInfo selfReferenceReplacerInfo("SelfReferenceReplacer");
+class SelfReferenceReplacer : public QuickHqlTransformer, public CInterface
+{
+public:
+    SelfReferenceReplacer(HqlGram * _parser, IHqlExpression * _self)
+    : QuickHqlTransformer(selfReferenceReplacerInfo, nullptr), parser(_parser), self(_self)
+    {
+    }
+
+    IHqlExpression * replaceExpression(IHqlExpression * expr)
+    {
+        return transform(expr);
+    }
+
+    IHqlExpression * queryAlreadyAssigned(IHqlExpression * select)
+    {
+        IHqlExpression * match = (IHqlExpression *)select->queryTransformExtra();
+        if (match && !match->isAttribute())
+            return select;
+        if (select->getOperator() == no_select)
+        {
+            IHqlExpression * lhs = select->queryChild(0);
+            if (lhs->getOperator() == no_select)
+                return queryAlreadyAssigned(lhs);
+        }
+        return nullptr;
+    }
+
+    bool haveAssignedToChildren(IHqlExpression * select)
+    {
+        return select->queryTransformExtra() == alreadyAssignedNestedTag;
+    }
+
+    bool haveAssignedToAllChildren(IHqlExpression * select)
+    {
+        return haveAssignedToAllChildren(select, select->queryRecord());
+    }
+
+    IHqlExpression * findAssignment(IHqlExpression *field)
+    {
+    //  assertex(field->getOperator() == no_select);
+        IHqlExpression * match = (IHqlExpression *)field->queryTransformExtra();
+        if (match && !match->isAttribute())
+            return match;
+        return NULL;
+    }
+
+    void associateAssignedValues(IHqlExpression * to, IHqlExpression * from)
+    {
+        //Associate the expression with target assignments, so we can quickly check if something has been assigned to,
+        //and also substitute references to SELF.x on the rhs of an assignment.
+        to->setTransformExtra(from);
+
+        IHqlExpression * parent = to->queryChild(0);
+        while ((parent->getOperator() == no_select) && !parent->queryTransformExtra())
+        {
+            parent->setTransformExtra(alreadyAssignedNestedTag);
+            parent = parent->queryChild(0);
+        }
+    }
+
+    bool haveAssignedToAllChildren(IHqlExpression * select, IHqlExpression * record)
+    {
+        IHqlExpression * match = static_cast<IHqlExpression *>(select->queryTransformExtra());
+        if (!match)
+            return false;
+        if (match != alreadyAssignedNestedTag)
+            return true;
+        if (!record)
+            return false;
+        ForEachChild(i, record)
+        {
+            IHqlExpression * cur = record->queryChild(i);
+            switch (cur->getOperator())
+            {
+            case no_record:
+                if (!haveAssignedToAllChildren(select, cur))
+                    return false;
+                break;
+            case no_ifblock:
+                if (!haveAssignedToAllChildren(select, cur->queryChild(1)))
+                    return false;
+                break;
+            case no_field:
+            {
+                OwnedHqlExpr nested = createSelectExpr(LINK(select), LINK(cur));
+                if (!haveAssignedToAllChildren(nested, cur->queryRecord()))
+                    return false;
+                break;
+            }
+            }
+        }
+        return true;
+    }
+
+protected:
+    IHqlExpression * createTransformedBody(IHqlExpression * expr)
+    {
+        if (expr == self)
+            return LINK(expr);
+
+        unsigned max = expr->numChildren();
+        if (max == 0)
+            return LINK(expr);
+
+        //Fields and records cannot be returned as-is because this is an unnormalized expression
+        //and a TABLE statement might have references to self in the result record (HPCC-20863)
+        switch (expr->getOperator())
+        {
+        case no_attr:
+        case no_attr_expr:
+        case no_left:
+        case no_right:
+            return LINK(expr);
+        case no_assign:
+            {
+                //The following optimization would be required if we ever supported recursive records.
+                IHqlExpression * rhs = expr->queryChild(1);
+                OwnedHqlExpr newRhs = transform(rhs);
+                if (rhs == newRhs)
+                    return LINK(expr);
+                IHqlExpression * lhs = expr->queryChild(0);
+                return createAssign(LINK(lhs), newRhs.getClear());
+            }
+        }
+
+        return QuickHqlTransformer::createTransformedBody(expr);
+    }
+
+    IHqlExpression * transform(IHqlExpression * expr)
+    {
+        if (!containsSelf(expr))
+            return LINK(expr);
+
+        IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
+        if (mapped)
+        {
+            if (mapped == alreadyAssignedNestedTag)
+            {
+                if (haveAssignedToAllChildren(expr))
+                {
+                    //create a new nested project from the child assignments.
+                    //This will always succeed since we have assigned to all the children
+                    IHqlExpression * childRecord = expr->queryRecord();
+                    OwnedHqlExpr childSelf = getSelf(childRecord);
+                    HqlExprArray subAssigns;
+                    bool modified;
+                    const attribute errpos;
+                    parser->doCheckAssignedNormalizeTransform(&subAssigns, expr, childSelf, childRecord, childRecord, errpos, modified);
+
+                    OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(childRecord->getType()), subAssigns);
+                    return createRow(no_createrow, newTransform.getClear());
+                }
+
+                return LINK(expr);
+            }
+            return ensureExprType(mapped, expr->queryType());
+        }
+
+        IHqlExpression * ret = createTransformed(expr);
+        expr->setTransformExtra(ret);
+        return ret;
+    }
+
+    void expandTransformAssigns(IHqlExpression * expr)
+    {
+        ForEachChild(i, expr)
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+
+            switch (cur->getOperator())
+            {
+            case no_transform:
+            case no_newtransform:
+            case no_assignall:
+                expandTransformAssigns(cur);
+                break;
+            case no_assign:
+                {
+                    IHqlExpression * tgt = cur->queryChild(0);
+                    OwnedHqlExpr castRhs = ensureExprType(cur->queryChild(1), tgt->queryType());
+                    tgt->setTransformExtraOwned(castRhs.getClear());
+                    break;
+                }
+            }
+        }
+    }
+
+
+protected:
+    LinkedHqlExpr self;
+    HqlGram * parser;
+};
+
+//-----------------------------------------------------------------------------
+
 
 /* this func does not affect linkage */
 /* Assume: field is of the form: (((self.r1).r2...).rn). */
 IHqlExpression * HqlGram::queryAlreadyAssigned(IHqlExpression * select)
 {
-    IHqlExpression * match = (IHqlExpression *)select->queryTransformExtra();
-    if (match && !match->isAttribute())
-        return select;
-    if (select->getOperator() == no_select)
-    {
-        IHqlExpression * lhs = select->queryChild(0);
-        if (lhs->getOperator() == no_select)
-            return queryAlreadyAssigned(lhs);
-    }
-    return nullptr;
+    return curSelfReplacer ? curSelfReplacer->queryAlreadyAssigned(select) : nullptr;
 }
 
 bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * select)
@@ -1476,13 +1663,9 @@ bool HqlGram::checkAlreadyAssigned(const attribute & errpos, IHqlExpression * se
     return true;
 }
 
-IHqlExpression * HqlGram::findAssignment(IHqlExpression *field)
+IHqlExpression * HqlGram::findAssignment(IHqlExpression *select)
 {
-//  assertex(field->getOperator() == no_select);
-    IHqlExpression * match = (IHqlExpression *)field->queryTransformExtra();
-    if (match && !match->isAttribute())
-        return match;
-    return NULL;
+    return curSelfReplacer ? curSelfReplacer->findAssignment(select) : nullptr;
 }
 
 /* All in parms will be consumed by this function */
@@ -1492,15 +1675,15 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
     OwnedHqlExpr srcExpr = source.getExpr();
 
     if (!srcExpr) // something bad just happened.
-        return; 
-    
+        return;
+
     node_operator targetOp = targetExpr->getOperator();
     if (targetOp ==no_self) // self := expr;
     {
         ITypeInfo* type = srcExpr->queryType();
         if (!type)
             type = queryCurrentTransformType();
-        
+
         switch(type->getTypeCode())
         {
             case type_record:
@@ -1536,15 +1719,15 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
 void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExpr, IHqlExpression * srcExpr)
 {
     if (!srcExpr) // something bad just happened.
-        return; 
-    
+        return;
+
     node_operator targetOp = targetExpr->getOperator();
     if (targetOp ==no_self) // self := expr;
     {
         ITypeInfo* type = srcExpr->queryType();
         if (!type)
             type = queryCurrentTransformType();
-        
+
         switch(type->getTypeCode())
         {
             case type_record:
@@ -1577,147 +1760,9 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
 }
 
 
-class SelfReferenceReplacer
-{
-public:
-    SelfReferenceReplacer(HqlGram * _parser, IHqlExpression * _self) : parser(_parser), self(_self)
-    {
-    }
-
-    IHqlExpression * replaceExpression(IHqlExpression * expr)
-    {
-        return recursiveReplaceExpression(expr);
-    }
-
-protected:
-    IHqlExpression * doRecursiveReplaceExpression(IHqlExpression * expr)
-    {
-        IHqlExpression * body = expr->queryBody();
-        if (expr != body)
-        {
-            OwnedHqlExpr mapped = recursiveReplaceExpression(body);
-            if (mapped == body)
-                return LINK(expr);
-            return expr->cloneAllAnnotations(mapped);
-        }
-
-        if (expr == self)
-            return LINK(expr);
-
-        unsigned max = expr->numChildren();
-        if (max == 0)
-            return LINK(expr);
-
-        //Fields and records cannot be returned as-is because this is an unnormalized expression
-        //and a TABLE statment might have references to self in the result record (HPCC-20863)
-        switch (expr->getOperator())
-        {
-        case no_attr:
-        case no_attr_expr:
-        case no_left:
-        case no_right:
-            return LINK(expr);
-        case no_assign:
-            {
-                //The following optimization would be required if we ever supported recursive records.
-                IHqlExpression * rhs = expr->queryChild(1);
-                OwnedHqlExpr newRhs = recursiveReplaceExpression(rhs);
-                if (rhs == newRhs)
-                    return LINK(expr);
-                IHqlExpression * lhs = expr->queryChild(0);
-                return createAssign(LINK(lhs), newRhs.getClear());
-            }
-        }
-
-        bool same = true;
-        HqlExprArray args;
-        for (unsigned i=0; i< max; i++)
-        {
-            IHqlExpression * cur = expr->queryChild(i);
-            IHqlExpression * tr = recursiveReplaceExpression(cur);
-            args.append(*tr);
-            if (cur != tr)
-                same = false;
-        }
-
-        if (same)
-            return LINK(expr);
-        return expr->clone(args);
-    }
-
-    IHqlExpression * recursiveReplaceExpression(IHqlExpression * expr)
-    {
-        if (!containsSelf(expr))
-            return LINK(expr);
-
-        IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
-        if (mapped)
-        {
-            if (mapped == alreadyAssignedNestedTag)
-            {
-                if (parser->haveAssignedToAllChildren(expr))
-                {
-                    //create a new nested project from the child assignments.
-                    //This will always succeed since we have assigned to all the children
-                    IHqlExpression * childRecord = expr->queryRecord();
-                    OwnedHqlExpr childSelf = getSelf(childRecord);
-                    HqlExprArray subAssigns;
-                    bool modified;
-                    const attribute errpos;
-                    parser->doCheckAssignedNormalizeTransform(&subAssigns, expr, childSelf, childRecord, childRecord, errpos, modified);
-
-                    OwnedHqlExpr newTransform = createValue(no_transform, makeTransformType(childRecord->getType()), subAssigns);
-                    return createRow(no_createrow, newTransform.getClear());
-                }
-
-                return LINK(expr);
-            }
-            return ensureExprType(mapped, expr->queryType());
-        }
-
-        IHqlExpression * ret = doRecursiveReplaceExpression(expr);
-        expr->setTransformExtra(ret);
-        return ret;
-    }
-
-    void expandTransformAssigns(IHqlExpression * expr)
-    {
-        ForEachChild(i, expr)
-        {
-            IHqlExpression * cur = expr->queryChild(i);
-
-            switch (cur->getOperator())
-            {
-            case no_transform:
-            case no_newtransform:
-            case no_assignall:
-                expandTransformAssigns(cur);
-                break;
-            case no_assign:
-                {
-                    IHqlExpression * tgt = cur->queryChild(0);
-                    OwnedHqlExpr castRhs = ensureExprType(cur->queryChild(1), tgt->queryType());
-                    tgt->setTransformExtraOwned(castRhs.getClear());
-                    break;
-                }
-            }
-        }
-    }
-
-
-protected:
-    LinkedHqlExpr self;
-    HqlGram * parser;
-};
-
 IHqlExpression * HqlGram::replaceSelfReferences(IHqlExpression * transform, IHqlExpression * rhs, IHqlExpression * self, const attribute& errpos)
 {
-    //MORE: This could be done more efficiently by replacing all the self references in a single pass
-    //would need to tag assigns in the transform, and process incrementally at the end.
-    //Seems to be fast enough anyway at the moment.
-    SelfReferenceReplacer replacer(this, self);
-
-    OwnedHqlExpr ret = replacer.replaceExpression(rhs);
+    OwnedHqlExpr ret = curSelfReplacer ? curSelfReplacer->replaceExpression(rhs) : LINK(rhs);
     if (containsSelf(ret))
     {
         //Horrible can have an assignment to an attribute which is then used in a nested transform - so as well as
@@ -1791,16 +1836,8 @@ void HqlGram::appendTransformAssign(IHqlExpression * transform, IHqlExpression *
         assign = createLocationAnnotation(assign, errpos.pos);
     transform->addOperand(assign);
 
-    //Associate the expression with target assignments, so we can quickly check if something has been assigned to,
-    //and also substiture refrences to SELF.x on the rhs of an assignment.
-    to->setTransformExtraOwned(from.getClear());
-
-    IHqlExpression * parent = to->queryChild(0);
-    while ((parent->getOperator() == no_select) && !parent->queryTransformExtra())
-    {
-        parent->setTransformExtra(alreadyAssignedNestedTag);
-        parent = parent->queryChild(0);
-    }
+    assertex(curSelfReplacer);
+    curSelfReplacer->associateAssignedValues(to, from);
 }
 
 IHqlExpression * HqlGram::forceEnsureExprType(IHqlExpression * expr, ITypeInfo * type)
@@ -1891,45 +1928,12 @@ bool haveAssignedToChildren(IHqlExpression * select, IHqlExpression * transform)
 
 bool HqlGram::haveAssignedToChildren(IHqlExpression * select)
 {
-    return select->queryTransformExtra() == alreadyAssignedNestedTag;
-}
-
-bool HqlGram::haveAssignedToAllChildren(IHqlExpression * select, IHqlExpression * record)
-{
-    IHqlExpression * match = static_cast<IHqlExpression *>(select->queryTransformExtra());
-    if (!match)
-        return false;
-    if (match != alreadyAssignedNestedTag)
-        return true;
-    if (!record)
-        return false;
-    ForEachChild(i, record)
-    {
-        IHqlExpression * cur = record->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_record:
-            if (!haveAssignedToAllChildren(select, cur))
-                return false;
-            break;
-        case no_ifblock:
-            if (!haveAssignedToAllChildren(select, cur->queryChild(1)))
-                return false;
-            break;
-        case no_field:
-        {
-            OwnedHqlExpr nested = createSelectExpr(LINK(select), LINK(cur));
-            if (!haveAssignedToAllChildren(nested, cur->queryRecord()))
-                return false;
-        }
-        }
-    }
-    return true;
+    return curSelfReplacer ? curSelfReplacer->haveAssignedToChildren(select) : false;
 }
 
 bool HqlGram::haveAssignedToAllChildren(IHqlExpression * select)
 {
-    return haveAssignedToAllChildren(select, select->queryRecord());
+    return curSelfReplacer ? curSelfReplacer->haveAssignedToAllChildren(select) : false;
 }
 
 
@@ -12236,23 +12240,20 @@ IHqlExpression * HqlGram::createProjectRow(attribute & rowAttr, attribute & tran
 
 void HqlGram::beginTransform(ITypeInfo * recordType, IHqlExpression * originalRecord)
 {
-    if (curTransform)
-    {
-        TransformSaveInfo * saved = new TransformSaveInfo;
-        saved->curTransform.setown(curTransform);
-        saved->transformScope.setown(transformScope);
-        saved->transformRecord.setown(curTransformRecord.getClear());
-        transformSaveStack.append(*saved);
-    }
+    TransformSaveInfo * saved = new TransformSaveInfo;
+    saved->curTransform.setown(curTransform);
+    saved->transformScope.setown(transformScope);
+    saved->transformRecord.setown(curTransformRecord.getClear());
+    saved->selfReplacer.swap(curSelfReplacer);
+    transformSaveStack.append(*saved);
 
     assertex(recordType->getTypeCode() == type_record);
     curTransform = createOpenValue(no_transform, makeTransformType(LINK(recordType)));
     curTransformRecord.set(originalRecord);
+    OwnedHqlExpr self = getSelf(curTransform);
+    curSelfReplacer.setown(new SelfReferenceReplacer(this, self));
     transformScope = createPrivateScope();
     enterScope(transformScope, false, false);
-
-    //The processing for a transform uses target->queryTransformExtra() to record whether it has been assigned to
-    lockTransformMutex();
 }
 
 IHqlExpression * HqlGram::endTransform(const attribute &errpos)
@@ -12260,21 +12261,17 @@ IHqlExpression * HqlGram::endTransform(const attribute &errpos)
     if (!curTransform)
         return NULL;
 
-    ::Release(transformScope);
-    transformScope = NULL;
     leaveScope(errpos);
-    unlockTransformMutex();
-    IHqlExpression *ret = curTransform->closeExpr();
-    curTransform = NULL;
-    curTransformRecord.clear();
-    if (transformSaveStack.ordinality())
-    {
-        Owned<TransformSaveInfo> saved = &transformSaveStack.popGet();
-        transformScope = saved->transformScope.getClear();
-        curTransform = saved->curTransform.getClear();
-        curTransformRecord.swap(saved->transformRecord);
-    }
-    return ret;
+    OwnedHqlExpr ret = curTransform->closeExpr();
+
+    Owned<TransformSaveInfo> saved = &transformSaveStack.popGet();
+    ::Release(transformScope);
+    transformScope = saved->transformScope.getClear();
+    curTransform = saved->curTransform.getClear();
+    curTransformRecord.swap(saved->transformRecord);
+    curSelfReplacer.swap(saved->selfReplacer);
+
+    return ret.getClear();
 }
 
 

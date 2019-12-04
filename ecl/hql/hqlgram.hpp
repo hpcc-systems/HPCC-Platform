@@ -344,13 +344,14 @@ public:
     Owned<IHqlScope> templateAttrContext;
 };
 
-
+class SelfReferenceReplacer;
 class TransformSaveInfo : public CInterface
 {
 public:
     Owned<IHqlScope> transformScope;
     Owned<IHqlExpression> curTransform;
     OwnedHqlExpr transformRecord;
+    Owned<SelfReferenceReplacer> selfReplacer;
 };
 
 class FunctionCallInfo : public CInterface
@@ -976,6 +977,7 @@ protected:
     IErrorReceiver *errorHandler;
     IHqlExpression *curTransform;
     OwnedHqlExpr curTransformRecord;
+    Owned<SelfReferenceReplacer> curSelfReplacer;
     ITypeInfo * defaultIntegralType;
     ITypeInfo * uint4Type;
     ITypeInfo * defaultRealType;
@@ -1078,7 +1080,6 @@ protected:
 
     bool haveAssignedToChildren(IHqlExpression * select);
     bool haveAssignedToAllChildren(IHqlExpression * select);
-    bool haveAssignedToAllChildren(IHqlExpression * select, IHqlExpression * record);
     void checkPattern(attribute & pattern, bool isCompound);
     void checkSubPattern(attribute & pattern);
     void checkPattern(attribute & pattern, HqlExprArray & values);
