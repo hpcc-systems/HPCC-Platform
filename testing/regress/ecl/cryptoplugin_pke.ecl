@@ -69,8 +69,8 @@ DATA signature := encModule.Sign((DATA)'The quick brown fox jumps over the lazy 
 output( TRUE = encModule.VerifySignature(signature, (DATA)'The quick brown fox jumps over the lazy dog'));
 output(FALSE = encModule.VerifySignature(signature, (DATA)'Your Name Here'));
 
-DATA bogus := (DATA)'Not a valid signature';
-output(FALSE = encModule.VerifySignature(bogus, (DATA)'Not a valid signature'));
+DATA bogus := (DATA)'Not a valid signaturexxx';
+output(FALSE = encModule.VerifySignature(bogus, (DATA)'Not a valid signaturexxx'));
 
 
 DATA sig256Ex := encModule.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
