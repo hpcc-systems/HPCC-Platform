@@ -220,6 +220,17 @@ TreeView, UpdateEnv, XRef</programlisting></para>
     role="bold">This is not recommended for production
     environments.</emphasis></para>
 
+    <para>When enabling Dali whitelisting on a cluster where there are other
+    external environments interacting, it can be useful to initially disable
+    whitelisting and audit the external components that are trying to connect
+    with it by viewing the DaServer log files. Each client that would be
+    refused access if whitelisting were enabled, creates log entries similar
+    to this:</para>
+
+    <para><programlisting>00000017 Operator 2019-11-20 16:58:39.617 17056 17074 
+         "WhiteListing is disabled, ignoring: Access denied! 
+         [client ip=192.168.9.12, role=DaliDiag] not whitelisted"</programlisting></para>
+
     <para>To allow legacy components that do not provide a role to connect,
     you can specify the allowAnonRoles option. The component MUST be on a
     whitelisted IP.</para>
