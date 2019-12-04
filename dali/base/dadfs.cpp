@@ -1129,8 +1129,6 @@ public:
     IFileDescriptor *createDescriptorFromMetaFile(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
 
     bool isProtectedFile(const CDfsLogicalFileName &logicalname, unsigned timeout) ;
-    unsigned queryProtectedCount(const CDfsLogicalFileName &logicalname, const char *owner);
-    bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
     IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
             const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total, bool *allMatchingFilesReceived);
@@ -2035,14 +2033,9 @@ public:
             ForEach(*piter) {
                 const char *name = piter->get().queryProp("@name");
                 if (name&&*name) {
-                    unsigned count = piter->get().getPropInt("@count");
-                    if (count) {
-                        if (plist.length())
-                            plist.append(',');
-                        plist.append(name);
-                        if (count>1)
-                            plist.append(':').append(count);
-                    }
+                    if (plist.length())
+                        plist.append(',');
+                    plist.append(name);
                 }
             }
             if (plist.length()) {
@@ -2152,7 +2145,6 @@ class CDFProtectedIterator: implements IDFProtectedIterator, public CInterface
 {
     StringAttr owner;
     StringAttr fn;
-    unsigned count;
     bool issuper;
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTreeIterator> fiter;
@@ -2168,7 +2160,6 @@ class CDFProtectedIterator: implements IDFProtectedIterator, public CInterface
         fn.set(t.queryProp("OrigName"));
         IPropertyTree &pt = piter->query();
         owner.set(pt.queryProp("@name"));
-        count = pt.getPropInt("@count");
     }
 
     void clear()
@@ -2185,7 +2176,6 @@ public:
     CDFProtectedIterator(const char *_owner,bool _notsuper,bool _superonly,unsigned _defaultTimeout)
         : owner(_owner)
     {
-        count = 0;
         issuper = false;
         notsuper=_notsuper;
         superonly=_superonly;
@@ -2280,11 +2270,6 @@ public:
     const char *queryOwner()
     {
         return owner;
-    }
-
-    unsigned getCount()
-    {
-        return count;
     }
 
     bool isSuper()
@@ -2619,38 +2604,33 @@ static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
     bool ret = false;
     CDateTime dt;
     dt.setNow();
-    if (owner&&*owner) {
-        Owned<IPropertyTree> t = getNamedPropTree(&p,"Protect","@name",owner,false);
-        if (t) {
-            unsigned c = t->getPropInt("@count");
+    if (owner&&*owner)
+    {
+        Owned<IPropertyTree> t = getNamedPropTree(&p, "Protect", "@name", owner, false);
+        if (t)
+        {
             if (protect)
-                c++;
-            else {
-                if (c>=1) {
-                    p.removeTree(t);
-                    c = 0;
-                }
-                else
-                    c--;
-            }
-            if (c) {
-                t->setPropInt("@count",c);
+            {
                 StringBuffer str;
-                t->setProp("@modified",dt.getString(str).str());
+                t->setProp("@modified", dt.getString(str).str());
             }
+            else
+                p.removeTree(t);
         }
-        else if (protect) {
-            t.setown(addNamedPropTree(&p,"Protect","@name",owner));
-            t->setPropInt("@count",1);
+        else if (protect)
+        {
+            t.setown(addNamedPropTree(&p, "Protect", "@name", owner));
             StringBuffer str;
             t->setProp("@modified",dt.getString(str).str());
         }
         ret = true;
     }
-    else if (!protect) {
+    else if (!protect)
+    {
         unsigned n=0;
         IPropertyTree *pt;
-        while ((pt=p.queryPropTree("Protect[1]"))!=NULL) {
+        while ((pt=p.queryPropTree("Protect[1]"))!=NULL)
+        {
             p.removeTree(pt);
             n++;
         }
@@ -2664,18 +2644,18 @@ static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,String
 {
     Owned<IPropertyTreeIterator> wpiter = froot->getElements("Attr/Protect");
     bool prot = false;
-    ForEach(*wpiter) {
+    ForEach(*wpiter)
+    {
         IPropertyTree &t = wpiter->query();
-        if (t.getPropInt("@count")) {
-            const char *wpname = t.queryProp("@name");
-            if (!wpname||!*wpname)
-                wpname = "<Unknown>";
-            if (prot)
-                reason.appendf(", %s",wpname);
-            else {
-                reason.appendf("file %s protected by %s",logicalname,wpname);
-                prot = true;
-            }
+        const char *wpname = t.queryProp("@name");
+        if (!wpname||!*wpname)
+            wpname = "<Unknown>";
+        if (prot)
+            reason.appendf(", %s", wpname);
+        else
+        {
+            reason.appendf("file %s protected by %s", logicalname, wpname);
+            prot = true;
         }
     }
     return prot;
@@ -5199,7 +5179,7 @@ protected:
         if (pos==0)
         {
             Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&file->queryAttributes());
-            superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+            while (superAttrs->removeProp("Protect")); // do not automatically inherit protected status
             resetFileAttr(superAttrs.getClear());
         }
         root->addPropTree("SubFile",sub);
@@ -5229,7 +5209,7 @@ protected:
             if (subfiles.ordinality())
             {
                 Owned<IPropertyTree> superAttrs = createPTreeFromIPT(&subfiles.item(0).queryAttributes());
-                superAttrs->removeProp("Protect"); // do not automatically inherit protected status
+                while (superAttrs->removeProp("Protect")); // do not automatically inherit protected status
                 resetFileAttr(superAttrs.getClear());
             }
             else
@@ -12457,52 +12437,7 @@ bool CDistributedFileDirectory::isProtectedFile(const CDfsLogicalFileName &logic
     CFileAttrLock attrLock;
     if (!attrLock.init(logicalName, RTM_LOCK_READ, NULL, timeout?timeout:INFINITE, "CDistributedFileDirectory::isProtectedFile"))
         return false; // timeout will raise exception
-    Owned<IPropertyTreeIterator> wpiter = attrLock.queryRoot()->getElements("Protect");
-    bool prot = false;
-    ForEach(*wpiter) {
-        IPropertyTree &t = wpiter->query();
-        if (t.getPropInt("@count")) {
-            prot = true;
-            break;
-        }
-    }
-    // timeout retry TBD
-    return prot;
-}
-
-unsigned CDistributedFileDirectory::queryProtectedCount(const CDfsLogicalFileName &logicalName, const char *owner)
-{
-    CFileAttrLock attrLock;
-    if (!attrLock.init(logicalName, RTM_LOCK_READ, NULL, defaultTimeout, "CDistributedFileDirectory::queryProtectedCount"))
-        return 0; // timeout will raise exception
-    Owned<IPropertyTreeIterator> wpiter = attrLock.queryRoot()->getElements("Protect");
-    unsigned count = 0;
-    ForEach(*wpiter) {
-        IPropertyTree &t = wpiter->query();
-        const char *name = t.queryProp("@name");
-        if (!owner||!*owner||(name&&(strcmp(owner,name)==0)))
-            count += t.getPropInt("@count");
-    }
-    return count;
-}
-
-bool CDistributedFileDirectory::getProtectedInfo(const CDfsLogicalFileName &logicalName, StringArray &names, UnsignedArray &counts)
-{
-    CFileAttrLock attrLock;
-    if (!attrLock.init(logicalName, RTM_LOCK_READ, NULL, defaultTimeout, "CDistributedFileDirectory::getProtectedInfo"))
-        return false; // timeout will raise exception
-    Owned<IPropertyTreeIterator> wpiter = attrLock.queryRoot()->getElements("Protect");
-    bool prot = false;
-    ForEach(*wpiter) {
-        IPropertyTree &t = wpiter->query();
-        const char *name = t.queryProp("@name");
-        names.append(name?name:"<Unknown>");
-        unsigned c = t.getPropInt("@count");
-        if (c)
-            prot = true;
-        counts.append(c);
-    }
-    return prot;
+    return attrLock.queryRoot()->hasProp("Protect");
 }
 
 IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char *owner,bool notsuper,bool superonly)

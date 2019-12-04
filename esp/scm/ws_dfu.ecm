@@ -158,7 +158,7 @@ ESPStruct [nil_remove] DFUFilePartsOnCluster
 ESPStruct [nil_remove] DFUFileProtect
 {
     string Owner;
-    int Count;
+    [depr_ver("1.54")] int Count;
     string Modified;
 };
 
@@ -986,8 +986,8 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.53"),
-    default_client_version("1.53"),
+    version("1.54"),
+    default_client_version("1.54"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
