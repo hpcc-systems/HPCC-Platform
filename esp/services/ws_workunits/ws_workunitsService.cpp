@@ -360,7 +360,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     setPasswordsFromSDS();
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
-    espName.set(process);
 
     checkUpdateQuerysetLibraries();
     refreshValidClusters();
@@ -435,6 +434,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         tmpdir->createDirectory();
 
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
+
+    getConfigurationDirectory(directories, "data", "esp", process, dataDirectory);
+    wuFactory.setown(getWorkUnitFactory());
 
     m_sched.start();
     filesInUse.subscribe();
@@ -3031,8 +3033,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                winfo.getWorkunitThorSlaveLog(directories, req.getProcess(), req.getClusterGroup(), req.getIPAddress(),
-                    req.getLogDate(), req.getSlaveNumber(), mb, nullptr, false);
+                winfo.getWorkunitThorSlaveLog(req.getProcess(), req.getIPAddress(), req.getSlaveNumber(), mb, nullptr, false);
                 openSaveFile(context, opt, req.getSizeLimit(), "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
@@ -4466,9 +4467,14 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
             if (!fileNames.ordinality())
                 throw MakeStringException(-1, "Failed to read upload content.");
 
-            Owned<IWorkUnit> wu = importWorkunitFromZAPFile(fileNames.item(0), zipFolder, password, "esp", espName, "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
-            if (!wu)
-                throw MakeStringException(-1, "Failed to import WU ZAP report.");
+            ForEachItemIn(m, fileNames)
+            {
+                const char *fileName = fileNames.item(m);
+                Owned<IWorkUnit> wu = wswService->getWUFactory()->importWorkUnit(fileName, zipFolder, password,
+                    wswService->getDataDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+                if (!wu)
+                    throw MakeStringException(-1, "Failed to import WU ZAP report.");
+            }
         }
         else
             throw MakeStringException(-1, "WsWorkunits::%s does not support the upload_ option.", method);

@@ -201,6 +201,8 @@ public:
     void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
+    IWorkUnitFactory *getWUFactory() { return wuFactory; };
+    const char *getDataDirectory() { return dataDirectory.str(); };
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest &req, IEspWULightWeightQueryResponse &resp);
@@ -355,7 +357,6 @@ private:
     void readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
         bool all, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList);
 
-    StringAttr espName;
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringBuffer envLocalAddress;
@@ -373,6 +374,8 @@ private:
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
+    Owned<IWorkUnitFactory> wuFactory;
+    StringBuffer dataDirectory;
 
 
 public:
@@ -399,7 +402,6 @@ public:
 
         xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
         thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
-        espName.set(process);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -429,7 +431,6 @@ public:
     }
 
 private:
-    StringAttr espName;
     bool batchWatchFeaturesOnly;
     CWsWorkunitsEx *wswService;
     Owned<IPropertyTree> directories;

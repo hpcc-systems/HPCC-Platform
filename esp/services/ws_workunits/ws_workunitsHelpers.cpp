@@ -1072,9 +1072,11 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     if (cw->getWuidVersion() > 0)
     {
         IArrayOf<IConstWUThorLogInfo> wuThorLogs;
-        cw->getWUThorLogInfo(wuThorLogs);
+        if (version < 1.78)
+            cw->getWUThorLogInfo(wuThorLogs);
+        else
+            cw->getWUThorLogInfoLW(wuThorLogs);
 
-        unsigned numberOfSlaveLogs = cw->getNumberOfThorSlaves();
         ForEachItemIn(i, wuThorLogs)
         {
             IConstWUThorLogInfo &logInfo = wuThorLogs.item(i);
@@ -1108,9 +1110,12 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 
             Owned<IEspThorLogInfo> thorLog = createThorLogInfo();
             thorLog->setProcessName(logInfo.getProcessName());
-            thorLog->setClusterGroup(logInfo.getGroupName());
-            thorLog->setLogDate(logInfo.getLogDate());
-            thorLog->setNumberSlaves(numberOfSlaveLogs);
+            if (version < 1.78)
+            {
+                thorLog->setClusterGroup(logInfo.getGroupName());
+                thorLog->setLogDate(logInfo.getLogDate());
+            }
+            thorLog->setNumberSlaves(logInfo.getNumberOfThorSlaves());
             thorLogList.append(*thorLog.getLink());
         }
     }
@@ -1869,7 +1874,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
     if(!rFile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open file %s.", fileName);
 
-    if (logSingleFile)
+    if (dedicatedLogFiles)
     {
         getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
         return;
@@ -1954,7 +1959,7 @@ void WsWuInfo::getWorkunitThorLog(const char* fileName, MemoryBuffer& buf, const
     if (!rFile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",fileName);
 
-    if (logSingleFile)
+    if (dedicatedLogFiles)
         getWorkunitLogSingleFile(rFile, fileName, buf, outFile);
     else
         readWorkunitLog(rFile, buf, outFile);
@@ -1982,48 +1987,42 @@ void WsWuInfo::getWorkunitLogSingleFile(IFile* iFile, const char* fileName, Memo
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read %s.", fileName);
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(IGroup *nodeGroup, const char *ipAddress, const char* logDate,
-    const char* logDir, int slaveNum, MemoryBuffer& buf, const char* outFile, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *process, const char *ipAddress, int slaveNum,
+    MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
-    if (isEmpty(logDir))
-        throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
-    if (isEmpty(logDate))
-        throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log date not specified.");
+    if (dedicatedLogFiles)
+    {
+        getWorkunitThorSlaveLogSingleFile(process, slaveNum, buf, outFile);
+        return;
+    }
 
-    StringBuffer slaveIPAddress, logName;
-    logName.append(logDir);
-    addPathSepChar(logName);
+    //if slaveNum <= 0, it is a legacy wuid: the name of thor slave log contains an IP address.
+    //ex. thorslave.10.239.219.6_20100.2012_05_23.log
+    if ((slaveNum <= 0) && isEmpty(ipAddress)) //The ipAddress is needed for the legacy wuid.
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "ThorSlave address not specified.");
+
+    StringBuffer logName;
+    cw->getSlaveLogFileNameWithPath(process, slaveNum, ipAddress, logName);
+
+    StringBuffer slaveIPAddress;
     if (slaveNum > 0)
     {
+        StringBuffer groupName;
+        getClusterThorGroupName(groupName, process);
+        if (groupName.isEmpty())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", process);
+
+        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
+
         nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
-        if (slaveIPAddress.length() < 1)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log network address not found.");
+        if (slaveIPAddress.isEmpty())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "ThorSlave log network address not found.");
 
-        logName.appendf("thorslave.%d.%s.log", slaveNum, logDate);
-    }
-    else
-    {//legacy wuid: a user types in an IP address for a thor slave
-        if (isEmpty(ipAddress))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave address not specified.");
-
-        //thorslave.10.239.219.6_20100.2012_05_23.log
-        logName.appendf("thorslave.%s*.%s.log", ipAddress, logDate);
-        const char* portPtr = strchr(ipAddress, '_');
-        if (!portPtr)
-            slaveIPAddress.append(ipAddress);
-        else
-        {
-            StringBuffer ipAddressStr(ipAddress);
-            ipAddressStr.setLength(portPtr - ipAddress);
-            slaveIPAddress.append(ipAddressStr.str());
-        }
-    }
-
-    if (slaveNum > 0)
-    {
         RemoteFilename rfn;
         rfn.setRemotePath(logName);
-        SocketEndpoint ep(slaveIPAddress.str());
+        SocketEndpoint ep(slaveIPAddress);
         rfn.setIp(ep);
 
         Owned<IFile> logfile = createIFile(rfn);
@@ -2033,41 +2032,22 @@ void WsWuInfo::getWorkunitThorSlaveLog(IGroup *nodeGroup, const char *ipAddress,
         readWorkunitLog(logfile, buf, outFile);
     }
     else
-    {//legacy wuid
+    {
+        const char* portPtr = strchr(ipAddress, '_');
+        if (!portPtr)
+            slaveIPAddress.append(ipAddress);
+        else
+            slaveIPAddress.append(portPtr - ipAddress, ipAddress);
+
         readFileContent(logName, slaveIPAddress.str(), logName, buf, forDownload);
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *process,
-    const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
-    MemoryBuffer& buf, const char* outFile, bool forDownload)
-{
-    if (logSingleFile)
-    {
-        getWorkunitThorSlaveLogSingleFile(process, logDate, slaveNum, buf, outFile);
-        return;
-    }
-
-    StringBuffer logDir, groupName;
-    getConfigurationDirectory(directories, "log", "thor", process, logDir);
-    getClusterThorGroupName(groupName, instanceName);
-    if (groupName.isEmpty())
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", instanceName);
-
-    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
-    if (!nodeGroup || (nodeGroup->ordinality() == 0))
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
-
-    getWorkunitThorSlaveLog(nodeGroup, ipAddress, logDate, logDir.str(), slaveNum, buf, outFile, forDownload);
-}
-
-void WsWuInfo::getWorkunitThorSlaveLogSingleFile(const char* thorProcess, const char* logDate, int slaveNum,
+void WsWuInfo::getWorkunitThorSlaveLogSingleFile(const char* thorProcess, int slaveNum,
     MemoryBuffer& buf, const char* outFile)
 {
-    StringBuffer logPath;
-    getWorkunitProcessLogPath("Thor", logPath);
-
-    VStringBuffer logFileName("%s%c%s_thorslave.%u.%s.log", logPath.str(), PATHSEPCHAR, thorProcess, slaveNum, logDate);
+    StringBuffer logFileName;
+    cw->getSlaveLogFileNameWithPath(thorProcess, slaveNum, nullptr, logFileName);
     Owned<IFile> logfile = createIFile(logFileName);
     if (!logfile)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", logFileName.str());
@@ -3009,7 +2989,6 @@ bool addToQueryString(StringBuffer &queryString, const char *name, const char *v
 int WUSchedule::run()
 {
     PROGLOG("ECLWorkunit WUSchedule Thread started.");
-
     unsigned int waitTimeMillies = 1000*60;
     while(!stopping)
     {
@@ -3467,71 +3446,63 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 {
     if (cwu->getWuidVersion() == 0)
         return;
-    const char* clusterName = cwu->queryClusterName();
-    if (isEmptyString(clusterName)) //Cluster name may not be set yet
-        return;
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
-    if (!clusterInfo)
-    {
-        OWARNLOG("Cannot find TargetClusterInfo for workunit %s", cwu->queryWuid());
-        return;
-    }
 
     Owned<IThreadFactory> threadFactory = new CGetThorSlaveLogToFileThreadFactory();
     Owned<IThreadPool> threadPool = createThreadPool("WsWuFileHelper GetThorSlaveLogToFile Thread Pool",
         threadFactory, NULL, thorSlaveLogThreadPoolSize, INFINITE);
 
-    unsigned numberOfSlaveLogs = clusterInfo->getNumberOfSlaveLogs();
-    BoolHash uniqueProcesses;
-    Owned<IStringIterator> thorInstances = cwu->getProcesses("Thor");
-    ForEach (*thorInstances)
+    Owned<IPropertyTreeIterator> processes = cwu->getProcesses("Thor", nullptr);
+    ForEach (*processes)
     {
-        SCMStringBuffer processName;
-        thorInstances->str(processName);
-        if (processName.length() == 0)
-            continue;
-
-        bool* found = uniqueProcesses.getValue(processName.str());
-        if (found && *found)
-            continue;
-        uniqueProcesses.setValue(processName.str(), true);
-
-        StringBuffer groupName, logDir;
-        getClusterThorGroupName(groupName, processName.str());
-        if (groupName.isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to get Thor Group Name for %s", processName.str());
-
-        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
-        if (!nodeGroup || (nodeGroup->ordinality() == 0))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
-
-        getConfigurationDirectory(directories, "log", "thor", processName.str(), logDir);
-        Owned<IStringIterator> thorLogs = cwu->getLogs("Thor", processName.str());
-        ForEach (*thorLogs)
+        IPropertyTree& proc = processes->query();
+        const char* processName = proc.queryName();
+        if (isEmptyString(processName))
         {
-            SCMStringBuffer logName;
-            thorLogs->str(logName);
-            if (logName.length() == 0)
-                continue;
+            IWARNLOG("Empty process name for workunit %s", cwu->queryWuid());
+            continue;
+        }
 
-            const char* pStr = logName.str();
+        StringBuffer slaveLogPattern, logDate;
+        cwu->getSlaveLogPattern(processName, slaveLogPattern);
+        if (slaveLogPattern.isEmpty())
+        {
+            StringBuffer logSpec;
+            proc.getProp("@log", logSpec);
+            if (logSpec.isEmpty())
+            {
+                IWARNLOG("Empty process log for workunit %s", cwu->queryWuid());
+                continue;
+            }
+
+            const char* pStr = logSpec.str();
             const char* ppStr = strstr(pStr, "/thormaster.");
             if (!ppStr)
             {
-                IWARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
+                IWARNLOG("Invalid thorlog entry in workunit xml: %s", logSpec.str());
                 continue;
             }
-            ppStr += 12;
-            StringBuffer logDate(ppStr);
-            logDate.setLength(10);
+            ppStr += strlen("/thormaster.");
+            logDate.append(10, ppStr);
+        }
 
-            for (unsigned i = 0; i < numberOfSlaveLogs; i++)
+        unsigned numberOfSlaveLogs = cwu->getNumberOfThorSlaves(processName);
+        for (unsigned i = 0; i < numberOfSlaveLogs; i++)
+        {
+            StringBuffer fileName;
+            if (!slaveLogPattern.isEmpty())
             {
-                VStringBuffer fileName("%s%c%s_thorslave.%u.%s.log", path, PATHSEPCHAR, processName.str(), i+1, logDate.str());
-                Owned<CGetThorSlaveLogToFileThreadParam> threadParam = new CGetThorSlaveLogToFileThreadParam(
-                    &winfo, nodeGroup, logDate, logDir, i+1, fileName);
-                threadPool->start(threadParam.getClear());
+                StringBuffer slaveIDStr;
+                slaveIDStr.append(i+1);
+                fileName.appendf("%s%c%s_%s", path, PATHSEPCHAR, processName, slaveLogPattern.str());
+                fileName.replaceString(SLAVEIDSTR, slaveIDStr);
             }
+            else
+            {
+                fileName.appendf("%s%c%s_thorslave.%u.%s.log", path, PATHSEPCHAR, processName, i+1, logDate.str());
+            }
+            Owned<CGetThorSlaveLogToFileThreadParam> threadParam = new CGetThorSlaveLogToFileThreadParam(
+                &winfo, processName, i+1, fileName);
+            threadPool->start(threadParam.getClear());
         }
     }
     threadPool->joinAll();
@@ -4001,8 +3972,8 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         fileName.set("ThorSlave.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
-        winfo.getWorkunitThorSlaveLog(directories, item.getProcess(), item.getClusterGroup(), item.getIPAddress(),
-            item.getLogDate(), item.getSlaveNumber(), mb, fileNameWithPath.str(), false);
+        winfo.getWorkunitThorSlaveLog(item.getProcess(), item.getIPAddress(),
+            item.getSlaveNumber(), mb, fileNameWithPath.str(), false);
 
         break;
     }
