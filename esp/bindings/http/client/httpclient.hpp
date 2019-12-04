@@ -32,6 +32,7 @@ interface IHttpClient : extends ITransportClient
     virtual void setConnectTimeOutMs(unsigned timeout) = 0;
     virtual void setTimeOut(unsigned int timeout) = 0;
     virtual void disableKeepAlive() = 0;
+    virtual IMultiException* queryExceptions() = 0;
 
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response) = 0;
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false) = 0;

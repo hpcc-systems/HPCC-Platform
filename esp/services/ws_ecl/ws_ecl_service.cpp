@@ -1657,7 +1657,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     return 0;
 };
 
-inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo, bool createWorkunit, const char *type, const char *params)
+inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo, bool createWorkunit, const char *type, const char *params, CHttpRequest* httpreq)
 {
     url.append("/WsEcl/").append(type);
     if (createWorkunit)
@@ -1669,6 +1669,18 @@ inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo,
         url.append("wuid/").append(wsinfo.queryWuid());
     if (params && *params)
         url.append('?').append(params);
+    if (httpreq)
+    {
+        IProperties *httpparams = httpreq->queryParameters();
+        if (httpparams && httpparams->getPropBool(".noTimeout", false))
+        {
+            if (!params || !*params)
+                url.append('?');
+            else
+                url.append('&');
+            url.append(".noTimeout=1");
+        }
+    }
     return url;
 }
 
@@ -1725,13 +1737,13 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
     StringBuffer url;
-    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str()).str());
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str(), request).str());
 
     bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
     if (isRoxieReq)
     {
         xform->setStringParameter("showJobType", "true()");
-        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url.clear(), wsinfo, true, formtype, params.str()).str());
+        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url.clear(), wsinfo, true, formtype, params.str(), request).str());
     }
 
     StringBuffer page;
@@ -1784,13 +1796,13 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
     StringBuffer url;
-    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str()).str());
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, false, formtype, params.str(), request).str());
 
     bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
     if (isRoxieReq)
     {
         xform->setStringParameter("showJobType", "true()");
-        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url, wsinfo, true, formtype, params.str()).str());
+        xform->setStringParameter("createWorkunitDestination", buildWsEclTargetUrl(url, wsinfo, true, formtype, params.str(), request).str());
     }
 
 
@@ -1888,6 +1900,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     StringAttr wuid(workunit->queryWuid());  // NB queryWuid() not valid after workunit,clear()
 
+    bool noTimeout = false;
     if (httpreq)
     {
         StringBuffer globalId, callerId;
@@ -1905,6 +1918,9 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
             workunit->setDebugValue("CallerIdHeader", callerIdHeader.str(), true); //use same header received
             DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s, Wuid: %s", globalId.str(), callerId.str(), localId.str(), wuid.str());
         }
+        IProperties *params = httpreq->queryParameters();
+        if (params)
+            noTimeout = params->getPropBool(".noTimeout", false);
     }
 
     workunit->setState(WUStateSubmitted);
@@ -1926,8 +1942,8 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     bool async = context.queryRequestParameters()->hasProp("_async");
 
-    //don't wait indefinitely, in case submitted to an inactive queue wait max + 5 mins
-    if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
+    //don't wait indefinitely, in case submitted to an inactive queue wait max + 5 mins (unless user chose to not timeout)
+    if (!async && waitForWorkUnitToComplete(wuid.str(), noTimeout?WAIT_FOREVER:wsecl->workunitTimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());
         if (!web)
@@ -1984,7 +2000,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IProperties> headers;
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-        httpclient->setTimeOut(wsecl->roxieTimeout);
+        bool noTimeout = false;
         if (httpreq)
         {
             StringBuffer globalId, callerId;
@@ -2003,9 +2019,21 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
                     headers->setProp(callerIdHeader, localId);
                 DBGLOG("GlobalId: %s, CallerId: %s, LocalId: %s", globalId.str(), callerId.str(), localId.str());
             }
+
+            IProperties *params = httpreq->queryParameters();
+            if (params)
+                noTimeout = params->getPropBool(".noTimeout", false);
         }
-        if (0 > httpclient->sendRequest(headers, "POST", contentType, req, resp, status))
+        httpclient->setTimeOut(noTimeout?WAIT_FOREVER:wsecl->roxieTimeout);
+        int ret = httpclient->sendRequest(headers, "POST", contentType, req, resp, status);
+        if (0 > ret)
             throw MakeStringException(-1, "Roxie cluster communication error: %s", target);
+        else if (0 == resp.length())
+        {
+            IMultiException* me = httpclient->queryExceptions();
+            if (me && 0 < me->ordinality())
+                throw LINK(me);
+        }
     }
     catch (IException *e)
     {
