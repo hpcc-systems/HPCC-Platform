@@ -11005,7 +11005,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             OwnedHqlExpr serializedRecord = getSerializedForm(dataset->queryRecord(), diskAtom);
             buildMetaMember(instance->classctx, serializedRecord, grouped && !ignoreGrouped, "queryDiskRecordSize");
         }
-        buildClusterHelper(instance->classctx, expr);
+        buildClusterHelper(instance->startctx, expr);
 
         //Both csv write and pipe with csv/xml format
         if (csvAttr)
