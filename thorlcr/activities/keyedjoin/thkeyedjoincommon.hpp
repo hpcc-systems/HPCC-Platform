@@ -50,4 +50,11 @@ enum KJServiceCmds:byte { kjs_nop, kjs_keyopen, kjs_keyread, kjs_keyclose, kjs_f
 enum KJFetchFlags:byte { kjf_nop=0x0, kjf_compressed=0x1, kjf_encrypted=0x2 };
 enum KJServiceErrorCode:byte { kjse_nop, kjse_exception, kjse_unknownhandle };
 
+constexpr unsigned partBits = 24;
+constexpr unsigned partMask = 0x00ffffff;
+// the same as part, but for clarify has own symbols
+constexpr unsigned slaveBits = 24;
+constexpr unsigned slaveMask = 0x00ffffff;
+
+
 #endif
