@@ -168,6 +168,10 @@ fi
 
 unset IFS
 
+DAFS_LOCK="/tmp/dafs_lock"
+trap "rm -f $DAFS_LOCK" SIGINT SIGTERM SIGQUIT
+STATUS=0
+
 for C in ${component} ; do
     set_componentvars ${C}
     if [ "${cmd}" == "start" ];then
@@ -178,14 +182,17 @@ for C in ${component} ; do
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo $xcmd
     fi
-    eval $xcmd
-    STATUS=$?
+    if [ "${cmd}" == "start" ]; then
+        (
+            flock 99
+            eval $xcmd
+            STATUS=$?
+            rm -f $DAFS_LOCK
+        ) 99>$DAFS_LOCK
+    else
+        eval $xcmd
+        STATUS=$?
+    fi
 done
 exit ${STATUS}
-
-
-
-
-
-
 

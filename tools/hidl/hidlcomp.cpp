@@ -5725,6 +5725,13 @@ void EspServInfo::write_esp_binding()
         StrBuffer minVer;
         bool hasMinVer = mthi->getMetaVerInfo("min_ver", minVer);
 
+        if (hasMinVer) {
+            outs(2, "if (!clientVer) {\n");
+            outf(3, "clientVer = %s;\n", minVer.str());
+            outs(3, "ctx->setClientVersion(clientVer);\n");
+            outs(2, "}\n");
+        }
+
         bool bHandleExceptions = 0 != mthi->getMetaInt("exceptions_inline", 0);
         if (!bHandleExceptions)
             bHandleExceptions = 0 != getMetaInt("exceptions_inline", 0);
@@ -5770,18 +5777,20 @@ void EspServInfo::write_esp_binding()
         {
             if (hasMinVer)
             {
-                outf("\t\tif (clientVer!=-1.0 && clientVer<%s)\n", minVer.str());
-                outs("\t\t\tthrow MakeStringException(-1, \"Client version is too old (can't pass exception to client)\");\n");
+                outf(2, "if (clientVer!=-1.0 && clientVer<%s)\n", minVer.str());
+                outf(3, "throw MakeStringException(-1, \"This method is not supported in version %%g, minimum version is %s. Please update your client application.\", clientVer);\n", minVer.str());
             }
             if (mthi->getMetaInt("do_not_log",0))
-                outs("\t\tcontext.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
+                outs(2, "context.queryRequestParameters()->setProp(\"do_not_log\",1);\n");
 
-            if (servicefeatureurl.length() != 0)
-                outf("\t\tif( accessmap.ordinality() > 0 )\n\t\t\tonFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
-            outf("\t\tiserv->on%s(*rpc_call->queryContext(), *esp_request, *esp_response);\n", mthi->getName());
+            if (servicefeatureurl.length() != 0) {
+                outs(2, "if( accessmap.ordinality() > 0 )\n");
+                outf(3, "onFeaturesAuthorize(context, accessmap, \"%s\", \"%s\");\n", name_, mthi->getName());
+            }
+            outf(2, "iserv->on%s(*rpc_call->queryContext(), *esp_request, *esp_response);\n", mthi->getName());
             if (clearCacheGroupIDs.length() > 0)
-                outf("\t\tclearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
-            outs("\t\tresponse->set_status(SOAP_OK);\n");
+                outf(2, "clearCacheByGroupID(\"%s\");\n", clearCacheGroupIDs.str());
+            outs(2, "response->set_status(SOAP_OK);\n");
         }
 
         outf("\t\tresponse->set_name(\"%s\");\n", mthi->getResp());

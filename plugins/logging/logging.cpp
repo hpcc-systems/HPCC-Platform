@@ -64,7 +64,14 @@ LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src)
 {
-    DBGLOG("%.*s", srcLen, src);
+    StringBuffer log(srcLen, src);
+    StringArray loglines;
+    log.replace('\r', ' ');
+    loglines.appendList(log, "\n", false);
+    ForEachItemIn(idx, loglines)
+    {
+        DBGLOG("%s", loglines.item(idx));
+    }
 }
 
 LOGGING_API char *  LOGGING_CALL logGetGlobalId(ICodeContext *ctx)

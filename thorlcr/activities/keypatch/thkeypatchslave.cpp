@@ -95,8 +95,8 @@ public:
             if (!copyTlk)
             {
                 StringBuffer tmp;
-                locateFilePartPath(this, tmp.clear().append(originalName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart);
-                locateFilePartPath(this, tmp.clear().append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePart);
+                locateFilePartPath(this, tmp.clear().append(originalName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart.clear());
+                locateFilePartPath(this, tmp.clear().append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePart.clear());
                 getPartFilename(*newIndexTlkPart, 0, tmp.clear());
                 tlkPatchApplicator.setown(createKeyDiffApplicator(patchFilePart.str(), originalFilePart.str(), tmp.str(), NULL, true, true));
             }
