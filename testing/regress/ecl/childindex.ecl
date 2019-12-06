@@ -49,7 +49,8 @@ orec := RECORD
 END;
 
 orec xfm1(d1 l) := TRANSFORM
-    SELF.fname := (SORT(Files.DG_indexFile(dg_lastName=l.lname), dg_firstName))[1].dg_firstName;
+    myLocalIndex := INDEX(Files.DG_indexFile, __nameof__(Files.DG_indexFile) + l.lname[3..NOFOLD(2)]);
+    SELF.fname := (SORT(myLocalIndex(dg_lastName=l.lname), dg_firstName))[1].dg_firstName;
     SELF := l;
     END;
 
