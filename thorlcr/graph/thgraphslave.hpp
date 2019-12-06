@@ -483,7 +483,7 @@ public:
 
     CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, ILoadedDllEntry *querySo, mptag_t _slavemptag);
 
-    virtual void addChannel(IMPServer *mpServer);
+    virtual CJobChannel *addChannel(IMPServer *mpServer) override;
     virtual void startJob() override;
     virtual void endJob() override;
     const char *queryFindString() const { return key.get(); } // for string HT

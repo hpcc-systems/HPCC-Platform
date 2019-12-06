@@ -1694,7 +1694,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         actInitWaitTimeMins = queryMaxLfnBlockTimeMins()+1;
 }
 
-void CJobSlave::addChannel(IMPServer *mpServer)
+CJobChannel *CJobSlave::addChannel(IMPServer *mpServer)
 {
     unsigned nextChannelNum = jobChannels.ordinality();
     CJobSlaveChannel *channel = new CJobSlaveChannel(*this, mpServer, nextChannelNum);
@@ -1702,6 +1702,7 @@ void CJobSlave::addChannel(IMPServer *mpServer)
     unsigned slaveNum = channel->queryMyRank();
     jobChannelSlaveNumbers[nextChannelNum] = slaveNum;
     jobSlaveChannelNum[slaveNum-1] = nextChannelNum;
+    return channel;
 }
 
 void CJobSlave::startJob()

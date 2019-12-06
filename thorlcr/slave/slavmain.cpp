@@ -1843,7 +1843,10 @@ public:
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, slaveMsgTag);
                         job->setXGMML(deps);
                         for (unsigned sc=0; sc<channelsPerSlave; sc++)
-                            job->addChannel(&mpServers.item(sc));
+                        {
+                            CJobChannel *channel = job->addChannel(&mpServers.item(sc));
+                            channel->reservePortKind(TPORT_mp);
+                        }
                         jobs.replace(*job.getLink());
                         job->startJob();
 

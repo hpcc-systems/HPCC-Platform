@@ -1349,7 +1349,11 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     }
     sharedAllocator.setown(::createThorAllocator(globalMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
-    addChannel(mpServer);
+    CJobChannel *channel = addChannel(mpServer);
+    channel->reservePortKind(TPORT_mp); 
+    channel->reservePortKind(TPORT_watchdog);
+    channel->reservePortKind(TPORT_debug);
+
     slavemptag = allocateMPTag();
     slaveMsgHandler.setown(new CSlaveMessageHandler(*this, slavemptag));
     tmpHandler.setown(createTempHandler(true));
@@ -1367,9 +1371,11 @@ void CJobMaster::endJob()
     PARENT::endJob();
 }
 
-void CJobMaster::addChannel(IMPServer *mpServer)
+CJobChannel *CJobMaster::addChannel(IMPServer *mpServer)
 {
-    jobChannels.append(*new CJobMasterChannel(*this, mpServer, jobChannels.ordinality()));
+    CJobChannel *channel = new CJobMasterChannel(*this, mpServer, jobChannels.ordinality());
+    jobChannels.append(*channel);
+    return channel;
 }
 
 
