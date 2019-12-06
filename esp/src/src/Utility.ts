@@ -1,6 +1,7 @@
 ﻿import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
+import { Palette } from "@hpcc-js/common";
 
 declare const dojoConfig;
 declare const ActiveXObject;
@@ -107,7 +108,7 @@ export function convertedSize(intsize: number): string {
     }
 }
 
-export function returnOSName(OS:number) {
+export function returnOSName(OS: number) {
     switch (OS) {
         case 0:
             return "Windows"
@@ -807,7 +808,7 @@ export function DynamicDialogTable(headingsArr, rows) {
         style: "border: 1px solid #dddddd;"
     }, table);
 
-    arrayUtil.forEach(headingsArr, function(row, idx) {
+    arrayUtil.forEach(headingsArr, function (row, idx) {
         //  @ts-ignore 
         var th = domConstruct.create("th", {
             innerHTML: row,
@@ -815,7 +816,7 @@ export function DynamicDialogTable(headingsArr, rows) {
         }, headingTr)
     });
 
-    arrayUtil.forEach(rows, function(row, idx) {
+    arrayUtil.forEach(rows, function (row, idx) {
         var tr = domConstruct.create("tr", {
             style: "padding: 5px 0 5px 0;"
         }, table);
@@ -871,4 +872,8 @@ export class Persist {
         }
         return false;
     }
+}
+
+export function textColor(backgroundColor: string): string {
+    return Palette.textColor(backgroundColor);
 }

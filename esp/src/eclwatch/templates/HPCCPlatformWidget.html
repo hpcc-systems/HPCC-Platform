@@ -2,7 +2,7 @@
     <div id="${id}BorderContainer" class="hpccMainpage" data-dojo-props="gutters:false, liveSplitters:false" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}Titlebar" class="hpccTitlebar" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
             <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
-            <div class="searchUserMoreComponents">
+            <div id="${id}searchUserMoreComponents" class="searchUserMoreComponents">
                 <div id="${id}plugin_32-32" class="left" style="margin-top:9px;width:32px;height:32px;overflow:hidden"></div>
                 <div id="MonitorStatus" class="None" data-dojo-attach-event="onClick:_onMonitoring"></div>
                 <div class="seperator grey"></div>
@@ -22,6 +22,7 @@
                     <span>${i18n.Advanced}</span>
                     <div data-dojo-type="dijit.DropDownMenu">
                         <div id="${id}SetBanner" data-dojo-attach-event="onClick:_onSetBanner" data-dojo-type="dijit.MenuItem">${i18n.SetBanner}</div>
+                        <div id="${id}SetToolbar" data-dojo-attach-event="onClick:_onSetToolbar" data-dojo-type="dijit.MenuItem">${i18n.SetToolbar}</div>
                         <div id="${id}ErrWarn" data-dojo-attach-event="onClick:_onOpenErrWarn" data-dojo-type="dijit.MenuItem">${i18n.ErrorWarnings}</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
@@ -103,6 +104,23 @@
         <div class="dijitDialogPaneActionBar">
             <button type="submit" data-dojo-attach-event="onClick:_onSetBannerOk" data-dojo-type="dijit.form.Button">${i18n.OK}</button>
             <button data-dojo-attach-event="onClick:_onSetBannerCancel" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+        </div>
+    </div>
+    <div style="padding-bottom:10px;"></div>
+    <div id="${id}SetToolbarDialog" title="Set Toolbar Color" style="width: 580px;" data-dojo-type="dijit.Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <div id="${id}SetToolbarForm" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                <div data-dojo-type="hpcc.TableContainer">
+                    <input id="${id}EnvironmentTextCB" title="${i18n.EnableBannerText}" data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}EnvironmentText" title="${i18n.NameOfEnvironment}" data-dojo-props="placeHolder: '${i18n.NameOfEnvironment}', trim: true" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}ToolbarColor" title="${i18n.BannerColor}:" style="width:100%;" value="red" data-dojo-props="trim: true" data-dojo-type="HPCCColorPicker" />
+                </div>
+            </div>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button type="submit" data-dojo-attach-event="onClick:_onSetToolbarOk" data-dojo-type="dijit.form.Button">${i18n.OK}</button>
+            <button data-dojo-attach-event="onClick:_onSetToolbarCancel" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+            <button class="resetBtn" data-dojo-attach-event="onClick:_onSetToolbarReset" data-dojo-type="dijit.form.Button">${i18n.Reset}</button>
         </div>
     </div>
     <div id="${id}UserDialog" title="${i18n.UserDetails}" data-dojo-type="dijit.Dialog">

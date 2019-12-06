@@ -35,6 +35,7 @@ define([
     "hpcc/DelayLoadWidget",
     "src/ws_machine",
     "hpcc/LockDialogWidget",
+    "src/UserPreferences/EnvironmentTheme",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -61,7 +62,7 @@ define([
     registry, Tooltip,
     UpgradeBar, ColorPicker,
     CodeMirror,
-    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, DelayLoadWidget, WsMachine, LockDialogWidget,
+    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, DelayLoadWidget, WsMachine, LockDialogWidget, EnvironmentTheme,
     template) {
 
         declare("HPCCColorPicker", [ColorPicker], {
@@ -87,18 +88,23 @@ define([
                 this.logoutBtn = registry.byId(this.id + "Logout");
                 this.aboutDialog = registry.byId(this.id + "AboutDialog");
                 this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
+                this.setToolbarDialog = registry.byId(this.id + "SetToolbarDialog");
                 this.stackContainer = registry.byId(this.id + "TabContainer");
                 this.mainPage = registry.byId(this.id + "_Main");
                 this.errWarnPage = registry.byId(this.id + "_ErrWarn");
                 this.pluginsPage = registry.byId(this.id + "_Plugins");
                 this.operationsPage = registry.byId(this.id + "_OPS");
                 registry.byId(this.id + "SetBanner").set("disabled", true);
+                registry.byId(this.id + "SetToolbar").set("disabled", true);
                 this.sessionBackground = registry.byId(this.id + "SessionBackground");
                 this.unlockDialog = registry.byId(this.id + "UnlockDialog");
                 this.unlockUserName = registry.byId(this.id + "UnlockUserName");
                 this.unlockPassword = registry.byId(this.id + "UnlockPassword");
                 this.logoutConfirm = registry.byId(this.id + "LogoutConfirm");
                 this.unlockForm = registry.byId(this.id + "UnlockForm");
+                this.environmentTextCB = registry.byId(this.id + "EnvironmentTextCB");
+                this.environmentText = registry.byId(this.id + "EnvironmentText");
+                this.toolbarColor = registry.byId(this.id + "ToolbarColor");
 
                 this.upgradeBar = new UpgradeBar({
                     notifications: [],
@@ -241,10 +247,21 @@ define([
                     context.checkMonitoring(topic.status);
                 });
                 this.storage = new ESPUtil.LocalStorage();
+
                 this.storage.on("storageUpdate", function(msg) {
                     context._onUpdateFromStorage(msg)
                 });
                 this.storage.setItem("Status", "Unlocked");
+
+                EnvironmentTheme.checkCurrentState(this.id, this);
+
+                this.environmentTextCB.on("change", function(state) {
+                    if (state) {
+                        context.environmentText.set("disabled", false);
+                    } else {
+                        context.environmentText.set("value", "");
+                    }
+                });
             },
 
             _onUpdateFromStorage: function (msg){
@@ -282,6 +299,7 @@ define([
                 var context = this;
                 if (user == null) {
                     registry.byId(context.id + "SetBanner").set("disabled", false);
+                    registry.byId(context.id + "SetToolbar").set("disabled", false);
                     dojo.destroy(this.monitorStatus);
                 } else {
                     WsAccess.UserEdit({
@@ -294,6 +312,7 @@ define([
                             if (response.UserEditResponse.isLDAPAdmin === true){
                                 dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
+                                registry.byId(context.id + "SetToolbar").set("disabled", false);
                                 if (context.widget._OPS.refresh) {
                                     context.widget._OPS.refresh();
                                 }
@@ -305,6 +324,7 @@ define([
                                     if (item.name === "Administrators" || item.name === "Directory Administrators") {
                                         dojoConfig.isAdmin = true;
                                         registry.byId(context.id + "SetBanner").set("disabled", false);
+                                        registry.byId(context.id + "SetToolbar").set("disabled", false);
                                         if (context.widget._OPS.refresh) {
                                             context.widget._OPS.refresh();
                                         }
@@ -323,6 +343,10 @@ define([
                     dom.byId("UserDivider").textContent = " / ";
                     dom.byId("Lock").textContent = this.i18n.Lock;
                 }
+            },
+
+            setEnvironmentTheme: function () {
+                EnvironmentTheme.setEnvironmentTheme(this.id, this);
             },
 
             //  Hitched actions  ---
@@ -532,6 +556,25 @@ define([
 
             _onSetBannerCancel: function (evt) {
                 this.setBannerDialog.hide();
+            },
+
+            _onSetToolbar: function (evt) {
+                this.setToolbarDialog.show();
+            },
+
+            _onSetToolbarOk: function (evt) {
+                this.setEnvironmentTheme();
+            },
+
+            _onSetToolbarCancel: function (evt) {
+              this.setToolbarDialog.hide();
+            },
+
+            _onSetToolbarReset: function(evt) {
+                if (confirm(this.i18n.AreYouSureYouWantToResetTheme)) {
+                    EnvironmentTheme._onResetDefaultTheme(this.id, this);
+                    this._onSetToolbarCancel();
+                }
             },
 
             createStackControllerTooltip: function (widgetID, text) {

@@ -121,8 +121,8 @@ define([
                         widget.restoreFromHash(dojoConfig.urlInfo.hash);
                     }
                 }
-
-                document.title = widget.getTitle ? widget.getTitle() : params.Widget;
+                dojoConfig.pageTitle = widget.getTitle ? widget.getTitle() : params.Widget;
+                document.title = dojoConfig.pageTitle;
                 stopLoading();
             }
             );
