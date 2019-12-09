@@ -830,6 +830,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
         // If the returned month doesn't match the expected month, we need to
         // go back to the last day of the previous month
         timeInfo.tm_mday = 0;
+        timeInfo.tm_isdst = -1; // in case DST is different
         tlMKTime(&timeInfo);
     }
 
@@ -837,6 +838,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlAdjustCalendar(unsigned int date, short 
     {
         // Now apply the day delta
         timeInfo.tm_mday += day_delta;
+        timeInfo.tm_isdst = -1; // in case DST is different
         tlMKTime(&timeInfo);
     }
 
@@ -985,6 +987,7 @@ TIMELIB_API unsigned int TIMELIB_CALL tlGetLastDayOfMonth(unsigned int date)
     // Adjust and call again
     timeInfo.tm_mon += 1;
     timeInfo.tm_mday = 0;
+    timeInfo.tm_isdst = -1; // in case DST is different
     tlMKTime(&timeInfo);
 
     result = tlExtractDateFromTimeStruct(&timeInfo);
@@ -1015,12 +1018,14 @@ TIMELIB_API size32_t TIMELIB_CALL tlDatesForWeek(ARowBuilder& __self, unsigned i
 
     // Adjust and call again
     timeInfo.tm_mday -= timeInfo.tm_wday;
+    timeInfo.tm_isdst = -1; // in case DST is different
     tlMKTime(&timeInfo);
 
     result->startDate = tlExtractDateFromTimeStruct(&timeInfo);
 
     // Adjust to the beginning of the week
     timeInfo.tm_mday += 6;
+    timeInfo.tm_isdst = -1; // in case DST is different
     tlMKTime(&timeInfo);
 
     result->endDate = tlExtractDateFromTimeStruct(&timeInfo);
