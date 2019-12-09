@@ -2582,12 +2582,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
             ForEach(*piter) {
                 const char *name = piter->get().queryProp("@name");
                 if (name&&*name) {
-                    unsigned count = piter->get().getPropInt("@count");
-                    if (count) {
-                        if (ret.length())
-                            ret.append(',');
-                        ret.append(name);
-                    }
+                    if (ret.length())
+                        ret.append(',');
+                    ret.append(name);
                 }
             }
         }

@@ -1180,7 +1180,7 @@ static void listprotect(const char *filename, const char *callerid)
     Owned<IDFProtectedIterator> piter = queryDistributedFileDirectory().lookupProtectedFiles((strcmp(callerid,"*")==0)?NULL:callerid); 
     ForEach(*piter) {
         if (WildMatch(piter->queryFilename(),filename))
-            OUTLOG("%s,%s,%s,%u",piter->isSuper()?"SuperFile":"File",piter->queryFilename(),piter->queryOwner(),piter->getCount());
+            OUTLOG("%s,%s,%s", piter->isSuper()?"SuperFile":"File", piter->queryFilename(), piter->queryOwner());
     }
 }
 
