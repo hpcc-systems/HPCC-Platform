@@ -1960,7 +1960,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid
         }
     }
 
-    if (buf.length() < 1)
+    if (!wuidFound)
     {
         const char * msg = "(No logfile entries found for this workunit)";
         outputALine(strlen(msg), msg, buf, outIOS);
