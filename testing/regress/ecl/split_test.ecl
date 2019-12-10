@@ -511,8 +511,6 @@ res14 := gatherCounts(dst14[1].targetFilename, origRecCount, dst14[1].noSplit);
 
 sequential (
 #if (VERBOSE = 1)
-    output(pad),
-    output(length(pad)),
     output(dropzonePath, NAMED('dropzonePath')),
 #end
 
