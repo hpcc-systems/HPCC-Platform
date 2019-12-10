@@ -248,7 +248,7 @@ define([
 
                             } else {
                                 request["ClusterProcesses"] = true;
-                                request["Addresses." + idx] = item.Netaddress + "|:" + item.Type + ":" + item.Name + ":" + 2 + ":" + item.Parent.Directory + ":" + idx;
+                                request["Addresses." + idx] = item.Netaddress + "|:" + item.Type + ":" + item.Parent.Name + ":" + 2 + ":" + item.Parent.Directory + ":" + idx;
                                 request["Addresses.itemcount"] = MachineInformationCount;
                             }
                         });
