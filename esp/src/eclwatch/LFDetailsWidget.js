@@ -34,6 +34,7 @@ define([
     "hpcc/FileBelongsToWidget",
     "src/FileSpray",
     "hpcc/FileHistoryWidget",
+    "hpcc/FileBloomsWidget",
     "src/DataPatternsWidget",
 
     "dojo/text!../templates/LFDetailsWidget.html",
@@ -50,7 +51,7 @@ define([
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
     BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-    _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget, DataPatternsWidget,
+    _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget, FileBloomsWidget, DataPatternsWidget,
     template) {
         exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
             templateString: template,
@@ -75,6 +76,7 @@ define([
             dfuWorkunitWidget: null,
             fileBelongsTo: null,
             fileHistoryWidget: null,
+            fileBloomsWidget: null,
 
             logicalFile: null,
             prevState: "",
@@ -96,6 +98,7 @@ define([
                 this.workunitWidget = registry.byId(this.id + "_Workunit");
                 this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
                 this.fileHistoryWidget = registry.byId(this.id + "_FileHistory");
+                this.fileBloomsWidget = registry.byId(this.id + "_FileBlooms");
                 this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
                 this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
                 this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
@@ -341,6 +344,10 @@ define([
                         this.fileHistoryWidget.init({
                             Name: this.logicalFile.Name
                         });
+                    } else if (currSel.id === this.fileBloomsWidget.id) {
+                        this.fileBloomsWidget.init({
+                            Name: this.logicalFile.Name
+                        });
                     } else {
                         currSel.init(currSel.params);
                     }
@@ -399,6 +406,7 @@ define([
                     }
                     this.fileBelongsToWidget.reset();
                     this.fileHistoryWidget.reset();
+                    this.fileBloomsWidget.reset();
                 } else if (name === "Name") {
                     this.updateInput("RenameSourceName", oldValue, newValue);
                     this.updateInput("RenameTargetName", oldValue, newValue);
