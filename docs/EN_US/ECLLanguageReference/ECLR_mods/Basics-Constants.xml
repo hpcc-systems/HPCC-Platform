@@ -232,17 +232,7 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
 
               <entry>A STRING containing the value of the target platform (the
               type of cluster the query was submitted to). Possible values
-              are: 'roxie', 'hthor' , 'thor', or 'thorlcr'.</entry>
-            </row>
-
-            <row>
-              <entry><emphasis> __PLATFORM__<indexterm>
-                  <primary>__PLATFORM__</primary>
-                </indexterm></emphasis></entry>
-
-              <entry>A STRING containing the value of the platform where the
-              query will execute. Possible values are: 'roxie', 'hthor' ,
-              'thor', or 'thorlcr'.</entry>
+              are: 'roxie', 'hthor', or 'thorlcr'.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -269,5 +259,35 @@ MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
     END;
   #END;
 </programlisting></para>
+
+    <para><emphasis role="bold">Runtime Expressions</emphasis></para>
+
+    <para>The following system constants <indexterm>
+        <primary>runtime constants</primary>
+      </indexterm>are evaluated at runtime. Technically, these are runtime
+    expressions, not constants. Therefore, they cannot be used in conditional
+    code that requires a constant. <indexterm>
+        <primary>runtime expressions</primary>
+      </indexterm></para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="150pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis> __PLATFORM__<indexterm>
+                  <primary>__PLATFORM__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A STRING that represents the type of engine where the
+              query is executing on. Possible values are: 'roxie', 'hthor', or
+              'thorlcr'.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
   </sect2>
 </sect1>
