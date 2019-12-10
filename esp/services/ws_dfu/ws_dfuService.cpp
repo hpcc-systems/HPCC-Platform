@@ -2096,13 +2096,13 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             IPropertyTree &tree = itr->query();
             const char *owner = tree.queryProp("@name");
             const char *modified = tree.queryProp("@modified");
-            int count = tree.getPropInt("@count", 0);
             Owned<IEspDFUFileProtect> protect= createDFUFileProtect();
             if(owner && *owner)
                 protect->setOwner(owner);
             if(modified && *modified)
                 protect->setModified(modified);
-            protect->setCount(count);
+            if (version < 1.54)
+                protect->setCount(1);
             protectList.append(*protect.getLink());
         }
         FileDetails.setProtectList(protectList);
