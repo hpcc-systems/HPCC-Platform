@@ -33,11 +33,20 @@ if(USE_AZURE)
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/azure-storage-cpplite
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/azure-storage-cpplite
         CMAKE_ARGS -DCMAKE_CXX_FLAGS=${EXTERNAL_AZURE_CXX_FLAGS} -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_SAMPLES=OFF -DBUILD_SHARED_LIBS=ON
-        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH}
+        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH} azure-storage-lite
         INSTALL_COMMAND "")
 
     add_library(azure-storage-lite SHARED IMPORTED GLOBAL)
     set_property(TARGET azure-storage-lite
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/azure-storage-cpplite/libazure-storage-lite.so )
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/azure-storage-cpplite/libazure-storage-lite${CMAKE_SHARED_LIBRARY_SUFFIX} )
+
+    if(NOT PLUGIN)
+        install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/azure-storage-cpplite/libazure-storage-lite${CMAKE_SHARED_LIBRARY_SUFFIX}
+                DESTINATION ${LIB_DIR})
+        #I do not think this is needed...
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/azure-storage-cpplite/LICENSE
+            RENAME azure-LICENSE.txt
+            DESTINATION ${LIB_DIR})
+    endif(NOT PLUGIN)
 
 endif()

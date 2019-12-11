@@ -45,6 +45,7 @@
 #include "esplog.hpp"
 #include "espcontext.hpp"
 #include "build-config.h"
+#include "rmtfile.hpp"
 
 void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
 
@@ -445,6 +446,8 @@ int init_main(int argc, const char* argv[])
             SEHMappingEnabled = true;
         if(SEHMappingEnabled)
             EnableSEHtoExceptionMapping();
+
+        installDefaultFileHooks(espConfig);
 
         CEspConfig* cfg = new CEspConfig(inputs.getLink(), envpt.getLink(), procpt.getLink(), false);
         if(cfg && cfg->isValid())

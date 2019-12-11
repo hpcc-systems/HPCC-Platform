@@ -2024,6 +2024,17 @@ extern DAFSCLIENT_API void installFileHooks(const char *hookFileSpec)
     }
 }
 
+void installDefaultFileHooks(IPropertyTree * config)
+{
+    StringBuffer hookdir;
+    if (!config || !config->getProp("@fileHooks", hookdir))
+    {
+        getPackageFolder(hookdir);
+        addPathSepChar(hookdir).append("filehooks");
+    }
+    installFileHooks(hookdir);
+}
+
 typedef void (*HookInstallFunction)();
 
 static void installFileHook(const char *hookFile)

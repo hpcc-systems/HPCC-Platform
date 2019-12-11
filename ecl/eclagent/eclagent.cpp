@@ -3047,7 +3047,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
             if(thissize != -1)
             {
                 StringBuffer remotePath;
-                rfn.getRemotePath(remotePath);
+                rfn.getPath(remotePath);
                 unsigned crc;
                 part->getCrc(crc);
                 key.setown(createKeyIndex(remotePath.str(), crc, false, false));
@@ -3424,6 +3424,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     }
     else
         agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", nullptr, nullptr));
+
+    installDefaultFileHooks(agentTopology);
 
     //Build log file specification
     StringBuffer logfilespec;

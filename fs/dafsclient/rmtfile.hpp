@@ -91,6 +91,7 @@ extern DAFSCLIENT_API void setRemoteFileTimeouts(unsigned maxconnecttime,unsigne
 extern DAFSCLIENT_API unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename=NULL);
 
 extern DAFSCLIENT_API void installFileHooks(const char *filespec);
+extern DAFSCLIENT_API void installDefaultFileHooks(IPropertyTree * config);
 extern DAFSCLIENT_API void removeFileHooks(); // Should be called before closedown
 
 extern DAFSCLIENT_API void setRemoteOutputCompressionDefault(const char *type);

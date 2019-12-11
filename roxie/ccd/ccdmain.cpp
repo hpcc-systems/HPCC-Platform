@@ -689,6 +689,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
             setStatisticsComponentName(SCTroxie, "roxie", true);
 
+        installDefaultFileHooks(topology);
+
         Owned<const IQueryDll> standAloneDll;
         const char *wuid = topology->queryProp("@workunit");
         if (topology->hasProp("@loadWorkunit"))
