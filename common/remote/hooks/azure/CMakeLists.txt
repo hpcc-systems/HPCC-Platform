@@ -1,0 +1,55 @@
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+
+# Component: azurefile
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for amazon azure direct reading hook
+#####################################################
+
+if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
+  set(EXTERNAL_AZURE_CXX_FLAGS "-fno-sanitize=all" )
+endif()
+
+project( azurefile )
+
+set (    SRCS
+         azurefile.cpp
+         azurefile.hpp
+    )
+
+include_directories (
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/azure_sm/cpprestsdk/Release/include
+         ${HPCC_SOURCE_DIR}/system/azure_sm/azure-storage-cpp/Microsoft.WindowsAzure.Storage/includes
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DazureFILE_EXPORTS )
+
+HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
+install ( TARGETS azurefile DESTINATION filehooks )
+target_link_options(azurefile  PUBLIC  "LINKER:-z,defs" )
+
+#message(FATAL_ERROR "${CMAKE_BINARY_DIR}/plugins/sqs/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so")
+target_link_libraries ( azurefile
+        jlib
+        azure-core
+        azure-storage
+        boost_system
+    )
