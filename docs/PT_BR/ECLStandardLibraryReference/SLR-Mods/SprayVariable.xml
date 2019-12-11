@@ -42,8 +42,9 @@
   <emphasis role="bold">]</emphasis><emphasis role="bold"> , [</emphasis>
   <emphasis>expireDays</emphasis> <emphasis role="bold">] ,
   </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
-  role="bold">])</emphasis></para>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -82,8 +83,9 @@
   <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> ,
   <emphasis role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
-  role="bold">])</emphasis></para>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -247,6 +249,14 @@
           <entry>Uma string terminada por nulo que contém a codificação. Pode
           ser definida como: ascii, utf8, utf8n, utf16, utf16le, utf16be,
           utf32, utf32le e utf32be. Se omitida, o padrão é ascii.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noSplit</emphasis></entry>
+
+          <entry>Opcional. A flag booleana TRUE ou FALSE indicando para não
+          dividir uma parte do arquivo em várias partes de destino. O padrão é
+          FALSE.</entry>
         </row>
 
         <row>

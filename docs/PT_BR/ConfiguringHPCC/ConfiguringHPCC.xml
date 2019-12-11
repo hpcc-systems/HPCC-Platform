@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>Configuring the HPCC System</title>
+    <title>Configurando o HPCC Systems® Platform</title>
 
     <mediaobject>
       <imageobject>
@@ -12,30 +12,30 @@
     </mediaobject>
 
     <author>
-      <surname>Boca Raton Documentation Team</surname>
+      <surname>Equipe de documentação de Boca Raton</surname>
     </author>
 
     <legalnotice>
-      <para>We welcome your comments and feedback about this document via
-      email to <email>docfeedback@hpccsystems.com</email></para>
+      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por
+      e-mail para <email>docfeedback@hpccsystems.com</email></para>
 
-      <para>Please include <emphasis role="bold">Documentation
-      Feedback</emphasis> in the subject line and reference the document name,
-      page numbers, and current Version Number in the text of the
-      message.</para>
+      <para>Inclua a frase <emphasis role="bold">Feedback
+      sobre documentação</emphasis> na linha de assunto e indique o nome do documento,
+      o número das páginas e número da versão atual no corpo da 
+      mensagem.</para>
 
-      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license.</para>
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas
+      da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
-      of LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada
+      da LexisNexis Risk Data Management Inc.</para>
 
-      <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies.</para>
+      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou
+      registradas de suas respectivas empresas.</para>
 
-      <para>All names and example data used in this manual are fictitious. Any
-      similarity to actual persons, living or dead, is purely
-      coincidental.</para>
+      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer
+      semelhança com pessoas reais, vivas ou mortas, é mera
+      coincidência.</para>
 
       <para></para>
     </legalnotice>
@@ -62,51 +62,52 @@
   </bookinfo>
 
   <chapter id="Buildin-HPCC-from-Source">
-    <title>Using Configuration Manager</title>
+    <title>Utilizando o Configuration Manager (Gerenciador de Configurações).</title>
 
-    <para>Configuration Manager is the utility with which we configure the
-    HPCC platform. The HPCC platform's configuration is stored in an XML file
-    named <emphasis role="bold">environment.xml</emphasis>. When you install a
-    package, a default single-node environment.xml is generated. After that,
-    you can use the Configuration Manager to modify it and add nodes and
-    configure components.</para>
+    <para>O Configuration Manager é o utilitário com o qual configuramos a
+    plataforma HPCC Systems. A configuração da plataforma HPCC Systems é armazenada em um arquivo XML
+    de nome <emphasis role="bold">environment.xml</emphasis>.
+    Ao instalar um pacote, um environment.xml single-node padrão é
+    gerado. Depois disso,    é possível usar o Configuration Manager para modificar 
+    , adicionar nós e componentes de configuração.</para>
 
-    <para>The Configuration Manager Wizard creates a similar file, but after
-    it is generated, you must rename it and put it into place on each
-    node.</para>
+    <para>O assistente do Configuration Manager cria um arquivo semelhante, mas depois
+    que ele é gerado, você deve renomeá-lo e colocá-lo no lugar em
+    cada nó.</para>
 
-    <para>Configuration Manager also offers an <emphasis role="bold">Advanced
-    View</emphasis> which allows you to add instances of components or change
-    the default settings for components. Even if you plane to use Advanced
-    View, it is a good idea to start with a wizard generated configuration and
-    use Advanced View to finish it.</para>
+    <para>O Configuration Manager também oferece um <emphasis role="bold">Advanced
+    View</emphasis> que permite adicionar instâncias de componentes ou alterar
+    as configurações padrão dos componentes. Mesmo se você planejar usar a Advanced
+    View, recomendamos começar com um arquivo de configuração gerado pelo assistente e
+    utilizar a Advanced View para finalizá-lo.</para>
 
-    <para>This document will guide you through configuring an HPCC environment
-    using the Configuration Manager.</para>
+    <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC Systems
+      utilizando o Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
-      <title>Running the Configuration Manager</title>
+      <title>Executando o Configuration Manager</title>
 
-      <para>This document will guide you through configuring an HPCC
-      environment using the Configuration Manager.</para>
+      <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC Systems
+      utilizando o Configuration Manager.</para>
 
-      <para>The HPCC package should already be installed on ALL nodes.</para>
+      <para>O pacote HPCC Systems já deve estar instalado em TODOS
+      os nós.</para>
 
-      <para>You can use any tool or shell script you choose.</para>
+      <para>É possível usar qualquer ferramenta ou script de shell desejado.</para>
 
       <orderedlist>
         <listitem>
-          <para>SSH to a node in your environment and login as a user with
-          sudo privileges. We would suggest that it would be the first node,
-          and that it is a support node, however that is up to your
-          discretion.</para>
+          <para>SSH para um nó em seu ambiente e fazer login como usuário com
+          privilégio de administrador. Sugerimos que esse seja o primeiro nó,
+          que é um nó de suporte; no entanto, isso fica a seu
+          critério.</para>
         </listitem>
 
         <listitem>
-          <para>Start the Configuration Manager service on the node (again we
-          would suggest that it should be on a support node, and further that
-          you use the same node to start the Configuration Manager every time,
-          but this is also entirely up to you).</para>
+          <para>Inicie o serviço do Configuration Manager no nó (novamente, sugerimos
+          que seja um nó de suporte e que
+          você use o mesmo nó para iniciar o Configuration Manager todas as vezes,
+          mas isso fica totalmente a seu critério).</para>
 
           <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
@@ -114,163 +115,164 @@
         </listitem>
 
         <listitem>
-          <para>Using a Web browser, go to the Configuration Manager's
-          interface:</para>
+          <para>Usando um navegador de Internet, acesse a interface do Gerenciador de
+          Configurações:</para>
 
-          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+          <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
 
-          <para>The Configuration Manager startup wizard displays.</para>
+          <para>O assistente de inicialização do Configuration Manager.</para>
         </listitem>
       </orderedlist>
 
-      <para>There are different ways to configure your HPCC system. You can
-      use the <emphasis role="bold">Generate environment wizard</emphasis> and
-      use that environment or experienced users can then use the <emphasis
-      role="bold">Advanced View</emphasis> for more specific customization.
-      There is also the option of using <emphasis role="bold">Create blank
-      environment</emphasis> to generate an empty environment that you could
-      then go in and add only the components you would want.</para>
+      <para>Existem diferentes maneiras de configurar sua plataforma HPCC Systems.
+      Você pode usar o<emphasis role="bold"> assistente 
+Generate environment</emphasis>      e usar esse ambiente ou usuários experientes
+      podem usar o <emphasis role="bold">Advanced View</emphasis> para uma personalização
+      mais específica. Há também a opção de utilizar <emphasis
+      role="bold">Criar ambiente em branco (Create blank)</emphasis> para gerar um ambiente
+      vazio que você poderá então acessar e adicionar os componentes
+      desejados.</para>
 
       <sect2 id="Env_Wizard">
-        <title>Environment Wizard</title>
+        <title>Assistente de Ambiente</title>
 
         <orderedlist>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>To use the wizard select the <emphasis role="bold">Generate
-            new environment using wizard</emphasis> button.</para>
+            <para>Para usar o assistente, selecione o botão <emphasis role="bold">Generate
+            new environment using wizard.</emphasis> .</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg"
             vendor="configmgrSS" /></para>
           </listitem>
 
           <listitem>
-            <para>Provide a name for the environment file.</para>
+            <para>Forneça um nome ao arquivo do ambiente.</para>
 
-            <para>This will then be the name of the configuration XML file.
-            For example, we will name our environment
-            <emphasis>NewEnvironment</emphasis> and this will produce a
-            configuration XML file named
-            <emphasis>NewEnvironment.xml</emphasis> that we will
-            use.<emphasis> </emphasis></para>
+            <para>Esse então será o nome do arquivo XML de configuração.
+            Por exemplo, nomearemos como
+            <emphasis>NewEnvironment</emphasis> e isso criará um
+            arquivo de configuração XML com o nome 
+            <emphasis>NewEnvironment.xml</emphasis> que iremos
+            usar.<emphasis> </emphasis></para>
           </listitem>
 
           <listitem>
-            <para>Press the Next button.</para>
+            <para>Pressione o botão Next.</para>
 
-            <para>Next you will need to define the IP addresses that your HPCC
-            system will be using.</para>
+            <para>Em seguida, você precisará definir os endereços IP que sua plataforma HPCC
+            Systems usará.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the IP addresses or hostname(s).</para>
+            <para>Insira os endereços IP ou os hostname(s).</para>
 
-            <para>IP Addresses can be specified individually using semi-colon
-            delimiters. You can also specify a range of IPs using a hyphen
-            (for example, nnn.nnn.nnn.x-y). In the image below, we specified
-            the IP addresses 10.239.219.1 through 10.239.219.100 using the
-            range syntax, and also a single IP 10.239.219.111. Alternatively,
-            you can enter the hostnames.</para>
+            <para>Os endereços IP podem ser especificados individualmente usando ponto e vírgula
+            como separadores. Também é possível especificar um intervalo de IPs usando um hífen
+            (por exemplo nnn.nnn.nnn.x-y). Na imagem abaixo, especificamos
+            os endereços  IP 10.239.219.1 até 10.239.219.100 usando a
+            sintaxe de intervalo, além de um IP único (10.239.219.111). Alternativamente,
+            você pode inserir os hostnames.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
             vendor="configmgrSS" /></para>
           </listitem>
 
           <listitem>
-            <para>Press the Next button.</para>
+            <para>Pressione o botão Next.</para>
 
-            <para>Now you will define how many nodes to use for the Roxie and
-            Thor clusters.</para>
+            <para>Agora você vai definir quantos nós usar para os clusters Roxie e
+            Thor.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Enter the appropriate values as indicated.</para>
+            <para>Insira os valores adequados conforme indicado.</para>
 
             <para><graphic fileref="images/GS_CMWiz003.jpg"
             vendor="configmgrSS" /></para>
 
             <variablelist>
               <varlistentry>
-                <term>Number of support nodes:</term>
+                <term>Número de nós de suporte:</term>
 
                 <listitem>
-                  <para>Specify the number of nodes to use for support
-                  components. The default is 1.</para>
+                  <para>Especifique o número de nós a serem usados para os
+                  componentes de suporte. O padrão é 1.</para>
                 </listitem>
               </varlistentry>
 
               <varlistentry>
-                <term>Number of nodes for Roxie cluster:</term>
+                <term>Número de nós do cluster Roxie:</term>
 
                 <listitem>
-                  <para>Specify the number of nodes to use for your Roxie
-                  cluster. Enter zero (0) if you do not want a Roxie
-                  cluster.</para>
+                  <para>Especifique o número de nós a serem usados para seu cluster
+                  Roxie. Insira zero(0) se você não quiser um cluster
+                  Roxie.</para>
                 </listitem>
               </varlistentry>
 
               <varlistentry>
-                <term>Number of slave nodes for Thor cluster</term>
+                <term>Número de nós slaves do cluster Thor</term>
 
                 <listitem>
-                  <para>Specify the number of slave nodes to use in your Thor
-                  cluster. A Thor master node will be added automatically.
-                  Enter zero (0) if you do not want any Thor slaves.</para>
+                  <para>Especifique o número de nós slaves a serem usados para seu cluster
+                  Thor. Um nó master Thor será adicionado automaticamente.
+                  Insira zero(0) se você não quiser nenhum slave Thor.</para>
                 </listitem>
               </varlistentry>
 
               <varlistentry>
-                <term>Number of Thor slaves per node (default 1)</term>
+                <term>Número de slaves Thor por nó (padrão 1)</term>
 
                 <listitem>
-                  <para>Specify the number of Thor slave processes to
-                  instantiate on each slave node. Enter zero (0) if you do not
-                  want a Thor cluster.</para>
+                  <para>Especifique o número de processos de slaves Thor para
+                  instanciar em cada nó slave. Insira zero(0) se você não quiser
+                  um cluster Thor.</para>
                 </listitem>
               </varlistentry>
 
               <varlistentry>
-                <term>Enable Roxie on demand</term>
+                <term>Ativar o Roxie sob demanda</term>
 
                 <listitem>
-                  <para>Specify whether or not to allow queries to be run
-                  immediately on Roxie. (Default is true)</para>
+                  <para>Especifique se você deseja permitir ou não que as consultas sejam executadas
+                  imediatamente no Roxie. (O padrão é true)</para>
                 </listitem>
               </varlistentry>
             </variablelist>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Next</emphasis>
-            button</para>
+            <para>Pressione o botão <emphasis role="bold">Next</emphasis>
+            .</para>
 
-            <para>The wizard displays the configuration parameters.</para>
+            <para>O assistente apresenta os parâmetros de configuração.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Finish</emphasis> button to
-            accept these values or press the <emphasis role="bold">Advanced
-            View</emphasis> button to edit in advanced mode.</para>
+            <para>Pressione o botão <emphasis role="bold">Finish</emphasis> para
+            aceitar esses valores ou o pressionar o botão <emphasis role="bold">Advanced
+            View</emphasis> para editar no modo avançado.</para>
 
             <graphic fileref="images/GS_ConfigMgrWiz004.jpg" />
           </listitem>
         </orderedlist>
 
-        <para>You will now be notified that you have completed the
-        wizard.</para>
+        <para>Você agora será notificado de que concluiu o
+        assistente.</para>
 
         <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg" /></para>
 
-        <para>At this point, you have created a file named NewEnvironment.xml
-        in the <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
-        directory</para>
+        <para>Neste ponto, você criou um arquivo com o nome NewEnvironment.xml no
+        diretório <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
+        </para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -284,30 +286,30 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>Keep in mind, that your HPCC configuration may be
-                different depending on your needs. For example, you may not
-                need a Roxie or you may need several smaller Roxie clusters.
-                In addition, in a production [Thor] system, you would ensure
-                that Thor and Roxie nodes are dedicated and have no other
-                processes running on them. This document is intended to show
-                you how to use the configuration tools. Capacity planning and
-                system design is covered in a training module.</entry>
+                <entry>Lembre-se de que a configuração dos seu HPCC Systems pode
+                ser diferente dependendo das suas necessidades. Por exemplo, você pode não
+                precisar de um Roxie ou pode precisar de vários clusters Roxie menores.
+                Além disso, em um sistema de produção [Thor] seria necessário assegurar
+                que os nós do Thor e Roxie sejam dedicados e que não contenham nenhum outro
+                processo em execução. Este documento visa mostrar
+                como usar as ferramentas de configuração. Planejamento de capacidade e
+                design do sistema estão disponíveis em um módulo de treinamento.</entry>
               </row>
             </tbody>
           </tgroup>
         </informaltable>
 
         <sect3 id="Distrib_Conf" role="brk">
-          <title>Distribute the Configuration</title>
+          <title>Aplicar a Configuração</title>
 
           <orderedlist>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Stop the HPCC system.</para>
+              <para>Pare o HPCC Systems.</para>
 
-              <para>If it is running stop the HPCC system (on every node),
-              using a command such as this:</para>
+              <para>Se estiver em execução, pare a plataforma HPCC Systems (em todos os
+              nós), usando um comando como este:</para>
 
               <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                           xpointer="element(/1)"
@@ -315,15 +317,15 @@
 
               <variablelist>
                 <varlistentry>
-                  <term>Note:</term>
+                  <term>Observação:</term>
 
                   <listitem>
-                    <para>You may have a multi-node system and a custom script
-                    such as the one illustrated in Appendix of the <emphasis
-                    role="bluebold">Installing and Running the HPCC
-                    Platform</emphasis> document to start and stop your
-                    system. If that is the case please use the appropriate
-                    command for stopping your system on every node.</para>
+                    <para>Você pode ter um sistema de múltiplos nós e um script personalizado
+                    como aquele ilustrado no anexo <emphasis
+                    role="bluebold">Instalando e
+                Executando a plataforma HPCC Systems</emphasis> para iniciar e parar o seu
+                    sistema. Se este for o caso, use o comando adequado
+                    para parar o sistema em cada nó.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>
@@ -339,8 +341,9 @@
                         <entry><inlinegraphic
                         fileref="images/caution.png" /></entry>
 
-                        <entry>Be sure HPCC is stopped before attempting to
-                        copy the environment.xml file.</entry>
+                        <entry>Certifique-se de que a plataforma HPCC Systems esteja parada
+                        antes de tentar copiar o arquivo 
+                        environment.xml.</entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -348,60 +351,60 @@
             </listitem>
 
             <listitem>
-              <para>Back up the original environment.xml file.</para>
+              <para>Faça um backup do arquivo original environment.xml</para>
 
-              <programlisting># For example
+              <programlisting># Por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
 
               <variablelist>
                 <varlistentry>
-                  <term>Note:</term>
+                  <term>Observação:</term>
 
                   <listitem>
-                    <para>The live environment.xml file is located in your
+                    <para>O arquivo environment.xml está localizado no diretório
                     <emphasis role="bold">/etc/HPCCSystems/</emphasis>
-                    directory. ConfigManager works on files in <emphasis
-                    role="bold">/etc/HPCCSystems/source</emphasis> directory.
-                    You must copy from this location to make an
-                    environment.xml file active.</para>
+                    . O Configuration Manager funciona em arquivos no diretório <emphasis
+                    role="bold">/etc/HPCCSystems/source</emphasis> .
+                    É necessário copiar deste local para criar um arquivo
+                    environment.xml ativo.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>
 
-              <para>You can also choose to give the environment file a more
-              descriptive name, to help differentiate any differences.</para>
+              <para>Também é possível optar por dar um nome mais
+              descritivo ao arquivo do ambiente para ajudar a distinguir quaisquer diferenças.</para>
 
-              <para>Having environment files under source control is a good
-              way to archive your environment settings.</para>
+              <para>Contar com arquivos do ambiente no controle de origem é uma boa
+              maneira de arquivar suas configurações de ambiente.</para>
             </listitem>
 
             <listitem>
-              <para>Copy the new .xml file from the source directory to the
-              /etc/HPCCSystems and rename the file to
+              <para>Copie o novo arquivo .xml do diretório de origem para
+              /etc/HPCCSystems e renomeie o arquivo para
               <emphasis>environment.xml</emphasis></para>
 
-              <programlisting># for example
+              <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
               <para></para>
             </listitem>
 
             <listitem>
-              <para>Copy the <emphasis
-              role="bold">/etc/HPCCSystems/environment.xml</emphasis> to the
-              <emphasis role="bold">/etc/HPCCSystems/</emphasis> on to
-              <emphasis>every</emphasis> node.</para>
+              <para>Copie o <emphasis
+              role="bold">/etc/HPCCSystems/environment.xml</emphasis> para o
+              <emphasis role="bold">/etc/HPCCSystems/</emphasis> em
+              <emphasis>cada</emphasis> nó.</para>
 
-              <para>You may want to use a script to push out the XML file to
-              all nodes. See the <emphasis>Example Scripts</emphasis> section
-              in the Appendix of the <emphasis role="bluebold">Installing and
-              Running the HPCC Platform</emphasis> document. You can use the
-              scripts as a model to create your own script to copy the
-              environment.xml file out to all your nodes.</para>
+              <para>Você pode usa um script para forçar o arquivo XML
+              para todos os nós. Consulte a seção <emphasis>Scripts de exemplo</emphasis> no
+              apêndice <emphasis role="bluebold">Instalando e
+              Executando a plataforma HPCC Systems</emphasis> . É possível usar os
+              scripts como um modelo para criar seu próprio script e copiar
+              o arquivo environment.xml para todos os seus nós.</para>
             </listitem>
 
             <listitem>
-              <para>Restart the HPCC platform on all nodes.</para>
+              <para>Reinicie a plataforma HPCC Systems em todos os nós.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -412,28 +415,28 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
   <chapter>
     <title>Configuration Manager Advanced View</title>
 
-    <para>For the advanced user, the Advanced View offers access to adding
-    additional instances of components or making configuration settings for
-    individual components.</para>
+    <para>Para o usuário avançado, a Visualização Avançada (Advanced View) oferece acesso para adicionar
+    instâncias adicionais de componentes ou fazer configurações para
+    componentes individuais.</para>
 
     <sect1 id="configuring-advanced-setup">
-      <title>Using ConfigMgr in Advanced Mode</title>
+      <title>Usando o Configuration Manager em Advanced Mode</title>
 
-      <para>This section shows some of the configuration options in Advanced
-      Mode. There are a few different ways to configure your system. If you
-      are not an experienced user you can use the Generate environment wizard
-      discussed in the previous section. The following steps will detail the
-      Advanced set up.</para>
+      <para>Esta seção mostra algumas das opções de configuração no Advanced
+      Mode. Há diferentes maneiras para configurar o seu HPCC Systems. Se você
+      não for um usuário experiente, poderá usar o assistente de geração de ambiente
+      discutido na seção anterior. As etapas a seguir detalharão a
+      configuração avançada.</para>
 
       <orderedlist>
         <listitem>
-          <para>SSH to the first box in your environment and login as a user
-          with sudo privileges.</para>
+          <para>SSH para um nó em seu ambiente e fazer login como usuário
+          com privilégio de administrador.</para>
         </listitem>
 
         <listitem>
-          <para>If it is running, stop the HPCC system using this command on
-          every node:</para>
+          <para>Se estiver em execução, pare a plataforma HPCC Systems usando este
+          comando em cada nó:</para>
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                       xpointer="element(/1)"
@@ -441,14 +444,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <variablelist>
             <varlistentry>
-              <term>Note:</term>
+              <term>Observação:</term>
 
               <listitem>
-                <para>If you have a large system with many nodes, you may want
-                to use a script to perform this step. See the
-                <emphasis>Example Scripts</emphasis> section in the Appendix
-                of the <emphasis role="bluebold">Installing and Running the
-                HPCC Platform</emphasis> document.</para>
+                <para>Se você tiver uma sistema amplo com múltiplos nós, você poderá
+              utilizar um script par realizar essa etapa. Consulte a seção
+                <emphasis>Scripts de exemplo</emphasis> no
+                anexo do documento <emphasis role="bluebold">Instalando e executando
+                a plataforma de sistemas HPCC</emphasis> .</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -466,8 +469,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>You can use this command to confirm HPCC processes
-                    are stopped: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
+                    <entry>Você pode usar este comando para confirmar que os processos do HPCC Systems
+                    estão parados: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -475,9 +478,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Start the Configuration Manager service on one node (usually
-          the first node is considered the head node and is used for this
-          task, but this is up to you).</para>
+          <para>Inicie o serviço do Configuration Manager em um nó (geralmente
+          o primeiro nó é considerado como o nó principal e é usado para esta
+          tarefa, mas isso fica a seu critério).</para>
 
           <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
@@ -485,44 +488,44 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Using a Web browser, go to the Configuration Manager's
-          interface:</para>
+          <para>Usando um navegador de Internet, acesse a interface do Gerenciador de
+          Configurações:</para>
 
-          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+          <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
 
-          <para>The Configuration Manager startup wizard displays.</para>
+          <para>O assistente de inicialização do Configuration Manager.</para>
         </listitem>
 
         <listitem>
-          <para>Select <emphasis role="bold">Advanced View</emphasis>, then
-          press the <emphasis role="bold">Next </emphasis>button.</para>
+          <para>Selecione <emphasis role="bold">Advanced View</emphasis>, em seguida
+          pressione o botão <emphasis role="bold">Next </emphasis>.</para>
 
-          <para>There are a few different ways to configure your system. If
-          you are not an experienced user you can use the Generate environment
-          wizard discussed in the previous section.</para>
+          <para>Há diferentes maneiras para configurar o seu HPCC Systems. Se você
+          não for um usuário experiente, poderá usar o assistente Generate environment (geração de ambiente)
+          discutido na seção anterior.</para>
         </listitem>
 
         <listitem>
-          <para>Select an XML file from the drop list.</para>
+          <para>Selecione um arquivo XML da lista suspensa.</para>
 
-          <para>This list is populated from versions of an environment XML
-          file in your server's /etc/HPCCSystems/source/ directory.</para>
+          <para>Essa lista é preenchida a partir das versões de um arquivo XML
+          no diretório /etc/HPCCSystems/source/.</para>
 
-          <para>The system will check the current environment file and if a
-          match is found here it will highlight in blue the current
-          environment file being used.</para>
+          <para>O sistema verificará o arquivo de ambiente atual e, se uma
+          correspondência for encontrada aqui, ele destacará em azul o arquivo de ambiente atual
+          em uso.</para>
         </listitem>
 
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Press the <emphasis role="bold">Next</emphasis> button.
+          <para>Pressione o botão <emphasis role="bold">Next</emphasis> .
           <graphic fileref="images/CM-WizStart.jpg"
           vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
-          <para>The Configuration Manager interface displays.</para>
+          <para>A interface do Configuration Manager será exibida.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -537,14 +540,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>Default access is read-only. Many options are only
-                    available when write-access is enabled. <para>Gain write
-                    access by checking the <emphasis role="bold">Write
-                    Access</emphasis> checkbox. </para><para>Unchecking this
-                    box returns the environment to read-only mode. All menu
-                    items are disabled in read-only mode. </para><para>Closing
-                    the web page automatically removes any write-access
-                    locks.</para></entry>
+                    <entry>O acesso padrão é somente leitura. Muitas opções estão disponíveis apenas
+                    quando o acesso à gravação estiver ativado. <para>Obtenha acesso
+                    de gravação marcando a caixa de seleção <emphasis role="bold">Write
+                    Access</emphasis> . </para><para>Desmarcar esta
+                    caixa retorna o ambiente para o modo somente leitura. Todos os itens de
+                    menu estão desativados no modo somente leitura. </para><para>Fechar
+                    a página da Web remove automaticamente todos os bloqueios de acesso de
+                    gravação.</para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -552,98 +555,98 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Check the <emphasis role="bold">Write Access</emphasis>
-          box.</para>
+          <para>Verifique a caixa <emphasis role="bold">Write Access</emphasis>
+          .</para>
 
           <para><graphic fileref="images/CM-img101.jpg"
-          vendor="configmgrSS" />The <emphasis role="bold">Save</emphasis>
-          button<inlinegraphic fileref="images/GS-img01c.png"
-          vendor="configmgrSS" /> validates and saves the environment.</para>
+          vendor="configmgrSS" />O <emphasis role="bold">botão</emphasis>
+          Save<inlinegraphic fileref="images/GS-img01c.png"
+          vendor="configmgrSS" /> valida e salva o ambiente.</para>
 
-          <para>The <emphasis role="bold">Save Environment As</emphasis>
-          button <inlinegraphic fileref="images/CM-img181.jpg"
-          vendor="configmgrSS" /> validates and lets you specify the
-          environment filename to save.</para>
+          <para>O<emphasis role="bold"> botão</emphasis>
+          Save Environment As<inlinegraphic fileref="images/CM-img181.jpg"
+          vendor="configmgrSS" /> valida e permite especificar o
+          nome do arquivo do ambiente a ser salvo.</para>
 
-          <para>The <emphasis role="bold">Validate Environment</emphasis>
-          button<inlinegraphic fileref="images/GS-img01d.png"
-          vendor="configmgrSS" /> just validates the current environment
-          including any changes that have not yet been saved.</para>
+          <para>O <emphasis role="bold">botão</emphasis>
+          Validate Environment<inlinegraphic fileref="images/GS-img01d.png"
+          vendor="configmgrSS" /> apenas valida o ambiente atual
+          , incluindo todas as alterações que ainda não foram salvas.</para>
 
-          <para>The <emphasis role="bold">Open Environment</emphasis> button
+          <para>O <emphasis role="bold">botão</emphasis>Open Environment
           <inlinegraphic fileref="images/CM-img18.jpg" vendor="configmgrSS" />
-          allows you to open a new environment file to work on.</para>
+          permite que você abra um novo arquivo de ambiente para trabalhar.</para>
 
-          <para>The <emphasis role="bold">Wizard</emphasis> button
+          <para>O <emphasis role="bold">botão </emphasis>Wizard
           <inlinegraphic fileref="images/CM-img19.jpg" vendor="configmgrSS" />
-          will bring up the Configuration Manager chooser form which will
-          allow you to create or view an environment file where you can also
-          launch the configuration wizard.</para>
+          exibirá o formulário de seleção do Configuration Manager, que permitirá
+          criar ou visualizar um arquivo de ambiente no qual você também
+          pode iniciar o assistente de configuração.</para>
 
-          <para>These buttons are only enabled in Write Access mode.</para>
+          <para>Esses botões só estão habilitados no modo Write Access.</para>
         </listitem>
       </orderedlist>
 
       <sect2 role="brk">
-        <title>XML View</title>
+        <title>Visualizar XML</title>
 
-        <para>In the advanced view of Configuration Manager, you can
-        optionally choose to work with the XML View.</para>
+        <para>Na exibição avançada do Configuration Manager, você pode
+        optar por trabalhar com a XML View (Visualização em XML).</para>
 
-        <para>To see the the configuration in XML View, click on the
-        Environment heading in the Navigator panel on the left side.</para>
+        <para>Para ver a configuração na Visualização XML, clique no
+        cabeçalho Environment no painel Navigator, no lado esquerdo.</para>
 
-        <para><graphic fileref="images/CM-120.jpg" />You can access all
-        attributes through the XML view.</para>
+        <para><graphic fileref="images/CM-120.jpg" />Você pode acessar todos
+        os atributos através da XML View.</para>
 
-        <para>If you wish to add an attribute that does not exist, right-click
-        on one of the components then you can choose to add an
-        attribute.</para>
+        <para>Se você deseja adicionar um atributo que não existe, clique com o botão direito
+        do mouse em um dos componentes e, em seguida, escolha adicionar um
+        atributo.</para>
 
         <para><graphic fileref="images/CM-121.jpg" /></para>
       </sect2>
     </sect1>
 
     <sect1 role="brk">
-      <title>Hardware Section</title>
+      <title>Seção Hardware</title>
 
-      <para>This section allows you to define your list of servers. When
-      defining instances of components, you will choose from servers in this
-      list.</para>
+      <para>Esta seção permite definir sua lista de servidores. Ao definir
+      instâncias de componentes, você escolherá entre os servidores desta
+      lista.</para>
 
       <orderedlist>
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Select <emphasis role="bold">Hardware</emphasis> in the
-          Navigator panel on the left side.</para>
+          <para>Selecione <emphasis role="bold">Hardware</emphasis> no painel
+          Navigator no lado esquerdo.</para>
 
           <para><graphic fileref="images/CM-img01.jpg"
           vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Select the <emphasis role="bold">Computers</emphasis>
-          tab.</para>
+          <para>Selecione a aba<emphasis role="bold">Computers</emphasis>
+          .</para>
         </listitem>
 
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>right-click on one of computers listed, then select New
-          Range.</para>
+          <para>Clique com o botão direito do mouse em um dos computadores listados e selecione New
+          Range (Novo Intervalo).</para>
 
           <para><graphic fileref="images/CM-img02.jpg"
           vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Specify the following:</para>
+          <para>Especifique o seguinte:</para>
 
           <itemizedlist>
             <listitem>
-              <para>Name Prefix - any name that will help you to identify the
-              node or range</para>
+              <para>Name Prefix - qualquer nome que ajudará você a identificar o
+              nó ou o intervalo</para>
             </listitem>
 
             <listitem>
@@ -653,12 +656,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <para>Stop IP Address</para>
 
-              <para>The IP Addresses can be specified in a range if all your
-              host IP addresses are consecutively numbered. If the IP
-              addresses are not sequential you should repeat the process for
-              each individual IP address and just add the IP address in both
-              the start and stop IP address field. You will then need to
-              repeat the process for each node.</para>
+              <para>Os endereços IP podem ser especificados em um intervalo, se
+              todos os endereços IP de seu host forem numerados consecutivamente. Se os endereços IP
+              não forem sequenciais, você deve repetir o processo para
+              cada endereço IP individual e apenas adicionar o endereço IP no campo de endereço IP
+              de início e parada. Você precisará
+              repetir o processo para cada nó.</para>
             </listitem>
           </itemizedlist>
         </listitem>
@@ -666,149 +669,149 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
+          <para>Pressione o botão <emphasis role="bold">OK</emphasis> .</para>
 
-          <para>The list of nodes now displays with the nodes that you just
-          added.</para>
+          <para>A lista de nós agora é exibida com os nós que acabou de
+          adicionar.</para>
 
           <para><inlinegraphic fileref="images/CM-img03.jpg"
           vendor="configmgrSS" /></para>
 
-          <para>Next, edit each System Server component instance and set it to
-          a newly defined node.</para>
+          <para>Em seguida, edite cada instância do componente System Server e defina-a
+          como um nó recém-definido.</para>
 
           <!--***The steps that follow are using one component per node. You can allocate more components per node, if needed.-->
         </listitem>
 
         <listitem>
-          <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-          disk icon to save</para>
+          <para>Clique no ícone de <inlinegraphic fileref="images/GS-img01c.png" />
+          disco para salvar.</para>
         </listitem>
 
         <listitem>
-          <para>Expand the <emphasis role="bold">Software</emphasis> section,
-          if necessary, in the Navigator panel on the left side, by clicking
-          on the <inlinegraphic fileref="images/expandButton.png" />
-          button.</para>
+          <para>Expanda a seção <emphasis role="bold">Software</emphasis>, se
+          necessário, no painel Navigator à esquerda, clicando no 
+botão <inlinegraphic fileref="images/expandButton.png" />
+          .</para>
         </listitem>
       </orderedlist>
     </sect1>
 
     <sect1>
-      <title>Software Section</title>
+      <title>Seção Software</title>
 
-      <para>Use the software components section to configure software
-      components of the HPCC platform. Most software components are actual
-      running processes; however, some are just definitions used by the
-      system. These definitions are used by the configuration
-      generator.</para>
+      <para>Use a seção de componentes de software para configurar os
+      componentes de software da plataforma HPCC Systems. A maioria dos componentes de software são
+      processos em      execução reais; no entanto, algumas são apenas definições usadas pelo
+      sistema. Essas definições são usadas pela operação gerador de
+      configuração.</para>
 
-      <para>Items that appear in <emphasis role="red">red</emphasis> indicate
-      optional values. They are only written to the environment if you add to
-      or change that value. If untouched, they will not appear in the
-      environment XML file.</para>
+      <para>Itens que aparecem em <emphasis role="red">vermelho</emphasis> indicam
+      valores opcionais. Eles são gravados apenas no ambiente se você adicionar
+      ou alterar esse valor. Se não forem tocados, eles não aparecerão no arquivo
+      XML do ambiente.</para>
 
       <sect2 role="brk">
         <title>Backupnode</title>
 
-        <para>Backupnode allows you to back up Thor clusters at regular
-        intervals. The Backupnode component is a way to allow administrators
-        to manage the backupnode process without using a cron job.</para>
+        <para>O Backupnode permite fazer backup de clusters Thor em intervalos
+        regulares. O componente Backupnode é uma maneira de permitir que os administradores
+        gerenciem o processo de backupnode sem usar um job cron.</para>
 
-        <para>To configure scheduled Thor node backups, add the backupnode
-        component, choose the hardware instance to run it on and then add Thor
-        groups to it. <graphic fileref="images/CM-img21.jpg"
+        <para>Para configurar backups de nó Thor agendados, adicione o componente
+        backupnode, escolha a instância de hardware para executá-lo e, em seguida, adicione grupos Thor
+        a ele. <graphic fileref="images/CM-img21.jpg"
         vendor="configmgrSS" /></para>
 
         <para><orderedlist>
             <listitem>
-              <para>Right click on the <emphasis
-              role="bold">Software</emphasis> component in the <emphasis
-              role="bold">Navigator</emphasis> panel (on the right side),
-              choose <emphasis role="bold">New Components</emphasis> then
-              <emphasis role="bold">backupnode</emphasis> from the drop
-              list.</para>
+              <para>Clique com o botão direito do mouse no componente <emphasis
+              role="bold">Software</emphasis> no painel <emphasis
+              role="bold">Navigator</emphasis> (à direita),
+              escolha <emphasis role="bold">New Components</emphasis> e 
+              <emphasis role="bold">backupnode</emphasis> na lista
+              suspensa.</para>
             </listitem>
 
             <listitem>
-              <para>From the tabs on the right side, select the <emphasis
-              role="bold">Instances</emphasis> tab.</para>
+              <para>Nas abas à direita, selecione a aba<emphasis
+              role="bold">Instances</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Right click on the <emphasis
-              role="bold">computer</emphasis> column and choose <emphasis
+              <para>Clique com o botão direito do mouse na coluna do <emphasis
+              role="bold">computador</emphasis> e escolha <emphasis
               role="bold">Add Instances</emphasis>...<graphic
               fileref="images/CM-img22.jpg" vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
-              <para>Select the computer for the backupnode component, or press
-              <emphasis role="bold">Add Hardware</emphasis> to add a new
-              computer instance. You would always want to run backupnode on
-              the Thor master of the cluster.</para>
+              <para>Selecione o computador para o componente backupnode ou pressione 
+              <emphasis role="bold">Add Hardware</emphasis> para adicionar uma nova
+              instância de computador. Você sempre deseja executar o backupnode no
+              Thor mestre do cluster.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold">Thor Node
-              Groups</emphasis> tab.</para>
+              <para>Selecione a<emphasis role="bold">              aba 
+Thor Node Groups</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Right click on the the <emphasis
-              role="bold">Interval</emphasis> column and choose the interval
-              and/or Thor group to back up.</para>
+              <para>Clique com o botão direito do mouse na coluna <emphasis
+              role="bold">Interval</emphasis> e escolha o intervalo
+              e/ou o grupo Thor para fazer o backup.</para>
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique no hiperlink <inlinegraphic fileref="images/GS-img01c.png" />
+              clique no ícone de disco para salvar.</para>
             </listitem>
-          </orderedlist>The default backup locations are:</para>
+          </orderedlist>Os locais de backup padrão são:</para>
 
         <programlisting> /var/lib/HPCCSystems/hpcc-data/backupnode/&lt;thorname&gt;/last_backup </programlisting>
 
-        <para>The interval attribute of the backupnode component determines
-        how many hours between backups.</para>
+        <para>O atributo de intervalo do componente backupnode determina
+        quantas horas entre os backups.</para>
       </sect2>
 
       <sect2 role="brk">
-        <title>Dali</title>
+        <title>Instâncias</title>
 
         <sect3>
-          <title>Instances</title>
+          <title>de Dali</title>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Select <emphasis role="bold">Dali Server</emphasis> in
-                the Navigator panel on the left side.</para>
+                <para>Selecione <emphasis role="bold">Dali Server</emphasis> no painel
+                Navigator no lado esquerdo.</para>
               </listitem>
 
               <listitem>
-                <para>Select the Instances tab.</para>
+                <para>Selecione a aba Instances.</para>
               </listitem>
 
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic fileref="images/CM-img04.jpg"
+                <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-img04.jpg"
                 vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
-                <para>Click the <inlinegraphic
-                fileref="images/GS-img01c.png" /> disk icon to save</para>
+                <para>Clique no <inlinegraphic
+                fileref="images/GS-img01c.png" /> ícone do disco para salvar os atributos do</para>
               </listitem>
             </orderedlist>
           </para>
         </sect3>
 
         <sect3 role="brk">
-          <title>DaliServer attributes</title>
+          <title>DaliServer</title>
 
-          <para>This section describes the DaliServer attributes.</para>
+          <para>Esta seção descreve os atributos do DaliServer.</para>
 
           <para>
             <graphic fileref="images/CM-img04-1.jpg" vendor="configmgrSS" />
@@ -830,8 +833,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>DaliServer store</title>
 
-          <para>This section describes the attributes configuring how Dali
-          handles the system data store.</para>
+          <para>Esta seção descreve os atributos que configuram como o Dali
+          manipula o armazenamento de dados do sistema.</para>
 
           <para>
             <graphic fileref="images/CM-img04-2.jpg" vendor="configmgrSS" />
@@ -851,9 +854,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>DaliServer LDAP options</title>
+          <title>Opções DaliServer LDAP</title>
 
-          <para>This section describes the DaliServer LDAP tab.</para>
+          <para>Esta seção descreve a aba DaliServer LDAP.</para>
 
           <para>
             <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS" />
@@ -869,24 +872,24 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>DaliServer Notes</title>
+          <title>Notas sobre DaliServer</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="DaliServerPlugin" role="brk">
         <title>DaliServerPlugin</title>
 
-        <para>DaliServerPlugin allows you to add plugin functionality to a
-        Dail server.</para>
+        <para>DaliServerPlugin permite que você adicione a funcionalidade do plugin a um
+        servidor Dail.</para>
 
         <sect3>
-          <title>DaliServerPlugin attributes</title>
+          <title>Atributos DaliServerPlugin</title>
 
-          <para>This section describes the DaliServerPlugin attributes.</para>
+          <para>Esta seção descreve os atributos do DaliServerPlugin.</para>
 
           <para>
             <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
@@ -902,14 +905,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>DaliServerPlugin Options</title>
+          <title>Opções do DaliServerPlugin</title>
 
-          <para>This section describes the DaliServerPlugin options</para>
+          <para>Esta seção descreve as opções do DaliServerPlugin.</para>
 
-          <para>These options are available for the DaliServerplugin when
-          configuring a Casandra server. See the System Administrator's Guide
-          for more details about configuring a Cassandra server as a system
-          datastore.</para>
+          <para>Essas opções estão disponíveis para o DaliServerplugin ao
+          configurar um servidor Casandra. Consulte o Guia do Administrador do Sistema
+          para obter mais detalhes sobre como configurar um servidor Cassandra como um datastore
+          do sistema.</para>
 
           <para>
             <informaltable colsep="1" frame="all" id="daliplugoptionstable"
@@ -923,66 +926,66 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   <row>
                     <entry>randomWuidSuffix</entry>
 
-                    <entry>An integer value indicating how many randomized
-                    digits to append to workunits. Set this if you need to
-                    create workunits at a high rate to reduce the risk of
-                    collisions (which would slow down the process of creating
-                    a new unique workunit id).</entry>
+                    <entry>Um valor inteiro que indica quantos dígitos aleatórios
+                    para acrescentar às workunits. Defina isso se você precisar criar
+                    workunits em uma taxa alta para reduzir o risco de
+                    colisões (o que retardaria o processo de criação
+                    de um nova workunit ID exclusiva).</entry>
                   </row>
 
                   <row>
                     <entry>traceLevel</entry>
 
-                    <entry>An integer value indicating how much tracing to
-                    output from Cassandra workunit operations. Set to zero or
-                    do not set in normal usage.</entry>
+                    <entry>Um valor inteiro que indica quanto de rastreio para a
+                    saída das operações da workunit do Cassandra. Defina para zero ou
+                    não defina em uso normal.</entry>
                   </row>
 
                   <row>
                     <entry>partitions</entry>
 
-                    <entry>An integer value indicating how many ways to
-                    partition the data on a Cassandra cluster. The default is
-                    2. The value only takes effect when a new Cassandra
-                    workunit repository is created. Larger values permit
-                    scaling to a more distributed store but at the expense of
-                    some overhead on smaller stores where the scaling is not
-                    needed.</entry>
+                    <entry>Um valor inteiro indicando quantos modos de
+                    particionar os dados em um cluster do Cassandra. O padrão é
+                    2. O valor só entra em vigor quando um novo repositório de workunit do Cassandra
+                    é criado. Valores maiores permitem
+                    escalar para um armazenamento mais distribuído, mas à custa de
+                    alguma sobrecarga em ambientes menores, onde o escalonamento não é
+                    necessário.</entry>
                   </row>
 
                   <row>
                     <entry>prefixsize</entry>
 
                     <entry>
-                      <para>An integer value specifying the minimum number of
-                      characters that must be provided when wildcard searching
-                      in the repository. Larger values will be more efficient
-                      but also more restrictive on users. The default is 2. As
-                      with partitions, this value only takes effect when a new
-                      Cassandra workunit repository is created.</para>
+                      <para>Um valor inteiro especificando o número mínimo de
+                      caracteres que devem ser fornecidos ao procurar
+                      curingas no repositório. Valores maiores serão mais eficientes
+                      , mas também mais restritivos para os usuários. O padrão é 2. Assim
+                      como o partitions, este valor só entra em vigor quando um novo repositório da workunit do
+                      Cassandra é criado.</para>
                     </entry>
                   </row>
 
                   <row>
                     <entry>keyspace</entry>
 
-                    <entry>The name of the Cassandra keyspace to use for the
-                    HPCC data store. The default is
+                    <entry>O nome do keyspace do Cassandra a ser usado no armazenamento de dados do
+                    HPCC Systems. O padrão é
                     <emphasis>hpcc</emphasis>.</entry>
                   </row>
 
                   <row>
                     <entry>user</entry>
 
-                    <entry>The username to use if the Cassandra server is
-                    configured to require credentials.</entry>
+                    <entry>O nome de usuário e senha são necessários apenas caso seu servidor
+                    Cassandra esteja configurado para exigir credenciais.</entry>
                   </row>
 
                   <row>
                     <entry>password</entry>
 
-                    <entry>The password to use if the Cassandra server is
-                    configured to require credentials.</entry>
+                    <entry>A senha a ser utilizada, caso o servidor
+                    Cassandra estiver configurado para exigir credenciais.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -992,34 +995,34 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="Dafilesrv-Process" role="brk">
-        <title>Dafilesrv Process</title>
+        <title>Processo Dafilesrv</title>
 
         <sect3>
-          <title>Dafilesrv Instances</title>
+          <title>Instâncias Dafilesrv</title>
 
-          <para>Dafilesrv is a helper process that every node needs.</para>
+          <para>Dafilesrv é um processo auxiliar que todo nó precisa.</para>
 
           <orderedlist>
             <listitem>
-              <para>Select Dafilesrv in the Navigator panel on the left
-              side.</para>
+              <para>Selecione Dafilesrv no painel Navigator no lado
+              esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>Right-click on a computer in the computer column, and
-              select Add Instance .</para>
+              <para>Clique com o botão direito em uma máquina na coluna do computador e
+              selecione Add Instance.</para>
             </listitem>
 
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Select all computers in the list by checking the <emphasis
-              role="bold">Select All</emphasis> box, then press the <emphasis
-              role="bold">OK</emphasis> button.</para>
+              <para>Selecione todos os computadores na lista marcando a opção <emphasis
+              role="bold">Select All</emphasis> e depois pressione o botão <emphasis
+              role="bold">OK</emphasis> .</para>
 
               <para>
                 <graphic fileref="images/CM-img12.jpg" vendor="configmgrSS" />
@@ -1027,8 +1030,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique no link <inlinegraphic fileref="images/GS-img01c.png" />
+              do disco para salvar</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1036,9 +1039,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>Dafilesrv attributes</title>
+          <title>os atributos Dafilesrv</title>
 
-          <para>This section describes the Dafilesrv attributes.</para>
+          <para>Esta seção descreve os atributos do Dafilesrv.</para>
 
           <para>
             <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS" />
@@ -1055,38 +1058,38 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </sect2>
 
       <sect2 id="DFU-Server" role="brk">
-        <title>DFU Server</title>
+        <title>Servidor DFU</title>
 
         <sect3>
-          <title>DfuServer Instances</title>
+          <title>Instância de o DfuServer</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold">DFU Server</emphasis> in the
-              Navigator panel on the left side.</para>
+              <para>Selecione<emphasis role="bold">DFU Server</emphasis> no painel
+              Navigator no lado esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>In the computer column, choose a node from the drop list
-              as shown below:<graphic fileref="images/CM-img05.jpg"
+              <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-img05.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+              ícone do disco para salvar a aba</para>
             </listitem>
           </orderedlist>
         </sect3>
 
         <sect3 role="brk">
-          <title>DfuServer Attributes Tab</title>
+          <title>DfuServer Attributes</title>
 
-          <para>This section describes the DfuServer attributes.</para>
+          <para>Esta seção descreve os atributos do DfuServer.</para>
 
           <para>
             <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS" />
@@ -1102,9 +1105,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>DfuServer SSH Options</title>
+          <title>Opções DfuServer SSH</title>
 
-          <para>This section describes the DfuServer SSH Options..</para>
+          <para>Esta seção descreve as opções DfuServer SSH.</para>
 
           <para>
             <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS" />
@@ -1120,20 +1123,20 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>DfuServer Notes</title>
+          <title>Notas sobre DfuServer</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 role="brk">
         <title>Directories</title>
 
-        <para>The Directories component is a global definition used by other
-        components to determine the directories they will use for various
-        functions.</para>
+        <para>O componente Directories é uma definição global usada por outros
+        componentes com objetivo de determinar os diretórios que eles usarão para várias
+        funções.</para>
 
         <para>
           <graphic fileref="images/CM-161a.jpg" vendor="configmgrSS" />
@@ -1147,11 +1150,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <tbody>
               <row>
-                <entry>Name</entry>
+                <entry>Nome</entry>
 
-                <entry>Directory</entry>
+                <entry>Diretório</entry>
 
-                <entry>Description</entry>
+                <entry>Descrição</entry>
               </row>
 
               <row>
@@ -1161,7 +1164,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry>/var/log/[NAME]/[INST]</entry>
 
-                <entry>Location for Log files</entry>
+                <entry>Localização dos arquivos de log</entry>
               </row>
 
               <row>
@@ -1171,7 +1174,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry>/var/lib/[NAME]/[INST]/temp</entry>
 
-                <entry>Location for temp files</entry>
+                <entry>Localização dos arquivos temporários</entry>
               </row>
 
               <row>
@@ -1181,7 +1184,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry />
 
-                <entry>Base Location for data files</entry>
+                <entry>Localização base para arquivos de dados</entry>
               </row>
 
               <row>
@@ -1191,7 +1194,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry />
 
-                <entry>Base Location for 2nd copy of roxie data</entry>
+                <entry>Localização base para a segunda cópia dos dados roxie</entry>
               </row>
 
               <row>
@@ -1201,7 +1204,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry />
 
-                <entry>Reserved for future use</entry>
+                <entry>Reservado para uso futuro</entry>
               </row>
 
               <row>
@@ -1211,7 +1214,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry />
 
-                <entry>Base Location for mirror data files</entry>
+                <entry>Localização base para arquivos de dados</entry>
               </row>
 
               <row>
@@ -1221,7 +1224,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
                 <entry />
 
-                <entry>Base Location for Queries</entry>
+                <entry>Localização base para consultas</entry>
               </row>
             </tbody>
           </tgroup>
@@ -1231,59 +1234,59 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <sect2 id="Drop-Zone" role="brk">
         <title>Drop Zone</title>
 
-        <para>A Drop Zone (or landing zone) is a location where files can be
-        transferred to or from your HPCC system. The drop zone is a logical
-        combination of a path and one or more servers.</para>
+        <para>A Drop Zone (ou zona de pouso) é um local onde os arquivos podem ser
+        transferidos para ou a partir do seu HPCC Systems. A drop zone
+        é uma combinação lógica de um caminho de um ou mais servidores.</para>
 
-        <para>Multiple drop zones allow you to configure different top level
-        folders for one or more servers. Multiple servers for a single drop
-        zone provides a logical grouping of distinct locations. Multiple drop
-        zones are useful to allow different permissions for users or
-        groups.</para>
+        <para>Múltiplas drop zones permitem que você configure diferentes
+        pastas de nível superior para um ou mais servidores. Vários servidores para uma única drop
+        zone fornecem um agrupamento lógico de locais distintos. Várias drop
+        zones são úteis para permitir diferentes permissões para usuários ou
+        grupos.</para>
 
-        <para>To add a drop zone:</para>
+        <para>Adicionar uma Drop Zone:</para>
 
         <para>
           <orderedlist>
             <listitem>
-              <para>Right-click on the Navigator panel on the left side and
-              choose <emphasis role="bold">New Components</emphasis></para>
+              <para>Clique com o botão direito do mouse no painel Navigator, no lado esquerdo,
+              e escolha <emphasis role="bold">New Components</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Select <emphasis role="bold">Drop Zone</emphasis></para>
+              <para>Selecione <emphasis role="bold">Drop Zone</emphasis></para>
             </listitem>
           </orderedlist>
         </para>
 
         <sect3>
-          <title>Drop Zone Attributes</title>
+          <title>Atributos da Drop Zone</title>
 
-          <para>You can change the configuration of your drop zone using the
-          attributes tab. If you have multiple drop zones, select the drop
-          zone to configure from the Navigator panel on the left side.</para>
+          <para>Você pode alterar a configuração da sua drop zone usando a
+          aba de atributos. Se você tiver múltiplas drop zones, selecione
+          a desejada para configurar no painel Navigator, no lado esquerdo.</para>
 
-          <para>To change the drop zone attributes:</para>
+          <para>Para alterar os atributos da Drop Zone:</para>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>On the <emphasis role="bold">Attributes</emphasis> tab,
-                select the Attribute to modify.</para>
+                <para>Na aba<emphasis role="bold">Attributes</emphasis>,
+                selecione o atributo a ser modificado.</para>
               </listitem>
 
               <listitem>
-                <para>Double-click on the value on the right side of the
-                attribute table for the value you wish to modify.</para>
+                <para>Clique duas vezes no valor no lado direito da tabela
+                de atributos para o valor que você deseja modificar.</para>
 
-                <para>For example, select the <emphasis
-                role="bold">name</emphasis> attribute, double click on the
-                <emphasis role="bold">value</emphasis> column and provide the
-                drop zone with a more meaningful name.</para>
+                <para>Por exemplo, selecione o atributo <emphasis
+                role="bold">name</emphasis>, clique duas vezes na coluna 
+                <emphasis role="bold">value</emphasis> e forneça a drop zone
+                para soltar um nome mais significativo.</para>
               </listitem>
 
               <listitem>
-                <para>Click the disk icon to save.</para>
+                <para>Clique no ícone de disco para salvar.</para>
               </listitem>
             </orderedlist>
           </para>
@@ -1334,39 +1337,39 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 id="DropZoneServerList">
-          <title>Drop Zone Server List</title>
+          <title>Lista de servidores da Drop Zone</title>
 
-          <para>This tab allows you to add any servers that you wish to
-          configure as a part of the selected drop zone.</para>
+          <para>Essa aba permite adicionar todos os servidores que você deseja
+          configurar como parte da drop zone selecionada.</para>
 
-          <para>To add a server to the current drop zone: <orderedlist>
+          <para>Para adicionar um servidor à drop zone atual: <orderedlist>
               <listitem>
-                <para>Select the <emphasis role="bold">Drop Zone</emphasis> to
-                configure from the Navigator panel on the left side.</para>
+                <para>Selecione a <emphasis role="bold">Drop Zone</emphasis> para
+                configurar no painel Navigator no lado esquerdo.</para>
               </listitem>
 
               <listitem>
-                <para>Select the <emphasis role="bold">Server List</emphasis>
-                tab, right-click on the Server Address field and choose
+                <para>Selecione a aba<emphasis role="bold">Server List</emphasis>
+                , clique com o botão direito do mouse no campo Server Address e escolha 
                 <emphasis role="bold">Add</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Enter the hostname or IP address of the server.</para>
+                <para>Digite o nome do host ou o endereço IP do servidor.</para>
               </listitem>
 
               <listitem>
-                <para>Click the disk icon to save.</para>
+                <para>Clique no ícone de disco para salvar.</para>
               </listitem>
             </orderedlist></para>
         </sect3>
 
         <sect3 id="DropZoneNotes">
-          <title>Drop Zone Notes</title>
+          <title>Notas sobre Drop Zone</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1374,35 +1377,35 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ECL Agent</title>
 
         <sect3>
-          <title>Instances</title>
+          <title>Instâncias</title>
 
           <orderedlist>
             <listitem>
-              <para>Select ECL Agent in the Navigator panel on the left
-              side.</para>
+              <para>Selecione ECL Agent no painel Navigator no lado
+              esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>In the computer column, choose a node from the drop list
-              as shown below:<graphic fileref="images/CM-img07.jpg"
+              <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-img07.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique <inlinegraphic fileref="images/GS-img01c.png" />
+              no ícone do </para>
             </listitem>
           </orderedlist>
         </sect3>
 
         <sect3 role="brk">
-          <title>EclAgent Attributes Tab</title>
+          <title>disco para salvar a aba EclAgent Attributes</title>
 
-          <para>This section describes the EclAgent Attributes tab.</para>
+          <para>Esta seção descreve os atributos da aba EclAgent.</para>
 
           <para>
             <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS" />
@@ -1418,9 +1421,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>EclAgent Options Tab</title>
+          <title>Aba EclAgent Options</title>
 
-          <para>This section describes the EclAgent Options tab.</para>
+          <para>Esta seção descreve a aba EclAgent Options.</para>
 
           <para>
             <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS" />
@@ -1436,11 +1439,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>EclAgentProcessNotes</title>
+          <title>Notas sobre EclAgent Process</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1448,38 +1451,38 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ECL CC Server Process</title>
 
         <sect3>
-          <title>Ecl CC Server Instances</title>
+          <title>Instâncias do Ecl CC Server</title>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Select Ecl CC Server - myeclccserver in the Navigator
-                panel on the left side.</para>
+                <para>Selecione Ecl CC Server - myeclccserver no painel Navigator
+                no lado esquerdo.</para>
               </listitem>
 
               <listitem>
-                <para>Select the Instances tab.</para>
+                <para>Selecione a aba Instances.</para>
               </listitem>
 
               <listitem>
-                <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic fileref="images/CM-ECLCC-01.jpg"
+                <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-ECLCC-01.jpg"
                 vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
-                <para>Click the <inlinegraphic
-                fileref="images/GS-img01c.png" /> disk icon to save</para>
+                <para>Clique no ícone do <inlinegraphic
+                fileref="images/GS-img01c.png" />disco para salvar</para>
               </listitem>
             </orderedlist>
           </para>
         </sect3>
 
         <sect3 role="brk">
-          <title>Ecl CC Server Attributes Tab</title>
+          <title> a aba Atributos do Ecl CC Server</title>
 
-          <para>This section describes the Ecl CC Server Attributes
-          tab.</para>
+          <para>Esta seção descreve a aba Ecl CC Server
+          Attributes.</para>
 
           <para>
             <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS" />
@@ -1495,13 +1498,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>EclCC Server Process Options</title>
+          <title>Opções do EclCC Server Process</title>
 
-          <para>To add a custom option, right-click and select add. These
-          options are passed to the eclcc compiler.</para>
+          <para>Para adicionar uma opção personalizada, clique com o botão direito e selecione adicionar. Essas
+          opções são passadas para o compilador eclcc.</para>
 
-          <para>See the ECL Compiler chapter in the <emphasis
-          role="bluebold">Client Tools</emphasis> manual for details.</para>
+          <para>Veja o capítulo Compilador ECL no manual de <emphasis
+          role="bluebold">Ferramentas do Cliente</emphasis> para detalhes.</para>
 
           <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
@@ -1509,11 +1512,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>EclCC Server Process Notes</title>
+          <title>Notas sobre EclCC Server Process</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1521,35 +1524,35 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ECL Scheduler</title>
 
         <sect3>
-          <title>Instances</title>
+          <title>Instâncias</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold">ECL Scheduler</emphasis> in
-              the Navigator panel on the left side.</para>
+              <para>Selecione <emphasis role="bold">ECL Scheduler</emphasis> no painel
+                Navigator ao lado esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>In the computer column, choose a node from the drop list
-              as shown below:<graphic fileref="images/CM-161.jpg"
+              <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-161.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique no ícone do <inlinegraphic fileref="images/GS-img01c.png" />
+              disco para salvar a aba </para>
             </listitem>
           </orderedlist>
         </sect3>
 
         <sect3 role="brk">
-          <title>EclScheduler Attributes Tab</title>
+          <title>EclScheduler Attributes.</title>
 
-          <para>This section describes the EclScheduler Attributes tab.</para>
+          <para>Esta seção descreve a aba EclScheduler Attributes.</para>
 
           <para>
             <graphic fileref="images/CM-160.jpg" vendor="configmgrSS" />
@@ -1565,11 +1568,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>EclScheduler Notes</title>
+          <title>Notas sobre EclScheduler</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1577,27 +1580,27 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>ESP Server</title>
 
         <sect3>
-          <title>Esp Process Instances</title>
+          <title>Instâncias do Esp Process</title>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold">ESP - myesp</emphasis> in the
-              Navigator panel on the left side.</para>
+              <para>Selecione <emphasis role="bold">ESP - myesp</emphasis>no painel
+              Navigator do lado esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>In the computer column, choose a node from the drop list
-              as shown below:<graphic fileref="images/CM-img08.jpg"
+              <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:<graphic fileref="images/CM-img08.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique <inlinegraphic fileref="images/GS-img01c.png" />
+              no ícone do </para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1605,9 +1608,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>Esp - myesp Attributes Tab</title>
+          <title>disco para salvar a aba Esp - myesp Attributes</title>
 
-          <para>This section describes the Esp - myesp Attributes tab.</para>
+          <para>Esta seção descreve a aba Esp - myesp Attributes.</para>
 
           <para>
             <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS" />
@@ -1623,26 +1626,26 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <!--***Move to XSD for 2.0***-->
 
-          <para>Persistent HTTP connections can cause backwards compatibility
-          issues with non-standard HTTP clients. You can disable this feature
-          by setting <emphasis>maxPersistentRequests</emphasis> to 0.</para>
+          <para>As conexões HTTP persistentes podem causar problemas de compatibilidade
+          com versões anteriores com clientes HTTP não padrão. Você pode desativar esse recurso
+          definindo <emphasis>maxPersistentRequests como</emphasis> 0.</para>
         </sect3>
 
         <sect3 role="brk">
-          <title>Esp - myesp Service BindingsTab</title>
+          <title>Aba Esp - myesp Service Bindings</title>
 
-          <para>This section describes the Esp - myesp Service Bindings tab.
-          This tab requires additional steps to configure the service
-          bindings.</para>
+          <para>Esta seção descreve a aba Esp - myesp Service Bindings
+          Esta guia requer etapas adicionais para configurar as conexões do
+          serviço.</para>
 
           <para>
             <graphic fileref="images/CM-img08-2.jpg" vendor="configmgrSS" />
           </para>
 
-          <para>You must first add the service bindings in the first table
-          (Right-click, add). Then you would configure the attributes in the
-          other tables on that tab. The next table describes the <emphasis
-          role="bold">URL Authentication</emphasis> table.</para>
+          <para>Você deve primeiro adicionar as ligações de serviço na primeira tabela
+          (botão direito do mouse, Add). Em seguida, você configuraria os atributos nas
+          outras tabelas nessa aba. A tabela a seguir descreve a tabela <emphasis
+          role="bold">URL Authentication</emphasis></para>
 
           <!--MyESP-Include-ESP.t1-XXXIII-->
 
@@ -1654,8 +1657,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <?hard-pagebreak ?>
 
-          <para>The following tables describe the ESPProcess Service Bindings,
-          <emphasis role="bold">Feature Authentications</emphasis>.</para>
+          <para>As tabelas a seguir descrevem as  ESPProcess Service Bindings e 
+          <emphasis role="bold">funcionalidades de autenticação</emphasis>.</para>
 
           <!--MyESP-Include-ES.t2-XXX-14-->
 
@@ -1679,10 +1682,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>Esp - myesp AuthenticationTab</title>
+          <title>Aba Esp - myesp Authentication</title>
 
-          <para>This section describes the Esp - myesp Service Authentication
-          tab.</para>
+          <para>Esta seção descreve a aba Esp - myesp Service
+          Authentication</para>
 
           <para>
             <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS" />
@@ -1696,8 +1699,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>Additional information about the available Authentication
-          methods:</para>
+          <?hard-pagebreak ?>
+
+          <para>Informações adicionais sobre os métodos de autenticação
+          disponíveis:</para>
 
           <para>
             <informaltable colsep="1" frame="all" rowsep="1">
@@ -1710,34 +1715,27 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   <row>
                     <entry>none</entry>
 
-                    <entry>uses no authentication</entry>
-                  </row>
-
-                  <row>
-                    <entry>local</entry>
-
-                    <entry>uses the local credentials for the server running
-                    the ESP</entry>
+                    <entry>não utiliza autenticação</entry>
                   </row>
 
                   <row>
                     <entry>ldap</entry>
 
-                    <entry>uses Lightweight Directory Access Protocol for
-                    authentication</entry>
+                    <entry>usa o protocolo Lightweight Directory Access para
+                    autenticação</entry>
                   </row>
 
                   <row>
                     <entry>ldaps</entry>
 
-                    <entry>similar to LDAP but uses a more secure (TLS)
-                    protocol</entry>
+                    <entry>semelhante ao LDAP, mas usa um protocolo mais
+                    seguro (TLS)</entry>
                   </row>
 
                   <row>
                     <entry>secmgrPlugin</entry>
 
-                    <entry>uses the security manager plug-in</entry>
+                    <entry>utilizado para configurar o Security Manager Plugin</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1746,16 +1744,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>Esp - AuthDomain Tab</title>
+          <title>Aba Esp - AuthDomain</title>
 
           <!--   Temporarily removing image 
 		  <para>
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
           </para>  -->
 
-          <para>The <emphasis role="bold">AuthDomain</emphasis> attribute
-          allows you to configure the settings used for session
-          management.</para>
+          <para>O atributo <emphasis role="bold">AuthDomain</emphasis> permite definir as
+          configurações usadas para o gerenciamento de
+          sessões.</para>
 
           <!--MyESP-HTTPS.t7-XXX-17-->
 
@@ -1771,18 +1769,18 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>Esp - myesp HTTPS Tab</title>
+          <title>Aba Esp - myesp HTTPS</title>
 
-          <para>This section describes the Esp - myesp HTTPS tab.</para>
+          <para>Esta seção descreve os atributos do Aba Esp - myesp HTTPS.</para>
 
           <para>
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
           </para>
 
-          <para>The <emphasis role="bold">cipherList</emphasis> attribute
-          allows you to set the ordered list of available ciphers for use by
-          openssl. See the documentation at openssl.org for more information
-          about ciphers.</para>
+          <para>O atributo <emphasis role="bold">cipherList</emphasis> permite
+          que você defina a lista ordenada de cifras disponíveis para uso pelo
+          openssl. Veja a documentação em openssl.org para mais informações
+          sobre cifras.</para>
 
           <!--MyESP-HTTPS.t5-XXX-17-->
 
@@ -1794,32 +1792,32 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>EspProcess Notes</title>
+          <title>Notas sobre EspProcess</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="ESP_Services" role="brk">
         <title>ESP Services</title>
 
-        <para>ESP Services provide a means to add functionality to an ESP
+        <para>O ESP Services fornecem um meio para adicionar funcionalidade a um ESP
         Server.</para>
 
         <sect3 id="CfgMgrEclWatch">
           <title>ECL Watch Service</title>
 
-          <para>Ecl Watch allows you to configure options for the ECL Watch
-          utility.</para>
+          <para>O Ecl Watch permite que você configure opções para o utilitário
+          ECL Watch.</para>
 
           <para>
             <graphic fileref="images/CM-009.jpg" vendor="configmgrSS" />
           </para>
 
           <para>
-            <emphasis role="bold">ECL Watch Attribute definitions</emphasis>
+            <emphasis role="bold">Definições do atributo ECL Watch.</emphasis>
           </para>
 
           <!--ECLWa-Include-TBLZ-1-->
@@ -1831,7 +1829,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
 
           <para>
-            <emphasis role="bold">ECL Watch Monitoring attributes</emphasis>
+            <emphasis role="bold">Atributos do ECL Watch Monitoring</emphasis>
           </para>
 
           <!--ECLWa-Include-TBLZ-2-->
@@ -1843,22 +1841,22 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </para>
 
           <para>
-            <emphasis role="bold">Configuring ELK Log Visualization
-            integration</emphasis>
+            <emphasis role="bold">Configurando a integração do
+            ELK Log Visualization</emphasis>
           </para>
 
-          <para>HPCC provides a mechanism to integrate ELK (ElasticSearch,
-          Logstash, and Kibana) based visualizations into ECL Watch. This
-          feature can be configured and enabled through the HPCC Configuration
-          manager.</para>
+          <para>O HPCC Systems fornece um mecanismo para integrar visualizações baseadas em ELK
+          (ElasticSearch, Logstash e Kibana) no ECL
+          Watch. Esse recurso pode ser configurado e ativado pelo gerenciador do HPCC
+          Configuration Manager</para>
 
-          <para>To configure the ELK Log Visualization component, click and
-          expand the <emphasis role="bold">ESP Service</emphasis> link on the
-          left side then select the <emphasis role="bold">EclWatch</emphasis>
-          link. Then select the <emphasis role="bold">Elk Log
-          Visualization</emphasis> tab from the right side.</para>
+          <para>Para configurar o componente ELK Log Visualization, clique e
+          expanda o link <emphasis role="bold">ESP Service</emphasis> no
+          lado esquerdo e selecione o link<emphasis role="bold">          EclWatch</emphasis>
+. Em seguida, selecione a aba <emphasis role="bold">Elk Log
+          Visualization</emphasis> no lado direito.</para>
 
-          <para>The ELK Log Visualization tab in ECL Watch:</para>
+          <para>A aba ELK Log Visualization no ECL Watch:</para>
 
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
@@ -1866,26 +1864,26 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>To configure the ELK visualization integration, provide the
-          following information: <orderedlist>
+          <para>Para configurar a integração de visualização ELK, forneça as
+          seguintes informações: <orderedlist>
               <listitem>
-                <para>In the <emphasis>kibanaAddress</emphasis> field, supply
-                the IP address for your Kibana component.. For example:
+                <para>No campo <emphasis>kibanaAddress</emphasis>, forneça
+                o endereço IP do seu componente Kibana. Por exemplo:
                 http://123.123.123.123</para>
               </listitem>
 
               <listitem>
-                <para>In the <emphasis>kibanaPort</emphasis> field, supply the
-                Kibana port number. For example: 5601</para>
+                <para>No campo <emphasis>kibanaPort</emphasis>, forneça o número da porta
+                Kibana. Por exemplo: 5601</para>
               </listitem>
 
               <listitem>
-                <para>In the <emphasis>kibanaEntryPointURI</emphasis> field,
-                enter the Kibana URI pointing to your shared Kibana
-                dashboard.</para>
+                <para>No campo <emphasis>kibanaEntryPointURI</emphasis>,
+                insira o URI do Kibana apontando para o painel do Kibana
+                compartilhado.</para>
 
-                <para>For example: /app/kibana#/dashboard/etc. (obtained from
-                the "share" tab in Kibana)</para>
+                <para>Por exemplo: /app/kibana#/dashboard/etc. (obtido
+                na aba “share" em Kibana)</para>
               </listitem>
             </orderedlist></para>
 
@@ -1895,14 +1893,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3 id="cfgmgr_WsECL" role="brk">
           <title>WsECL Service</title>
 
-          <para>The WsECL service allows you to configure options for the
-          WsECL utility.</para>
+          <para>O serviço WsECL permite configurar opções para o
+          utilitário WsECL.</para>
 
           <para>
             <graphic fileref="images/CM-010.jpg" vendor="configmgrSS" />
           </para>
 
-          <para>The Ws ECL configuration attributes.</para>
+          <para>Os atributos de configuração do Ws ECL.</para>
 
           <!--WsECL-Include-ZXX-1-->
 
@@ -1914,7 +1912,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <?hard-pagebreak ?>
 
-          <para>Ws ECL VIPS option attributes.</para>
+          <para>Opções dos atributos Ws ECL VIPS.</para>
 
           <!--WsECL-Include-ZXX-2-->
 
@@ -1924,7 +1922,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>Ws ECL Target Restrictions table.</para>
+          <para>Tabela de Restrições do Ws ECL Target</para>
 
           <!--WsECL-Include-ZXX-3-->
 
@@ -1934,32 +1932,104 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
         </sect3>
+
+        <sect3 id="CFGESP_WsStore" role="brk">
+          <title>Ws_Store</title>
+
+          <para>Uma instância do ws_store está incluída no ECL Watch, mas você
+          pode optar por adicionar outro serviço ESP ws_store à sua plataforma
+           HPCC Systems.</para>
+
+          <para>Para adicionar o serviço Ws_Store. <graphic
+          fileref="images/CM-WsStore.jpg" vendor="configmgrSS" /></para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Clique com o botão direito do mouse no componente <emphasis
+                role="bold">Software</emphasis> no painel <emphasis
+                role="bold">Navegador</emphasis> (no lado direito),
+                escolha <emphasis role="bold">New ESP Services </emphasis> e, em seguida, 
+                <emphasis role="bold">ws_store</emphasis> na
+                lista suspensa.</para>
+              </listitem>
+
+              <listitem>
+                <para>Configure os atributos ws_store conforme necessário.</para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no ícone de <inlinegraphic
+                fileref="images/GS-img01c.png" /> disco para salvar.</para>
+              </listitem>
+            </orderedlist>Os seguintes valores são os atributos configuráveis
+          para ws_store:</para>
+
+          <!--WsECL-Include-ZXX-2-->
+
+          <para>
+            <xi:include href="../XMLGeneration/xml/esp_service_wsstore.xsd.mod.xml"
+                        xpointer="xpointer(//*[@id='ESPWS.t1'])"
+                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+          </para>
+        </sect3>
+
+        <sect3 id="CFGESP-WsSql" role="brk">
+          <title>Ws_SQL</title>
+
+          <para>Você pode optar por adicionar o serviço ESP ws_sql à sua plataforma HPCC
+          Systems.</para>
+
+          <para>Para adicionar o serviço ws_sql.</para>
+
+          <para>
+            <orderedlist>
+              <listitem>
+                <para>Clique com o botão direito do mouse no componente <emphasis
+                role="bold">Software</emphasis> no painel <emphasis
+                role="bold">Navigator</emphasis> (no lado direito),
+                escolha <emphasis role="bold">New ESP Services </emphasis> e, em seguida, 
+                <emphasis role="bold">ws_sql</emphasis> na
+                lista suspensa.</para>
+              </listitem>
+
+              <listitem>
+                <para>Configure o ws_sql fornecendo o nome do
+                serviço.</para>
+              </listitem>
+
+              <listitem>
+                <para>Clique no <inlinegraphic
+                fileref="images/GS-img01c.png" /> ícone do disco para salvar o </para>
+              </listitem>
+            </orderedlist>
+          </para>
+        </sect3>
       </sect2>
 
       <sect2 id="FTSlave-Process" role="brk">
-        <title>FTSlave Process</title>
+        <title>FTSlave Process.</title>
 
-        <para>FTSlave is a helper process that every node needs. This section
-        depicts an FTSlave installation.</para>
+        <para>FTSlave é um processo auxiliar que todo nó precisa. Esta seção
+        descreve uma instalação do FTSlave.</para>
 
         <sect3>
-          <title>Instances</title>
+          <title>Instâncias</title>
 
           <orderedlist>
             <listitem>
-              <para>Select FTSlave in the Navigator panel on the left
-              side.</para>
+              <para>Selecione  ESP  - MyEsp no painel do navegador ao lado
+              esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Right-click on a computer in the computer column, and
-              select Add Instance.</para>
+              <para>Clique com o botão direito em uma máquina na coluna do computador e
+              selecione Add Instance.</para>
 
               <para>
                 <graphic fileref="images/CM-190.jpg" vendor="configmgrSS" />
@@ -1969,8 +2039,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Select all computers in the list, then press the <emphasis
-              role="bold">OK</emphasis> button.</para>
+              <para>Selecione todos os computadores da lista, depois pressione o botão <emphasis
+              role="bold">OK</emphasis> .</para>
 
               <para>
                 <graphic fileref="images/CM-112-4.jpg" vendor="configmgrSS" />
@@ -1978,17 +2048,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             </listitem>
 
             <listitem>
-              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-              disk icon to save</para>
+              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+              ícone do disco para salvar o </para>
             </listitem>
           </orderedlist>
         </sect3>
 
         <sect3>
-          <title>FtSlave attributes</title>
+          <title>FTSlave Process.</title>
 
-          <para>This section describes an FTSlaveProcess attributes
-          tab.</para>
+          <para>Esta seção descreve a aba de atributos
+          FTSlaveProcess.</para>
 
           <!--FTSlave-Include-XXX-18-->
 
@@ -2000,23 +2070,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>FtSlave Process Notes</title>
+          <title>Notas sobre FtSlave Process</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="LDAPServer_Process" role="brk">
         <title>LDAP Server Process</title>
 
-        <para>This section describes the configuration attributes of an
-        LDAPServer Installation in ConfigManager. For a complete description
-        of how to add LDAP Authentication see <emphasis>Using LDAP
-        Authentication</emphasis> section in the <emphasis
-        role="bluebold">Installing and Running The HPCC Platform</emphasis>
-        document.</para>
+        <para>Esta seção descreve os atributos de configuração de uma instalação do
+        LDAPServer no ConfigManager. Para obter uma descrição completa
+        de como adicionar autenticação LDAP, consulte a seção <emphasis>Usando 
+        autenticação </emphasis>LDAP no <emphasis
+        role="bluebold">documento Instalando e executando a
+        plataforma</emphasis> HPCC Systems.</para>
 
         <para>
           <graphic fileref="images/LDAP_004.jpg" />
@@ -2031,70 +2101,71 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>LDAP Server Process Instances</title>
 
-          <para>This tab allows you to add instances to your LDAP
-          Configuration. In order to add instances you would have previously
-          added the LDAP computers in the Hardware section. For a complete
-          description of how to add LDAP Authentication see <emphasis>Using
-          LDAP Authentication</emphasis> section in the <emphasis
-          role="bluebold">Installing and Running The HPCC Platform</emphasis>
-          document.</para>
+          <para>Essa aba permite adicionar instâncias à sua configuração
+          LDAP. Para adicionar instâncias, você teria adicionado
+          anteriormente os computadores LDAP na seção Hardware. Para obter uma descrição completa
+          de como adicionar autenticação LDAP, consulte a seção <emphasis>Usando         autenticação 
+LDAP no </emphasis>documento <emphasis
+          role="bluebold">Instalando e executando a
+        plataforma</emphasis> HPCC Systems.</para>
 
           <orderedlist>
             <listitem>
-              <para>On the <emphasis role="bold">Instances</emphasis> tab,
-              right-click on the table on the right hand side, choose
+              <para>Na aba <emphasis role="bold">Instances</emphasis>, clique com o
+              botão direito na tabela à direita e selecione
               <emphasis role="bold">Add Instances...</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Select the computer to use by checking the box next to
-              it.</para>
+              <para>Selecione o computador a ser usado clicando na caixa ao lado
+              dele.</para>
 
-              <para>This is the computer you added in the <emphasis
+              <para>Este é o computador que foi adicionado anteriormente na área <emphasis
               role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
-              Computers</emphasis> portion earlier.</para>
+              Computers</emphasis>.</para>
             </listitem>
           </orderedlist>
         </sect3>
 
         <sect3>
-          <title>The HPCC Administrator's account</title>
+          <title>A conta do administrador do HPCC Systems</title>
 
-          <para>You can set up an HPCC Administrator's account with limited
-          administrative rights. The HPCC Administrator does not have to be an
-          LDAP Administrator's account. This allows the HPCC Administrator to
-          be able to set up users, groups, and set permissions in HPCC without
-          having rights to perform other LDAP administrative functions. To use
-          this feature: <orderedlist>
+          <para>Você pode configurar uma conta de administrador do HPCC Systems com direitos
+          administrativos limitados. O administrador do HPCC Systems não
+          precisa ser uma conta de administrador LDAP. Isso permite que o administrador
+          do HPCC System possa configurar usuários, grupos e definir
+          permissões no HPCC Systems sem ter direitos para executar outras
+          funções administrativas do LDAP. Para usar este recurso: <orderedlist>
               <listitem>
-                <para>Create an LDAP group to contain all the HPCC
-                Administrator users. For example: "HPCCAdminGroup"</para>
+                <para>Crie um grupo LDAP para conter todos os usuários do administrador
+          do HPCC. Por exemplo: "HPCCAdminGroup"</para>
               </listitem>
 
               <listitem>
-                <para>In the HPCC configuration manager navigate to this (LDAP
-                Server Process) page and enter the HPCC Administrator group
-                name as the value in the <emphasis
-                role="bold">adminGroupName</emphasis> field.</para>
+                <para>No gerenciador de configuração HPCC Systems, navegue até
+                esta página (LDAP Server Process) e insira o nome do grupo Administrador HPCC Systems
+                como o valor no campo <emphasis
+                role="bold">adminGroupName</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Add (HPCC Administrator) users to this new group.</para>
+                <para>Adicione usuários (Administrador do HPCC Systems) a este novo
+                grupo.</para>
               </listitem>
 
               <listitem>
-                <para>Save and deploy the new configuration file, then restart
-                ESP to apply the new configuration.</para>
+                <para>Salve e implemente o novo arquivo de configuração e reinicie
+                o ESP para aplicar a nova configuração.</para>
               </listitem>
             </orderedlist></para>
         </sect3>
 
         <sect3>
-          <title>LDAP Server Process Notes</title>
+          <title>Notas sobre LDAP Server Process</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
@@ -2102,20 +2173,20 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>Sasha Server</title>
 
         <sect3>
-          <title>Instances</title>
+          <title>Instâncias</title>
 
           <orderedlist>
             <listitem>
-              <para>Select Sasha Server in the menu on the left side.</para>
+              <para>Selecione Sasha Server no menu do lado esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the Instances tab.</para>
+              <para>Selecione a aba Instances.</para>
             </listitem>
 
             <listitem>
-              <para>In the computer column, choose a node from the drop list
-              as shown below:</para>
+              <para>Na coluna do computador, escolha um nó da lista suspensa,
+              conforme mostrado abaixo:</para>
             </listitem>
           </orderedlist>
 
@@ -2123,12 +2194,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>Sasha Server Attributes</title>
+          <title>Atributos Sasha Server</title>
 
           <!--***Might-Want-to-add-CM-Sasha17A.jpg-image-***-->
 
-          <para>This section described the SashaServerProcess <emphasis
-          role="bold">Attribute</emphasis> tab values.</para>
+          <para>Esta seção descreve os valores da aba SashaServerProcess<emphasis
+          role="bold">Attribute</emphasis>.</para>
 
           <graphic fileref="images/CM-Sasha17A.jpg" vendor="configmgrSS" />
 
@@ -2146,8 +2217,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>SashaServer Process Archiver</title>
 
-          <para>This section describes the SashaServer Process Archiver
-          tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process Archiver</para>
 
           <para>
             <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS" />
@@ -2167,8 +2238,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3 role="brk">
           <title>SashaServer Process Coalescer</title>
 
-          <para>This section describes the SashaServer Process Coalescer
-          tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process Coalescer</para>
 
           <para>
             <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS" />
@@ -2188,8 +2259,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>SashaServer Process DfuXRef</title>
 
-          <para>This section describes the SashaServer Process DfuXref
-          tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process DfuXref</para>
 
           <para>
             <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS" />
@@ -2209,8 +2280,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>SashaServer Process DfuExpiry</title>
 
-          <para>This section describes the SashaServer Process DfuExpiry
-          tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process DfuExpiry</para>
 
           <para>
             <graphic fileref="images/CM-img17-4.jpg" vendor="configmgrSS" />
@@ -2232,8 +2303,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>SashaServer Process ThorQMon</title>
 
-          <para>This section describes the SashaServer Process ThorQMon
-          tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process ThorQMon</para>
 
           <para>
             <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS" />
@@ -2253,8 +2324,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <sect3>
           <title>SashaServer Process DaFileSrvMonitor</title>
 
-          <para>This section describes the SashaServer Process
-          DaFileSrvMonitor tab.</para>
+          <para>Esta seção descreve a aba
+          SashaServer Process DaFileSrvMonitor</para>
 
           <para>
             <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS" />
@@ -2270,47 +2341,47 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>SashaServer Process Notes</title>
+          <title>Notas sobre SashaServer Process</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="Thor" role="brk">
         <title>Thor</title>
 
-        <para>This section details how to define a Data Refinery (Thor)
-        cluster. Before you begin, you should decide the width of the cluster
-        (i.e., how many slave nodes will you have).</para>
+        <para>Esta seção detalha como definir um cluster de refinaria de
+        dados (Thor). Antes de começar, você deve decidir a largura do cluster
+        (ou seja, quantos nós filhos você terá).</para>
 
         <orderedlist>
           <listitem>
-            <para>Select <emphasis role="bold">Thor Cluster -
-            mythor</emphasis> in the Navigator panel on the left side.</para>
+            <para>Selecione <emphasis role="bold">Thor Cluster -
+            mythor</emphasis> no painel Navigator no lado esquerdo.</para>
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold">Topology</emphasis>
-            tab.</para>
+            <para>Selecione a aba<emphasis role="bold">            Topology</emphasis>
+.</para>
           </listitem>
 
           <listitem>
-            <para>Expand the Topology, if needed, then right-click the Master
-            and select Delete.</para>
+            <para>Expanda a Topology, se necessário, clique com o botão direito do mouse no Master
+            e selecione Delete.</para>
           </listitem>
         </orderedlist>
 
-        <para>This deletes the sample one-node Thor.</para>
+        <para>Isso exclui o Thor de um nó de amostra.</para>
 
-        <para>You will replace this with a multi-node cluster.</para>
+        <para>Você irá substituir isso por um cluster de vários nós.</para>
 
         <orderedlist>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>right-click on the Topology and select Add Master.</para>
+            <para>Clique com o botão direito do mouse na Topologia e selecione Add Master.</para>
 
             <para>
               <graphic fileref="images/CM-img13.jpg" vendor="configmgrSS" />
@@ -2320,8 +2391,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select a computer from the list, then press the OK
-            button.</para>
+            <para>Selecione um computador na lista e pressione o
+            botão OK.</para>
 
             <para>
               <graphic fileref="images/CM-112-5.jpg" vendor="configmgrSS" />
@@ -2331,7 +2402,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Right-click on the Master and select Add Slaves.</para>
+            <para>Clique com o botão direito no mestre e selecione Add Slaves.</para>
 
             <para>
               <graphic fileref="images/CM-111.jpg" vendor="configmgrSS" />
@@ -2341,13 +2412,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the computers to use as slaves from the list, then
-            press the OK button. Use CTRL+CLICK to multi-select or SHIFT+CLICK
-            to select a range.</para>
+            <para>Selecione os computadores a serem usados como filhos na lista e
+            pressione o botão OK. Use CTRL+CLICK para multi-seleção ou SHIFT+CLICK
+            para selecionar um intervalo.</para>
 
             <para><graphic fileref="images/CM-112-3.jpg"
-            vendor="configmgrSS" />The Nodes now display below the Thor Master
-            node.</para>
+            vendor="configmgrSS" />Os nós agora são exibidos abaixo do nó do
+            Thor Master.</para>
 
             <para>
               <graphic fileref="images/CM-img14.jpg" vendor="configmgrSS" />
@@ -2355,14 +2426,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </listitem>
 
           <listitem>
-            <para>Select Thor Cluster - mythor in the Navigator panel on the
-            left side.</para>
+            <para>Selecione Thor Cluster - mythor no painel Navigator no
+            lado esquerdo.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the Attributes tab.</para>
+            <para>Selecione a aba Attributes.</para>
 
             <para>
               <graphic fileref="images/CM-img15.jpg" vendor="configmgrSS" />
@@ -2370,45 +2441,45 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </listitem>
 
           <listitem>
-            <para>Change the value of the localThor to <emphasis
+            <para>É possível alterar o valor localThor para <emphasis
             role="bold">false</emphasis></para>
           </listitem>
 
           <listitem>
-            <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-            disk icon to save</para>
+            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+            ícone do disco para salvar </para>
           </listitem>
         </orderedlist>
 
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>Changing Thor topology</title>
+          <title>a alteração da topologia do Thor</title>
 
-          <para>If you want to designate a different node as the Thor master
-          when setting up a multi-node system, follow these steps.</para>
+          <para>Se você deseja designar um nó diferente como o mestre
+          Thor ao configurar um sistema de vários nós, siga estas etapas.</para>
 
           <orderedlist>
             <listitem>
-              <para>Select <emphasis role="bold">Thor Cluster -
-              mythor</emphasis> in the Navigator panel on the left
-              side.</para>
+              <para>Selecione <emphasis role="bold">Thor Cluster -
+              mythor</emphasis> no painel do Navigator ao lado
+              esquerdo.</para>
             </listitem>
 
             <listitem>
-              <para>Select the <emphasis role="bold">Topology</emphasis>
-              tab.</para>
+              <para>Selecione a aba<emphasis role="bold">            Topology</emphasis>
+.</para>
             </listitem>
 
             <listitem>
-              <para>Right-click on the Master node</para>
+              <para>Clique com o botão direito do mouse no nó mestre</para>
             </listitem>
 
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Select the <emphasis role="bold">Replace Master</emphasis>
-              option.</para>
+              <para>Selecione a opção <emphasis role="bold">Replace Master</emphasis>
+              </para>
 
               <para>
                 <graphic fileref="images/CM-111-2.jpg" vendor="configmgrSS" />
@@ -2429,10 +2500,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                           <inlinegraphic fileref="images/caution.png" />
                         </entry>
 
-                        <entry>You should only use this feature when initially
-                        setting up your system. If there is data on the nodes
-                        when attempting to Swap Master, you run the risk of
-                        losing or corrupting some data.</entry>
+                        <entry>Você só deve usar esse recurso quando configurar inicialmente
+                        seu sistema. Se houver dados nos nós
+                        ao tentar trocar o mestre, você corre o
+                        risco de perder ou corromper alguns dados.</entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -2445,62 +2516,62 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3 id="ThorClusterAttributesTab">
-          <title>ThorCluster Attributes</title>
+          <title>Atributos ThorCluster</title>
 
-          <para>This section describes the Thor Cluster Attributes tab.</para>
+          <para>Esta seção descreve a aba Thor Cluster Attributes.</para>
 
           <para>
             <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
           </para>
 
           <sect4 id="ThorMemorySettings">
-            <title>Thor Memory Settings</title>
+            <title>Configurações de Memória do Thor</title>
 
-            <para>When the <emphasis role="bold">globalMemorySize</emphasis>
-            is left unset, Thor[master] detects total physical memory and
-            allocates 75% of it. If there are multiple slaves per node
-            (slavesPerNode&gt;1) it divides the total among the slaves. If
-            globalMemorySize is defined, then it allocates that amount of
-            memory to each slave. The masterMemorySize attribute allocates
-            memory for the Thor master. If omitted, Thor master uses
-            globalMemorySize, or the default 75% of memory.</para>
+            <para>Quando o <emphasis role="bold">globalMemorySize</emphasis>
+            é deixado indefinido, Thor [master] detecta a memória física total e
+            aloca 75% dela. Se houver múltiplos escravos por nó
+            (slavesPerNode&gt;1), ele divide o total entre os escravos. Se
+            globalMemorySize for definido, ele aloca a quantidade de
+            memória para cada slave. O atributo masterMemorySize aloca
+            memória para o mestre Thor. Se omitido, o Thor master usa
+            globalMemorySize ou o padrão 75% de memória.</para>
 
-            <para>On systems with a lot of memory, the default 75% of physical
-            memory is probably too conservative and reserving total physical
-            minus 2GB (for the OS and other processes) is sensible. You should
-            then divide that number by the number of slavesPerNode.</para>
+            <para>Em sistemas com muita memória, o padrão de 75% da memória
+            física é provavelmente muito conservador e reservar o total físico
+            menos 2GB (para o SO e outros processos) é sensato. Você deve
+            então dividir esse número pelo número de slavesPerNode.</para>
 
-            <para>If there are multiple Thors sharing the same nodes, then
-            globalMemorySize must be configured to take that into
-            account.</para>
+            <para>Se houver vários Thors compartilhando os mesmos nós, o
+            globalMemorySize deverá ser configurado para levar
+            isso em conta.</para>
 
-            <para>For example, if there are 2 Thors each with 2 slaves per
-            box, that will mean there are 4 slaves per physical node. So you
-            should use a formula similar to the following in your calculations
-            when configuring globalMemorySize:</para>
+            <para>Por exemplo, se houver 2 Thors, cada um com 2 escravos por
+            caixa, isso significará que há 4 escravos por nó físico. Portanto,
+            você deve usar uma fórmula semelhante à seguinte em seus cálculos
+            ao configurar globalMemorySize:</para>
 
             <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
 
-            <para>Without any specified setting, Thor assumes it has exclusive
-            access to the memory and would therefore use too much (because
-            each Thor is unaware of the other's configuration and memory
-            usage).</para>
+            <para>Sem nenhuma configuração especificada, o Thor assume que tem acesso exclusivo
+            à memória e, portanto, usaria muito (porque
+            cada Thor não está ciente da configuração e uso de memória
+            do outro).</para>
 
-            <para>If <emphasis role="bold">localThor</emphasis> is set to true
-            and <emphasis role="bold">masterMemorySize</emphasis> and
-            <emphasis role="bold">globalMemorySize</emphasis> are unspecified,
-            then the defaults will be 50% for <emphasis
-            role="bold">globalMemorySize</emphasis> (divided by <emphasis
-            role="bold">slavesPerNode</emphasis>) and 25% for <emphasis
+            <para>Se <emphasis role="bold">localThor</emphasis> estiver configurado como true
+            e <emphasis role="bold">masterMemorySize</emphasis> e 
+            <emphasis role="bold">globalMemorySize</emphasis> não forem especificados,
+            os padrões serão 50% para <emphasis
+            role="bold">globalMemorySize</emphasis> (dividido por <emphasis
+            role="bold">slavesPerNode</emphasis>) e 25% para <emphasis
             role="bold">masterMemorySize.</emphasis></para>
 
-            <para>Although a configuration may be set using upper memory
-            limits that exceed total physical memory, Thor will not actually
-            reserve the memory ahead of time and will only hit memory problems
-            when and if your jobs use all of memory. So, for example, two
-            Thors that are configured to use all available memory could
-            peacefully co-exist until a query on each are simultaneously using
-            more memory than the node has available.</para>
+            <para>Embora uma configuração possa ser definida usando limites de memória
+            superiores que excedam a memória física total, o Thor não
+            reservará a memória com antecedência. Isso somente ocorrerá em casos de problemas
+            de memória quando e se seus jobs usarem toda a memória. Portanto, por exemplo,
+            dois Thors configurados para usar toda a memória disponível podem coexistir
+            pacificamente até que uma consulta em cada um esteja usando
+            simultaneamente mais memória do que o nó disponível.</para>
 
             <!--configMgr-Thor-Attribute-Include-XXX-->
 
@@ -2519,9 +2590,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>ThorCluster SSH Options</title>
+          <title>Opções do SSH ThorCluster</title>
 
-          <para>This section describes the ThorCluster SSH Options tab.</para>
+          <para>Esta seção descreve a aba ThorCluster SSH Options.</para>
 
           <para>
             <graphic fileref="images/CM-img18-2.jpg" vendor="configmgrSS" />
@@ -2537,17 +2608,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>ThorCluster Debug</title>
+          <title>Depuração do ThorCluster</title>
 
-          <para>The debug tab is for internal use only</para>
+          <para>A aba de depuração é somente para uso interno.</para>
         </sect3>
 
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>ThorCluster Swap Node</title>
+          <title>Nó Swap ThorCluster</title>
 
-          <para>This section describes the ThorCluster Swap Node tab.</para>
+          <para>Esta seção descreve a aba ThorCluster Swap Node</para>
 
           <para>
             <graphic fileref="images/CM-img18-4.jpg" vendor="configmgrSS" />
@@ -2565,47 +2636,47 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>ThorCluster Notes</title>
+          <title>Notas sobre ThorCluster</title>
 
-          <para>This tab allows you to add any notes pertinent to the
-          component's configuration. This can be useful to keep a record of
-          changes and to communicate this information to peers.</para>
+          <para>Esta aba permite que você adicione notas pertinentes à
+          configuração do componente. Isso pode ser útil para manter um registro
+          de alterações e para comunicar essas informações aos parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="Roxie" role="brk">
         <title>Roxie</title>
 
-        <para>This section details how to define a Rapid Data Delivery Engine
-        (Roxie) cluster. Before you begin, you should decide the width of the
-        cluster (i.e., how many agent nodes will you have).</para>
+        <para>Esta seção detalha como definir um cluster do Mecanismo de Entrega Rápida de Dados (Rapid Data Delivery Engine
+        - Roxie). Antes de começar, você deve decidir a largura do
+        cluster (ou seja, quantos nós de agente você terá).</para>
 
         <!--***This section appears to have had signifcent changes*** -->
 
         <orderedlist>
           <listitem>
-            <para>Select <emphasis role="bold">Roxie Cluster</emphasis> in the
-            Navigator panel on the left side.</para>
+            <para>Selecione <emphasis role="bold">Roxie Cluster</emphasis> no
+            painel do navegador ao lado esquerdo.</para>
 
-            <para><emphasis role="bold">Note:</emphasis> If you did not
-            specify a value in the <emphasis>Number of nodes for Roxie cluster
-            </emphasis>field when you first set up your environment, you will
-            not have a Roxie Cluster. To add a Roxie Cluster component:
-            Right-click on the <emphasis role="bold">Software</emphasis>
-            component in the Navigator Panel, then select <emphasis
-            role="bold">New Components</emphasis> then <emphasis
-            role="bold">roxie</emphasis> from the drop lists.</para>
+            <para><emphasis role="bold">Observação:</emphasis> Se você não
+            especificou um valor no campo <emphasis>Number of nodes for Roxie cluster (Número de nós para o cluster Roxie)
+            </emphasis> ao configurar seu ambiente pela primeira vez, você não terá
+            um Roxie Cluster. Para adicionar um componente Roxie Cluster:
+            Clique com o botão direito do mouse no componente <emphasis role="bold">Software</emphasis>
+            no Painel Navigator, selecione <emphasis
+            role="bold">New Components</emphasis> e depois <emphasis
+            role="bold">roxie</emphasis> nas listas suspensas.</para>
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold">Servers</emphasis>
-            tab.</para>
+            <para>Selecione a aba <emphasis role="bold">Servidores</emphasis>
+            .</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Right-click the Roxie Servers and select
+            <para>Clique com o botão direito do mouse nos Servidores Roxie e selecione 
             <guimenuitem>Reconfigure Servers</guimenuitem>.</para>
 
             <para>
@@ -2616,8 +2687,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the computers to use as Servers from the list, then
-            press the OK button.</para>
+            <para>Selecione os computadores a serem usados como servidores na lista e
+            pressione o botão OK.</para>
 
             <para>
               <graphic fileref="images/CM-112-2.jpg" vendor="configmgrSS" />
@@ -2625,15 +2696,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis role="bold">Redundancy</emphasis>
-            tab.</para>
+            <para>Selecione a aba<emphasis role="bold">Redundancy</emphasis>
+            .</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the redundancy scheme to use. Typically, this is
-            cyclic redundancy, as shown below.</para>
+            <para>Selecione o esquema de redundância a ser usado. Normalmente, isso é
+            redundância cíclica, conforme mostrado abaixo.</para>
 
             <para>
               <graphic fileref="images/CM-112-1.jpg" vendor="configmgrSS" />
@@ -2641,24 +2712,24 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </listitem>
 
           <listitem>
-            <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
-            disk icon to save</para>
+            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+            ícone do disco para salvar</para>
           </listitem>
 
           <listitem>
-            <para>Close Configuration Manager by pressing ctrl+C in the
-            command window where it is running.</para>
+            <para>Feche o Gerenciador de Configuração, pressionando ctrl+C na
+            janela de comando em que está sendo executado.</para>
           </listitem>
         </orderedlist>
 
         <sect3>
-          <title>Roxie Configuration Attributes</title>
+          <title>Atributos de Configuração do Roxie</title>
 
-          <para>Roxie has many configurable attributes which can be used to
-          for customizing and tuning to your specific needs. The following
-          section expands on each of the Roxie tabs and the available
-          attributes. There is additional Roxie configuration information in
-          the section immediately following these tables.</para>
+          <para>O Roxie possui muitos atributos configuráveis que podem ser usados
+          para personalizar e ajustar suas necessidades específicas. A seção a seguir
+          se expande em cada uma das guias Roxie e nos atributos
+          disponíveis. Há informações adicionais sobre a configuração do Roxie na
+          seção imediatamente após essas tabelas.</para>
         </sect3>
       </sect2>
 
@@ -2674,103 +2745,103 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title />
 
         <sect3>
-          <title>Additional Roxie Configuration items</title>
+          <title>Itens adicionais de Configuração Roxie</title>
 
           <!--***Move to XSD for 2.0***-->
 
           <para>
-            <emphasis role="bold">Persistent Connections to Roxie</emphasis>
+            <emphasis role="bold">Conexões Persistentes para o Roxie</emphasis>
           </para>
 
-          <para>Persistent connections can cause backwards compatibility
-          issues with non-standard HTTP clients. You can disable this feature
-          by setting <emphasis>maxHttpConnectionRequests</emphasis> to either
-          0 or 1.</para>
+          <para>As conexões persistentes podem causar problemas de compatibilidade
+          com versões anteriores com clientes HTTP não padrão. Você pode desativar esse recurso
+          definindo <emphasis>maxHttpConnectionRequests</emphasis> como
+          0 ou 1.</para>
 
-          <para>In addition, persistent connections can affect Roxie load
-          balancing. If this is a concern, you can adjust
-          <emphasis>maxHttpConnectionRequests</emphasis> and
-          <emphasis>maxHttpKeepAliveWait</emphasis> values to optimize how
-          long all the transactions from a particular persistent connection go
-          to a single node rather than being distributed across the
+          <para>Além disso, conexões persistentes podem afetar o balanceamento de
+          carga do Roxie. Se isso for uma preocupação, você poderá ajustar os valores
+          <emphasis>maxHttpConnectionRequests</emphasis> e 
+          <emphasis>maxHttpKeepAliveWait</emphasis> para otimizar por quanto
+          tempo todas as transações de uma conexão persistente específica vão
+          para um único nó, em vez de serem distribuídas pelo
           cluster.</para>
 
           <para>
-            <emphasis role="bold">Add Servers to Roxie Farm</emphasis>
+            <emphasis role="bold">Adicionar servidores ao Roxie Farm</emphasis>
           </para>
 
-          <para>To add servers to a Roxie farm</para>
+          <para>Para adicionar servidores ao Roxie Farm</para>
 
           <para><orderedlist>
               <listitem>
-                <para>Select the <emphasis role="bold">Roxie Cluster -
-                myroxie</emphasis> (default) from the Navigator window on the
-                left side.</para>
+                <para>Selecione o <emphasis role="bold">Roxie Cluster -
+                myroxie</emphasis> (padrão) na janela Navigator no lado
+                esquerdo.</para>
               </listitem>
 
               <listitem>
-                <para>Select the <emphasis role="bold">Servers</emphasis>
-                tab.</para>
+                <para>Selecione a aba <emphasis role="bold">Servidores</emphasis>
+                .</para>
               </listitem>
 
               <listitem>
-                <para>Right-click on <emphasis role="bold">Roxie
+                <para>Clique com o botão direito do mouse em <emphasis role="bold">Roxie
                 Servers</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Select <emphasis role="bold">Reconfigure
+                <para>Selecione <emphasis role="bold">Reconfigure
                 Servers</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Press the <emphasis role="bold">Add Hardware</emphasis>
-                button.</para>
+                <para>Pressione o<emphasis role="bold">                botão </emphasis>
+Add Hardware.</para>
               </listitem>
 
               <listitem>
-                <para>Enter the values for the new server(s) in the dialog
-                then press OK.</para>
+                <para>Digite os valores para os novo(s) servidore(s) na caixa de diálogo
+                e pressione OK.</para>
               </listitem>
-            </orderedlist>All configured servers are then used when you create
-          a port to listen on.</para>
+            </orderedlist>Todos os servidores configurados são usados quando você cria
+          uma porta para escutar.</para>
 
           <variablelist>
             <varlistentry>
-              <term>NOTE</term>
+              <term>OBSERVAÇÃO</term>
 
               <listitem>
-                <para>If working with an older environment file this process
-                has changed. You no longer have to specify for a server to use
-                a specific port.</para>
+                <para>Se estiver trabalhando com um arquivo de ambiente antigo, esse processo
+                foi alterado. Você não precisa mais especificar para um servidor usar uma
+                porta específica.</para>
               </listitem>
             </varlistentry>
           </variablelist>
         </sect3>
 
         <sect3>
-          <title>Redundancy</title>
+          <title>Redundância</title>
 
-          <para>Roxie can be configured to utilize a few different redundancy
-          models. <itemizedlist>
+          <para>O Roxie pode ser configurado para utilizar alguns modelos de redundância
+          diferentes. <itemizedlist>
               <listitem>
-                <para>Simple Redundancy - One channel per slave. Most commonly
-                used for a single node Roxie.</para>
+                <para>Simple Redundancy - um canal por escravo. Mais comumente
+          usado para um único nó Roxie.</para>
               </listitem>
 
               <listitem>
-                <para>Full Redundancy - More slaves than the number of
-                channels. Multiple slaves host each channel.</para>
+                <para>Full Redundancy - mais escravos que o número de
+                canais. Vários escravos hospedam cada canal.</para>
               </listitem>
 
               <listitem>
-                <para>Overloaded Redundancy - There are multiple channels per
-                slave.</para>
+                <para>Overloaded Redundancy - Existem vários canais por
+                escravo.</para>
               </listitem>
 
               <listitem>
-                <para>Cyclic Redundancy - Each node hosts multiple channels in
-                rotation. The most commonly used configuration.</para>
+                <para>Cyclic Redundancy - Cada nó hospeda vários canais em
+                rotação. A configuração mais usada.</para>
               </listitem>
             </itemizedlist></para>
         </sect3>
@@ -2779,7 +2850,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <sect2 id="Topology" role="brk">
         <title>Topology</title>
 
-        <para>This section describes the topology tab.</para>
+        <para>Esta seção descreve a aba Topology.</para>
 
         <para>
           <graphic fileref="images/CM-img20.jpg" vendor="configmgrSS" />
@@ -2792,9 +2863,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
               <tbody>
                 <row>
-                  <entry>Attribute name</entry>
+                  <entry>Nome do Atributo</entry>
 
-                  <entry>Definition</entry>
+                  <entry>Definição</entry>
                 </row>
 
                 <row>
@@ -2802,7 +2873,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <emphasis>Topology</emphasis>
                   </entry>
 
-                  <entry>describes the system topology</entry>
+                  <entry>descreve a topologia do sistema</entry>
                 </row>
 
                 <row>
@@ -2810,7 +2881,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <emphasis>Cluster - thor</emphasis>
                   </entry>
 
-                  <entry>describes the Thor clusters</entry>
+                  <entry>descreve os clusters Thor</entry>
                 </row>
 
                 <row>
@@ -2818,7 +2889,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <emphasis>Cluster - hthor</emphasis>
                   </entry>
 
-                  <entry>describes the hthor clusters</entry>
+                  <entry>descreve os clusters de hThor</entry>
                 </row>
 
                 <row>
@@ -2826,92 +2897,110 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <emphasis>Cluster - roxie</emphasis>
                   </entry>
 
-                  <entry>describes the Roxie clusters</entry>
+                  <entry>descreve os clusters Roxie</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable>
         </para>
+      </sect2>
 
-        <sect3 id="Propogate-configuration-changes" role="brk">
-          <title>Distribute Configuration Changes to all Nodes</title>
+      <sect2 id="CFG_TopoServer" role="brk">
+        <title>Topo Server</title>
 
-          <para>Once your environment is set up as desired, you must copy the
-          configuration file to the other nodes.</para>
+        <para>Esse processo TopoServer é configurado através do servidor <emphasis>Topo
+        Server - mytoposerver</emphasis> do Configuration Manager. Você
+        define as instâncias e, em seguida, define os atributos de configuração.</para>
 
-          <para />
+        <para>
+          <graphic fileref="images/CM-TopoSrvr.jpg" />
+        </para>
 
-          <orderedlist>
-            <listitem>
-              <para>If it is running, stop the system</para>
+        <!--TopoServer-Include-->
 
-              <para>
-                <informaltable colsep="1" frame="all" rowsep="1">
-                  <?dbfo keep-together="always"?>
+        <xi:include href="../XMLGeneration/xml/toposerver.xsd.mod.xml"
+                    xpointer="xpointer(//*[@id='topo.svr'])"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </sect2>
 
-                  <tgroup cols="2">
-                    <colspec colwidth="49.50pt" />
+      <sect2 id="Propogate-configuration-changes" role="brk">
+        <title>Distribuir alterações na configuração para todos os nós</title>
 
-                    <colspec />
+        <para>Após ter configurado seu ambiente da forma desejada, é preciso copiar
+          o arquivo de configuração para os demais nós.</para>
 
-                    <tbody>
-                      <row>
-                        <entry>
-                          <inlinegraphic fileref="images/caution.png" />
-                        </entry>
+        <para />
 
-                        <entry>Be sure system is stopped before attempting to
-                        copy the Environment.xml file.</entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </informaltable>
-              </para>
-            </listitem>
+        <orderedlist>
+          <listitem>
+            <para>Se o sistema estiver em execução, pare o sistema.</para>
 
-            <listitem>
-              <para>Back up the original environment.xml file</para>
+            <para>
+              <informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
 
-              <programlisting># for example
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>
+                        <inlinegraphic fileref="images/caution.png" />
+                      </entry>
+
+                      <entry>Certifique-se de que o HPCC System não esteja em execução antes de tentar
+                        copiar o arquivo Environment.xml.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>Salve o arquivo environment.xml em um backup.</para>
+
+            <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
 
-              <para>Note: the "live environment.xml file is located in your
-              <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
-              ConfigManager works on files in <emphasis
-              role="bold">/etc/HPCCSystems/source</emphasis> directory. You
-              must copy from this location to make an environment.xml file
-              active.</para>
-            </listitem>
+            <para>Observação: o arquivo environment.xml do ambiente em execução está localizado em seu diretório 
+            <emphasis role="bold">/etc/HPCCSystems/</emphasis>.
+            O Gerenciador de Configurações funciona em arquivos no diretório <emphasis
+            role="bold">/etc/HPCCSystems/source</emphasis>. É necessário
+            copiar deste local para criar um arquivo environment.xml
+            ativo.</para>
+          </listitem>
 
-            <listitem>
-              <para>Copy the NewEnvironment.xml file from the source directory
-              to the /etc/HPCCSystems and rename the file to
+          <listitem>
+            <para>Copie o novo arquivo NewEnvironment.xml do diretório de origem
+              para /etc/HPCCSystems e renomeie o arquivo para
               environment.xml</para>
 
-              <programlisting># for example
+            <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-              <para />
-            </listitem>
+            <para />
+          </listitem>
 
-            <listitem>
-              <para>Copy the /etc/HPCCSystems/environment.xml to the
-              /etc/HPCCSystems/ on every node.</para>
+          <listitem>
+            <para>Copie o /etc/HPCCSystems/environment.xml para o
+              /etc/HPCCSystems/ em cada nó.</para>
 
-              <para />
-            </listitem>
+            <para />
+          </listitem>
 
-            <listitem>
-              <para>Restart the HPCC system</para>
+          <listitem>
+            <para>Inicie a plataforma do HPCC System</para>
 
-              <para>You might prefer to script this process, especially if you
-              have many nodes. See the Example Scripts section in the Appendix
-              of the Installing_and_RunningtheHPCCPlatform document. You can
-              use the scripts as a model to create your own script to copy the
-              environment.xml file out to all your nodes.</para>
-            </listitem>
-          </orderedlist>
-        </sect3>
+            <para>Se preferir, use um script para automatizar essa etapa, especialmente se você
+              tiver muitos nós. Consulte a seção Scripts de exemplo na seção Anexos do manual
+              Como instalar e executar a plataforma do HPCC System. É possível usar os
+              scripts como um modelo para criar seu próprio script e copiar
+              o arquivo environment.xml para todos os seus nós.</para>
+          </listitem>
+        </orderedlist>
       </sect2>
     </sect1>
   </chapter>

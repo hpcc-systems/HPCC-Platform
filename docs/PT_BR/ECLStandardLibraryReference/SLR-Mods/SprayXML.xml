@@ -32,8 +32,9 @@
   role="bold">]</emphasis>, <emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
-  role="bold">])</emphasis></para>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayXML<indexterm>
@@ -63,8 +64,9 @@
   role="bold">]</emphasis>, <emphasis
   role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis
-  role="bold">])</emphasis></para>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -193,6 +195,14 @@
 
           <entry>Nome do Servidor DFU de destino. O padrão é '' (empty) para o
           primeiro na fila de DFU no ambiente.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noSplit</emphasis></entry>
+
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando para não
+                    dividir uma parte do arquivo em várias partes de destino.
+          O padrão é           FALSO</entry>
         </row>
 
         <row>
