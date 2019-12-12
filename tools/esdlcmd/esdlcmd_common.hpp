@@ -161,9 +161,11 @@ class EsdlCmdCommon : public CInterface, implements IEsdlCommand
 {
 public:
     using TraceFlags = IEsdlDefReporter::Flags;
-    static const TraceFlags defaultSuccinctTraceFlags = IEsdlDefReporter::ReportErrorClass | IEsdlDefReporter::ReportWarningClass;
-    static const TraceFlags defaultVerboseTraceFlags = defaultSuccinctTraceFlags | IEsdlDefReporter::ReportProgressClass | IEsdlDefReporter::ReportInfoClass;
-
+    enum : TraceFlags
+    {
+        defaultSuccinctTraceFlags = IEsdlDefReporter::ReportErrorClass | IEsdlDefReporter::ReportWarningClass,
+        defaultVerboseTraceFlags = defaultSuccinctTraceFlags | IEsdlDefReporter::ReportProgressClass | IEsdlDefReporter::ReportInfoClass,
+    };
     IMPLEMENT_IINTERFACE;
     EsdlCmdCommon() : optVerbose(false)
     {}
