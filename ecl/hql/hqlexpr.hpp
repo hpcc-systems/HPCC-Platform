@@ -859,16 +859,14 @@ public:
     class MetaOptions
     {
     public:
-        MetaOptions() { _clear(*this); }
-
-        bool includePublicDefinitions;   // include details of SHARED and EXPORTED symbols
-        bool includePrivateDefinitions;  // include details of local symbols/parameters etc.
-        bool onlyGatherRoot;             // only gather information for the main definition processed.
-        bool includeInternalUses;        // gather use of internal symbols
-        bool includeExternalUses;        // gather use of external symbols
-        bool includeImports;            // gather imports
-        bool includeLocations;          // include information about source locations
-        bool includeJavadoc;
+        bool includePublicDefinitions = false;   // include details of SHARED and EXPORTED symbols
+        bool includePrivateDefinitions = false;  // include details of local symbols/parameters etc.
+        bool onlyGatherRoot = false;             // only gather information for the main definition processed.
+        bool includeInternalUses = false;        // gather use of internal symbols
+        bool includeExternalUses = false;        // gather use of external symbols
+        bool includeImports = false;            // gather imports
+        bool includeLocations = false;          // include information about source locations
+        bool includeJavadoc = false;
         StringAttr cacheLocation;
     };
 

@@ -2063,8 +2063,16 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
             break;
 
         //ds.x has changed to ds'.x - need to map any selectors from ds to ds'
-        newDs = queryDatasetCursor(newRoot->queryChild(0));
-        ds = queryDatasetCursor(oldRoot->queryChild(0));
+        newDs = newRoot->queryChild(0);
+        ds = oldRoot->queryChild(0);
+        // If ds.x is mapped to r.y.x then only map ds to r.y
+        while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
+        {
+            if (newDs->getOperator() != no_select)
+                break;
+            ds = ds->queryChild(0);
+            newDs = newDs->queryChild(0);
+        }
     }
 
     return updated.getClear();
