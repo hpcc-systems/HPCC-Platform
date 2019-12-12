@@ -25,12 +25,15 @@
 #include <set>
 #include <map>
 #include <list>
+#include "InfoCacheReader.hpp"
 
 class CMachineInfoThreadParam;
 class CRoxieStateInfoThreadParam;
 class CMetricsThreadParam;
 class CRemoteExecThreadParam;
 class CGetMachineUsageThreadParam;
+class CUsageCache;
+class CUsageCacheReader;
 
 static const char *legacyFilterStrings[] = {"AttrServerProcess:attrserver", "DaliProcess:daserver",
 "DfuServerProcess:dfuserver", "DKCSlaveProcess:dkcslave", "EclServerProcess:eclserver", "EclCCServerProcess:eclccserver",
@@ -726,143 +729,8 @@ public:
     int* getChannels(const char* key) { return channelsMap.getValue(key); };
 };
 
-const unsigned MACHINE_USAGE_MAX_CACHE_SIZE = 8;
-const unsigned MACHINE_USAGE_CACHE_MINUTES = 3;
-
-struct MachineUsageCacheElement: public CInterface, implements IInterface
-{
-    IMPLEMENT_IINTERFACE;
-    MachineUsageCacheElement(const char* _id, IArrayOf<IEspComponentUsage>& _usages) : id(_id)
-    {
-        ForEachItemIn(i, _usages)
-        {
-            Owned<IEspComponentUsage> usage= createComponentUsage("","");
-            IEspComponentUsage& _usage = _usages.item(i);
-            usage->copy(_usage);
-
-            componentUsages.append(*usage.getClear());
-        }
-        timeCached.setNow();
-    }
-    MachineUsageCacheElement(const char* _id, IArrayOf<IEspTargetClusterUsage>& _usages) : id(_id)
-    {
-        ForEachItemIn(i, _usages)
-        {
-            Owned<IEspTargetClusterUsage> usage= createTargetClusterUsage("","");
-            IEspTargetClusterUsage& _usage = _usages.item(i);
-            usage->copy(_usage);
-
-            tcUsages.append(*usage.getClear());
-        }
-        timeCached.setNow();
-    }
-    MachineUsageCacheElement(const char* _id, IArrayOf<IEspNodeGroupUsage>& _usages) : id(_id)
-    {
-        ForEachItemIn(i, _usages)
-        {
-            Owned<IEspNodeGroupUsage> usage= createNodeGroupUsage("","");
-            IEspNodeGroupUsage& _usage = _usages.item(i);
-            usage->copy(_usage);
-
-            ngUsages.append(*usage.getClear());
-        }
-        timeCached.setNow();
-    }
-
-    CDateTime timeCached;
-    std::string id;
-    IArrayOf<IEspComponentUsage> componentUsages;
-    IArrayOf<IEspTargetClusterUsage> tcUsages;
-    IArrayOf<IEspNodeGroupUsage> ngUsages;
-};
-
-struct CompareMachines
-{
-    CompareMachines(const char* _id): id(_id) {}
-    bool operator()(const Linked<MachineUsageCacheElement>& e) const
-    {
-        return streq(e->id.c_str(), id.c_str());
-    }
-    std::string id;
-};
-
-struct MachineUsageCache: public CInterface, implements IInterface
-{
-    IMPLEMENT_IINTERFACE;
-    MachineUsageCache(size32_t _maxCacheSize=0) : maxCacheSize(_maxCacheSize){}
-
-    MachineUsageCacheElement* lookup(IEspContext &context, const char* id, unsigned timeOutMinutes)
-    {
-        CriticalBlock block(crit);
-
-        if (cache.size() == 0)
-            return nullptr;
-
-        //erase data if it should be
-        CDateTime timeNow;
-        timeNow.setNow();
-        timeNow.adjustTimeSecs(-timeOutMinutes*60);
-        while (true)
-        {
-            std::list<Linked<MachineUsageCacheElement> >::iterator list_iter = cache.begin();
-            if (list_iter == cache.end())
-                break;
-
-            MachineUsageCacheElement* cachedElement = list_iter->get();
-            if (!cachedElement || (cachedElement->timeCached > timeNow))
-                break;
-
-            cache.pop_front();
-        }
-
-        if (cache.size() == 0)
-            return nullptr;
-
-        //Check whether we have usage cache for those machines.
-        std::list<Linked<MachineUsageCacheElement> >::iterator it = std::find_if(cache.begin(), cache.end(), CompareMachines(id));
-        if (it!=cache.end())
-        {
-            return it->getLink();
-        }
-
-        return nullptr;
-    }
-
-    void add(const char* id, IArrayOf<IEspComponentUsage>& usages)
-    {
-        CriticalBlock block(crit);
-        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
-    }
-
-    void add(const char* id, IArrayOf<IEspTargetClusterUsage>& usages)
-    {
-        CriticalBlock block(crit);
-        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
-    }
-
-    void add(const char* id, IArrayOf<IEspNodeGroupUsage>& usages)
-    {
-        CriticalBlock block(crit);
-        addUsageCacheElement(new MachineUsageCacheElement(id, usages));
-    }
-
-    std::list<Linked<MachineUsageCacheElement> > cache;
-    CriticalSection crit;
-    size32_t maxCacheSize;
-
-private:
-    void addUsageCacheElement(MachineUsageCacheElement* _e)
-    {
-        Owned<MachineUsageCacheElement> e = _e;
-        if (maxCacheSize == 0)
-            return;
-
-        if (cache.size() >= maxCacheSize)
-            cache.pop_front();
-
-        cache.push_back(e.get());
-    }
-};
+const unsigned MACHINE_USAGE_CACHE_MINUTES = 3; //Force usage cache to rebuild
+const unsigned DEFAULT_MACHINE_USAGE_CACHE_AUTO_BUILD_MINUTES = 10;
 
 //---------------------------------------------------------------------------------------------
 
@@ -893,7 +761,22 @@ public:
     void doGetMetrics(CMetricsThreadParam* pParam);
     bool doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop, IEspStartStopResponse &resp);
     void getMachineUsage(IEspContext& context, CGetMachineUsageThreadParam* param);
+    void getMachineUsages(IEspContext& context, IPropertyTree* uniqueUsageReq);
+    IArrayOf<IConstComponent>& listComponentsForCheckingUsage(IConstEnvironment* constEnv, IArrayOf<IConstComponent>& componentList);
+    IPropertyTree* createDiskUsageReq(IPropertyTree* envDirectories, const char* pathName, const char* componentType, const char* componentName);
+    IPropertyTree* createMachineUsageReq(IConstEnvironment* constEnv, const char* computer);
 
+    virtual bool attachServiceToDali() override
+    {
+        usageCacheReaderThread->setDetachedState(false);
+        return true;
+    }
+
+    virtual bool detachServiceFromDali() override
+    {
+        usageCacheReaderThread->setDetachedState(true);
+        return true;
+    }
     IConstEnvironment* getConstEnvironment();
 
     //Used in StartStop/Rexec
@@ -957,11 +840,7 @@ private:
 
     StringArray& listTargetClusterNames(IConstEnvironment* constEnv, StringArray& targetClusters);
     StringArray& listThorHThorNodeGroups(IConstEnvironment* constEnv, StringArray& nodeGroups);
-    IArrayOf<IConstComponent>& listComponentsForCheckingUsage(IConstEnvironment* constEnv, IArrayOf<IConstComponent>& componentList);
     IArrayOf<IConstComponent>& listComponentsByType(IPropertyTree* envRoot, const char* componentType, IArrayOf<IConstComponent>& componentList);
-    IPropertyTree* createDiskUsageReq(IPropertyTree* envDirectories, const char* pathName,
-        const char* componentType, const char* componentName);
-    IPropertyTree* createMachineUsageReq(IConstEnvironment* constEnv, const char* computer);
     void readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv,
         IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
     void readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv,
@@ -973,7 +852,6 @@ private:
     void readDropZoneUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void readOtherComponentUsageReq(const char* name, const char* type, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void setUniqueMachineUsageReq(IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
-    void getMachineUsages(IEspContext& context, IPropertyTree* uniqueUsageReq);
     bool getEclAgentNameFromNodeGroupName(const char* nodeGroupName, StringBuffer& agentName);
     void getThorClusterNamesByGroupName(IPropertyTree* envRoot, const char* group, StringArray& thorClusters);
     void readTargetClusterUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
@@ -983,12 +861,8 @@ private:
     void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
         IArrayOf<IEspComponentUsage>& componentUsages);
     bool readDiskSpaceResponse(const char* buf, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed);
-    void buildUsageCacheID(StringBuffer& id, StringArray& names, const char* defaultID);
-    void buildComponentUsageCacheID(StringBuffer& id, IArrayOf<IConstComponent>& componentList);
-    bool readComponentUsageCache(IEspContext& context, const char* id, IEspGetComponentUsageResponse& resp);
-    bool readTargetClusterUsageCache(IEspContext& context, const char* id, IEspGetTargetClusterUsageResponse& resp);
-    bool readNodeGroupUsageCache(IEspContext& context, const char* id, IEspGetNodeGroupUsageResponse& resp);
     void addChannels(CGetMachineInfoData& machineInfoData, IPropertyTree* envRoot, const char* componentType, const char* componentName);
+    StringBuffer& setUsageTimeStr(CUsageCache* usageCache, StringBuffer& timeStr);
 
     //Still used in StartStop/Rexec, so keep them for now.
     enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
@@ -1007,8 +881,8 @@ private:
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
-    Owned<MachineUsageCache>    machineUsageCache;
-    unsigned                    machineUsageCacheMinutes;
+    Owned<CUsageCacheReader>    usageCacheReader;
+    Owned<CInfoCacheReaderThread>    usageCacheReaderThread;
 };
 
 //---------------------------------------------------------------------------------------------
@@ -1097,5 +971,35 @@ public:
     }
 };
 
+
+class CUsageCache : public CInfoCache
+{
+    Owned<IPropertyTree> usages;
+public:
+    CUsageCache() {};
+
+    void setUsages(IPropertyTree *tree) { usages.setown(tree); timeCached.setNow(); };
+    IPropertyTree *queryUsages() { return usages; };
+};
+
+class CUsageCacheReader : public CInterface, implements IInfoCacheReader
+{
+    Linked<Cws_machineEx> servicePtr;
+
+    IPropertyTree *setUsageReqAllMachines();
+    void addClusterUsageReq(IConstEnvironment *constEnv, const char *name, bool thorCluster, IPropertyTree *usageReq);
+    void checkAndAddMachineUsageReq(IConstEnvironment *constEnv, const char *computer, IPropertyTree *logFolder,
+        IPropertyTree *dataFolder,  IPropertyTree *repFolder, IPropertyTree *usageReq);
+    void checkAndAddFolderReq(IPropertyTree *folder, IPropertyTree *machineReqTree);
+    void addDropZoneUsageReq(IConstEnvironment *constEnv, const char* name, IPropertyTree *usageReq);
+    void addOtherComponentUsageReq(IConstEnvironment *constEnv, const char *name, const char *type, IPropertyTree *usageReq);
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {};
+
+    virtual CInfoCache *read();
+};
 #endif //_ESPWIZ_ws_machine_HPP__
 
