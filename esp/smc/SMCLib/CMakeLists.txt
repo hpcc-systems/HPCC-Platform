@@ -30,7 +30,8 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp 
          LogicFileWrapper.cpp 
          TpWrapper.cpp 
-         WUXMLInfo.cpp 
+         WUXMLInfo.cpp
+         InfoCacheReader.cpp
     )
 
 include_directories ( 

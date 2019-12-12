@@ -23,6 +23,7 @@
 #include "wujobq.hpp"
 #include "TpWrapper.hpp"
 #include "WUXMLInfo.hpp"
+#include "InfoCacheReader.hpp"
 
 const unsigned DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND = 10;
 const unsigned DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND = 120;
@@ -100,9 +101,8 @@ public:
     virtual ~CWsSMCTargetCluster(){};
 };
 
-class CActivityInfo : public CInterface, implements IInterface
+class CActivityInfo : public CInfoCache
 {
-    CDateTime timeCached;
     BoolHash uniqueECLWUIDs;
 
     Owned<IJQSnapshot> jobQueueSnapshot;
@@ -142,12 +142,9 @@ class CActivityInfo : public CInterface, implements IInterface
     void addQueuedServerQueueJob(IEspContext& context, const char* serverName, const char* queueName, const char* instanceName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CActivityInfo() {};
     virtual ~CActivityInfo() { jobQueueSnapshot.clear(); };
 
-    bool isCachedActivityInfoValid(unsigned timeOutSeconds);
     void createActivityInfo(IEspContext& context);
 
     inline CIArrayOf<CWsSMCTargetCluster>& queryThorTargetClusters() { return thorTargetClusters; };
@@ -157,88 +154,22 @@ public:
     inline IArrayOf<IEspActiveWorkunit>& queryActiveWUs() { return aws; };
     inline IArrayOf<IEspServerJobQueue>& queryServerJobQueues() { return serverJobQueues; };
     inline IArrayOf<IEspDFUJob>& queryDFURecoveryJobs() { return DFURecoveryJobs; };
-    inline StringBuffer& queryTimeCached(StringBuffer& str) { return timeCached.getString(str, true); }
 };
 
-class CWsSMCEx;
-
-class CActivityInfoReader : public CInterface, implements IThreaded
+class CActivityInfoCacheReader : public CInterface, implements IInfoCacheReader
 {
-    bool stopping = false;
-    bool detached = false;
-    bool first = true;
-    bool firstBlocked = false;
-    unsigned autoRebuildSeconds = DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND;
-    unsigned forceRebuildSeconds = DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND;
-    Owned<CActivityInfo> activityInfoCache;
-    Semaphore sem;
-    Semaphore firstSem;
-    CriticalSection crit;
-    CThreaded threaded;
-    std::atomic<bool> waiting = {false};
 public:
-    CActivityInfoReader(unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
-        : autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), threaded("ActivityInfoReader")
+    IMPLEMENT_IINTERFACE;
+
+    CActivityInfoCacheReader() {};
+
+    virtual CInfoCache* read()
     {
-        threaded.init(this);
+        Owned<IEspContext> espContext =  createEspContext();
+        Owned<CActivityInfo> info = new CActivityInfo();
+        info->createActivityInfo(*espContext);
+        return info.getClear();
     };
-
-    ~CActivityInfoReader()
-    {
-        stopping = true;
-        sem.signal();
-        firstSem.signal(); // in case
-        threaded.join();
-    }
-
-    virtual void threadmain() override;
-    CActivityInfo* getActivityInfo()
-    {
-        CLeavableCriticalBlock b(crit);
-        if (first)
-        {
-            if (detached)
-                return nullptr;
-            firstBlocked = true;
-            b.leave();
-            firstSem.wait();
-            b.enter();
-            if (first)
-                return nullptr;
-        }
-
-        //Now, activityInfoCache should always be available.
-        assertex(activityInfoCache);
-        if (!detached && !activityInfoCache->isCachedActivityInfoValid(forceRebuildSeconds))
-            rebuild();
-        return activityInfoCache.getLink();
-    }
-    void rebuild()
-    {
-        bool expected = true;
-        if (waiting.compare_exchange_strong(expected, false))
-            sem.signal();
-    }
-    void setDetachedState(bool _detached)
-    {
-        CriticalBlock b(crit);
-        if (detached != _detached)
-        {
-            detached = _detached;
-            if (detached)
-            {
-                // NB: first will still be true, signal and getActivityInfo() will return null
-                if (firstBlocked)
-                {
-                    firstBlocked = false;
-                    firstSem.signal(); // NB: first still true
-                }
-            }
-            else
-                rebuild();
-        }
-    }
-    bool isDaliDetached() const { return detached; }
 };
 
 class CWsSMCEx : public CWsSMC
@@ -255,7 +186,8 @@ class CWsSMCEx : public CWsSMC
     int m_BannerAction;
     bool m_EnableChatURL;
     CriticalSection crit;
-    Owned<CActivityInfoReader> activityInfoReader;
+    Owned<CInfoCacheReaderThread>   activityInfoCacheReaderThread;
+    Owned<CActivityInfoCacheReader> activityInfoCacheReader;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -281,13 +213,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        activityInfoReader->setDetachedState(false);
+        activityInfoCacheReaderThread->setDetachedState(false);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        activityInfoReader->setDetachedState(true);
+        activityInfoCacheReaderThread->setDetachedState(true);
         return true;
     }
 
