@@ -1381,6 +1381,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         throw MakeGraphException(this, 0, "subgraph aborted");
     }
     GraphPrintLog("Processing graph");
+    setParentCtx(parentExtractSz, parentExtract);
     Owned<IException> exception;
     try
     {
@@ -3142,8 +3143,6 @@ CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_contai
     mpTag = TAG_NULL;
     abortSoon = receiving = cancelledReceive = initialized = reInit = false;
     baseHelper.set(container.queryHelper());
-    parentExtractSz = 0;
-    parentExtract = NULL;
 
     defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags);
     if (container.queryJob().queryUsePackedAllocators())
