@@ -3432,8 +3432,8 @@ public:
                             startWuid.setCharAt(startWuid.length()-1, startWuid.charAt(startWuid.length()-1)-1);  // we want to find the last wuid BEFORE
                         else
                             startWuid.append('\x21');  // we want to find the first wuid AFTER. This is printable but not going to be in any wuid
-                        thorTimeThreshold.clear();
                     }
+                    thorTimeThreshold.clear();
                     wuidFilters.append(*new PostFilter(sortorder==WUSFwuid ? WUSFwuid : WUSFwuidhigh, startWuid, true));
                     startOffset -= found;
                     merger->setStartOffset(found);
