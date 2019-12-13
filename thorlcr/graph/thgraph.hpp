@@ -658,6 +658,11 @@ public:
         parentExtractMb.swapWith(newParentExtract);
         return (const byte *)parentExtractMb.toByteArray();
     }
+    const byte *queryParentExtract(size32_t &sz) const
+    {
+        sz = parentExtractSz;
+        return (const byte *)parentExtractMb.toByteArray();
+    }
     virtual ICodeContext *queryCodeContext() { return &graphCodeContext; }
     void setLoopCounter(unsigned _counter) { counter = _counter; }
     unsigned queryLoopCounter() const { return counter; }
@@ -1071,8 +1076,6 @@ protected:
     mptag_t mpTag; // to be used by any direct inter master<->slave communication
     bool abortSoon;
     bool timeActivities; // purely for access efficiency
-    size32_t parentExtractSz;
-    const byte *parentExtract;
     bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
@@ -1096,7 +1099,6 @@ public:
     inline bool queryTimeActivities() const { return timeActivities; }
     inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
 
-    void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag);

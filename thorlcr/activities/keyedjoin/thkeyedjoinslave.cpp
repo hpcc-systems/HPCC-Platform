@@ -158,7 +158,7 @@ static const unsigned defaultFetchLookupProcessBatchLimit = 10000;
 class CJoinGroup;
 
 
-enum AllocatorTypes { AT_Transform=1, AT_LookupWithJG, AT_LookupWithJGRef, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
+enum AllocatorTypes { AT_Transform=1, AT_LookupWithJG, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
 
 
 struct Row
@@ -1496,6 +1496,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 activity.queryHelper()->serializeCreateContext(msg);
                 sizeMark.write();
 
+                size32_t parentExtractSz;
+                const byte *parentExtract = activity.queryGraph().queryParentExtract(parentExtractSz);
+                msg.append(parentExtractSz);
+                msg.append(parentExtractSz, parentExtract);
+                msg.append(activity.startCtxMb.length());
+                msg.append(activity.startCtxMb.length(), activity.startCtxMb.toByteArray());
+
                 msg.append(activity.messageCompression);
                 // NB: potentially translation per part could be different if dealing with superkeys
                 IPropertyTree &props = part.queryOwner().queryProperties();
@@ -2145,6 +2152,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     roxiemem::IRowManager *rowManager = nullptr;
     unsigned currentAdded = 0;
     unsigned currentJoinGroupSize = 0;
+    MemoryBuffer startCtxMb;
 
     Owned<IThorRowInterfaces> fetchInputMetaRowIf; // fetch request rows, header + fetch fields
     Owned<IThorRowInterfaces> fetchOutputMetaRowIf; // fetch request reply rows, header + [join fields as child row]
@@ -3028,6 +3036,7 @@ public:
         rowLimit = (rowcount_t)helper->getRowLimit();
         if (rowLimit < keepLimit)
             keepLimit = rowLimit+1; // if keepLimit is small, let it reach rowLimit+1, but any more is pointless and a waste of time/resources.
+        helper->serializeStartContext(startCtxMb.clear());
 
         inputHelper.set(input->queryFromActivity()->queryContainer().queryHelper());
         preserveOrder = 0 == (joinFlags & JFreorderable);
