@@ -3969,7 +3969,8 @@ BoundRow * HqlCppTranslator::buildDatasetIterateProject(BuildCtx & ctx, IHqlExpr
     Owned<BoundRow> tempRow = declareTempAnonRow(ctx, ctx, expr);
     if (counter)
     {
-        ctx.associateExpr(counter, counterVar);
+        OwnedHqlExpr castCounterVar = ensureExprType(counterVar, counter->queryType());
+        ctx.associateExpr(counter, castCounterVar);
         OwnedHqlExpr inc = createValue(no_postinc, LINK(unsignedType), LINK(counterVar));
         ctx.addExpr(inc);
     }
