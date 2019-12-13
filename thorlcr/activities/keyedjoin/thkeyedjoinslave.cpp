@@ -158,7 +158,7 @@ static const unsigned defaultFetchLookupProcessBatchLimit = 10000;
 class CJoinGroup;
 
 
-enum AllocatorTypes { AT_Transform=1, AT_LookupWithJG, AT_LookupWithJGRef, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
+enum AllocatorTypes { AT_Transform=1, AT_Lookup, AT_LookupWithJG, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
 
 
 struct Row
@@ -1472,6 +1472,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     {
         typedef CRemoteLookupHandler PARENT;
 
+        IOutputRowSerializer *keyLookupRowSerializer = nullptr;
+
         void initRead(CMessageBuffer &msg, unsigned selected, unsigned partNo, unsigned copy)
         {
             unsigned handle = handles[selected];
@@ -1494,6 +1496,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 DelayedSizeMarker sizeMark(msg);
                 activity.queryHelper()->serializeCreateContext(msg);
                 sizeMark.write();
+
+                size32_t parentExtractSz;
+                const byte *parentExtract = activity.queryGraph().queryParentExtract(parentExtractSz);
+                msg.append(parentExtractSz);
+                msg.append(parentExtractSz, parentExtract);
 
                 msg.append(activity.messageCompression);
                 // NB: potentially translation per part could be different if dealing with superkeys
@@ -1544,6 +1551,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             limiter = &activity.lookupThreadLimiter;
             allParts = &activity.allIndexParts;
+            keyLookupRowSerializer = activity.keyLookupRowIf->queryRowSerializer();
         }
         virtual void trace(const char *msg) const override
         {
@@ -2121,6 +2129,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     bool forceRemoteKeyedFetch = false;
     bool messageCompression = false;
 
+    Owned<IThorRowInterfaces> keyLookupRowIf;
     Owned<IThorRowInterfaces> keyLookupRowWithJGRowIf;
     Owned<IThorRowInterfaces> keyLookupReplyOutputMetaRowIf;
 
@@ -2814,6 +2823,8 @@ public:
 
         transformAllocator.setown(getRowAllocator(queryOutputMeta(), (roxiemem::RoxieHeapFlags)(queryHeapFlags()|roxiemem::RHFpacked|roxiemem::RHFunique), AT_Transform));
         rowManager = queryJobChannel().queryThorAllocator()->queryRowManager();
+
+        keyLookupRowIf.setown(createRowInterfaces(helper->queryIndexReadInputRecordSize(), (roxiemem::RoxieHeapFlags)(queryHeapFlags()|roxiemem::RHFpacked|roxiemem::RHFunique), AT_Lookup));
 
         class CKeyLookupRowOutputMetaData : public CPrefixedOutputMeta
         {
