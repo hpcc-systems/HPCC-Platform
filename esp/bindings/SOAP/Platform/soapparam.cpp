@@ -68,8 +68,9 @@ bool BaseEspParam::unmarshall(IRpcMessage &rpc_call, const char *tagname, const 
         if (optGroup && rpc_call.queryContext())
             rpc_call.queryContext()->addOptGroup(optGroup);
         isNil = false;
+        return true;
     }
-    return isNil;
+    return false;
 }
 
 bool BaseEspParam::unmarshall(IEspContext* ctx, CSoapValue &soapval, const char *tagname, const char* optGroup)
@@ -79,8 +80,9 @@ bool BaseEspParam::unmarshall(IEspContext* ctx, CSoapValue &soapval, const char 
         if (ctx && optGroup)
             ctx->addOptGroup(optGroup);
         isNil = false;
+        return true;
     }
-    return isNil;
+    return false;
 }
 
 bool BaseEspParam::unmarshall(IEspContext* ctx, IProperties &params, MapStrToBuf *attachments, const char *tagname, const char *basepath, const char* optGroup, const char *xsdtype, const char *prefix)
@@ -92,11 +94,12 @@ bool BaseEspParam::unmarshall(IEspContext* ctx, IProperties &params, MapStrToBuf
 
     if (updateValue(params.queryProp(path.str())))
     {
-        isNil = false;
         if (ctx && optGroup)
             ctx->addOptGroup(optGroup);
+        isNil = false;
+        return true;
     }
-    return isNil;
+    return false;
 }
 
 void SoapStringParam::toXMLValue(StringBuffer &s, bool encode)
