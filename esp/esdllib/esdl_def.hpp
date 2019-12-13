@@ -237,40 +237,42 @@ esdl_decl EsdlBasicElementType esdlSimpleType(const char *type);
 interface IEsdlDefReporter : extends IInterface
 {
     using Flags = uint64_t;
-    static const Flags ReportDisaster  = 1 << 0;
-    static const Flags ReportAError    = 1 << 1;
-    static const Flags ReportIError    = 1 << 2;
-    static const Flags ReportOError    = 1 << 3;
-    static const Flags ReportUError    = 1 << 4;
-    static const Flags ReportIWarning  = 1 << 5;
-    static const Flags ReportOWarning  = 1 << 6;
-    static const Flags ReportUWarning  = 1 << 7;
-    static const Flags ReportDProgress = 1 << 8;
-    static const Flags ReportOProgress = 1 << 9;
-    static const Flags ReportUProgress = 1 << 10;
-    static const Flags ReportDInfo     = 1 << 11;
-    static const Flags ReportOInfo     = 1 << 12;
-    static const Flags ReportUInfo     = 1 << 13;
-    static const Flags ReportStats     = 1 << 14;
-    static const Flags ReportCategoryMask =
-            ReportDisaster |
-            ReportAError | ReportIError | ReportOError | ReportUError |
-            ReportIWarning | ReportOWarning | ReportUWarning |
-            ReportDProgress | ReportOProgress | ReportUProgress |
-            ReportDInfo | ReportOInfo | ReportUInfo |
-            ReportStats;
-    static const Flags ReportErrorClass = ReportIError | ReportOError | ReportUError;
-    static const Flags ReportWarningClass = ReportIWarning | ReportOWarning | ReportUWarning;
-    static const Flags ReportProgressClass = ReportDProgress | ReportOProgress | ReportUProgress;
-    static const Flags ReportInfoClass = ReportDInfo | ReportOInfo | ReportUInfo;
-    static const Flags ReportDeveloperAudience = ReportIError | ReportIWarning | ReportDProgress | ReportDInfo;
-    static const Flags ReportOperatorAudience = ReportOError | ReportOWarning | ReportOProgress | ReportOInfo;
-    static const Flags ReportUserAudience = ReportUError | ReportUWarning | ReportUProgress | ReportUInfo;
+    enum : Flags {
+        ReportDisaster  = 1 << 0,
+        ReportAError    = 1 << 1,
+        ReportIError    = 1 << 2,
+        ReportOError    = 1 << 3,
+        ReportUError    = 1 << 4,
+        ReportIWarning  = 1 << 5,
+        ReportOWarning  = 1 << 6,
+        ReportUWarning  = 1 << 7,
+        ReportDProgress = 1 << 8,
+        ReportOProgress = 1 << 9,
+        ReportUProgress = 1 << 10,
+        ReportDInfo     = 1 << 11,
+        ReportOInfo     = 1 << 12,
+        ReportUInfo     = 1 << 13,
+        ReportStats     = 1 << 14,
+        ReportCategoryMask =
+                ReportDisaster |
+                ReportAError | ReportIError | ReportOError | ReportUError |
+                ReportIWarning | ReportOWarning | ReportUWarning |
+                ReportDProgress | ReportOProgress | ReportUProgress |
+                ReportDInfo | ReportOInfo | ReportUInfo |
+                ReportStats,
+        ReportErrorClass = ReportIError | ReportOError | ReportUError,
+        ReportWarningClass = ReportIWarning | ReportOWarning | ReportUWarning,
+        ReportProgressClass = ReportDProgress | ReportOProgress | ReportUProgress,
+        ReportInfoClass = ReportDInfo | ReportOInfo | ReportUInfo,
+        ReportDeveloperAudience = ReportIError | ReportIWarning | ReportDProgress | ReportDInfo,
+        ReportOperatorAudience = ReportOError | ReportOWarning | ReportOProgress | ReportOInfo,
+        ReportUserAudience = ReportUError | ReportUWarning | ReportUProgress | ReportUInfo,
 
-    static const Flags ReportDefinition = Flags(1) << 63;
-    static const Flags ReportService    = Flags(1) << 62;
-    static const Flags ReportMethod     = Flags(1) << 61;
-    static const Flags ReportComponentMask = Flags(UINT64_MAX) & ~ReportCategoryMask;
+        ReportDefinition = Flags(1) << 63,
+        ReportService    = Flags(1) << 62,
+        ReportMethod     = Flags(1) << 61,
+        ReportComponentMask = Flags(UINT64_MAX) & ~ReportCategoryMask,
+    };
 
     virtual Flags queryFlags() const = 0;
     virtual Flags getFlags(Flags mask = Flags(-1)) const = 0;

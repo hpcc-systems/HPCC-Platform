@@ -804,8 +804,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
         else
         {
-            IpSubNet subnet; // preferred set but not required
-            IpAddress fromip; // returned
             Owned<IFile> destFile = createIFile(tempFile);
 
             bool hardLinkCreated = false;
