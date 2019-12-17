@@ -22,6 +22,7 @@
 #include <openssl/rand.h>
 #include <string>
 #include <unordered_map>
+#include "jthread.hpp"
 
 #include "cryptolib.hpp"
 
@@ -572,18 +573,27 @@ public:
     }
 };
 
+static thread_local CKeyCache *pKC = nullptr;
+
+static bool clearupKeyCache(bool isPooled)
+{
+    delete pKC;
+    return false;
+}
 //----------------------------------------------------------------------------
 // TLS storage of Key cache
 //----------------------------------------------------------------------------
 
 static CLoadedKey * getCachedKey(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
 {
-    static thread_local Owned<CKeyCache> pKC;
     int count = 0;
     if (pKC)
         count = pKC->getLinkCount();
     if (0 == count)
-        pKC.setown(new CKeyCache());
+    {
+        pKC = new CKeyCache();
+        addThreadTermFunc(clearupKeyCache);
+    }
     CLoadedKey *  ret = pKC->getInstance(isPublic, keyFS, keyBuff, passphrase);
     return ret;
 }
