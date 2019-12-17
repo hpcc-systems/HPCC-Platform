@@ -3231,6 +3231,26 @@ NewSelectorReplacingTransformer::NewSelectorReplacingTransformer() : NewHqlTrans
     isHidden=false; 
 }
 
+void NewSelectorReplacingTransformer::initNullMapping(IHqlExpression * selector)
+{
+    node_operator op = selector->getOperator();
+    assertex(op == no_left || op == no_right);
+
+    setNullMapping(selector, selector->queryRecord(), false);
+    setNullMapping(selector, selector->queryRecord(), true);
+
+    //Also map the selector to the a null row
+    OwnedHqlExpr nullValue = createNullExpr(selector);
+    setRootMapping(selector, nullValue, false);
+    setRootMapping(selector, nullValue, true);
+
+    //And map MATCHED(RIGHT) -> false since that can be used inside a JOIN ONFAIL() clause.
+    OwnedHqlExpr matchedExpr = createValue(no_matched_injoin, makeBoolType(), LINK(selector));
+    setSelectorMapping(matchedExpr, queryBoolExpr(false));
+    setMappingOnly(matchedExpr, queryBoolExpr(false));
+
+    oldSelector.set(selector);
+}
 
 void NewSelectorReplacingTransformer::initSelectorMapping(IHqlExpression * oldDataset, IHqlExpression * newDataset)
 {
@@ -3286,6 +3306,32 @@ void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, 
                     OwnedHqlExpr newSelected = createSelectExpr(LINK(newSel), LINK(cur));
                     setRootMapping(oldSelected, newSelected, oldField->queryRecord(), isSelector);
                 }
+                break;
+            }
+        }
+    }
+}
+
+void NewSelectorReplacingTransformer::setNullMapping(IHqlExpression * selector, IHqlExpression * record, bool isSelector)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            setNullMapping(selector, cur, isSelector);
+            break;
+        case no_ifblock:
+            setNullMapping(selector, cur->queryChild(1), isSelector);
+            break;
+        case no_field:
+            {
+                IHqlExpression * field = cur;
+                OwnedHqlExpr selected = createSelectExpr(LINK(selector), LINK(field));
+                OwnedHqlExpr newValue = createNullExpr(selected);
+                setRootMapping(selected, newValue, field->queryRecord(), isSelector);
+                break;
             }
         }
     }

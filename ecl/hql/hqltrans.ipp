@@ -983,6 +983,7 @@ public:
     NewSelectorReplacingTransformer();
 
     void initSelectorMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
+    void initNullMapping(IHqlExpression * selector);
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
@@ -1012,6 +1013,7 @@ public:
     void setActiveSelectorMapping(IHqlExpression * oldRecord, IHqlExpression * newRecord);
 
 protected:
+    void setNullMapping(IHqlExpression * selector, IHqlExpression * record, bool isSelector);
     void setNestedMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlSimpleScope * oldScope, IHqlExpression * newRecord, bool isSelector);
     void setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, bool isSelector);
 
