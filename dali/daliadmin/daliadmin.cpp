@@ -2709,7 +2709,7 @@ public:
 
         xml.appendf("<attr source='%s' message='%s' timestamp='%s' exceptionCode='%u' severity='%u' scope='%s' cost='%u'",
                     source.str(), message.str(), timestamp.str(),
-                    exception.getExceptionCode(), exception.getSeverity(), exception.queryScope(), exception.getPriority());
+                    exception.getExceptionCode(), exception.getSeverity(), nullText(exception.queryScope()), exception.getPriority());
         xml.append("/>");
         printf(" %s\n", xml.str());
     }
