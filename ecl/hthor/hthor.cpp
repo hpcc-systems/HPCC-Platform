@@ -8134,6 +8134,7 @@ void CHThorDiskReadBaseActivity::ready()
     Owned<IOutputMetaData> publishedMeta;
     unsigned publishedCrc = 0;
     RecordTranslationMode translationMode = getLayoutTranslationMode();
+    StringBuffer traceName;
     if (dFile)
     {
         const char *kind = queryFileKind(dFile);
@@ -8144,10 +8145,18 @@ void CHThorDiskReadBaseActivity::ready()
             if (publishedMeta)
                 publishedCrc = props.getPropInt("@formatCrc");
         }
+        dFile->getLogicalName(traceName);
     }
-    translators.setown(::getTranslators("hthor-diskread", expectedCrc, expectedDiskMeta, publishedCrc, publishedMeta, projectedCrc, projectedDiskMeta, translationMode));
+    else
+        traceName.set("hthor-diskread");
+    translators.setown(::getTranslators(traceName.str(), expectedCrc, expectedDiskMeta, publishedCrc, publishedMeta, projectedCrc, projectedDiskMeta, translationMode));
     if (translators)
     {
+        if (publishedCrc && expectedCrc && publishedCrc != expectedCrc)
+        {
+            VStringBuffer msg("Record layout translation required for %s", traceName.str());
+            agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
+        }
         translator = &translators->queryTranslator();
         keyedTranslator = translators->queryKeyedTranslator();
         actualDiskMeta.set(&translators->queryActualFormat());

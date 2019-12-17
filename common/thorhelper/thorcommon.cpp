@@ -2097,8 +2097,11 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
         if ((projectedFormat != sourceFormat) && (projectedCrc != sourceCrc))
         {
             translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), sourceFormat->queryRecordAccessor(true)));
-            DBGLOG("Record layout translator created for %s", tracing);
-            translator->describe();
+            if (expectedCrc && publishedCrc && expectedCrc != publishedCrc)
+            {
+                DBGLOG("Record layout translator created for %s", tracing);
+                translator->describe();
+            }
 
             if (!translator->canTranslate())
                 throw MakeStringException(0, "Untranslatable record layout mismatch detected for file %s", tracing);
