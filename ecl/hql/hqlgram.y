@@ -2091,7 +2091,8 @@ conditionalAssignmentElseClause
                             parser->normalizeExpression($2);
                             parser->ensureBoolean($2);
                             //normalizeExpression($2, type_boolean, false);
-                            OwnedHqlExpr map = createValue(no_mapto, $2.getExpr(), $4.getExpr());
+                            OwnedHqlExpr other = $4.getExpr();
+                            OwnedHqlExpr map = createValue(no_mapto, other->getType(), $2.getExpr(), LINK(other));
                             $$.setExpr(createComma(map.getClear(), $5.getExpr()), $1);
                         }
     ;
@@ -2125,7 +2126,7 @@ transformation1
                                 IHqlExpression * arg = $3.queryExpr();
                                 if ((arg->getOperator() == no_list) && (arg->numChildren() == 0))
                                 {
-                                    $3.release().setExpr(createValue(no_null));
+                                    $3.release().setExpr(createValue(no_null, makeNullType()));
                                 }
                             }
                             parser->addAssignment($1, $3);
@@ -2503,7 +2504,7 @@ actionStmt
     | OUTPUT '(' startTopFilter optOutputWuFlags ')' endTopFilter
                         {
                             IHqlExpression *dataset = $3.getExpr();
-                            IHqlExpression *record = createValue(no_null);
+                            IHqlExpression *record = createValue(no_null, makeNullType());
                             OwnedHqlExpr select = createDatasetF(no_selectfields, dataset, record, NULL); //createUniqueId(), NULL);
                             OwnedHqlExpr flags = $4.getExpr();
 
@@ -2752,9 +2753,13 @@ actionStmt
                                 parser->reportError(ERR_TYPEMISMATCH_RECORD, $4, "Indexes must have the same structure");
                             parser->normalizeExpression($7, type_string, false);
 
-                            OwnedHqlExpr options = createComma($3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr());
-                            parser->saveDiskAccessInformation($1, options);
-                            $$.setExpr(createValueFromCommaList(no_keydiff, makeVoidType(), options.getClear()));
+                            HqlExprArray args;
+                            args.append(*$3.getExpr());
+                            args.append(*$5.getExpr());
+                            args.append(*$7.getExpr());
+                            $8.unwindCommaList(args);
+                            parser->saveDiskAccessInformation($1, args);
+                            $$.setExpr(createValue(no_keydiff, makeVoidType(), args));
                             $$.setPosition($1);
                         }
     | KEYPATCH '(' dataSet ',' expression ',' expression keyDiffFlags ')'
@@ -2763,10 +2768,14 @@ actionStmt
                                 parser->reportError(ERR_EXPECTED_INDEX,$3,"Expected an index");
                             parser->normalizeExpression($5, type_string, false);
                             parser->normalizeExpression($7, type_string, false);
-                            OwnedHqlExpr options = createComma($3.getExpr(), $5.getExpr(), $7.getExpr(), $8.getExpr());
 
-                            parser->saveDiskAccessInformation($1, options);
-                            $$.setExpr(createValueFromCommaList(no_keypatch, makeVoidType(), options.getClear()));
+                            HqlExprArray args;
+                            args.append(*$3.getExpr());
+                            args.append(*$5.getExpr());
+                            args.append(*$7.getExpr());
+                            $8.unwindCommaList(args);
+                            parser->saveDiskAccessInformation($1, args);
+                            $$.setExpr(createValue(no_keypatch, makeVoidType(), args));
                             $$.setPosition($1);
                         }
     | EVALUATE '(' expression ')'
@@ -3908,7 +3917,7 @@ keyDiffFlag
 optRecordDef
     : recordDef
     |                   {
-                            $$.setExpr(createValue(no_null));
+                            $$.setExpr(createValue(no_null, makeNullType()));
                             $$.clearPosition();
                         }
     ;
@@ -5317,7 +5326,7 @@ query
                             expr = parser->attachPendingWarnings(expr);
                             expr = parser->attachMetaAttributes(expr, meta);
 
-                            IHqlExpression *record = createValue(no_null);
+                            IHqlExpression *record = createValue(no_null, makeNullType());
                             OwnedHqlExpr select = createDatasetF(no_selectfields, expr, record, NULL);
                             HqlExprArray args;
                             args.append(*select.getClear());
@@ -7341,7 +7350,7 @@ scopeFunctionWithParameters
                             OwnedHqlExpr parms = $4.getExpr();
                             //NB: Do not call createComma() incase the first argument is a dataset
                             if (parms)
-                                $$.setExpr(createValue(no_comma, $1.getExpr(), parms.getClear()), $1);
+                                $$.setExpr(createValue(no_comma, nullptr, $1.getExpr(), parms.getClear()), $1);
                             else
                                 $$.setExpr($1.getExpr(), $1);
                         }
@@ -10263,23 +10272,23 @@ failDatasetParam
     ;
 
 mode
-    : FLAT              {   $$.setExpr(createValue(no_flat));   }
-    | CSV               {   $$.setExpr(createValue(no_csv));    }
+    : FLAT              {   $$.setExpr(createValue(no_flat, makeNullType()));   }
+    | CSV               {   $$.setExpr(createValue(no_csv, makeNullType()));    }
     | CSV '(' csvOptions ')'
                         {   
                             HqlExprArray args;
                             $3.unwindCommaList(args);
                             $$.setExpr(createValue(no_csv, makeNullType(), args));
                         }
-    | SQL               {   $$.setExpr(createValue(no_sql));    }
-    | THOR              {   $$.setExpr(createValue(no_thor));   }
+    | SQL               {   $$.setExpr(createValue(no_sql, makeNullType()));    }
+    | THOR              {   $$.setExpr(createValue(no_thor, makeNullType()));   }
     | THOR  '(' expression ')'
                         {
                             throwUnexpected();
                             parser->normalizeExpression($3);
-                            $$.setExpr(createValue(no_thor, $3.getExpr()));
+                            $$.setExpr(createValue(no_thor, makeNullType(),  $3.getExpr()));
                         }
-    | XML_TOKEN         {   $$.setExpr(createValue(no_xml));    }
+    | XML_TOKEN         {   $$.setExpr(createValue(no_xml, makeNullType()));    }
     | XML_TOKEN '(' xmlOptions ')'
                         {
                             HqlExprArray args;
@@ -10296,7 +10305,7 @@ mode
                                 args.add(*createConstant("xml"), 0);
                             $$.setExpr(createValue(no_xml, makeNullType(), args));
                         }
-    | JSON_TOKEN         {   $$.setExpr(createValue(no_json));    }
+    | JSON_TOKEN         {   $$.setExpr(createValue(no_json, makeNullType()));    }
     | JSON_TOKEN '(' xmlOptions ')'
                         {
                             HqlExprArray args;
@@ -10985,7 +10994,7 @@ skewAttribute
                                 parser->normalizeExpression($3, type_numeric, true);
                             }
                             else
-                                $3.setExpr(createValue(no_null));
+                                $3.setExpr(createValue(no_null, makeNullType()));
 
                             parser->normalizeExpression($5, type_any, true);
                             parser->normalizeExpression($5, type_numeric, false);
@@ -11141,7 +11150,7 @@ parseFlag
     | MIN               {   $$.setExpr(createAttribute(minAtom)); }
     | USE '(' globalPatternAttribute ')'
                         {
-                            $$.setExpr(createValue(no_pat_use, $3.getExpr()));
+                            $$.setExpr(createValue(no_pat_use, makeNullType(), $3.getExpr()));
                         }
     | BEST              {   $$.setExpr(createAttribute(bestAtom)); }
     | MANY BEST         {   $$.setExpr(createComma(createAttribute(bestAtom), createAttribute(manyAtom))); }

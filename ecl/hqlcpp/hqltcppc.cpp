@@ -173,7 +173,7 @@ void SizeStruct::addVariableExpr(unsigned _varMinSize, IHqlExpression * expr)
 {
     varMinSize += _varMinSize;
     if (varSize)
-        varSize.setown(createValue(no_add, varSize.getClear(), LINK(expr)));
+        varSize.setown(createValue(no_add, makeIntType(4,false), varSize.getClear(), LINK(expr)));
     else
         varSize.set(expr);
 }
@@ -2523,11 +2523,11 @@ void CBitfieldInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ct
     OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, queryStorageType(), 0);
     OwnedHqlExpr value = convertAddressToValue(address, queryStorageType());
     if (bitOffset > 0)
-        value.setown(createValue(no_rshift, LINK(value), getSizetConstant((int)bitOffset)));
+        value.setown(createValue(no_rshift, value->getType(), LINK(value), getSizetConstant((int)bitOffset)));
 
     unsigned __int64 mask = ((unsigned __int64)1<<columnType->getBitSize())-1;
     IValue * maskValue = columnType->queryChildType()->castFrom(false, (__int64)mask);
-    bound.expr.setown(createValue(no_band, LINK(value), createConstant(maskValue)));
+    bound.expr.setown(createValue(no_band, value->getType(), LINK(value), createConstant(maskValue)));
 }
 
 IHqlExpression * CBitfieldInfo::buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
@@ -2575,7 +2575,7 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
     IValue * oldMaskValue = storageType->castFrom(false, (__int64)shiftMask);
     IHqlExpression * oldMask = createConstant(oldMaskValue);
     IHqlExpression * transColumn = createTranslatedOwned(columnRef);
-    IHqlExpression * oldValue = createValue(no_band, transColumn, createValue(no_bnot,oldMask));
+    IHqlExpression * oldValue = createValue(no_band, LINK(storageType), transColumn, createValue(no_bnot, LINK(storageType), oldMask));
 
     IValue * newMaskValue = storageType->castFrom(false, (__int64)mask);
     IHqlExpression * newMask = createConstant(newMaskValue);

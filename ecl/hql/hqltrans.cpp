@@ -3069,7 +3069,7 @@ void MergingHqlTransformer::pushChildContext(IHqlExpression * expr, IHqlExpressi
     IHqlExpression * scope = expr;
     //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
     if (childScope)
-        childScope.setown(createValue(no_comma,LINK(scope), childScope.getClear()));
+        childScope.setown(createValue(no_comma, nullptr, LINK(scope), childScope.getClear()));
     else
         childScope.set(scope);
     initializeActiveSelector(expr, transformed);
@@ -4579,8 +4579,8 @@ void ScopedTransformer::throwScopeError()
 
 ScopedDependentTransformer::ScopedDependentTransformer(HqlTransformerInfo & _info) : ScopedTransformer(_info)
 {
-    cachedLeft.setown(createValue(no_left));
-    cachedRight.setown(createValue(no_right));
+    cachedLeft.setown(createValue(no_left, makeNullType()));
+    cachedRight.setown(createValue(no_right, makeNullType()));
 }
 
 bool ScopedDependentTransformer::setDataset(IHqlExpression * ds, IHqlExpression * transformedDs)
@@ -4677,7 +4677,7 @@ void ScopedDependentTransformer::pushChildContext(IHqlExpression * expr, IHqlExp
     {
         //NB: Do no call createComma because that calls createDataset which unwinds a comma list!
         if (childScope)
-            childScope.setown(createValue(no_comma,LINK(scope), childScope.getClear()));
+            childScope.setown(createValue(no_comma, nullptr, LINK(scope), childScope.getClear()));
         else
             childScope.set(scope);
 

@@ -1177,7 +1177,7 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
             if (lmatch)
             {
                 if (rmatch)
-                    return createValue(no_and, lmatch, rmatch);
+                    return createValue(no_and, makeBoolType(), lmatch, rmatch);
                 else
                     return lmatch;
             }
@@ -5165,12 +5165,12 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
                 if (value->isDictionary())
                 {
                     value.setown(createDataset(no_datasetfromdictionary, value.getClear()));
-                    value.setown(createDataset(no_selectfields, value.getClear(), createValue(no_null)));
+                    value.setown(createDataset(no_selectfields, value.getClear(), createValue(no_null, makeNullType())));
                     op = no_output;
                 }
                 else if (value->isDataset())
                 {
-                    value.setown(createDataset(no_selectfields, LINK(value), createValue(no_null)));
+                    value.setown(createDataset(no_selectfields, LINK(value), createValue(no_null, makeNullType())));
                     op = no_output;
                 }
                 else if (value->isDatarow())
@@ -6680,7 +6680,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                             HqlExprArray children;
                             children.append(*LINK(src));
                             children.append(*LINK(record));
-                            OwnedHqlExpr tempTable = createValue(no_temptable, children);
+                            OwnedHqlExpr tempTable = createDataset(no_temptable, children);
 //                          castValue.setown(transform(tempTable));
                             castValue.set(tempTable);
                         }
@@ -6691,7 +6691,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                                 transforms.append(*createTempTableTransform(src->queryChild(idx), record));
 
                             HqlExprArray children;
-                            children.append(*createValue(no_transformlist, transforms));
+                            children.append(*createValue(no_transformlist, makeNullType(), transforms));
                             children.append(*LINK(record));
                             castValue.setown(createDataset(no_inlinetable, children));
                         }
@@ -10310,7 +10310,7 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
         {
         case no_ifblock:
         {
-            OwnedHqlExpr key = createValue(no_comma, LINK(rowRecord), LINK(field));
+            OwnedHqlExpr key = createValue(no_comma, makeVoidType(), LINK(rowRecord), LINK(field));
             const RtlTypeInfo * type = deserializer.lookupType(key);
             if (!type)
             {

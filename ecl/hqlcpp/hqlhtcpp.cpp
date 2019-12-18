@@ -199,7 +199,7 @@ IHqlExpression * getMetaUniqueKey(IHqlExpression * record, bool grouped)
     if (grouped)
         search.setown(createAttribute(groupedAtom, search.getClear()));
     if (!search)
-        search.setown(createValue(no_null));
+        search.setown(createValue(no_null, makeNullType()));
     return search.getClear();
 }
 
@@ -15014,7 +15014,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChooseSets(BuildCtx & ctx, IHq
             buildFilter(condctx, cond2);
         }
 
-        OwnedHqlExpr inc = createValue(no_postinc, bucketExpr.getLink());
+        OwnedHqlExpr inc = createValue(no_postinc, LINK(unsignedType), bucketExpr.getLink());
         condctx.addExpr(inc);
         BuildCtx doneCtx(condctx);
         buildFilter(doneCtx, condDone);
