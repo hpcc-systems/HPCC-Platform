@@ -595,6 +595,11 @@ private:
     }
 
 public:
+    virtual ~CKeyCache()
+    {
+        if (m_loadedKey)
+            m_loadedKey->Release();
+    }
 
     CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
     {
@@ -610,8 +615,8 @@ public:
             {
                 m_loadedKey->Release();//release previous cached key
                 m_keyFS.clear();
-                m_keyBuff.clear());
-                m_passphrase.clear());
+                m_keyBuff.clear();
+                m_passphrase.clear();
             }
             if (!isEmptyString(keyFS))
             {
