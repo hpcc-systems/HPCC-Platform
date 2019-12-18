@@ -273,6 +273,7 @@ define([
 
                 if (this.params.searchResults) {
                     this.filter.disable(true);
+                    this.mineControl.set("disabled", true);
                 }
 
                 this.clusterTargetSelect.init({
