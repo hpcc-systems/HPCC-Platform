@@ -1877,7 +1877,7 @@ void EclAgent::doProcess()
         {
             MTIME_SECTION(queryActiveTimer(), "Process");
             Owned<IEclProcess> process = loadProcess();
-            QueryTerminationCleanup threadCleanup;
+            QueryTerminationCleanup threadCleanup(false);
 
             if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
                 failv(0, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", eclccCodeVersion, process->getActivityVersion());
