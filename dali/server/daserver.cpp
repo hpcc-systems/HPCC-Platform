@@ -255,11 +255,21 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
                 {
                     const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
                     StringBuffer ipSB;
-                    const char *ip = resolveComputer(masterCompName, component.queryProp("@netAddress"), ipSB);
+                    const char *ip = resolveComputer(masterCompName, nullptr, ipSB);
                     if (ip)
                     {
                         writer.add(ip, DCR_ThorMaster);
                         writer.add(ip, DCR_DaliAdmin);
+                    }
+
+                    // NB: slaves are currently seen as foreign clients and are only used by Std.File.GetUniqueInteger (which calls Dali v. occassionally)
+                    Owned<IPropertyTreeIterator> slaveIter = component.getElements("ThorSlaveProcess");
+                    ForEach(*slaveIter)
+                    {
+                        const char *slaveCompName = component.queryProp("@computer");
+                        const char *ip = resolveComputer(slaveCompName, nullptr, ipSB.clear());
+                        if (ip)
+                            writer.add(ip, DCR_ThorSlave);
                     }
                     break;
                 }
