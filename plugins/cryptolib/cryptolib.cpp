@@ -581,9 +581,16 @@ static thread_local CKeyCache *pKC = nullptr;
 
 static bool clearupKeyCache(bool isPooled)
 {
-    delete pKC;
+    if (pKC)
+    {
+        if (isPooled)
+            return true; // preserve hook
+        delete pKC;
+        pKC = nullptr;
+    }
     return false;
 }
+
 
 static CLoadedKey * getCachedKey(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
 {
