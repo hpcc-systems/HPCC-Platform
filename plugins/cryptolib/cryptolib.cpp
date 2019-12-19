@@ -577,74 +577,67 @@ public:
 #else
 
 class CKeyCache : public CInterface
-{
-private:
-    bool        m_isPublic;
-    StringAttr  m_keyFS;
-    StringAttr  m_keyBuff;
-    StringAttr  m_passphrase;
-    CLoadedKey * m_loadedKey = nullptr;
-
-    inline bool sameString(const char * left, const char * right)
     {
-        if (nullptr == left && nullptr == right)
-            return true;
-        if (nullptr == left || nullptr == right)
-            return false;
-        return strcmp(left, right) == 0;
-    }
+    private:
+        bool        m_isPublic = false;
+        StringAttr  m_keyFS;
+        StringAttr  m_keyBuff;
+        StringAttr  m_passphrase;
+        Owned<CLoadedKey> m_loadedKey;
 
-public:
-    virtual ~CKeyCache()
-    {
-        if (m_loadedKey)
-            m_loadedKey->Release();
-    }
-
-    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
-    {
-        if (isEmptyString(keyFS) && isEmptyString(keyBuff))
-            throw MakeStringException(-1, "Must specify a key filename or provide a key buffer");
-
-        if (isPublic != m_isPublic ||
-            !sameString(passphrase, m_passphrase.str())  ||
-            !sameString(keyFS, m_keyFS.str()) ||
-            !sameString(keyBuff, m_keyBuff.str()))
+        //String compare that treats null ptr and ptr to empty string as matching
+        inline bool sameString(const char * left, const char * right)
         {
-            if (m_loadedKey)
-            {
-                m_loadedKey->Release();//release previous cached key
-                m_keyFS.clear();
-                m_keyBuff.clear();
-                m_passphrase.clear();
-            }
-            if (!isEmptyString(keyFS))
-            {
-                //Create CLoadedKey from filespec
-                if (isPublic)
-                    m_loadedKey = loadPublicKeyFromFile(keyFS, passphrase);
-                else
-                    m_loadedKey = loadPrivateKeyFromFile(keyFS, passphrase);
-            }
-            else
-            {
-                //Create CLoadedKey from key contents
-                if (isPublic)
-                    m_loadedKey = loadPublicKeyFromMemory(keyBuff, passphrase);
-                else
-                    m_loadedKey = loadPrivateKeyFromMemory(keyBuff, passphrase);
-            }
-            if (m_loadedKey)
-            {
-                m_isPublic = isPublic;
-                m_keyFS.set(keyFS);
-                m_keyBuff.set(keyBuff);
-                m_passphrase.set(passphrase);
-            }
+            if (isEmptyString(left) && isEmptyString(right))
+                return true;
+            if (isEmptyString(left) || isEmptyString(right))
+                return false;
+            return strcmp(left, right) == 0;
         }
-        return m_loadedKey ? LINK(m_loadedKey) : nullptr;
-    }
-};
+
+    public:
+
+        CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+        {
+            if (!m_loadedKey ||
+                isPublic != m_isPublic ||
+                !sameString(passphrase, m_passphrase.str())  ||
+                !sameString(keyFS, m_keyFS.str()) ||
+                !sameString(keyBuff, m_keyBuff.str()))
+            {
+                CLoadedKey *newKey;
+
+                if (!isEmptyString(keyFS))
+                {
+                    //Create CLoadedKey from filespec
+                    if (isPublic)
+                        newKey = loadPublicKeyFromFile(keyFS, passphrase);
+                    else
+                        newKey = loadPrivateKeyFromFile(keyFS, passphrase);
+                }
+                else if (!isEmptyString(keyBuff))
+                {
+                    //Create CLoadedKey from key contents
+                    if (isPublic)
+                        newKey = loadPublicKeyFromMemory(keyBuff, passphrase);
+                    else
+                        newKey = loadPrivateKeyFromMemory(keyBuff, passphrase);
+                }
+                else
+                    throw MakeStringException(-1, "Must specify a key filename or provide a key buffer");
+
+                if (newKey)
+                {
+                    m_loadedKey.setown(newKey);//releases previous ptr
+                    m_isPublic = isPublic;
+                    m_keyFS.set(keyFS);
+                    m_keyBuff.set(keyBuff);
+                    m_passphrase.set(passphrase);
+                }
+            }
+            return LINK(m_loadedKey);
+        }
+    };
 #endif//_USE_HASHMAP
 
 //----------------------------------------------------------------------------
