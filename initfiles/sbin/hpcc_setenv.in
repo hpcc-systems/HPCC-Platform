@@ -239,3 +239,7 @@ else
         fi
     fi
 fi
+
+# good for programs to know these ...
+export HPCC_INSTALL_DIR=${INSTALL_DIR}
+export HPCC_CONFIG_DIR=${CONFIG_DIR}

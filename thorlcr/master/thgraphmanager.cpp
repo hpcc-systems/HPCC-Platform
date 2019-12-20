@@ -337,18 +337,42 @@ void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
 
 
 #define IDLE_RESTART_PERIOD (8*60) // 8 hours
-class CIdleShutdown : public CSimpleInterface, implements IThreaded
+#define ONDEMAND_LINGER_SECONDS (10) // 10 seconds
+
+class CIdleHandler : public CSimpleInterface, implements IThreaded
 {
-    unsigned timeout;
-    Semaphore sem;
     CThreaded threaded;
+    Semaphore sem;
+    unsigned timeout;
+    bool ondemand;
 public:
-    CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this); }
-    ~CIdleShutdown() { stop(); threaded.join(); }
+    CIdleHandler() : threaded("CIdleHandler")
+    {
+        ondemand = globals->getPropBool("@ondemand");
+        if (ondemand)
+            timeout = (globals->getPropInt("@ondemandLingerSeconds", ONDEMAND_LINGER_SECONDS)) * 1000;
+        else
+            timeout = (globals->getPropInt("@idleRestartPeriod", IDLE_RESTART_PERIOD)) * 60000;
+        threaded.init(this);
+    }
+    ~CIdleHandler()
+    {
+        stop();
+        threaded.join();
+    }
     virtual void threadmain() override
     {
-        if (!sem.wait(timeout)) // feeling neglected, restarting..
-            abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
+        if (!sem.wait(timeout))
+        {
+            if (ondemand)
+            {
+                // abortThor() doesn't log exception text if TEC_Clean ...
+                PROGLOG("Ondemand Thor has been idle for %d seconds, stopping", timeout/1000);
+                abortThor(nullptr, TEC_Clean, false);
+            }
+            else
+                abortThor(MakeThorException(TE_IdleRestart, "Thor has been idle for %d minutes, restarting", timeout/60000), TEC_Idle, false);
+        }
     }
     void stop() { sem.signal(); }
 };
@@ -545,7 +569,7 @@ void CJobManager::run()
         } daliLock;
         Owned<IJobQueueItem> item;
         {
-            CIdleShutdown idleshutdown(globals->getPropInt("@idleRestartPeriod", IDLE_RESTART_PERIOD));
+            CIdleHandler idlehandler;
             if (exclLockDaliMutex.get())
             {
                 for (;;)

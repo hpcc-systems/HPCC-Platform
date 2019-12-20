@@ -24,6 +24,7 @@ source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 component=$(basename $PWD)
 
 PID_NAME="${PID_DIR}/${component}.pid"
+INIT_PID_NAME="${PID_DIR}/init_${component}.pid"
 
 timestamp="$(date +%Y_%m_%d_%H_%M_%S)"
 export logfile="${LOG_DIR}/${component}/init_${component}_${timestamp}.log"
@@ -69,12 +70,12 @@ kill_slaves()
     log "Killing slaves"
     # NB: many of the parameters to init_thorslave not used by 'stop' command
     if [[ "$localthor" = "true" ]]; then
-        $deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect
+        $deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect no-valgrind 0:0:0
     else
         # we want to kill only slaves that have already been started in run_thor
         if [[ -r $instancedir/uslaves ]]; then
             clusternodes=$(cat $instancedir/uslaves 2> /dev/null | wc -l)
-            $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+            $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave stop localhost $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect no-valgrind 0:0:0'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
             FRUNSSH_RC=$?
             if [[ ${FRUNSSH_RC} -gt 0 ]]; then
                 log "Error ${FRUNSSH_RC} in frunssh"
@@ -111,11 +112,12 @@ thorpid=0
 
 while [[ 1 ]]; do
     # update slaves file in case state of environment has been altered since last run
-    errorMessage=$( daliadmin server=$DALISERVER clusternodes ${component} $instancedir/slaves 2>&1 )
+    errorMessage=$( daliadmin server=$DALISERVER timeout=25 clusternodes ${component} $instancedir/slaves 2>&1 )
     errcode=$?
     if [[ 0 != ${errcode} ]]; then
-        log "failed to lookup dali group for ${component}"
+        log "failed to connect/lookup dali group for ${component}"
         log "$errorMessage"
+        sleep 3 # allow start to see us running once
         exit 1
     fi
 
@@ -125,30 +127,60 @@ while [[ 1 ]]; do
     # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
     sort $instancedir/slaves | uniq > $instancedir/uslaves
 
+    # build slave args and pass to slave cmdline ...
+    slaveargs=""
+    slaveport=$THORSLAVEPORT
+    clusternode=1
+    clusternodes=$(cat $instancedir/slaves | wc -l)
+    for ip in $(cat $instancedir/uslaves); do
+        for slaveip in $(cat $instancedir/slaves); do
+            if [[ ${slaveip} = ${ip} ]]; then
+                for (( slave=0; slave<${slavespernode}; slave++ )); do
+                    slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
+                    slaveargs="${slaveargs} ${slave}:${slavenum}:${slaveport}"
+                    slaveport=$(( ${slaveport} + ${slaveportinc} ))
+                done
+            fi
+            clusternode=$(( $clusternode + 1 ))
+        done
+    done
+
     # To configure Thor to run with valgrind, set 'valgrindOptions' in the ThorCluster in the environment.xml
     # e.g. set valgrindOptions="--tool=memcheck --leak-check=full --show-leak-kinds=all -v"
+    log "valgrindOptions = \"${valgrindOptions}\""
+    if [[ -z "${valgrindOptions}" ]]; then
+        valgrindOptions="no-valgrind"
+    fi
+
+    log "slaveargs =${slaveargs}"
 
     if [[ "$localthor" = "true" ]]; then
         slaveip=$(head -n 1 $instancedir/uslaves)
-        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect "${valgrindOptions}"
+        $deploydir/init_thorslave start $slaveip $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect "${valgrindOptions}" ${slaveargs}
     else
         clusternodes=$(cat $instancedir/uslaves | wc -l)
-        escapedValgrindOptions=$(printf %q "$valgrindOptions")
-        $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect ${escapedValgrindOptions}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
-        FRUNSSH_RC=$?
-        if [[ ${FRUNSSH_RC} -gt 0 ]]; then
-            log "Error ${FRUNSSH_RC} in frunssh"
-            log "Please check ${LOG_DIR}/frunssh for more details"
-            # clean up any slaves it was able to reach
-            kill_slaves
-            rm -f $instancedir/slaves > /dev/null 2>&1
-            log "Sleeping for 30 seconds before retrying"
-            sleep 30
-            continue
-        fi
+        escapedValgrindOptions=$(printf %q "${valgrindOptions}")
+        # -----------------------------------
+        # $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/init_thorslave start %a $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect ${escapedValgrindOptions} ${slaveargs}'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$clusternodes 2>&1
+        # FRUNSSH_RC=$?
+        # if [[ ${FRUNSSH_RC} -gt 0 ]]; then
+        #     log "Error ${FRUNSSH_RC} in frunssh"
+        #     log "Please check ${LOG_DIR}/frunssh for more details"
+        #     # clean up any slaves it was able to reach
+        #     kill_slaves
+        #     rm -f $instancedir/slaves > /dev/null 2>&1
+        #     log "Sleeping for 30 seconds before retrying"
+        #     sleep 30
+        #     continue
+        # fi
+        # -----------------------------------
+        for slavehost in $(cat $instancedir/uslaves); do
+            ssh -x -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${slavehost} "$deploydir/init_thorslave start ${slavehost} $slavespernode $THORSLAVEPORT $slaveportinc $THORMASTER $THORMASTERPORT $LOG_DIR $instancedir $deploydir $THORNAME ${INSTALL_DIR}/sbin $logredirect ${escapedValgrindOptions} ${slaveargs}" &
+        done
+        # -----------------------------------
     fi
 
-    if [ -z ${valgrindOptions} ]; then
+    if [[ -z ${valgrindOptions} || "${valgrindOptions}" == "no-valgrind" ]]; then
         log "thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT"
         nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
     else
@@ -165,25 +197,26 @@ while [[ 1 ]]; do
         wait $thorpid
         errcode=$?
         case $errcode in
-        # TEC_Clean
+        # TEC_Clean - stop
         0)  log "Thormaster ($thorpid) Exited cleanly"
-            rm -f $instancedir/slaves $instancedir/uslaves $PID_NAME > /dev/null 2>&1
+            rm -f $instancedir/slaves $instancedir/uslaves $PID_NAME $INIT_PID_NAME ${SENTINEL} > /dev/null 2>&1
+            unlock ${LOCK_DIR}/${component}/${component}.lock
             exit 0
             ;;
-        # TEC_CtrlC
+        # TEC_CtrlC - stop
         1)  log "Thormaster ($thorpid) Interrupted, Ctrl-C caught"
             killed
             ;;
-        # TEC_SlaveInit
+        # TEC_SlaveInit - stop
         4)  log "Thormaster ($thorpid) Slaves failed to initialize"
             log "Shutting down"
             killed
             ;;
-        # TEC_Idle
+        # TEC_Idle - restart
         2)  log "Thormaster ($thorpid) Idle"
             kill_slaves
             ;;
-        # TEC_Swap=5, TEC_Watchdog=3, TEC_DaliDown=6
+        # TEC_Swap=5, TEC_Watchdog=3, TEC_DaliDown=6 - attempt restart
         *)  if [[ $errcode -eq 5 ]]; then
                 log "Thormaster ($thorpid) Swap node required"
             elif [[ $errcode -eq 3 ]]; then
@@ -200,6 +233,7 @@ while [[ 1 ]]; do
               swapnode auto $DALISERVER $component
               errcode=$?
               if [[ 0 != ${errcode} ]]; then
+                # stop
                 log "Auto swap node failed, errcode=${errcode}"
                 killed
               fi

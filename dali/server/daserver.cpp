@@ -172,6 +172,8 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
     };
     auto resolveComputer = [&machineMap](const char *compName, const char *defaultValue, StringBuffer &result) -> const char *
     {
+        if (!compName || !*compName)
+            return nullptr;
         const auto &it = machineMap.find(compName);
         if (it == machineMap.end())
             return defaultValue;

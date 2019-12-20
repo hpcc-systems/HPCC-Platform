@@ -1168,6 +1168,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
       const char* masterPort = pComponent->queryProp("@masterport");
       const char* slavePort = pComponent->queryProp("@slaveport");
       const char* slavesPerNode = pComponent->queryProp("@slavesPerNode");
+      const char* ondemand = pComponent->queryProp("@ondemand");
       const char* logDir = NULL;
 
       /* If one of these components found isn't also declared in topology, skip it. */
@@ -1232,6 +1233,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
                 pInstance->addProp("@computer", computer);
                 pInstance->addProp("@netAddress", netAddr);
                 pInstance->addProp("@masterport", masterPort);
+                pInstance->addProp("@ondemand", ondemand);
                 if(!strcmp(pInst->queryName(), "ThorSlaveProcess"))
                 {
                   pInstance->addProp("@slaveport", slavePort);

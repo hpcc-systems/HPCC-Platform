@@ -28,6 +28,9 @@
     #define ENVIRONMENT_API DECL_IMPORT
 #endif
 
+#define START_THOR_RETRY_MAX   (3)
+#define START_THOR_RETRY_DELAY (60*1000)
+
 interface IPropertyTree;   // Forward reference
 interface IEnvironment;    // Forward reference
 interface ISDSSubscription;// Forward reference
@@ -198,6 +201,9 @@ interface IConstEnvironment : extends IConstEnvBase
     virtual IConstSparkThorInfo *getSparkThor(const char *name) const = 0;
     virtual IConstSparkThorInfoIterator *getSparkThorIterator() const = 0;
 
+    virtual void buildthorNameMap(bool onlyOndemand) const = 0;
+    virtual bool getThorToStart(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost) const = 0;
+
     virtual IConstDfuQueueInfoIterator * getDfuQueueIterator() const = 0;
     virtual bool isValidDfuQueueName(const char * queueName) const = 0;
 };
@@ -231,5 +237,6 @@ extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, co
 
 extern ENVIRONMENT_API unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list);
 
+extern ENVIRONMENT_API bool getThorOndemand(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost);
 #endif // _ENVIRONMENT_INCL
 //end

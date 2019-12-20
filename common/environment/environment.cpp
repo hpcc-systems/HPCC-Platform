@@ -157,6 +157,23 @@ protected:
     unsigned maxIndex = 0;
 };
 
+class CThorInstances: public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    std::string name;
+    std::string group;
+    std::string cluster;
+    std::string masterHost;
+    bool started = false;
+
+    CThorInstances(std::string _name, std::string _group, std::string _cluster) : name(_name), group(_group), cluster(_cluster) { }
+};
+typedef std::unordered_map<std::string, Owned<CThorInstances>> ThorNameMap;
+
+static Linked<IConstEnvironment> todEnv;
+static CriticalSection todCrit;
 
 //==========================================================================================
 
@@ -193,6 +210,9 @@ private:
     void buildDfuQueueCache() const;
     mutable unsigned numOfDfuQueues = 0;
     mutable bool dfuQueueCacheBuilt = false;
+
+    mutable ThorNameMap thorNameMap;
+    mutable bool thorNameMapCacheBuilt = false;
 
     IConstEnvBase * getCache(const char *path) const;
     void setCache(const char *path, IConstEnvBase *value) const;
@@ -342,6 +362,9 @@ public:
     IConstDfuQueueInfo * getDfuQueueByIndex(unsigned index) const;
     virtual IConstDfuQueueInfoIterator * getDfuQueueIterator() const;
     bool isValidDfuQueueName(const char * queueName) const;
+
+    virtual void buildthorNameMap(bool onlyOndemand) const;
+    virtual bool getThorToStart(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost) const;
 
     virtual const char *getClusterGroupKeyPairName(const char *group) const override
     {
@@ -515,6 +538,11 @@ public:
             { return c->getDfuQueueIterator(); }
     virtual bool isValidDfuQueueName(const char * queueName) const
             { return c->isValidDfuQueueName(queueName); }
+
+    virtual void buildthorNameMap(bool onlyOndemand) const
+            { c->buildthorNameMap(onlyOndemand); }
+    virtual bool getThorToStart(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost) const
+            { return c->getThorToStart(clusName, queName, startThorName, startThorHost); }
 
 };
 
@@ -1380,6 +1408,7 @@ void CLocalEnvironment::init()
     dropZoneCacheBuilt = false;
     sparkThorCacheBuilt = false;
     dfuQueueCacheBuilt = false;
+    thorNameMapCacheBuilt = false;
     numOfMachines = 0;
     numOfDropZones = 0;
     numOfSparkThors = 0;
@@ -1546,6 +1575,291 @@ void CLocalEnvironment::buildDfuQueueCache() const
         }
         dfuQueueCacheBuilt = true;
     }
+}
+
+// #define _THORSTART_DEBUG
+
+void CLocalEnvironment::buildthorNameMap(bool onlyOndemand) const
+{
+    synchronized procedure(safeCache);
+    if (!thorNameMapCacheBuilt)
+    {
+        thorNameMap.clear();
+        Owned<IPropertyTreeIterator> allClusters = p->getElements("Software/Topology/Cluster");
+        ForEach(*allClusters)
+        {
+            IPropertyTree &cluster = allClusters->query();
+            const char *clusterName = cluster.queryProp("@name");
+            if (clusterName && *clusterName)
+            {
+                std::string tcluster(clusterName);
+                Owned<IPropertyTreeIterator> thorClusters = cluster.getElements("ThorCluster");
+                ForEach(*thorClusters)
+                {
+                    const char *thorName = thorClusters->query().queryProp("@process");
+                    if (thorName && *thorName)
+                    {
+                        std::string tname(thorName);
+                        VStringBuffer query("Software/ThorCluster[@name=\"%s\"]",thorName);
+                        IPropertyTree *thorCluster = p->queryPropTree(query.str());
+                        if (thorCluster)
+                        {
+                            if ( (!onlyOndemand) || ((onlyOndemand) && (thorCluster->getPropBool("@ondemand"))) )
+                            {
+                                const char *groupName = thorCluster->queryProp("@nodeGroup");
+                                if (!groupName || !*groupName)
+                                    groupName = thorName;
+                                std::string tgroup(groupName);
+                                auto itr = thorNameMap.find(tname);
+                                if (itr == thorNameMap.end())
+                                {
+                                    Owned<CThorInstances> nthor = new CThorInstances(tname, tgroup, tcluster);
+                                    thorNameMap.insert({tname, nthor.getClear()});
+#ifdef _THORSTART_DEBUG
+                                    DBGLOG("buildthorNameMap() adding new name:%s group:%s cluster:%s", tname.c_str(), tgroup.c_str(), tcluster.c_str());
+#endif
+                                }
+                                else
+                                {
+                                    StringBuffer cStrBuffer(itr->second->cluster.c_str());
+                                    StringArray cStrArray;
+                                    cStrArray.appendList(cStrBuffer, ",");
+                                    bool found = false;
+                                    ForEachItemIn(i, cStrArray)
+                                    {
+                                        if (streq(cStrArray.item(i), clusterName))
+                                        {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!found)
+                                    {
+#ifdef _THORSTART_DEBUG
+                                        DBGLOG("buildthorNameMap() adding cluster:%s to name:%s group:%s cluster:%s", clusterName,
+                                            itr->second->name.c_str(), itr->second->group.c_str(), itr->second->cluster.c_str());
+#endif
+                                        itr->second->cluster.append(",");
+                                        itr->second->cluster.append(clusterName);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // fill in ip/host for each ondemand Thor match found above ...
+        // NOTE: this step not necessary for cloud configuration
+
+        std::unordered_map<std::string, std::string> machineMap;
+
+        auto populateMachineMap = [&machineMap](const IPropertyTree &envRoot)
+        {
+            Owned<IPropertyTreeIterator> machineIter = envRoot.getElements("Hardware/Computer");
+            ForEach(*machineIter)
+            {
+                const IPropertyTree &machine = machineIter->query();
+                const char *name = machine.queryProp("@name");
+                const char *host = machine.queryProp("@netAddress");
+                machineMap.insert({name, host});
+            }
+        };
+
+        auto resolveComputer = [&machineMap](const char *compName, const char *defaultValue, StringBuffer &result) -> const char *
+        {
+            if (!compName || !*compName)
+                return nullptr;
+            const auto &it = machineMap.find(compName);
+            if (it == machineMap.end())
+                return defaultValue;
+            IpAddress ip(it->second.c_str());
+            if (ip.isNull())
+                return defaultValue;
+            return ip.getIpText(result);
+        };
+
+        populateMachineMap(*p);
+
+        Owned<IPropertyTreeIterator> softwareIter = p->getElements("Software/*");
+        ForEach(*softwareIter)
+        {
+            const IPropertyTree &component = softwareIter->query();
+            const char *compProcess = component.queryName();
+            if (streq(compProcess, "ThorCluster"))
+            {
+                std::string tname(component.queryProp("@name"));
+                if (!tname.empty())
+                {
+                    auto itr = thorNameMap.find(tname);
+                    if (itr != thorNameMap.end())
+                    {
+                        const char *masterCompName = component.queryProp("ThorMasterProcess/@computer");
+                        StringBuffer hoststr;
+                        const char *hostn = resolveComputer(masterCompName, component.queryProp("@netAddress"), hoststr);
+                        if (hostn)
+                        {
+                            itr->second->masterHost.assign(hostn);
+#ifdef _THORSTART_DEBUG
+                            DBGLOG("buildthorNameMap() setting masterHost:%s in name:%s group:%s cluster:%s", hostn,
+                                itr->second->name.c_str(), itr->second->group.c_str(), itr->second->cluster.c_str());
+#endif
+                        }
+                    }
+                }
+            }
+        }
+
+        thorNameMapCacheBuilt = true;
+    }
+}
+
+bool CLocalEnvironment::getThorToStart(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost) const
+{
+    // NOTE: expected to hold excl SDS lock (/Locks/StartThorLock) while here
+
+    buildthorNameMap(true);
+
+    // determine which ondemand Thor matches from above are currently started ...
+    // NOTE: this step not necessary for cloud configuration -
+    //       simply know max allowed and how many currently running
+
+    // TODO: mck - could ask topology server for this info ...
+
+    {
+        Owned<IRemoteConnection>conn = querySDS().connect("Status/Servers", myProcessSession(), RTM_LOCK_READ, 5000);
+        if (!conn.get())
+            throw MakeStringException(-1, "unable to SDS connect to /Status/Servers");
+
+        for (auto i : thorNameMap)
+        {
+            i.second->started = false;
+        }
+
+        Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server"));
+        ForEach(*it)
+        {
+            if ( (it->query().hasProp("@name")) && (it->query().hasProp("@thorname")) &&
+                 (it->query().hasProp("@cluster")) && (it->query().hasProp("@nodeGroup")) &&
+                 (it->query().hasProp("@queue")) )
+            {
+                const char *name = it->query().queryProp("@name");
+                if (streq(name, "ThorMaster"))
+                {
+                    StringBuffer qStrBuffer(it->query().queryProp("@queue"));
+                    if (!qStrBuffer.isEmpty())
+                    {
+                        StringArray qStrArray;
+                        qStrArray.appendList(qStrBuffer, ",");
+                        bool found = false;
+                        ForEachItemIn(i, qStrArray)
+                        {
+                            if (streq(qStrArray.item(i), queName))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found)
+                        {
+                            std::string tname(it->query().queryProp("@thorname"));
+                            if (!tname.empty())
+                            {
+                                auto itr = thorNameMap.find(tname);
+                                if (itr != thorNameMap.end())
+                                    itr->second->started = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+#ifdef _THORSTART_DEBUG
+    for (auto i : thorNameMap)
+    {
+        DBGLOG("getThorToStart() name:%s group:%s cluster:%s masterHost:%s started:%u",
+            i.second->name.c_str(), i.second->group.c_str(), i.second->cluster.c_str(),
+            i.second->masterHost.c_str(), i.second->started);
+    }
+#endif
+
+    if (thorNameMap.size() == 0)
+        return false;
+
+    ThorNameMap thorNameMapCluster;
+    for (auto i : thorNameMap)
+    {
+        StringBuffer cStrBuffer(i.second->cluster.c_str());
+        StringArray cStrArray;
+        cStrArray.appendList(cStrBuffer, ",");
+        bool found = false;
+        ForEachItemIn(j, cStrArray)
+        {
+            if (streq(cStrArray.item(j), clusName))
+            {
+                found = true;
+                break;
+            }
+        }
+        if (found)
+        {
+            if (!i.second->started)
+            {
+                Owned<CThorInstances> nthor = new CThorInstances(i.second->name, i.second->group, i.second->cluster);
+                nthor->masterHost = i.second->masterHost;
+                thorNameMapCluster.insert({i.second->name, nthor.getClear()});
+            }
+        }
+    }
+
+    // select not started ondemand Thor ...
+    // NOTE: this step not necessary for cloud configuration
+
+#ifdef _THORSTART_DEBUG
+    for (auto i : thorNameMapCluster)
+    {
+        DBGLOG("getThorToStart() name:%s group:%s cluster:%s masterHost:%s started:%u",
+            i.second->name.c_str(), i.second->group.c_str(), i.second->cluster.c_str(), i.second->masterHost.c_str(), i.second->started);
+    }
+#endif
+
+    if (thorNameMapCluster.size() == 0)
+        return false;
+    else if (thorNameMapCluster.size() == 1)
+    {
+        auto itr = thorNameMapCluster.begin();
+        startThorHost.clear().append(itr->second->masterHost.c_str());
+        startThorName.clear().append(itr->second->name.c_str());
+        return true;
+    }
+
+    // select random one from list ...
+
+    // not very uniform in a small range, but ok for this ...
+    unsigned randIdx = std::rand() % thorNameMapCluster.size();
+    unsigned ix = 0;
+    for (auto i : thorNameMapCluster)
+    {
+        if (ix == randIdx)
+        {
+            startThorHost.clear().append(i.second->masterHost.c_str());
+            startThorName.clear().append(i.second->name.c_str());
+            return true;
+        }
+        ix++;
+    }
+
+    // can we really ever get here ?
+    // assertex(false);
+    // return false;
+
+    auto itr = thorNameMapCluster.begin();
+    startThorHost.clear().append(itr->second->masterHost.c_str());
+    startThorName.clear().append(itr->second->name.c_str());
+    return true;
 }
 
 IConstComputerTypeInfo * CLocalEnvironment::getComputerType(const char * name) const
@@ -1886,6 +2200,7 @@ void CLocalEnvironment::clearCache()
     cache.kill();
     keyGroupMap.clear();
     keyPairMap.clear();
+    thorNameMap.clear();
     init();
     resetPasswordsFromSDS();
 }
@@ -2579,4 +2894,14 @@ unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::s
     return added;
 }
 
+bool getThorOndemand(const char *clusName, const char *queName, StringBuffer &startThorName, StringBuffer &startThorHost)
+{
+    CriticalBlock b(todCrit);
+    if (!todEnv.get())
+    {
+        Owned<IEnvironmentFactory> todFactory = getEnvironmentFactory(true);
+        todEnv.set(todFactory->openEnvironment());
+    }
 
+    return todEnv->getThorToStart(clusName, queName, startThorName, startThorHost);
+}

@@ -3299,6 +3299,7 @@ int main(int argc, char* argv[])
     if (!ret) {
         const char *cmd = params.item(0);
         unsigned np = params.ordinality()-1;
+        daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
 
         if (!props->getProp("server",daliserv.clear()))
         {
@@ -3345,8 +3346,11 @@ int main(int argc, char* argv[])
                 epa.append(ep);
                 Owned<IGroup> group = createIGroup(epa);
                 unsigned start = msTick();
-                initClientProcess(group, DCR_DaliAdmin);
-                daliconnectelapsed = msTick()-start;
+                bool ok = initClientProcess(group, DCR_DaliAdmin, 0, nullptr, nullptr, daliConnectTimeoutMs);
+                if (!ok)
+                    ret = 254;
+                else
+                    daliconnectelapsed = msTick()-start;
             }
             catch (IException *e) {
                 EXCLOG(e,"daliadmin initClientProcess");
@@ -3363,7 +3367,6 @@ int main(int argc, char* argv[])
                         userDesc->set(tmps.str(),ps.str());
                         queryDistributedFileDirectory().setDefaultUser(userDesc);
                     }
-                    daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
                     if (strieq(cmd,"export")) {
                         CHECKPARAMS(2,2);
                         _export_(params.item(1),params.item(2));
