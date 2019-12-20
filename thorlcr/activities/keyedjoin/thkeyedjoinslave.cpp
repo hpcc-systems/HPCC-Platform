@@ -695,9 +695,7 @@ class CJoinGroupList
     CJoinGroup *head = nullptr, *tail = nullptr;
     unsigned count = 0;
 
-public:
-    CJoinGroupList() { }
-    ~CJoinGroupList()
+    void removeAll()
     {
         while (head)
         {
@@ -705,6 +703,17 @@ public:
             head->Release();
             head = next;
         }
+    }
+public:
+    CJoinGroupList() { }
+    ~CJoinGroupList()
+    {
+        removeAll();
+    }
+    void clear()
+    {
+        removeAll();
+        head = tail = nullptr;
     }
     inline unsigned queryCount() const { return count; }
     inline CJoinGroup *queryHead() const { return head; }
@@ -2048,6 +2057,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
     };
 
+    const unsigned startSpillAmountPercentage = 10;   // Initial percentage to spill, will grow if memory pressure keeps calling callback
+    const memsize_t startSpillAmount = 10 * 0x100000; // (10MB) Initial amount to try to spill
+    const memsize_t minRhsJGSpillSz = 1024;           // (1K) Threshold, if a join group is smaller than this, don't attempt to spill
+    const unsigned minimumQueueLimit = 5;             // When spilling the pending and group limits will gradually reduce until this limit
+    const unsigned unknownCopyNum = 0xff;             // in a partCopy denotes that a copy is unknown.
+
     IHThorKeyedJoinArg *helper = nullptr;
     StringAttr indexName;
     size32_t fixedRecordSize = 0;
@@ -2068,7 +2083,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     CLimiter doneListLimiter;
 
     CPartDescriptorArray allDataParts;
-    IArrayOf<IPartDescriptor> allIndexParts;
+    CPartDescriptorArray allIndexParts;
     std::vector<unsigned> localIndexParts, localFetchPartMap;
     IArrayOf<IKeyIndex> tlkKeyIndexes;
     Owned<IEngineRowAllocator> joinFieldsAllocator;
@@ -2118,15 +2133,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     std::atomic<bool> waitingForDoneGroups{false};
     Semaphore waitingForDoneGroupsSem;
     CJoinGroupList pendingJoinGroupList, doneJoinGroupList;
-    Owned<IException> abortLimitException;
     Owned<CJoinGroup> currentJoinGroup;
     unsigned currentMatchIdx = 0;
     CJoinGroup::JoinGroupRhsState rhsState;
 
-    unsigned spillAmountPercentage = 10;   // Initial percentage to spill, will grow if memory pressure keeps calling callback
-    memsize_t spillAmount = 10 * 0x100000; // (10MB) Initial amount to try to spill
-    memsize_t minRhsJGSpillSz = 1024; // (1K) Threshold, if a join group is smaller than this, don't attempt to spill
-    const unsigned minimumQueueLimit = 5; // When spilling the pending and group limits will gradually reduce until this limit
+    unsigned spillAmountPercentage = startSpillAmountPercentage;
+    memsize_t spillAmount = startSpillAmount;
     bool memoryCallbackInstalled = false;
 
     roxiemem::IRowManager *rowManager = nullptr;
@@ -2139,7 +2151,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
     CriticalSection fetchFileCrit;
     std::vector<PartIO> openFetchParts;
-    const unsigned unknownCopyNum = 0xff; // in a partCopy denotes that a copy is unknown.
 
     PartIO getFetchPartIO(unsigned partNo, unsigned copy, bool compressed, bool encrypted)
     {
@@ -2859,11 +2870,18 @@ public:
             tlkKeyIndexes.kill();
             allIndexParts.kill();
             localIndexParts.clear();
+            localFetchPartMap.clear();
 
             allDataParts.kill();
             globalFPosToSlaveMap.clear();
             keyLookupHandlers.clear();
             fetchLookupHandlers.clear();
+            openFetchParts.clear();
+
+            indexPartToSlaveMap.clear();
+            dataPartToSlaveMap.clear();
+            tlkKeyManagers.kill();
+            partitionKey = false;
         }
         for (auto &a : statsArr)
             a = 0;
@@ -3018,12 +3036,19 @@ public:
         currentMatchIdx = 0;
         rhsState.clear();
         currentAdded = 0;
+        currentJoinGroupSize = 0;
         eos = false;
         endOfInput = false;
         lookupThreadLimiter.reset();
         fetchThreadLimiter.reset();
         keyLookupHandlers.init();
         fetchLookupHandlers.init();
+        pendingKeyLookupLimiter.reset();
+        doneListLimiter.reset();
+        pendingJoinGroupList.clear();
+        doneJoinGroupList.clear();
+        currentJoinGroup.clear();
+        waitingForDoneGroups = false;
 
         if ((pendingKeyLookupLimiter.queryMax() > minimumQueueLimit) || (doneListLimiter.queryMax() > minimumQueueLimit))
         {
