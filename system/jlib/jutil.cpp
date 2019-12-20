@@ -1827,13 +1827,16 @@ static const char *findExtension(const char *fn)
     return ret;
 }
 
-unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input)
+unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char *otitle)
 {
     try
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
         int ret = START_FAILURE;
-        if (pipe->run(cmd, cmd, ".", input != NULL, true, true, 1024*1024))
+        const char *title = otitle;
+        if (title == nullptr)
+            title = cmd;
+        if (pipe->run(title, cmd, ".", input != NULL, true, true, 1024*1024))
         {
             if (input)
             {

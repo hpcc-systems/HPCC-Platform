@@ -442,6 +442,20 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="ondemand" type="xs:boolean" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Thor starts when job is submitted and ends after job completes.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ondemandLingerSeconds" type="xs:nonNegativeInteger" use="optional" default="10">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>On demand Thor idle linger time, after which Thor shuts down. (seconds)</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="masterport" type="xs:nonNegativeInteger" default="20000">
         <xs:annotation>
           <xs:appinfo>

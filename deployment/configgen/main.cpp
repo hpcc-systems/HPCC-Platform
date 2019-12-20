@@ -65,6 +65,7 @@ void usage()
   puts("          generate any output files. If masters and slaves exist for ");
   puts("          a component like Roxie or thor, then only the master entry ");
   puts("          is returned. ");
+  puts("   -list2: Same as -list option, except it skips all OnDemand Thors.");
   puts("   -listall: Lists out all the components specified in the environment");
   puts("          that have an instance defined. Does not require an ip. Does ");
   puts("          not generate any output files. Output is written to stdout ");
@@ -253,7 +254,7 @@ void replaceDotWithHostIp(IPropertyTree* pTree, bool verbose)
 int processRequest(const char* in_cfgname, const char* out_dirname, const char* in_dirname, 
                    const char* compName, const char* compType, const char* in_filename, 
                    const char* out_filename, bool generateOutput, const char* ipAddr, 
-                   bool listComps, bool verbose, bool listallComps, bool listallCompsAllThors, bool listESPServices, bool listdirs,
+                   bool listComps, bool listCompsNoOnDemandThors, bool verbose, bool listallComps, bool listallCompsAllThors, bool listESPServices, bool listdirs,
                    bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly,
                    bool listldaps, bool ldapconfig, bool ldapservers)
 {
@@ -450,7 +451,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       }
     }
   }
-  else if (!listComps && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines
+  else if (!listComps && !listCompsNoOnDemandThors && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines
            && !listldaps && !listESPServices)
   {
     Owned<IEnvDeploymentEngine> m_configGenMgr;
@@ -687,6 +688,42 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         else
           out.appendf("%s=%s;%s%c%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"));
       }
+      else if (listCompsNoOnDemandThors)
+      {
+        if (!strcmp(pComponent->queryName(), "ThorCluster"))
+        {
+            if (pComponent->numChildren())
+            {
+                Owned<IPropertyTreeIterator> itComp = pComponent->getElements("*");
+                ForEach(*itComp)
+                {
+                    IPropertyTree* pInst = &itComp->query();
+                    if (!strcmp(pInst->queryName(), "ThorMasterProcess"))
+                    {
+                        StringBuffer onDemandSuffix("");
+                        if (pInst->getPropBool("@ondemand"))
+                            onDemandSuffix.append("-ondemand");
+                        out.appendf("%s=%s%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), onDemandSuffix.str(), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
+                    }
+                }
+            }
+        }
+        else if (!strcmp(pComponent->queryProp("@buildSet"), "roxie"))
+        {
+            Owned<IPropertyTreeIterator> itInst = pComponent->getElements("*");
+            ForEach(*itInst)
+            {
+                IPropertyTree* pInst = &itInst->query();
+                String instName(pInst->queryName());
+                if (instName.startsWith("RoxieServerProcess"))
+                {
+                  out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
+                }
+            }
+        }
+        else
+            out.appendf("%s=%s;%s%c%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"));
+      }
       else if (listallComps)
       {
         StringBuffer netAddr;
@@ -721,8 +758,8 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                 else
                     port.append(pInst->queryProp(XML_ATTR_MASTERPORT));
             }
-	    else
-		port.append(pInst->queryProp("@port"));
+            else
+                port.append(pInst->queryProp("@port"));
             
             if (multiInstances)
               processName.clear().append(pInst->queryName());
@@ -771,6 +808,7 @@ int main(int argc, char** argv)
   StringBuffer ipAddr;
   bool generateOutput = true;
   bool listComps = false;
+  bool listCompsNoOnDemandThors = false;
   bool verbose = false;
   bool listallComps = false;
   bool listallCompsAllThors = false;
@@ -844,6 +882,11 @@ int main(int argc, char** argv)
     {
       i++;
       listComps = true;
+    }
+    else if (stricmp(argv[i], "-list2") == 0)
+    {
+      i++;
+      listCompsNoOnDemandThors = true;
     }
     else if (stricmp(argv[i], "-listall") == 0)
     {
@@ -925,7 +968,7 @@ int main(int argc, char** argv)
   {
     processRequest(in_cfgname, out_dirname, in_dirname, compName, 
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
-      listComps, verbose, listallComps, listallCompsAllThors, listespservices, listdirs, listdropzones, listcommondirs, listMachines,
+      listComps, listCompsNoOnDemandThors, verbose, listallComps, listallCompsAllThors, listespservices, listdirs, listdropzones, listcommondirs, listMachines,
       validateOnly, listldaps, ldapconfig, ldapservers);
   }
   catch(IException *excpt)

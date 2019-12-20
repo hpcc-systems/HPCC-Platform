@@ -124,7 +124,7 @@ interface IJobQueue: extends IJobQueueConst
     virtual void resume(const char *info)=0;    // removes paused or stopped flag
 
 // conversations:
-    virtual IConversation *initiateConversation(IJobQueueItem *item)=0; // does enqueue - take ownership of item
+    virtual IConversation *initiateConversation(IJobQueueItem *item,unsigned timeoutms=INFINITE)=0; // does enqueue - take ownership of item
     virtual IConversation *acceptConversation(IJobQueueItem *&item,unsigned prioritytransitiondelay=0,IDynamicPriority *maxp=NULL)=0;  
                                                                         // does dequeue - returns queue item dequeued
     virtual void cancelInitiateConversation()=0;                        // cancels initiateConversation in progress

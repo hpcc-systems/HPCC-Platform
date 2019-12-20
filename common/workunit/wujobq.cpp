@@ -1744,7 +1744,7 @@ public:
         return (querySessionManager().lookupProcessSession(node)==(SessionId)item->getPropInt64("@session"));
     }
 
-    IConversation *initiateConversation(sQueueData &qd,IJobQueueItem *item)
+    IConversation *initiateConversation(sQueueData &qd,IJobQueueItem *item,unsigned timeoutms)
     {
         CriticalBlock block(crit);
         assertex(!initiateconv.get());
@@ -1758,7 +1758,7 @@ public:
         bool ok;
         {
             CriticalUnblock unblock(crit);
-            ok = initiateconv->accept(INFINITE);
+            ok = initiateconv->accept(timeoutms);
         }
         if (!ok)
             initiateconv.clear();
@@ -1939,9 +1939,9 @@ public:
         }
     }
 
-    IConversation *initiateConversation(IJobQueueItem *item)
+    IConversation *initiateConversation(IJobQueueItem *item,unsigned timeout)
     {
-        return initiateConversation(*activeq,item);
+        return initiateConversation(*activeq,item,timeout);
     }
     void cancelInitiateConversation()
     {

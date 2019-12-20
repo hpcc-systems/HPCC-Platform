@@ -110,7 +110,7 @@ void setMulticastEndpoints(unsigned numChannels);
 #endif
 
 #define ROXIE_DALI_CONNECT_TIMEOUT 30000
-#define ABORT_POLL_PERIOD 5000
+#define ABORT_POLL_PERIOD 2000
 
 class RemoteActivityId
 {

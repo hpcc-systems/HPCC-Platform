@@ -26,6 +26,7 @@
 #include "thorstats.hpp"
 #include "roxiemem.hpp"
 #include "eventqueue.hpp"
+#include "environment.hpp"
 
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
@@ -1173,6 +1174,7 @@ protected:
     mutable CriticalSection statsCrit;
     const IRoxieContextLogger &logctx;
 
+    mutable CriticalSection todCrit;
 
 protected:
     bool exceptionLogged;
@@ -2280,6 +2282,7 @@ protected:
         Owned<IJobQueue> jq = createJobQueue(queueName.str());
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
         bool resubmit;
+
         do // loop if pause interrupted graph and needs resubmitting on resume
         {
             resubmit = false; // set if job interrupted in thor
@@ -2296,22 +2299,33 @@ protected:
             }
             setWUState(WUStateBlocked);
 
-            class cPollThread: public Thread  // MORE - why do we ned a thread here?
+            PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
+
+            IJobQueueItem* item = createJobQueueItem(wuid.str());
+            item->setOwner(owner.str());
+            item->setPriority(priority);
+
+            StringBuffer cname(cluster.str());
+            StringBuffer qname(queueName.str());
+
+            class cPollThread: public Thread
             {
                 Semaphore sem;
-                bool stopped;
                 IJobQueue *jq;
                 IConstWorkUnit *wu;
-            public:
+                StringBuffer cluster;
+                StringBuffer queName;
+                int retCode = 0;
+                CTimeMon ts;
 
-                bool timedout;
-                CTimeMon tm;
-                cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
-                    : tm(timelimit)
+            public:
+                std::atomic<bool> stopped = { false };
+                std::atomic<bool> timedout = { false };
+                CTimeMon tl;
+                cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, StringBuffer &_cl, StringBuffer &_qn, unsigned timelimit)
+                    : jq(_jq), wu(_wu), cluster(_cl), queName(_qn), tl(timelimit)
                 {
                     stopped = false;
-                    jq = _jq;
-                    wu = _wu;
                     timedout = false;
                 }
                 ~cPollThread()
@@ -2320,46 +2334,139 @@ protected:
                 }
                 int run()
                 {
-                    while (!stopped) {
+                    Owned<IRemoteConnection>thorStartLock;
+                    unsigned startThorAttempts = 0;
+                    ts.reset(START_THOR_RETRY_DELAY);
+
+                    while (!stopped)
+                    {
                         sem.wait(ABORT_POLL_PERIOD);
                         if (stopped)
                             break;
-                        if (tm.timedout()) {
+                        else if (tl.timedout())
+                        {
                             timedout = true;
                             stopped = true;
                             jq->cancelInitiateConversation();
+                            retCode = 1;
+                            break;
                         }
-                        else if (wu->aborting()) {
+                        else if (wu->aborting())
+                        {
                             stopped = true;
                             jq->cancelInitiateConversation();
+                            retCode = 2;
+                            break;
                         }
 
+                        if ( (startThorAttempts == 0) || ((startThorAttempts < START_THOR_RETRY_MAX) && (ts.timedout())) )
+                        {
+                            if (!thorStartLock.get())
+                            {
+                                try
+                                {
+                                    thorStartLock.setown(querySDS().connect("/Locks/ThorStartLock", myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY | RTM_DELETE_ON_DISCONNECT, 5000));
+                                }
+                                catch (ISDSException *sdse)
+                                {
+                                    if (sdse->errorCode() == SDSExcpt_LockTimeout)
+                                        sdse->Release();
+                                    else
+                                        throw;
+                                }
+                                catch (...)
+                                {
+                                    throw;
+                                }
+                            }
+
+                            if (thorStartLock.get())
+                            {
+                                StringBuffer startThorName;
+                                StringBuffer startThorHost;
+                                bool foundThorSlot = getThorOndemand(cluster.str(), queName.str(), startThorName, startThorHost);
+                                if (foundThorSlot)
+                                {
+                                    // call may have taken some time, make one last check to see if a Thor accepted our init
+                                    if (stopped)
+                                        break;
+                                    else if (wu->aborting())
+                                    {
+                                        stopped = true;
+                                        jq->cancelInitiateConversation();
+                                        retCode = 2;
+                                        break;
+                                    }
+
+                                    // TODO: mck - really want a component launcher 'service'
+                                    //       that watches queues and starts whatever is configured to listen to those queues ...
+
+                                    //       1). bare metal - start thor (hpcc-init) on correct master host
+                                    //       2). docker/lxc - start thor master container on correct host and it starts all its slaves lxcs
+                                    //       3). kubernetes - request start of thor master and its slave containers
+
+                                    // TODO: mck - proper Windows bare metal Thor start up ...
+
+                                    IpAddress startThorIp(startThorHost.str());
+                                    StringBuffer cmdLine, cmdStdOut, cmdStdErr;
+                                    // could be from a make install which uses custom install dir,
+                                    // and that assumes same machine, if remote use standard dir ...
+                                    if (startThorIp.isHost())
+                                    {
+                                        StringBuffer insDir(" ");
+                                        char *insptr = getenv("HPCC_INSTALL_DIR");
+                                        if (insptr != nullptr)
+                                            insDir.clear().append(insptr);
+                                        cmdLine.appendf("%s/etc/init.d/hpcc-init -c %s start", insDir.str(), startThorName.str());
+                                    }
+                                    else
+                                        cmdLine.appendf("ssh -x -n -o BatchMode=yes -o LogLevel=ERROR -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no %s /etc/init.d/hpcc-init -c %s start", startThorHost.str(), startThorName.str());
+
+                                    int retCode = runExternalCommand(cmdStdOut, cmdStdErr, cmdLine.str(), nullptr, "thor start");
+                                    if (retCode)
+                                    {
+                                        // PipeProcess logs cmd line already ...
+                                        StringBuffer errLogStr;
+                                        errLogStr.appendf("thor start: ERROR - code: %d", retCode);
+                                        if (!cmdStdOut.isEmpty())
+                                            errLogStr.appendf(" stdout: %s", cmdStdOut.str());
+                                        if (!cmdStdErr.isEmpty())
+                                            errLogStr.appendf(" stderr: %s", cmdStdErr.str());
+                                        OERRLOG("%s", errLogStr.str());
+                                    }
+
+                                    startThorAttempts++;
+                                    ts.reset(START_THOR_RETRY_DELAY);
+                                }
+                                else
+                                    thorStartLock.clear();
+                            }
+                        }
                     }
-                    return 0;
+                    return retCode;
                 }
                 void stop()
                 {
                     stopped = true;
                     sem.signal();
                 }
-            } pollthread(jq, workUnit, timelimit*1000);
+            } pollthread(jq, workUnit, cname, qname, timelimit*1000);
 
             pollthread.start();
 
-            PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
-            IJobQueueItem* item = createJobQueueItem(wuid.str());
-            item->setOwner(owner.str());
-            item->setPriority(priority);
-            Owned<IConversation> conversation = jq->initiateConversation(item);
-            bool got = conversation.get()!=NULL;
+            Owned<IConversation> conversation = jq->initiateConversation(item, INFINITE);
+
             pollthread.stop();
             pollthread.join();
+
+            bool got = conversation.get()!=NULL;
             if (!got)
             {
                 if (pollthread.timedout)
                     throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
                 throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
             }
+
             // get the thor ep from whoever picked up
 
             SocketEndpoint thorMaster;

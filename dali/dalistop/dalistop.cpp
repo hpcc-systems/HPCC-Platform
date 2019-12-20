@@ -45,38 +45,44 @@ int main(int argc, char* argv[])
             printf("Stopping Dali Server on %s\n",argv[1]);
 
             Owned<IGroup> group = createIGroup(1,&ep); 
-            initClientProcess(group, DCR_DaliStop);
-            Owned<ICommunicator> comm = createCommunicator(group);
-            CMessageBuffer mb;
-            int fn=-1;
-            mb.append(fn);
-            if (comm->verifyConnection(0,2000))
+            // dont wait forever ...
+            bool initOK = initClientProcess(group, DCR_DaliStop, 0, nullptr, nullptr, 25000);
+            if (initOK)
             {
-                comm->send(mb,0,MPTAG_DALI_COVEN_REQUEST,MP_ASYNC_SEND);
-                if (nowait)
+                Owned<ICommunicator> comm = createCommunicator(group);
+                CMessageBuffer mb;
+                int fn=-1;
+                mb.append(fn);
+                if (comm->verifyConnection(0,2000))
                 {
-                    Sleep(1000);
-                    exitCode = 0;
-                }
-                else
-                {
-                    // verifyConnection() has a min conn timeout of 10s
-                    // use recv() instead to check for socket closed ...
-                    try
+                    comm->send(mb,0,MPTAG_DALI_COVEN_REQUEST,MP_ASYNC_SEND);
+                    if (nowait)
                     {
-                        while (!comm->recv(mb,0,MPTAG_DALI_COVEN_REQUEST,nullptr,5000))
-                        {
-                            printf("Waiting for Dali Server to stop....\n");
-                        }
+                        Sleep(1000);
                         exitCode = 0;
                     }
-                    catch (IMP_Exception *e)
+                    else
                     {
-                        if (e->errorCode() == MPERR_link_closed)
+                        // verifyConnection() has a min conn timeout of 10s
+                        // use recv() instead to check for socket closed ...
+                        try
+                        {
+                            while (!comm->recv(mb,0,MPTAG_DALI_COVEN_REQUEST,nullptr,5000))
+                            {
+                                printf("Waiting for Dali Server to stop....\n");
+                            }
                             exitCode = 0;
-                        e->Release();
+                        }
+                        catch (IMP_Exception *e)
+                        {
+                            if (e->errorCode() == MPERR_link_closed)
+                                exitCode = 0;
+                            e->Release();
+                        }
                     }
                 }
+                else
+                    fprintf(stderr, "Dali not responding\n");
             }
             else
                 fprintf(stderr, "Dali not responding\n");

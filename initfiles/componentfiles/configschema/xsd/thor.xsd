@@ -158,6 +158,10 @@
                 <!--Not sure about nodeGroup. It wants to default to the value of the name attribute above, but it might not be set yet-->
                 <xs:attribute name="nodeGroup" type="xs:string" hpcc:displayName="Node Group" hpcc:autoGenerateType="siblingValue"
                               hpcc:autoGenerateValue="name" hpcc:tooltip="Name of a node group running Thor slaves. (if omitted uses same name as Thor)"/>
+                <xs:attribute name="ondemand" type="xs:boolean" hpcc:displayName="Thor start on demand" hpcc:presetValue="false"
+                              hpcc:tooltip="Thor starts when job is submitted and ends after job completes"/>
+                <xs:attribute name="ondemandLingerSeconds" type="xs:nonNegativeInteger" hpcc:displayName="On demand Thor idle linger timeout (s)"
+                              hpcc:presetValue="10" hpcc:tooltip="On demand Thor idle linger time, after which Thor shuts down (seconds)"/>
                 <xs:attribute name="defaultOutputNodeGroup" type="xs:string" hpcc:displayName="Default Output Node Group"
                               hpcc:tooltip="Default group to output to. Leave blank if output defaults to local cluster"/>
                 <xs:attribute name="masterport" type="xs:nonNegativeInteger" hpcc:displayName="Master Port" hpcc:presetValue="20000"
