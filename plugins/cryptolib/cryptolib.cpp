@@ -14,8 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
-#include "jutil.hpp"
 #include "jexcept.hpp"
 #include "digisign.hpp"
 #include "ske.hpp"
@@ -24,6 +22,7 @@
 #include <openssl/rand.h>
 #include <string>
 #include <unordered_map>
+#include "jthread.hpp"
 
 #include "cryptolib.hpp"
 
@@ -436,14 +435,12 @@ public:
         }
         else
         {
-            IDigitalSignatureManager * pDSM = nullptr;
             if (!isEmptyString(pubKeyFS) || !isEmptyString(privKeyFS))
-                pDSM = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
+                ret = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
             else
-                pDSM = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
+                ret = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
 
-            dsmCache.insert(pair<string, IDigitalSignatureManager*>(searchKey.str(), pDSM));
-            ret = pDSM;
+            dsmCache.emplace(searchKey.str(), ret);
         }
         return LINK(ret);
     }
@@ -528,6 +525,139 @@ CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff(const char * pkalgori
 }
 
 
+//-----------------------------------------------------------------
+//  Simple cache for loaded keys
+//
+//-----------------------------------------------------------------
+#ifdef _USE_HASHMAP
+class CKeyCache : public CInterface
+{
+private:
+    typedef std::unordered_map<string, Owned<CLoadedKey>> KeyCache;
+    KeyCache keyCache;
+
+public:
+
+    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+    {
+        if (isEmptyString(keyFS) && isEmptyString(keyBuff))
+            throw MakeStringException(-1, "Must specify a key filename or provide a key buffer");
+        VStringBuffer searchKey("%s_%s_%s", isEmptyString(keyFS) ? "" : keyFS, isEmptyString(keyBuff) ? "" : keyBuff, isEmptyString(passphrase) ? "" : passphrase);
+        KeyCache::iterator it = keyCache.find(searchKey.str());
+        CLoadedKey * ret = nullptr;
+        if (it != keyCache.end())//exists in cache?
+        {
+            ret = (*it).second;
+        }
+        else
+        {
+            if (!isEmptyString(keyFS))
+            {
+                //Create CLoadedKey from filespec
+                if (isPublic)
+                    ret = loadPublicKeyFromFile(keyFS, passphrase);
+                else
+                    ret = loadPrivateKeyFromFile(keyFS, passphrase);
+            }
+            else
+            {
+                //Create CLoadedKey from key contents
+                if (isPublic)
+                    ret = loadPublicKeyFromMemory(keyBuff, passphrase);
+                else
+                    ret = loadPrivateKeyFromMemory(keyBuff, passphrase);
+            }
+
+            keyCache.emplace(searchKey.str(), ret);
+        }
+        return LINK(ret);
+    }
+};
+
+#else
+
+class CKeyCache : public CInterface
+{
+private:
+    bool        m_isPublic = false;
+    StringAttr  m_keyFS;
+    StringAttr  m_keyBuff;
+    StringAttr  m_passphrase;
+    Owned<CLoadedKey> m_loadedKey;
+
+    //String compare that treats null ptr and ptr to empty string as matching
+    inline bool sameString(const char * left, const char * right)
+    {
+        if (isEmptyString(left))
+            return isEmptyString(right);
+        else if (isEmptyString(right))
+            return false;
+        return strcmp(left, right) == 0;
+    }
+
+public:
+
+    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+    {
+        if (!m_loadedKey ||
+            isPublic != m_isPublic ||
+            !sameString(passphrase, m_passphrase.str())  ||
+            !sameString(keyFS, m_keyFS.str()) ||
+            !sameString(keyBuff, m_keyBuff.str()))
+        {
+            CLoadedKey *newKey;
+
+            if (!isEmptyString(keyFS))
+            {
+                //Create CLoadedKey from filespec
+                if (isPublic)
+                    newKey = loadPublicKeyFromFile(keyFS, passphrase);
+                else
+                    newKey = loadPrivateKeyFromFile(keyFS, passphrase);
+            }
+            else if (!isEmptyString(keyBuff))
+            {
+                //Create CLoadedKey from key contents
+                if (isPublic)
+                    newKey = loadPublicKeyFromMemory(keyBuff, passphrase);
+                else
+                    newKey = loadPrivateKeyFromMemory(keyBuff, passphrase);
+            }
+            else
+                throw makeStringException(-1, "Must specify a key filename or provide a key buffer");
+
+            m_loadedKey.setown(newKey);//releases previous ptr
+            m_isPublic = isPublic;
+            m_keyFS.set(keyFS);
+            m_keyBuff.set(keyBuff);
+            m_passphrase.set(passphrase);
+        }
+        return LINK(m_loadedKey);
+    }
+};
+#endif//_USE_HASHMAP
+
+//----------------------------------------------------------------------------
+// TLS storage of Key cache
+//----------------------------------------------------------------------------
+static thread_local CKeyCache *pKC = nullptr;
+
+static bool clearupKeyCache(bool isPooled)
+{
+    delete pKC;
+    pKC = nullptr;
+    return false;
+}
+
+static CLoadedKey * getCachedKey(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase)
+{
+    if (!pKC)
+    {
+        pKC = new CKeyCache();
+        addThreadTermFunc(clearupKeyCache);
+    }
+    return pKC->getInstance(isPublic, keyFS, keyBuff, passphrase);
+}
 //------------------------------------
 //Encryption helper
 //------------------------------------
@@ -570,7 +700,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & _
                                             size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publickeyfile, passphrase);
+    Owned<CLoadedKey> publicKey = getCachedKey(true, publickeyfile, nullptr, passphrase);
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
@@ -582,7 +712,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(size32_t & __lenResult,void * & _
                                             size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privatekeyfile, passphrase);
+    Owned<CLoadedKey> privateKey = getCachedKey(false, privatekeyfile, nullptr, passphrase);
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }
 
@@ -595,7 +725,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(size32_t & __lenResult,void *
                                                 size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(publickeybuff, passphrase);
+    Owned<CLoadedKey> publicKey = getCachedKey(true, nullptr, publickeybuff, passphrase);
     doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
 }
 
@@ -606,6 +736,6 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void *
                                                 size32_t lenEncrypteddata,const void * encrypteddata)
 {
     verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privatekeybuff, passphrase);
+    Owned<CLoadedKey> privateKey = getCachedKey(false, nullptr, privatekeybuff, passphrase);
     doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
 }
