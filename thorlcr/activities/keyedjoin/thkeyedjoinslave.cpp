@@ -1484,7 +1484,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 IPartDescriptor &part = activity.allIndexParts.item(partNo);
                 unsigned crc;
-                part.getCrc(crc);
+                if (!part.getCrc(crc))
+                    crc = 0;
                 RemoteFilename rfn;
                 part.getFilename(copy, rfn);
                 StringBuffer fname;
