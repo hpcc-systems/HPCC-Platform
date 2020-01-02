@@ -406,7 +406,7 @@ public:
     }
     virtual const char * queryScope() const
     {
-        return scope;
+        return scope ? scope : "";
     }
     virtual IStringVal & getFormattedValue(IStringVal & str) const
     {
