@@ -262,24 +262,10 @@ extern "C++"
                 RdKafka::Message* getOneMessage();
 
                 /**
-                 * Retrieves many messages from the inbound Kafka topic and
-                 * returns them as a streamed dataset.  Note that this is a
-                 * per-brokers/per-topic/per-partition retrieval.
-                 *
-                 * @param   allocator       The allocator to use with RowBuilder
-                 * @param   maxRecords      The maximum number of records
-                 *                          to retrieved
-                 *
-                 * @return  An IRowStream streamed dataset object pointer
+                 * Initializes the object and prepares it to receive
+                 * messages from a specific broker/topic/partition.
                  */
-                KafkaStreamedDataset* getMessageDataset(IEngineRowAllocator* allocator, __int64 maxRecords = 1);
-
-                /**
-                 * @param offsetPath  StringBuffer object to contain the path to this
-                 *                    consumer's offset file
-                 * @return            Reference to pass-in buffer
-                 */
-                StringBuffer &offsetFilePath(StringBuffer &offsetPath) const;
+                void prepForMessageFetch();
 
                 /**
                  * Commits the given offset to storage so we can pick up
@@ -309,11 +295,11 @@ extern "C++"
                 std::string                     brokers;        //!< One or more Kafka bootstrap brokers; comma-delimited; NameOrIP[:port]
                 std::string                     topic;          //!< The name of the topic to consume from
                 std::string                     consumerGroup;  //!< The name of the consumer group for this consumer object
+                StringBuffer                    offsetPath;     //!< Full path to the Kafka topic offset file
                 RdKafka::Consumer*              consumerPtr;    //!< Pointer to librdkafka consumer object
                 std::atomic<RdKafka::Topic*>    topicPtr;       //!< Pointer to librdkafka topic object
                 CriticalSection                 lock;           //!< Mutex to ensure that only one thread creates the librdkafka object pointers or starts/stops the queue
                 __int32                         partitionNum;   //!< The partition within the topic from which we will be pulling messages
-                bool                            queueStarted;   //!< If true, we have started the process of reading from the queue
                 int                             traceLevel;     //!< The current logging level
         };
 

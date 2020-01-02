@@ -225,7 +225,7 @@ EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING
                 LOCAL
             );
 
-        RETURN COUNT(result(offset >= -1));
+        RETURN COUNT(result(offset >= 0));
     END;
 
     /**
@@ -245,7 +245,7 @@ EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING
                     (
                         KafkaMessageOffset,
                         SELF.partitionNum := COUNTER - 1,
-                        SELF.offset := -1
+                        SELF.offset := 0
                     )
             );
 
