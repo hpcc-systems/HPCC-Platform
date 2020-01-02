@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><id>1</id><name>Gavin</name></Row>
+ <Row><id>2</id><name>Bill</name></Row>
+ <Row><id>3</id><name>John</name></Row>
+ <Row><id>4</id><name>Gerald</name></Row>
+ <Row><id>5</id><name>Fluffy</name></Row>
+</Dataset>

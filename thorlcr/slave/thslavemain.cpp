@@ -370,7 +370,7 @@ int main( int argc, char *argv[]  )
 
         setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
 
-        startMPServer(getFixedPort(TPORT_mp));
+        startMPServer(DCR_ThorSlave, getFixedPort(TPORT_mp), false);
 
         if (globals->getPropBool("@MPChannelReconnect"))
             getMPServer()->setOpt(mpsopt_channelreopen, "true");
