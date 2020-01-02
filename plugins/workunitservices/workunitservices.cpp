@@ -735,6 +735,7 @@ public:
         extra.getCreator(creator);
         StatisticScopeType scopeType = extra.getScopeType();
         const char * scope = extra.queryScope();
+        if (!scope) scope = "";
         extra.getDescription(description, true);
         StatisticMeasure measure = extra.getMeasure();
 
