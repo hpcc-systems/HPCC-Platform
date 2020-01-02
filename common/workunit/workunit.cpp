@@ -1100,7 +1100,8 @@ public:
 
     virtual const char * queryScope() const  override
     {
-        return notes.item(baseIndex).queryScope();
+        const char * scope = notes.item(baseIndex).queryScope();
+        return scope ? scope : "";
     }
 
     virtual StatisticScopeType getScopeType() const override
