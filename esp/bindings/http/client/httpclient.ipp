@@ -115,6 +115,7 @@ private:
     bool m_isPersistentSocket = false;
     int m_numRequests = 0;
     SocketEndpoint m_ep;
+    Owned<IMultiException> m_exceptions;
 
     virtual int connect(StringBuffer& errmsg, bool forceNewConnection);
     void close();
@@ -147,6 +148,7 @@ public:
     virtual void setConnectTimeOutMs(unsigned timeout) override;
     virtual void setTimeOut(unsigned int timeout);
     virtual void setPersistentHandler(IPersistentHandler* handler) { m_persistentHandler = handler; }
+    virtual IMultiException* queryExceptions();
 };
 
 #endif

@@ -316,7 +316,7 @@ function switchInputForm()
                <td class='input' align='left'>
                   <span>
                      <hr/>
-                     <input type='checkbox' name='@log'/> Capture Log Info.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace Level: <input type='text' name='@traceLevel' size='10'/><br/>
+                     <input type='checkbox' name='@log'/> Capture Log Info.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Trace Level: <input type='text' name='@traceLevel' size='10'/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type='checkbox' name='.noTimeout' value='1'/> No Timeout<br/>
                   </span>
                </td>
             </tr>

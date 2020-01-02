@@ -240,6 +240,11 @@ void CHttpClient::setTimeOut(unsigned int timeout)
     m_readTimeoutSecs =  timeout;
 }
 
+IMultiException* CHttpClient::queryExceptions()
+{
+    return m_exceptions.get();
+}
+
 int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
 {
     if (m_socket != nullptr)
@@ -434,7 +439,8 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    int ret = httpresponse->receive(false, NULL);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
+    m_exceptions.setown(MakeMultiException());
+    int ret = httpresponse->receive(false, m_exceptions);
     if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
         return HttpClientErrCode::PeerClosed;
 #ifdef COOKIE_HANDLING
@@ -597,8 +603,6 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
         DBGLOG("Request content: %s", forwardRequest->queryContent());
     }
 
-    Owned<IMultiException> me = MakeMultiException();
-
     copyCookies(*httprequest, *forwardRequest, m_host);
 
     httprequest->setPersistentEnabled(!m_disableKeepAlive);
@@ -607,7 +611,8 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    int ret = httpresponse->receive(false, nullptr);
+    m_exceptions.setown(MakeMultiException());
+    int ret = httpresponse->receive(false, m_exceptions);
     if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
         return HttpClientErrCode::PeerClosed;
 
@@ -711,7 +716,6 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
 
     httprequest->setContent(content.str());
 
-    Owned<IMultiException> me = MakeMultiException();
     //httprequest->sendWithoutContentType();
 
 #ifdef COOKIE_HANDLING
@@ -729,7 +733,8 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    int ret = httpresponse->receive(alwaysReadContent, me);  // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
+    m_exceptions.setown(MakeMultiException());
+    int ret = httpresponse->receive(alwaysReadContent, m_exceptions);
     if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
         return HttpClientErrCode::PeerClosed;
 
@@ -908,11 +913,11 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     }
 #endif
     httprequest->send();
-    Owned<IMultiException> me = MakeMultiException();
 
     if (m_readTimeoutSecs)
         httpresponse->setTimeOut(m_readTimeoutSecs);
-    int ret = httpresponse->receive(true, me);
+    m_exceptions.setown(MakeMultiException());
+    int ret = httpresponse->receive(true, m_exceptions);
     if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
         return HttpClientErrCode::PeerClosed;
 
@@ -983,12 +988,12 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
         DBGLOG("%s", errmsg.str());
 
         StringBuffer msg;
-        if (me->ordinality())
+        if (m_exceptions->ordinality())
         {
-            aindex_t count = me->ordinality();
+            aindex_t count = m_exceptions->ordinality();
             for (aindex_t i = 0; i < count; i++)
             {
-                IException& ex = me->item(i);
+                IException& ex = m_exceptions->item(i);
 
                 int errCode = ex.errorCode();
                 StringBuffer buf;
