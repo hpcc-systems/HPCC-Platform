@@ -4113,7 +4113,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 checkSvcAttrNoValue(attr, errpos);
             }
             else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom) ||
-                     (name == namespaceAtom) || (name==prototypeAtom) || (name == foldAtom) || (name == nofoldAtom))
+                     (name == namespaceAtom) || (name==prototypeAtom) || (name == foldAtom) || (name == nofoldAtom) || (name == deprecatedAtom))
             {
             }
             else if (name == holeAtom)

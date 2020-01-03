@@ -101,7 +101,10 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, Lexer
         return UNKNOWN_ID;
     }
 
+    node_operator op = expr->getOperator();
     IHqlExpression * deprecated = queryMetaAttribute(deprecatedAtom, expr);
+    if (!deprecated && (op == no_funcdef))
+        deprecated = expr->queryChild(0)->queryAttribute(deprecatedAtom);
     if (deprecated)
     {
         IHqlExpression * alternative = deprecated->queryChild(0);
@@ -130,7 +133,6 @@ int HqlLex::lookupIdentifierToken(attribute & returnToken, HqlLex * lexer, Lexer
     }
 
     returnToken.setExpr(expr);
-    node_operator op = expr->getOperator();
     int token = UNKNOWN_ID;
     bool isFunction = expr->isFunction();
     ITypeInfo * exprType = expr->queryType();
