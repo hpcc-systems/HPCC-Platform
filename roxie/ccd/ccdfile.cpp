@@ -1808,7 +1808,7 @@ template <class X> class PerFormatCacheOf : public PerChannelCacheOf<X>
 
 CRoxieFileCache * fileCache;
 
-class CResolvedFile : implements IResolvedFileCreator, implements ISDSSubscription, public CInterface
+class CResolvedFile : implements IResolvedFileCreator, implements ISafeSDSSubscription, public CInterface
 {
 protected:
     IResolvedFileCache *cached;
@@ -1833,6 +1833,7 @@ protected:
     Linked<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> notifier;
 
+    virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
     {
         subNames.append(subName);

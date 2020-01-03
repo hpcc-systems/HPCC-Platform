@@ -35,17 +35,17 @@
 
 const char *roxieStateName = "RoxieLocalState.xml";
 
-class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, implements ISDSNodeSubscription, implements IDaliPackageWatcher
+class CDaliPackageWatcher : public CInterface, implements ISafeSDSSubscription, implements ISDSNodeSubscription, implements IDaliPackageWatcher
 {
     SubscriptionId change;
-    ISDSSubscription *notifier;
+    ISafeSDSSubscription *notifier;
     StringAttr id;
     StringAttr xpath;
     mutable CriticalSection crit;
     bool isExact;
 public:
     IMPLEMENT_IINTERFACE;
-    CDaliPackageWatcher(const char *_id, const char *_xpath, ISDSSubscription *_notifier)
+    CDaliPackageWatcher(const char *_id, const char *_xpath, ISafeSDSSubscription *_notifier)
       : change(0), id(_id), xpath(_xpath), isExact(false)
     {
         notifier = _notifier;
@@ -55,6 +55,7 @@ public:
         if (change)
             unsubscribe();
     }
+    virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
     virtual void subscribe(bool exact)
     {
         CriticalBlock b(crit);
@@ -125,12 +126,12 @@ public:
     virtual void notify(SubscriptionId subid, const char *daliXpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
-        Linked<ISDSSubscription> myNotifier;
+        Linked<ISafeSDSSubscription> myNotifier;
         {
             CriticalBlock b(crit);
             if (traceLevel > 5)
                 DBGLOG("Notification on %s (%s), %p", xpath.get(), daliXpath ? daliXpath : "", this);
-            myNotifier.set(notifier);
+            myNotifier.setown(notifier ? notifier->linkIfAlive() : nullptr);
             // allow crit to be released, allowing this to be unsubscribed, to avoid deadlocking when other threads via notify call unsubscribe
         }
         if (myNotifier)
@@ -696,7 +697,7 @@ public:
         subscription->unsubscribe();
     }
 
-    IDaliPackageWatcher *getSubscription(const char *id, const char *xpath, ISDSSubscription *notifier, bool exact)
+    IDaliPackageWatcher *getSubscription(const char *id, const char *xpath, ISafeSDSSubscription *notifier, bool exact)
     {
         IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, xpath, notifier);
         watchers.append(*LINK(watcher));
@@ -705,25 +706,25 @@ public:
         return watcher;
     }
 
-    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISafeSDSSubscription *notifier)
     {
         StringBuffer xpath;
         return getSubscription(id, getQuerySetPath(xpath, id), notifier, false);
     }
 
-    virtual IDaliPackageWatcher *getPackageSetsSubscription(ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getPackageSetsSubscription(ISafeSDSSubscription *notifier)
     {
         StringBuffer xpath;
         return getSubscription("PackageSets", "PackageSets", notifier, false);
     }
 
-    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISafeSDSSubscription *notifier)
     {
         StringBuffer xpath;
         return getSubscription("PackageMaps", "PackageMaps", notifier, false);
     }
 
-    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISafeSDSSubscription *notifier)
     {
         StringBuffer xpathBuf;
         const char *xpath = getSuperFilePath(xpathBuf, lfn);

@@ -1465,7 +1465,7 @@ protected:
  *    The query caching code should ensure that it is quick enough to do so
  *
  **/
-class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implements ISDSSubscription
+class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implements ISafeSDSSubscription
 {
     Owned<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> notifier;
@@ -1483,6 +1483,8 @@ public:
         if (notifier)
             daliHelper->releaseSubscription(notifier);
     }
+
+    virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
@@ -1802,7 +1804,7 @@ private:
 
 };
 
-class CRoxiePackageSetManager : implements IRoxieQueryPackageManagerSet, implements ISDSSubscription, public CInterface
+class CRoxiePackageSetManager : implements IRoxieQueryPackageManagerSet, implements ISafeSDSSubscription, public CInterface
 {
     Owned<IDaliPackageWatcher> pSetsNotifier;
     Owned<IDaliPackageWatcher> pMapsNotifier;
@@ -1827,6 +1829,8 @@ public:
         autoReloadThread.stop();
         autoReloadThread.join();
     }
+
+    virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
 
     void requestReload(bool signal, bool force)
     {
