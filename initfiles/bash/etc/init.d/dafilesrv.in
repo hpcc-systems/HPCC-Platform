@@ -182,7 +182,7 @@ for C in ${component} ; do
     if [ ${DEBUG} != "NO_DEBUG" ]; then
         echo $xcmd
     fi
-    if [ "${cmd}" == "start" ]; then
+    if [[ "${cmd}" == "start" && "${thisos}" == "Linux" ]]; then
         (
             flock 99
             eval $xcmd
