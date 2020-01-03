@@ -110,7 +110,7 @@ struct EsdlAccessMapReporter : public EsdlAccessMapGenerator::Reporter
 
 protected:
 #define REPORT_FLAGS(f) (f | IEsdlDefReporter::ReportMethod)
-    void reportError(const char* fmt, va_list& args) const override
+    void reportError(const char* fmt, va_list& args) const override  __attribute__((format(printf,2,0)))
     {
         StringBuffer msg;
         msg.valist_appendf(fmt, args);
