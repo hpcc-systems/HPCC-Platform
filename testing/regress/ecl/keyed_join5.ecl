@@ -89,6 +89,17 @@ j5 := TABLE(JOIN(GROUP(lhs, someid), i, LEFT.lhsKey=RIGHT.key, KEEP(2)), { lhsKe
 // test helper->getRowLimit, generated inside KJ by enclosing within LIMIT()
 j6 := LIMIT(JOIN(lhs, i, LEFT.lhsKey=RIGHT.key, doHKJoinTrans(LEFT, RIGHT), KEEP(3)), 2, onFail(TRANSFORM(rhsRec, SELF.f1 := 'limit hit'; SELF := [])));
 
+
+childFunc(unsigned v) := FUNCTION
+ j := JOIN(lhs, i, v>20 AND v<80 AND LEFT.someid=RIGHT.key);
+ RETURN IF(COUNT(j)>0, j[1].key, 0);
+END;
+
+parentDs := DATASET(100, TRANSFORM({unsigned4 id1; unsigned4 id2}, SELF.id1 := COUNTER; SELF.id2 := 0));
+j7 := PROJECT(parentDs, TRANSFORM(RECORDOF(parentDs), SELF.id2 := childFunc(LEFT.id1); SELF := LEFT));
+j7sumid2 := SUM(j7, id2);
+
+
 SEQUENTIAL(
  OUTPUT(rhs, , '~REGRESS::'+WORKUNIT+'::rhsDs', OVERWRITE);
  BUILD(i, OVERWRITE);
@@ -102,5 +113,7 @@ SEQUENTIAL(
 
   OUTPUT(j5);
   OUTPUT(j6);
+
+  OUTPUT(j7sumid2);
  );
 );

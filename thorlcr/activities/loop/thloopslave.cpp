@@ -517,6 +517,8 @@ public:
                 if (condLoopCounter)
                     boundGraph->prepareCounterResult(*this, results, condLoopCounter, 0);
                 sendLoopingCount(loopCounter, 0);
+                size32_t parentExtractSz;
+                const byte *parentExtract = queryGraph().queryParentExtract(parentExtractSz);
                 boundGraph->queryGraph()->executeChild(parentExtractSz, parentExtract, results, loopResults);
             }
             int iNumResults = loopResults->count();

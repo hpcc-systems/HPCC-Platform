@@ -55,3 +55,6 @@
 <Dataset name='Result 10'>
  <Row><key>0</key><f1>limit hit </f1><f2>          </f2></Row>
 </Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>59</Result_11></Row>
+</Dataset>
