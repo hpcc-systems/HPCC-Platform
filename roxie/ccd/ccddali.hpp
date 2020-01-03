@@ -27,6 +27,11 @@
 
 extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
+interface ISafeSDSSubscription : extends ISDSSubscription
+{
+    virtual ISafeSDSSubscription *linkIfAlive() = 0;
+};
+
 interface IDaliPackageWatcher : extends IInterface
 {
     virtual void subscribe(bool exact) = 0;
@@ -44,12 +49,12 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IFileDescriptor *resolveCachedLFN(const char *filename) = 0;
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source) = 0;
     virtual IPropertyTree *getQuerySet(const char *id) = 0;
-    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier) = 0;
+    virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISafeSDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageSets() = 0;
-    virtual IDaliPackageWatcher *getPackageSetsSubscription(ISDSSubscription *notifier) = 0;
-    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISDSSubscription *notifier) = 0;
+    virtual IDaliPackageWatcher *getPackageSetsSubscription(ISafeSDSSubscription *notifier) = 0;
+    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISafeSDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageMap(const char *id) = 0;
-    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier) = 0;
+    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISafeSDSSubscription *notifier) = 0;
     virtual void releaseSubscription(IDaliPackageWatcher *subscription) = 0;
     virtual bool connect(unsigned timeout) = 0;
     virtual void disconnect() = 0;
