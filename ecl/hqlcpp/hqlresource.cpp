@@ -2759,7 +2759,7 @@ IHqlExpression * SpillerInfo::createSpilledRead(IHqlExpression * spillReason)
             args.append(*createSpillName());
             args.append(*LINK(record));
         }
-        args.append(*createValue(no_thor));
+        args.append(*createValue(no_thor, makeNullType()));
         addSpillFlags(args, true);
         args.append(*createUniqueId());
         args.append(*createExprAttribute(_signed_Atom, createConstant("hpcc")));
@@ -6246,7 +6246,7 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
         if (!transformed->isAction())
             transformed.setown(info->createTransformedExpr(transformed));
         else if (defineSideEffect)
-            transformed.setown(createValue(no_definesideeffect, LINK(transformed), createUniqueId()));
+            transformed.setown(createValue(no_definesideeffect, makeVoidType(), LINK(transformed), createUniqueId()));
     }
 
     return transformed.getClear();

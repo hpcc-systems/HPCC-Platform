@@ -280,6 +280,7 @@ public:
     IHqlExpression * getTranslatedExpr() const;
     inline bool isStreamed() const              { return hasStreamedModifier(queryType()); }
 
+    ITypeInfo * getType() const                 { return expr->getType(); }
     ITypeInfo * queryType() const               { return expr->queryType(); }
     void set(const CHqlBoundExpr & src)         { expr.set(src.expr); length.set(src.length); count.set(src.count); isAll.set(src.isAll); }
     void setFromTarget(const CHqlBoundTarget & target);

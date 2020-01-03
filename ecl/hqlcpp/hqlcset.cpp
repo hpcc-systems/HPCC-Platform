@@ -338,7 +338,7 @@ BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needT
         OwnedHqlExpr counter = ctx.getTempDeclare(unsignedType, count);
 
         //while (count--)
-        test.setown(createValue(no_postdec, LINK(counter)));
+        test.setown(createValue(no_postdec, counter->getType(), LINK(counter)));
     }
 
     ctx.addLoop(test, NULL, false);
@@ -626,7 +626,7 @@ BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool ne
     OwnedHqlExpr counter = ctx.getTempDeclare(unsignedType, count);
 
     //while (count--)
-    test.setown(createValue(no_postdec, LINK(counter)));
+    test.setown(createValue(no_postdec, LINK(unsignedType), LINK(counter)));
 
     ctx.addLoop(test, NULL, false);
     ctx.addQuoted(s.clear().append(rowName).append(" = *").append(cursorName).append("++;"));
@@ -1064,7 +1064,7 @@ BoundRow * MultiLevelDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpressio
     buildIterateLoop(subctx, true);
     if (!selectFirst)
     {
-        OwnedHqlExpr test = createValue(no_eq, makeBoolType(), createValue(no_predec, LINK(boundCount.expr)), getZero());
+        OwnedHqlExpr test = createValue(no_eq, makeBoolType(), createValue(no_predec, boundCount.getType(), LINK(boundCount.expr)), getZero());
         subctx.addFilter(test);
     }
 
@@ -1832,7 +1832,8 @@ void InlineDatasetBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
     }
     else
     {
-        OwnedHqlExpr inc = createValue(no_add, LINK(selfCursor->queryBound()), LINK(bound.expr));
+        IHqlExpression * boundCursor = selfCursor->queryBound();
+        OwnedHqlExpr inc = createValue(no_add, boundCursor->getType(), LINK(boundCursor), LINK(bound.expr));
         ctx.addAssign(selfCursor->queryBound(), inc);
     }
 }

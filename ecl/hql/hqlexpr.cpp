@@ -439,8 +439,8 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     nullType = makeNullType();
     sourcePaths = new KeptAtomTable;
     blank = createStringValue("",(unsigned)0);
-    cachedActiveTableExpr = createValue(no_activetable);
-    cachedSelfReferenceExpr = createValue(no_selfref);
+    cachedActiveTableExpr = createValue(no_activetable, LINK(nullType));
+    cachedSelfReferenceExpr = createValue(no_selfref, LINK(nullType));
     cachedNullRecord = createRecord()->closeExpr();
     cachedSelfExpr = createValue(no_self, makeRowType(cachedNullRecord->getType()));
     OwnedHqlExpr nonEmptyAttr = createAttribute(_nonEmpty_Atom);
@@ -5019,11 +5019,23 @@ unsigned CHqlRealExpression::getCachedEclCRC()
     if (cachedCRC)
         return cachedCRC;
 
+    ITypeInfo * thisType = queryType();
     unsigned crc = op;
     switch (op)
     {
     case no_record:
     case no_type:
+        thisType = nullptr;
+        break;
+    case no_thor:
+    case no_flat:
+    case no_sql:
+    case no_csv:
+    case no_xml:
+    case no_json:
+    case no_null:
+        if (thisType && (thisType->getTypeCode() == type_null))
+            thisType = nullptr;
         break;
     case no_self:
         //ignore new record argument
@@ -5031,12 +5043,13 @@ unsigned CHqlRealExpression::getCachedEclCRC()
         return crc;
     case no_selfref:
         crc = no_self;
+        thisType = nullptr;
         break;
     case no_assertconstant:
     case no_assertconcrete:
         return queryChild(0)->getCachedEclCRC();
     case no_sortlist:
-        //backward compatibility
+        thisType = nullptr;
         break;
     case no_attr_expr:
         {
@@ -5045,30 +5058,26 @@ unsigned CHqlRealExpression::getCachedEclCRC()
             //will be incompatible.
             if (name == maxLengthAtom || name == xpathAtom || name == cardinalityAtom || name == caseAtom || name == maxCountAtom || name == choosenAtom || name == maxSizeAtom || name == namedAtom || name == rangeAtom || name == xmlDefaultAtom || name == virtualAtom)
                 crc = no_attr;
-            //fallthrough
-        }
-    default:
-        {
-            ITypeInfo * thisType = queryType();
-            if (thisType && this != queryExpression(thisType))
-            {
-                ITypeInfo * hashType = thisType;
-                switch (hashType->getTypeCode())
-                {
-                case type_transform:
-                    hashType = hashType->queryChildType();
-                    break;
-                case type_row:
-                    //Backward compatibility
-                    if (op == no_field)
-                        hashType = hashType->queryChildType();
-                    break;
-                }
-                unsigned typeCRC = hashType->getCrc();
-                crc = hashc((const byte *)&typeCRC, sizeof(typeCRC), crc);
-            }
             break;
         }
+    }
+
+    if (thisType && this != queryExpression(thisType))
+    {
+        ITypeInfo * hashType = thisType;
+        switch (hashType->getTypeCode())
+        {
+        case type_transform:
+            hashType = hashType->queryChildType();
+            break;
+        case type_row:
+            //Backward compatibility
+            if (op == no_field)
+                hashType = hashType->queryChildType();
+            break;
+        }
+        unsigned typeCRC = hashType->getCrc();
+        crc = hashc((const byte *)&typeCRC, sizeof(typeCRC), crc);
     }
 
     unsigned numChildrenToHash = numChildren();
@@ -5186,6 +5195,22 @@ CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeI
 {
     CHqlExpression *e = new CHqlExpressionWithType(_op, _type, _ownedOperands);
     return (CHqlExpression *)e->closeExpr();
+}
+
+CHqlExpression* CHqlExpressionWithType::makeExpression(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands)
+{
+    HqlExprArray args;
+    args.ensure(operands.size());
+    for (auto & cur : operands)
+    {
+        //Skip null entries
+        if (cur)
+        {
+            dbgassertex(QUERYINTERFACE(cur, IHqlExpression));
+            args.append(*cur);
+        }
+    }
+    return makeExpression(op, type, args);
 }
 
 CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeInfo *_type, ...)
@@ -11182,10 +11207,6 @@ extern IHqlExpression *createParameter(IIdAtom * id, unsigned idx, ITypeInfo *ty
     return CHqlParameter::makeParameter(id, idx, type, attrs);
 }
 
-extern IHqlExpression *createValue(node_operator op)
-{
-    return CHqlExpressionWithType::makeExpression(op, NULL, NULL);
-}
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type)
 {
     return CHqlExpressionWithType::makeExpression(op, type, NULL);
@@ -11209,6 +11230,7 @@ extern IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type)
             case type_table:
                 assertex(!"createDataset should be called instead");
             }
+            break;
         }
     }
 #endif
@@ -11238,11 +11260,6 @@ extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, I
     }
 #endif
     return new CHqlNamedExpression(op, type, id, NULL);
-}
-
-extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2)
-{
-    return CHqlExpressionWithType::makeExpression(op, p1->getType(), p1, p2, NULL);
 }
 
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type, IHqlExpression *p1)
@@ -11286,17 +11303,6 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
     }
     va_end(args);
     return CHqlExpressionWithType::makeExpression(op, type, children);
-}
-
-extern HQL_API IHqlExpression * createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr)
-{
-    HqlExprArray args;
-    if (argsExpr)
-    {
-        argsExpr->unwindList(args, no_comma);
-        argsExpr->Release();
-    }
-    return createValue(op, type, args);
 }
 
 extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args)
@@ -11508,6 +11514,27 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
     }
     va_end(args);
     return createDataset(op, children);
+}
+
+IHqlExpression *createDataset(node_operator op, const std::initializer_list<IHqlExpression *> &operands)
+{
+    HqlExprArray args;
+    for (auto & cur : operands)
+    {
+        //Skip null entries, and expand no_comma
+        if (cur)
+        {
+            dbgassertex(QUERYINTERFACE(cur, IHqlExpression));
+            if (cur->getOperator() == no_comma)
+            {
+                cur->unwindList(args, no_comma);
+                cur->Release();
+            }
+            else
+                args.append(*cur);
+        }
+    }
+    return createDataset(op, args);
 }
 
 IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
@@ -13029,16 +13056,13 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
     return replaceChild(funcdef, 0, externalExpr);
 }
 
-extern IHqlExpression* createValue(node_operator op, HqlExprArray& operands) {
-    return CHqlExpressionWithType::makeExpression(op, NULL, operands);
+extern IHqlExpression* createValue(node_operator op, ITypeInfo *type, HqlExprArray& operands) {
+    return CHqlExpressionWithType::makeExpression(op, type, operands);
 }
 
-extern IHqlExpression* createValue(node_operator op, ITypeInfo *_type, HqlExprArray& operands) {
-    return CHqlExpressionWithType::makeExpression(op, _type, operands);
-}
-
-extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1) {
-    return CHqlExpressionWithType::makeExpression(op, NULL, p1, NULL);
+extern IHqlExpression* createValue(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands)
+{
+    return CHqlExpressionWithType::makeExpression(op, type, operands);
 }
 
 extern IHqlExpression* createConstant(int ival) {
@@ -16263,7 +16287,7 @@ IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpre
     case no_activetable:
         return LINK(cachedActiveTableExpr);
     default:
-        return createValue(op);
+        return createValue(op, makeNullType());
     }
 }
 

@@ -296,7 +296,7 @@ IHqlExpression * HqlGram::createSetRange(attribute & array, attribute & range)
                     IHqlExpression * from = ensureExprType(rangeExpr->queryChild(0), indexType);
                     IHqlExpression * to = ensureExprType(rangeExpr->queryChild(1), indexType);
                     OwnedHqlExpr length = createValue(no_add, LINK(indexType), createValue(no_sub, LINK(indexType), to, from), createConstant(indexType->castFrom(true, (__int64)1)));
-                    dsChooseN.setown(createDataset(no_choosen, dsFromList.getClear(), createComma(length.getClear(), LINK(from))));
+                    dsChooseN.setown(createDataset(no_choosen, { dsFromList.getClear(), length.getClear(), LINK(from) }));
                     break;
                 }
             case no_rangeto :
@@ -1152,7 +1152,7 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         bool hasFileposition = getBoolAttributeInList(flags, filepositionAtom, true);
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
-        projectedDataset.setown(createDatasetF(no_selectfields, LINK(dataset), LINK(record), NULL));
+        projectedDataset.setown(createDataset(no_selectfields, { LINK(dataset), LINK(record) }));
         warnIfRecordPacked(projectedDataset, *recordAttr);
     }
     else
@@ -1688,6 +1688,7 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
         {
             case type_record:
             case type_row:
+            case type_null: // Assign no_null
                 addAssignall(targetExpr.getClear(), srcExpr.getClear(), target);
                 break;
             default:
@@ -1695,6 +1696,7 @@ void HqlGram::addAssignment(attribute & target, attribute &source)
                     StringBuffer msg("Can not assign non-record type ");
                     getFriendlyTypeStr(type, msg).append(" to self");
                     reportError(ERR_TRANS_ILLASSIGN2SELF, target, "%s", msg.str());
+                    break;
                 }
         }
     }
@@ -1732,6 +1734,7 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
         {
             case type_record:
             case type_row:
+            case type_null: // no_null
                 addAssignall(LINK(targetExpr), LINK(srcExpr), errpos);
                 break;
             default:
@@ -1739,6 +1742,7 @@ void HqlGram::addAssignment(const attribute & errpos, IHqlExpression * targetExp
                     StringBuffer msg("Can not assign non-record type ");
                     getFriendlyTypeStr(type, msg).append(" to self");
                     reportError(ERR_TRANS_ILLASSIGN2SELF, errpos, "%s", msg.str());
+                    break;
                 }
         }
     }
@@ -1793,7 +1797,7 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
     // type checking
     ITypeInfo* fldType = field->queryType();
     Owned<ITypeInfo> rhsType = rhs->getType();
-    if (!rhsType)           // this happens when rhs is no_null.
+    if (!rhsType || (rhsType->getTypeCode() == type_null))           // this happens when rhs is no_null.
         rhsType.set(fldType);
 
     // handle alien type
@@ -2053,7 +2057,7 @@ IHqlExpression * HqlGram::createDefaultProjectDataset(IHqlExpression * record, I
     OwnedHqlExpr seq = createActiveSelectorSequence(src, NULL);
     OwnedHqlExpr left = createSelector(no_left, src, seq);
     OwnedHqlExpr transform = createDefaultAssignTransform(record, left, errpos);
-    return createDatasetF(no_hqlproject, ::ensureDataset(src), LINK(transform), LINK(seq), NULL);
+    return createDataset(no_hqlproject, { ::ensureDataset(src), LINK(transform), LINK(seq) });
 }
 
 
@@ -2192,7 +2196,7 @@ IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, co
 
 IHqlExpression * HqlGram::createClearTransform(IHqlExpression * record, const attribute & errpos)
 {
-    OwnedHqlExpr null = createValue(no_null);
+    OwnedHqlExpr null = createValue(no_null, makeNullType());
     return createDefaultAssignTransform(record, null, errpos);
 }
 
@@ -5829,8 +5833,8 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
 
     if ((list->getOperator() == no_list) && (list->numChildren() == 0))
     {
-        OwnedHqlExpr list = createValue(no_null);
-        OwnedHqlExpr table = createDataset(no_temptable, LINK(list), createComma(record.getClear(), LINK(attrs)));
+        OwnedHqlExpr list = createValue(no_null, makeNullType());
+        OwnedHqlExpr table = createDataset(no_temptable, { LINK(list), record.getClear(), LINK(attrs) });
         return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
     }
 
@@ -7204,13 +7208,13 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
 
     IHqlExpression * select;
     if (sourceDataset)
-        select = createDatasetF(no_newusertable, LINK(sourceDataset), LINK(record), LINK(transform), NULL); //createUniqueId(), NULL);
+        select = createDataset(no_newusertable, { LINK(sourceDataset), LINK(record), LINK(transform) });
     else if (transform)
-        select = createDatasetF(no_newusertable, LINK(dataset), LINK(record), LINK(transform), NULL); //createUniqueId(), NULL);
+        select = createDataset(no_newusertable, { LINK(dataset), LINK(record), LINK(transform) });
     else
     {
         IHqlExpression * newRecord = checkBuildIndexRecord(LINK(record), errpos);
-        select = createDatasetF(no_selectfields, LINK(dataset), newRecord, NULL); //createUniqueId(), NULL);
+        select = createDataset(no_selectfields, { LINK(dataset), newRecord });
     }
 
     HqlExprArray args;
@@ -10101,7 +10105,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         if (etype && etype->getTypeCode()==type_record)
         {
             IHqlExpression *recordDef = queryExpression(etype);
-            expr.setown(createDatasetF(no_table, createConstant(str(name)), LINK(recordDef), LINK(expr), NULL));
+            expr.setown(createDataset(no_table, { createConstant(str(name)), LINK(recordDef), LINK(expr) }));
         }
         break;
 
@@ -10752,7 +10756,7 @@ IHqlExpression * HqlGram::createIffDataset(IHqlExpression * record, IHqlExpressi
             OwnedHqlExpr left = createSelector(no_left, ds, seq);
             OwnedHqlExpr selectedValue = createSelectExpr(LINK(left), LINK(rhs));
             OwnedHqlExpr transform = createSingleValueTransform(record, selectedValue);
-            return createDatasetF(no_hqlproject, LINK(ds), LINK(transform), LINK(seq), NULL);
+            return createDataset(no_hqlproject, { LINK(ds), LINK(transform), LINK(seq) });
         }
 
     }
@@ -10770,7 +10774,7 @@ IHqlExpression * HqlGram::createIff(attribute & condAttr, attribute & leftAttr, 
     OwnedHqlExpr record = createRecord(field);
     OwnedHqlExpr lhs = createIffDataset(record, left);
     OwnedHqlExpr rhs = createIffDataset(record, right);
-    OwnedHqlExpr ifDs = createDatasetF(no_if, condAttr.getExpr(), lhs.getClear(), rhs.getClear(), NULL);
+    OwnedHqlExpr ifDs = createDataset(no_if, { condAttr.getExpr(), lhs.getClear(), rhs.getClear() });
     OwnedHqlExpr row1 = createRow(no_selectnth, ifDs.getClear(), getSizetConstant(1));
     return createSelectExpr(LINK(row1), LINK(field));
 }

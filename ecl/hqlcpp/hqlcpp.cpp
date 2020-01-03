@@ -2854,7 +2854,7 @@ void HqlCppTranslator::buildIncrementAssign(BuildCtx & ctx, IHqlExpression * tar
         }
     }
 
-    OwnedHqlExpr plus = createValue(no_add, LINK(target), castValue.getClear());
+    OwnedHqlExpr plus = createValue(no_add, LINK(type), LINK(target), castValue.getClear());
     buildAssign(condctx, target, plus);
 }
 
@@ -2886,7 +2886,7 @@ void HqlCppTranslator::buildIncrementAssign(BuildCtx & ctx, const CHqlBoundTarge
         }
     }
 
-    OwnedHqlExpr plus = createValue(no_add, target.getTranslatedExpr(), castValue.getClear());
+    OwnedHqlExpr plus = createValue(no_add, LINK(type), target.getTranslatedExpr(), castValue.getClear());
     buildExprAssign(ctx, target, plus);
 }
 
@@ -10056,7 +10056,7 @@ bool HqlCppTranslator::doBuildExprInfiniteSubString(BuildCtx & ctx, SubStringInf
 
     OwnedHqlExpr length;
     if (start && !isZero(start))
-        length.setown(createValue(no_sub, info.boundTo.expr.getLink(), LINK(start)));
+        length.setown(createValue(no_sub, info.boundTo.getType(), info.boundTo.expr.getLink(), LINK(start)));
     else
         length.setown(info.boundTo.expr.getLink());
     tgt.length.setown(ensureExprType(length, sizetType));

@@ -54,12 +54,12 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 IHqlExpression * addFilter(IHqlExpression * dataset, IHqlExpression * limitField)
 {
     IHqlExpression * lower = createConstant(limitField->queryType()->castFrom(true, (__int64)0));
-    lower = createValue(no_colon, lower, createValue(no_stored, createConstant(LOWER_LIMIT_ID)));
+    lower = createValue(no_colon, lower->getType(), lower, createValue(no_stored, makeVoidType(), createConstant(LOWER_LIMIT_ID)));
     lower = createSymbol(createIdAtom(LOWER_LIMIT_ID), lower, ob_private);
     dataset = createDataset(no_filter, LINK(dataset), createBoolExpr(no_ge, LINK(limitField), lower));
 
     IHqlExpression * upper = createConstant((int)DISKREAD_PAGE_SIZE);
-    upper = createValue(no_colon, upper, createValue(no_stored, createConstant(RECORD_LIMIT_ID)));
+    upper = createValue(no_colon, upper->getType(), upper, createValue(no_stored, makeVoidType(), createConstant(RECORD_LIMIT_ID)));
     upper = createSymbol(createIdAtom(RECORD_LIMIT_ID), upper, ob_private);
     dataset = createDataset(no_choosen, dataset, upper);
     dataset = createSymbol(createIdAtom("_Filtered_"), dataset, ob_private);
@@ -112,7 +112,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
     OwnedHqlExpr newRecord = createRecord(fields);
     newRecord.setown(createSymbol(createIdAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
 
-    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor), NULL, NULL, NULL);
+    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor, makeNullType()), NULL, NULL, NULL);
     OwnedHqlExpr filtered = addFilter(dataset, filepos);
     OwnedHqlExpr projected = addSimplifyProject(filtered);
     OwnedHqlExpr output = addOutput(projected);
@@ -123,7 +123,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
 
 IHqlExpression * buildDiskOutputEcl(const char * logicalName, IHqlExpression * record)
 {
-    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), LINK(record), createValue(no_thor), NULL, NULL, NULL);
+    OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), LINK(record), createValue(no_thor, makeNullType()), NULL, NULL, NULL);
     return addOutput(dataset);
 }
 
@@ -182,7 +182,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                 {
                     IHqlExpression * newTarget = createField(child->queryId(), child->getType(), LINK(child), insertedAttr.getLink());
                     fields.append(*newTarget);
-                    assigns.append(*createValue(no_assign, makeVoidType(), newTarget, createSelectExpr(createValue(no_left), LINK(newTarget))));
+                    assigns.append(*createValue(no_assign, makeVoidType(), newTarget, createSelectExpr(createValue(no_left, makeNullType()), LINK(newTarget)))); // MORE: This probably doesn't work because left needs a selSeq and record as children.  All this code is deprecated so not a priority.
                 }
             }
             IHqlExpression * newRecord = createRecord(fields);

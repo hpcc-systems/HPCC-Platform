@@ -18,6 +18,8 @@
 #ifndef HQLEXPR_INCL
 #define HQLEXPR_INCL
 
+#include <initializer_list>
+
 #define USE_SELSEQ_UID
 //It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
 //x := PROJECT(ds, t(LEFT));
@@ -1276,8 +1278,6 @@ struct OwnedHqlExprItem : public CInterface
 };
 
 extern HQL_API const char *getOpString(node_operator op);
-extern HQL_API IHqlExpression *createValue(node_operator op);
-extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2);
 extern HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
 extern HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id);
 extern HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args);
@@ -1290,9 +1290,9 @@ extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, I
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3, IHqlExpression *p4);
 extern HQL_API IHqlExpression *createValueF(node_operator op, ITypeInfo * type, ...);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, HqlExprArray & args);        //NB: This deletes the array that is passed
+extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max);
-extern HQL_API IHqlExpression *createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr);
 
 //These all consume their arguments
 extern HQL_API IHqlExpression *createWrapper(node_operator op, IHqlExpression * expr);
@@ -1331,6 +1331,7 @@ extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *d
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset, IHqlExpression *elist);
 extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);       // inScope should only be set internally.
 extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);
+extern HQL_API IHqlExpression *createDataset(node_operator op, const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *initializer, IHqlExpression *recordDef);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms);
@@ -1422,9 +1423,6 @@ inline bool isFail(IHqlExpression * expr)       { return expr->getOperator() == 
 extern HQL_API IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, unsigned lookupFlags, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * createLibraryInstance(IHqlExpression * scopeFunction, HqlExprArray &operands);
 
-extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, HqlExprArray& operands);
-extern HQL_API IHqlExpression* createValue(node_operator op, HqlExprArray& operands);
-extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression* createConstant(int ival);
 extern HQL_API IHqlExpression *queryConstantLikelihoodUnknown();
 extern HQL_API IHqlExpression *queryConstantLikelihoodLikely();

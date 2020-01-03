@@ -2447,7 +2447,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     return LINK(child);
                 IHqlExpression * opt = expr->queryAttribute(extendAtom);
                 IHqlExpression * selectors = expr->queryAttribute(_selectors_Atom);
-                return createValue(no_assertwild, makeBoolType(), createValue(no_all), LINK(selectors), LINK(opt));
+                return createValue(no_assertwild, makeBoolType(), createValue(no_all, makeNullType()), LINK(selectors), LINK(opt));
             }
             break;
         }
@@ -3330,7 +3330,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                             {
                                 IHqlExpression * result = (IHqlExpression *)&caseResults.item(i);
                                 IValue * castRes = result->queryValue()->castTo(newType);
-                                IHqlExpression * newMapping = createValue(no_mapto, LINK(child->queryChild(i+1)->queryChild(0)), createConstant(castRes));
+                                IHqlExpression * newMapping = createValue(no_mapto, LINK(newType), LINK(child->queryChild(i+1)->queryChild(0)), createConstant(castRes));
                                 newCaseMaps.append(*newMapping);
                             }
                             newCaseMaps.append(*createConstant(defVal->castTo(newType)));
@@ -3504,7 +3504,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                                 IHqlExpression * val2 = (IHqlExpression*)&caseInput2.item(k);
                                 if (val1->queryValue()->compare(val2->queryValue()) == 0)
                                 {
-                                    IHqlExpression * newMapping = createValue(no_mapto, LINK(leftExpr->queryChild(i+1)->queryChild(0)), LINK(expr->queryChild(k+1)->queryChild(1)));
+                                    IHqlExpression * newMapping = createValue(no_mapto, expr->getType(), LINK(leftExpr->queryChild(i+1)->queryChild(0)), LINK(expr->queryChild(k+1)->queryChild(1)));
                                     newCaseMaps.append(*newMapping);
                                     found = true;
                                     break;
@@ -3512,7 +3512,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                             }
                             if (inRes && !found)
                             {
-                                IHqlExpression * newMapping = createValue(no_mapto, LINK(leftExpr->queryChild(i+1)->queryChild(0)), LINK(defCase1));
+                                IHqlExpression * newMapping = createValue(no_mapto, expr->getType(), LINK(leftExpr->queryChild(i+1)->queryChild(0)), LINK(defCase1));
                                 newCaseMaps.append(*newMapping);
                             }
                         }
@@ -3657,7 +3657,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                             if (alreadyDone.find(*value) == NotFound)
                             {
                                 alreadyDone.append(*value);
-                                args2.append(*createValue(no_mapto, LINK(value), LINK(mapValue)));
+                                args2.append(*createValue(no_mapto, mapValue->getType(), LINK(value), LINK(mapValue)));
                             }
                         }
                     }
@@ -4952,7 +4952,7 @@ IHqlExpression * NullFolderMixin::queryOptimizeAggregateInline(IHqlExpression * 
     HqlExprArray args;
     args.append(*createAssign(LINK(assign->queryChild(0)), LINK(value)));
     OwnedHqlExpr newTransform = createValue(no_transform, transform->getType(), args);
-    OwnedHqlExpr values = createValue(no_transformlist, newTransform.getClear());
+    OwnedHqlExpr values = createValue(no_transformlist, makeNullType(), newTransform.getClear());
     return createDataset(no_inlinetable, values.getClear(), LINK(expr->queryRecord()));
 }
 

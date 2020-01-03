@@ -422,6 +422,7 @@ class HQL_API CHqlExpressionWithType : public CHqlExpressionWithTables
 public:
     static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, HqlExprArray &operands);
     static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, ...);
+    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands);
 
     virtual ITypeInfo *queryType() const override;
     virtual ITypeInfo *getType() override;

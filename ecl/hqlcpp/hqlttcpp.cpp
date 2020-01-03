@@ -5654,7 +5654,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             args.kill();
             args.append(*LINK(filename));
             args.append(*LINK(record));
-            args.append(*createValue(no_thor));
+            args.append(*createValue(no_thor, makeNullType()));
             args.append(*createAttribute(_noVirtual_Atom));         // don't interpret virtual fields in spilled output
             args.append(*createExprAttribute(_signed_Atom, createConstant("hpcc")));
 
@@ -6927,7 +6927,7 @@ IHqlExpression * WorkflowTransformer::createSequentialWorkflow(IHqlExpression * 
         else
         {
             if (nextBranch)
-                nextBranch.setown(createValue(expr->getOperator(), nextBranch.getClear(), LINK(transformed)));
+                nextBranch.setown(createValue(expr->getOperator(), makeVoidType(), nextBranch.getClear(), LINK(transformed)));
             else
                 nextBranch.set(transformed);
             inheritDependencies(nextBranch);
@@ -8716,7 +8716,7 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
         break;
     case no_thor:
         //ignore thor attribute on a dataset..
-        if (expr->queryType())
+        if (expr->queryType() && (expr->queryType()->getTypeCode() != type_null))
         {
             curGraph++;
             graphDepth++;
@@ -8995,14 +8995,14 @@ IHqlExpression * FilterCloner::inheritFilters(IHqlExpression * expr)
             {
                 DBGLOG("Inheriting filter condition");
                 IHqlExpression * cond = replaceExpression(lhsExtra, lhs, rhs);
-                return createValue(no_and, LINK(expr), cond);
+                return createValue(no_and, makeBoolType(), LINK(expr), cond);
             }
             IHqlExpression * rhsExtra = (IHqlExpression *)rhs->queryTransformExtra();
             if (rhsExtra)
             {
                 DBGLOG("Inheriting filter condition");
                 IHqlExpression * cond = replaceExpression(rhsExtra, rhs, lhs);
-                return createValue(no_and, LINK(expr), cond);
+                return createValue(no_and, makeBoolType(), LINK(expr), cond);
             }
             break;
         }
@@ -9016,7 +9016,7 @@ IHqlExpression * FilterCloner::inheritFilters(IHqlExpression * expr)
             if (lhsExtra)
             {
                 DBGLOG("Inheriting filter condition");
-                return createValue(no_and, LINK(expr), LINK(lhsExtra));
+                return createValue(no_and, makeBoolType(), LINK(expr), LINK(lhsExtra));
             }
             break;
         }
@@ -12367,7 +12367,7 @@ IHqlExpression * HqlTreeNormalizer::transformTable(IHqlExpression * untransforme
     if (getStringValue(s, filename, NULL).length() == 0)
         return transformed.getClear();
 
-    OwnedHqlExpr modeThor = createValue(no_thor);
+    OwnedHqlExpr modeThor = createValue(no_thor, makeNullType());
     IHqlExpression * diskRead = replaceChild(transformed, 2, modeThor);
     HqlExprArray args;
     args.append(*diskRead);

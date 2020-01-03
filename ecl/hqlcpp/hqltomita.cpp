@@ -1383,7 +1383,7 @@ void TomitaContext::compileSearchPattern()
 
     eofToken.setown(new TomToken(NULL, noGuards));
     tokens.append(*LINK(eofToken));
-    OwnedHqlExpr nullExpr = createValue(no_null);
+    OwnedHqlExpr nullExpr = createValue(no_null, makeNullType());
 
     //MORE, create rules for used list...
     expandRecursion();

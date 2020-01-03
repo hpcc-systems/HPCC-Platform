@@ -1106,7 +1106,7 @@ void SourceBuilder::appendFilter(SharedHqlExpr & unkeyedFilter, IHqlExpression *
         else
         {
             if (unkeyedFilter)
-                unkeyedFilter.setown(createValue(no_and, unkeyedFilter.getClear(), LINK(expr)));
+                unkeyedFilter.setown(createValue(no_and, makeBoolType(), unkeyedFilter.getClear(), LINK(expr)));
             else
                 unkeyedFilter.set(expr);
         }

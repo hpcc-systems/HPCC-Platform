@@ -282,7 +282,7 @@ IHqlExpression * HqlRegexParser::parse2()
             //MORE: This really needs to be utf-8 compliant...
             char next = (char)nextAdvance();
             //MORE: interpret special characters....
-            return createValue(no_pat_const, createConstant(createStringValue(&next, 1)));
+            return createValue(no_pat_const, makePatternType(), createConstant(createStringValue(&next, 1)));
         }
     default:
         if (nextIsSpecial())
@@ -330,7 +330,7 @@ IHqlExpression * HqlRegexParser::parse2()
                 break;
             }
         }
-        return createValue(no_pat_const, createConstant(value));
+        return createValue(no_pat_const, makePatternType(), createConstant(value));
     }
 }
 
