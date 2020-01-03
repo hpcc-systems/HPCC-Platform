@@ -361,7 +361,7 @@ protected:
     inline bool pure() const { return (infoFlags & HEFimpure) == 0; }
     virtual unsigned getCachedEclCRC() override;
 
-    void appendOperands(IHqlExpression * arg0, ...);
+    void appendSingleOperand(IHqlExpression * arg0);
     void setOperands(HqlExprArray & ownedOperands);
     void onAppendOperand(IHqlExpression & child, unsigned whichOperand);
     inline void doAppendOperand(IHqlExpression & child)
@@ -421,8 +421,7 @@ class HQL_API CHqlExpressionWithType : public CHqlExpressionWithTables
     friend HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
 public:
     static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, HqlExprArray &operands);
-    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, ...);
-    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands);
+    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands, bool expandCommas = false);
 
     virtual ITypeInfo *queryType() const override;
     virtual ITypeInfo *getType() override;
@@ -447,7 +446,7 @@ protected:
     IIdAtom * id;
 
 protected:
-    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, ...);
+    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id);
     CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, HqlExprArray & _ownedOperands);
 
     virtual void sethash() override;
@@ -1396,20 +1395,6 @@ protected:
     CriticalSection cs;
     HqlScopeArray mergedScopes;
     bool mergedAll;
-};
-
-//Used in the parser to allow symbols to be looked up in a list of multiple independent scopes.
-class CHqlMultiParentScope : public CHqlScope
-{
-protected:
-    ICopyArray parents;
-
-public:
-    CHqlMultiParentScope(IIdAtom *, ...);
-
-    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) override;
-    virtual IHqlScope * queryConcreteScope() override { return this; }
-    virtual bool allBasesFullyBound() const override { return true; }
 };
 
 //MORE: I'm not 100% sure why this is different from a CLocalScope... it should be merged

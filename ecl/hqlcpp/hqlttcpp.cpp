@@ -2736,7 +2736,7 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
                 //changing a heavyweight global sort into a lightweight distribute,merge
                 OwnedHqlExpr sortOrder = getExistingSortOrder(dataset, true, true);
                 OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, replaceSelector(sortOrder, queryActiveTableSelector(), dataset));
-                sorted.setown(createDatasetF(no_distribute, LINK(dataset), LINK(hashed), mergeAttr.getClear(), NULL));
+                sorted.setown(createDataset(no_distribute, { LINK(dataset), LINK(hashed), mergeAttr.getClear() }));
                 sorted.setown(cloneInheritedAnnotations(expr, sorted));
             }
             else
@@ -2756,7 +2756,7 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
     }
 
     //Do a local group after the sort because we know they can't overlap...
-    OwnedHqlExpr ret = createDatasetF(no_group, sorted.getClear(), LINK(sortlist), createLocalAttribute(), NULL);
+    OwnedHqlExpr ret = createDataset(no_group, { sorted.getClear(), LINK(sortlist), createLocalAttribute() });
     return expr->cloneAllAnnotations(ret);
 }
 
@@ -2835,7 +2835,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
                 OwnedHqlExpr mergeAttr;
                 if (bestSortOrder && isAlreadySorted(&cur, bestSortOrder, true, true, false))
                     mergeAttr.setown(createExprAttribute(mergeAtom, replaceSelector(bestSortOrder, queryActiveTableSelector(), &cur)));
-                OwnedHqlExpr distributedInput = createDatasetF(no_distribute, LINK(&cur), LINK(mappedDistribution), mergeAttr.getClear(), NULL);
+                OwnedHqlExpr distributedInput = createDataset(no_distribute, { LINK(&cur), LINK(mappedDistribution), mergeAttr.getClear() });
                 distributedInput.setown(cloneInheritedAnnotations(expr, distributedInput));
                 inputs.replace(*distributedInput.getClear(), iReplace);
             }
@@ -2867,7 +2867,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
         OwnedHqlExpr appended = createDataset(no_addfiles, inputs);
         appended.setown(cloneInheritedAnnotations(expr, appended));
         OwnedHqlExpr mappedOrder = replaceSelector(grouping, queryActiveTableSelector(), appended);
-        merged.setown(createDatasetF(no_sort, LINK(appended), mappedOrder.getClear(), LINK(localFlag), NULL));
+        merged.setown(createDataset(no_sort, { LINK(appended), mappedOrder.getClear(), LINK(localFlag) } ));
     }
 
     //Now group by the grouping condition
@@ -2993,7 +2993,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     assertex(groupOrder);
     OwnedHqlExpr left = createSelector(no_left, expr->queryChild(0), querySelSeq(expr));
     OwnedHqlExpr leftSortOrder = replaceSelector(groupOrder, left, newLeft);
-    newLeft.setown(createDatasetF(no_sort, newLeft.getClear(), LINK(leftSortOrder), LINK(newLocalAttr), NULL));
+    newLeft.setown(createDataset(no_sort, { newLeft.getClear(), LINK(leftSortOrder), LINK(newLocalAttr) }));
 
     if (oldRight == oldLeft)
         newRight.set(newLeft);
@@ -3021,11 +3021,11 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     {
         OwnedHqlExpr hashOut = createValue(no_hash32, makeIntType(4, false), LINK(mappedOrder));
         OwnedHqlExpr mergeOut = createExprAttribute(mergeAtom, LINK(mappedOrder));
-        distributed.setown(createDatasetF(no_distribute, LINK(newJoin), hashOut.getClear(), mergeOut.getClear(), NULL));
+        distributed.setown(createDataset(no_distribute, { LINK(newJoin), hashOut.getClear(), mergeOut.getClear() }));
     }
 
     //And finally group it.
-    return createDatasetF(no_group, LINK(distributed), LINK(mappedOrder), LINK(newLocalAttr), NULL);
+    return createDataset(no_group, { LINK(distributed), LINK(mappedOrder), LINK(newLocalAttr) });
 }
 
 static IHqlExpression * queryDistributionKey(IHqlExpression * rhs)
@@ -3171,7 +3171,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     OwnedHqlExpr keyedCondition = joinInfo.getContiguousJoinCondition(numKeyedFields);
                     if (keyedCondition)
                     {
-                        OwnedHqlExpr distribute = createDataset(no_keyeddistribute, LINK(leftDs), createComma(LINK(rhsKey), keyedCondition.getClear(), LINK(seq)));
+                        OwnedHqlExpr distribute = createDataset(no_keyeddistribute, { LINK(leftDs), LINK(rhsKey), keyedCondition.getClear(), LINK(seq) });
                         HqlExprArray args;
                         args.append(*distribute.getClear());
                         unwindChildren(args, expr, 1);
@@ -3806,9 +3806,9 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 
     OwnedHqlExpr mergeAttr = createExprAttribute(mergeAtom, LINK(mappedGrouping));
     OwnedHqlExpr hashed = createValue(no_hash32, LINK(unsignedType), LINK(mappedGrouping), createAttribute(internalAtom));
-    OwnedHqlExpr redistributed = createDatasetF(no_distribute, LINK(transformedFirstAggregate), LINK(hashed), mergeAttr.getClear(), NULL);
+    OwnedHqlExpr redistributed = createDataset(no_distribute, { LINK(transformedFirstAggregate), LINK(hashed), mergeAttr.getClear() });
     redistributed.setown(cloneInheritedAnnotations(expr, redistributed));
-    OwnedHqlExpr grouped = createDatasetF(no_group, LINK(redistributed), LINK(mappedGrouping), createLocalAttribute(), NULL);
+    OwnedHqlExpr grouped = createDataset(no_group, { LINK(redistributed), LINK(mappedGrouping), createLocalAttribute() });
     grouped.setown(cloneInheritedAnnotations(expr, grouped));
 
     HqlExprArray args;
@@ -9881,7 +9881,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::ensureInputSerialized(IHqlExpress
     //and then use it to expand references to the unserialized format
     IHqlExpression * selector = dataset->queryNormalizedSelector();
     OwnedHqlExpr mapTransform = createRecordMappingTransform(no_newtransform, serializedRecord, selector);
-    OwnedHqlExpr newDataset = createDatasetF(no_newusertable, LINK(dataset), LINK(serializedRecord), LINK(mapTransform), LINK(selSeq), NULL);
+    OwnedHqlExpr newDataset = createDataset(no_newusertable, { LINK(dataset), LINK(serializedRecord), LINK(mapTransform), LINK(selSeq) });
 
     NewProjectMapper2 mapper;
     mapper.setMapping(mapTransform);

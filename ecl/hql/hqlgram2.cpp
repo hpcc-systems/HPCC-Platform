@@ -6245,7 +6245,7 @@ IHqlExpression * HqlGram::createLoopCondition(IHqlExpression * leftDs, IHqlExpre
     if (!filter) filter = createAttribute(_omitted_Atom);
     if (!loopCond) loopCond= createAttribute(_omitted_Atom);
 
-    return createComma(count, filter, loopCond);
+    return createComma({count, filter, loopCond });
 }
 
 void HqlGram::reportError(int errNo, const attribute& a, const char* format, ...)
@@ -7966,7 +7966,7 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
     finalRecord.setown(cleanIndexRecord(finalRecord));
 
     OwnedHqlExpr transform = createClearTransform(finalRecord, errpos);
-    return createDataset(no_newkeyindex, ds, createComma(LINK(finalRecord), replaceOperator(transform, no_newtransform), newAttrs.getClear()));
+    return createDataset(no_newkeyindex, { ds, LINK(finalRecord), replaceOperator(transform, no_newtransform), newAttrs.getClear() });
 }
 
 
@@ -10800,9 +10800,9 @@ IHqlExpression * HqlGram::createListIndex(attribute & list, attribute & which, I
         reportError(ERR_NO_MULTI_ARRAY, list, "Multi dimension array index is not supported");
 
     if (childType && isDatasetType(childType))
-        return createDataset(no_rowsetindex, expr.getClear(), createComma(which.getExpr(), attr));
+        return createDataset(no_rowsetindex, { expr.getClear(), which.getExpr(), attr });
     else
-        return createList(no_index, LINK(childType), createComma(expr.getClear(), which.getExpr(), attr));
+        return createValue(no_index, LINK(childType), { expr.getClear(), which.getExpr(), attr }, true);
 }
 
 void HqlGram::checkCompatibleTransforms(HqlExprArray & values, IHqlExpression * record, attribute & errpos)

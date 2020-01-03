@@ -192,7 +192,7 @@ IHqlExpression * HqlRegexParser::parse1()
             advance();
             minimal = createAttribute(minimalAtom);
         }
-        arg.setown(createValue(no_pat_repeat, makePatternType(), arg.getClear(), createConstant((__int64)low), createConstant((__int64)high), minimal));
+        arg.setown(createValue(no_pat_repeat, makePatternType(), { arg.getClear(), createConstant((__int64)low), createConstant((__int64)high), minimal }));
     }
 }
 

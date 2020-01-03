@@ -1096,7 +1096,7 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
     else
         assertex(!ds->isDictionary());
-    return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
+    return createRow(no_projectrow, { LINK(ds), transform, LINK(seq) });
 }
 
 

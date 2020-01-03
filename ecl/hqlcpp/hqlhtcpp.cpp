@@ -8721,7 +8721,7 @@ IHqlExpression * HqlCppTranslator::createLoopSubquery(IHqlExpression * dataset, 
     OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
     transformedBody.setown(replaceExpression(transformedBody, rowsExpr, inputResult));
 
-    OwnedHqlExpr result = createValue(no_setgraphresult, makeVoidType(), LINK(transformedBody), LINK(graphid), getSizetConstant(0), createAttribute(_loop_Atom));
+    OwnedHqlExpr result = createValue(no_setgraphresult, makeVoidType(), { LINK(transformedBody), LINK(graphid), getSizetConstant(0), createAttribute(_loop_Atom) });
     graphBuilder.addAction(result);
 
     if (transformedAgain)
