@@ -300,7 +300,7 @@ public:
             m_flags = m_flags & ~flags;
     }
 
-    void report(Flags flags, const char* fmt, ...) const
+    void report(Flags flags, const char* fmt, ...) const  __attribute__((format(printf,3,4)))
     {
         if (testFlags(flags))
         {
@@ -311,7 +311,7 @@ public:
         }
     }
 
-    void report(Flags flags, const char* fmt, va_list& args) const
+    void report(Flags flags, const char* fmt, va_list& args) const __attribute__((format(printf,3,0)))
     {
         if (testFlags(flags))
             reportSelf(flags, fmt, args);
@@ -324,7 +324,7 @@ public:
     }
 
 protected:
-    void reportSelf(Flags flags, const char* fmt, va_list& args) const
+    void reportSelf(Flags flags, const char* fmt, va_list& args) const  __attribute__((format(printf,3,0)))
     {
         StringBuffer msg;
         msg.valist_appendf(fmt, args);
