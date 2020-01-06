@@ -518,6 +518,7 @@ StringBuffer& get_subj_from_cert(X509* cert, StringBuffer& subj)
     return subj;
 }
 
+//TODO: this change is not necessary, the original get_cn should work just fine
 StringBuffer& get_cn_from_subj(const char* subj, StringBuffer& cn)
 {
     cn.clear();
@@ -531,7 +532,6 @@ StringBuffer& get_cn_from_subj(const char* subj, StringBuffer& cn)
     }
     return cn;
 }
-
 StringBuffer& get_cn_from_cert(X509* cert, StringBuffer& cn)
 {
     cn.clear();
@@ -555,6 +555,7 @@ bool CSecureSocket::verify_cert(CCertificateInfo* certinfo)
     get_issuer_from_cert(cert, issuer);
     DBGLOG("\t subject: %s\n\t isser: %s", subj.str(), issuer.str());
 
+    //TODO: this change is not necessary, the original get_cn should work just fine
     get_cn_from_subj(subj.str(), cn);
 
     if(cn.length() == 0)
