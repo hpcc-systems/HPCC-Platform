@@ -622,7 +622,6 @@ bool CBoolTypeInfo::assignableFrom(ITypeInfo *t2)
     switch(t2->getTypeCode())
     {
     case type_boolean:
-    case type_int:
     case type_any:
         return true;
     }

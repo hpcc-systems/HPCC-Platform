@@ -1633,6 +1633,10 @@ protected:
 
 //-----------------------------------------------------------------------------
 
+static bool wasLegacyAssignable(ITypeInfo * to, ITypeInfo * from)
+{
+    return (to->getTypeCode() == type_boolean) && isIntegralType(from);
+}
 
 /* this func does not affect linkage */
 /* Assume: field is of the form: (((self.r1).r2...).rn). */
@@ -1813,8 +1817,15 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
         getFriendlyTypeStr(rhsType,msg).append(" to ");
         getFriendlyTypeStr(fldType,msg).append(" (field ");
         getFldName(field,msg).append(")");
-        reportError(ERR_TYPE_INCOMPATIBLE,errpos, "%s", msg.str());
-        rhs.setown(createNullExpr(field));
+        if (wasLegacyAssignable(fldType, rhsType))
+        {
+            reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE,errpos.pos, "%s", msg.str());
+        }
+        else
+        {
+            reportError(ERR_TYPE_INCOMPATIBLE,errpos, "%s", msg.str());
+            rhs.setown(createNullExpr(field));
+        }
     }
 
     appendTransformAssign(transform, field, rhs, errpos);
@@ -2723,7 +2734,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         ITypeInfo * valueType = value->queryType();
         // MORE - is this implicit or explicit?
         if (!expectedType->assignableFrom(valueType->queryPromotedType()))
-            canNotAssignTypeWarn(fieldType,valueType,errpos);
+            canNotAssignTypeWarn(fieldType,valueType,str(name),errpos);
         if (expectedType->getTypeCode() != type_row)
         {
             value.setown(ensureExprType(value, expectedType));
@@ -2740,7 +2751,12 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
             if (defvalueType != expectedType)
             {
                 if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
-                    canNotAssignTypeError(fieldType,defvalueType,errpos);
+                {
+                    if (wasLegacyAssignable(expectedType, defvalueType))
+                        canNotAssignTypeWarn(expectedType,defvalueType,str(name),errpos);
+                    else
+                        canNotAssignTypeError(fieldType,defvalueType,str(name),errpos);
+                }
                 IValue * constValue = defaultValue->queryValue();
                 if (constValue && (constValue->rangeCompare(expectedType) > 0))
                     reportWarning(CategorySyntax, ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
@@ -2847,9 +2863,16 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         }
         else if (!dsType->assignableFrom(valueType))
         {
-            canNotAssignTypeError(dsType,valueType,errpos);
-            value->Release();
-            value = NULL;
+            if (wasLegacyAssignable(dsType, valueType))
+            {
+                canNotAssignTypeWarn(dsType,valueType,str(name),errpos);
+            }
+            else
+            {
+                canNotAssignTypeError(dsType,valueType,str(name),errpos);
+                value->Release();
+                value = NULL;
+            }
         }
     }
     else
@@ -2897,9 +2920,16 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
             dictType.set(value->queryType());
         else if (!dictType->assignableFrom(valueType))
          {
-             canNotAssignTypeError(dictType,valueType,errpos);
-             value->Release();
-             value = NULL;
+            if (wasLegacyAssignable(dictType, valueType))
+            {
+                canNotAssignTypeWarn(dictType,valueType,str(name),errpos);
+            }
+            else
+            {
+                 canNotAssignTypeError(dictType,valueType,str(name),errpos);
+                 value->Release();
+                 value = NULL;
+            }
          }
     }
     if (queryAttributeInList(virtualAtom, attrs))
@@ -3923,7 +3953,13 @@ unsigned HqlGram::checkCompatible(ITypeInfo * t1, ITypeInfo * t2, const attribut
         StringBuffer msg("Type mismatch - expected ");
         getFriendlyTypeStr(t1,msg).append(" value, given ");
         getFriendlyTypeStr(t2,msg);
-        reportError(ERR_EXPECTED, ea, "%s", msg.str());
+        if (wasLegacyAssignable(t1, t2) || wasLegacyAssignable(t2, t1))
+        {
+            reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, ea.pos, "%s", msg.str());
+            return wasLegacyAssignable(t1, t2) ? 1 : 2;
+        }
+        else
+            reportError(ERR_EXPECTED, ea, "%s", msg.str());
     }
 
     return 0;
@@ -5221,7 +5257,10 @@ void HqlGram::ensureType(attribute &a, ITypeInfo * type)
             StringBuffer msg("Incompatible types: expected ");
             getFriendlyTypeStr(type, msg).append(", given ");
             getFriendlyTypeStr(expr->queryType(),msg);
-            reportError(ERR_TYPE_INCOMPATIBLE, a, "%s", msg.str());
+            if (wasLegacyAssignable(type, exprType))
+                reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, a.pos, "%s", msg.str());
+            else
+                reportError(ERR_TYPE_INCOMPATIBLE, a, "%s", msg.str());
         }
         expr = a.getExpr();
         a.setExpr(ensureExprType(expr, type));
@@ -6827,9 +6866,16 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
                             getFriendlyTypeStr(formal,tp1).str(),
                             getFriendlyTypeStr(actual,tp2).str());
                 }
-                reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "%s", s.str());
+                if (wasLegacyAssignable(formalType, actualType))
+                    reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, errpos->pos, "%s", s.str());
+                else
+                {
+                    reportError(ERR_PARAM_TYPEMISMATCH, *errpos, "%s", s.str());
+                    return nullptr;
+                }
             }
-            return NULL;
+            else
+                return nullptr;
         }
         break;
     }
@@ -10191,8 +10237,15 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     {
                         if (!matchType->assignableFrom(etype))
                         {
-                            canNotAssignTypeError(type, etype, nameattr);
-                            expr.setown(createNullExpr(matchType));
+                            if (wasLegacyAssignable(matchType, etype))
+                            {
+                                canNotAssignTypeWarn(matchType, etype,str(name),nameattr);
+                            }
+                            else
+                            {
+                                canNotAssignTypeError(type, etype, str(name), nameattr);
+                                expr.setown(createNullExpr(matchType));
+                            }
                         }
                     }
                     else
@@ -10218,15 +10271,23 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             {
                 if (queryRecord(type) != queryNullRecord())
                 {
-                    canNotAssignTypeError(type,etype,nameattr);
-                    switch (type->getTypeCode())
+                    if (wasLegacyAssignable(type, etype))
                     {
-                    case type_record:
-                        expr.set(queryNullRecord());
-                        break;
-                    default:
-                        expr.setown(createNullExpr(type));
-                        break;
+                        canNotAssignTypeWarn(type,etype,str(name),nameattr);
+                        expr.setown(forceEnsureExprType(expr, type));
+                    }
+                    else
+                    {
+                        canNotAssignTypeError(type,etype,str(name),nameattr);
+                        switch (type->getTypeCode())
+                        {
+                        case type_record:
+                            expr.set(queryNullRecord());
+                            break;
+                        default:
+                            expr.setown(createNullExpr(type));
+                            break;
+                        }
                     }
                 }
             }
@@ -10818,17 +10879,18 @@ void HqlGram::checkCompatibleTransforms(HqlExprArray & values, IHqlExpression * 
     }
 }
 
-void HqlGram::canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos)
+void HqlGram::canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const char * name, const attribute& errpos)
 {
-    StringBuffer msg("Incompatible types: can not assign ");
+    VStringBuffer msg("Incompatible types for %s: can not assign ", name);
     getFriendlyTypeStr(given, msg).append(" to ");
     getFriendlyTypeStr(expected, msg);
+
     reportError(ERR_TYPE_INCOMPATIBLE, errpos, "%s", msg.str());
 }
 
-void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos)
+void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const char * name, const attribute& errpos)
 {
-    StringBuffer msg("Incompatible types: should cast ");
+    VStringBuffer msg("Incompatible types for %s: should cast ", name);
     getFriendlyTypeStr(given, msg).append(" to a ");
     getFriendlyTypeStr(expected, msg);
     reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", msg.str());
