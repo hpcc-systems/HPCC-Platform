@@ -454,9 +454,7 @@ protected:
     bool queryNoteDataset(IHqlExpression * ds)
     {
         bool alwaysHoist = queryHoistDataset(ds);
-        //MORE: It should be possible to remove this condition, but it causes problems with resourcing hsss.xhql amongst others -> disable for the moment
-        if (alwaysHoist)
-            noteDataset(ds, ds, alwaysHoist);
+        noteDataset(ds, ds, alwaysHoist);
         return alwaysHoist;
     }
 
