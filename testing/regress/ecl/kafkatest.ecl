@@ -65,7 +65,7 @@ SEQUENTIAL
 
         OUTPUT(c.GetMessages(10), NAMED('GetMessages2'));
 
-        OUTPUT(c.SetMessageOffsets(DATASET([{0,0}], kafka.KafkaMessageOffset)), NAMED('ConsumerSetExplicitMessageOffsets'));
+        OUTPUT(c.SetMessageOffsets(DATASET([{0,1}], kafka.KafkaMessageOffset)), NAMED('ConsumerSetExplicitMessageOffsets'));
 
         OUTPUT(c.GetMessages(10), NAMED('GetMessages3'));
 
