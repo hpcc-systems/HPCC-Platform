@@ -54,7 +54,7 @@ interface ICommunicator: extends IInterface
     virtual void flush  (mptag_t tag) = 0;    // flushes pending buffers
 
     virtual bool verifyConnection(rank_t rank, unsigned timeout=1000*60*5) = 0; // verifies connected to rank
-    virtual bool verifyAll(bool duplex=false, unsigned timeout=1000*60*30) = 0;
+    virtual bool verifyAll(bool duplex=false, unsigned timeout=1000*60*30, unsigned perConnectionTimeout=0) = 0;
     virtual void disconnect(INode *node) = 0;
     virtual void barrier() = 0;
     virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const = 0;

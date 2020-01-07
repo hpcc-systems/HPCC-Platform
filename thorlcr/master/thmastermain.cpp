@@ -862,10 +862,9 @@ int main( int argc, char *argv[]  )
             }
 
             PROGLOG("verifying mp connection to rest of cluster");
-            if (!queryNodeComm().verifyAll())
-                OERRLOG("Failed to connect to all nodes");
-            else
-                PROGLOG("verified mp connection to rest of cluster");
+            if (!queryNodeComm().verifyAll(false, 1000*60*30, 1000*60))
+                throwStringExceptionV(0, "Failed to connect to all nodes");
+            PROGLOG("verified mp connection to rest of cluster");
 
             LOG(MCauditInfo, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
