@@ -78,7 +78,8 @@ public:
 
     inline void dataLinkStop()
     {
-        count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STOPPED;
+        if (hasStarted())
+            count = (count & THORDATALINK_COUNT_MASK) | THORDATALINK_STOPPED;
 #ifdef _TESTING
         owner.ActPrintLog("ITDL output %d stopped, count was %" RCPF "d", outputId, getDataLinkCount());
 #endif

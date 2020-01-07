@@ -2958,19 +2958,22 @@ CTimingInfo::CTimingInfo(CJobBase &ctx) : CThorStats(ctx, StTimeLocalExecute)
 
 ProgressInfo::ProgressInfo(CJobBase &ctx) : CThorStats(ctx, StNumRowsProcessed)
 {
-    startcount = stopcount = 0;
+    startCount = stopCount = 0;
 }
 void ProgressInfo::processInfo() // reimplement as counts have special flags (i.e. stop/start)
 {
     reset();
-    startcount = stopcount = 0;
+    startCount = stopCount = 0;
     ForEachItemIn(n, counts)
     {
         unsigned __int64 thiscount = counts.item(n);
-        if (thiscount & THORDATALINK_STARTED)
-            startcount++;
         if (thiscount & THORDATALINK_STOPPED)
-            stopcount++;
+        {
+            startCount++;
+            stopCount++;
+        }
+        else if (thiscount & THORDATALINK_STARTED)
+            startCount++;
         thiscount = thiscount & THORDATALINK_COUNT_MASK;
         tallyValue(thiscount, n+1);
     }
@@ -2982,8 +2985,8 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
     CThorStats::getStats(stats, true);
     stats.addStatistic(kind, tot);
     stats.addStatistic(StNumSlaves, counts.ordinality());
-    stats.addStatistic(StNumStarts, startcount);
-    stats.addStatistic(StNumStops, stopcount);
+    stats.addStatistic(StNumStarts, startCount);
+    stats.addStatistic(StNumStops, stopCount);
 }
 
 

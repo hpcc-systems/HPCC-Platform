@@ -119,7 +119,7 @@ public:
 
 class graphmaster_decl ProgressInfo : public CThorStats
 {
-    unsigned startcount, stopcount;
+    unsigned startCount, stopCount;
 public:
     ProgressInfo(CJobBase &ctx);
 
