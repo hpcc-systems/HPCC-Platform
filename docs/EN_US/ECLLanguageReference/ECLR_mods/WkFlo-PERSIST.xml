@@ -108,7 +108,8 @@
 
             <entry>Optional. The number of days after which the file may be
             automatically deleted. If omitted, it defaults to use the
-            PersistExpiryDefault setting in Sasha.</entry>
+            <emphasis role="bold">PersistExpiryDefault</emphasis> setting in
+            Sasha.</entry>
           </row>
 
           <row>
@@ -144,7 +145,7 @@
             <entry>Optional. Specifies to keep different versions of the
             PERSIST. The name of the persist file generated is a combination
             of the name supplied suffixed with a 32-bit value derived from the
-            ECL. </entry>
+            ECL.</entry>
           </row>
 
           <row>
@@ -178,7 +179,7 @@
   of "compute in anticipation" capability.</para>
 
   <para>You can use #OPTION to override the default settings, as shown in the
-  example. </para>
+  example.</para>
 
   <para>Example:</para>
 
