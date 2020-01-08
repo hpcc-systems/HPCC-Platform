@@ -1,12 +1,8 @@
 import { Workunit } from "@hpcc-js/comms";
-import * as hpccCommon from "@hpcc-js/common";
+import { ascending as d3Ascending, max as d3Max, select as d3Select, scaleLinear as d3ScaleLinear } from "@hpcc-js/common";
 import { WUTimeline } from "@hpcc-js/eclwatch";
 import { ChartPanel } from "@hpcc-js/layout";
 import { Column } from "@hpcc-js/chart";
-import { ascending as d3Ascending, max as d3Max } from "d3-array";
-import { scaleLinear as d3ScaleLinear } from "d3-scale";
-
-const d3Select = (hpccCommon as any).select;
 
 class TimingColumn extends Column {
 
