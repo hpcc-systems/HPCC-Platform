@@ -67,8 +67,10 @@ extern jlib_decl void callThreadTerminationHooks(bool isPooled);
 //An exception safe way of ensuring that the thread termination hooks are called.
 class jlib_decl QueryTerminationCleanup
 {
+    bool isPooled;
 public:
-    inline ~QueryTerminationCleanup() { callThreadTerminationHooks(true); }
+    inline QueryTerminationCleanup(bool _isPooled) : isPooled(_isPooled) { }
+    inline ~QueryTerminationCleanup() { callThreadTerminationHooks(isPooled); }
 };
 
 class jlib_decl Thread : public CInterface, public IThread
