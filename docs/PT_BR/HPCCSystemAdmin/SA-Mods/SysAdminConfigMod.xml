@@ -323,7 +323,7 @@
               <para>Salve o arquivo environment.xml em um backup.</para>
 
               <programlisting># For example
-              sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environment-date.xml </programlisting>
 
               <variablelist>
                 <varlistentry>
@@ -356,7 +356,7 @@
               <emphasis>environment.xml.</emphasis></para>
 
               <programlisting># for example 
-              sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
               <para/>
             </listitem>
