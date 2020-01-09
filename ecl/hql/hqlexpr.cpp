@@ -4216,7 +4216,7 @@ void CHqlRealExpression::initFlagsBeforeOperands()
         infoFlags |= HEFcontainsActiveDataset;
         break;
     case no_nohoist:
-        infoFlags |= HEFcontextDependent;
+        infoFlags |= (HEFcontextDependent & ~HEFonFailDependent);
         infoFlags2 &= ~HEF2constant;
         break;
     case no_nofold:

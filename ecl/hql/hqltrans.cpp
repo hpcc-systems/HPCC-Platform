@@ -913,6 +913,9 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
     case no_getresult:
         if (!expr->queryRecord())
             break;
+        if (expr->isDataset() || expr->isDictionary() || expr->isDatarow())
+            break;
+        throwUnexpected();
         //fallthrough
     case no_newtransform:
     case no_transform:
