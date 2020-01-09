@@ -430,10 +430,13 @@ void CDiskWriteSlaveActivityBase::close()
             outraw.clear();
         }
 
+        Owned<IFileIO> tmpFileIO;
         {
             CriticalBlock block(statsCs);
             mergeStats(fileStats, outputIO);
-            outputIO.clear();
+
+            // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
+            tmpFileIO.setown(outputIO.getClear());
         }
 
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
