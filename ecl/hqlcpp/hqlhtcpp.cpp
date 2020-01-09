@@ -19519,6 +19519,7 @@ void HqlCppTranslator::spotGlobalCSE(HqlExprArray & exprs)
     {
         transformer.transformRoot(exprs, results);
         replaceArray(exprs, results);
+        checkNormalized(exprs);
     }
 
     if (!options.resourceConditionalActions)
