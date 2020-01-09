@@ -26,6 +26,7 @@
 #include "sechandler.hpp"
 #include "espprotocol.hpp"
 #include "espsecurecontext.hpp"
+#include "ldapsecurity.ipp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -441,6 +442,16 @@ public:
         {
             setAuthStatus(AUTH_STATUS_NOACCESS);
             throw MakeStringException(excCode, "%s", excMsg);
+        }
+    }
+
+    virtual void ensureSuperUser(unsigned excCode, const char* excMsg)
+    {
+        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(m_secmgr.get());
+        if (secmgr && !secmgr->isSuperUser(m_user.get()))
+        {
+            setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw makeStringException(excCode, excMsg);
         }
     }
 

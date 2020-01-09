@@ -1438,11 +1438,17 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUArrayAction: Permission denied.");
-
         CDFUArrayActions action = req.getType();
         if (action == DFUArrayActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"Action not defined.");
+
+        if (action == CDFUArrayActions_ChangeRestriction)
+            return  changeFileRestrictions(context, req, resp);
+
+        if (action == CDFUArrayActions_ChangeProtection)
+            return  changeFileProtections(context, req, resp);
+
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUArrayAction: Permission denied.");
 
         double version = context.getClientVersion();
         if (version > 1.03)
@@ -1539,6 +1545,99 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
     catch(IException* e)
     {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
+{
+    CDFUChangeProtection protect = req.getProtect();
+    if (protect == CDFUChangeProtection_NoChange)
+        return true;
+
+#ifdef _USE_OPENLDAP
+    if (protect == CDFUChangeProtection_UnprotectAll)
+        context.ensureSuperUser(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Access denied, administrators only.");
+#endif
+
+    if (isDetachedFromDali())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "ESP server is detached from Dali. Please try later.");
+
+    StringBuffer userID;
+    context.getUserID(userID);
+    Owned<IUserDescriptor> userDesc;
+    if (userID.isEmpty())
+        userID.set("hpcc"); //The userID is needed for setProtect().
+    else
+    {
+        userDesc.setown(createUserDescriptor());
+        userDesc->set(userID, context.queryPassword(), context.querySignature());
+    }
+
+    for (unsigned i = 0; i < req.getLogicalFiles().length(); i++)
+    {
+        const char *file = req.getLogicalFiles().item(i);
+        if (isEmptyString(file))
+            continue;
+
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        if (!df)
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", file);
+
+        if (protect != CDFUChangeProtection_UnprotectAll)
+            df->setProtect(userID, protect == CDFUChangeProtection_Protect ? true : false);
+        else
+            clearFileProtections(df);
+    }
+    return true;
+}
+
+void CWsDfuEx::clearFileProtections(IDistributedFile *df)
+{
+    StringArray owners;
+    Owned<IPropertyTreeIterator> itr = df->queryAttributes().getElements("Protect");
+    ForEach(*itr)
+    {
+        const char *owner = itr->query().queryProp("@name");
+        if (!isEmptyString(owner))
+            owners.append(owner);
+    }
+
+    ForEachItemIn(i, owners)
+        df->setProtect(owners.item(i), false);
+}
+
+bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
+{
+    CDFUChangeRestriction changeRestriction = req.getRestrict();
+    if (changeRestriction == CDFUChangeRestriction_NoChange)
+        return true;
+
+    context.ensureFeatureAccess("DFURestrictedAccess", SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "DFURestrictedAccess: Permission denied.");
+
+    if (isDetachedFromDali())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "ESP server is detached from Dali. Please try later.");
+
+    StringBuffer userID;
+    context.getUserID(userID);
+    Owned<IUserDescriptor> userDesc;
+    if (!userID.isEmpty())
+    {
+        userDesc.setown(createUserDescriptor());
+        userDesc->set(userID, context.queryPassword(), context.querySignature());
+    }
+
+    for (unsigned i = 0; i < req.getLogicalFiles().length();i++)
+    {
+        const char *file = req.getLogicalFiles().item(i);
+        if (isEmptyString(file))
+            continue;
+
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        if (!df)
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", file);
+                
+        df->setRestrictedAccess(changeRestriction==CDFUChangeRestriction_Restrict);
     }
     return true;
 }
@@ -2059,11 +2158,21 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 
     if (protect != CDFUChangeProtection_NoChange)
     {
-        StringBuffer protectBy;
-        context.getUserID(protectBy);
-        if (protectBy.isEmpty())
-            protectBy.set("hpcc");
-        df->setProtect(protectBy.str(), protect == CDFUChangeProtection_Protect ? true : false);
+#ifdef _USE_OPENLDAP
+        if (protect == CDFUChangeProtection_UnprotectAll)
+            context.ensureSuperUser(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Access denied, administrators only.");
+#endif
+
+        if (protect == CDFUChangeProtection_UnprotectAll)
+            clearFileProtections(df);
+        else
+        {
+            StringBuffer userID;
+            context.getUserID(userID);
+            if (userID.isEmpty())
+                userID.set("hpcc");
+            df->setProtect(userID.str(), protect == CDFUChangeProtection_Protect ? true : false);
+        }
     }
     if (changeRestriction != CDFUChangeRestriction_NoChange)
     {
