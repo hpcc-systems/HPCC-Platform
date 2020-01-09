@@ -3888,6 +3888,17 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         // recover: to avoid reload the definition again and again
         return createSymbol(searchName, createConstant(0), ob_private);
     }
+    catch (IException * e)
+    {
+        unsigned code = e->errorCode();
+        if (code == ERR_ABORT_PARSING)
+            throw;
+        StringBuffer msg;
+        e->errorMessage(msg);
+        e->Release();
+        reportError(code, errpos, "%s", msg.str());
+        return nullptr;
+    }
     return NULL;
 }
 
@@ -12768,7 +12779,6 @@ IHqlExpression *HqlGram::yyParse(bool _parsingTemplateAttribute, bool catchAbort
         }
         else if (!catchAbort)
             throw;
-
 
         e->Release();
         return NULL;
