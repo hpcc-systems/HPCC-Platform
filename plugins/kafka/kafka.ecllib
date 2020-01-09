@@ -31,7 +31,7 @@ END;
 SHARED kafka := SERVICE : plugin('kafka'), namespace('KafkaPlugin')
 
     BOOLEAN PublishMessage(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING message, CONST VARSTRING key) : cpp,action,context,entrypoint='publishMessage';
-    INTEGER4 getTopicPartitionCount(CONST VARSTRING brokers, CONST VARSTRING topic) : cpp,action,context,entrypoint='getTopicPartitionCount';
+    INTEGER4 getTopicPartitionCount(CONST VARSTRING brokers, CONST VARSTRING topic) : cpp,context,entrypoint='getTopicPartitionCount';
     STREAMED DATASET(KafkaMessage) GetMessageDataset(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING consumerGroup, INTEGER4 partitionNum, INTEGER8 maxRecords) : cpp,action,context,entrypoint='getMessageDataset';
     INTEGER8 SetMessageOffset(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING consumerGroup, INTEGER4 partitionNum, INTEGER8 newOffset) : cpp,action,context,entrypoint='setMessageOffset';
 
@@ -115,25 +115,20 @@ EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING
      */
     EXPORT DATASET(KafkaMessage) GetMessages(INTEGER8 maxRecords) := FUNCTION
 
-        // Record structure to hold messages from multiple partitions
-        MultiNodeMessageRec := RECORD
-            DATASET(KafkaMessage)   messages;
-        END;
-
-        numberOfPartitions := GetTopicPartitionCount() : INDEPENDENT;
+        numberOfPartitions := GetTopicPartitionCount();
         maxRecordsPerNode := MAX(maxRecords DIV numberOfPartitions, 1);
 
         // Container holding messages from all partitions; in a multi-node setup
         // the work will be distributed among the nodes (at least up to the
         // number of partitions); note that 'COUNTER - 1' is actually the
         // Kafka partition number that will be read
-        messageContainer := DATASET
+        partitionTracker := DATASET
             (
                 numberOfPartitions,
                 TRANSFORM
                     (
-                        MultiNodeMessageRec,
-                        SELF.messages := kafka.GetMessageDataset(brokers, topic, consumerGroup, COUNTER - 1, maxRecordsPerNode)
+                        {UNSIGNED2 partitionNum},
+                        SELF.partitionNum := COUNTER - 1
                     ),
                 DISTRIBUTED
             );
@@ -141,8 +136,8 @@ EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING
         // Map messages from multiple partitions back to final record structure
         resultDS := NORMALIZE
             (
-                messageContainer,
-                LEFT.messages,
+                partitionTracker,
+                kafka.GetMessageDataset(brokers, topic, consumerGroup, LEFT.partitionNum, maxRecordsPerNode),
                 TRANSFORM
                     (
                         KafkaMessage,
@@ -236,7 +231,7 @@ EXPORT KafkaConsumer(VARSTRING topic, VARSTRING brokers = 'localhost', VARSTRING
      */
     EXPORT UNSIGNED4 ResetMessageOffsets() := FUNCTION
 
-        numberOfPartitions := GetTopicPartitionCount() : INDEPENDENT;
+        numberOfPartitions := GetTopicPartitionCount();
 
         offsets := DATASET
             (
