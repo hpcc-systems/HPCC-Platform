@@ -293,6 +293,7 @@ protected:
 
     IPointerArrayOf<ISourceRowPrefetcher> prefetchers;
     IConstPointerArrayOf<ITranslator> translators;
+    bool initialized = false;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
@@ -311,6 +312,16 @@ public:
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
+        if (initialized)
+        {
+            parts.kill();
+            offsetMapBytes.clear();
+            prefetchers.kill();
+            translators.kill();
+            eexp.clear();
+        }
+        else
+            initialized = true;
         unsigned numParts;
         data.read(numParts);
         offsetCount = 0;
