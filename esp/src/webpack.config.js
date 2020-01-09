@@ -1,4 +1,3 @@
-
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
 
@@ -7,7 +6,7 @@ var webpack = require("webpack");
 var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = function (env) {
-    const isDev = env && env.build === "development";
+    const isDev = env && env === "development";
     const isProduction = !isDev;
 
     const plugins = [

@@ -135,14 +135,13 @@ define([
                 var baseUrlParts = baseUrl.split("?");
                 baseUrl = baseUrlParts[0];
                 var args = baseUrlParts[1];
-                var nopack = (args && args.indexOf("nopack=1") >= 0) ? "nopack=1&" : "";
                 delete this.params.__filter;
                 var filterParams = this.getFilterParams();
                 if (filterParams) {
                     this.params.__filter = ioQuery.objectToQuery(filterParams);
                 }
                 var paramsString = ioQuery.objectToQuery(this.params);
-                return baseUrl + "?" + nopack + paramsString;
+                return baseUrl + "?" + paramsString;
             },
 
             _onNewPage: function (event) {
