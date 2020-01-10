@@ -1244,7 +1244,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         if (neverSimplifyRegEx)
             parseCtx.setNeverSimplify(neverSimplifyRegEx.str());
 
-        if (optFastSyntax)
+        //Allow fastsyntax to be specified in the archive to aid with regression testing
+        if (optFastSyntax || (instance.srcArchive && instance.srcArchive->getPropBool("@fastSyntax", false)))
             parseCtx.setFastSyntax();
         parseCtx.timeParser = instance.wu->getDebugValueBool("timeParser", false);
 
