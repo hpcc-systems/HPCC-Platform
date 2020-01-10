@@ -11,7 +11,7 @@ define([
     "src/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+    GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("VariablesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

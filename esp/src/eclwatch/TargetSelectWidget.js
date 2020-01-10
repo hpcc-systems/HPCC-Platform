@@ -8,5 +8,5 @@ define([
     Select,
     TargetSelectClass) {
 
-        return declare("TargetSelectWidget", [Select], TargetSelectClass);
-    });
+    return declare("TargetSelectWidget", [Select], TargetSelectClass);
+});

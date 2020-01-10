@@ -51,10 +51,10 @@ define([
     "hpcc/TableContainer"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
-                registry, Menu, MenuItem, MenuSeparator, Select,
-                tree, selector,
-                _TabContainerWidget, WsAccess, WsAccount, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
-                template) {
+    registry, Menu, MenuItem, MenuSeparator, Select,
+    tree, selector,
+    _TabContainerWidget, WsAccess, WsAccount, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
+    template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "UserQueryWidget",
@@ -142,11 +142,11 @@ define([
             }
         },
 
-       _onCloseFilePermissions: function () {
+        _onCloseFilePermissions: function () {
             this.filePermissionDialog.hide();
             this.nameSelect.reset();
-            this.usersSelect.set("value","");
-            this.groupsSelect.set("value","");
+            this.usersSelect.set("value", "");
+            this.groupsSelect.set("value", "");
         },
         _onCheckFilePermissions: function () {
             this.filePermissionDialog.show();
@@ -155,7 +155,7 @@ define([
             var context = this;
             if (this.filePermissionsForm.validate()) {
                 WsAccess.FilePermission({
-                    request:{
+                    request: {
                         FileName: this.nameSelect.get("value"),
                         UserName: this.usersSelect.get("value"),
                         GroupName: this.groupsSelect.get("value")
@@ -478,20 +478,20 @@ define([
                 context.refreshUsersGrid();
             });
 
-            this.filePermissionDialog.on("cancel", function(evt){
+            this.filePermissionDialog.on("cancel", function (evt) {
                 context._onCloseFilePermissions();
             });
 
-            this.groupsSelect.on("click", function(evt){
+            this.groupsSelect.on("click", function (evt) {
                 context.usersSelect.set("value", "");
             });
 
-            this.usersSelect.on("click", function(evt){
+            this.usersSelect.on("click", function (evt) {
                 context.groupsSelect.set("value", "");
             });
 
             WsAccount.MyAccount({
-            }).then(function (response){
+            }).then(function (response) {
                 if (lang.exists("MyAccountResponse.distinguishedName", response)) {
                     context.addGroupOwner.set("value", response.MyAccountResponse.distinguishedName);
                 }
@@ -542,7 +542,7 @@ define([
             this.groupsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            ESPUtil.goToPageUserPreference(this.groupsGrid, "UsersQueryWidget_GroupsGrid_GridRowsPerPage").then(function(){
+            ESPUtil.goToPageUserPreference(this.groupsGrid, "UsersQueryWidget_GroupsGrid_GridRowsPerPage").then(function () {
                 context.groupsGrid.startup();
             });
         },
@@ -610,7 +610,7 @@ define([
                     check: selector({
                         width: 27,
                         label: " "
-                    },"checkbox"),
+                    }, "checkbox"),
                     username: {
                         width: 180,
                         label: this.i18n.Username,
@@ -645,19 +645,19 @@ define([
             this.usersGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.employeeID,item.employeeNumber,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username, item.employeeID, item.employeeNumber, item.fullname, item.passwordexpiration);
                 }
             });
             this.usersGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onUsersRowDblClick) {
                     var item = context.usersGrid.row(evt).data;
-                    context._onUsersRowDblClick(item.username,item.employeeID,item.employeeNumber,item.fullname,item.passwordexpiration);
+                    context._onUsersRowDblClick(item.username, item.employeeID, item.employeeNumber, item.fullname, item.passwordexpiration);
                 }
             });
             this.usersGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            ESPUtil.goToPageUserPreference(this.usersGrid, "UsersQueryWidget_UsersGrid_GridRowsPerPage").then(function(){
+            ESPUtil.goToPageUserPreference(this.usersGrid, "UsersQueryWidget_UsersGrid_GridRowsPerPage").then(function () {
                 context.usersGrid.startup();
             });
         },
@@ -758,7 +758,7 @@ define([
                             if (idx.__hpcc_parent) {
                                 return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
                             } else {
-                              return _name;
+                                return _name;
                             }
                         }
                     }),
@@ -909,15 +909,15 @@ define([
                         registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "CheckFilePermissions").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
-                    break;
+                        break;
                     case "Workunit Scopes":
                         registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
-                    break;
+                        break;
                     case "Repository Modules":
                         registry.byId(this.id + "CodeGenerator").set("disabled", !hasPermissionSelection);
                         registry.byId(this.id + "AdvancedPermissions").set("disabled", !hasPermissionSelection);
-                    break;
+                        break;
                 }
             }
         }

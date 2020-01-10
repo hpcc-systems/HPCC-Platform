@@ -233,8 +233,8 @@ define([
                     CompType: data.Type,
                     OsType: data.OS,
                 }
-            }).then(function(response) {
-                var tab = context.ensureConfigurationPane(data.Parent.Name + "-" + data.Type , {
+            }).then(function (response) {
+                var tab = context.ensureConfigurationPane(data.Parent.Name + "-" + data.Type, {
                     Component: data.Type,
                     Name: data.Parent.Name,
                     Usergenerated: response

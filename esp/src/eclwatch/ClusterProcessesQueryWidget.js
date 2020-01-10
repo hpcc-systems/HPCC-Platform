@@ -75,7 +75,7 @@ define([
                     var data = context.grid.row(selection[i].hpcc_id).data;
                     selections.push(data);
                 }
-                context.machineFilter._onSubmitRequest("machine",  selections);
+                context.machineFilter._onSubmitRequest("machine", selections);
             });
 
             topic.subscribe("createClusterProcessPreflightTab", function (topic) {
@@ -208,7 +208,7 @@ define([
                 event.preventDefault();
             });
 
-            retVal.on(".dgrid-cell:click", function(evt){
+            retVal.on(".dgrid-cell:click", function (evt) {
                 var cell = retVal.cell(evt)
             });
 
@@ -239,8 +239,8 @@ define([
                     Directory: data.Directory,
                     OsType: data.OS
                 }
-            }).then(function(response) {
-                var tab = context.ensureConfigurationPane(data.Component + "_" + data.Name , {
+            }).then(function (response) {
+                var tab = context.ensureConfigurationPane(data.Component + "_" + data.Name, {
                     Component: data.Component,
                     Name: data.Name,
                     Usergenerated: response

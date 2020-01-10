@@ -388,8 +388,8 @@ define([
                                     Name: Binding.Id,
                                     PublishBy: Binding.History.PublishBy,
                                     CreatedTime: Binding.History.CreatedTime,
-                                    LastEditBy:Binding.History.LastEditBy,
-                                    LastEditTime:Binding.History.LastEditTime,
+                                    LastEditBy: Binding.History.LastEditBy,
+                                    LastEditTime: Binding.History.LastEditTime,
                                     children: false,
                                     type: "binding"
                                 });

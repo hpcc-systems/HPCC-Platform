@@ -47,10 +47,10 @@ define([
     "dijit/TooltipDialog"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
-                registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                selector,
-                _TabContainerWidget, ESPBase, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, ECLSourceWidget, WsTopology,
-                template) {
+    registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+    selector,
+    _TabContainerWidget, ESPBase, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, ECLSourceWidget, WsTopology,
+    template) {
     return declare("LogWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LogWidget",
@@ -197,8 +197,8 @@ define([
                     store: store,
                     query: this.getFilter(),
                     columns: {
-                        MsgID: {width: 80 },
-                        Audience: { label: this.i18n.Audience, width: 60},
+                        MsgID: { width: 80 },
+                        Audience: { label: this.i18n.Audience, width: 60 },
                         Date: { label: this.i18n.Date, width: 100 },
                         Timemilli: { label: this.i18n.Time, width: 100 },
                         PID: { label: "PID", width: 60 },
@@ -231,7 +231,7 @@ define([
         refreshGrid: function (clearSelection) {
             this.rawText.setText(this.i18n.loadingMessage);
             var filter = lang.mixin(this.getFilter(), {
-                Name: this.params.getNetaddress ? "//" + this.params.getNetaddress()+this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value") : "//" + this.params.params.Netaddress + this.params.LogDirectory + "/" + this.logTargetSelect.get("value"),
+                Name: this.params.getNetaddress ? "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value") : "//" + this.params.params.Netaddress + this.params.LogDirectory + "/" + this.logTargetSelect.get("value"),
                 Type: "tpcomp_log",
                 LoadData: 1
             });

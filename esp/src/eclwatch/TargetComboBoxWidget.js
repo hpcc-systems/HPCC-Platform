@@ -8,5 +8,5 @@ define([
     ComboBox,
     TargetSelectClass) {
 
-        return declare("TargetComboBoxWidget", [ComboBox], TargetSelectClass);
-    });
+    return declare("TargetComboBoxWidget", [ComboBox], TargetSelectClass);
+});
