@@ -648,7 +648,7 @@ public:
         return lookupCtx.queryParseContext().unsuppressImmediateSyntaxErrors;
     }
     void reportTooManyErrors();
-    void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void doReportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(IError * warning, HqlLex * lexer);
