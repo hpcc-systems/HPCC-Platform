@@ -27,6 +27,7 @@
 #include "thmem.hpp"
 #include "rtlformat.hpp"
 #include "thorsoapcall.hpp"
+#include "thorport.hpp"
 
 
 PointerArray createFuncs;
@@ -1385,6 +1386,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         throw MakeGraphException(this, 0, "subgraph aborted");
     }
     GraphPrintLog("Processing graph");
+    setParentCtx(parentExtractSz, parentExtract);
     Owned<IException> exception;
     try
     {
@@ -2936,6 +2938,8 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
     graphExecutor.setown(new CGraphExecutor(*this));
+    myBasePort = mpServer->queryMyNode()->endpoint().port;
+    portMap.setown(createBitSet());
 }
 
 CJobChannel::~CJobChannel()
@@ -3055,6 +3059,51 @@ IThorResult *CJobChannel::getOwnedResult(graph_id gid, activity_id ownerId, unsi
     return result.getClear();
 }
 
+unsigned short CJobChannel::allocPort(unsigned num)
+{
+    CriticalBlock block(portAllocCrit);
+    if (num==0)
+        num = 1;
+    unsigned sp=0;
+    unsigned p;
+    for (;;)
+    {
+        p = portMap->scan(sp, false);
+        unsigned q;
+        for (q=p+1; q<p+num; q++)
+        {
+            if (portMap->test(q))
+                break;
+        }
+        if (q == p+num)
+        {
+            while (q != p)
+                portMap->set(--q);
+            break;
+        }
+        sp = p+1;
+    }
+
+    return (unsigned short)(p+queryMyBasePort());
+}
+
+void CJobChannel::freePort(unsigned short p, unsigned num)
+{
+    CriticalBlock block(portAllocCrit);
+    if (!p)
+        return;
+    if (num == 0)
+        num = 1;
+    while (num--) 
+        portMap->set(p-queryMyBasePort()+num, false);
+}
+
+void CJobChannel::reservePortKind(ThorPortKind kind)
+{
+    CriticalBlock block(portAllocCrit);
+    portMap->set(getPortOffset(kind), true);
+}
+
 void CJobChannel::abort(IException *e)
 {
     aborted = true;
@@ -3096,8 +3145,6 @@ CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_contai
     mpTag = TAG_NULL;
     abortSoon = receiving = cancelledReceive = initialized = reInit = false;
     baseHelper.set(container.queryHelper());
-    parentExtractSz = 0;
-    parentExtract = NULL;
 
     defaultRoxieMemHeapFlags = (roxiemem::RoxieHeapFlags)container.getOptInt("heapflags", defaultHeapFlags);
     if (container.queryJob().queryUsePackedAllocators())

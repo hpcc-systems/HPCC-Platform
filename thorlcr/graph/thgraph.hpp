@@ -47,6 +47,7 @@
 #include "workunit.hpp"
 #include "thorcommon.hpp"
 #include "thmem.hpp"
+#include "thorport.hpp"
 
 #include "thor.hpp"
 #include "eclhelper.hpp"
@@ -658,6 +659,11 @@ public:
         parentExtractMb.swapWith(newParentExtract);
         return (const byte *)parentExtractMb.toByteArray();
     }
+    const byte *queryParentExtract(size32_t &sz) const
+    {
+        sz = parentExtractSz;
+        return (const byte *)parentExtractMb.toByteArray();
+    }
     virtual ICodeContext *queryCodeContext() { return &graphCodeContext; }
     void setLoopCounter(unsigned _counter) { counter = _counter; }
     unsigned queryLoopCounter() const { return counter; }
@@ -861,7 +867,7 @@ public:
 
     inline bool queryUsePackedAllocators() const { return usePackedAllocator; }
     unsigned queryMaxLfnBlockTimeMins() const { return maxLfnBlockTimeMins; }
-    virtual void addChannel(IMPServer *mpServer) = 0;
+    virtual CJobChannel *addChannel(IMPServer *mpServer) = 0;
     CJobChannel &queryJobChannel(unsigned c) const;
     CActivityBase &queryChannelActivity(unsigned c, graph_id gid, activity_id id) const;
     unsigned queryChannelsPerSlave() const { return channelsPerSlave; }
@@ -971,6 +977,9 @@ protected:
     Owned<CThorCodeContextBase> sharedMemCodeCtx;
     unsigned channel;
     bool cleaned = false;
+    unsigned myBasePort = 0;
+    CriticalSection portAllocCrit;
+    Owned<IBitSet> portMap;
 
     void removeAssociates(CGraphBase &graph)
     {
@@ -1026,9 +1035,13 @@ public:
     ICommunicator &queryJobComm() const { return *jobComm; }
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
+    unsigned queryMyBasePort() const { return myBasePort; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
     roxiemem::IRowManager *queryRowManager() const;
+    unsigned short allocPort(unsigned num);
+    void freePort(unsigned short p, unsigned num);
+    void reservePortKind(ThorPortKind type);
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -1064,8 +1077,6 @@ protected:
     mptag_t mpTag; // to be used by any direct inter master<->slave communication
     bool abortSoon;
     bool timeActivities; // purely for access efficiency
-    size32_t parentExtractSz;
-    const byte *parentExtract;
     bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
@@ -1089,7 +1100,6 @@ public:
     inline bool queryTimeActivities() const { return timeActivities; }
     inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
 
-    void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(ICommunicator &comm, const rank_t rank, const mptag_t mpTag);

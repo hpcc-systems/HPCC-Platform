@@ -66,14 +66,14 @@ public:
     ~MSortSlaveActivity()
     {
         if (portbase) 
-            freePort(portbase,NUMSLAVEPORTS);
+            queryJobChannel().freePort(portbase,NUMSLAVEPORTS);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
         mptag_t barrierTag = container.queryJobChannel().deserializeMPTag(data);
         barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
-        portbase = allocPort(NUMSLAVEPORTS);
+        portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
         ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
         server.setLocalHost(portbase); 
         helper = (IHThorSortArg *)queryHelper();
@@ -183,7 +183,7 @@ public:
         }
         if (portbase)
         {
-            freePort(portbase, NUMSLAVEPORTS);
+            queryJobChannel().freePort(portbase, NUMSLAVEPORTS);
             portbase = 0;
         }
         PARENT::kill();

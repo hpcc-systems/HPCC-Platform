@@ -742,6 +742,8 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
             actualTranslator->describe();
             if (actualTranslator->keyedTranslated())
                 throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+            VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
+            agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
 
             actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
         }
@@ -2520,9 +2522,8 @@ protected:
                     {
                         if (getLayoutTranslationMode()==RecordTranslationMode::None)
                             throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
-#ifdef _DEBUG
-                        translator->describe();
-#endif
+                        VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
+                        agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
                     }
                     else
                         throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s", f->queryLogicalName());
@@ -4156,11 +4157,17 @@ protected:
         if (actualFormat)
         {
             actualLayouts.append(actualFormat.getLink());  // ensure adequate lifespan
-            Owned<const IDynamicTransform> payloadTranslator =  createRecordTranslator(helper.queryProjectedIndexRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+            Owned<const IDynamicTransform> payloadTranslator = createRecordTranslator(helper.queryProjectedIndexRecordSize()->queryRecordAccessor(true), actualFormat->queryRecordAccessor(true));
+            DBGLOG("Record layout translator created for %s", f->queryLogicalName());
+            payloadTranslator->describe();
             if (!payloadTranslator->canTranslate())
                 throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s", f->queryLogicalName());
             if (payloadTranslator->keyedTranslated())
                 throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - keyed fields do not match", f->queryLogicalName());
+            if (getLayoutTranslationMode()==RecordTranslationMode::None)
+                throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
+            VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
+            agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
             return payloadTranslator.getClear();
         }
         throw MakeStringException(0, "Untranslatable key layout mismatch reading index %s - key layout information not found", f->queryLogicalName());
@@ -4206,6 +4213,8 @@ protected:
                     {
                         if (getLayoutTranslationMode()==RecordTranslationMode::None)
                             throw MakeStringException(0, "Translatable file layout mismatch reading file %s but translation disabled", f->queryLogicalName());
+                        VStringBuffer msg("Record layout translation required for %s", f->queryLogicalName());
+                        agent.addWuExceptionEx(msg.str(), WRN_UseLayoutTranslation, SeverityInformation, MSGAUD_user, "hthor");
                     }
                     else
                         throw MakeStringException(0, "Untranslatable file layout mismatch reading file %s", f->queryLogicalName());

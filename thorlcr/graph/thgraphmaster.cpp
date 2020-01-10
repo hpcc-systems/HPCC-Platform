@@ -1359,7 +1359,11 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     }
     sharedAllocator.setown(::createThorAllocator(globalMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
-    addChannel(mpServer);
+    CJobChannel *channel = addChannel(mpServer);
+    channel->reservePortKind(TPORT_mp); 
+    channel->reservePortKind(TPORT_watchdog);
+    channel->reservePortKind(TPORT_debug);
+
     slavemptag = allocateMPTag();
     slaveMsgHandler.setown(new CSlaveMessageHandler(*this, slavemptag));
     tmpHandler.setown(createTempHandler(true));
@@ -1377,9 +1381,11 @@ void CJobMaster::endJob()
     PARENT::endJob();
 }
 
-void CJobMaster::addChannel(IMPServer *mpServer)
+CJobChannel *CJobMaster::addChannel(IMPServer *mpServer)
 {
-    jobChannels.append(*new CJobMasterChannel(*this, mpServer, jobChannels.ordinality()));
+    CJobChannel *channel = new CJobMasterChannel(*this, mpServer, jobChannels.ordinality());
+    jobChannels.append(*channel);
+    return channel;
 }
 
 
@@ -2961,19 +2967,22 @@ CTimingInfo::CTimingInfo(CJobBase &ctx) : CThorStats(ctx, StTimeLocalExecute)
 
 ProgressInfo::ProgressInfo(CJobBase &ctx) : CThorStats(ctx, StNumRowsProcessed)
 {
-    startcount = stopcount = 0;
+    startCount = stopCount = 0;
 }
 void ProgressInfo::processInfo() // reimplement as counts have special flags (i.e. stop/start)
 {
     reset();
-    startcount = stopcount = 0;
+    startCount = stopCount = 0;
     ForEachItemIn(n, counts)
     {
         unsigned __int64 thiscount = counts.item(n);
-        if (thiscount & THORDATALINK_STARTED)
-            startcount++;
         if (thiscount & THORDATALINK_STOPPED)
-            stopcount++;
+        {
+            startCount++;
+            stopCount++;
+        }
+        else if (thiscount & THORDATALINK_STARTED)
+            startCount++;
         thiscount = thiscount & THORDATALINK_COUNT_MASK;
         tallyValue(thiscount, n+1);
     }
@@ -2985,8 +2994,8 @@ void ProgressInfo::getStats(IStatisticGatherer & stats)
     CThorStats::getStats(stats, true);
     stats.addStatistic(kind, tot);
     stats.addStatistic(StNumSlaves, counts.ordinality());
-    stats.addStatistic(StNumStarts, startcount);
-    stats.addStatistic(StNumStops, stopcount);
+    stats.addStatistic(StNumStarts, startCount);
+    stats.addStatistic(StNumStops, stopCount);
 }
 
 

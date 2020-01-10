@@ -35,26 +35,10 @@
 #include "portlist.h"
 #include "thorport.hpp"
 
+// NB: these are offsets from slave/channel start port
 #define MPPORT       0
 #define WATCHDOGPORT 1
 #define DEBUGPORT 2
-
-static CriticalSection *portallocsection;
-static IBitSet *portmap;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    portallocsection = new CriticalSection;
-    portmap = createThreadSafeBitSet();
-    portmap->set(MPPORT, true);
-    portmap->set(WATCHDOGPORT, true);
-    portmap->set(DEBUGPORT, true);
-    return true;
-}
-MODULE_EXIT()
-{
-    portmap->Release();
-    delete portallocsection;
-}
 
 static unsigned short masterportbase=0;
 static unsigned short machineportbase=0;
@@ -74,56 +58,9 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
 {
     if (!masterBase) masterBase = THOR_BASE_PORT;
     if (!machineBase) machineBase = THOR_BASESLAVE_PORT;
-    switch (category) {
-    case TPORT_watchdog:
-        return machineBase+WATCHDOGPORT;
-    case TPORT_mp:
-        return machineBase+MPPORT; 
-    case TPORT_debug:
-        return machineBase+DEBUGPORT;
-    }
-    LOG(MCerror,unknownJob,"getFixedPort: Unknown Port Kind!");
-    return 0;
+    return machineBase + getPortOffset(category);
 }
-
-unsigned short allocPort(unsigned num)
-{
-    CriticalBlock proc(*portallocsection);
-    if (num==0)
-        num = 1;
-    unsigned sp=0;
-    unsigned p;
-    for (;;) {
-        p = portmap->scan(sp,false);
-        unsigned q;
-        for (q=p+1;q<p+num;q++) {
-            if (portmap->test(q))
-                break;
-        }
-        if (q==p+num) {
-            while (q!=p)
-                portmap->set(--q);
-            break;
-        }
-        sp=p+1;
-    }
-
-    return (unsigned short)(p+machineportbase);
-}
-
-void freePort(unsigned short p,unsigned num)
-{
-    CriticalBlock proc(*portallocsection);
-    if (!p)
-        return;
-    if (!portmap) 
-        return;
-    if (num==0)
-        num = 1;
-    while (num--) 
-        portmap->set(p-machineportbase+num,false);
-}
-        
+  
 void setMachinePortBase(unsigned short base)
 {
     machineportbase = base?base:THOR_BASESLAVE_PORT;
@@ -142,4 +79,19 @@ unsigned short getMasterPortBase()
 unsigned short getMachinePortBase()
 {
     return machineportbase?machineportbase:THOR_BASESLAVE_PORT;
+}
+
+unsigned getPortOffset(ThorPortKind category)
+{
+    switch (category)
+    {
+        case TPORT_watchdog:
+            return WATCHDOGPORT;
+        case TPORT_mp:
+            return MPPORT; 
+        case TPORT_debug:
+            return DEBUGPORT;
+        default:
+            throwUnexpected();
+    }
 }

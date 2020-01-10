@@ -70,6 +70,7 @@ protected:
     Owned<IKeyManager> keyMergerManager;
     Owned<IKeyIndexSet> keyIndexSet;
     IConstPointerArrayOf<ITranslator> translators;
+    bool initialized = false;
 
     rowcount_t keyedLimitCount = RCMAX;
     rowcount_t keyedLimit = RCMAX;
@@ -487,6 +488,13 @@ public:
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
+        allocator.set(queryRowAllocator());
+        deserializer.set(queryRowDeserializer());
+        serializer.set(queryRowSerializer());
+        helper->setCallback(&callback);
+        _statsArr.append(0);
+        _statsArr.append(0);
+        statsArr = _statsArr.getArray();
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     rowcount_t getLocalCount(const rowcount_t keyedLimit, bool hard)
@@ -546,18 +554,22 @@ public:
         data.read(logicalFilename);
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJobChannel().deserializeMPTag(data); // channel to pass back partial counts for aggregation
+        if (initialized)
+        {
+            partDescs.kill();
+            keyIndexSet.clear();
+            translators.kill();
+            keyManagers.kill();
+            keyMergerManager.clear();
+        }
+        else
+            initialized = true;
+        
         unsigned parts;
         data.read(parts);
         if (parts)
             deserializePartFileDescriptors(data, partDescs);
         localKey = partDescs.ordinality() ? partDescs.item(0).queryOwner().queryProperties().getPropBool("@local", false) : false;
-        allocator.set(queryRowAllocator());
-        deserializer.set(queryRowDeserializer());
-        serializer.set(queryRowSerializer());
-        helper->setCallback(&callback);
-        _statsArr.append(0);
-        _statsArr.append(0);
-        statsArr = _statsArr.getArray();
         lastSeeks = lastScans = 0;
         localMerge = (localKey && partDescs.ordinality()>1) || seekGEOffset;
 

@@ -119,7 +119,7 @@ public:
 
 class graphmaster_decl ProgressInfo : public CThorStats
 {
-    unsigned startcount, stopcount;
+    unsigned startCount, stopCount;
 public:
     ProgressInfo(CJobBase &ctx);
 
@@ -215,7 +215,7 @@ public:
     CJobMaster(IConstWorkUnit &workunit, const char *_graphName, ILoadedDllEntry *querySo, bool _sendSo, const SocketEndpoint &_agentEp);
     virtual void endJob() override;
 
-    virtual void addChannel(IMPServer *mpServer);
+    virtual CJobChannel *addChannel(IMPServer *mpServer) override;
 
     void registerFile(const char *logicalName, StringArray &clusters, unsigned usageCount=0, WUFileKind fileKind=WUFileStandard, bool temp=false);
     void deregisterFile(const char *logicalName, bool kept=false);

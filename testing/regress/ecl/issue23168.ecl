@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2019 HPCC SystemsÂ®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,16 +15,20 @@
     limitations under the License.
 ############################################################################## */
 
-export display := SERVICE
- echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho',deprecated('Use function echoecho instead.');
-END;
+import dbglog from Std.System.log;
 
-person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_st, string40 per_first_name, string40 per_last_name}, thor);
-apply(person, display.echo(per_last_name)) : global;
+namesRecord :=
+            RECORD
+unsigned        id;
+string          name;
+            END;
 
-apply(person, display.echo(per_last_name+'a')) : independent;
+names2 := DEDUP(NOCOMBINE(DATASET([{1,'Gavin'},{2,'Bill'},{3,'John'},{4,'Gerald'},{5,'Fluffy'}], namesRecord)),id);
+names1 := DEDUP(NOCOMBINE(DATASET([{1,'Oscar'},{2,'Charles'},{3,'Freddie'},{4,'Winifred'},{5,'Bouncer'}], namesRecord)), id);
 
+s := nofold(sort(names2, name));
 
-output(10) : global;
-output(20) : independent;
-output(30) : stored('thirty');
+j := join(names1, s, left.id = right.id, transform(namesRecord, self.id := left.id + s[2].id; self.name := right.name), left outer, keep(1));
+
+output(names2);
+dbglog('Hello ' + (string)names2[3].name + ' and ' + (string)count(j) + 'again');

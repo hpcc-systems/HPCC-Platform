@@ -122,16 +122,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 extern jlib_decl int compareScopeName(const char * left, const char * right)
 {
-    if (!*left)
+    if (!left || !*left)
     {
-        if (!*right)
+        if (!right || !*right)
             return 0;
         else
             return -1;
     }
     else
     {
-        if (!*right)
+        if (!right || !*right)
             return +1;
     }
 

@@ -549,7 +549,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     unsigned currentMatchIdx, currentJoinGroupSize, currentAdded, currentMatched;
     Owned<CJoinGroup> djg, doneJG;
     OwnedConstThorRow defaultRight;
-    unsigned portbase, node;
+    unsigned node;
     IArrayOf<IDelayedFile> fetchFiles;
     FPosTableEntry *localFPosToNodeMap; // maps fpos->local part #
     FPosTableEntry *globalFPosToNodeMap; // maps fpos->node for all parts of file. If file is remote, localFPosToNodeMap will have all parts
@@ -1657,7 +1657,6 @@ public:
         tlkKeySet.setown(createKeyIndexSet());
         pool = NULL;
         currentMatchIdx = currentJoinGroupSize = currentAdded = currentMatched = 0;
-        portbase = 0;
         pendingGroups = 0;
         superWidth = 0;
         additionalStats = 0;
@@ -1689,8 +1688,6 @@ public:
         }
         ::Release(fetchHandler);
         ::Release(inputHelper);
-        if (portbase)
-            freePort(portbase, NUMSLAVEPORTS*3);
         ::Release(resultDistStream);
         defaultRight.clear();
         if (pool) delete pool;
@@ -2074,15 +2071,6 @@ public:
             parallelLookups = 0;
             resultDistStream = new CKeyLocalLookup(*this, helper->queryIndexRecordSize()->queryRecordAccessor(true));
         }
-    }
-    virtual void kill() override
-    {
-        if (portbase)
-        {
-            freePort(portbase, NUMSLAVEPORTS);
-            portbase = 0;
-        }
-        PARENT::kill();
     }
     virtual void abort() override
     {

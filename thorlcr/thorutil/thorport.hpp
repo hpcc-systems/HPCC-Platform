@@ -35,44 +35,14 @@ enum ThorPortKind
     TPORT_debug
 };
 
+// NB: these helpers are all based on the slave or master base port and do not relate to channels
 graph_decl unsigned short getFixedPort(ThorPortKind category);
 graph_decl unsigned short getFixedPort(unsigned short base, ThorPortKind category);
 graph_decl unsigned short getExternalFixedPort(unsigned short masterbase, unsigned short machinebase, ThorPortKind category);
-graph_decl unsigned short allocPort(unsigned num=1);
-graph_decl void           freePort(unsigned short,unsigned num=1);
 graph_decl void           setMachinePortBase(unsigned short base);
 graph_decl void           setMasterPortBase(unsigned short base);
 graph_decl unsigned short         getMasterPortBase();
 graph_decl unsigned short         getMachinePortBase();
-
-typedef UnsignedShortArray PortArray;
-
-class CPortGroup
-{
-public:
-    unsigned short allocPort(unsigned n=1)
-    {
-        unsigned short p=::allocPort(n);
-        while (n--)
-            portsinuse.append(p+n);
-        return p;
-    }
-    void freePort(unsigned short p,unsigned n=1)
-    {
-        unsigned i;
-        for (i=0;i<n;i++)
-            portsinuse.zap(p+i);
-        ::freePort(p,n);
-    }
-    virtual ~CPortGroup()
-    {
-        ForEachItemIn(i,portsinuse) {
-            freePort(portsinuse.item(i));
-        }
-    }
-protected:
-    PortArray portsinuse;
-};
-
+graph_decl unsigned getPortOffset(ThorPortKind category);
 
 #endif

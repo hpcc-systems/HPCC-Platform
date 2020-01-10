@@ -454,6 +454,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         Linked<CKeyLookupContext> ctx;
         Owned<IKeyManager> keyManager;
         unsigned handle = 0;
+        Owned<IHThorKeyedJoinArg> helper;
     public:
         CKMContainer(CKJService &_service, CKeyLookupContext *_ctx)
             : service(_service), ctx(_ctx)
@@ -464,6 +465,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             if (translator)
                 keyManager->setLayoutTranslator(translator);
             handle = service.getUniqId();
+            helper.set(ctx->queryHelper());
         }
         ~CKMContainer()
         {
@@ -472,6 +474,14 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKeyLookupContext &queryCtx() const { return *ctx; }
         IKeyManager *queryKeyManager() const { return keyManager; }
         unsigned queryHandle() const { return handle; }
+        void setContexts(MemoryBuffer &parentCtxMb, MemoryBuffer &startCtxMb, MemoryBuffer &createCtxMb)
+        {
+            // Only create a new helper, if either parent or start are present, in which case onStart evaluation may vary.
+            if (parentCtxMb.length() || startCtxMb.length())
+                helper.setown(service.createHelper(*service.currentJob, ctx->queryKey().id, createCtxMb));
+            helper->onStart((const byte *)parentCtxMb.toByteArray(), startCtxMb.length() ? &startCtxMb : nullptr);
+        }
+        inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
     };
     template<class KEY, class ITEM>
     class CKeyedCacheEntry : public CInterface
@@ -505,7 +515,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     {
     protected:
         Linked<CActivityContext> activityCtx;
-        IHThorKeyedJoinArg *helper;
         std::vector<const void *> rows;
         rank_t sender;
         mptag_t replyTag;
@@ -516,7 +525,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CLookupRequest(CActivityContext *_activityCtx, rank_t _sender, mptag_t _replyTag)
             : activityCtx(_activityCtx), sender(_sender), replyTag(_replyTag)
         {
-            helper = activityCtx->queryHelper();
         }
         ~CLookupRequest()
         {
@@ -654,6 +662,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     };
     class CKeyLookupRequest : public CLookupRequest
     {
+        IHThorKeyedJoinArg *helper = nullptr;
         Linked<CKMContainer> kmc;
 
         rowcount_t abortLimit = 0;
@@ -719,6 +728,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         CKeyLookupRequest(CKJService &_service, CKeyLookupContext *_ctx, CKMContainer *_kmc, rank_t _sender, mptag_t _replyTag)
             : CLookupRequest(_ctx->queryActivityCtx(), _sender, _replyTag), kmc(_kmc)
         {
+            helper = kmc->queryHelper();
             allocator = activityCtx->queryLookupInputAllocator();
             deserializer = activityCtx->queryLookupInputDeserializer();
             joinFieldsAllocator = activityCtx->queryJoinFieldsAllocator();
@@ -818,6 +828,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     };
     class CFetchLookupRequest : public CLookupRequest
     {
+        IHThorKeyedJoinArg *helper = nullptr;
         Linked<CFetchContext> fetchContext;
         const unsigned defaultMaxFetchLookupReplySz = 0x100000;
         const IDynamicTransform *translator = nullptr;
@@ -877,6 +888,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             StringBuffer tracing;
             translator = fetchContext->queryTranslator(fetchContext->queryKey().getTracing(tracing));
             prefetcher = fetchContext->queryPrefetcher();
+            helper = queryCtx().queryHelper();
         }
         virtual void process(bool &abortSoon) override
         {
@@ -977,7 +989,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     CriticalSection kMCrit, lCCrit;
     Owned<IThreadPool> processorPool;
 
-    CActivityContext *createActivityContext(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
+    IHThorKeyedJoinArg *createHelper(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
     {
         VStringBuffer helperName("fAc%u", (unsigned)id);
         EclHelperFactory helperFactory = (EclHelperFactory) job.queryDllEntry().getEntry(helperName.str());
@@ -987,7 +999,13 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         ICodeContext &codeCtx = job.queryJobChannel(0).querySharedMemCodeContext();
         Owned<IHThorKeyedJoinArg> helper = static_cast<IHThorKeyedJoinArg *>(helperFactory());
         helper->onCreate(&codeCtx, nullptr, &createCtxMb); // JCS->GH - will I ever need colocalParent here?
-        return new CActivityContext(*this, id, helper.getClear(), &codeCtx);
+        return helper.getClear();
+    }
+    CActivityContext *createActivityContext(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
+    {
+        IHThorKeyedJoinArg *helper = createHelper(job, id, createCtxMb);
+        ICodeContext &codeCtx = job.queryJobChannel(0).querySharedMemCodeContext();
+        return new CActivityContext(*this, id, helper, &codeCtx);
     }
     CActivityContext *ensureActivityContext(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
     {
@@ -1290,6 +1308,16 @@ public:
                         MemoryBuffer createCtxMb;
                         createCtxMb.setBuffer(createCtxSz, (void *)msg.readDirect(createCtxSz)); // NB: read only
 
+                        size32_t parentCtxSz;
+                        msg.read(parentCtxSz);
+                        MemoryBuffer parentCtxMb;
+                        parentCtxMb.setBuffer(parentCtxSz, (void *)msg.readDirect(parentCtxSz)); // NB: read only
+
+                        size32_t startCtxSz;
+                        msg.read(startCtxSz);
+                        MemoryBuffer startCtxMb;
+                        startCtxMb.setBuffer(startCtxSz, (void *)msg.readDirect(startCtxSz)); // NB: read only
+
                         bool created;
                         Owned<CKeyLookupContext> keyLookupContext = ensureKeyLookupContext(*currentJob, key, createCtxMb, &created); // ensure entry in keyLookupContextsHT, will be removed by last CKMContainer
                         bool messageCompression;
@@ -1313,6 +1341,7 @@ public:
                                 keyLookupContext->setTranslation(translationMode, publishedFormat, publishedFormatCrc, projectedFormat);
                         }
                         Owned<CKMContainer> kmc = createActiveKeyManager(keyLookupContext); // owns keyLookupContext
+                        kmc->setContexts(parentCtxMb, startCtxMb, createCtxMb);
                         processKeyLookupRequest(msg, kmc, sender, replyTag);
                         break;
                     }
@@ -1839,7 +1868,10 @@ public:
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, querySo, slaveMsgTag);
                         job->setXGMML(deps);
                         for (unsigned sc=0; sc<channelsPerSlave; sc++)
-                            job->addChannel(&mpServers.item(sc));
+                        {
+                            CJobChannel *channel = job->addChannel(&mpServers.item(sc));
+                            channel->reservePortKind(TPORT_mp);
+                        }
                         jobs.replace(*job.getLink());
                         job->startJob();
 
