@@ -825,8 +825,8 @@ protected:
     void unwindSelect(IHqlExpression* expr, HqlExprArray& r);
     void setDefaultString(attribute &a);
 
-    void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
-    void canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
+    void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const char * name, const attribute& errpos);
+    void canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const char * name, const attribute& errpos);
     bool isExceptionalCase(attribute& defineid, attribute& object, attribute& failure);
     void checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos);
     void checkFormals(IIdAtom * name, HqlExprArray & parms, HqlExprArray & defaults, attribute& object);
