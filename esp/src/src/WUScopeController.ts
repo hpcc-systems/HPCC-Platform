@@ -182,6 +182,7 @@ export class WUScopeController {
             if (typeof attr === "string") {
                 return attr.toLowerCase().indexOf(findTerm) >= 0;
             }
+            // tslint:disable-next-line: triple-equals
             return attr == findTerm;
         }
 
@@ -489,7 +490,7 @@ export class WUScopeController {
                 const lightColor = active ? ACTIVE_FILL : finished ? FINISHED_FILL : UNKNOWN_FILL;
                 e.strokeColor(strokeColor);
 
-                const vInOut = [e.sourceVertex(), e.targetVertex()]
+                const vInOut = [e.sourceVertex(), e.targetVertex()];
                 vInOut.forEach(v => {
                     if (v instanceof Vertex) {
                         (v as any)["__started"] = started;

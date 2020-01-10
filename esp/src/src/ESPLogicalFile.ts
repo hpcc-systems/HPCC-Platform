@@ -1,27 +1,26 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as arrayUtil from "dojo/_base/array";
-import * as lang from "dojo/_base/lang";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
-import * as QueryResults from "dojo/store/util/QueryResults";
+import * as lang from "dojo/_base/lang";
 import * as Observable from "dojo/store/Observable";
-
-import * as WsDfu from "./WsDfu";
-import * as FileSpray from "./FileSpray";
-import * as ESPRequest from "./ESPRequest";
-import * as ESPUtil from "./ESPUtil";
-import * as ESPResult from "./ESPResult";
-import * as Utility from "./Utility";
+import * as QueryResults from "dojo/store/util/QueryResults";
 import { DPWorkunit } from "./DataPatterns/DPWorkunit";
+import * as ESPRequest from "./ESPRequest";
+import * as ESPResult from "./ESPResult";
+import * as ESPUtil from "./ESPUtil";
+import * as FileSpray from "./FileSpray";
+import * as Utility from "./Utility";
+import * as WsDfu from "./WsDfu";
 
-var _logicalFiles = {};
+const _logicalFiles = {};
 
-var createID = function (Cluster, Name) {
+const createID = function (Cluster, Name) {
     return (Cluster ? Cluster : "") + "--" + Name;
 };
 
-var create = function (id) {
+const create = function (id) {
     if (!lang.exists(id, _logicalFiles)) {
-        var idParts = id.split("--");
+        const idParts = id.split("--");
         _logicalFiles[id] = new LogicalFile({
             Cluster: idParts[0] ? idParts[0] : "",
             NodeGroup: idParts[0] ? idParts[0] : "",
@@ -31,7 +30,7 @@ var create = function (id) {
     return _logicalFiles[id];
 };
 
-var Store = declare([ESPRequest.Store], {
+const Store = declare([ESPRequest.Store], {
     service: "WsDfu",
     action: "DFUQuery",
     responseQualifier: "DFUQueryResponse.DFULogicalFiles.DFULogicalFile",
@@ -41,10 +40,10 @@ var Store = declare([ESPRequest.Store], {
     countProperty: "PageSize",
 
     _watched: [],
-    create: function (id) {
+    create(id) {
         return create(id);
     },
-    preRequest: function (request) {
+    preRequest(request) {
         switch (request.Sortby) {
             case "RecordCount":
                 request.Sortby = "Records";
@@ -58,11 +57,11 @@ var Store = declare([ESPRequest.Store], {
             IncludeSuperOwner: 1
         });
     },
-    update: function (id, item) {
-        var storeItem = this.get(id);
+    update(id, item) {
+        const storeItem = this.get(id);
         storeItem.updateData(item);
         if (!this._watched[id]) {
-            var context = this;
+            const context = this;
             this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
                     context.notify(storeItem, id);
@@ -70,7 +69,7 @@ var Store = declare([ESPRequest.Store], {
             });
         }
     },
-    preProcessRow: function (item, request, query, options) {
+    preProcessRow(item, request, query, options) {
         lang.mixin(item, {
             __hpcc_id: createID(item.NodeGroup, item.Name),
             __hpcc_isDir: false,
@@ -79,44 +78,44 @@ var Store = declare([ESPRequest.Store], {
             State: ""
         });
     },
-    mayHaveChildren: function (object) {
+    mayHaveChildren(object) {
         return object.__hpcc_isDir;
     }
 });
 
-var TreeStore = declare(null, {
+const TreeStore = declare(null, {
     idProperty: "__hpcc_id",
     cache: null,
     _watched: [],
 
-    constructor: function (options) {
+    constructor(options) {
         this.cache = {};
     },
 
-    _fetchFiles: function (scope) {
-        var deferredResults = new Deferred();
+    _fetchFiles(scope) {
+        const deferredResults = new Deferred();
         deferredResults.total = new Deferred();
 
-        var context = this;
+        const context = this;
         WsDfu.DFUFileView({
             request: {
                 Scope: scope
             }
         }).then(function (response) {
-            var retVal = [];
+            const retVal = [];
             if (lang.exists("DFUFileViewResponse.DFULogicalFiles.DFULogicalFile", response)) {
                 arrayUtil.forEach(response.DFUFileViewResponse.DFULogicalFiles.DFULogicalFile, function (item, idx) {
-                    var isDir = !(item.Name);
+                    const isDir = !(item.Name);
 
-                    var childScope = "";
-                    var leafName = "";
+                    let childScope = "";
+                    let leafName = "";
                     if (isDir) {
                         childScope = scope;
                         if (childScope)
                             childScope += "::";
                         childScope += item.Directory;
                     } else {
-                        var parts = item.Name.split("::");
+                        const parts = item.Name.split("::");
                         if (parts.length) {
                             leafName = parts[parts.length - 1];
                         }
@@ -129,7 +128,7 @@ var TreeStore = declare(null, {
                         __hpcc_displayName: isDir ? item.Directory : leafName
                     });
 
-                    var storeItem = null;
+                    let storeItem = null;
                     if (isDir) {
                         storeItem = item;
                     } else {
@@ -165,45 +164,45 @@ var TreeStore = declare(null, {
     },
 
     //  Store API ---
-    get: function (id) {
+    get(id) {
         return this.cache[id];
     },
-    getIdentity: function (object) {
+    getIdentity(object) {
         return object[this.idProperty];
     },
-    put: function (object, directives) {
+    put(object, directives) {
     },
-    add: function (object, directives) {
+    add(object, directives) {
     },
-    remove: function (id) {
+    remove(id) {
     },
-    query: function (query, options) {
+    query(query, options) {
         return QueryResults(this._fetchFiles(""));
     },
-    transaction: function () {
+    transaction() {
     },
-    mayHaveChildren: function (object) {
+    mayHaveChildren(object) {
         return object.__hpcc_isDir;
     },
-    getChildren: function (parent, options) {
+    getChildren(parent, options) {
         return QueryResults(this._fetchFiles(parent.__hpcc_childScope));
     },
-    getMetadata: function (object) {
+    getMetadata(object) {
     }
 });
 
-var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
+const LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
     _dpWU: DPWorkunit,
 
-    _FileDetailSetter: function (FileDetail) {
+    _FileDetailSetter(FileDetail) {
         this.FileDetail = FileDetail;
         this.result = ESPResult.Get(FileDetail);
     },
-    _DirSetter: function (Dir) {
+    _DirSetter(Dir) {
         this.set("Directory", Dir);
     },
-    _DFUFilePartsOnClustersSetter: function (DFUFilePartsOnClusters) {
-        var DFUFileParts = {
+    _DFUFilePartsOnClustersSetter(DFUFilePartsOnClusters) {
+        const DFUFileParts = {
             DFUPart: []
         };
         if (lang.exists("DFUFilePartsOnCluster", DFUFilePartsOnClusters)) {
@@ -224,28 +223,28 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         }
         this.set("DFUFileParts", DFUFileParts);
     },
-    _CompressedFileSizeSetter: function (CompressedFileSize) {
+    _CompressedFileSizeSetter(CompressedFileSize) {
         this.CompressedFileSize = "";
         if (CompressedFileSize) {
             this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
     },
-    _StatSetter: function (Stat) {
+    _StatSetter(Stat) {
         this.set("MinSkew", Stat.MinSkew);
         this.set("MaxSkew", Stat.MaxSkew);
         this.set("MinSkewPart", Stat.MinSkewPart);
         this.set("MaxSkewPart", Stat.MaxSkewPart);
     },
-    constructor: function (args) {
+    constructor(args) {
         if (args) {
             declare.safeMixin(this, args);
         }
         this.logicalFile = this;
         this._dpWU = new DPWorkunit(this.Cluster, this.Name);
     },
-    save: function (request, args) {
-        //WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
-        var context = this;
+    save(request, args) {
+        // WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
+        const context = this;
         WsDfu.DFUInfo({
             request: {
                 Name: this.Name,
@@ -264,54 +263,54 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             }
         });
     },
-    doDelete: function (params) {
-        var context = this;
+    doDelete(params) {
+        const context = this;
         WsDfu.DFUArrayAction([this], "Delete").then(function (response) {
             if (lang.exists("DFUArrayActionResponse.ActionResults.DFUActionInfo", response) &&
                 response.DFUArrayActionResponse.ActionResults.DFUActionInfo.length &&
                 !response.DFUArrayActionResponse.ActionResults.DFUActionInfo[0].Failed) {
-                context.updateData({ StateID: 999, State: "deleted" })
+                context.updateData({ StateID: 999, State: "deleted" });
             } else {
                 context.refresh();
             }
         });
     },
-    despray: function (params) {
+    despray(params) {
         lang.mixin(params.request, {
             sourceLogicalName: this.Name
         });
         return FileSpray.Despray(params);
     },
-    copy: function (params) {
+    copy(params) {
         lang.mixin(params.request, {
             sourceLogicalName: this.Name
         });
         return FileSpray.Copy(params);
     },
-    rename: function (params) {
-        var context = this;
+    rename(params) {
+        const context = this;
         lang.mixin(params.request, {
             srcname: this.Name
         });
         return FileSpray.Rename(params).then(function (response) {
-            context.set("Name", params.request.dstname);  //TODO - need to monitor DFUWorkunit for success (After ESPDFUWorkunit has been updated to proper singleton).
+            context.set("Name", params.request.dstname);  // TODO - need to monitor DFUWorkunit for success (After ESPDFUWorkunit has been updated to proper singleton).
             context.refresh();
             return response;
         });
     },
-    removeSubfiles: function (subfiles, removeSuperfile) {
-        var context = this;
+    removeSubfiles(subfiles, removeSuperfile) {
+        const context = this;
         return WsDfu.SuperfileAction("remove", this.Name, subfiles, removeSuperfile).then(function (response) {
             context.refresh();
             return response;
         });
     },
-    refresh: function (full) {
+    refresh(full) {
         return this.getInfo();
     },
-    getInfo: function (args) {
-        //WsDfu/DFUInfo?Name=progguide::exampledata::keys::people.state.city.zip.lastname.firstname.payload&Cluster=hthor__myeclagent HTTP/1.1
-        var context = this;
+    getInfo(args) {
+        // WsDfu/DFUInfo?Name=progguide::exampledata::keys::people.state.city.zip.lastname.firstname.payload&Cluster=hthor__myeclagent HTTP/1.1
+        const context = this;
         return WsDfu.DFUInfo({
             request: {
                 Name: this.Name,
@@ -326,8 +325,8 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             }
         });
     },
-    getInfo2: function (args) {
-        var context = this;
+    getInfo2(args) {
+        const context = this;
         return WsDfu.DFUQuery({
             request: {
                 LogicalName: this.Name
@@ -341,8 +340,8 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             }
         });
     },
-    getLeaf: function () {
-        var nameParts = this.Name.split("::");
+    getLeaf() {
+        const nameParts = this.Name.split("::");
         return nameParts.length ? nameParts[nameParts.length - 1] : "";
     },
     updateData: ESPUtil.override(function (inherited, data) {
@@ -351,7 +350,7 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             this.result = ESPResult.Get(data);
         }
     }),
-    fetchStructure: function (format, onFetchStructure) {
+    fetchStructure(format, onFetchStructure) {
         WsDfu.DFUDefFile({
             request: {
                 Name: this.Name,
@@ -361,13 +360,13 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             onFetchStructure(response);
         });
     },
-    fetchDEF: function (onFetchXML) {
+    fetchDEF(onFetchXML) {
         this.fetchStructure("def", onFetchXML);
     },
-    fetchXML: function (onFetchXML) {
+    fetchXML(onFetchXML) {
         this.fetchStructure("xml", onFetchXML);
     },
-    getStateIconClass: function () {
+    getStateIconClass() {
         if (this.isSuperfile) {
             switch (this.StateID) {
                 case 999:
@@ -382,11 +381,11 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             return "iconLogicalFile";
         }
     },
-    getStateImageName: function () {
+    getStateImageName() {
         if (this.isSuperfile) {
             switch (this.StateID) {
                 case 999:
-                    return "superfile_deleted.png"
+                    return "superfile_deleted.png";
             }
             return "superfile.png";
         } else {
@@ -397,22 +396,22 @@ var LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             return "logicalfile.png";
         }
     },
-    getStateImageHTML: function () {
+    getStateImageHTML() {
         return Utility.getImageHTML(this.getStateImageName());
     },
-    getProtectedImage: function () {
+    getProtectedImage() {
         if (this.ProtectList.DFUFileProtect.length > 0) {
             return Utility.getImageURL("locked.png");
         }
         return Utility.getImageURL("unlocked.png");
     },
-    getCompressedImage: function () {
+    getCompressedImage() {
         if (this.IsCompressed) {
             return Utility.getImageURL("compressed.png");
         }
         return "";
     },
-    isDeleted: function () {
+    isDeleted() {
         return this.StateID === 999;
     },
     fetchDataPatternsWU() {
@@ -424,8 +423,8 @@ export function Get(Cluster, Name, data) {
     if (!Name) {
         throw new Error("Invalid Logical File ID");
     }
-    var store = new Store();
-    var retVal = store.get(createID(Cluster, Name));
+    const store = new Store();
+    const retVal = store.get(createID(Cluster, Name));
     if (data) {
         lang.mixin(data, {
             __hpcc_id: createID(data.NodeGroup, data.Name),
@@ -438,11 +437,11 @@ export function Get(Cluster, Name, data) {
 }
 
 export function CreateLFQueryStore(options) {
-    var store = new Store(options);
+    const store = new Store(options);
     return Observable(store);
 }
 
 export function CreateLFQueryTreeStore(options) {
-    var store = new TreeStore(options);
+    const store = new TreeStore(options);
     return Observable(store);
 }

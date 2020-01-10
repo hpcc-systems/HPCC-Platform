@@ -19,7 +19,7 @@ export class Cardinality extends BreakdownTable {
                 "max-width": "60px",
                 "overflow": "hidden",
                 "text-overflow": "ellipsis",
-                "white-space": "nowrap",
+                "white-space": "nowrap"
             }, {
                 "font-size": config.secondaryFontSize + "px",
                 "font-weight": "normal",

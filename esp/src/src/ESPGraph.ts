@@ -1,11 +1,11 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as arrayUtil from "dojo/_base/array";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 
 import * as parser from "dojox/xml/parser";
 
 import * as Utility from "./Utility";
 
-var GRAPH_TYPE = {
+const GRAPH_TYPE = {
     UNKNOWN: 0,
     GRAPH: 1,
     SUBGRAPH: 2,
@@ -14,7 +14,7 @@ var GRAPH_TYPE = {
     LAST: 5
 };
 
-var GRAPH_TYPE_STRING = {
+const GRAPH_TYPE_STRING = {
     UNKNOWN: "Unknown",
     GRAPH: "Graph",
     SUBGRAPH: "Cluster",
@@ -23,8 +23,8 @@ var GRAPH_TYPE_STRING = {
     LAST: "Last"
 };
 
-var LocalisedXGMMLWriter = declare([], {
-    constructor: function (graph) {
+const LocalisedXGMMLWriter = declare([], {
+    constructor(graph) {
         this.graph = graph;
 
         this.m_xgmml = "";
@@ -34,7 +34,7 @@ var LocalisedXGMMLWriter = declare([], {
         this.m_visibleEdges = {};
     },
 
-    calcVisibility: function (items, localisationDepth, localisationDistance, noSpills) {
+    calcVisibility(items, localisationDepth, localisationDistance, noSpills) {
         this.noSpills = noSpills;
         arrayUtil.forEach(items, function (item) {
             switch (this.graph.getGlobalType(item)) {
@@ -55,7 +55,7 @@ var LocalisedXGMMLWriter = declare([], {
         this.calcVisibility2();
     },
 
-    calcInVertexVisibility: function (vertex, localisationDistance) {
+    calcInVertexVisibility(vertex, localisationDistance) {
         if (this.noSpills && vertex.isSpill()) {
             localisationDistance++;
         }
@@ -67,7 +67,7 @@ var LocalisedXGMMLWriter = declare([], {
         }
     },
 
-    calcOutVertexVisibility: function (vertex, localisationDistance) {
+    calcOutVertexVisibility(vertex, localisationDistance) {
         if (this.noSpills && vertex.isSpill()) {
             localisationDistance++;
         }
@@ -79,7 +79,7 @@ var LocalisedXGMMLWriter = declare([], {
         }
     },
 
-    calcSubgraphVisibility: function (subgraph, localisationDepth) {
+    calcSubgraphVisibility(subgraph, localisationDepth) {
         if (localisationDepth < 0) {
             return;
         }
@@ -98,7 +98,7 @@ var LocalisedXGMMLWriter = declare([], {
         }, this);
 
         //  Calculate edges that pass through the subgraph  ---
-        var dedupEdges = {};
+        const dedupEdges = {};
         arrayUtil.forEach(this.graph.edges, function (edge, idx) {
             if (edge.getSource().__hpcc_parent !== edge.getTarget().__hpcc_parent && subgraph === this.getCommonAncestor(edge)) {
                 //  Only include one unique edge between subgraphs  ---
@@ -110,11 +110,11 @@ var LocalisedXGMMLWriter = declare([], {
         }, this);
     },
 
-    buildVertexString: function (vertex, isPoint) {
-        var attrStr = "";
-        var propsStr = "";
-        var props = vertex.getProperties();
-        for (var key in props) {
+    buildVertexString(vertex, isPoint) {
+        let attrStr = "";
+        let propsStr = "";
+        const props = vertex.getProperties();
+        for (const key in props) {
             if (isPoint && key.indexOf("_kind") >= 0) {
                 propsStr += "<att name=\"_kind\" value=\"point\"/>";
             } else if (key === "id" || key === "label") {
@@ -126,11 +126,11 @@ var LocalisedXGMMLWriter = declare([], {
         return "<node" + attrStr + ">" + propsStr + "</node>";
     },
 
-    buildEdgeString: function (edge) {
-        var attrStr = "";
-        var propsStr = "";
-        var props = edge.getProperties();
-        for (var key in props) {
+    buildEdgeString(edge) {
+        let attrStr = "";
+        let propsStr = "";
+        const props = edge.getProperties();
+        for (const key in props) {
             if (key.toLowerCase() === "id" ||
                 key.toLowerCase() === "label" ||
                 key.toLowerCase() === "source" ||
@@ -143,22 +143,22 @@ var LocalisedXGMMLWriter = declare([], {
         return "<edge" + attrStr + ">" + propsStr + "</edge>";
     },
 
-    getAncestors: function (v, ancestors) {
-        var parent = v.__hpcc_parent;
+    getAncestors(v, ancestors) {
+        let parent = v.__hpcc_parent;
         while (parent) {
             ancestors.push(parent);
             parent = parent.__hpcc_parent;
         }
     },
 
-    getCommonAncestorV: function (v1, v2) {
-        var v1_ancestors = [];
-        var v2_ancestors = [];
+    getCommonAncestorV(v1, v2) {
+        const v1_ancestors = [];
+        const v2_ancestors = [];
         this.getAncestors(v1, v1_ancestors);
         this.getAncestors(v2, v2_ancestors);
-        var finger1 = v1_ancestors.length - 1;
-        var finger2 = v2_ancestors.length - 1;
-        var retVal = null;
+        let finger1 = v1_ancestors.length - 1;
+        let finger2 = v2_ancestors.length - 1;
+        let retVal = null;
         while (finger1 >= 0 && finger2 >= 0 && v1_ancestors[finger1] === v2_ancestors[finger2]) {
             retVal = v1_ancestors[finger1];
             --finger1;
@@ -167,21 +167,21 @@ var LocalisedXGMMLWriter = declare([], {
         return retVal;
     },
 
-    getCommonAncestor: function (e) {
+    getCommonAncestor(e) {
         return this.getCommonAncestorV(e.getSource(), e.getTarget());
     },
 
-    calcAncestorVisibility: function (vertex) {
-        var ancestors = [];
+    calcAncestorVisibility(vertex) {
+        const ancestors = [];
         this.getAncestors(vertex, ancestors);
         arrayUtil.forEach(ancestors, function (item, idx) {
             this.m_visibleSubgraphs[item.__hpcc_id] = item;
         }, this);
     },
 
-    calcVisibility2: function () {
-        for (var key in this.m_visibleVertices) {
-            var vertex = this.m_visibleVertices[key];
+    calcVisibility2() {
+        for (const key in this.m_visibleVertices) {
+            const vertex = this.m_visibleVertices[key];
             arrayUtil.forEach(vertex.getInEdges(), function (edge, idx) {
                 this.m_visibleEdges[edge.__hpcc_id] = edge;
             }, this);
@@ -193,26 +193,26 @@ var LocalisedXGMMLWriter = declare([], {
         this.calcSemiVisibleVertices();
     },
 
-    addSemiVisibleEdge: function (edge) {
+    addSemiVisibleEdge(edge) {
         if (edge && !this.m_visibleEdges[edge.__hpcc_id]) {
             this.m_visibleEdges[edge.__hpcc_id] = edge;
         }
     },
 
-    addSemiVisibleVertex: function (vertex) {
+    addSemiVisibleVertex(vertex) {
         if (!this.m_visibleVertices[vertex.__hpcc_id]) {
             this.m_semiVisibleVertices[vertex.__hpcc_id] = vertex;
             this.calcAncestorVisibility(vertex);
         }
     },
 
-    calcSemiVisibleVertices: function () {
-        for (var key in this.m_visibleEdges) {
-            var edge = this.m_visibleEdges[key];
-            var source = edge.getSource();
+    calcSemiVisibleVertices() {
+        for (const key in this.m_visibleEdges) {
+            const edge = this.m_visibleEdges[key];
+            let source = edge.getSource();
             this.addSemiVisibleVertex(source);
             while (this.noSpills && source.isSpill()) {
-                var inEdges = source.getInEdges();
+                const inEdges = source.getInEdges();
                 if (inEdges.length) {
                     this.addSemiVisibleEdge(inEdges[0]);
                     source = inEdges[0].getSource();
@@ -221,10 +221,10 @@ var LocalisedXGMMLWriter = declare([], {
                     break;
                 }
             }
-            var target = edge.getTarget();
+            let target = edge.getTarget();
             this.addSemiVisibleVertex(target);
             while (this.noSpills && target.isSpill()) {
-                var outEdges = target.getOutEdges();
+                const outEdges = target.getOutEdges();
                 if (outEdges.length) {
                     this.addSemiVisibleEdge(outEdges[0]);
                     target = outEdges[0].getTarget();
@@ -236,30 +236,30 @@ var LocalisedXGMMLWriter = declare([], {
         }
     },
 
-    writeXgmml: function () {
+    writeXgmml() {
         this.subgraphVisited(this.graph.subgraphs[0], true);
         arrayUtil.forEach(this.graph.edges, function (edge, idx) {
             this.edgeVisited(edge);
         }, this);
     },
 
-    subgraphVisited: function (subgraph, root) {
+    subgraphVisited(subgraph, root) {
         if (this.m_visibleSubgraphs[subgraph.__hpcc_id]) {
-            var propsStr = "";
+            let propsStr = "";
             this.m_xgmml += root ? "" : "<node id=\"" + subgraph.__hpcc_id + "\"><att><graph>";
-            var xgmmlLen = this.m_xgmml.length;
+            const xgmmlLen = this.m_xgmml.length;
             subgraph.walkSubgraphs(this);
             subgraph.walkVertices(this);
             if (xgmmlLen === this.m_xgmml.length) {
                 //  Add at least one child otherwise subgraphs will render as a vertex  ---
-                var vertex = subgraph.__hpcc_vertices[0];
+                const vertex = subgraph.__hpcc_vertices[0];
                 if (vertex) {
                     this.m_xgmml += this.buildVertexString(vertex, true);
                 }
             }
 
-            var props = subgraph.getProperties();
-            for (var key in props) {
+            const props = subgraph.getProperties();
+            for (const key in props) {
                 propsStr += "<att name=\"" + key + "\" value=\"" + Utility.xmlEncode(props[key]) + "\"/>";
             }
             this.m_xgmml += root ? "" : "</graph></att>" + propsStr + "</node>";
@@ -267,31 +267,30 @@ var LocalisedXGMMLWriter = declare([], {
         return false;
     },
 
-    vertexVisited: function (vertex) {
+    vertexVisited(vertex) {
         if (this.m_visibleVertices[vertex.__hpcc_id]) {
             this.m_xgmml += this.buildVertexString(vertex, false);
-        }
-        else if (this.m_semiVisibleVertices[vertex.__hpcc_id]) {
+        } else if (this.m_semiVisibleVertices[vertex.__hpcc_id]) {
             this.m_xgmml += this.buildVertexString(vertex, true);
         }
     },
 
-    edgeVisited: function (edge) {
+    edgeVisited(edge) {
         if (this.m_visibleEdges[edge.__hpcc_id]) {
             this.m_xgmml += this.buildEdgeString(edge);
         }
     }
 });
 
-var GraphItem = declare([], {
-    constructor: function (graph, id) {
+const GraphItem = declare([], {
+    constructor(graph, id) {
         this.__hpcc_graph = graph;
         this.__hpcc_id = id;
         this._globalID = id;
     },
-    getProperties: function () {
-        var retVal = {};
-        for (var key in this) {
+    getProperties() {
+        const retVal = {};
+        for (const key in this) {
             if (key.indexOf("__") !== 0 && this.hasOwnProperty(key)) {
                 retVal[key] = this[key];
             }
@@ -300,8 +299,8 @@ var GraphItem = declare([], {
     }
 });
 
-var Subgraph = declare([GraphItem], {
-    constructor: function (graph, id) {
+const Subgraph = declare([GraphItem], {
+    constructor(graph, id) {
         this._globalType = id === "0" ? "Graph" : "Cluster";
         this.__hpcc_subgraphs = [];
         this.__hpcc_vertices = [];
@@ -309,7 +308,7 @@ var Subgraph = declare([GraphItem], {
         this.id = id;
     },
 
-    addSubgraph: function (subgraph) {
+    addSubgraph(subgraph) {
         subgraph.__hpcc_parent = this;
         if (!arrayUtil.some(this.__hpcc_subgraphs, function (subgraph2) {
             return subgraph === subgraph2;
@@ -318,7 +317,7 @@ var Subgraph = declare([GraphItem], {
         }
     },
 
-    addVertex: function (vertex) {
+    addVertex(vertex) {
         vertex.__hpcc_parent = this;
         if (!arrayUtil.some(this.__hpcc_vertices, function (vertex2) {
             return vertex === vertex2;
@@ -327,13 +326,13 @@ var Subgraph = declare([GraphItem], {
         }
     },
 
-    removeVertex: function (vertex) {
+    removeVertex(vertex) {
         this.__hpcc_vertices = arrayUtil.filter(this.__hpcc_vertices, function (vertex2) {
             return vertex !== vertex2;
         }, this);
     },
 
-    addEdge: function (edge) {
+    addEdge(edge) {
         edge.__hpcc_parent = this;
         if (!arrayUtil.some(this.__hpcc_edges, function (edge2) {
             return edge === edge2;
@@ -342,13 +341,13 @@ var Subgraph = declare([GraphItem], {
         }
     },
 
-    removeEdge: function (edge) {
+    removeEdge(edge) {
         this.__hpcc_edges = arrayUtil.filter(this.__hpcc_edges, function (edge2) {
             return edge !== edge2;
         }, this);
     },
 
-    remove: function () {
+    remove() {
         arrayUtil.forEach(this.__hpcc_subgraphs, function (subgraph) {
             subgraph.__hpcc_parent = this.__hpcc_parent;
         }, this);
@@ -362,7 +361,7 @@ var Subgraph = declare([GraphItem], {
         this.__hpcc_graph.removeItem(this);
     },
 
-    walkSubgraphs: function (visitor) {
+    walkSubgraphs(visitor) {
         arrayUtil.forEach(this.__hpcc_subgraphs, function (subgraph, idx) {
             if (visitor.subgraphVisited(subgraph)) {
                 subgraph.walkSubgraphs(visitor);
@@ -370,24 +369,24 @@ var Subgraph = declare([GraphItem], {
         }, this);
     },
 
-    walkVertices: function (visitor) {
+    walkVertices(visitor) {
         arrayUtil.forEach(this.__hpcc_vertices, function (vertex, idx) {
             visitor.vertexVisited(vertex);
         }, this);
     }
 });
 
-var Vertex = declare([GraphItem], {
-    constructor: function () {
+const Vertex = declare([GraphItem], {
+    constructor() {
         this._globalType = "Vertex";
     },
 
-    isSpill: function () {
+    isSpill() {
         return this._isSpill;
     },
 
-    remove: function () {
-        var inVertices = this.getInVertices();
+    remove() {
+        const inVertices = this.getInVertices();
         if (inVertices.length <= 1) {
             console.log(this.__hpcc_id + ":  remove only supports single or zero inputs activities...");
         }
@@ -403,48 +402,48 @@ var Vertex = declare([GraphItem], {
         this.__hpcc_graph.removeItem(this);
     },
 
-    getInVertices: function () {
+    getInVertices() {
         return arrayUtil.map(this.getInEdges(), function (edge) {
             return edge.getSource();
         }, this);
     },
 
-    getInEdges: function () {
+    getInEdges() {
         return arrayUtil.filter(this.__hpcc_graph.edges, function (edge) {
             return edge.getTarget() === this;
         }, this);
     },
 
-    getOutVertices: function () {
+    getOutVertices() {
         return arrayUtil.map(this.getOutEdges(), function (edge) {
             return edge.getTarget();
         }, this);
     },
 
-    getOutEdges: function () {
+    getOutEdges() {
         return arrayUtil.filter(this.__hpcc_graph.edges, function (edge) {
             return edge.getSource() === this;
         }, this);
     }
 });
 
-var Edge = declare([GraphItem], {
-    constructor: function (graph, id) {
+const Edge = declare([GraphItem], {
+    constructor(graph, id) {
         this._globalType = "Edge";
     },
 
-    remove: function () {
+    remove() {
         arrayUtil.forEach(this.__hpcc_graph.subgraphs, function (subgraph) {
             subgraph.removeEdge(this);
         }, this);
         this.__hpcc_graph.removeItem(this);
     },
 
-    getSource: function () {
+    getSource() {
         return this.__hpcc_graph.idx[this._sourceActivity || this.source];
     },
 
-    setSource: function (source) {
+    setSource(source) {
         if (this._sourceActivity) {
             this._sourceActivity = source.__hpcc_id;
         } else if (this.source) {
@@ -455,17 +454,17 @@ var Edge = declare([GraphItem], {
         }
     },
 
-    getTarget: function () {
+    getTarget() {
         return this.__hpcc_graph.idx[this._targetActivity || this.target];
     }
 });
 
-export var Graph = declare([], {
-    constructor: function () {
+export let Graph = declare([], {
+    constructor() {
         this.clear();
     },
 
-    clear: function () {
+    clear() {
         this.xgmml = "";
 
         this.idx = {};
@@ -474,18 +473,18 @@ export var Graph = declare([], {
         this.edges = [];
     },
 
-    load: function (xgmml) {
+    load(xgmml) {
         this.clear();
         this.merge(xgmml);
     },
 
-    merge: function (xgmml) {
+    merge(xgmml) {
         this.xgmml = xgmml;
-        var dom = parser.parse(xgmml);
+        const dom = parser.parse(xgmml);
         this.walkDocument(dom.documentElement, "0");
     },
 
-    getGlobalType: function (item) {
+    getGlobalType(item) {
         if (item instanceof Vertex) {
             return GRAPH_TYPE.VERTEX;
         } else if (item instanceof Edge) {
@@ -498,7 +497,7 @@ export var Graph = declare([], {
         return GRAPH_TYPE.UNKNOWN;
     },
 
-    getGlobalTypeString: function (item) {
+    getGlobalTypeString(item) {
         if (item instanceof Vertex) {
             return GRAPH_TYPE_STRING.VERTEX;
         } else if (item instanceof Edge) {
@@ -511,21 +510,21 @@ export var Graph = declare([], {
         return GRAPH_TYPE_STRING.UNKNOWN;
     },
 
-    getItem: function (docNode, id) {
+    getItem(docNode, id) {
         if (!this.idx[id]) {
             switch (docNode.tagName) {
                 case "graph":
-                    var subgraph = new Subgraph(this, id);
+                    const subgraph = new Subgraph(this, id);
                     this.subgraphs.push(subgraph);
                     this.idx[id] = subgraph;
                     break;
                 case "node":
-                    var vertex = new Vertex(this, id);
+                    const vertex = new Vertex(this, id);
                     this.vertices.push(vertex);
                     this.idx[id] = vertex;
                     break;
                 case "edge":
-                    var edge = new Edge(this, id);
+                    const edge = new Edge(this, id);
                     this.edges.push(edge);
                     this.idx[id] = edge;
                     break;
@@ -534,14 +533,14 @@ export var Graph = declare([], {
                     break;
             }
         }
-        var retVal = this.idx[id];
+        const retVal = this.idx[id];
         arrayUtil.forEach(docNode.attributes, function (attr, idx) {
             retVal[attr.name] = attr.value;
         }, this);
         return retVal;
     },
 
-    removeItem: function (item) {
+    removeItem(item) {
         delete this.idx[item.__hpcc_id];
         if (item instanceof Subgraph) {
             this.subgraphs = arrayUtil.filter(this.subgraphs, function (subgraph) {
@@ -558,8 +557,8 @@ export var Graph = declare([], {
         }
     },
 
-    getChildByTagName: function (docNode, tagName) {
-        var retVal = null;
+    getChildByTagName(docNode, tagName) {
+        let retVal = null;
         arrayUtil.some(docNode.childNodes, function (childNode, idx) {
             if (childNode.tagName === tagName) {
                 retVal = childNode;
@@ -569,33 +568,33 @@ export var Graph = declare([], {
         return retVal;
     },
 
-    walkDocument: function (docNode, id) {
-        var retVal = this.getItem(docNode, id);
+    walkDocument(docNode, id) {
+        const retVal = this.getItem(docNode, id);
         arrayUtil.forEach(docNode.childNodes, function (childNode, idx) {
             switch (childNode.nodeType) {
-                case 1:     //	ELEMENT_NODE
+                case 1:     // 	ELEMENT_NODE
                     switch (childNode.tagName) {
                         case "graph":
                             break;
                         case "node":
-                            var isSubgraph = false;
-                            var attNode = this.getChildByTagName(childNode, "att");
+                            let isSubgraph = false;
+                            const attNode = this.getChildByTagName(childNode, "att");
                             if (attNode) {
-                                var graphNode = this.getChildByTagName(attNode, "graph");
+                                const graphNode = this.getChildByTagName(attNode, "graph");
                                 if (graphNode) {
                                     isSubgraph = true;
-                                    var subgraph = this.walkDocument(graphNode, childNode.getAttribute("id"));
+                                    const subgraph = this.walkDocument(graphNode, childNode.getAttribute("id"));
                                     retVal.addSubgraph(subgraph);
                                 }
                             }
                             if (!isSubgraph) {
-                                var vertex = this.walkDocument(childNode, childNode.getAttribute("id"));
+                                const vertex = this.walkDocument(childNode, childNode.getAttribute("id"));
                                 retVal.addVertex(vertex);
                             }
                             break;
                         case "att":
-                            var name = childNode.getAttribute("name");
-                            var value = childNode.getAttribute("value");
+                            const name = childNode.getAttribute("name");
+                            const value = childNode.getAttribute("value");
                             if (name.indexOf("Time") === 0) {
                                 retVal["_" + name] = value;
                                 retVal[name] = "" + Utility.espTime2Seconds(value);
@@ -610,7 +609,7 @@ export var Graph = declare([], {
                             }
                             break;
                         case "edge":
-                            var edge = this.walkDocument(childNode, childNode.getAttribute("id"));
+                            const edge = this.walkDocument(childNode, childNode.getAttribute("id"));
                             if (edge.NumRowsProcessed !== undefined) {
                                 edge._eclwatchCount = edge.NumRowsProcessed.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                             } else if (edge.Count !== undefined) {
@@ -628,9 +627,9 @@ export var Graph = declare([], {
                             } else if (edge._childGraph) {
                             } else if (edge._sourceActivity || edge._targetActivity) {
                                 edge._isSpill = true;
-                                var source = edge.getSource();
+                                const source = edge.getSource();
                                 source._isSpill = true;
-                                var target = edge.getTarget();
+                                const target = edge.getTarget();
                                 target._isSpill = true;
                             }
                             retVal.addEdge(edge);
@@ -639,17 +638,17 @@ export var Graph = declare([], {
                             break;
                     }
                     break;
-                case 2:     //	ATTRIBUTE_NODE
-                case 3:     //	TEXT_NODE
-                case 4:     //	CDATA_SECTION_NODE
-                case 5:     //	ENTITY_REFERENCE_NODE
-                case 6:     //	ENTITY_NODE
-                case 7:     //	PROCESSING_INSTRUCTION_NODE
-                case 8:     //	COMMENT_NODE
-                case 9:     //	DOCUMENT_NODE
-                case 10:    //	DOCUMENT_TYPE_NODE
-                case 11:    //	DOCUMENT_FRAGMENT_NODE
-                case 12:    //	NOTATION_NODE
+                case 2:     // 	ATTRIBUTE_NODE
+                case 3:     // 	TEXT_NODE
+                case 4:     // 	CDATA_SECTION_NODE
+                case 5:     // 	ENTITY_REFERENCE_NODE
+                case 6:     // 	ENTITY_NODE
+                case 7:     // 	PROCESSING_INSTRUCTION_NODE
+                case 8:     // 	COMMENT_NODE
+                case 9:     // 	DOCUMENT_NODE
+                case 10:    // 	DOCUMENT_TYPE_NODE
+                case 11:    // 	DOCUMENT_FRAGMENT_NODE
+                case 12:    // 	NOTATION_NODE
                     break;
                 default:
                     break;
@@ -658,8 +657,8 @@ export var Graph = declare([], {
         return retVal;
     },
 
-    removeSubgraphs: function () {
-        var subgraphs = arrayUtil.map(this.subgraphs, function (subgraph) { return subgraph; });
+    removeSubgraphs() {
+        const subgraphs = arrayUtil.map(this.subgraphs, function (subgraph) { return subgraph; });
         arrayUtil.forEach(subgraphs, function (subgraph) {
             if (subgraph.__hpcc_parent instanceof Subgraph) {
                 subgraph.remove();
@@ -667,8 +666,8 @@ export var Graph = declare([], {
         }, this);
     },
 
-    removeSpillVertices: function () {
-        var vertices = arrayUtil.map(this.vertices, function (vertex) { return vertex; });
+    removeSpillVertices() {
+        const vertices = arrayUtil.map(this.vertices, function (vertex) { return vertex; });
         arrayUtil.forEach(vertices, function (vertex) {
             if (vertex.isSpill()) {
                 vertex.remove();
@@ -676,8 +675,8 @@ export var Graph = declare([], {
         }, this);
     },
 
-    getLocalisedXGMML: function (items, localisationDepth, localisationDistance, noSpills) {
-        var xgmmlWriter = new LocalisedXGMMLWriter(this);
+    getLocalisedXGMML(items, localisationDepth, localisationDistance, noSpills) {
+        const xgmmlWriter = new LocalisedXGMMLWriter(this);
         xgmmlWriter.calcVisibility(items, localisationDepth, localisationDistance, noSpills);
         xgmmlWriter.writeXgmml();
         return "<graph>" + xgmmlWriter.m_xgmml + "</graph>";

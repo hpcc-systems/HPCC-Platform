@@ -1,9 +1,9 @@
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as dom from "dojo/dom";
 import * as domClass from "dojo/dom-class";
 import * as domForm from "dojo/dom-form";
+import "dojo/i18n";
+// @ts-ignore
+import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 import * as registry from "dijit/registry";
 
@@ -21,22 +21,22 @@ import * as DelayLoadWidget from "hpcc/DelayLoadWidget";
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/DataPatternsWidget.html";
 
+import "dijit/Fieldset";
+import "dijit/form/Button";
+import "dijit/form/CheckBox";
+import "dijit/form/DropDownButton";
+import "dijit/form/Form";
 import "dijit/layout/BorderContainer";
-import "dijit/layout/TabContainer";
 import "dijit/layout/ContentPane";
+import "dijit/layout/TabContainer";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
-import "hpcc/TargetSelectWidget";
 import "dijit/TooltipDialog";
-import "dijit/form/Form";
-import "dijit/form/Button";
-import "dijit/form/DropDownButton";
-import "dijit/Fieldset";
-import "dijit/form/CheckBox";
 import "hpcc/TableContainer";
+import "hpcc/TargetSelectWidget";
 
-import { declareDecorator } from './DeclareDecorator';
-import { WUStatus } from './WUStatus';
+import { declareDecorator } from "./DeclareDecorator";
+import { WUStatus } from "./WUStatus";
 
 type _TabContainerWidget = {
     id: string;
@@ -109,7 +109,7 @@ export class DataPatternsWidget {
                     .lazyRender()
                     ;
             }
-        }
+        };
 
         this.wuStatus = new WUStatus()
             .baseUrl("")
@@ -180,7 +180,7 @@ export class DataPatternsWidget {
     }
 
     initTab() {
-        var currSel = this.getSelectedChild();
+        const currSel = this.getSelectedChild();
         if (currSel && !currSel.initalized) {
             if (currSel.id === this.summaryWidget.id) {
             } else if (this.rawDataWidget && currSel.id === this.rawDataWidget.id) {
@@ -204,10 +204,10 @@ export class DataPatternsWidget {
 
     ensureWUPane(wuid: string) {
         const id = this.createChildTabID(wuid);
-        var retVal = registry.byId(id);
+        let retVal = registry.byId(id);
         if (!retVal) {
             retVal = new DelayLoadWidget({
-                id: id,
+                id,
                 title: wuid,
                 closable: true,
                 delayWidget: "WUDetailsWidget",

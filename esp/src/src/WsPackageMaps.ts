@@ -5,7 +5,7 @@ import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 import * as ESPRequest from "./ESPRequest";
 
-var i18n = nlsHPCC;
+const i18n = nlsHPCC;
 
 export function PackageMapQuery(params) {
     return ESPRequest.send("WsPackageProcess", "ListPackages", params);
@@ -78,36 +78,36 @@ export function GetPackageMapSelectProcessFilter(params) {
     });
 }
 
-//Not used for now. May be used later.
+// Not used for now. May be used later.
 export function listProcessFilters(callback) {
-    var context = this;
+    const context = this;
     return ESPRequest.send("WsPackageProcess", "ListProcessFilters", {
         request: {},
-        load: function (response) {
+        load(response) {
             if (!lang.exists("ListProcessFiltersResponse.ProcessFilters", response))
                 callback.load(i18n.NoContent);
             else
                 callback.load(response.ListProcessFiltersResponse.ProcessFilters);
         },
-        error: function (err) {
+        error(err) {
             context.errorMessageCallback(callback, err);
         }
     });
 }
 
 export function validatePackage(params) {
-    var request = { Target: params.target };
+    const request = { Target: params.target };
     if (params.packageMap)
-        request['PMID'] = params.packageMap;
+        request["PMID"] = params.packageMap;
     if (params.process)
-        request['Process'] = params.process;
+        request["Process"] = params.process;
     if (params.content)
-        request['Info'] = params.content;
+        request["Info"] = params.content;
     if (params.active)
-        request['Active'] = params.active;
+        request["Active"] = params.active;
 
     return ESPRequest.send("WsPackageProcess", "ValidatePackage", {
-        request: request
+        request
     });
 }
 

@@ -1,7 +1,7 @@
 import * as cookie from "dojo/cookie";
 import * as xhr from "dojo/request/xhr";
+import * as topic from "dojo/topic";
 import * as ESPUtil from "./ESPUtil";
-import * as topic from "dojo/topic"
 
 const espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600; // 10 minuntes?
 const IDLE_TIMEOUT = espTimeoutSeconds * 1000;
@@ -26,7 +26,7 @@ export function initSession() {
             idleWatcher.stop();
             topic.publish("hpcc/session_management_status", {
                 status: "Idle",
-                idleCreator: idleCreator
+                idleCreator
             });
         });
 

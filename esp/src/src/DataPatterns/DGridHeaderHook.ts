@@ -1,8 +1,8 @@
 import { HTMLWidget, select as d3Select, selectAll as d3SelectAll } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
+import { Cardinality } from "./Cardinality";
+import { PopularPatterns } from "./PopularPatterns";
 import { StatChart } from "./StatChart";
-import { Cardinality } from './Cardinality';
-import { PopularPatterns } from './PopularPatterns';
 
 export class DGridHeaderHook {
 
@@ -30,7 +30,7 @@ export class DGridHeaderHook {
             return wu.watchUntilComplete().then(wu => {
                 return wu.fetchResults();
             }).then(results => {
-                return results.length ? results[0].fetchRows() : []
+                return results.length ? results[0].fetchRows() : [];
             }).then(fields => {
                 fields.forEach(field => {
                     if (field.is_numeric) {
@@ -67,7 +67,7 @@ export class DGridHeaderHook {
                             .lazyRender()
                             ;
                     }
-                })
+                });
             });
         }
         return Promise.resolve();
@@ -75,7 +75,7 @@ export class DGridHeaderHook {
 
     resize(columnId: string) {
         const headerElement = d3Select<HTMLElement, HTMLWidget>(`#${this._gridID} tr:not(.dgrid-spacer-row) th.dgrid-column-${columnId} > .dgrid-resize-header-container`);
-        const element = headerElement.select(`.common_HTMLWidget`);
+        const element = headerElement.select(".common_HTMLWidget");
         if (!element.empty()) {
             const widget = element.datum();
             if (widget) {

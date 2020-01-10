@@ -1,50 +1,46 @@
-﻿import * as declare from "dojo/_base/declare";
+﻿import { select as d3Select } from "@hpcc-js/common";
+import * as registry from "dijit/registry";
+import * as Tooltip from "dijit/Tooltip";
+import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
+import * as aspect from "dojo/aspect";
+import * as domClass from "dojo/dom-class";
+import * as domStyle from "dojo/dom-style";
+import * as Evented from "dojo/Evented";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as arrayUtil from "dojo/_base/array";
-import * as domClass from "dojo/dom-class";
-import * as domStyle from "dojo/dom-style";
-import * as Stateful from "dojo/Stateful";
-import * as query from "dojo/query";
 import * as json from "dojo/json";
-import * as aspect from "dojo/aspect";
-import * as Evented from "dojo/Evented";
 import * as on from "dojo/on";
+import * as query from "dojo/query";
+import * as Stateful from "dojo/Stateful";
 import * as Memory from "dojo/store/Memory";
 
-import * as registry from "dijit/registry";
-import * as Tooltip from "dijit/Tooltip";
-
-// @ts-ignore
-import * as DGrid from "dgrid/Grid";
-// @ts-ignore
-import * as OnDemandGrid from "dgrid/OnDemandGrid";
-// @ts-ignore
-import * as CompoundColumns from 'dgrid/extensions/CompoundColumns';
-// @ts-ignore
-import * as Keyboard from "dgrid/Keyboard";
-// @ts-ignore
-import * as Selection from "dgrid/Selection";
 // @ts-ignore
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
 // @ts-ignore
-import * as ColumnHider from "dgrid/extensions/ColumnHider";
+import * as CompoundColumns from "dgrid/extensions/CompoundColumns";
 // @ts-ignore
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
+// @ts-ignore
+import * as DGrid from "dgrid/Grid";
+// @ts-ignore
+import * as Keyboard from "dgrid/Keyboard";
+// @ts-ignore
+import * as OnDemandGrid from "dgrid/OnDemandGrid";
+// @ts-ignore
+import * as Selection from "dgrid/Selection";
 
-import { select as d3Select } from "@hpcc-js/common";
-import { Pagination } from "./Pagination";
-
-import { declareDecorator } from './DeclareDecorator';
+import { declareDecorator } from "./DeclareDecorator";
 import { userKeyValStore } from "./KeyValStore";
+import { Pagination } from "./Pagination";
 
 declare const dojo;
 
-var SingletonData = declare([Stateful], {
+const SingletonData = declare([Stateful], {
     //  Attributes  ---
-    _hasCompletedSetter: function (hasCompleted) {
+    _hasCompletedSetter(hasCompleted) {
         if (this.hasCompleted !== hasCompleted) {
             this.hasCompleted = hasCompleted;
             if (!this.hasCompleted) {
@@ -60,21 +56,21 @@ var SingletonData = declare([Stateful], {
     },
 
     //  Methods  ---
-    constructor: function (args) {
+    constructor(args) {
         this.__hpcc_changedCount = 0;
         this.__hpcc_changedCache = {};
     },
-    getData: function () {
+    getData() {
         if (this instanceof SingletonData) {
             return (SingletonData)(this);
         }
         return this;
     },
-    updateData: function (response) {
-        var changed = false;
-        for (var key in response) {
+    updateData(response) {
+        let changed = false;
+        for (const key in response) {
             if (response[key] !== undefined && response[key] !== null) {
-                var jsonStr = json.stringify(response[key]);
+                const jsonStr = json.stringify(response[key]);
                 if (this.__hpcc_changedCache[key] !== jsonStr) {
                     this.__hpcc_changedCache[key] = jsonStr;
                     this.set(key, response[key]);
@@ -86,7 +82,7 @@ var SingletonData = declare([Stateful], {
             try {
                 this.set("__hpcc_changedCount", this.get("__hpcc_changedCount") + 1);
             } catch (e) {
-                /*  __hpcc_changedCount can notify a dgrid instance that a row has changed.  
+                /*  __hpcc_changedCount can notify a dgrid instance that a row has changed.
                 *   There is an issue (TODO check issue number) with dgrid which can cause an exception to be thrown during the notify.
                 *   By catching these exceptions here normal execution can continue.
                 */
@@ -95,18 +91,18 @@ var SingletonData = declare([Stateful], {
     }
 });
 
-export var Monitor = declare(null, {
-    isMonitoring: function () {
+export let Monitor = declare(null, {
+    isMonitoring() {
         return this._timer && this._timer > 0;
     },
-    disableMonitor: function (disableMonitor) {
+    disableMonitor(disableMonitor) {
         this._disableMonitor = disableMonitor;
         if (!this._disableMonitor) {
             this.refresh();
             this.onMonitor();
         }
     },
-    startMonitor: function (aggressive) {
+    startMonitor(aggressive) {
         if (this.isMonitoring())
             return;
 
@@ -114,11 +110,11 @@ export var Monitor = declare(null, {
         this._timer = 1000;
         this.onMonitor();
     },
-    stopMonitor: function () {
+    stopMonitor() {
         this._timerTickCount = 0;
         this._timer = 0;
     },
-    onMonitor: function () {
+    onMonitor() {
         if (this._disableMonitor) {
             return;
         }
@@ -143,7 +139,7 @@ export var Monitor = declare(null, {
             }
         }
 
-        var context = this;
+        const context = this;
         if (this._timer) {
             setTimeout(function () {
                 context.onMonitor();
@@ -154,7 +150,7 @@ export var Monitor = declare(null, {
     }
 });
 
-var GridHelper = declare(null, {
+const GridHelper = declare(null, {
     allowTextSelection: true,
     noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
     loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
@@ -210,7 +206,7 @@ var GridHelper = declare(null, {
         }
     }),
 
-    onSelectionChanged: function (callback) {
+    onSelectionChanged(callback) {
         this.onSelectedChangedCallback = callback;
         this.on("dgrid-select, dgrid-deselect, dgrid-refresh-complete", function (event) {
             callback(event);
@@ -225,12 +221,12 @@ var GridHelper = declare(null, {
         });
     }),
 
-    setSelection: function (arrayOfIDs) {
+    setSelection(arrayOfIDs) {
         this.clearSelection();
-        var context = this;
+        const context = this;
         arrayUtil.forEach(arrayOfIDs, function (item, idx) {
             if (idx === 0) {
-                var row = context.row(item);
+                const row = context.row(item);
                 if (row.element) {
                     row.element.scrollIntoView();
                 }
@@ -239,12 +235,12 @@ var GridHelper = declare(null, {
         });
     },
 
-    setSelected: function (items) {
+    setSelected(items) {
         this.clearSelection();
-        var context = this;
+        const context = this;
         arrayUtil.forEach(items, function (item, idx) {
             if (idx === 0) {
-                var row = context.row(item);
+                const row = context.row(item);
                 if (row.element) {
                     row.element.scrollIntoView();
                 }
@@ -253,12 +249,12 @@ var GridHelper = declare(null, {
         });
     },
 
-    getSelected: function (store) {
+    getSelected(store) {
         if (!store) {
             store = this.store;
         }
-        var retVal = [];
-        for (var id in this.selection) {
+        const retVal = [];
+        for (const id in this.selection) {
             if (this.selection[id]) {
                 const rowItem = this.row(id);
                 const storeItem = store.get(id);
@@ -271,36 +267,36 @@ var GridHelper = declare(null, {
     }
 });
 
-export var LocalStorage = dojo.declare([Evented], {
-    constructor: function () {
-        var context = this;
+export let LocalStorage = dojo.declare([Evented], {
+    constructor() {
+        const context = this;
         if (typeof Storage !== void (0)) {
-            window.addEventListener('storage', function (event) {
-                context.emit('storageUpdate', { event });
+            window.addEventListener("storage", function (event) {
+                context.emit("storageUpdate", { event });
             });
         } else {
             console.log("Browser doesn't support multi-tab communication");
-        };
+        }
     },
 
-    setItem: function (key, value) {
+    setItem(key, value) {
         localStorage.setItem(key, value);
     },
-    removeItem: function (key) {
+    removeItem(key) {
         localStorage.removeItem(key);
     },
-    getItem: function (key, type) {
+    getItem(key, type) {
         return type === "Number" ? Number(localStorage.getItem(key)) : localStorage.getItem(key);
     },
-    clear: function () {
+    clear() {
         localStorage.clear();
     }
 });
 
 export function goToPageUserPreference(gridName, key) {
-    var store = userKeyValStore();
-    var defaultValue = 50;
-    var retVal = store.get(key).then(function(count){
+    const store = userKeyValStore();
+    let defaultValue = 50;
+    const retVal = store.get(key).then(function (count) {
         if (count) {
             defaultValue = +count;
             gridName.rowsPerPage = defaultValue;
@@ -308,9 +304,9 @@ export function goToPageUserPreference(gridName, key) {
         }
     });
 
-    aspect.after(gridName, 'gotoPage', function (deferred, args) {
+    aspect.after(gridName, "gotoPage", function (deferred, args) {
         return deferred.then(function () {
-            var currentGridValue = gridName.rowsPerPage;
+            const currentGridValue = gridName.rowsPerPage;
             if (defaultValue !== currentGridValue) {
                 store.set(key, currentGridValue);
             }
@@ -319,28 +315,28 @@ export function goToPageUserPreference(gridName, key) {
     return retVal;
 }
 
-export var MonitorLockClick = dojo.declare([Evented], {
-    unlocked: function () {
+export let MonitorLockClick = dojo.declare([Evented], {
+    unlocked() {
         this.emit("unlocked", {});
     },
-    locked: function () {
+    locked() {
         this.emit("locked", {});
     }
 });
 
-export var IdleWatcher = dojo.declare([Evented], {
-    constructor: function (idleDuration) {
+export let IdleWatcher = dojo.declare([Evented], {
+    constructor(idleDuration) {
         idleDuration = idleDuration || 30 * 1000;
         this._idleDuration = idleDuration;
     },
 
-    fireIdle: function () {
+    fireIdle() {
         this.emit("idle", { status: "firedIdle" });
     },
 
-    start: function () {
+    start() {
         this.stop();
-        var context = this;
+        const context = this;
         this._keydownHandle = on(document, "keydown", function (item, index, array) {
             context.emit("active", {});
             context.stop();
@@ -356,7 +352,7 @@ export var IdleWatcher = dojo.declare([Evented], {
         }, this._idleDuration);
     },
 
-    stop: function () {
+    stop() {
         if (this._intervalHandle) {
             clearInterval(this._intervalHandle);
             delete this._intervalHandle;
@@ -375,9 +371,9 @@ export var IdleWatcher = dojo.declare([Evented], {
 export const Singleton = SingletonData;
 
 export const FormHelper = declare(null, {
-    getISOString: function (dateField, timeField) {
-        var d = registry.byId(this.id + dateField).attr("value");
-        var t = registry.byId(this.id + timeField).attr("value");
+    getISOString(dateField, timeField) {
+        const d = registry.byId(this.id + dateField).attr("value");
+        const t = registry.byId(this.id + timeField).attr("value");
         if (d) {
             if (t) {
                 d.setHours(t.getHours() - d.getTimezoneOffset() / 60);
@@ -412,22 +408,25 @@ export class UndefinedMemory extends UndefinedMemoryBase {
     query(query: any, options: any) {
         if (options.sort !== undefined) {
             if (options.sort.length > 0) {
-                var sortSet = options.sort;
+                const sortSet = options.sort;
                 options.sort = function (a, b) {
-                    for (var sort, i = 0; sort = sortSet[i]; i++) {
-                        var aValue = a[sort.attribute];
-                        var bValue = b[sort.attribute];
+                    // tslint:disable-next-line: no-conditional-assignment
+                    for (let sort, i = 0; sort = sortSet[i]; i++) {
+                        let aValue = a[sort.attribute];
+                        let bValue = b[sort.attribute];
                         // valueOf enables proper comparison of dates
                         aValue = aValue != null ? aValue.valueOf() : aValue;
                         bValue = bValue != null ? bValue.valueOf() : bValue;
+                        // tslint:disable-next-line: triple-equals
                         if (aValue != bValue) {
                             if (aValue === undefined) return 1;     // Force "undefined" to bottom always
                             if (bValue === undefined) return -1;    // Force "undefined" to bottom always
+                            // tslint:disable-next-line: triple-equals
                             return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
                         }
                     }
                     return 0;
-                }
+                };
             }
         }
         return super.query(query, options);
@@ -435,8 +434,8 @@ export class UndefinedMemory extends UndefinedMemoryBase {
 }
 
 export function Grid(pagination?, selection?, overrides?, compoundColumns?) {
-    var baseClass = [];
-    var params = {};
+    let baseClass = [];
+    const params = {};
     if (pagination) {
         baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
         lang.mixin(params, {
@@ -464,9 +463,9 @@ export function Grid(pagination?, selection?, overrides?, compoundColumns?) {
 }
 
 export function MonitorVisibility(widget, callback) {
-    //  There are many places that may cause the widget to be hidden, the possible places are calculated by walking the DOM hierarchy upwards. 
-    var watchList = {};
-    var domNode = widget.domNode;
+    //  There are many places that may cause the widget to be hidden, the possible places are calculated by walking the DOM hierarchy upwards.
+    const watchList = {};
+    let domNode = widget.domNode;
     while (domNode) {
         if (domNode.id) {
             watchList[domNode.id] = false;
@@ -475,7 +474,7 @@ export function MonitorVisibility(widget, callback) {
     }
 
     function isHidden() {
-        for (var key in watchList) {
+        for (const key in watchList) {
             if (watchList[key] === true) {
                 return true;
             }
@@ -483,7 +482,7 @@ export function MonitorVisibility(widget, callback) {
         return false;
     }
 
-    //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
+    //  Hijack the dojo style class replacement call and monitor for elements in our watchList.
     aspect.around(domClass, "replace", function (origFunc) {
         return function (node, addStyle, removeStyle) {
             if (node.firstChild && (node.firstChild.id in watchList)) {
@@ -506,18 +505,18 @@ export function MonitorVisibility(widget, callback) {
                 }
             }
             return origFunc(node, addStyle, removeStyle);
-        }
+        };
     });
 }
 
-var slice = Array.prototype.slice;
+const slice = Array.prototype.slice;
 export function override(method) {
-    var proxy;
+    let proxy;
 
     /** @this target object */
     proxy = function () {
-        var me = this;
-        var inherited = (this.getInherited && this.getInherited({
+        const me = this;
+        const inherited = (this.getInherited && this.getInherited({
             // emulating empty arguments
             callee: proxy,
             length: 0
@@ -542,10 +541,10 @@ export interface IMaximizeState {
     widgetResize: (size?: { l: number, t: number, w: number, h: number }) => void;
 }
 export function maximizeWidget(widget: any, max: boolean, prev?: IMaximizeState): IMaximizeState | undefined {
-    var stub = registry.byId("stub");
+    const stub = registry.byId("stub");
     if (stub.domNode !== widget.domNode) {
         if (max) {
-            var retVal: IMaximizeState = {
+            const retVal: IMaximizeState = {
                 parentNode: widget.domNode.parentNode,
                 nextElementSibling: widget.domNode.nextElementSibling,
                 stylePosition: domStyle.get(widget.domNode, "position"),

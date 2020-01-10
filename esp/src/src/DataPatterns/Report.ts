@@ -1,12 +1,12 @@
 import { Widget } from "@hpcc-js/common";
 import { Grid } from "@hpcc-js/layout";
-import { StatChart, NumericStatsWidget, StringStatsWidget } from "./StatChart";
+import { AttributeDesc } from "./AttributeDesc";
+import { Cardinality } from "./Cardinality";
 import { config } from "./config";
 import { DPWorkunit } from "./DPWorkunit";
-import { PopularPatterns } from "./PopularPatterns";
-import { AttributeDesc } from "./AttributeDesc";
 import { NAWidget } from "./NAWidget";
-import { Cardinality } from './Cardinality';
+import { PopularPatterns } from "./PopularPatterns";
+import { NumericStatsWidget, StatChart, StringStatsWidget } from "./StatChart";
 
 export class Report extends Grid {
 
@@ -59,7 +59,7 @@ export class Report extends Grid {
 
         let c = 2;
         let cPos = 0;
-        let cStep = 12;
+        const cStep = 12;
         this.setContent(y, cPos, new AttributeDesc(row), undefined, config.rowHeight, cStep * config.colRatios.attributeDesc);
         cPos += cStep * config.colRatios.attributeDesc;
         this.setContent(y, cPos, getStatsWidget(row, ext.statsDataWidth), undefined, config.rowHeight, cStep * config.colRatios.statsData);
@@ -106,7 +106,7 @@ export class Report extends Grid {
         function getQuartileWidget(row) {
             if (row.is_numeric) {
                 return new StatChart()
-                    //.columns(["Min", "25%", "50%", "75%", "Max"])
+                    // .columns(["Min", "25%", "50%", "75%", "Max"])
                     .mean(row.numeric_mean)
                     .standardDeviation(row.numeric_std_dev)
                     .quartiles([

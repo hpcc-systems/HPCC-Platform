@@ -1,19 +1,19 @@
-﻿import * as declare from "dojo/_base/declare";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
-import * as arrayUtil from "dojo/_base/array";
 import * as Memory from "dojo/store/Memory";
 
-import * as WsSMC from "./WsSMC";
 import * as ESPUtil from "./ESPUtil";
 import * as Utility from "./Utility";
+import * as WsSMC from "./WsSMC";
 
-var Store = declare([Memory], {
+const Store = declare([Memory], {
     idProperty: "__hpcc_id"
 });
 
-var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+const Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
 
-    constructor: function (id) {
+    constructor(id) {
         this.__hpcc_id = id;
 
         this._watched = [];
@@ -24,8 +24,8 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    pause: function () {
-        var context = this;
+    pause() {
+        const context = this;
         return WsSMC.PauseQueue({
             request: {
                 ClusterType: this.ServerType,
@@ -39,8 +39,8 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    resume: function () {
-        var context = this;
+    resume() {
+        const context = this;
         return WsSMC.ResumeQueue({
             request: {
                 ClusterType: this.ServerType,
@@ -54,8 +54,8 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    clear: function () {
-        var context = this;
+    clear() {
+        const context = this;
         return WsSMC.ClearQueue({
             request: {
                 QueueName: this.QueueName,
@@ -69,7 +69,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    setPriority: function (wuid, priority) {    //  high, normal, low
+    setPriority(wuid, priority) {    //  high, normal, low
         return WsSMC.SetJobPriority({
             request: {
                 QueueName: this.QueueName,
@@ -79,7 +79,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    moveTop: function (wuid) {
+    moveTop(wuid) {
         return WsSMC.MoveJobFront({
             request: {
                 QueueName: this.QueueName,
@@ -88,7 +88,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    moveUp: function (wuid) {
+    moveUp(wuid) {
         return WsSMC.MoveJobUp({
             request: {
                 QueueName: this.QueueName,
@@ -97,7 +97,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    moveDown: function (wuid) {
+    moveDown(wuid) {
         return WsSMC.MoveJobDown({
             request: {
                 QueueName: this.QueueName,
@@ -106,7 +106,7 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    moveBottom: function (wuid) {
+    moveBottom(wuid) {
         return WsSMC.MoveJobBack({
             request: {
                 QueueName: this.QueueName,
@@ -115,27 +115,27 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    canChildMoveUp: function (id) {
+    canChildMoveUp(id) {
         return (this.getChildIndex(id) > 0);
     },
 
-    canChildMoveDown: function (id) {
+    canChildMoveDown(id) {
         return (this.getChildIndex(id) < this.getChildCount() - 1);
     },
 
-    clearChildren: function () {
+    clearChildren() {
         this.children.setData([]);
         this.set("DisplaySize", "");
     },
 
     tmp: 0,
-    addChild: function (wu) {
+    addChild(wu) {
         wu.set("ESPQueue", this);
         if (!this.children.get(wu.__hpcc_id)) {
             this.children.add(wu);
         }
         if (!this._watched[wu.__hpcc_id]) {
-            var context = this;
+            const context = this;
             this._watched[wu.__hpcc_id] = wu.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
                     //  If child changes force the parent to refresh...
@@ -148,29 +148,29 @@ var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         this.set("DisplaySize", this.getChildCount());
     },
 
-    getChild: function (id) {
+    getChild(id) {
         return this.children.get(id);
     },
 
-    getChildIndex: function (id) {
+    getChildIndex(id) {
         return this.children.index[id];
     },
 
-    getChildCount: function () {
+    getChildCount() {
         return this.children.data.length;
     },
 
-    queryChildren: function () {
+    queryChildren() {
         return this.children.query();
     }
 });
 
-var TargetCluster = declare([Queue], {
-    _QueueNameSetter: function (QueueName) {
+const TargetCluster = declare([Queue], {
+    _QueueNameSetter(QueueName) {
         this.QueueName = QueueName;
         this.ServerName = QueueName;
     },
-    _ClusterTypeSetter: function (ClusterType) {
+    _ClusterTypeSetter(ClusterType) {
         this.ClusterType = ClusterType;
         switch (this.ClusterType) {
             case 1:
@@ -180,15 +180,15 @@ var TargetCluster = declare([Queue], {
                 this.ServerType = "RoxieServer";
                 break;
             case 3:
-                this.ServerType = "ThorMaster"
+                this.ServerType = "ThorMaster";
                 break;
             default:
-                this.ServerType = ""
+                this.ServerType = "";
         }
     },
 
-    refresh: function () {
-        var context = this;
+    refresh() {
+        const context = this;
         return WsSMC.GetStatusServerInfo({
             request: {
                 ServerName: this.ClusterName,
@@ -203,15 +203,15 @@ var TargetCluster = declare([Queue], {
         });
     },
 
-    getDisplayName: function () {
+    getDisplayName() {
         return this.ServerType + (this.ClusterName ? " - " + this.ClusterName : "");
     },
 
-    isNormal: function () {
+    isNormal() {
         return this.ClusterStatus === 0;
     },
 
-    isPaused: function () {
+    isPaused() {
         switch (this.ClusterStatus) {
             case 1:
             case 2:
@@ -221,7 +221,7 @@ var TargetCluster = declare([Queue], {
     },
 
     pause: ESPUtil.override(function (inherited) {
-        var context = this;
+        const context = this;
         return inherited(arguments).then(function (response) {
             context.updateData({
                 ClusterStatus: 2
@@ -231,7 +231,7 @@ var TargetCluster = declare([Queue], {
     }),
 
     resume: ESPUtil.override(function (inherited) {
-        var context = this;
+        const context = this;
         return inherited(arguments).then(function (response) {
             context.updateData({
                 ClusterStatus: 0
@@ -240,7 +240,7 @@ var TargetCluster = declare([Queue], {
         });
     }),
 
-    getStateImageName: function () {
+    getStateImageName() {
         switch (this.ClusterStatus) {
             case 1:
             case 2:
@@ -252,19 +252,19 @@ var TargetCluster = declare([Queue], {
         return "server.png";
     },
 
-    getStateImage: function () {
+    getStateImage() {
         return Utility.getImageURL(this.getStateImageName());
     }
 });
 
-var ServerJobQueue = declare([Queue], {
-    _ServerNameSetter: function (ServerName) {
+const ServerJobQueue = declare([Queue], {
+    _ServerNameSetter(ServerName) {
         this.ServerName = ServerName;
         this.ClusterName = ServerName;
     },
 
-    refresh: function () {
-        var context = this;
+    refresh() {
+        const context = this;
         return WsSMC.GetStatusServerInfo({
             request: {
                 ServerName: this.ServerName,
@@ -284,15 +284,15 @@ var ServerJobQueue = declare([Queue], {
         });
     },
 
-    getDisplayName: function () {
+    getDisplayName() {
         return this.ServerName + (this.QueueName ? " - " + this.QueueName : "");
     },
 
-    isNormal: function () {
+    isNormal() {
         return this.QueueStatus === "running";
     },
 
-    isPaused: function () {
+    isPaused() {
         if (this.QueueStatus === "paused") {
             return true;
         }
@@ -300,7 +300,7 @@ var ServerJobQueue = declare([Queue], {
     },
 
     pause: ESPUtil.override(function (inherited) {
-        var context = this;
+        const context = this;
         return inherited(arguments).then(function (response) {
             context.updateData({
                 QueueStatus: "paused"
@@ -310,7 +310,7 @@ var ServerJobQueue = declare([Queue], {
     }),
 
     resume: ESPUtil.override(function (inherited) {
-        var context = this;
+        const context = this;
         return inherited(arguments).then(function (response) {
             context.updateData({
                 QueueStatus: null
@@ -319,7 +319,7 @@ var ServerJobQueue = declare([Queue], {
         });
     }),
 
-    getStateImageName: function () {
+    getStateImageName() {
         switch (this.QueueStatus) {
             case "running":
                 return "server.png";
@@ -331,28 +331,28 @@ var ServerJobQueue = declare([Queue], {
         return "server.png";
     },
 
-    getStateImage: function () {
+    getStateImage() {
         return Utility.getImageURL(this.getStateImageName());
     }
 
 });
 
-var globalQueueStore = null;
-var GetGlobalQueueStore = function () {
+let globalQueueStore = null;
+const GetGlobalQueueStore = function () {
     if (!globalQueueStore) {
         globalQueueStore = new Store();
     }
     return globalQueueStore;
-}
+};
 
 export function isInstanceOfQueue(obj) {
     return obj && obj.isInstanceOf && obj.isInstanceOf(Queue);
 }
 
 export function GetTargetCluster(name, createIfMissing = false) {
-    var store = GetGlobalQueueStore();
-    var id = "TargetCluster::" + name;
-    var retVal = store.get(id);
+    const store = GetGlobalQueueStore();
+    const id = "TargetCluster::" + name;
+    let retVal = store.get(id);
     if (!retVal && createIfMissing) {
         retVal = new TargetCluster(id);
         store.put(retVal);
@@ -361,9 +361,9 @@ export function GetTargetCluster(name, createIfMissing = false) {
 }
 
 export function GetServerJobQueue(name, createIfMissing = false) {
-    var store = GetGlobalQueueStore();
-    var id = "ServerJobQueue::" + name;
-    var retVal = store.get(id);
+    const store = GetGlobalQueueStore();
+    const id = "ServerJobQueue::" + name;
+    let retVal = store.get(id);
     if (!retVal && createIfMissing) {
         retVal = new ServerJobQueue(id);
         store.put(retVal);

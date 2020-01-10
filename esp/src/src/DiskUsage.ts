@@ -1,8 +1,8 @@
-import { Palette } from "@hpcc-js/common";
 import { Gauge } from "@hpcc-js/chart";
+import { Palette } from "@hpcc-js/common";
 import { GetTargetClusterUsageEx, MachineService } from "@hpcc-js/comms";
-import { FlexGrid } from "@hpcc-js/layout";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
+import { FlexGrid } from "@hpcc-js/layout";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
@@ -21,7 +21,7 @@ export class Summary extends FlexGrid {
             .itemMinHeight(100)
             .itemMinWidth(100)
             .forceYScroll(true)
-            .widgetsFlexGrow([1, 1, 1])
+            .widgetsFlexGrow([1, 1, 1]);
     }
 
     enter(domNode, element) {
@@ -44,7 +44,7 @@ export class Summary extends FlexGrid {
         this
             .widgets(widgets)
             .flexBasis(`${100 / widgets.length}%`)
-            .flexBasis(`100px`)
+            .flexBasis("100px")
             ;
 
         super.update(domNode, element);
@@ -67,7 +67,7 @@ export class Summary extends FlexGrid {
         }
         this._connection.GetTargetClusterUsageEx(undefined, bypassCachedResult).then(response => {
             this._loadingMsg && this._loadingMsg
-                .html(`<i class="fa fa-database"></i>`)
+                .html('<i class="fa fa-database"></i>')
                 ;
             response.forEach(details => {
                 if (!this._usage[details.Name]) {

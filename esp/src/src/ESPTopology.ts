@@ -1,24 +1,24 @@
-﻿import * as declare from "dojo/_base/declare";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
-import * as arrayUtil from "dojo/_base/array";
 import * as all from "dojo/promise/all";
 import * as QueryResults from "dojo/store/util/QueryResults";
 
-import * as WsTopology from "./WsTopology";
-import * as ESPUtil from "./ESPUtil";
 import * as ESPTree from "./ESPTree";
+import * as ESPUtil from "./ESPUtil";
+import * as WsTopology from "./WsTopology";
 
-var ThorCache = {
+const ThorCache = {
 };
-var Thor = declare([ESPUtil.Singleton], {
-    constructor: function (args) {
+const Thor = declare([ESPUtil.Singleton], {
+    constructor(args) {
         if (args) {
             declare.safeMixin(this, args);
         }
     },
 
-    refresh: function () {
-        var context = this;
+    refresh() {
+        const context = this;
         return WsTopology.TpThorStatus({
             request: {
                 Name: this.Name
@@ -33,45 +33,44 @@ var Thor = declare([ESPUtil.Singleton], {
                 }
             }
             return response;
-        })
+        });
     }
 });
 
-var createTreeItem = function (Type, id, espParent?, data?) {
+const createTreeItem = function (Type, id, espParent?, data?) {
     if (!(espParent instanceof TopologyItem)) {
         if (!espParent && id !== "root") {
             // var d = 0;
         }
     }
-    var retVal = new Type({ __hpcc_id: id, __hpcc_parent: espParent });
+    const retVal = new Type({ __hpcc_id: id, __hpcc_parent: espParent });
     if (data) {
         retVal.updateData(data);
     }
     return retVal;
 };
 
-
-var TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
-    constructor: function (args) {
+const TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
+    constructor(args) {
         this.__hpcc_children = [];
     },
 
-    appendChild: function (child) {
+    appendChild(child) {
         this.__hpcc_children.push(child);
     },
 
-    appendChildren: function (children) {
+    appendChildren(children) {
         arrayUtil.forEach(children, function (child) {
             this.appendChild(child);
         }, this);
     },
 
-    getLabel: function () {
+    getLabel() {
         return this.__hpcc_displayName;
     },
 
     //  Helpers  ---
-    getCompType: function () {
+    getCompType() {
         if (this.__hpcc_parent && this.__hpcc_parent.Type) {
             return this.__hpcc_parent.Type;
         } else {
@@ -79,7 +78,7 @@ var TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
         }
     },
 
-    getCompName: function () {
+    getCompName() {
         if (this.__hpcc_parent && this.__hpcc_parent.Name) {
             return this.__hpcc_parent.Name;
         } else {
@@ -87,7 +86,7 @@ var TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
         }
     },
 
-    getNetaddress: function () {
+    getNetaddress() {
         if (this.Netaddress) {
             return this.Netaddress;
         } else if (this.__hpcc_parent) {
@@ -98,7 +97,7 @@ var TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
         return "";
     },
 
-    getLogDirectory: function () {
+    getLogDirectory() {
         if (this.LogDirectory) {
             return this.LogDirectory;
         } else if (this.__hpcc_parent) {
@@ -112,11 +111,11 @@ var TopologyItem = declare([ESPTree.Item], {    // jshint ignore:line
     }
 });
 
-var TpMachine = declare([TopologyItem], {
+const TpMachine = declare([TopologyItem], {
     __hpcc_type: "TpMachine",
-    constructor: function (args) {
+    constructor(args) {
     },
-    getIcon: function () {
+    getIcon() {
         return "machine.png";
     },
     updateData: ESPUtil.override(function (inherited, data) {
@@ -125,11 +124,11 @@ var TpMachine = declare([TopologyItem], {
     })
 });
 
-var TpCommon = declare([TopologyItem], {
-    _TpMachinesSetter: function (TpMachines) {
+const TpCommon = declare([TopologyItem], {
+    _TpMachinesSetter(TpMachines) {
         if (lang.exists("TpMachine", TpMachines)) {
             arrayUtil.forEach(TpMachines.TpMachine, function (item, idx) {
-                var newMachine = createTreeItem(TpMachine, item.Type + "_" + item.Netaddress + "_" + item.ProcessNumber + "_" + item.Directory, this, item)
+                const newMachine = createTreeItem(TpMachine, item.Type + "_" + item.Netaddress + "_" + item.ProcessNumber + "_" + item.Directory, this, item);
                 this.appendChild(newMachine);
             }, this);
         }
@@ -140,66 +139,66 @@ var TpCommon = declare([TopologyItem], {
     })
 });
 
-var TpService = declare([TpCommon], {
+const TpService = declare([TpCommon], {
     __hpcc_type: "TpService",
-    constructor: function (args) {
+    constructor(args) {
     },
-    getLabel: function () {
+    getLabel() {
         return "[" + this.Type + "] " + this.Name;
     }
 });
 
-var TpEclAgent = declare([TpService], {
+const TpEclAgent = declare([TpService], {
     __hpcc_type: "TpEclAgent",
-    constructor: function (args) {
+    constructor(args) {
     }
 });
 
-var TpEclServer = declare([TpService], {
+const TpEclServer = declare([TpService], {
     __hpcc_type: "TpEclServer",
-    constructor: function (args) {
+    constructor(args) {
     }
 });
 
-var TpEclCCServer = declare([TpService], {
+const TpEclCCServer = declare([TpService], {
     __hpcc_type: "TpEclCCServer",
-    constructor: function (args) {
+    constructor(args) {
     }
 });
 
-var TpEclScheduler = declare([TpService], {
+const TpEclScheduler = declare([TpService], {
     __hpcc_type: "TpEclScheduler",
-    constructor: function (args) {
+    constructor(args) {
     }
 });
 
-var TpBinding = declare([TpCommon], {
+const TpBinding = declare([TpCommon], {
     __hpcc_type: "TpBinding",
-    constructor: function (args) {
+    constructor(args) {
     },
 
-    getLabel: function () {
+    getLabel() {
         return this.Service;
     }
 });
 
-var Cluster = declare([TpCommon], {
+const Cluster = declare([TpCommon], {
     __hpcc_type: "Cluster",
-    constructor: function (args) {
+    constructor(args) {
     },
-    getIcon: function () {
+    getIcon() {
         return "cluster.png";
     },
-    getLabel: function () {
+    getLabel() {
         return this.Name;
     }
 });
 
-var Service = declare([TpCommon], {
+const Service = declare([TpCommon], {
     __hpcc_type: "Service",
-    constructor: function (args) {
+    constructor(args) {
     },
-    _TpBindingsSetter: function (TpBindings) {
+    _TpBindingsSetter(TpBindings) {
         if (lang.exists("TpBinding", TpBindings)) {
             arrayUtil.forEach(TpBindings.TpBinding, function (item, idx) {
                 this.appendChild(createTreeItem(TpBinding, item.Service + "::" + item.Port, this, item));
@@ -208,14 +207,14 @@ var Service = declare([TpCommon], {
     }
 });
 
-var ServiceType = declare([TpCommon], {
+const ServiceType = declare([TpCommon], {
     __hpcc_type: "ServiceType",
-    constructor: function (args) {
+    constructor(args) {
     },
-    getIcon: function () {
+    getIcon() {
         return "folder.png";
     },
-    getLabel: function () {
+    getLabel() {
         switch (this.__hpcc_id) {
             case "ServiceType::TpDali":
                 return "Dali";
@@ -241,7 +240,7 @@ var ServiceType = declare([TpCommon], {
         return "Unknown";
     },
 
-    addServices: function (items) {
+    addServices(items) {
         arrayUtil.forEach(items, function (item) {
             this.appendChild(createTreeItem(Service, item.Name, this, item));
         }, this);
@@ -249,73 +248,73 @@ var ServiceType = declare([TpCommon], {
     }
 });
 
-var Services = declare([TpCommon], {
+const Services = declare([TpCommon], {
     __hpcc_type: "Services",
-    constructor: function (args) {
+    constructor(args) {
         args.__hpcc_displayName = "Services";
     },
 
-    getIcon: function () {
+    getIcon() {
         return "folder.png";
     },
 
-    getLabel: function () {
+    getLabel() {
         return "Services";
     },
 
-    appendServiceType: function (property, data) {
+    appendServiceType(property, data) {
         if (lang.exists(property, data)) {
-            var newServiceType = createTreeItem(ServiceType, property, this);
+            const newServiceType = createTreeItem(ServiceType, property, this);
             newServiceType.addServices(data[property]);
             this.appendChild(newServiceType);
         } else {
-            throw "GJS";
+            throw new Error("GJS");
         }
     },
 
-    _TpDalisSetter: function (TpDalis) {
+    _TpDalisSetter(TpDalis) {
         this.appendServiceType("TpDali", TpDalis);
     },
-    _TpDfuServersSetter: function (TpDfuServers) {
+    _TpDfuServersSetter(TpDfuServers) {
         this.appendServiceType("TpDfuServer", TpDfuServers);
     },
-    _TpDropZonesSetter: function (TpDropZones) {
+    _TpDropZonesSetter(TpDropZones) {
         this.appendServiceType("TpDropZone", TpDropZones);
     },
-    _TpEclAgentsSetter: function (TpEclAgents) {
+    _TpEclAgentsSetter(TpEclAgents) {
         this.appendServiceType("TpEclAgent", TpEclAgents);
     },
-    _TpEclServersSetter: function (TpEclServers) {
+    _TpEclServersSetter(TpEclServers) {
         this.appendServiceType("TpEclServer", TpEclServers);
     },
-    _TpEclCCServersSetter: function (TpEclCCServers) {
+    _TpEclCCServersSetter(TpEclCCServers) {
         this.appendServiceType("TpEclServer", TpEclCCServers);
     },
-    _TpEclSchedulersSetter: function (TpEclSchedulers) {
+    _TpEclSchedulersSetter(TpEclSchedulers) {
         this.appendServiceType("TpEclScheduler", TpEclSchedulers);
     },
-    _TpEspServersSetter: function (TpEspServers) {
+    _TpEspServersSetter(TpEspServers) {
         this.appendServiceType("TpEspServer", TpEspServers);
     },
-    _TpFTSlavesSetter: function (TpFTSlaves) {
+    _TpFTSlavesSetter(TpFTSlaves) {
         this.appendServiceType("TpFTSlave", TpFTSlaves);
     },
-    _TpSashaServersSetter: function (TpSashaServers) {
+    _TpSashaServersSetter(TpSashaServers) {
         this.appendServiceType("TpSashaServer", TpSashaServers);
     }
 });
 
-var TargetCluster = declare([TpCommon], {
+const TargetCluster = declare([TpCommon], {
     __hpcc_type: "TargetCluster",
-    constructor: function (args) {
+    constructor(args) {
     },
-    getIcon: function () {
+    getIcon() {
         return "server.png";
     },
-    getLabel: function () {
+    getLabel() {
         return this.Name;
     },
-    _TpEclAgentsSetter: function (TpEclAgents) {
+    _TpEclAgentsSetter(TpEclAgents) {
         if (lang.exists("TpEclAgent", TpEclAgents)) {
             arrayUtil.forEach(TpEclAgents.TpEclAgent, function (item, idx) {
                 this.appendChild(createTreeItem(TpEclAgent, item.Name, this, item));
@@ -323,7 +322,7 @@ var TargetCluster = declare([TpCommon], {
         }
     },
 
-    _TpEclCCServersSetter: function (TpEclCCServers) {
+    _TpEclCCServersSetter(TpEclCCServers) {
         if (lang.exists("TpEclServer", TpEclCCServers)) {
             arrayUtil.forEach(TpEclCCServers.TpEclServer, function (item, idx) {
                 this.appendChild(createTreeItem(TpEclCCServer, item.Name, this, item));
@@ -331,7 +330,7 @@ var TargetCluster = declare([TpCommon], {
         }
     },
 
-    _TpEclServersSetter: function (TpEclServers) {
+    _TpEclServersSetter(TpEclServers) {
         if (lang.exists("TpEclServer", TpEclServers)) {
             arrayUtil.forEach(TpEclServers.TpEclServer, function (item, idx) {
                 this.appendChild(createTreeItem(TpEclServer, item.Name, this, item));
@@ -339,7 +338,7 @@ var TargetCluster = declare([TpCommon], {
         }
     },
 
-    _TpEclSchedulersSetter: function (TpEclSchedulers) {
+    _TpEclSchedulersSetter(TpEclSchedulers) {
         if (lang.exists("TpEclScheduler", TpEclSchedulers)) {
             arrayUtil.forEach(TpEclSchedulers.TpEclScheduler, function (item, idx) {
                 this.appendChild(createTreeItem(TpEclScheduler, item.Name, this, item));
@@ -347,7 +346,7 @@ var TargetCluster = declare([TpCommon], {
         }
     },
 
-    _TpClustersSetter: function (TpClusters) {
+    _TpClustersSetter(TpClusters) {
         if (lang.exists("TpCluster", TpClusters)) {
             arrayUtil.forEach(TpClusters.TpCluster, function (item, idx) {
                 this.appendChild(createTreeItem(Cluster, item.Name, this, item));
@@ -356,40 +355,40 @@ var TargetCluster = declare([TpCommon], {
     }
 });
 
-var TargetClusterType = declare([TpCommon], {
+const TargetClusterType = declare([TpCommon], {
     __hpcc_type: "TargetClusterType",
-    constructor: function (args) {
+    constructor(args) {
         args.__hpcc_displayName = "TargetClusterType";
     },
 
-    getIcon: function () {
+    getIcon() {
         return "folder.png";
     },
 
-    getLabel: function () {
+    getLabel() {
         return this.Name;
     }
 });
 
-var TopologyRoot = declare([TopologyItem], {
+const TopologyRoot = declare([TopologyItem], {
     __hpcc_type: "TopologyRoot",
-    getIcon: function () {
+    getIcon() {
         return "workunit.png";
     },
-    getLabel: function () {
+    getLabel() {
         return "Topology";
     }
 });
 
-var TopologyTreeStore = declare([ESPTree.Store], {
-    constructor: function () {
+const TopologyTreeStore = declare([ESPTree.Store], {
+    constructor() {
         this.viewMode("Debug");
         this.cachedTreeItems = {};
         this.cachedRelations = {};
         this.cachedRelationsPC = {};
     },
     createTreeNode: ESPUtil.override(function (inherited, parentNode, treeItem) {
-        var retVal = inherited(parentNode, treeItem);
+        const retVal = inherited(parentNode, treeItem);
         retVal.hasConfig = function () {
             return this.__hpcc_treeItem.Netaddress && this.__hpcc_treeItem.Directory;
         };
@@ -412,7 +411,7 @@ var TopologyTreeStore = declare([ESPTree.Store], {
             return this.__hpcc_treeItem.OS;
         };
         retVal.getNetaddress = function () {
-            var retVal = null;
+            let retVal = null;
             if (this.__hpcc_treeItem.getNetaddress) {
                 retVal = this.__hpcc_treeItem.getNetaddress();
             }
@@ -422,7 +421,7 @@ var TopologyTreeStore = declare([ESPTree.Store], {
             return retVal;
         };
         retVal.getLogDirectory = function () {
-            var retVal = null;
+            let retVal = null;
             if (this.__hpcc_treeItem.getLogDirectory) {
                 retVal = this.__hpcc_treeItem.getLogDirectory();
             }
@@ -436,19 +435,19 @@ var TopologyTreeStore = declare([ESPTree.Store], {
         this.cachedRelations = {};
         this.cachedRelationsPC = {};
     }),
-    viewMode: function (mode) {
+    viewMode(mode) {
         this._viewMode = mode;
     },
-    createTreeItemXXX: function (Type, id, data) {
-        var newItem = new Type({ __hpcc_store: this, __hpcc_id: id });
-        var retVal = this.cachedTreeItems[newItem.getUniqueID()];
+    createTreeItemXXX(Type, id, data) {
+        const newItem = new Type({ __hpcc_store: this, __hpcc_id: id });
+        let retVal = this.cachedTreeItems[newItem.getUniqueID()];
         if (!retVal) {
             retVal = newItem;
             this.cachedTreeItems[newItem.getUniqueID()] = retVal;
             this.cachedRelationsPC[newItem.getUniqueID()] = [];
         } else {
             //  Sanity Checking  ---
-            for (var key in data) {
+            for (const key in data) {
                 if (!(data[key] instanceof Object)) {
                     if (retVal.get(key) !== data[key] && key !== "HasThorSpareProcess") {
                         // var d = 0;//throw "Duplicate ID";
@@ -461,16 +460,16 @@ var TopologyTreeStore = declare([ESPTree.Store], {
         }
         return retVal;
     },
-    query: function (query, options) {
-        var data = [];
-        var instance = {};
-        var machines = {};
-        var context = this;
+    query(query, options) {
+        const data = [];
+        let instance = {};
+        let machines = {};
+        const context = this;
 
         function getMachines(treeItem, parentTreeItem?) {
             if (treeItem instanceof TpMachine) {
                 if (!machines[treeItem.Netaddress]) {
-                    var machineNode = context.createTreeNode(null, treeItem);
+                    const machineNode = context.createTreeNode(null, treeItem);
                     machines[treeItem.Netaddress] = machineNode;
                     data.push(machineNode);
                 }
@@ -514,10 +513,10 @@ var TopologyTreeStore = declare([ESPTree.Store], {
                     machines = {};
                     getMachines(this.rootItem);
                     data.sort(function (a, b) {
-                        var aa = a.__hpcc_treeItem.Netaddress.split(".");
-                        var bb = b.__hpcc_treeItem.Netaddress.split(".");
-                        var resulta = aa[0] * 0x1000000 + aa[1] * 0x10000 + aa[2] * 0x100 + aa[3] * 1;
-                        var resultb = bb[0] * 0x1000000 + bb[1] * 0x10000 + bb[2] * 0x100 + bb[3] * 1;
+                        const aa = a.__hpcc_treeItem.Netaddress.split(".");
+                        const bb = b.__hpcc_treeItem.Netaddress.split(".");
+                        const resulta = aa[0] * 0x1000000 + aa[1] * 0x10000 + aa[2] * 0x100 + aa[3] * 1;
+                        const resultb = bb[0] * 0x1000000 + bb[1] * 0x10000 + bb[2] * 0x100 + bb[3] * 1;
                         return resulta - resultb;
                     });
                     break;
@@ -526,12 +525,12 @@ var TopologyTreeStore = declare([ESPTree.Store], {
         return QueryResults(this.queryEngine({}, {})(data));
     },
 
-    mayHaveChildren: function (treeNode) {
+    mayHaveChildren(treeNode) {
         return this.getChildren(treeNode, {}).length > 0;
     },
 
-    getChildren: function (treeNode, options) {
-        var data = [];
+    getChildren(treeNode, options) {
+        let data = [];
         if (treeNode.__hpcc_children.length) {
             data = treeNode.__hpcc_children;
         } else {
@@ -544,9 +543,9 @@ var TopologyTreeStore = declare([ESPTree.Store], {
                 case "Services":
                     if (!treeNode.__hpcc_parentNode) {
                         arrayUtil.forEach(treeNode.__hpcc_treeItem.__hpcc_children, function (child) {
-                            var serviceNode = this.createTreeNode(treeNode, child);
-                            var machines = [];
-                            var bindings = [];
+                            const serviceNode = this.createTreeNode(treeNode, child);
+                            const machines = [];
+                            const bindings = [];
                             arrayUtil.forEach(child.__hpcc_children, function (gchild) {
                                 if (gchild instanceof TpMachine) {
                                     machines.push(gchild);
@@ -555,13 +554,13 @@ var TopologyTreeStore = declare([ESPTree.Store], {
                                 }
                             }, this);
                             arrayUtil.forEach(bindings, function (binding) {
-                                var bindingNode = this.createTreeNode(serviceNode, binding);
+                                const bindingNode = this.createTreeNode(serviceNode, binding);
                                 arrayUtil.forEach(machines, function (machine) {
                                     this.createTreeNode(bindingNode, machine);
                                 }, this);
                             }, this);
                             arrayUtil.forEach(machines, function (machine) {
-                                var machineNode = this.createTreeNode(serviceNode, machine);
+                                const machineNode = this.createTreeNode(serviceNode, machine);
                                 arrayUtil.forEach(bindings, function (binding) {
                                     this.createTreeNode(machineNode, binding);
                                 }, this);
@@ -582,23 +581,23 @@ var TopologyTreeStore = declare([ESPTree.Store], {
         return QueryResults(this.queryEngine({}, {})(data));
     },
 
-    refresh: function (callback) {
+    refresh(callback) {
         this.clear();
         this.rootItem = createTreeItem(TopologyRoot, "root");
 
-        var context = this;
+        const context = this;
         return all({
             targetClusterQuery: WsTopology.TpTargetClusterQuery({
                 request: {
                     Type: "ROOT"
                 }
             }).then(function (response) {
-                var clusterTypes = {};
-                var retVal = [];
+                const clusterTypes = {};
+                const retVal = [];
                 if (lang.exists("TpTargetClusterQueryResponse.TpTargetClusters", response)) {
                     arrayUtil.forEach(response.TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster, function (item, idx) {
                         if (!clusterTypes[item.Type]) {
-                            clusterTypes[item.Type] = createTreeItem(TargetClusterType, item.Type, context.rootItem, { Name: item.Type })
+                            clusterTypes[item.Type] = createTreeItem(TargetClusterType, item.Type, context.rootItem, { Name: item.Type });
                             retVal.push(clusterTypes[item.Type]);
                         }
                         clusterTypes[item.Type].appendChild(createTreeItem(TargetCluster, item.Name, context.rootItem, item));
@@ -611,7 +610,7 @@ var TopologyTreeStore = declare([ESPTree.Store], {
                     Type: "ALLSERVICES"
                 }
             }).then(function (response) {
-                var retVal = [];
+                const retVal = [];
                 if (lang.exists("TpServiceQueryResponse.ServiceList", response)) {
                     retVal.push(createTreeItem(Services, "Services", context.rootItem, response.TpServiceQueryResponse.ServiceList));
                 }

@@ -1,17 +1,17 @@
 import * as declare from "dojo/_base/declare";
-import * as topic from "dojo/topic";
 import * as Observable from "dojo/store/Observable";
+import * as topic from "dojo/topic";
 
 import * as ESPRequest from "./ESPRequest";
 
-var NagiosStore = declare([ESPRequest.Store], {
+const NagiosStore = declare([ESPRequest.Store], {
     service: "ws_machine",
     action: "GetComponentStatus",
     responseQualifier: "GetComponentStatusResponse.ComponentStatusList.ComponentStatus",
     idProperty: "__hpcc_id"
 });
 
-var monitorHandle;
+let monitorHandle;
 export function GetComponentStatus(params) {
     return ESPRequest.send("ws_machine", "GetComponentStatus", params);
 }
@@ -25,15 +25,15 @@ export function GetMachineInfo(params) {
 }
 
 export function MonitorComponentStatus(params) {
-    var prevResponse = null;
+    let prevResponse = null;
     if (!monitorHandle) {
-        var context = this;
+        const context = this;
         monitorHandle = setInterval(function () {
             context.GetComponentStatus(params).then(function (response) {
                 if (response && response.GetComponentStatusResponse.ComponentStatus) {
                     response.GetComponentStatusResponse.ComponentStatusList.ComponentStatus.forEach(function (row) {
                         topic.publish("hpcc/monitoring_component_update", {
-                            response: response,
+                            response,
                             status: response.GetComponentStatusResponse.ComponentStatus
                         });
                     });
@@ -46,6 +46,6 @@ export function MonitorComponentStatus(params) {
 }
 
 export function CreateNagiosStore(options) {
-    var store = new NagiosStore(options);
+    const store = new NagiosStore(options);
     return Observable(store);
 }

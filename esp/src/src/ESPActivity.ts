@@ -1,56 +1,56 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as arrayUtil from "dojo/_base/array";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
 import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
 
-import * as WsSMC from "./WsSMC";
-import * as ESPUtil from "./ESPUtil";
-import * as ESPQueue from "./ESPQueue";
-import * as ESPWorkunit from "./ESPWorkunit";
 import * as ESPDFUWorkunit from "./ESPDFUWorkunit";
+import * as ESPQueue from "./ESPQueue";
+import * as ESPUtil from "./ESPUtil";
+import * as ESPWorkunit from "./ESPWorkunit";
+import * as WsSMC from "./WsSMC";
 import * as WsWorkunits from "./WsWorkunits";
 
-var Store = declare([Memory], {
+const Store = declare([Memory], {
     idProperty: "__hpcc_id",
-    mayHaveChildren: function (item) {
+    mayHaveChildren(item) {
         return (item.getChildCount && item.getChildCount());
     },
-    getChildren: function (parent, options) {
+    getChildren(parent, options) {
         return parent.queryChildren();
     }
 });
 
-var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+const Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
     //  Asserts  ---
-    _assertHasWuid: function () {
+    _assertHasWuid() {
         if (!this.Wuid) {
             throw new Error("Wuid cannot be empty.");
         }
     },
     //  Attributes  ---
-    _StateIDSetter: function (StateID) {
+    _StateIDSetter(StateID) {
         this.StateID = StateID;
-        var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
+        const actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
         this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
     },
 
     //  ---  ---  ---
-    constructor: function (args) {
+    constructor(args) {
         this._watched = [];
         this.store = new Store();
-        this.observableStore = new Observable(this.store)
+        this.observableStore = new Observable(this.store);
     },
 
-    isInstanceOfQueue: function (obj) {
+    isInstanceOfQueue(obj) {
         return ESPQueue.isInstanceOfQueue(obj);
     },
 
-    isInstanceOfWorkunit: function (obj) {
+    isInstanceOfWorkunit(obj) {
         return ESPWorkunit.isInstanceOfWorkunit(obj) || ESPDFUWorkunit.isInstanceOfWorkunit(obj);
     },
 
-    setBanner: function (request) {
+    setBanner(request) {
         lang.mixin(request, {
             FromSubmitBtn: true,
             BannerAction: request.BannerAction ? 1 : 0,
@@ -59,13 +59,13 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         this.getActivity(request);
     },
 
-    resolve: function (id) {
-        var queue = this.observableStore.get(id);
+    resolve(id) {
+        let queue = this.observableStore.get(id);
         if (queue) {
             return queue;
         }
 
-        var wu = id[0] === "D" ? ESPDFUWorkunit.Get(id) : ESPWorkunit.Get(id);
+        const wu = id[0] === "D" ? ESPDFUWorkunit.Get(id) : ESPWorkunit.Get(id);
         if (wu) {
             //  is wu still in a queue?
             queue = wu.get("ESPQueue");
@@ -76,12 +76,12 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         return null;
     },
 
-    monitor: function (callback) {
+    monitor(callback) {
         if (callback && this.__hpcc_changedCount) {
             callback(this);
         }
         if (!this.hasCompleted) {
-            var context = this;
+            const context = this;
             this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue && newValue) {
                     if (callback) {
@@ -92,14 +92,14 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         }
     },
 
-    getActivity: function (request) {
-        var context = this;
+    getActivity(request) {
+        const context = this;
         return WsSMC.Activity({
-            request: request
+            request
         }).then(function (response) {
             if (lang.exists("ActivityResponse", response)) {
-                var targetClusters = [];
-                var targetClusterMap = {};
+                const targetClusters = [];
+                const targetClusterMap = {};
                 context.refreshTargetClusters(lang.getObject("ActivityResponse.HThorClusterList.TargetCluster", false, response), targetClusters, targetClusterMap);
                 context.refreshTargetClusters(lang.getObject("ActivityResponse.ThorClusterList.TargetCluster", false, response), targetClusters, targetClusterMap);
                 context.refreshTargetClusters(lang.getObject("ActivityResponse.RoxieClusterList.TargetCluster", false, response), targetClusters, targetClusterMap);
@@ -112,8 +112,8 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    refreshTargetClusters: function (responseTargetClusters, targetClusters, targetClusterMap) {
-        var context = this;
+    refreshTargetClusters(responseTargetClusters, targetClusters, targetClusterMap) {
+        const context = this;
         if (responseTargetClusters) {
             arrayUtil.forEach(responseTargetClusters, function (item, idx) {
                 if (lang.exists("Queues.ServerJobQueue", item)) {
@@ -127,8 +127,8 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         }
     },
 
-    refreshTargetCluster: function (item, queueItem, targetClusters, targetClusterMap) {
-        var queue = null;
+    refreshTargetCluster(item, queueItem, targetClusters, targetClusterMap) {
+        let queue = null;
         if (item.ClusterName) {
             queue = ESPQueue.GetTargetCluster(item.ClusterName, true);
         } else {
@@ -142,7 +142,7 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         queue.clearChildren();
         targetClusters.push(queue);
         targetClusterMap[queue.__hpcc_id] = queue;
-        var context = this;
+        const context = this;
         if (!this._watched[queue.__hpcc_id]) {
             this._watched[queue.__hpcc_id] = queue.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
@@ -154,11 +154,11 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         }
     },
 
-    refreshActiveWorkunits: function (responseActiveWorkunits, targetClusters, targetClusterMap) {
+    refreshActiveWorkunits(responseActiveWorkunits, targetClusters, targetClusterMap) {
         if (responseActiveWorkunits) {
             arrayUtil.forEach(responseActiveWorkunits, function (item, idx) {
                 item["__hpcc_id"] = item.Wuid;
-                var queue = null;
+                let queue = null;
                 if (item.QueueName) {
                     queue = ESPQueue.GetServerJobQueue(item.QueueName);
                 }
@@ -169,7 +169,7 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
                         queue = ESPQueue.GetServerJobQueue(item.ServerName);
                     }
                 }
-                var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
+                const wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                 wu.updateData(lang.mixin({
                     __hpcc_id: item.Wuid,
                     component: "ActivityWidget"
@@ -182,8 +182,8 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
     },
 
     inRefresh: false,
-    refresh: function (full) {
-        var context = this;
+    refresh(full) {
+        const context = this;
         if (this.inRefresh) {
             return;
         }
@@ -196,15 +196,15 @@ var Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
         });
     },
 
-    getStore: function () {
+    getStore() {
         return this.observableStore;
     }
 });
-var globalActivity = null;
+let globalActivity = null;
 
 export function Get() {
     if (!globalActivity) {
-        globalActivity = new Activity;
+        globalActivity = new Activity();
         globalActivity.startMonitor();
         globalActivity.refresh();
     }
@@ -212,6 +212,6 @@ export function Get() {
 }
 
 export function CreateActivityStore(options) {
-    var store = new Store(options);
+    const store = new Store(options);
     return Observable(store);
 }

@@ -1,22 +1,22 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as arrayUtil from "dojo/_base/array";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
+import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as Deferred from "dojo/_base/Deferred";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
 import * as parser from "dojox/xml/parser";
 
-import * as WsWorkunits from "./WsWorkunits";
-import * as WsEcl from "./WsEcl";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
+import * as WsEcl from "./WsEcl";
+import * as WsWorkunits from "./WsWorkunits";
 
-var Store = declare([ESPRequest.Store], {
+const Store = declare([ESPRequest.Store], {
     i18n: nlsHPCC,
     service: "WsWorkunits",
     action: "WUListQueries",
@@ -28,19 +28,19 @@ var Store = declare([ESPRequest.Store], {
 
     _watched: [],
 
-    create: function (__hpcc_id) {
-        var tmp = __hpcc_id.split(":");
+    create(__hpcc_id) {
+        const tmp = __hpcc_id.split(":");
         return new Query({
-            __hpcc_id: __hpcc_id,
+            __hpcc_id,
             QuerySetId: tmp[0],
             Id: tmp[1]
         });
     },
-    update: function (id, item) {
-        var storeItem = this.get(id);
+    update(id, item) {
+        const storeItem = this.get(id);
         storeItem.updateData(item);
         if (!this._watched[id]) {
-            var context = this;
+            const context = this;
             this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
                     context.notify(storeItem, id);
@@ -49,11 +49,11 @@ var Store = declare([ESPRequest.Store], {
         }
     },
 
-    preProcessRow: function (item, request, query, options) {
-        var context = this;
-        var ErrorCount = 0;
-        var StatusMessage;
-        var MixedNodeStates;
+    preProcessRow(item, request, query, options) {
+        const context = this;
+        let ErrorCount = 0;
+        let StatusMessage;
+        let MixedNodeStates;
         item[this.idProperty] = item.QuerySetId + ":" + item.Id;
         if (lang.exists("Clusters", item)) {
             arrayUtil.some(item.Clusters.ClusterQueryState, function (cqs, idx) {
@@ -73,14 +73,14 @@ var Store = declare([ESPRequest.Store], {
         }
 
         lang.mixin(item, {
-            ErrorCount: ErrorCount,
+            ErrorCount,
             Status: StatusMessage,
-            MixedNodeStates: MixedNodeStates
+            MixedNodeStates
         });
     }
 });
 
-var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
+const Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,
     constructor: ESPUtil.override(function (inherited, args) {
         inherited(arguments);
@@ -89,11 +89,11 @@ var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
         this.queries = {};
     }),
-    refresh: function (full) {
+    refresh(full) {
         return this.getDetails();
     },
-    getDetails: function (args) {
-        var context = this;
+    getDetails(args) {
+        const context = this;
         return WsWorkunits.WUQueryDetails({
             request: {
                 QueryId: this.Id,
@@ -108,22 +108,22 @@ var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    getWorkunit: function () {
+    getWorkunit() {
         return ESPWorkunit.Get(this.Wuid);
     },
-    SubmitXML: function (xml) {
-        var deferred = new Deferred();
+    SubmitXML(xml) {
+        const deferred = new Deferred();
         if (this.queries[xml]) {
             deferred.resolve(this.queries[xml]);
         } else {
-            var domXml = parser.parse(xml);
-            var query = {};
+            const domXml = parser.parse(xml);
+            const query = {};
             arrayUtil.forEach(domXml.firstChild.childNodes, function (item, idx) {
                 if (item.tagName) {
                     query[item.tagName] = item.textContent;
                 }
             });
-            var context = this;
+            const context = this;
             WsEcl.Submit(this.QuerySetId, this.Id, query).then(function (response) {
                 context.queries[xml] = response;
                 deferred.resolve(response);
@@ -132,15 +132,14 @@ var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
         return deferred.promise;
     },
-    showResetQueryStatsResponse: function (responses) {
-        var sv = "Error";
-        var msg = "Invalid response";
+    showResetQueryStatsResponse(responses) {
+        let sv = "Error";
+        let msg = "Invalid response";
         if (lang.exists("WUQuerySetQueryActionResponse.Results", responses[0])) {
-            var result = responses[0].WUQuerySetQueryActionResponse.Results.Result[0];
+            const result = responses[0].WUQuerySetQueryActionResponse.Results.Result[0];
             if (result.Success === 0) {
                 msg = this.i18n.Exception + ": code=" + result.Code + " message=" + result.Message;
-            }
-            else {
+            } else {
                 sv = "Message";
                 msg = result.Message;
             }
@@ -151,8 +150,8 @@ var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
             Exceptions: [{ Source: "ResetQueryStats", Message: msg }]
         });
     },
-    doAction: function (action) {
-        var context = this;
+    doAction(action) {
+        const context = this;
         return WsWorkunits.WUQuerysetQueryAction([{
             QuerySetId: this.QuerySetId,
             Id: this.Id,
@@ -164,23 +163,23 @@ var Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return responses;
         });
     },
-    setSuspended: function (suspended) {
+    setSuspended(suspended) {
         return this.doAction(suspended ? "Suspend" : "Unsuspend");
     },
-    setActivated: function (activated) {
+    setActivated(activated) {
         return this.doAction(activated ? "Activate" : "Deactivate");
     },
-    doReset: function () {
+    doReset() {
         return this.doAction("ResetQueryStats");
     },
-    doDelete: function () {
+    doDelete() {
         return this.doAction("Delete");
     }
 });
 
 export function Get(QuerySetId, Id, data?) {
-    var store = new Store();
-    var retVal = store.get(QuerySetId + ":" + Id);
+    const store = new Store();
+    const retVal = store.get(QuerySetId + ":" + Id);
     if (data) {
         retVal.updateData(data);
     }
@@ -189,7 +188,7 @@ export function Get(QuerySetId, Id, data?) {
 
 export function GetFromRequestXML(QuerySetId, requestXml) {
     try {
-        var domXml = parser.parse(requestXml);
+        const domXml = parser.parse(requestXml);
         //  Not all XML is a "Request"  ---
         if (lang.exists("firstChild.tagName", domXml) && domXml.firstChild.tagName.indexOf("Request") === domXml.firstChild.tagName.length - 7) {
             return this.Get(QuerySetId, domXml.firstChild.tagName.slice(0, -7));
@@ -200,6 +199,6 @@ export function GetFromRequestXML(QuerySetId, requestXml) {
 }
 
 export function CreateQueryStore(options) {
-    var store = new Store(options);
+    const store = new Store(options);
     return new Observable(store);
 }

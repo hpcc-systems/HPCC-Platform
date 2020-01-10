@@ -1,10 +1,10 @@
-﻿import * as declare from "dojo/_base/declare";
-import * as arrayUtil from "dojo/_base/array";
+﻿import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
+import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as Deferred from "dojo/_base/Deferred";
 import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
@@ -12,16 +12,16 @@ import * as topic from "dojo/topic";
 import { Workunit as HPCCWorkunit } from "@hpcc-js/comms";
 import { IEvent } from "@hpcc-js/util";
 
-import * as Utility from "./Utility";
-import * as WsWorkunits from "./WsWorkunits";
-import * as WsTopology from "./WsTopology";
-import * as ESPUtil from "./ESPUtil";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPResult from "./ESPResult";
+import * as ESPUtil from "./ESPUtil";
+import * as Utility from "./Utility";
+import * as WsTopology from "./WsTopology";
+import * as WsWorkunits from "./WsWorkunits";
 
 declare const dojo;
 
-var _workunits = {};
+const _workunits = {};
 
 export function getStateIconClass(stateID: number, complete: boolean, archived: boolean): string {
     if (archived) {
@@ -113,7 +113,7 @@ export function getStateImageHTML(stateID: number, complete: boolean, archived: 
     return Utility.getImageHTML(getStateImageName(stateID, complete, archived));
 }
 
-var Store = declare([ESPRequest.Store], {
+const Store = declare([ESPRequest.Store], {
     service: "WsWorkunits",
     action: "WUQuery",
     responseQualifier: "WUQueryResponse.Workunits.ECLWorkunit",
@@ -122,29 +122,29 @@ var Store = declare([ESPRequest.Store], {
     startProperty: "PageStartFrom",
     countProperty: "Count",
 
-    constructor: function () {
+    constructor() {
         this._watched = {};
     },
-    preRequest: function (request) {
+    preRequest(request) {
         if (request.Sortby && request.Sortby === "TotalClusterTime") {
             request.Sortby = "ClusterTime";
         }
         this.busy = true;
     },
-    preProcessFullResponse: function (response, request, query, options) {
+    preProcessFullResponse(response, request, query, options) {
         this.busy = false;
         this._toUnwatch = lang.mixin({}, this._watched);
     },
-    create: function (id) {
+    create(id) {
         return new Workunit({
             Wuid: id
         });
     },
-    update: function (id, item) {
-        var storeItem = this.get(id);
+    update(id, item) {
+        const storeItem = this.get(id);
         storeItem.updateData(item);
         if (!this._watched[id]) {
-            var context = this;
+            const context = this;
             this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
                     context.notify(storeItem, id);
@@ -154,8 +154,8 @@ var Store = declare([ESPRequest.Store], {
             delete this._toUnwatch[id];
         }
     },
-    postProcessResults: function () {
-        for (var key in this._toUnwatch) {
+    postProcessResults() {
+        for (const key in this._toUnwatch) {
             this._toUnwatch[key].unwatch();
             delete this._watched[key];
         }
@@ -163,29 +163,29 @@ var Store = declare([ESPRequest.Store], {
     }
 });
 
-var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
+const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,
 
     //  Asserts  ---
-    _assertHasWuid: function () {
+    _assertHasWuid() {
         if (!this.Wuid) {
             throw new Error("Wuid cannot be empty.");
         }
     },
     //  Attributes  ---
-    _StateIDSetter: function (StateID) {
+    _StateIDSetter(StateID) {
         this.StateID = StateID;
-        var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
+        const actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
         this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
     },
-    _ActionExSetter: function (ActionEx) {
+    _ActionExSetter(ActionEx) {
         if (this.StateID) {
             this.ActionEx = ActionEx;
             this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, this.ActionEx));
         }
     },
-    _hasCompletedSetter: function (completed) {
-        var justCompleted = !this.hasCompleted && completed;
+    _hasCompletedSetter(completed) {
+        const justCompleted = !this.hasCompleted && completed;
         this.hasCompleted = completed;
         if (justCompleted) {
             topic.publish("hpcc/ecl_wu_completed", this);
@@ -194,15 +194,15 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             this.startMonitor();
         }
     },
-    _VariablesSetter: function (Variables) {
+    _VariablesSetter(Variables) {
         this.set("variables", Variables.ECLResult);
     },
-    _ResultsSetter: function (Results) {
-        var results = [];
-        var sequenceResults = [];
-        var namedResults = {};
-        for (var i = 0; i < Results.ECLResult.length; ++i) {
-            var espResult = ESPResult.Get(lang.mixin({
+    _ResultsSetter(Results) {
+        const results = [];
+        const sequenceResults = [];
+        const namedResults = {};
+        for (let i = 0; i < Results.ECLResult.length; ++i) {
+            const espResult = ESPResult.Get(lang.mixin({
                 wu: this.wu,
                 Wuid: this.Wuid,
                 ResultViews: lang.exists("ResultViews.View", Results) ? Results.ResultViews.View : []
@@ -217,22 +217,22 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         this.set("sequenceResults", sequenceResults);
         this.set("namedResults", namedResults);
     },
-    _SourceFilesSetter: function (SourceFiles) {
-        var sourceFiles = [];
-        for (var i = 0; i < SourceFiles.ECLSourceFile.length; ++i) {
+    _SourceFilesSetter(SourceFiles) {
+        const sourceFiles = [];
+        for (let i = 0; i < SourceFiles.ECLSourceFile.length; ++i) {
             sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: "" }, SourceFiles.ECLSourceFile[i])));
             if (lang.exists("ECLSourceFiles.ECLSourceFile", SourceFiles.ECLSourceFile[i])) {
-                for (var j = 0; j < SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile.length; ++j) {
+                for (let j = 0; j < SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile.length; ++j) {
                     sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid, __hpcc_parentName: SourceFiles.ECLSourceFile[i].Name }, SourceFiles.ECLSourceFile[i].ECLSourceFiles.ECLSourceFile[j])));
                 }
             }
         }
         this.set("sourceFiles", sourceFiles);
     },
-    _TimersSetter: function (Timers) {
-        var timers = [];
-        for (var i = 0; i < Timers.ECLTimer.length; ++i) {
-            var secs = Utility.espTime2Seconds(Timers.ECLTimer[i].Value);
+    _TimersSetter(Timers) {
+        const timers = [];
+        for (let i = 0; i < Timers.ECLTimer.length; ++i) {
+            const secs = Utility.espTime2Seconds(Timers.ECLTimer[i].Value);
             timers.push(lang.mixin(Timers.ECLTimer[i], {
                 __hpcc_id: i + 1,
                 Seconds: Math.round(secs * 1000) / 1000,
@@ -241,16 +241,16 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
         this.set("timers", timers);
     },
-    _ResourceURLsSetter: function (resourceURLs) {
-        var data = [];
+    _ResourceURLsSetter(resourceURLs) {
+        const data = [];
         arrayUtil.forEach(resourceURLs.URL, function (url, idx) {
-            var cleanedURL = url.split("\\").join("/");
-            var urlParts = cleanedURL.split("/");
-            var matchStr = "res/" + this.wu.Wuid + "/";
+            const cleanedURL = url.split("\\").join("/");
+            const urlParts = cleanedURL.split("/");
+            const matchStr = "res/" + this.wu.Wuid + "/";
             if (cleanedURL.indexOf(matchStr) === 0) {
-                var displayPath = cleanedURL.substr(matchStr.length);
-                var displayName = urlParts[urlParts.length - 1];
-                var row = {
+                const displayPath = cleanedURL.substr(matchStr.length);
+                const displayName = urlParts[urlParts.length - 1];
+                const row = {
                     __hpcc_id: idx,
                     DisplayName: displayName,
                     DisplayPath: displayPath,
@@ -262,26 +262,26 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         this.set("resourceURLs", data);
         this.set("resourceURLCount", data.length);
     },
-    _GraphsSetter: function (Graphs) {
+    _GraphsSetter(Graphs) {
         this.set("graphs", Graphs.ECLGraph);
     },
 
     //  Calculated "Helpers"  ---
-    _HelpersSetter: function (Helpers) {
+    _HelpersSetter(Helpers) {
         this.set("helpers", Helpers.ECLHelpFile);
         this.refreshHelpersCount();
     },
-    _ThorLogListSetter: function (ThorLogList) {
+    _ThorLogListSetter(ThorLogList) {
         this.set("thorLogInfo", ThorLogList.ThorLogInfo);
         this.getThorLogStatus(ThorLogList);
         this.refreshHelpersCount();
     },
-    _HasArchiveQuerySetter: function (HasArchiveQuery) {
+    _HasArchiveQuerySetter(HasArchiveQuery) {
         this.set("hasArchiveQuery", HasArchiveQuery);
         this.refreshHelpersCount();
     },
-    refreshHelpersCount: function () {
-        var eclwatchHelpersCount = 2;   //  ECL + Workunit XML are also helpers...
+    refreshHelpersCount() {
+        let eclwatchHelpersCount = 2;   //  ECL + Workunit XML are also helpers...
         if (this.helpers) {
             eclwatchHelpersCount += this.helpers.length;
         }
@@ -295,11 +295,11 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
     },
 
     //  ---  ---  ---
-    onCreate: function () {
+    onCreate() {
     },
-    onUpdate: function () {
+    onUpdate() {
     },
-    onSubmit: function () {
+    onSubmit() {
     },
     constructor: ESPUtil.override(function (inherited, args) {
         inherited(arguments);
@@ -309,53 +309,53 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         this.wu = this;
         this._hpccWU = HPCCWorkunit.attach({ baseUrl: "" }, this.Wuid);
     }),
-    isComplete: function () {
+    isComplete() {
         return this.hasCompleted;
     },
-    isFailed: function () {
+    isFailed() {
         return this.StateID === 4;
     },
-    isDeleted: function () {
+    isDeleted() {
         return this.StateID === 999;
     },
-    isBlocked: function () {
+    isBlocked() {
         return this.StateID === 8;
     },
-    isAbleToDeschedule: function () {
+    isAbleToDeschedule() {
         return this.EventSchedule === 2;
     },
-    isAbleToReschedule: function () {
+    isAbleToReschedule() {
         return this.EventSchedule === 1;
     },
-    isMonitoring: function (): boolean {
+    isMonitoring(): boolean {
         return !!this._hpccWatchHandle;
     },
-    disableMonitor: function (disableMonitor: boolean) {
+    disableMonitor(disableMonitor: boolean) {
         if (disableMonitor) {
             this.stopMonitor();
         } else {
             this.startMonitor();
         }
     },
-    startMonitor: function () {
+    startMonitor() {
         if (this.isMonitoring())
             return;
         this._hpccWatchHandle = this._hpccWU.watch((changes: IEvent[]) => {
             this.updateData(this._hpccWU.properties);
         }, true);
     },
-    stopMonitor: function () {
+    stopMonitor() {
         if (this._hpccWatchHandle) {
             this._hpccWatchHandle.release();
             delete this._hpccWatchHandle;
         }
     },
-    monitor: function (callback) {
+    monitor(callback) {
         if (callback) {
             callback(this);
         }
         if (!this.hasCompleted) {
-            var context = this;
+            const context = this;
             if (this._watchHandle) {
                 this._watchHandle.unwatch();
             }
@@ -368,18 +368,18 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             });
         }
     },
-    doDeschedule: function () {
+    doDeschedule() {
         return this._action("Deschedule").then(function (response) {
         });
     },
-    doReschedule: function () {
+    doReschedule() {
         return this._action("Reschedule").then(function (response) {
         });
     },
-    create: function (ecl) {
-        var context = this;
+    create(ecl) {
+        const context = this;
         WsWorkunits.WUCreate({
-            load: function (response) {
+            load(response) {
                 if (lang.exists("Exceptions.Exception", response)) {
                     dojo.publish("hpcc/brToaster", {
                         message: "<h4>" + response.Exceptions.Source + "</h4>" + "<p>" + response.Exceptions.Exception[0].Message + "</p>",
@@ -397,7 +397,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             }
         });
     },
-    update: function (request, appData) {
+    update(request, appData) {
         this._assertHasWuid();
         lang.mixin(request, {
             Wuid: this.Wuid
@@ -412,10 +412,10 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             ApplicationValues: appData
         });
 
-        var context = this;
+        const context = this;
         WsWorkunits.WUUpdate({
-            request: request,
-            load: function (response) {
+            request,
+            load(response) {
                 if (lang.exists("Exceptions.Exception", response)) {
                     dojo.publish("hpcc/brToaster", {
                         message: "<h4>" + response.Exceptions.Source + "</h4>" + "<p>" + response.Exceptions.Exception[0].Message + "</p>",
@@ -429,17 +429,17 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             }
         });
     },
-    submit: function (target) {
+    submit(target) {
         this._assertHasWuid();
-        var context = this;
-        var deferred = new Deferred()
+        const context = this;
+        const deferred = new Deferred();
         deferred.promise.then(function (target) {
             WsWorkunits.WUSubmit({
                 request: {
                     Wuid: context.Wuid,
                     Cluster: target
                 },
-                load: function (response) {
+                load(response) {
                     context.onSubmit();
                 }
             });
@@ -455,9 +455,9 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             });
         }
     },
-    _resubmit: function (clone, resetWorkflow) {
+    _resubmit(clone, resetWorkflow) {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         return WsWorkunits.WUResubmit({
             request: {
                 Wuids: this.Wuid,
@@ -469,11 +469,11 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    clone: function () {
-        var context = this;
+    clone() {
+        const context = this;
         this._resubmit(true, false).then(function (response) {
             if (!lang.exists("Exceptions.Source", response)) {
-                var msg = "";
+                let msg = "";
                 if (lang.exists("WUResubmitResponse.WUs.WU", response) && response.WUResubmitResponse.WUs.WU.length) {
                     msg = context.i18n.ClonedWUID + ":  " + response.WUResubmitResponse.WUs.WU[0].WUID;
                     topic.publish("hpcc/ecl_wu_created", {
@@ -489,8 +489,8 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    resubmit: function () {
-        var context = this;
+    resubmit() {
+        const context = this;
         this._resubmit(false, true).then(function (response) {
             if (!lang.exists("Exceptions.Source", response)) {
                 dojo.publish("hpcc/brToaster", {
@@ -504,8 +504,8 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    recover: function () {
-        var context = this;
+    recover() {
+        const context = this;
         this._resubmit(false, false).then(function (response) {
             if (!lang.exists("Exceptions.Source", response)) {
                 dojo.publish("hpcc/brToaster", {
@@ -519,42 +519,42 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    _action: function (action) {
+    _action(action) {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         return WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
-            load: function (response) {
+            load(response) {
                 context.refresh();
             }
         });
     },
-    setToFailed: function () {
+    setToFailed() {
         return this._action("setToFailed");
     },
-    pause: function () {
+    pause() {
         return this._action("Pause");
     },
-    pauseNow: function () {
+    pauseNow() {
         return this._action("PauseNow");
     },
-    resume: function () {
+    resume() {
         return this._action("Resume");
     },
-    abort: function () {
+    abort() {
         return this._action("Abort");
     },
-    doDelete: function () {
+    doDelete() {
         return this._action("Delete").then(function (response) {
         });
     },
 
-    restore: function () {
+    restore() {
         return this._action("Restore");
     },
 
-    publish: function (jobName, remoteDali, sourceProcess, priority, comment, allowForeign, updateSupers) {
+    publish(jobName, remoteDali, sourceProcess, priority, comment, allowForeign, updateSupers) {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         WsWorkunits.WUPublishWorkunit({
             request: {
                 Wuid: this.Wuid,
@@ -569,20 +569,20 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 UpdateWorkUnitName: 1,
                 Wait: 5000
             },
-            load: function (response) {
+            load(response) {
                 context.updateData(response.WUPublishWorkunitResponse);
             }
         });
     },
-    refresh: function (full) {
+    refresh(full) {
         return this._hpccWU.refresh(full || this.Archived || this.__hpcc_changedCount === 0).then(wu => {
             this.updateData(wu.properties);
             return wu.properties;
         });
     },
-    getQuery: function () {
+    getQuery() {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         return WsWorkunits.WUQuery({
             request: {
                 Wuid: this.Wuid
@@ -596,9 +596,9 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    getInfo: function (args) {
+    getInfo(args) {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         return WsWorkunits.WUInfo({
             request: {
                 Wuid: this.Wuid,
@@ -633,7 +633,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                         Exceptions: {
                             ECLException: []
                         }
-                    })
+                    });
                 }
                 context.updateData(response.WUInfoResponse.Workunit);
 
@@ -669,10 +669,10 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 }
                 if (args.onGetGraphs && lang.exists("graphs", context)) {
                     if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
-                        for (var i = 0; i < context.graphs.length; ++i) {
+                        for (let i = 0; i < context.graphs.length; ++i) {
                             if (context.timers) {
                                 context.graphs[i].Time = 0;
-                                for (var j = 0; j < context.timers.length; ++j) {
+                                for (let j = 0; j < context.timers.length; ++j) {
                                     if (context.timers[j].GraphName === context.graphs[i].Name && !context.timers[j].HasSubGraphId) {
                                         context.graphs[i].Time = context.timers[j].Seconds;
                                         break;
@@ -681,7 +681,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                                 context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                             }
                             if (lang.exists("ApplicationValues.ApplicationValue", context)) {
-                                var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
+                                const idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
                                 if (idx >= 0) {
                                     context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
                                 }
@@ -702,9 +702,9 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             return response;
         });
     },
-    getGraphIndex: function (name) {
+    getGraphIndex(name) {
         if (this.graphs) {
-            for (var i = 0; i < this.graphs.length; ++i) {
+            for (let i = 0; i < this.graphs.length; ++i) {
                 if (this.graphs[i].Name === name) {
                     return i;
                 }
@@ -712,8 +712,8 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
         return -1;
     },
-    getGraphTimers: function (name) {
-        var retVal = [];
+    getGraphTimers(name) {
+        const retVal = [];
         arrayUtil.forEach(this.timers, function (timer, idx) {
             if (timer.HasSubGraphId && timer.GraphName === name) {
                 retVal.push(timer);
@@ -721,9 +721,9 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }, this);
         return retVal;
     },
-    getApplicationValueIndex: function (application, name) {
+    getApplicationValueIndex(application, name) {
         if (lang.exists("ApplicationValues.ApplicationValue", this)) {
-            for (var i = 0; i < this.ApplicationValues.ApplicationValue.length; ++i) {
+            for (let i = 0; i < this.ApplicationValues.ApplicationValue.length; ++i) {
                 if (this.ApplicationValues.ApplicationValue[i].Application === application && this.ApplicationValues.ApplicationValue[i].Name === name) {
                     return i;
                 }
@@ -731,38 +731,38 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
         return -1;
     },
-    getThorLogStatus: function (ThorLogList) {
+    getThorLogStatus(ThorLogList) {
         return ThorLogList.ThorLogInfo.length > 0 ? true : false;
     },
-    getState: function () {
+    getState() {
         return this.State;
     },
-    getStateIconClass: function () {
+    getStateIconClass() {
         return getStateIconClass(this.StateID, this.isComplete(), this.Archived);
     },
-    getStateImageName: function () {
+    getStateImageName() {
         return getStateImageName(this.StateID, this.isComplete(), this.Archived);
     },
-    getStateImage: function () {
+    getStateImage() {
         return getStateImage(this.StateID, this.isComplete(), this.Archived);
     },
-    getStateImageHTML: function () {
+    getStateImageHTML() {
         return getStateImageHTML(this.StateID, this.isComplete(), this.Archived);
     },
-    getProtectedImageName: function () {
+    getProtectedImageName() {
         if (this.Protected) {
             return "locked.png";
         }
         return "unlocked.png";
     },
-    getProtectedImage: function () {
+    getProtectedImage() {
         return Utility.getImageURL(this.getProtectedImageName());
     },
-    getProtectedHTML: function () {
+    getProtectedHTML() {
         return Utility.getImageHTML(this.getProtectedImageName());
     },
-    fetchText: function (onFetchText) {
-        var context = this;
+    fetchText(onFetchText) {
+        const context = this;
         if (lang.exists("Query.Text", context)) {
             onFetchText(this.Query.Text);
             return;
@@ -772,26 +772,26 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetText: onFetchText
         });
     },
-    fetchXML: function (onFetchXML) {
+    fetchXML(onFetchXML) {
         if (this.xml) {
             onFetchXML(this.xml);
             return;
         }
 
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         WsWorkunits.WUFile({
             request: {
                 Wuid: this.Wuid,
                 Type: "XML"
             },
-            load: function (response) {
+            load(response) {
                 context.xml = response;
                 onFetchXML(response);
             }
         });
     },
-    fetchResults: function (onFetchResults) {
+    fetchResults(onFetchResults) {
         if (this.results && this.results.length) {
             onFetchResults(this.results);
             return;
@@ -801,16 +801,16 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetResults: onFetchResults
         });
     },
-    fetchNamedResults: function (resultNames, row, count) {
-        var deferred = new Deferred();
-        var context = this;
+    fetchNamedResults(resultNames, row, count) {
+        const deferred = new Deferred();
+        const context = this;
         this.fetchResults(function (results) {
-            var resultContents = [];
+            const resultContents = [];
             arrayUtil.forEach(resultNames, function (item, idx) {
                 resultContents.push(context.namedResults[item].fetchContent(row, count));
             });
             all(resultContents).then(function (resultContents) {
-                var results = [];
+                const results = [];
                 arrayUtil.forEach(resultContents, function (item, idx) {
                     results[resultNames[idx]] = item;
                 });
@@ -819,11 +819,11 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         });
         return deferred.promise;
     },
-    fetchAllNamedResults: function (row, count) {
-        var deferred = new Deferred();
-        var context = this;
+    fetchAllNamedResults(row, count) {
+        const deferred = new Deferred();
+        const context = this;
         this.fetchResults(function (results) {
-            var resultNames = [];
+            const resultNames = [];
             arrayUtil.forEach(results, function (item, idx) {
                 resultNames.push(item.Name);
             });
@@ -833,7 +833,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         });
         return deferred.promise;
     },
-    fetchSequenceResults: function (onFetchSequenceResults) {
+    fetchSequenceResults(onFetchSequenceResults) {
         if (this.sequenceResults && this.sequenceResults.length) {
             onFetchSequenceResults(this.sequenceResults);
             return;
@@ -843,7 +843,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetSequenceResults: onFetchSequenceResults
         });
     },
-    fetchSourceFiles: function (onFetchSourceFiles) {
+    fetchSourceFiles(onFetchSourceFiles) {
         if (this.sourceFiles && this.sourceFiles.length) {
             onFetchSourceFiles(this.sourceFiles);
             return;
@@ -853,7 +853,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetSourceFiles: onFetchSourceFiles
         });
     },
-    fetchTimers: function (onFetchTimers) {
+    fetchTimers(onFetchTimers) {
         if (this.timers && this.timers.length) {
             onFetchTimers(this.timers);
             return;
@@ -863,7 +863,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetTimers: onFetchTimers
         });
     },
-    fetchGraphs: function (onFetchGraphs) {
+    fetchGraphs(onFetchGraphs) {
         if (this.graphs && this.graphs.length) {
             onFetchGraphs(this.graphs);
             return;
@@ -873,8 +873,8 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetGraphs: onFetchGraphs
         });
     },
-    fetchGraphXgmmlByName: function (name, subGraphId, onFetchGraphXgmml, force) {
-        var idx = this.getGraphIndex(name);
+    fetchGraphXgmmlByName(name, subGraphId, onFetchGraphXgmml, force) {
+        const idx = this.getGraphIndex(name);
         if (idx >= 0) {
             this.fetchGraphXgmml(idx, subGraphId, onFetchGraphXgmml, force);
         } else {
@@ -888,7 +888,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onFetchGraphXgmml("", "");
         }
     },
-    fetchGraphXgmml: function (idx, subGraphId, onFetchGraphXgmml, force) {
+    fetchGraphXgmml(idx, subGraphId, onFetchGraphXgmml, force) {
         if (!force && !subGraphId && this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
             onFetchGraphXgmml(this.graphs[idx].xgmml, this.graphs[idx].svg);
             return;
@@ -898,7 +898,7 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         }
 
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         WsWorkunits.WUGetGraph({
             request: {
                 Wuid: this.Wuid,
@@ -932,31 +932,30 @@ var Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             }
         });
     },
-    setGraphSvg: function (graphName, svg) {
-        var idx = this.getGraphIndex(graphName);
+    setGraphSvg(graphName, svg) {
+        const idx = this.getGraphIndex(graphName);
         if (idx >= 0) {
             this.graphs[idx].svg = svg;
-            var appData = [];
+            const appData = [];
             appData[graphName + "_SVG"] = svg;
             this.update({}, appData);
         }
     }
 });
 
-
 export function isInstanceOfWorkunit(obj) {
     return obj && obj.isInstanceOf && obj.isInstanceOf(Workunit);
 }
 
 export function Create(params) {
-    var retVal = new Workunit(params);
+    const retVal = new Workunit(params);
     retVal.create();
     return retVal;
 }
 
 export function Get(wuid, data?) {
-    var store = new Store();
-    var retVal = store.get(wuid);
+    const store = new Store();
+    const retVal = store.get(wuid);
     if (data) {
         retVal.updateData(data);
     }
@@ -964,6 +963,6 @@ export function Get(wuid, data?) {
 }
 
 export function CreateWUQueryStore(options) {
-    var store = new Store(options);
+    const store = new Store(options);
     return Observable(store);
 }

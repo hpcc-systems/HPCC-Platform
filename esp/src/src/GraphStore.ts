@@ -1,7 +1,7 @@
-import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
+import * as lang from "dojo/_base/lang";
 import * as QueryResults from "dojo/store/util/QueryResults";
-import {UndefinedMemory} from "./ESPUtil";
+import { UndefinedMemory } from "./ESPUtil";
 
 export class GraphStore extends UndefinedMemory {
     idProperty: string;
@@ -19,17 +19,19 @@ export class GraphStore extends UndefinedMemory {
     }
 
     query(query, options) {
-        var retVal = super.query(query, options);
-        var sortSet = options && options.sort;
+        const retVal = super.query(query, options);
+        const sortSet = options && options.sort;
         if (sortSet) {
             retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
-                for (var sort, i = 0; sort = sortSet[i]; i++) {
-                    var aValue = a[sort.attribute];
-                    var bValue = b[sort.attribute];
+                // tslint:disable-next-line: no-conditional-assignment
+                for (let sort, i = 0; sort = sortSet[i]; i++) {
+                    let aValue = a[sort.attribute];
+                    let bValue = b[sort.attribute];
                     // valueOf enables proper comparison of dates
                     aValue = aValue != null ? aValue.valueOf() : aValue;
                     bValue = bValue != null ? bValue.valueOf() : bValue;
                     if (aValue !== bValue) {
+                        // tslint:disable-next-line: triple-equals
                         return !!sort.descending == (bValue == null || aValue > bValue) ? -1 : 1;   // jshint ignore:line
                     }
                 }
@@ -46,7 +48,7 @@ export class GraphStore extends UndefinedMemory {
 
     calcColumns() {
         arrayUtil.forEach(this.data, function (item, idx) {
-            for (var key in item) {
+            for (const key in item) {
                 if (key !== "id" && key.substring(0, 1) !== "_") {
                     if (!this.cacheColumns[key]) {
                         this.cacheColumns[key] = item[key].length;
@@ -62,7 +64,7 @@ export class GraphStore extends UndefinedMemory {
     }
 
     getColumnWidth(key) {
-        var width = this.cacheColumns[key] * 9;
+        let width = this.cacheColumns[key] * 9;
         if (width < 27) {
             width = 27;
         } else if (width > 300) {
@@ -78,7 +80,7 @@ export class GraphStore extends UndefinedMemory {
         if (!lowPriority) {
             lowPriority = [];
         }
-        var skip = skip || [];
+        skip = skip || [];
         arrayUtil.forEach(target, function (item, idx) {
             skip.push(item.field);
         });
@@ -89,7 +91,7 @@ export class GraphStore extends UndefinedMemory {
                 });
             }
         }, this);
-        for (var key in this.cacheColumns) {
+        for (const key in this.cacheColumns) {
             if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) !== "_") {
                 target.push({
                     field: key, label: key, width: this.getColumnWidth(key)
@@ -108,7 +110,7 @@ export class GraphStore extends UndefinedMemory {
                 if (column.label.indexOf("Time") === 0 || column.label.indexOf("Size") === 0 || column.label.indexOf("Skew") === 0) {
                     column.formatter = function (_id, row) {
                         return row["_" + column.field] || "";
-                    }
+                    };
                 }
             });
         }
@@ -146,7 +148,7 @@ export class GraphTreeStore extends GraphStore {
             }
             this.add(item);
 
-            for (var key in item) {
+            for (const key in item) {
                 if (key !== "id" && key.substring(0, 1) !== "_") {
                     if (!this.cacheColumns[key]) {
                         this.cacheColumns[key] = item[key].length;
@@ -167,7 +169,7 @@ export class GraphTreeStore extends GraphStore {
     }
 
     getChildren(parent, options) {
-        var filter = {};
+        let filter = {};
         if (options.originalQuery.__hpcc_notActivity) {
             filter = {
                 __hpcc_notActivity: true

@@ -1,4 +1,4 @@
-import * as ESPRequest from "./ESPRequest"
+import * as ESPRequest from "./ESPRequest";
 
 export function ListDESDLEspBindings(params) {
     return ESPRequest.send("WsESDLConfig", "ListDESDLEspBindings", params);
@@ -32,11 +32,8 @@ export function PublishESDLBinding(params) {
     return ESPRequest.send("WsESDLConfig", "PublishESDLBinding", params);
 }
 
-//post 1.3 services
+// post 1.3 services
 
 export function ListESDLBindings(params) {
     return ESPRequest.send("WsESDLConfig", "ListESDLBindings", params);
 }
-
-
-

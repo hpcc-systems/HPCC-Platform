@@ -1,8 +1,8 @@
+import { Column } from "@hpcc-js/chart";
+import { ascending as d3Ascending, max as d3Max, scaleLinear as d3ScaleLinear, select as d3Select } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
-import { ascending as d3Ascending, max as d3Max, select as d3Select, scaleLinear as d3ScaleLinear } from "@hpcc-js/common";
 import { WUTimeline } from "@hpcc-js/eclwatch";
 import { ChartPanel } from "@hpcc-js/layout";
-import { Column } from "@hpcc-js/chart";
 
 class TimingColumn extends Column {
 
@@ -268,7 +268,7 @@ export class Timings {
             this._rawColumns = response.columns;
             this._graphLookup = {};
             this._subgraphLookup = {};
-            var rawData = response.data.filter(row => {
+            const rawData = response.data.filter(row => {
                 if (row.type === "graph") this._graphLookup[row.name] = row.id;
                 if (row.type === "subgraph") this._subgraphLookup[row.name] = row.id;
                 if (!row.id) return false;
@@ -283,16 +283,16 @@ export class Timings {
                 return 0;
             });
 
-            var measure = "";
-            var colArr = [];
-            for (var key in response.columns) {
+            const measure = "";
+            const colArr = [];
+            for (const key in response.columns) {
                 if (response.columns[key].Measure && response.columns[key].Measure !== "label") {
-                    colArr.push(key)
+                    colArr.push(key);
                 }
             }
             colArr.sort(d3Ascending);
             this._metricSelectLabel = this._metricSelectValues + (measure ? " (" + measure + ")" : "");
-            var options = this.metricsSelect.selectAll("option").data(colArr, function (d) { return d; });
+            const options = this.metricsSelect.selectAll("option").data(colArr, function (d) { return d; });
             options.enter().append("option")
                 .merge(options)
                 .property("value", d => d)
@@ -344,8 +344,8 @@ export class Timings {
             };
         });
         this._metricSelectValues.forEach(metric => {
-            var max = d3Max<number>(data.map(row => row[metric]));
-            var scale = d3ScaleLinear().domain([0, max]).range([0, 1]);
+            const max = d3Max<number>(data.map(row => row[metric]));
+            const scale = d3ScaleLinear().domain([0, max]).range([0, 1]);
             normalizedData.forEach(row => {
                 row[metric] = scale(row[metric]);
             });
@@ -389,7 +389,7 @@ export class WUTimelineEx extends WUTimeline {
                     started: row[1],
                     finished: row[2]
                 };
-            })
+            });
             this.setData(timeData);
         }
         return retVal;

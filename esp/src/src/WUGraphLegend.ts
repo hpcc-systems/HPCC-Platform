@@ -112,7 +112,7 @@ export class WUGraphLegend extends Legend {
                     .render();
             })
             .remove();
-        this._g.attr("transform", `translate(32, 16)`);
+        this._g.attr("transform", "translate(32, 16)");
         const bbox = this.getBBox(true, true);
         this.resize({ width: bbox.width + 32, height: bbox.height + 16 });
     }

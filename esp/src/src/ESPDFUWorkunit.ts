@@ -6,14 +6,14 @@ import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
-import * as FileSpray from "./FileSpray";
-import * as ESPUtil from "./ESPUtil";
 import * as ESPRequest from "./ESPRequest";
+import * as ESPUtil from "./ESPUtil";
+import * as FileSpray from "./FileSpray";
 import * as Utility from "./Utility";
 
-var i18n = nlsHPCC;
+const i18n = nlsHPCC;
 
-var Store = declare([ESPRequest.Store], {
+const Store = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "GetDFUWorkunits",
     responseQualifier: "GetDFUWorkunitsResponse.results.DFUWorkunit",
@@ -23,7 +23,7 @@ var Store = declare([ESPRequest.Store], {
     countProperty: "PageSize",
 
     _watched: [],
-    preRequest: function (request) {
+    preRequest(request) {
         switch (request.Sortby) {
             case "ClusterName":
                 request.Sortby = "Cluster";
@@ -39,17 +39,17 @@ var Store = declare([ESPRequest.Store], {
                 break;
         }
     },
-    create: function (id) {
+    create(id) {
         return new Workunit({
             ID: id,
             Wuid: id
         });
     },
-    update: function (id, item) {
-        var storeItem = this.get(id);
+    update(id, item) {
+        const storeItem = this.get(id);
         storeItem.updateData(item);
         if (!this._watched[id]) {
-            var context = this;
+            const context = this;
             this._watched[id] = storeItem.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue) {
                     context.notify(storeItem, id);
@@ -59,9 +59,9 @@ var Store = declare([ESPRequest.Store], {
     }
 });
 
-var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:line
+const Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:line
     //  Asserts  ---
-    _assertHasWuid: function () {
+    _assertHasWuid() {
         if (!this.Wuid) {
             throw new Error(i18n.Wuidcannotbeempty);
         }
@@ -79,20 +79,20 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
     exceptions: [],
     timers: [],
 
-    _StateSetter: function (state) {
+    _StateSetter(state) {
         this.State = state;
         this.set("hasCompleted", FileSpray.isComplete(this.State));
     },
 
-    _hasCompletedSetter: function (completed) {
-        var justCompleted = lang.exists("hasCompleted", this) && !this.hasCompleted && completed;
+    _hasCompletedSetter(completed) {
+        const justCompleted = lang.exists("hasCompleted", this) && !this.hasCompleted && completed;
         this.hasCompleted = completed;
         if (justCompleted) {
             topic.publish("hpcc/dfu_wu_completed", this);
         }
     },
 
-    _CommandSetter: function (command) {
+    _CommandSetter(command) {
         this.Command = command;
         if (command in FileSpray.CommandMessages) {
             this.set("CommandMessage", FileSpray.CommandMessages[command]);
@@ -101,7 +101,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
         }
     },
 
-    _SourceFormatSetter: function (format) {
+    _SourceFormatSetter(format) {
         this.SourceFormat = format;
         if (format in FileSpray.FormatMessages) {
             this.set("SourceFormatMessage", FileSpray.FormatMessages[format]);
@@ -110,7 +110,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
         }
     },
 
-    _DestFormatSetter: function (format) {
+    _DestFormatSetter(format) {
         this.DestFormat = format;
         if (format in FileSpray.FormatMessages) {
             this.set("DestFormatMessage", FileSpray.FormatMessages[format]);
@@ -119,11 +119,11 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
         }
     },
 
-    onCreate: function () {
+    onCreate() {
     },
-    onUpdate: function () {
+    onUpdate() {
     },
-    onSubmit: function () {
+    onSubmit() {
     },
     constructor: ESPUtil.override(function (inherited, args) {
         inherited(arguments);
@@ -132,18 +132,18 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
         }
         this.wu = this;
     }),
-    isComplete: function () {
+    isComplete() {
         return this.hasCompleted;
     },
-    isDeleted: function () {
+    isDeleted() {
         return this.State === 999;
     },
-    monitor: function (callback) {
+    monitor(callback) {
         if (callback) {
             callback(this);
         }
         if (!this.hasCompleted) {
-            var context = this;
+            const context = this;
             this.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
                 if (oldValue !== newValue && newValue) {
                     if (callback) {
@@ -153,32 +153,32 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
             });
         }
     },
-    create: function (ecl) {
+    create(ecl) {
     },
-    update: function (request) {
+    update(request) {
         this._assertHasWuid();
         lang.mixin(request, {
             ID: this.Wuid
         });
 
-        var outerRequest = {
+        const outerRequest = {
             "wu.ID": request.ID,
             "wu.isProtected": request.isProtected,
             "wu.JobName": request.JobName,
-            isProtectedOrig: this.isProtected,
-            JobNameOrig: this.JobName
+            "isProtectedOrig": this.isProtected,
+            "JobNameOrig": this.JobName
         };
 
-        var context = this;
+        const context = this;
         FileSpray.UpdateDFUWorkunit({
             request: outerRequest
         }).then(function (response) {
             context.refresh();
         });
     },
-    submit: function (target) {
+    submit(target) {
     },
-    fetchXML: function (onFetchXML) {
+    fetchXML(onFetchXML) {
         FileSpray.DFUWUFile({
             request: {
                 Wuid: this.Wuid
@@ -187,36 +187,36 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
             onFetchXML(response);
         });
     },
-    _resubmit: function (clone, resetWorkflow, callback) {
+    _resubmit(clone, resetWorkflow, callback) {
     },
-    resubmit: function (callback) {
+    resubmit(callback) {
     },
-    _action: function (action) {
-        var context = this;
+    _action(action) {
+        const context = this;
         return FileSpray.DFUWorkunitsAction([this], action, {
         }).then(function (response) {
             context.refresh();
         });
     },
-    abort: function () {
+    abort() {
         return FileSpray.AbortDFUWorkunit({
             request: {
                 wuid: this.Wuid
             }
         });
     },
-    doDelete: function (callback) {
+    doDelete(callback) {
         return this._action("Delete");
     },
-    refresh: function (full) {
+    refresh(full) {
         this.getInfo({
-            onAfterSend: function () {
+            onAfterSend() {
             }
         });
     },
-    getInfo: function (args) {
+    getInfo(args) {
         this._assertHasWuid();
-        var context = this;
+        const context = this;
         FileSpray.GetDFUWorkunit({
             request: {
                 wuid: this.Wuid
@@ -231,16 +231,16 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
             }
         });
     },
-    getState: function () {
+    getState() {
         return this.State;
     },
-    getProtectedImage: function () {
+    getProtectedImage() {
         if (this.isProtected) {
             return Utility.getImageURL("locked.png");
         }
         return Utility.getImageURL("unlocked.png");
     },
-    getStateIconClass: function () {
+    getStateIconClass() {
         switch (this.State) {
             case 1:
                 return "iconWarning";
@@ -263,7 +263,7 @@ var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:
         }
         return "iconWorkunit";
     },
-    getStateImage: function () {
+    getStateImage() {
         switch (this.State) {
             case 1:
                 return Utility.getImageURL("workunit_warning.png");
@@ -293,8 +293,8 @@ export function isInstanceOfWorkunit(obj) {
 }
 
 export function Get(wuid, data?) {
-    var store = new Store();
-    var retVal = store.get(wuid);
+    const store = new Store();
+    const retVal = store.get(wuid);
     if (data) {
         retVal.updateData(data);
     }
@@ -302,7 +302,7 @@ export function Get(wuid, data?) {
 }
 
 export function CreateWUQueryStore(options) {
-    var store = new Store(options);
+    let store = new Store(options);
     store = Observable(store);
     return store;
 }

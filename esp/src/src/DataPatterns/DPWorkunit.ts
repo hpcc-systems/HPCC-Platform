@@ -56,7 +56,7 @@ export class DPWorkunit {
     resolveWU(): Promise<Workunit | undefined> {
         return this._store.get(this._storeWuidID).then(wuid => {
             if (this._wu && this._wu.Wuid === wuid) {
-                return this._wu
+                return this._wu;
             }
             this.clearCache();
             return wuid && Workunit.attach({ baseUrl: "" }, wuid);
@@ -97,7 +97,7 @@ export class DPWorkunit {
             }
             this.clearCache();
             return this._store.delete(this._storeWuidID);
-        })
+        });
     }
 
     create(target: string): Promise<Workunit> {
@@ -139,8 +139,8 @@ export class DPWorkunit {
             rows.forEach(row => {
                 if (fields.length) fields += "\n";
                 if (transformFields.length) transformFields += "\n";
-                fields += `    ${row.best_attribute_type} ${row.attribute};`
-                transformFields += `    SELF.${row.attribute} := (${row.best_attribute_type})L.${row.attribute};`
+                fields += `    ${row.best_attribute_type} ${row.attribute};`;
+                transformFields += `    SELF.${row.attribute} := (${row.best_attribute_type})L.${row.attribute};`;
             }, "");
             return Workunit.submit({ baseUrl: "" }, target, optimizeECL(this._lf.Name, this._lf.ContentType, fields, transformFields, name, overwrite));
         });

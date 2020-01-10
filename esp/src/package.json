@@ -5,7 +5,9 @@
   "scripts": {
     "preinstall-tmp": "rimraf ./node_modules/@hpcc-js || true",
     "clean": "rimraf ./build && rimraf ./lib",
-    "lint": "jshint --config ./.jshintrc ./eclwatch",
+    "jslint": "jshint --config ./.jshintrc ./eclwatch",
+    "tslint": "tslint --project . src/**/*.ts",
+    "lint": "run-s jslint tslint",
     "copy-res-es6-promise": "cpx \"./node_modules/es6-promise/dist/es6-promise.auto.min.js\" ./build/node_modules/es6-promise/dist/",
     "copy-res-eclwatch-img": "cpx \"./eclwatch/img/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res-eclwatch-ecl": "cpx \"./eclwatch/ecl/**/*.*\" ./build/eclwatch/ecl/",
@@ -61,6 +63,7 @@
     "rimraf": "3.0.0",
     "style-loader": "1.1.2",
     "tslib": "1.10.0",
+    "tslint": "5.20.1",
     "typescript": "3.7.4",
     "url-loader": "3.0.0",
     "webpack": "4.41.5",
