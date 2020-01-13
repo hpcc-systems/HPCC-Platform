@@ -6722,8 +6722,6 @@ static IHqlExpression * doResourceGraph(BuildCtx * ctx, HqlCppTranslator & trans
         totalResults = resourcer.numGraphResults();
     }
 
-    hoistNestedCompound(translator, transformed);
-
     if (totalResults == 0)
         totalResults = 1;
     transformed.append(*createAttribute(numResultsAtom, getSizetConstant(totalResults)));
