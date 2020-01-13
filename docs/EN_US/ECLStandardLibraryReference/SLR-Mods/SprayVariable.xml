@@ -233,9 +233,12 @@
         <row>
           <entry><emphasis>expireDays</emphasis></entry>
 
-          <entry>Optional. A integer value indicating the number of days
-          before automatically removing the file. If omitted, the default is
-          -1 (never expires).</entry>
+          <entry>Optional. Specifies the file is a temporary file to be
+          automatically deleted after the specified number of days since the
+          file was read. If omitted, the default is -1 (never expires). If set
+          to 0, the file is automatically deleted when it reaches the
+          threshold set in Sasha Server's <emphasis
+          role="bold">expiryDefault</emphasis> setting.</entry>
         </row>
 
         <row>
