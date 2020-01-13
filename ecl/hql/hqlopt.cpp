@@ -3391,6 +3391,15 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 break;      // play safe
             IHqlExpression * transformKeyed = transformed->queryAttribute(keyedAtom);
             IHqlExpression * transform = transformed->queryChild(1);
+
+            //Do not combine a project with an input dataset/join that contains an ifblock in the output
+            //because assignments that should be conditional in the input may become unconditional
+            if (definesColumnList(child))
+            {
+                if (containsIfBlock(child->queryRecord()) && !recordTypesMatch(transformed, child))
+                    break;
+            }
+
             switch(childOp)
             {
             case no_if:
