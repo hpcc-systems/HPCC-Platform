@@ -1244,6 +1244,9 @@ public:
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
 
+                    if (options->getNoCommon())
+                        opttree->setPropBool("@noCommon", true);
+
                     if (foreigncopy)
                     {
                         if (options->getPush())

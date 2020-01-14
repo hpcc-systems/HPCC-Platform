@@ -2087,6 +2087,14 @@ public:
     {
         queryRoot()->setPropInt("@expireDays",val);
     }
+    bool getNoCommon() const
+    {
+        return queryRoot()->getPropBool("@noCommon", false);
+    }
+    void setNoCommon(bool val)
+    {
+        queryRoot()->setPropBool("@noCommon",val);
+    }
 };
 
 class CExceptionIterator: implements IExceptionIterator, public CInterface
