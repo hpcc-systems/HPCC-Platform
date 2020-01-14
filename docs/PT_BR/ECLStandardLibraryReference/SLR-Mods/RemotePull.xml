@@ -22,7 +22,9 @@
   [</emphasis><emphasis>,forcePush</emphasis> <emphasis role="bold">]
   [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
   [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis
+  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
   role="bold">])</emphasis> <emphasis/></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -38,7 +40,9 @@
   role="bold">] [</emphasis><emphasis>,forcePush</emphasis> <emphasis
   role="bold">] [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis
   role="bold">] [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis
+  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
+  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
   role="bold">]);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -162,6 +166,22 @@
           <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
           novo arquivo deve ser compactado automaticamente usando LZW. Se
           omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noSplit</emphasis></entry>
+
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando para não
+                    dividir uma parte do arquivo em várias partes de destino.
+          O padrão é           FALSO</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>expireDays </emphasis></entry>
+
+          <entry>Opcional. Um valor inteiro indicando o número de dias
+                    antes de remover automaticamente o arquivo. Se omitido, o
+          padrão é           -1 (nunca expira).</entry>
         </row>
 
         <row>
