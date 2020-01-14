@@ -327,7 +327,7 @@ networkName=${appName}_ovnet
 
 [ ! -d ${wkDir} ] && mkdir -p ${wkDir}
 
-while getopts "*a:d:D:e:hn:N:r:s:t:uxX" arg
+while getopts "*a:d:D:e:hn:Nr:s:t:uxX" arg
 do
    case $arg in
       a) appName=${OPTARG}
@@ -425,14 +425,16 @@ adjust_node_type_for_ansible
 setup_ansible_hosts
 dali_ip=$(cat /etc/ansible/ips/dali)
 
-[ $notPush -eq 1 ] && exit 0
 
 #  set_hpcc_data_owner
 echo "Stop HPCC Cluster"
 ${SCRIPT_DIR}/stop_hpcc.sh
 
-echo "Push environment.xml to HPCC Cluster"
-${SCRIPT_DIR}/push_env.sh
+if [ $notPush -ne 1 ]
+then
+  echo "Push environment.xml to HPCC Cluster"
+  ${SCRIPT_DIR}/push_env.sh
+fi
 
 echo "Start HPCC Cluster"
 ${SCRIPT_DIR}/start_hpcc.sh
