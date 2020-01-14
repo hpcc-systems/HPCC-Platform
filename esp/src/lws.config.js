@@ -1,6 +1,8 @@
+const fs = require("fs");
+
 const CLUSTER_MV = "192.168.99.103";
 const CLUSTER_GJS = "localhost";
-const debugServerIP = CLUSTER_MV;
+const debugServerIP = fs.existsSync("./gjs.md") ? CLUSTER_GJS : CLUSTER_MV;
 
 let rewrite = [
     { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
