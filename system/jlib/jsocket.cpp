@@ -1328,6 +1328,8 @@ bool CSocket::connect_timeout( unsigned timeout, bool noexception)
                 }
             }
         }
+        else if (err)
+            refused_sleep(tm, refuseddelay); // this stops becoming cpu bound
         if (err==0)
         {
             err = post_connect();
