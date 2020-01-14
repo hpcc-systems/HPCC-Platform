@@ -340,6 +340,13 @@ inline bool isRootAction(IPropertyTree &node)
 
 inline unsigned usageCount(IPropertyTree &node)
 {
+#ifdef _DEBUG
+    switch (node.getPropInt("@id", 0))
+    {
+    case 18: return 2;
+    case 32: return 2;
+    }
+#endif
     return node.getPropInt("att[@name='_globalUsageCount']/@value", 0);
 }
 

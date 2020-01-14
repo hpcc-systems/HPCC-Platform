@@ -1495,17 +1495,17 @@ public:
     // Sink activities should override this....
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
     {
-        throw MakeStringException(ROXIE_SINK, "Internal error: execute() requires a sink");
+        throw MakeStringException(ROXIE_SINK, "Internal error: execute() requires a sink - activity %d is not one", activityId);
     }
 
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract)
     {
-        throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink");
+        throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink - activity %d is not one", activityId);
     }
 
     virtual void stopSink(unsigned idx)
     {
-        throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
+        throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink - activity %d is not one", activityId);
     }
     virtual void connectInputStreams(bool consumerOrdered)
     {
@@ -1526,7 +1526,7 @@ public:
 
     virtual __int64 evaluate() 
     {
-        throw MakeStringException(ROXIE_SINK, "Internal error: evaluate() requires a function");
+        throw MakeStringException(ROXIE_SINK, "Internal error: evaluate() requires a function - activity %d is not one", activityId);
     }
 
     virtual IFinalRoxieInput * querySelectOutput(unsigned id)
@@ -2846,10 +2846,20 @@ public:
     {
         if (outputIdx < numOutputs && !stopped[outputIdx])  // Implicit dependencies on DiskWrite activities do not count as outputs
         {
+            if (traceStartStop)
+                DBGLOG("stopSink %d, outputIdx %d", activityId, outputIdx);
             stopped[outputIdx] = true;
             for (unsigned s = 0; s < numOutputs; s++)
+            {
                 if (!stopped[s])
+                {
+                    if (traceStartStop)
+                        DBGLOG("stopSink %d: not all outputs stopped yet", activityId);
                     return;
+                }
+            }
+            if (traceStartStop)
+                DBGLOG("stopSink %d: all outputs stopped", activityId);
             stop(); // all outputs stopped - stop parent.
         }
     }
@@ -2859,7 +2869,7 @@ public:
         throwUnexpected(); // I am nobody's input
     }
 
-    virtual void onExecute() = 0;
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) = 0;
 
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
     {
@@ -2873,7 +2883,7 @@ public:
                 start(parentExtractSize, parentExtract, false);
                 {
                     ActivityTimer t(activityStats, timeActivities); // unfortunately this is not really best place for seeing in debugger.
-                    onExecute();
+                    onExecute(parentExtractSize, parentExtract);
                 }
                 stop();
                 executed = true;
@@ -5194,7 +5204,7 @@ public:
     {
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         helper.start();
         for (;;)
@@ -5763,7 +5773,7 @@ public:
     {
     }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         MemoryAttr ma;
         IDistributionTable * * accumulator = (IDistributionTable * *)ma.allocate(helper.queryInternalRecordSize()->getMinRecordSize());
@@ -6799,7 +6809,7 @@ public:
         graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         RtlLinkedDatasetBuilder builder(rowAllocator);
         inputStream->readAll(builder);
@@ -6869,7 +6879,7 @@ public:
         graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
         for (;;)
@@ -7123,7 +7133,7 @@ public:
         graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         RtlLinkedDatasetBuilder builder(rowAllocator);
         inputStream->readAll(builder);
@@ -9791,7 +9801,7 @@ public:
         pipe.clear();
     }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         Owned<IPipeProcessException> pipeException;
         try
@@ -10420,7 +10430,7 @@ public:
     {
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         helper.action();
     }
@@ -11819,7 +11829,7 @@ public:
         crc.reset();
     }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         for (;;)
         {
@@ -11933,7 +11943,7 @@ public:
         csvOutput.init(csvHelper.queryCsvParameters(), false);
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         OwnedRoxieString header(csvHelper.queryCsvParameters()->getHeader());
         if (header) 
@@ -12021,7 +12031,7 @@ public:
         }
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         StringBuffer header;
         OwnedRoxieString suppliedHeader(xmlHelper.getHeader());
@@ -12259,7 +12269,7 @@ public:
         resolve();
     }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
         size32_t fileposSize = hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()) ? sizeof(offset_t) : 0;
@@ -20848,75 +20858,17 @@ IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, un
 
 //=================================================================================
 
-class CRoxieServerActionBaseActivity : public CRoxieServerActivity
-{
-    CriticalSection ecrit;
-    Owned<IException> exception;
-    bool executed;
-
-public:
-    CRoxieServerActionBaseActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager)
-    {
-        executed = false;
-    }
-
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) = 0; 
-
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract) 
-    {
-        CriticalBlock b(ecrit);
-        if (exception)
-            throw(exception.getLink());
-        if (!executed)
-        {
-            try
-            {
-                executed = true;
-                start(parentExtractSize, parentExtract, false);
-                doExecuteAction(parentExtractSize, parentExtract);
-                stop();
-            }
-            catch (IException * E)
-            {
-                ctx->notifyAbort(E);
-                abort();
-                exception.set(E);
-                throw;
-            }
-        }
-    }
-
-    virtual void reset()
-    {
-        executed = false;
-        exception.clear();
-        CRoxieServerActivity::reset();
-    }
-
-    virtual const void *nextRow()
-    {
-        throwUnexpected(); // I am nobody's input
-    }
-
-    virtual IFinalRoxieInput *queryInput(unsigned idx) const
-    {
-        return NULL;
-    }
-
-};
-
-class CRoxieServerIfActionActivity : public CRoxieServerActionBaseActivity
+class CRoxieServerIfActionActivity : public CRoxieServerInternalSinkActivity
 {
     IHThorIfArg &helper;
 
 public:
-    CRoxieServerIfActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager), helper((IHThorIfArg &)basehelper)
+    CRoxieServerIfActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorIfArg &)basehelper)
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         bool cond;
         {
@@ -20929,42 +20881,36 @@ public:
 
 };
 
-class CRoxieServerIfActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerIfActionActivityFactory : public CRoxieServerInternalSinkFactory
 {
-    bool isRoot;
 public:
-    CRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
+    CRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _numOutputs, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _numOutputs, _isRoot)
     {
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerIfActionActivity(_ctx, this, _probeManager);
-    }
-
-    virtual bool isSink() const
-    {
-        return isRoot;
+        return new CRoxieServerIfActionActivity(_ctx, this, _probeManager, usageCount);
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerIfActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _numOutputs, bool _isRoot)
 {
-    return new CRoxieServerIfActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
+    return new CRoxieServerIfActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _numOutputs, _isRoot);
 }
 
 //=================================================================================
 
-class CRoxieServerParallelActionActivity : public CRoxieServerActionBaseActivity
+class CRoxieServerParallelActionActivity : public CRoxieServerInternalSinkActivity
 {
 public:
-    CRoxieServerParallelActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager)
+    CRoxieServerParallelActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs)
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
 #ifdef PARALLEL_EXECUTE
         CParallelActivityExecutor afor(dependencies, parentExtractSize, parentExtract);
@@ -20979,45 +20925,57 @@ public:
 
 };
 
-class CRoxieServerParallelActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerParallelActionActivityFactory : public CRoxieServerInternalSinkFactory
 {
-    bool isRoot;
 public:
-    CRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
+    CRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _numOutputs, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _numOutputs, _isRoot)
     {
         assertex(!isRoot);      // non-internal should be expanded out..
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerParallelActionActivity(_ctx, this, _probeManager);
-    }
-
-    virtual bool isSink() const
-    {
-        return isRoot;
+        return new CRoxieServerParallelActionActivity(_ctx, this, _probeManager, usageCount);
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerParallelActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _numOutputs, bool _isRoot)
 {
-    return new CRoxieServerParallelActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
+    return new CRoxieServerParallelActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _numOutputs, _isRoot);
 }
 
 //=================================================================================
 
-class CRoxieServerSequentialActionActivity : public CRoxieServerActionBaseActivity
+class CRoxieServerSequentialActionActivity : public CRoxieServerInternalSinkActivity
 {
     IHThorSequentialArg &helper;
 
 public:
-    CRoxieServerSequentialActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager), helper((IHThorSequentialArg &)basehelper)
+    CRoxieServerSequentialActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs), helper((IHThorSequentialArg &)basehelper)
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void stop()
+    {
+        if (state != STATEstopped)
+        {
+            ForEachItemIn(idx, dependencies)
+            {
+                if (dependencyControlIds.item(idx) != 0)  // The others are done in base class
+                    dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+            }
+        }
+        CRoxieServerActivity::stop();
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    }
+
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         unsigned numBranches = helper.numBranches();
         for (unsigned branch=1; branch <= numBranches; branch++)
@@ -21026,29 +20984,23 @@ public:
 
 };
 
-class CRoxieServerSequentialActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerSequentialActionActivityFactory : public CRoxieServerInternalSinkFactory
 {
-    bool isRoot;
 public:
-    CRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
+    CRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot)
     {
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSequentialActionActivity(_ctx, this, _probeManager);
-    }
-
-    virtual bool isSink() const
-    {
-        return isRoot;
+        return new CRoxieServerSequentialActionActivity(_ctx, this, _probeManager, usageCount);
     }
 };
 
-IRoxieServerActivityFactory *createRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+IRoxieServerActivityFactory *createRoxieServerSequentialActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerSequentialActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
+    return new CRoxieServerSequentialActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 }
 
 //=================================================================================
@@ -21146,11 +21098,11 @@ extern IRoxieServerActivityFactory *createRoxieServerWhenActivityFactory(unsigne
 
 //=================================================================================
 
-class CRoxieServerWhenActionActivity : public CRoxieServerActionBaseActivity
+class CRoxieServerWhenActionActivity : public CRoxieServerInternalSinkActivity
 {
 public:
-    CRoxieServerWhenActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActionBaseActivity(_ctx, _factory, _probeManager)
+    CRoxieServerWhenActionActivity(IRoxieSlaveContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
+        : CRoxieServerInternalSinkActivity(_ctx, _factory, _probeManager, _numOutputs)
     {
         savedExtractSize = 0;
         savedExtract = NULL;
@@ -21160,7 +21112,7 @@ public:
     {
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
-        CRoxieServerActionBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerInternalSinkActivity::start(parentExtractSize, parentExtract, paused);
         executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
@@ -21172,10 +21124,10 @@ public:
             stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
             executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
         }
-        CRoxieServerActionBaseActivity::stop();
+        CRoxieServerInternalSinkActivity::stop();
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         executeDependencies(parentExtractSize, parentExtract, 1);
     }
@@ -21187,30 +21139,24 @@ protected:
 };
 
 
-class CRoxieServerWhenActionActivityFactory : public CRoxieServerActivityFactory
+class CRoxieServerWhenActionActivityFactory : public CRoxieServerInternalSinkFactory
 {
 public:
-    CRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
+    CRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _numOutputs, bool _isRoot)
+        : CRoxieServerInternalSinkFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _numOutputs, _isRoot)
     {
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWhenActionActivity(_ctx, this, _probeManager);
+        return new CRoxieServerWhenActionActivity(_ctx, this, _probeManager, usageCount);
     }
 
-    virtual bool isSink() const
-    {
-        return isRoot;
-    }
-private:
-    bool isRoot;
 };
 
-extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+extern IRoxieServerActivityFactory *createRoxieServerWhenActionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, unsigned _usageCount, bool _isRoot)
 {
-    return new CRoxieServerWhenActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
+    return new CRoxieServerWhenActionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _usageCount, _isRoot);
 }
 
 //=================================================================================
@@ -21416,7 +21362,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         MemoryBuffer result;
         bool saveInContext = (int) sequence < 0 || isReread;
@@ -21607,7 +21553,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void onExecute()
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         int sequence = helper.getSequence();
         const char *storedName = helper.queryName();
@@ -21663,7 +21609,7 @@ public:
     {
     }
 
-    virtual void onExecute() 
+    virtual void onExecute(unsigned parentExtractSize, const byte * parentExtract) override
     {
         OwnedConstRoxieRow row = inputStream->nextRow();
         helper.sendResult(row);  // should be only one row or something has gone wrong!
@@ -27476,6 +27422,7 @@ public:
                 IRoxieServerActivity &dependencySourceActivity = activities.item(dependencies.item(idx2));
                 unsigned dependencySourceIndex = dependencyIndexes.item(idx2);
                 unsigned dependencyControlId = dependencyControlIds.item(idx2);
+                DBGLOG("%d.addDependency(%d, %d, %d)", activity.queryId(), dependencySourceActivity.queryId(), dependencySourceIndex, dependencyControlId);
                 activity.addDependency(dependencySourceActivity, dependencySourceIndex, dependencyControlId);
                 if (probeManager)
                     probeManager->noteDependency( &dependencySourceActivity, dependencySourceIndex, dependencyControlId, dependencyEdgeIds.item(idx2), &activity);
