@@ -6285,13 +6285,13 @@ static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
         return true;
 }
 
-void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
+void HqlGram::doReportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
-	if (includeError(lookupCtx, category))
-	{
-		Owned<IError> error = createError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
-		report(error);
-	}
+    if (includeError(lookupCtx, category))
+    {
+        Owned<IError> error = createError(category, severity, warnNo, msg, filename, lineno, column, pos);
+        report(error);
+    }
 }
 
 void HqlGram::reportMacroExpansionPosition(IError * warning, HqlLex * lexer)
@@ -6308,10 +6308,11 @@ void HqlGram::reportMacroExpansionPosition(IError * warning, HqlLex * lexer)
 
     expandingMacroPosition = true;
     unsigned code = warning->errorCode();
-    if (warning->getSeverity() == SeverityFatal)
+    ErrorSeverity severity = warning->getSeverity();
+    if (severity == SeverityFatal)
         errorHandler->reportError(code, s.str(), str(lexer->querySourcePath()), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     else
-        doReportWarning(warning->getCategory(), code, s.str(), str(lexer->querySourcePath()), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
+        doReportWarning(warning->getCategory(), severity, code, s.str(), str(lexer->querySourcePath()), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     expandingMacroPosition = false;
 }
 
@@ -6370,7 +6371,7 @@ void HqlGram::reportWarningVa(WarnErrorCategory category, int warnNo, const attr
 void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column)
 {
     if (errorHandler && !errorDisabled && includeError(lookupCtx, category))
-        doReportWarning(category, warnNo, msg, querySourcePathText(), lineno, column, 0);
+        doReportWarning(category, queryDefaultSeverity(category), warnNo, msg, querySourcePathText(), lineno, column, 0);
 }
 
 
@@ -6423,7 +6424,7 @@ void HqlGram::report(IError* error)
 void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
     if (errorHandler && !errorDisabled)
-        doReportWarning(category, warnNo, msg, filename, lineno, column, pos);
+        doReportWarning(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
 }
 
 size32_t HqlGram::errCount()
