@@ -2,36 +2,29 @@
 <html>
 
 <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta charset="utf-8">
     <title>ECL Watch</title>
     <script src="/esp/files/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
     <link rel="stylesheet" href="/esp/files/dist/font-awesome/css/font-awesome.min.css">
     <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
-    <!-- load dojo and provide config via dojoConfig global -->
+    <script type="text/javascript" src="/esp/files/dist/stub.eclwatch.js" charset="utf-8"></script>
     <script type="text/javascript">
-        if (/[?&]nopack=(1|true)/i.test(location.search)) {
-            document.write("<script type=\"text/javascript\" src=\"/esp/files/eclwatch/dojoConfig.js\" charset=\"utf-8\"><" + "/script>");
-            document.write("<script type=\"text/javascript\" src=\"/esp/files/eclwatch/debugConfig.js\" charset=\"utf-8\"><" + "/script>");
-            document.write("<script type=\"text/javascript\" src=\"/esp/files/node_modules/dojo/dojo.js\" charset=\"utf-8\"><" + "/script>");
-        } else {
-            document.write("<script type=\"text/javascript\" src=\"/esp/files/dist/stub.eclwatch.js\" charset=\"utf-8\"><" + "/script>");
-        }
         getAuthType();
-        function getAuthType(){
-            if (document.cookie.indexOf ("ESPSessionState=true") > -1){
+        function getAuthType() {
+            if (document.cookie.indexOf("ESPSessionState=true") > -1) {
                 checkCookie();
-            } else if (document.cookie.indexOf ("ESPSessionState=false") > -1) {
+            } else if (document.cookie.indexOf("ESPSessionState=false") > -1) {
                 window.location.href;
             } else {
                 sendAuthRequest();
             }
 
-            function checkCookie(){
-                    document.cookie.indexOf ("ESPAuthenticated=true") > -1 ? window.location.href : window.location.href = location.origin + "/esp/files/Login.html";
-                }
+            function checkCookie() {
+                document.cookie.indexOf("ESPAuthenticated=true") > -1 ? window.location.href : window.location.href = location.origin + "/esp/files/Login.html";
+            }
 
-            function sendAuthRequest(){
+            function sendAuthRequest() {
                 var xhttp = new XMLHttpRequest();
                 xhttp.onload = function () {
                     var responseType = this.responseXML && this.responseXML.childNodes && this.responseXML.childNodes.length ? this.responseXML.childNodes[0].textContent : "None";

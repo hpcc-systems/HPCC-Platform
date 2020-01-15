@@ -1,4 +1,3 @@
-
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
 
@@ -6,7 +5,7 @@ var path = require("path");
 var webpack = require("webpack");
 
 module.exports = function (env) {
-    const isDev = env && env.build === "development";
+    const isDev = env && env === "development";
     const isProduction = !isDev;
 
     const plugins = [
