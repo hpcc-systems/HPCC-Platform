@@ -4,7 +4,6 @@ var CopyWebpackPlugin = require("copy-webpack-plugin");
 
 var path = require("path");
 var webpack = require("webpack");
-var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = function (env) {
     const isDev = env && env.build === "development";

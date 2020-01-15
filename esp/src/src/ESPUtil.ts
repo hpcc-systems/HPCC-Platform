@@ -34,7 +34,7 @@ import * as ColumnHider from "dgrid/extensions/ColumnHider";
 // @ts-ignore
 import * as DijitRegistry from "dgrid/extensions/DijitRegistry";
 
-import { select as d3Select } from "d3-selection";
+import { select as d3Select } from "@hpcc-js/common";
 import { Pagination } from "./Pagination";
 
 import { declareDecorator } from './DeclareDecorator';

@@ -15,8 +15,7 @@ define([
 
     "dgrid/editor",
 
-    "d3-collection",
-    "d3-array",
+    "@hpcc-js/common",
 
     "hpcc/_Widget",
     "src/ESPWorkunit",
@@ -42,7 +41,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
     registry, Select,
     editor,
-    d3Collection, d3Array,
+    hpccCommon,
     _Widget, ESPWorkunit, WsWorkunits, Utility,
     template) {
         return declare("VizWidget", [_Widget], {
@@ -411,7 +410,7 @@ define([
                     }
                 }, this);
                 var context = this;
-                var data = d3Collection.nest()
+                var data = hpccCommon.nest()
                     .key(function (d) { return d[request.label] })
                     .rollup(function (leaves) {
                         var retVal = {
@@ -423,7 +422,7 @@ define([
                                         retVal[row.id] = leaves.length;
                                         break;
                                     default:
-                                        retVal[row.id] = d3Array[row.aggregation || "mean"](leaves, function (d) {
+                                        retVal[row.id] = hpccCommon[row.aggregation || "mean"](leaves, function (d) {
                                             return d[row.field];
                                         });
                                         break;

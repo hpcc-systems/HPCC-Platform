@@ -721,9 +721,6 @@ export function resolve(hpccWidget, callback) {
         case "WUQueryWidget":
             require(["hpcc/WUQueryWidget"], doLoad);
             break;
-        case "WUStatsWidget":
-            require(["hpcc/WUStatsWidget"], doLoad);
-            break;
         case "XrefDetailsWidget":
             require(["hpcc/XrefDetailsWidget"], doLoad);
             break;

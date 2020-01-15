@@ -19,14 +19,6 @@ type AxisTicks = AxisTick[];
 const CANDLE_HEIGHT = 20;   // Pixels
 const DOMAIN_PADDING = 10;  // Percentage
 
-class BellCurve extends Scatter {
-}
-interface BellCurve {
-    xAxisTicks(): Array<{ value: string, label: string }>;
-    xAxisTicks(_: Array<{ value: string, label: string }>): this;
-}
-BellCurve.prototype.publishProxy("xAxisTicks", "domainAxis", "ticks");
-
 function myFormatter(format: string): (num: number) => string {
     const formatter = d3Format(format);
     return function (num: number) {
@@ -41,7 +33,7 @@ export class StatChart extends HTMLWidget {
     private _selectMode: any;
     private _tickFormatter: (_: number) => string;
 
-    private _bellCurve: BellCurve = new BellCurve()
+    private _bellCurve = new Scatter()
         .columns(["", "Std. Dev."])
         .paletteID("Quartile")
         .interpolate_default("basis")
@@ -52,7 +44,7 @@ export class StatChart extends HTMLWidget {
         .yAxisHidden(true)
         .yAxisDomainLow(0)
         .yAxisDomainHigh(110)
-        .yAxisGuideLines(false) as BellCurve
+        .yAxisGuideLines(false)
         ;
 
     private _candle = new QuartileCandlestick()
