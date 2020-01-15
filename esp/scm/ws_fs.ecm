@@ -319,6 +319,7 @@ ESPrequest [nil_remove] SprayFixed
     bool   compress(false);
     bool   push(false);
     bool   pull(false);
+    [min_ver("1.18")] bool noCommon(false);
 
     string encrypt;
     string decrypt;
@@ -370,6 +371,7 @@ ESPrequest [nil_remove] SprayVariable
     bool   compress(false);
     bool   push(false);
     bool   pull(false);
+    [min_ver("1.18")] bool noCommon(false);
 
     string encrypt;
     string decrypt;
@@ -467,6 +469,7 @@ ESPrequest [nil_remove] Copy
     bool   push(false);
     bool   pull(false);
     bool   ifnewer(false);
+    [min_ver("1.18")] bool noCommon(false);
 
     string encrypt;
     string decrypt;
@@ -681,7 +684,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.17"),
+    version("1.18"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
