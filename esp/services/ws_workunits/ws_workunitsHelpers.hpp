@@ -75,6 +75,7 @@ void ensureWsWorkunitAccess(IEspContext& cxt, IConstWorkUnit& cw, SecAccessFlags
 void ensureWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFlags minAccess);
 void ensureWsWorkunitAccessByOwnerId(IEspContext& context, const char* owner, SecAccessFlags minAccess);
 void ensureWsCreateWorkunitAccess(IEspContext& cxt);
+bool validateWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFlags minAccess);
 
 const char *getGraphNum(const char *s,unsigned &num);
 

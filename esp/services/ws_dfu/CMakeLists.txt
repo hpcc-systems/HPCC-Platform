@@ -67,7 +67,8 @@ include_directories (
          ./../../../fs/dafsstream
          ./../../../common/roxiecommlib
          ./../../clients 
-         ./../../../dali/base 
+         ./../../../dali/base
+         ./../../../dali/sasha
          ./../ws_workunits 
          ./../../bindings 
          ./../../smc/SMCLib 

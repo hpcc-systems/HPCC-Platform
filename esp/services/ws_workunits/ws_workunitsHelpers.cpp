@@ -88,6 +88,15 @@ SecAccessFlags getWsWorkunitAccess(IEspContext& ctx, IConstWorkUnit& cw)
     return accessFlag;
 }
 
+bool validateWsWorkunitAccess(IEspContext& ctx, const char* wuid, SecAccessFlags minAccess)
+{
+    Owned<IWorkUnitFactory> wf = getWorkUnitFactory(ctx.querySecManager(), ctx.queryUser());
+    Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid);
+    if (!cw)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Failed to open workunit %s when validating workunit access", wuid);
+    return ctx.validateFeatureAccess(getWuAccessType(*cw, ctx.queryUserId()), minAccess, false);
+}
+
 void ensureWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
 {
     if (!ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false))

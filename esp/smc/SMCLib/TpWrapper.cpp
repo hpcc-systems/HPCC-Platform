@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include "workunit.hpp"
 #include "exception_util.hpp"
+#include "portlist.h"
+
 
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
@@ -1968,3 +1970,43 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
     JBASE64_Decode(Path, returnStr);
 }
 
+extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
+{
+
+    StringBuffer sashaAddress;
+    unsigned port = DEFAULT_SASHA_PORT;
+    if (params && params->hasProp("sashaServerIP"))
+    {
+        sashaAddress.set(params->queryProp("sashaServerIP"));
+        port = params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT);
+    }
+    else
+    {
+        IArrayOf<IConstTpSashaServer> sashaservers;
+        CTpWrapper dummy;
+        dummy.getTpSashaServers(sashaservers);
+        if (sashaservers.ordinality() == 0)
+            throw makeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha server not found");
+
+        IArrayOf<IConstTpMachine>& sashaservermachine = sashaservers.item(0).getTpMachines();
+        sashaAddress.set(sashaservermachine.item(0).getNetaddress());
+        if (sashaAddress.isEmpty())
+            throw makeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha address not found");
+    }
+
+    SocketEndpoint ep(sashaAddress.str(), port);
+    Owned<INode> node = createINode(ep);
+    Owned<ISashaCommand> cmd = createSashaCommand();
+    cmd->setAction(archive ? SCA_ARCHIVE : SCA_RESTORE);
+    if (dfu)
+        cmd->setDFU(true);
+
+    ForEachItemIn(i, wuids)
+        cmd->addId(wuids.item(i));
+
+    if (!cmd->send(node, 1*60*1000))
+        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
+            "Sasha (%s) took too long to respond for Archive/restore workunit.",
+            sashaAddress.str());
+    return cmd.getClear();
+}
