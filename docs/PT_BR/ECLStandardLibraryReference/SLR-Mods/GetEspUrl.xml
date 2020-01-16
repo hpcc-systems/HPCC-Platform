@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetEspUrl">
+  <title>GetEspUrl</title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.File.GetEspUrl <indexterm>
+      <primary>STD.File.GetEspUrl</primary>
+    </indexterm><indexterm>
+      <primary>File.GetEspUrl</primary>
+    </indexterm> <indexterm>
+      <primary>GetEspUrl</primary>
+    </indexterm>( [</emphasis> <emphasis>username, userPW </emphasis>
+  <emphasis role="bold">]);</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>username</emphasis></entry>
+
+          <entry>Opcional. Uma STRING que contém um nome do usuário para
+          uso no acesso autenticado ao processo do ESP. Se omitida, indica
+          que não é necessário autenticar o usuário. </entry>
+        </row>
+
+        <row>
+          <entry><emphasis>userPW</emphasis></entry>
+
+          <entry>Opcional. Uma STRING que contém a senha a ser usada com
+          o usuário citado no argumento <emphasis>username</emphasis>. Se o 
+          <emphasis>username</emphasis> estiver vazio, isso será ignorado</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>GetEspUrl retorna um STRING contendo a URL completa (incluindo
+          porta e esquema HTTP) para um processo do servidor ESP. Se mais de um processo ESP
+          estiver definido, será retornado o primeiro processo encontrado. Retorna
+          uma string vazia se não for possível encontrar um processo do servidor ESP no
+          ambiente.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">GetEspUrl </emphasis>retorna a
+  URL completo para um processo do servidor ESP. </para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">EspAddress := STD.File.GetEspUrl
+</programlisting>
+</sect1>

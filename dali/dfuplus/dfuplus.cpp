@@ -395,6 +395,8 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
         req->setPrefix(globals->queryProp("prefix"));
     if(globals->hasProp("nosplit"))
         req->setNosplit(globals->getPropBool("nosplit", false));
+    if(globals->hasProp("nocommon"))
+        req->setNoCommon(globals->getPropBool("nocommon", false));
     if(globals->hasProp("wrap"))
         req->setWrap(globals->getPropBool("wrap", false));
     if(globals->hasProp("compress"))
@@ -537,6 +539,8 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         req->setPrefix(globals->queryProp("prefix"));
     if(globals->hasProp("nosplit"))
         req->setNosplit(globals->getPropBool("nosplit", false));
+    if(globals->hasProp("nocommon"))
+        req->setNoCommon(globals->getPropBool("nocommon", false));
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
@@ -857,6 +861,8 @@ int CDfuPlusHelper::copy()
     req->setReplicateOffset(globals->getPropInt("replicateoffset",1));
     if(globals->hasProp("nosplit"))
         req->setNosplit(globals->getPropBool("nosplit", false));
+    if(globals->hasProp("nocommon"))
+        req->setNoCommon(globals->getPropBool("nocommon", false));
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);
@@ -946,7 +952,9 @@ int CDfuPlusHelper::copysuper()
     req->setReplicate(globals->getPropBool("replicate", true));
     req->setReplicateOffset(globals->getPropInt("replicateoffset",1));
     if(globals->hasProp("nosplit"))
-    req->setNosplit(globals->getPropBool("nosplit", false));
+        req->setNosplit(globals->getPropBool("nosplit", false));
+    if(globals->hasProp("nocommon"))
+        req->setNoCommon(globals->getPropBool("nocommon", false));
     if(globals->hasProp("push")) {
         if (globals->getPropBool("push"))
             req->setPush(true);

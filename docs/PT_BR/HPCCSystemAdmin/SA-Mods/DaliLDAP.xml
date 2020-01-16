@@ -234,6 +234,17 @@ TreeView, UpdateEnv, XRef</programlisting></para>
     role="bold">Isso não é recomendado para ambientes de
     produção.</emphasis></para>
 
+    <para>Ao ativar a whitelist Dali em um cluster em que existem outros     
+    ambientes externos interagindo, pode ser útil desativar inicialmente     
+    a whitelist e auditar os componentes externos que estão tentando conectar
+         exibindo os arquivos de log do DaServer. Cada cliente que teria     
+    acesso recusado se a whitelist estiver ativada, criando entradas de log
+    semelhantes      para isso:</para>
+
+    <para><programlisting>00000017 Operator 2019-11-20 16:58:39.617 17056 17074 
+         "WhiteListing is disabled, ignoring: Access denied! 
+         [client ip=192.168.9.12, role=DaliDiag] not whitelisted"</programlisting></para>
+
     <para/>
 
     <sect3>
@@ -245,6 +256,17 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       /opt/HPCCSystems/bin/.)</para>
 
       <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+    </sect3>
+
+    <sect3>
+      <title>Atualizar Dali sem reiniciar</title>
+
+      <para>Para atualizar as informações da whitelist no Dali sem reiniciar,
+      use o comando <emphasis role="bold">updtdalienv</emphasis>.</para>
+
+      <para>(encotrado em /opt/HPCCSystems/bin/)</para>
+
+      <para><programlisting>updtdalienv &lt;environment-xml-file&gt; -i &lt;dali-ip&gt; </programlisting></para>
     </sect3>
 
     <sect3 role="brk">

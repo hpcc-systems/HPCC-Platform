@@ -687,6 +687,10 @@ static bool SEHtermOnSystemDLLs = false;
 static bool SEHtermAlways = false;
 
 #ifdef _WIN32
+void jlib_decl setProcessAborted(bool _abortVal)
+{
+}
+
 static void *SEHrestore;
 
 #ifdef EXTENDED_EXCEPTION_TRACE

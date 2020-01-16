@@ -47,6 +47,7 @@ void handleSyntax()
     out.append("        @filename  -- read options from filename \n");
     out.append("        nowait=0|1  -- return immediately without waiting for completion.\n");
     out.append("        connect=<nn>  -- restrict to nn connections at a time.\n");
+    out.append("        nocommon=0|1 (default=0) -- disable automatic commoning up of puller or pusher processes on same host\n");
     out.append("        transferbuffersize=<n>  -- use buffer of size n bytes when transferring\n");
     out.append("                                   data.\n");
     out.append("        throttle=<nnn>  -- restrict the entire transfer speed to nnn Mbits/sec\n");
