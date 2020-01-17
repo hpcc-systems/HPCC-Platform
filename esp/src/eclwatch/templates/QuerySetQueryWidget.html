@@ -79,7 +79,7 @@
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
                     <label for="Mine" class="bold" style="vertical-align: middle;">${i18n.PublishedByMe}</label>
-                    <input id="${id}Mine" name="PublishedBy" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox"/>
+                    <input id="${id}Mine" name="PublishedBy" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox" />
                     <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                     <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList" data-dojo-type="dijit.form.Button">
@@ -100,5 +100,6 @@
                 </div>
             </div>
         </div>
-    </div><!--end of border container-->
+    </div>
+    <!--end of border container-->
 </div>

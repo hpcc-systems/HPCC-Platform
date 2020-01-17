@@ -62,7 +62,7 @@ define([
                         sortable: false,
                         unhidable: true
                     }),
-                    Name:{
+                    Name: {
                         width: 200,
                         label: nlsHPCC.FieldNames,
                         sortable: false

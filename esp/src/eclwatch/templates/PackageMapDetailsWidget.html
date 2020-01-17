@@ -11,18 +11,18 @@
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>
-                        <div id="${id}StateIdImage" title="" class="iconWorkunit" ></div>&nbsp<span id="${id}PMID" class="bold">PMID</span>
+                        <div id="${id}StateIdImage" title="" class="iconWorkunit"></div>&nbsp<span id="${id}PMID" class="bold">PMID</span>
                         <button id="${id}ClippyButton" class="clippy" data-clipboard-target="#${id}PMID"><img src="${dojoConfig.urlInfo.resourcePath}/img/clippy.png" alt="${i18n.CopyToClipboard}"></button>
                     </h2>
                     <form id="${id}SummaryForm">
                         <ul>
                             <li>
                                 <label class="Prompt" for="Target">${i18n.Target}:</label>
-                                <div><input id="${id}Target" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled/></div>
+                                <div><input id="${id}Target" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled /></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="Process">${i18n.ProcessFilter}:</label>
-                                <div><input id="${id}Process" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled/></div>
+                                <div><input id="${id}Process" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled /></div>
                             </li>
                             <!--li>
                                 <label class="Prompt" for="Description">Description:</label>

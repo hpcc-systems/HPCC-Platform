@@ -30,8 +30,8 @@ define([
     tree,
     WsELK, ESPWorkunit, DelayLoadWidget, _TabContainerWidget, ESPUtil, Utility,
     template) {
-        return declare("LogVisualizationWidget", [_TabContainerWidget], {
-            i18n: nlsHPCC,
+    return declare("LogVisualizationWidget", [_TabContainerWidget], {
+        i18n: nlsHPCC,
 
-        });
     });
+});

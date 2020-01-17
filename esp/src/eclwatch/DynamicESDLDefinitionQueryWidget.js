@@ -55,9 +55,9 @@ define([
 
         addContextMenuItems: function () {
             var context = this;
-            this.appendContextMenuItem(this.i18n.Delete, function () { context._onDelete()});
+            this.appendContextMenuItem(this.i18n.Delete, function () { context._onDelete() });
             this.contextMenu.addChild(new MenuSeparator());
-            this.appendContextMenuItem(this.i18n.Bind, function () { context._onBind()});
+            this.appendContextMenuItem(this.i18n.Bind, function () { context._onBind() });
         },
 
         _onBind: function () {
@@ -235,12 +235,12 @@ define([
             if (confirm(this.i18n.DeleteSelectedDefinitions + "\n" + list)) {
                 var context = this;
                 WsESDLConfig.DeleteESDLDefinition({
-                    request:{
+                    request: {
                         Id: selections[0].Name,
                         Name: name[0],
                         Version: name[1]
                     }
-                }).then(function(response){
+                }).then(function (response) {
                     if (lang.exists("DeleteESDLRegistryEntryResponse.status", response)) {
                         dojo.publish("hpcc/brToaster", {
                             Severity: "Message",
@@ -267,8 +267,8 @@ define([
                     EsdlDefinitionID: dom.byId("DefId").value,
                     EsdlServiceName: dom.byId("ServiceNameTB").value,
                     Overwrite: true
-                }                
-             }).then(function(response){
+                }
+            }).then(function (response) {
                 if (lang.exists("PublishESDLBindingResponse.status", response)) {
                     if (response.PublishESDLBindingResponse.status.Code === 0) {
                         dojo.publish("hpcc/brToaster", {
@@ -293,7 +293,7 @@ define([
                     }
                 }
                 context.dialog.hide();
-             });
+            });
         },
 
         refreshGrid: function (args) {

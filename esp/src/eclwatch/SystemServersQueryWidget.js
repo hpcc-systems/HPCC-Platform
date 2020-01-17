@@ -105,7 +105,7 @@ define([
             var headings = [this.i18n.ServiceName, this.i18n.ServiceType, this.i18n.Protocol, this.i18n.Port];
             var rows = [];
 
-            arrayUtil.forEach(arr, function(row){
+            arrayUtil.forEach(arr, function (row) {
                 rows.push({
                     "ServiceName": row.Name,
                     "ServiceType": row.ServiceType,
@@ -192,7 +192,7 @@ define([
                     },
                     Logs: {
                         label: this.i18n.Logs,
-                        width:90,
+                        width: 90,
                         children: [
                             {
                                 label: this.i18n.AuditLogs,
@@ -261,7 +261,7 @@ define([
                 for (var i = selection.length - 1; i >= 0; --i) {
                     if (selection[i].Component) {
                         context.machineFilter.disable(true);
-                    }  else {
+                    } else {
                         context.machineFilter.disable(false);
                     }
                 }
@@ -296,12 +296,12 @@ define([
                 }
             });
 
-            retVal.on(".dgrid-cell .additionalSystemServersDialog:click", function (evt){
+            retVal.on(".dgrid-cell .additionalSystemServersDialog:click", function (evt) {
                 var item = retVal.row(evt).data;
                 context._onAdditionalInformation(item.Parent.TpBindings.TpBinding);
             });
 
-            retVal.on(".dgrid-cell:click", function(evt){
+            retVal.on(".dgrid-cell:click", function (evt) {
                 var cell = retVal.cell(evt)
             });
 
@@ -345,8 +345,8 @@ define([
                     Directory: data.Directory,
                     OsType: data.OS
                 }
-            }).then(function(response) {
-                var tab = context.ensureConfigurationPane(data.Type + data.Name + "Configuration" , {
+            }).then(function (response) {
+                var tab = context.ensureConfigurationPane(data.Type + data.Name + "Configuration", {
                     Component: data.Type,
                     Name: data.Name,
                     Usergenerated: response
