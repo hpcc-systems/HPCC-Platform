@@ -8712,7 +8712,7 @@ const char* DFUQFilterFieldNames[] = { "", "@description", "@directory", "@group
     "@partmask", "@OrigName", "Attr", "Attr/@job", "Attr/@owner", "Attr/@recordCount", "Attr/@recordSize", "Attr/@size",
     "Attr/@compressedsize", "Attr/@workunit", "Cluster", "Cluster/@defaultBaseDir", "Cluster/@defaultReplDir", "Cluster/@mapFlags",
     "Cluster/@name", "Part", "Part/@name", "Part/@num", "Part/@size", "SuperOwner", "SuperOwner/@name",
-    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind" };
+    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind", "Attr/@accessed" };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild)
 {
@@ -8862,9 +8862,9 @@ public:
         const char* prop = file.queryProp(attrPath.get());
         if (!prop || !*prop)
             return false;
-        if (filterValue && (strcmp(filterValue, prop) > 0))
+        if (!filterValue.isEmpty() && (strcmp(filterValue, prop) > 0))
             return false;
-        if (filterValueHigh && (strcmp(filterValueHigh, prop) < 0))
+        if (!filterValueHigh.isEmpty() && (strcmp(filterValueHigh, prop) < 0))
             return false;
         return true;
     }

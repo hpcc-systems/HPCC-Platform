@@ -248,6 +248,8 @@ private:
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &port, bool &secure, const char *fileName, std::vector<std::string> &groups);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, const char *group);
     void exportRecordDefinitionBinaryType(const char *recordDefinition, MemoryBuffer &layoutBin);
+    void appendTimeString(const char *in, StringBuffer &out);
+    void setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf);
 
     bool attachServiceToDali() override
     {
