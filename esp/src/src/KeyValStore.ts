@@ -13,7 +13,7 @@ export interface IKeyValStore {
  *  Global Store
  *      Stores info in Dali, ignores user ID
  *      No push notifications outside of current tab
- **/
+ */
 export function globalKeyValStore(): IKeyValStore {
     return Store.attach({ baseUrl: "" }, "HPCCApps", "ECLWatch", false);
 }
@@ -22,7 +22,7 @@ export function globalKeyValStore(): IKeyValStore {
  *  User Store
  *      Stores info in Dali by user ID
  *      No push notifications outside of current tab
- **/
+ */
 export function userKeyValStore(): IKeyValStore {
     const userName = globalThis.dojoConfig.username;
     if (!userName) {
@@ -45,14 +45,14 @@ class LocalStorage implements IKeyValStore {
         this._prefixLength = this._prefix.length;
 
         if (typeof StorageEvent !== void (0)) {
-            window.addEventListener('storage', (event: StorageEvent) => {
+            window.addEventListener("storage", (event: StorageEvent) => {
                 if (this.isECLWatchKey(event.key)) {
                     this._dispatch.post(new ValueChangedMessage(this.extractKey(event.key), event.newValue, event.oldValue));
                 }
             });
         } else {
             console.log("Browser doesn't support multi-tab communication");
-        };
+        }
     }
 
     isECLWatchKey(key: string): boolean {
@@ -110,7 +110,7 @@ let _localStorage: LocalStorage;
  *  Local Store
  *      Stores info in local storage
  *      Includes push notifications outside of current tab
- **/
+ */
 export function localKeyValStore(): IKeyValStore {
     if (!_localStorage) {
         _localStorage = new LocalStorage();
@@ -133,7 +133,7 @@ let _sessionStorage: SessionStorage;
  *  Session Store
  *      Stores info in session storage
  *      Includes push notifications outside of current tab
- **/
+ */
 export function sessionKeyValStore(): IKeyValStore {
     if (!_sessionStorage) {
         _sessionStorage = new SessionStorage();

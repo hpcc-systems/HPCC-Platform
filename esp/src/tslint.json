@@ -8,8 +8,9 @@
     "extends": "tslint:recommended",
     "rules": {
         /*
-     * Any rules specified here will override those from the base config we are extending.
-     */
+         * Any rules specified here will override those from the base config we are extending.
+        */
+        "member-ordering": false,
         "prefer-for-of": false,
         "no-console": [
             false
@@ -18,6 +19,10 @@
         "interface-over-type-literal": false,
         "no-empty-interface": false,
         "no-unused-expression": false,
+        "no-shadowed-variable": [
+            false,
+            {}
+        ],
         "space-before-function-paren": false,
         "arrow-parens": false,
         "forin": false,
@@ -27,19 +32,14 @@
         ],
         "object-literal-sort-keys": false,
         "trailing-comma": [
-            false,
+            true,
             {
-                "multiline": "always",
+                "multiline": "never",
                 "singleline": "never"
             }
         ],
         "curly": false,
-        "member-ordering": [
-            true
-        ],
-        "max-classes-per-file": [
-            false
-        ],
+        "max-classes-per-file": false,
         "no-empty": false,
         "max-line-length": [
             false
@@ -60,10 +60,33 @@
             "check-operator",
             "check-module",
             "check-separator",
-            "check-type"
+            "check-rest-spread",
+            "check-type",
+            "check-typecast",
+            "check-type-operator",
+            "check-preblock"
         ],
         "prefer-const": true,
-        "no-string-literal": false
+        "no-string-literal": false,
+        "indent": [
+            true,
+            "spaces",
+            4
+        ],
+        "deprecation": true,
+        "no-duplicate-imports": true,
+        "no-default-export": true,
+        "no-require-imports": true,
+        "no-irregular-whitespace": true,
+        "no-unnecessary-callback-wrapper": true,
+        "quotemark": [
+            true,
+            "double",
+            "avoid-template",
+            "avoid-escape"
+        ],
+        "unified-signatures": false,
+        "no-bitwise": false
     },
     "jsRules": {
         /*

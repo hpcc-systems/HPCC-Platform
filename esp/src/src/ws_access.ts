@@ -1,18 +1,18 @@
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
+import * as Deferred from "dojo/_base/Deferred";
+import * as lang from "dojo/_base/lang";
 import * as all from "dojo/promise/all";
 import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
-import * as Deferred from "dojo/_base/Deferred";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import * as topic from "dojo/topic";
 
-import * as ESPUtil from "./ESPUtil";
 import * as ESPRequest from "./ESPRequest";
+import * as ESPUtil from "./ESPUtil";
 
-var UsersStore = declare([ESPRequest.Store], {
+const UsersStore = declare([ESPRequest.Store], {
     service: "ws_access",
     action: "UserQuery",
     responseQualifier: "UserQueryResponse.Users.User",
@@ -20,10 +20,10 @@ var UsersStore = declare([ESPRequest.Store], {
     idProperty: "username",
     startProperty: "PageStartFrom",
     countProperty: "PageSize",
-    SortbyProperty: 'SortBy'
+    SortbyProperty: "SortBy"
 });
 
-var GroupsStore = declare([ESPRequest.Store], {
+const GroupsStore = declare([ESPRequest.Store], {
     service: "ws_access",
     action: "GroupQuery",
     responseQualifier: "GroupQueryResponse.Groups.Group",
@@ -31,9 +31,9 @@ var GroupsStore = declare([ESPRequest.Store], {
     idProperty: "name",
     startProperty: "PageStartFrom",
     countProperty: "PageSize",
-    SortbyProperty: 'SortBy',
+    SortbyProperty: "SortBy",
 
-    preRequest: function (request) {
+    preRequest(request) {
         switch (request.SortBy) {
             case "name":
                 request.SortBy = "Name";
@@ -45,17 +45,17 @@ var GroupsStore = declare([ESPRequest.Store], {
     }
 });
 
-var CONCAT_SYMBOL = ":";
-var ResourcesStore = declare([Memory], {
+const CONCAT_SYMBOL = ":";
+const ResourcesStore = declare([Memory], {
 
-    constructor: function () {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited(arguments);
-        var request = {
+        const retVal = inherited(arguments);
+        const request = {
             account_name: this.groupname ? this.groupname : this.username,
             account_type: this.groupname ? 1 : 0,
             BasednName: row.__hpcc_parent.name,
@@ -63,26 +63,26 @@ var ResourcesStore = declare([Memory], {
             action: "update"
         };
         lang.mixin(request, row);
-        delete request['__hpcc_parent'];
+        delete request["__hpcc_parent"];
         PermissionAction({
-            request: request
+            request
         });
         return retVal;
     }),
 
-    query: function (query, options) {
-        var results = all([
+    query(query, options) {
+        const results = all([
             this.refreshResources(query),
             this.refreshAccountPermissions(query)
         ]).then(lang.hitch(this, function (response) {
-            var accountPermissions = {};
+            const accountPermissions = {};
             arrayUtil.forEach(response[1], function (item, idx) {
                 accountPermissions[item.ResourceName] = item;
             }, this);
 
-            var data = [];
+            const data = [];
             arrayUtil.forEach(response[0], function (item, idx) {
-                var accountPermission = accountPermissions[item.name];
+                const accountPermission = accountPermissions[item.name];
                 data.push(lang.mixin(item, {
                     __hpcc_type: "Resources",
                     __hpcc_id: this.parentRow.__hpcc_id + CONCAT_SYMBOL + item.name,
@@ -106,7 +106,7 @@ var ResourcesStore = declare([Memory], {
         return QueryResults(results);
     },
 
-    refreshResources: function (query) {
+    refreshResources(query) {
         return Resources({
             request: {
                 name: this.parentRow.name
@@ -119,7 +119,7 @@ var ResourcesStore = declare([Memory], {
         }));
     },
 
-    refreshAccountPermissions: function () {
+    refreshAccountPermissions() {
         if (!this.groupname && !this.username) {
             return [];
         }
@@ -138,16 +138,16 @@ var ResourcesStore = declare([Memory], {
     }
 });
 
-var InheritedPermissionStore = declare([Memory], {
+const InheritedPermissionStore = declare([Memory], {
 
-    constructor: function () {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited(arguments);
-        var request = {
+        const retVal = inherited(arguments);
+        const request = {
             BasednName: row.BasednName,
             rname: row.ResourceName,
             account_name: row.account_name,
@@ -156,17 +156,17 @@ var InheritedPermissionStore = declare([Memory], {
         };
         lang.mixin(request, row);
         PermissionAction({
-            request: request
+            request
         });
         return retVal;
     }),
 
-    query: function (query, options) {
-        var data = [];
-        var results = all([
+    query(query, options) {
+        const data = [];
+        const results = all([
             this.refreshAccountPermissions(query)
         ]).then(lang.hitch(this, function (response) {
-            var accountPermissions = {};
+            const accountPermissions = {};
             arrayUtil.forEach(response[0], function (item, idx) {
                 accountPermissions[item.ResourceName] = item;
                 data.push(lang.mixin(item, {
@@ -191,7 +191,7 @@ var InheritedPermissionStore = declare([Memory], {
         return QueryResults(results);
     },
 
-    refreshAccountPermissions: function () {
+    refreshAccountPermissions() {
         if (!this.AccountName) {
             return [];
         }
@@ -204,8 +204,8 @@ var InheritedPermissionStore = declare([Memory], {
             }
         }).then(lang.hitch(this, function (response) {
             if (lang.exists("AccountPermissionsResponse.GroupPermissions.GroupPermission", response)) {
-                var arr = response.AccountPermissionsResponse.GroupPermissions.GroupPermission;
-                for (var index in arr) {
+                const arr = response.AccountPermissionsResponse.GroupPermissions.GroupPermission;
+                for (const index in arr) {
                     if (arr[index].GroupName === this.TabName) {
                         return response.AccountPermissionsResponse.GroupPermissions.GroupPermission[index].Permissions.Permission;
                     }
@@ -216,16 +216,16 @@ var InheritedPermissionStore = declare([Memory], {
     }
 });
 
-var AccountResourcesStore = declare([Memory], {
+const AccountResourcesStore = declare([Memory], {
 
-    constructor: function () {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited(arguments);
-        var request = {
+        const retVal = inherited(arguments);
+        const request = {
             BasednName: row.BasednName,
             rname: row.ResourceName,
             account_name: row.account_name,
@@ -233,17 +233,17 @@ var AccountResourcesStore = declare([Memory], {
         };
         lang.mixin(request, row);
         PermissionAction({
-            request: request
+            request
         });
         return retVal;
     }),
 
-    query: function (query, options) {
-        var data = [];
-        var results = all([
+    query(query, options) {
+        const data = [];
+        const results = all([
             this.refreshAccountPermissions(query)
         ]).then(lang.hitch(this, function (response) {
-            var accountPermissions = {};
+            const accountPermissions = {};
             arrayUtil.forEach(response[0], function (item, idx) {
                 accountPermissions[item.ResourceName] = item;
                 data.push(lang.mixin(item, {
@@ -268,7 +268,7 @@ var AccountResourcesStore = declare([Memory], {
         return QueryResults(results);
     },
 
-    refreshAccountPermissions: function () {
+    refreshAccountPermissions() {
         if (!this.AccountName) {
             return [];
         }
@@ -287,16 +287,16 @@ var AccountResourcesStore = declare([Memory], {
     }
 });
 
-var IndividualPermissionsStore = declare([Memory], {
+const IndividualPermissionsStore = declare([Memory], {
 
-    constructor: function () {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
     put: ESPUtil.override(function (inherited, row) {
         this.get(row.__hpcc_id);
-        var retVal = inherited(arguments);
-        var request = {
+        const retVal = inherited(arguments);
+        const request = {
             BasednName: row.BasednName,
             rname: row.rname,
             account_name: row.account_name,
@@ -304,17 +304,17 @@ var IndividualPermissionsStore = declare([Memory], {
         };
         lang.mixin(request, row);
         PermissionAction({
-            request: request
+            request
         });
         return retVal;
     }),
 
-    query: function (query, options) {
-        var data = [];
-        var results = all([
+    query(query, options) {
+        const data = [];
+        const results = all([
             this.refreshAccountPermissions(query)
         ]).then(lang.hitch(this, function (response) {
-            var accountPermissions = {};
+            const accountPermissions = {};
             arrayUtil.forEach(response[0], function (item, idx) {
                 accountPermissions[item.account_name] = item;
                 data.push(lang.mixin(item, {
@@ -340,7 +340,7 @@ var IndividualPermissionsStore = declare([Memory], {
         return QueryResults(results);
     },
 
-    refreshAccountPermissions: function () {
+    refreshAccountPermissions() {
         return ResourcePermissions({
             request: {
                 name: this.name ? this.name : "",
@@ -355,25 +355,25 @@ var IndividualPermissionsStore = declare([Memory], {
     }
 });
 
-var PermissionsStore = declare([Memory], {
+const PermissionsStore = declare([Memory], {
     service: "ws_access",
     action: "Permissions",
     responseQualifier: "BasednsResponse.Basedns.Basedn",
     idProperty: "__hpcc_id",
 
-    constructor: function () {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
     get: ESPUtil.override(function (inherited, id) {
-        var tmp = id.split(CONCAT_SYMBOL);
+        const tmp = id.split(CONCAT_SYMBOL);
         if (tmp.length > 0) {
-            var parentID = tmp[0];
-            var parent = inherited([parentID]);
+            const parentID = tmp[0];
+            const parent = inherited([parentID]);
             if (tmp.length === 1) {
                 return parent;
             }
-            var child = parent.children.get(id);
+            const child = parent.children.get(id);
             if (child) {
                 return child;
             }
@@ -382,24 +382,24 @@ var PermissionsStore = declare([Memory], {
         return null;
     }),
 
-    putChild: function (row) {
-        var parent = row.__hpcc_parent;
+    putChild(row) {
+        const parent = row.__hpcc_parent;
         return parent.children.put(row);
     },
 
-    getChildren: function (parent, options) {
+    getChildren(parent, options) {
         return parent.children.query();
     },
 
-    mayHaveChildren: function (object) {
+    mayHaveChildren(object) {
         return object.__hpcc_type === "Permission";
     },
 
-    query: function (query, options) {
-        var deferredResults = new Deferred();
+    query(query, options) {
+        const deferredResults = new Deferred();
         deferredResults.total = new Deferred();
         Permissions().then(lang.hitch(this, function (response) {
-            var data = [];
+            const data = [];
             if (lang.exists("BasednsResponse.Basedns.Basedn", response)) {
                 arrayUtil.forEach(response.BasednsResponse.Basedns.Basedn, function (item, idx) {
                     data.push(lang.mixin(item, {
@@ -425,8 +425,8 @@ var PermissionsStore = declare([Memory], {
 });
 
 export function checkError(response, sourceMethod, showOkMsg) {
-    var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
-    var retMsg = lang.getObject(sourceMethod + "Response.retmsg", false, response);
+    const retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
+    const retMsg = lang.getObject(sourceMethod + "Response.retmsg", false, response);
     if (retCode) {
         topic.publish("hpcc/brToaster", {
             Severity: "Error",
@@ -587,7 +587,7 @@ export function CheckFilePermissions() {
 }
 
 export function CreateUsersStore(groupname, observable) {
-    var store = new UsersStore();
+    const store = new UsersStore();
     store.groupname = groupname;
     if (observable) {
         return Observable(store);
@@ -596,7 +596,7 @@ export function CreateUsersStore(groupname, observable) {
 }
 
 export function CreateGroupsStore(username, observable) {
-    var store = new GroupsStore();
+    const store = new GroupsStore();
     store.username = username;
     if (observable) {
         return Observable(store);
@@ -605,14 +605,14 @@ export function CreateGroupsStore(username, observable) {
 }
 
 export function CreatePermissionsStore(groupname, username) {
-    var store = new PermissionsStore();
+    const store = new PermissionsStore();
     store.groupname = groupname;
     store.username = username;
     return Observable(store);
 }
 
 export function CreateAccountPermissionsStore(IsGroup, IncludeGroup, AccountName) {
-    var store = new AccountResourcesStore();
+    const store = new AccountResourcesStore();
     store.IsGroup = IsGroup;
     store.IncludeGroup = IncludeGroup;
     store.AccountName = AccountName;
@@ -620,7 +620,7 @@ export function CreateAccountPermissionsStore(IsGroup, IncludeGroup, AccountName
 }
 
 export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountName, TabName) {
-    var store = new InheritedPermissionStore();
+    const store = new InheritedPermissionStore();
     store.IsGroup = IsGroup;
     store.IncludeGroup = IncludeGroup;
     store.AccountName = AccountName;
@@ -629,14 +629,14 @@ export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountNa
 }
 
 export function CreateIndividualPermissionsStore(basedn, name) {
-    var store = new IndividualPermissionsStore();
+    const store = new IndividualPermissionsStore();
     store.basedn = basedn;
     store.name = name;
     return Observable(store);
 }
 
 export function CreateResourcesStore(groupname, username, basedn, name) {
-    var store = new ResourcesStore();
+    const store = new ResourcesStore();
     store.groupname = groupname;
     store.username = username;
     store.basedn = basedn;

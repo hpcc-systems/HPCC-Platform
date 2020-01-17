@@ -1,20 +1,20 @@
+import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
+import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
+import * as dom from "dojo/dom";
+import * as html from "dojo/html";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as arrayUtil from "dojo/_base/array";
-import * as Deferred from "dojo/_base/Deferred";
-import * as dom from "dojo/dom";
 import * as on from "dojo/on";
-import * as html from "dojo/html";
 import * as topic from "dojo/topic";
 
-import * as registry from "dijit/registry";
+import * as CheckedMenuItem from "dijit/CheckedMenuItem";
 import * as Menu from "dijit/Menu";
 import * as MenuItem from "dijit/MenuItem";
 import * as MenuSeparator from "dijit/MenuSeparator";
-import * as CheckedMenuItem from "dijit/CheckedMenuItem";
+import * as registry from "dijit/registry";
 
 import * as entities from "dojox/html/entities";
 
@@ -25,31 +25,31 @@ import * as tree from "../dgrid/tree";
 import * as _Widget from "hpcc/_Widget";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
-import * as WsWorkunits from "./WsWorkunits";
 import * as Utility from "./Utility";
+import * as WsWorkunits from "./WsWorkunits";
 
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/GraphTreeWidget.html";
 
-import "hpcc/JSGraphWidget";
-import "hpcc/TimingTreeMapWidget";
+import "dijit/Dialog";
+import "dijit/form/Button";
+import "dijit/form/DropDownButton";
+import "dijit/form/NumberSpinner";
+import "dijit/form/Select";
+import "dijit/form/SimpleTextarea";
+import "dijit/form/TextBox";
+import "dijit/form/ToggleButton";
 import "dijit/layout/BorderContainer";
-import "dijit/layout/TabContainer";
+import "dijit/layout/ContentPane";
 import "dijit/layout/StackContainer";
 import "dijit/layout/StackController";
-import "dijit/layout/ContentPane";
-import "dijit/Dialog";
-import "dijit/form/TextBox";
-import "dijit/form/SimpleTextarea";
-import "dijit/form/NumberSpinner";
-import "dijit/form/DropDownButton";
-import "dijit/form/Select";
-import "dijit/form/Button";
-import "dijit/form/ToggleButton";
+import "dijit/layout/TabContainer";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
+import "hpcc/JSGraphWidget";
+import "hpcc/TimingTreeMapWidget";
 
-import { declareDecorator } from './DeclareDecorator';
+import { declareDecorator } from "./DeclareDecorator";
 
 type _Widget = any;
 export interface GraphTreeWidget extends _Widget { }
@@ -87,7 +87,7 @@ export class GraphTreeWidget {
         this._initTimings();
         this._initActivitiesMap();
         this._initDialogs();
-        var context = this;
+        const context = this;
         topic.subscribe(this.id + "OverviewTabContainer-selectChild", function (topic) {
             context.refreshActionState();
         });
@@ -101,7 +101,7 @@ export class GraphTreeWidget {
         this._initVertices();
         this._initEdges();
 
-        var splitter = this.widget.BorderContainer.getSplitter("left");
+        let splitter = this.widget.BorderContainer.getSplitter("left");
         this.main.watchSplitter(splitter);
 
         splitter = this.widget.SideBorderContainer.getSplitter("bottom");
@@ -129,7 +129,7 @@ export class GraphTreeWidget {
 
     //  Implementation  ---
     _initGraphControls() {
-        var context = this;
+        const context = this;
         this.global = registry.byId(this.id + "GlobalGraphWidget");
 
         this.main = registry.byId(this.id + "MainGraphWidget");
@@ -147,21 +147,21 @@ export class GraphTreeWidget {
     }
 
     _initTimings() {
-        var context = this;
+        const context = this;
         this.widget.TimingsTreeMap.onClick = function (value) {
             context.syncSelectionFrom(context.widget.TimingsTreeMap);
-        }
+        };
     }
 
     _initActivitiesMap() {
-        var context = this;
+        const context = this;
         this.widget.ActivitiesTreeMap.onClick = function (value) {
             context.syncSelectionFrom(context.widget.ActivitiesTreeMap);
-        }
+        };
     }
 
     _initDialogs() {
-        var context = this;
+        const context = this;
 
         this.infoDialog = registry.byId(this.id + "InfoDialog");
         on(dom.byId(this.id + "InfoDialogCancel"), "click", function (event) {
@@ -173,13 +173,13 @@ export class GraphTreeWidget {
         on(dom.byId(this.id + "XGMMLDialogApply"), "click", function (event) {
             context.xgmmlDialog.hide();
             if (context.xgmmlDialog.get("hpccMode") === "XGMML") {
-                var xgmml = context.xgmmlTextArea.get("value");
+                const xgmml = context.xgmmlTextArea.get("value");
                 context.loadGraphFromXGMML(xgmml);
             } else if (context.xgmmlDialog.get("hpccMode") === "DOT") {
-                var dot = context.xgmmlTextArea.get("value");
+                const dot = context.xgmmlTextArea.get("value");
                 context.loadGraphFromDOT(dot);
             } else if (context.xgmmlDialog.get("hpccMode") === "DOTATTRS") {
-                var dotAttrs = context.xgmmlTextArea.get("value");
+                const dotAttrs = context.xgmmlTextArea.get("value");
                 context.global.setDotMetaAttributes(dotAttrs);
                 context.main.setDotMetaAttributes(dotAttrs);
                 context._onMainSync();
@@ -191,14 +191,14 @@ export class GraphTreeWidget {
     }
 
     _initItemGrid(grid) {
-        var context = this;
+        const context = this;
         grid.on("dgrid-select, dgrid-deselect", function (event) {
             context.syncSelectionFrom(grid);
         });
         grid.on(".dgrid-row:dblclick", function (evt) {
-            var item = grid.row(evt).data;
+            const item = grid.row(evt).data;
             if (item._globalID) {
-                var mainItem = context.main.getItem(item._globalID);
+                const mainItem = context.main.getItem(item._globalID);
                 context.main.centerOnItem(mainItem, true);
             }
         });
@@ -215,20 +215,20 @@ export class GraphTreeWidget {
     }
 
     initContextMenu() {
-        var context = this;
-        var pMenu = new Menu({
+        const context = this;
+        const pMenu = new Menu({
             targetNodeIds: [this.id + "TreeGrid"]
         });
         pMenu.addChild(new MenuItem({
             label: this.i18n.ExpandAll,
-            onClick: function (evt) {
+            onClick(evt) {
                 context.treeGrid.set("treeDepth", 9999);
                 context.treeGrid.refresh();
             }
         }));
         pMenu.addChild(new MenuItem({
             label: this.i18n.CollapseAll,
-            onClick: function (evt) {
+            onClick(evt) {
                 context.treeGrid.set("treeDepth", 1);
                 context.treeGrid.refresh();
             }
@@ -237,7 +237,7 @@ export class GraphTreeWidget {
         pMenu.addChild(new CheckedMenuItem({
             label: this.i18n.Activities,
             checked: false,
-            onClick: function (evt) {
+            onClick(evt) {
                 if (this.checked) {
                     context.treeGrid.set("query", {
                         id: "0"
@@ -289,7 +289,7 @@ export class GraphTreeWidget {
     }
 
     _onChangeActivityMetric() {
-        var metric = this.widget.ActivityMetric.get("value");
+        const metric = this.widget.ActivityMetric.get("value");
         this.widget.ActivitiesTreeMap.setActivityMetric(metric);
     }
 
@@ -338,7 +338,7 @@ export class GraphTreeWidget {
     }
 
     _onRenderSVG() {
-        var context = this
+        const context = this;
         this.main.localLayout(function (svg) {
             html.set(dom.byId(context.id + "InfoDialogContent"), "<div style='border: 1px inset grey; width: 640px; height: 480px; overflow : auto; '>" + svg + "</div>");
             context.infoDialog.set("title", this.i18n.RenderedSVG);
@@ -401,11 +401,11 @@ export class GraphTreeWidget {
 
         if (params.SafeMode && params.SafeMode !== "false") {
             this.main.depth.set("value", 1);
-            var dotAttrs = this.global.getDotMetaAttributes();
+            let dotAttrs = this.global.getDotMetaAttributes();
             dotAttrs = dotAttrs.replace("\n//graph[splines=\"line\"];", "\ngraph[splines=\"line\"];");
             this.global.setDotMetaAttributes(dotAttrs);
         } else {
-            var dotAttrs = this.global.getDotMetaAttributes();
+            let dotAttrs = this.global.getDotMetaAttributes();
             dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
             this.global.setDotMetaAttributes(dotAttrs);
         }
@@ -430,17 +430,16 @@ export class GraphTreeWidget {
             hideHelp: true
         }, params));
 
-
         if (this.isWorkunit()) {
             this.wu = ESPWorkunit.Get(params.Wuid);
 
-            var firstLoad = true;
-            var context = this;
+            let firstLoad = true;
+            const context = this;
             this.wu.monitor(function () {
                 context.wu.getInfo({
-                    onGetApplicationValues: function (applicationValues) {
+                    onGetApplicationValues(applicationValues) {
                     },
-                    onGetGraphs: function (graphs) {
+                    onGetGraphs(graphs) {
                         if (firstLoad === true) {
                             firstLoad = false;
                             context.loadGraphFromWu(context.wu, context.graphName, context.subGraphId);
@@ -448,7 +447,7 @@ export class GraphTreeWidget {
                             context.refreshGraphFromWU(context.wu, context.graphName, context.subGraphId);
                         }
                     },
-                    onGetTimers: function (timers) {
+                    onGetTimers(timers) {
                         context.graphTimers = context.wu.getGraphTimers(context.GraphName);
                     }
                 });
@@ -472,8 +471,8 @@ export class GraphTreeWidget {
     loadGraphFromXGMML(xgmml) {
         if (this.global.loadXGMML(xgmml, false, this.graphTimers, true)) {
             this.global.setMessage("...");  //  Just in case it decides to render  ---
-            var mainRoot = [0];
-            var complexityInfo = this.global.getComplexityInfo();
+            let mainRoot = [0];
+            const complexityInfo = this.global.getComplexityInfo();
             if (this.params.SubGraphId) {
                 mainRoot = [this.params.SubGraphId];
             } else if (complexityInfo.isComplex()) {
@@ -509,9 +508,9 @@ export class GraphTreeWidget {
     }
 
     loadGraphFromWu(wu, graphName, subGraphId, refresh: boolean = false) {
-        var deferred = new Deferred();
+        const deferred = new Deferred();
         this.main.setMessage(this.i18n.FetchingData);
-        var context = this;
+        const context = this;
         wu.fetchGraphXgmmlByName(graphName, subGraphId, function (xgmml, svg) {
             context.main.setMessage("");
             context.loadGraphFromXGMML(xgmml);
@@ -521,7 +520,7 @@ export class GraphTreeWidget {
     }
 
     refreshGraphFromWU(wu, graphName, subGraphId) {
-        var context = this;
+        const context = this;
         wu.fetchGraphXgmmlByName(graphName, subGraphId, function (xgmml) {
             context.mergeGraphFromXGMML(xgmml);
         }, true);
@@ -529,7 +528,7 @@ export class GraphTreeWidget {
 
     loadGraphFromQuery(targetQuery, queryId, graphName) {
         this.main.setMessage(this.i18n.FetchingData);
-        var context = this;
+        const context = this;
         WsWorkunits.WUQueryGetGraph({
             request: {
                 Target: targetQuery,
@@ -547,7 +546,7 @@ export class GraphTreeWidget {
     }
 
     refreshGraphFromQuery(targetQuery, queryId, graphName) {
-        var context = this;
+        const context = this;
         WsWorkunits.WUQueryGetGraph({
             request: {
                 Target: targetQuery,
@@ -564,15 +563,15 @@ export class GraphTreeWidget {
     }
 
     loadTree() {
-        var treeData = this.global.getTreeWithProperties();
+        const treeData = this.global.getTreeWithProperties();
         this.treeStore.setTree(treeData);
-        var context = this;
-        var columns = [
+        const context = this;
+        const columns = [
             tree({
                 field: "id",
                 label: this.i18n.ID, width: 150,
                 collapseOnRefresh: true,
-                shouldExpand: function (row, level, previouslyExpanded) {
+                shouldExpand(row, level, previouslyExpanded) {
                     if (previouslyExpanded !== undefined) {
                         return previouslyExpanded;
                     } else if (level < context.treeGrid.get("treeDepth")) {
@@ -580,9 +579,9 @@ export class GraphTreeWidget {
                     }
                     return false;
                 },
-                formatter: function (_id, row) {
-                    var img = Utility.getImageURL("file.png");
-                    var label = _id + " - ";
+                formatter(_id, row) {
+                    let img = Utility.getImageURL("file.png");
+                    let label = _id + " - ";
                     switch (row._globalType) {
                         case "Graph":
                             img = Utility.getImageURL("server.png");
@@ -614,13 +613,13 @@ export class GraphTreeWidget {
     }
 
     loadSubgraphs() {
-        var subgraphs = this.global.getSubgraphsWithProperties();
+        const subgraphs = this.global.getSubgraphsWithProperties();
         this.subgraphsStore.setData(subgraphs);
-        var columns = [
+        const columns = [
             {
                 label: this.i18n.ID, field: "id", width: 54,
-                formatter: function (_id, row) {
-                    var img = Utility.getImageURL("folder.png");
+                formatter(_id, row) {
+                    const img = Utility.getImageURL("folder.png");
                     return "<img src='" + img + "'/>&nbsp;" + _id;
                 }
             }
@@ -631,13 +630,13 @@ export class GraphTreeWidget {
     }
 
     loadVertices() {
-        var vertices = this.global.getVerticesWithProperties();
+        const vertices = this.global.getVerticesWithProperties();
         this.verticesStore.setData(vertices);
-        var columns = [
+        const columns = [
             {
                 label: this.i18n.ID, field: "id", width: 54,
-                formatter: function (_id, row) {
-                    var img = Utility.getImageURL("file.png");
+                formatter(_id, row) {
+                    const img = Utility.getImageURL("file.png");
                     return "<img src='" + img + "'/>&nbsp;" + _id;
                 }
             },
@@ -670,9 +669,9 @@ export class GraphTreeWidget {
     }
 
     loadEdges() {
-        var edges = this.global.getEdgesWithProperties();
+        const edges = this.global.getEdgesWithProperties();
         this.edgesStore.setData(edges);
-        var columns = [
+        const columns = [
             { label: this.i18n.ID, field: "id", width: 50 }
         ];
         this.edgesStore.appendColumns(columns, ["label", "count"], ["source", "target"]);
@@ -690,27 +689,27 @@ export class GraphTreeWidget {
     // _syncSelectionFrom: Utility.debounce(function (sourceControlOrGlobalIDs) {
     _syncSelectionFrom(sourceControlOrGlobalIDs) {
         this.inSyncSelectionFrom = true;
-        var sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
-        var selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
+        const sourceControl = sourceControlOrGlobalIDs instanceof Array ? null : sourceControlOrGlobalIDs;
+        let selectedGlobalIDs = sourceControlOrGlobalIDs instanceof Array ? sourceControlOrGlobalIDs : [];
         if (sourceControl) {
             //  Get Selected Items  ---
             if (sourceControl === this.widget.TimingsTreeMap) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
+                const items = sourceControl.getSelected();
+                for (let i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
                         selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
             } else if (sourceControl === this.widget.ActivitiesTreeMap) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
+                const items = sourceControl.getSelected();
+                for (let i = 0; i < items.length; ++i) {
                     if (items[i].ActivityID) {
                         selectedGlobalIDs.push(items[i].ActivityID);
                     }
                 }
             } else if (sourceControl === this.verticesGrid || sourceControl === this.edgesGrid || sourceControl === this.subgraphsGrid || sourceControl === this.treeGrid) {
-                var items = sourceControl.getSelected();
-                for (var i = 0; i < items.length; ++i) {
+                const items = sourceControl.getSelected();
+                for (let i = 0; i < items.length; ++i) {
                     if (lang.exists("_globalID", items[i])) {
                         selectedGlobalIDs.push(items[i]._globalID);
                     }
@@ -747,14 +746,14 @@ export class GraphTreeWidget {
             this.setMainRootItems(selectedGlobalIDs);
         }
 
-        var propertiesDom = dom.byId(this.id + "Properties");
+        const propertiesDom = dom.byId(this.id + "Properties");
         propertiesDom.innerHTML = "";
-        for (var i = 0; i < selectedGlobalIDs.length; ++i) {
+        for (let i = 0; i < selectedGlobalIDs.length; ++i) {
             this.global.displayProperties(this.wu, selectedGlobalIDs[i], propertiesDom);
         }
-        var context = this;
+        const context = this;
         if (selectedGlobalIDs.length) {
-            var edges = arrayUtil.filter(selectedGlobalIDs, function (id) {
+            const edges = arrayUtil.filter(selectedGlobalIDs, function (id) {
                 return id && id.indexOf && id.indexOf("_") >= 0;
             });
             if (edges.length === 1) {
@@ -766,7 +765,7 @@ export class GraphTreeWidget {
             }
         }
         this.inSyncSelectionFrom = false;
-        //}, 500, false)
+        // }, 500, false)
     }
 
     resetPage() {
@@ -774,17 +773,17 @@ export class GraphTreeWidget {
     }
 
     setMainRootItems(globalIDs) {
-        var graphView = this.global.getGraphView(globalIDs, this.main.getDepth(), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
+        const graphView = this.global.getGraphView(globalIDs, this.main.getDepth(), this.main.distance.get("value"), this.main.option("subgraph"), this.main.option("vhidespills"));
         return graphView.navigateTo(this.main);
     }
 
     refreshMainXGMML() {
-        var graphView = this.main.getCurrentGraphView();
+        const graphView = this.main.getCurrentGraphView();
         graphView.refreshXGMML(this.main);
     }
 
     displayGraphs(graphs) {
-        for (var i = 0; i < graphs.length; ++i) {
+        for (let i = 0; i < graphs.length; ++i) {
             this.wu.fetchGraphXgmml(i, null, function (xgmml) {
                 this.main.loadXGMML(xgmml, true);
             });
@@ -792,7 +791,7 @@ export class GraphTreeWidget {
     }
 
     refreshActionState() {
-        var tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
+        const tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
         this.setDisabled(this.id + "FindPrevious", this.foundIndex <= 0, "iconLeft", "iconLeftDisabled");
         this.setDisabled(this.id + "FindNext", this.foundIndex >= this.found.length - 1, "iconRight", "iconRightDisabled");
         this.setDisabled(this.id + "ActivityMetric", tab.id !== this.id + "ActivitiesTreeMap");

@@ -1,29 +1,29 @@
 import { Connection } from "@hpcc-js/comms";
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
+import * as lang from "dojo/_base/lang";
+import * as Evented from "dojo/Evented";
 import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
-import * as Evented from "dojo/Evented";
 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
 
 declare const dojoConfig;
 
-var TpLogFileStore = declare([Memory, Evented], {
-    constructor: function () {
+const TpLogFileStore = declare([Memory, Evented], {
+    constructor() {
         this.idProperty = "__hpcc_id";
     },
 
-    query: function (query, options) {
-        var deferredResults = new Deferred();
+    query(query, options) {
+        const deferredResults = new Deferred();
         deferredResults.total = new Deferred();
 
         function nextItem(itemParts) {
-            var part = "";
+            let part = "";
             while (itemParts.length && part.trim() === "") {
                 part = itemParts[0]; itemParts.shift();
             }
@@ -40,24 +40,24 @@ var TpLogFileStore = declare([Memory, Evented], {
                     IncludeLogFieldNames: 0
                 })
             }).then(lang.hitch(this, function (response) {
-                var data = [];
+                const data = [];
                 if (lang.exists("TpLogFileResponse.LogData", response)) {
-                    var columns = response.TpLogFileResponse.LogFieldNames.Item;
+                    const columns = response.TpLogFileResponse.LogFieldNames.Item;
                     this.lastPage = response.TpLogFileResponse.LogData;
                     this.emit("pageLoaded", this.lastPage);
                     arrayUtil.forEach(response.TpLogFileResponse.LogData.split("\n"), function (item, idx) {
                         if (options.start === 0 || idx > 0) {
                             //  Throw away first line as it will probably only be a partial line  ---
-                            var itemParts = item.split(" ");
-                            var tempObj = {
+                            const itemParts = item.split(" ");
+                            const tempObj = {
                                 __hpcc_id: response.TpLogFileResponse.PageNumber + "_" + idx
                             };
 
-                            for  (var i = 0; i < columns.length; ++i) {
-                                var cleanName = Utility.removeSpecialCharacters(columns[i]);
-                                var value = "";
+                            for (let i = 0; i < columns.length; ++i) {
+                                const cleanName = Utility.removeSpecialCharacters(columns[i]);
+                                let value = "";
 
-                                if ((i + 1) == (columns).length) {
+                                if ((i + 1) === columns.length) {
                                     value = itemParts.join("");
                                 } else if (itemParts.length) {
                                     value = nextItem(itemParts);
@@ -98,9 +98,9 @@ export function TpClusterQuery(params) {
 }
 
 export function GetESPServiceBaseURL(type) {
-    var deferred = new Deferred();
+    const deferred = new Deferred();
     this.TpServiceQuery({}).then(function (response) {
-        var retVal = ESPRequest.getURL({
+        let retVal = ESPRequest.getURL({
             port: window.location.protocol === "https:" ? 18002 : 8002,
             pathname: ""
         });
@@ -127,9 +127,9 @@ export function GetESPServiceBaseURL(type) {
 }
 export const WsEclURL = "";
 export function GetWsEclURL(type) {
-    var deferred = new Deferred();
+    const deferred = new Deferred();
     if (this.WsEclURL === "") {
-        var context = this;
+        const context = this;
         this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
             context.WsEclURL = response + "/WsEcl/";
             deferred.resolve(context.WsEclURL + type + "/query/");
@@ -141,9 +141,9 @@ export function GetWsEclURL(type) {
 }
 export const WsEclIFrameURL = "";
 export function GetWsEclIFrameURL(type) {
-    var deferred = new Deferred();
+    const deferred = new Deferred();
     if (this.WsEclIFrameURL === "") {
-        var context = this;
+        const context = this;
         this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
             context.WsEclIFrameURL = response + dojoConfig.urlInfo.basePath + "/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
             deferred.resolve(context.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
@@ -161,8 +161,8 @@ export function TpGroupQuery(params) {
 }
 export function TpLogicalClusterQuery(params?) {
     return ESPRequest.send("WsTopology", "TpLogicalClusterQuery", params).then(function (response) {
-        var best = null;
-        var hthor = null;
+        let best = null;
+        let hthor = null;
         if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
             arrayUtil.forEach(response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster, function (item, idx) {
                 if (!best) {
@@ -206,7 +206,7 @@ export function TpLogFile(params) {
     return ESPRequest.send("WsTopology", "TpLogFile", params);
 }
 export function CreateTpLogFileStore() {
-    var store = new TpLogFileStore();
+    const store = new TpLogFileStore();
     return Observable(store);
 }
 export function TpGetServerVersion() {

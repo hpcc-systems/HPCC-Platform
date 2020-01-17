@@ -1,27 +1,27 @@
+import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
-import * as arrayUtil from "dojo/_base/array";
-import * as QueryResults from "dojo/store/util/QueryResults";
 import * as Observable from "dojo/store/Observable";
+import * as QueryResults from "dojo/store/util/QueryResults";
 import * as ESPRequest from "./ESPRequest";
 
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
-var i18n = nlsHPCC;
+const i18n = nlsHPCC;
 
-var SystemServersStore = declare([ESPRequest.Store], {
+const SystemServersStore = declare([ESPRequest.Store], {
     service: "WsTopology",
     action: "TpServiceQuery",
     responseQualifier: "TpServiceQueryResponse.ServiceList",
     idProperty: "hpcc_id",
-    constructor: function (options) {
+    constructor(options) {
         if (options) {
             declare.safeMixin(this, options);
         }
     },
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             Name: row.parent,
             childName: row.Name,
@@ -30,13 +30,13 @@ var SystemServersStore = declare([ESPRequest.Store], {
         });
     },
 
-    preProcessResponse: function (response, request) {
-        var results = [];
-        for (var key in response.ServiceList) {
-            for (var i in response.ServiceList[key]) {
+    preProcessResponse(response, request) {
+        const results = [];
+        for (const key in response.ServiceList) {
+            for (const i in response.ServiceList[key]) {
                 if (key !== "TpEclServers") {
-                    response.ServiceList[key][i].map(function(item) {
-                        var cleanKey = key.replace('Tp', '');
+                    response.ServiceList[key][i].map(function (item) {
+                        const cleanKey = key.replace("Tp", "");
                         results.push(item);
                         lang.mixin(item, {
                             parent: cleanKey
@@ -48,28 +48,28 @@ var SystemServersStore = declare([ESPRequest.Store], {
         response.ServiceList = results;
     },
 
-    mayHaveChildren: function (item) {
-        return item.TpMachines
+    mayHaveChildren(item) {
+        return item.TpMachines;
     },
 
-    getMachineIP: function (item) {
+    getMachineIP(item) {
         if (item.TpMachines) {
-            return item.TpMachines.TpMachine[0].Netaddress
+            return item.TpMachines.TpMachine[0].Netaddress;
         } else {
-            return ""
+            return "";
         }
     },
 
-    getMachinePort: function (port) {
+    getMachinePort(port) {
         if (port > 0) {
-            return ":" + port
+            return ":" + port;
         }
-        return ""
+        return "";
     },
 
-    getChildren: function (parent, options) {
-        var children = [];
-        var context = this;
+    getChildren(parent, options) {
+        const children = [];
+        const context = this;
 
         arrayUtil.forEach(parent.TpMachines.TpMachine, function (item, idx) {
             children.push({
@@ -94,17 +94,17 @@ var SystemServersStore = declare([ESPRequest.Store], {
     }
 });
 
-var ClusterTargetStore = declare([ESPRequest.Store], {
+const ClusterTargetStore = declare([ESPRequest.Store], {
     service: "WsTopology",
     action: "TpTargetClusterQuery",
     responseQualifier: "TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster",
     idProperty: "hpcc_id",
-    constructor: function (options) {
+    constructor(options) {
         if (options) {
             declare.safeMixin(this, options);
         }
     },
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             hpcc_id: row.Name,
             displayName: row.Name,
@@ -113,19 +113,19 @@ var ClusterTargetStore = declare([ESPRequest.Store], {
             Configuration: false
         });
     },
-    mayHaveChildren: function (item) {
+    mayHaveChildren(item) {
         return item.type === "targetClusterProcess";
     },
-    getChildren: function (parent, options) {
-        var context = this;
-        var children = [];
-        var tempArr = [];
-        for (var key in parent) {
+    getChildren(parent, options) {
+        const context = this;
+        const children = [];
+        const tempArr = [];
+        for (const key in parent) {
             if (typeof parent[key] === "object") {
-                for (var i in parent[key]) {
+                for (const i in parent[key]) {
                     if (key !== "TpEclServers") {
-                        parent[key][i].map(function(item){
-                            tempArr.push(item)
+                        parent[key][i].map(function (item) {
+                            tempArr.push(item);
                         });
                     }
                 }
@@ -135,7 +135,7 @@ var ClusterTargetStore = declare([ESPRequest.Store], {
         arrayUtil.forEach(tempArr, function (item, idx) {
             children.push({
                 hpcc_id: parent.Name + "_" + item.Name,
-                Name: item.Type + " - " +  item.Name,
+                Name: item.Type + " - " + item.Name,
                 Type: item.Type,
                 DaliServer: item.DaliServer ? true : false,
                 Directory: item.TpMachines ? item.TpMachines.TpMachine[0].Directory : "",
@@ -153,40 +153,40 @@ var ClusterTargetStore = declare([ESPRequest.Store], {
         return QueryResults(children);
     },
 
-    getMachineType: function (type) {
+    getMachineType(type) {
         switch (type) {
             case "RoxieCluster":
-                return "ROXIEMACHINES"
+                return "ROXIEMACHINES";
             case "ThorCluster":
-                return "THORMACHINES"
+                return "THORMACHINES";
         }
     },
 
-    getOS: function (int) {
+    getOS(int) {
         switch (int) {
             case 0:
-                return "Windows"
+                return "Windows";
             case 1:
-                return "Solaris"
+                return "Solaris";
             case 2:
-                return "Linux"
+                return "Linux";
             default:
-                return "Linux"
+                return "Linux";
         }
     }
-})
+});
 
-var ClusterProcessStore = declare([ESPRequest.Store], {
+const ClusterProcessStore = declare([ESPRequest.Store], {
     service: "WsTopology",
     action: "TpClusterQuery",
     responseQualifier: "TpClusterQueryResponse.TpClusters.TpCluster",
     idProperty: "hpcc_id",
-    constructor: function (options) {
+    constructor(options) {
         if (options) {
             declare.safeMixin(this, options);
         }
     },
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             Platform: this.getOS(row.OS),
             hpcc_id: row.Name,
@@ -196,12 +196,12 @@ var ClusterProcessStore = declare([ESPRequest.Store], {
             Configuration: true
         });
     },
-    mayHaveChildren: function (item) {
+    mayHaveChildren(item) {
         return item.type === "clusterProcess";
     },
-    getChildren: function (parent, options) {
-        var store = Observable(new ClusterProcessesList({
-            parent: parent
+    getChildren(parent, options) {
+        const store = Observable(new ClusterProcessesList({
+            parent
         }));
         return store.query({
             Type: this.getMachineType(parent.Type),
@@ -213,35 +213,35 @@ var ClusterProcessStore = declare([ESPRequest.Store], {
         });
     },
 
-    getMachineType: function (type) {
+    getMachineType(type) {
         switch (type) {
             case "RoxieCluster":
-                return "ROXIEMACHINES"
+                return "ROXIEMACHINES";
             case "ThorCluster":
-                return "THORMACHINES"
+                return "THORMACHINES";
         }
     },
 
-    getOS: function (int) {
+    getOS(int) {
         switch (int) {
             case 0:
-                return "Windows"
+                return "Windows";
             case 1:
-                return "Solaris"
+                return "Solaris";
             case 2:
             default:
-                return "Linux"
+                return "Linux";
         }
     }
 });
 
-var ClusterProcessesList = declare([ESPRequest.Store], {
+const ClusterProcessesList = declare([ESPRequest.Store], {
     service: "WsTopology",
     action: "TpMachineQuery",
     responseQualifier: "TpMachineQueryResponse.TpMachines.TpMachine",
     idProperty: "hpcc_id",
 
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             Platform: this.getOS(row.OS),
             hpcc_id: row.Name + "_" + row.Netaddress + "_" + row.Directory,
@@ -255,20 +255,20 @@ var ClusterProcessesList = declare([ESPRequest.Store], {
         });
     },
 
-    getOS: function (int) {
+    getOS(int) {
         switch (int) {
             case 0:
-                return "Windows"
+                return "Windows";
             case 1:
-                return "Solaris"
+                return "Solaris";
             case 2:
             default:
-                return "Linux"
+                return "Linux";
         }
     }
 });
 
-export function getCondition (int) {
+export function getCondition(int) {
     switch (int) {
         case 1:
             return i18n.Normal;
@@ -287,7 +287,7 @@ export function getCondition (int) {
     }
 }
 
-export function getState (int) {
+export function getState(int) {
     switch (int) {
         case 0:
             return i18n.Unknown;
@@ -309,17 +309,17 @@ export function getState (int) {
 }
 
 export function CreateTargetClusterStore(options) {
-    var store = new ClusterTargetStore(options);
+    const store = new ClusterTargetStore(options);
     return Observable(store);
 }
 
 export function CreateClusterProcessStore(options) {
-    var store = new ClusterProcessStore(options);
+    const store = new ClusterProcessStore(options);
     return Observable(store);
 }
 
 export function CreateSystemServersStore(options) {
-    var store = new SystemServersStore(options);
+    const store = new SystemServersStore(options);
     return Observable(store);
 }
 

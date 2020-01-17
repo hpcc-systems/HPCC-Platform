@@ -14,15 +14,15 @@ export function DFUXRefUnusedFiles(params) {
     return ESPRequest.send("WsDFUXRef", "DFUXRefUnusedFiles", params);
 }
 export function DFUXRefFoundFiles(params) {
-    var request = {
+    const request = {
         Cluster: params
-    }
+    };
     return ESPRequest.send("WsDFUXRef", "DFUXRefFoundFiles", {
-        request: request
+        request
     }).then(function (response) {
-        var newRows = [];
+        const newRows = [];
         if (lang.exists("DFUXRefFoundFilesQueryResponse.DFUXRefFoundFilesQueryResult.File", response)) {
-            var results = response.DFUXRefFoundFilesQueryResponse.DFUXRefFoundFilesQueryResult.File;
+            const results = response.DFUXRefFoundFilesQueryResponse.DFUXRefFoundFilesQueryResult.File;
             if (results.length) {
                 arrayUtil.forEach(results, function (row, idx) {
                     newRows.push({
@@ -45,15 +45,15 @@ export function DFUXRefFoundFiles(params) {
     });
 }
 export function DFUXRefOrphanFiles(params) {
-    var request = {
+    const request = {
         Cluster: params
-    }
+    };
     return ESPRequest.send("WsDFUXRef", "DFUXRefOrphanFiles", {
-        request: request
+        request
     }).then(function (response) {
-        var newRows = [];
+        const newRows = [];
         if (lang.exists("DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File", response)) {
-            var results = response.DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File
+            const results = response.DFUXRefOrphanFilesQueryResponse.DFUXRefOrphanFilesQueryResult.File;
             if (results.length) {
                 arrayUtil.forEach(results, function (row, idx) {
                     newRows.push({
@@ -84,15 +84,15 @@ export function DFUXRefCleanDirectories(params) {
     return ESPRequest.send("WsDFUXRef", "DFUXRefCleanDirectories", params);
 }
 export function DFUXRefLostFiles(params) {
-    var request = {
+    const request = {
         Cluster: params
-    }
+    };
     return ESPRequest.send("WsDFUXRef", "DFUXRefLostFiles", {
-        request: request
+        request
     }).then(function (response) {
-        var newRows = [];
+        const newRows = [];
         if (lang.exists("DFUXRefLostFilesQueryResponse.DFUXRefLostFilesQueryResult.File", response)) {
-            var results = response.DFUXRefLostFilesQueryResponse.DFUXRefLostFilesQueryResult.File
+            const results = response.DFUXRefLostFilesQueryResponse.DFUXRefLostFilesQueryResult.File;
             if (results.length) {
                 arrayUtil.forEach(results, function (row, idx) {
                     newRows.push({
@@ -117,7 +117,7 @@ export function DFUXRefLostFiles(params) {
                 });
             }
         }
-        return newRows
+        return newRows;
     });
 
 }
@@ -131,7 +131,7 @@ export function DFUXRefArrayAction(xrefFiles, actionType, cluster, type) {
     arrayUtil.forEach(xrefFiles, function (item, idx) {
         item.qualifiedName = item.Name;
     });
-    var request = {
+    const request = {
         XRefFiles: xrefFiles,
         Action: actionType,
         Cluster: cluster,
@@ -139,7 +139,7 @@ export function DFUXRefArrayAction(xrefFiles, actionType, cluster, type) {
     };
     ESPRequest.flattenArray(request, "XRefFiles", "qualifiedName");
     return ESPRequest.send("WsDFUXRef", "DFUXRefArrayAction", {
-        request: request
+        request
     }).then(function (response) {
         if (lang.exists("DFUXRefArrayActionResponse.DFUXRefArrayActionResult", response)) {
             if (response.DFUXRefArrayActionResponse.DFUXRefArrayActionResult.Value) {

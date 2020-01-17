@@ -1,10 +1,10 @@
-import * as declare from "dojo/_base/declare";
-import * as lang from "dojo/_base/lang";
 import * as arrayUtil from "dojo/_base/array";
+import * as declare from "dojo/_base/declare";
+import * as Deferred from "dojo/_base/Deferred";
+import * as lang from "dojo/_base/lang";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import * as Deferred from "dojo/_base/Deferred";
 import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
@@ -12,13 +12,13 @@ import * as ESPRequest from "./ESPRequest";
 
 declare const dojo;
 
-var EventScheduleStore = declare([ESPRequest.Store], {
+const EventScheduleStore = declare([ESPRequest.Store], {
     service: "WsWorkunits",
     action: "WUShowScheduled",
     responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
     idProperty: "calculatedID",
 
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             calculatedID: row.Wuid + row.EventText
         });
@@ -58,7 +58,7 @@ export function WUCreate(params) {
 }
 
 export function WUUpdate(params) {
-    ESPRequest.flattenMap(params.request, "ApplicationValues")
+    ESPRequest.flattenMap(params.request, "ApplicationValues");
     return ESPRequest.send("WsWorkunits", "WUUpdate", params);
 }
 
@@ -87,16 +87,16 @@ export function WUPushEvent(params) {
 }
 
 export function WUQuerysetAliasAction(selection, action) {
-    var requests = [];
+    const requests = [];
     arrayUtil.forEach(selection, function (item, idx) {
-        var request = {
-            QuerySetName: item.QuerySetId,
-            Action: action,
+        const request = {
+            "QuerySetName": item.QuerySetId,
+            "Action": action,
             "Aliases.QuerySetAliasActionItem.0.Name": item.Name,
             "Aliases.QuerySetAliasActionItem.itemcount": 1
         };
         requests.push(ESPRequest.send("WsWorkunits", "WUQuerysetAliasAction", {
-            request: request
+            request
         }));
     });
     return all(requests);
@@ -106,16 +106,16 @@ export function WUQuerysetQueryAction(selection, action) {
     if (action === "Deactivate") {
         return this.WUQuerysetAliasAction(selection, action);
     }
-    var requests = [];
+    const requests = [];
     arrayUtil.forEach(selection, function (item, idx) {
-        var request = {
-            QuerySetName: item.QuerySetId,
-            Action: action,
+        const request = {
+            "QuerySetName": item.QuerySetId,
+            "Action": action,
             "Queries.QuerySetQueryActionItem.0.QueryId": item.Id,
             "Queries.QuerySetQueryActionItem.itemcount": 1
         };
         requests.push(ESPRequest.send("WsWorkunits", "WUQuerysetQueryAction", {
-            request: request
+            request
         }));
     });
     return all(requests);
@@ -221,17 +221,17 @@ export function WUFile(params) {
 }
 
 export function WUAction(workunits, actionType, callback) {
-    var request = {
+    const request = {
         Wuids: workunits,
         WUActionType: actionType
     };
     ESPRequest.flattenArray(request, "Wuids", "Wuid");
 
     return ESPRequest.send("WsWorkunits", "WUAction", {
-        request: request,
-        load: function (response) {
+        request,
+        load(response) {
             if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
-                var wuMap = {};
+                const wuMap = {};
                 arrayUtil.forEach(workunits, function (item, index) {
                     wuMap[item.Wuid] = item;
                 });
@@ -243,7 +243,7 @@ export function WUAction(workunits, actionType, callback) {
                             Exceptions: [{ Source: item.Action + " " + item.Wuid, Message: item.Result }]
                         });
                     } else {
-                        var wu = wuMap[item.Wuid];
+                        const wu = wuMap[item.Wuid];
                         if (actionType === "delete" && item.Result === "Success") {
                             wu.set("StateID", 999);
                             wu.set("State", "not found");
@@ -258,7 +258,7 @@ export function WUAction(workunits, actionType, callback) {
                 callback.load(response);
             }
         },
-        error: function (err) {
+        error(err) {
             if (callback && callback.error) {
                 callback.error(err);
             }
@@ -303,7 +303,7 @@ export const visualisations = [
     { value: "DojoD3Choropleth COUNTY", label: "US County Choropleth" }
 ];
 export function GetVisualisations() {
-    var deferred = new Deferred();
+    const deferred = new Deferred();
     if (this.visualisations) {
         deferred.resolve(this.visualisations);
     }
@@ -311,7 +311,7 @@ export function GetVisualisations() {
 }
 
 export function CreateEventScheduleStore(options) {
-    var store = new EventScheduleStore(options);
+    const store = new EventScheduleStore(options);
     return Observable(store);
 }
 
@@ -321,16 +321,16 @@ export function isComplete(stateID, actionEx, archived?) {
         return true;
     }
     switch (stateID) {
-        case 1: //WUStateCompiled
+        case 1: // WUStateCompiled
             if (actionEx && actionEx === "compile") {
                 return true;
             }
             break;
-        case 3: //WUStateCompleted:
-        case 4: //WUStateFailed:
-        case 5: //WUStateArchived:
-        case 7: //WUStateAborted:
-        case 999: //WUStateDeleted:
+        case 3: // WUStateCompleted:
+        case 4: // WUStateFailed:
+        case 5: // WUStateArchived:
+        case 7: // WUStateAborted:
+        case 999: // WUStateDeleted:
             return true;
     }
     return false;

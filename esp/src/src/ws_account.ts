@@ -4,8 +4,8 @@ import * as topic from "dojo/topic";
 import * as ESPRequest from "./ESPRequest";
 
 export function checkError(response, sourceMethod, showOkMsg) {
-    var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
-    var retMsg = lang.getObject(sourceMethod + "Response.message", false, response);
+    const retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
+    const retMsg = lang.getObject(sourceMethod + "Response.message", false, response);
     if (retCode) {
         topic.publish("hpcc/brToaster", {
             Severity: "Error",
@@ -22,7 +22,7 @@ export function checkError(response, sourceMethod, showOkMsg) {
 }
 
 export function UpdateUser(params) {
-    var context = this;
+    const context = this;
     return ESPRequest.send("ws_account", "UpdateUser", params).then(function (response) {
         context.checkError(response, "UpdateUser", params ? params.showOkMsg : false);
         return response;
@@ -50,4 +50,3 @@ export function Lock(params) {
     });
     return ESPRequest.send("esp", "lock", params);
 }
-

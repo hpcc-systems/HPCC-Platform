@@ -31,7 +31,7 @@ export function MoveJobBack(params) {
     return ESPRequest.send("WsSMC", "MoveJobBack", params);
 }
 export function parseBuildString(build) {
-    var retVal = {
+    const retVal = {
         orig: build,
         prefix: "",
         postfix: "",
@@ -43,7 +43,7 @@ export function parseBuildString(build) {
     retVal.orig = build;
     retVal.prefix = "";
     retVal.postfix = "";
-    var verArray = build.split("[");
+    let verArray = build.split("[");
     if (verArray.length > 1) {
         retVal.postfix = verArray[1].split("]")[0];
     }

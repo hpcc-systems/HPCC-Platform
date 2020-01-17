@@ -1,24 +1,24 @@
+import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
-import * as arrayUtil from "dojo/_base/array";
-import * as QueryResults from "dojo/store/util/QueryResults";
 import * as Observable from "dojo/store/Observable";
+import * as QueryResults from "dojo/store/util/QueryResults";
 
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 
 declare const dojo;
 
-var FileListStore = declare([ESPRequest.Store], {
+const FileListStore = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "FileList",
     responseQualifier: "FileListResponse.files.PhysicalFileStruct",
     idProperty: "calculatedID",
-    create: function (id) {
-        var retVal = {
-            lfEncode: function (path) {
-                var retVal = "";
-                for (var i = 0; i < path.length; ++i) {
+    create(id) {
+        const retVal = {
+            lfEncode(path) {
+                let retVal = "";
+                for (let i = 0; i < path.length; ++i) {
                     switch (path[i]) {
                         case "/":
                         case "\\":
@@ -58,29 +58,29 @@ var FileListStore = declare([ESPRequest.Store], {
                 }
                 return retVal;
             },
-            getLogicalFile: function () {
+            getLogicalFile() {
                 return "~file::" + this.NetAddress + this.lfEncode(this.fullPath);
             }
         };
         retVal[this.idProperty] = id;
         return retVal;
     },
-    preProcessRow: function (row) {
-        var fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
-        var fullFolderPathParts = fullPath.split("/");
+    preProcessRow(row) {
+        const fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
+        const fullFolderPathParts = fullPath.split("/");
         fullFolderPathParts.pop();
         lang.mixin(row, {
             calculatedID: this.parent.NetAddress + fullPath,
             NetAddress: this.parent.NetAddress,
             OS: this.parent.OS,
-            fullPath: fullPath,
+            fullPath,
             fullFolderPath: fullFolderPathParts.join("/"),
             DropZone: this.parent.DropZone,
             displayName: row.name,
             type: row.isDir ? "folder" : "file"
         });
     },
-    postProcessResults: function (items) {
+    postProcessResults(items) {
         items.sort(function (l, r) {
             if (l.isDir === r.isDir) {
                 if (l.displayName === r.displayName)
@@ -96,18 +96,18 @@ var FileListStore = declare([ESPRequest.Store], {
     }
 });
 
-var LandingZonesFilterStore = declare([ESPRequest.Store], {
+const LandingZonesFilterStore = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "DropZoneFileSearch",
     responseQualifier: "DropZoneFileSearchResponse.Files.PhysicalFileStruct",
     idProperty: "calculatedID",
-    constructor: function (options) {
+    constructor(options) {
         if (options) {
             declare.safeMixin(this, options);
         }
     },
-    preProcessRow: function (row) {
-        var fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
+    preProcessRow(row) {
+        const fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
         lang.mixin(row, {
             NetAddress: this.dropZone.machine.Netaddress,
             Directory: this.dropZone.machine.Directory,
@@ -120,12 +120,12 @@ var LandingZonesFilterStore = declare([ESPRequest.Store], {
     }
 });
 
-var LandingZonesStore = declare([ESPRequest.Store], {
+const LandingZonesStore = declare([ESPRequest.Store], {
     service: "WsTopology",
     action: "TpDropZoneQuery",
     responseQualifier: "TpDropZoneQueryResponse.TpDropZones.TpDropZone",
     idProperty: "calculatedID",
-    constructor: function (options) {
+    constructor(options) {
         if (options) {
             declare.safeMixin(this, options);
         }
@@ -135,36 +135,36 @@ var LandingZonesStore = declare([ESPRequest.Store], {
         if (!query.filter) {
             return inherited(query, options);
         }
-        var landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
+        const landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
         delete query.filter.__dropZone;
         return landingZonesFilterStore.query(query.filter, options);
     }),
-    addUserFile: function (_file) {
+    addUserFile(_file) {
         //  Just add a file "reference" so it can be remotely sprayed etc.
-        var fileListStore = new FileListStore({
+        const fileListStore = new FileListStore({
             parent: null
         });
         _file._isUserFile = true;
-        var file = fileListStore.get(_file.calculatedID);
+        const file = fileListStore.get(_file.calculatedID);
         fileListStore.update(_file.calculatedID, _file);
         this.userAddedFiles[file.calculatedID] = file;
     },
-    removeUserFile: function (_file) {
-        var fileListStore = new FileListStore({
+    removeUserFile(_file) {
+        const fileListStore = new FileListStore({
             parent: null
         });
         fileListStore.remove(_file.calculatedID);
         delete this.userAddedFiles[_file.calculatedID];
     },
-    postProcessResults: function (items) {
-        for (var key in this.userAddedFiles) {
+    postProcessResults(items) {
+        for (const key in this.userAddedFiles) {
             items.push(this.userAddedFiles[key]);
         }
     },
-    preRequest: function (request) {
-        request.ECLWatchVisibleOnly = true
+    preRequest(request) {
+        request.ECLWatchVisibleOnly = true;
     },
-    preProcessRow: function (row) {
+    preProcessRow(row) {
         lang.mixin(row, {
             OS: row.Linux === "true" ? 2 : 0
         });
@@ -176,7 +176,7 @@ var LandingZonesStore = declare([ESPRequest.Store], {
             DropZone: row
         });
     },
-    mayHaveChildren: function (item) {
+    mayHaveChildren(item) {
         switch (item.type) {
             case "dropzone":
             case "folder":
@@ -185,8 +185,8 @@ var LandingZonesStore = declare([ESPRequest.Store], {
         }
         return false;
     },
-    getChildren: function (parent, options) {
-        var children = [];
+    getChildren(parent, options) {
+        const children = [];
         if (parent.TpMachines) {
             arrayUtil.forEach(parent.TpMachines.TpMachine, function (item, idx) {
                 children.push({
@@ -204,8 +204,8 @@ var LandingZonesStore = declare([ESPRequest.Store], {
             });
             return QueryResults(children);
         } else if (parent.isMachine || parent.isDir) {
-            var store = Observable(new FileListStore({
-                parent: parent
+            const store = Observable(new FileListStore({
+                parent
             }));
             return store.query({
                 Netaddr: parent.NetAddress,
@@ -217,13 +217,12 @@ var LandingZonesStore = declare([ESPRequest.Store], {
     }
 });
 
-export var LogFileStore = declare([ESPRequest.Store], {
+export let LogFileStore = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "FileList",
     responseQualifier: "FileListResponse.files.PhysicalFileStruct",
     idProperty: ""
 });
-
 
 export const States = {
     0: "unknown",
@@ -291,17 +290,17 @@ export const FormatMessages = {
 };
 
 export function CreateLandingZonesStore(options) {
-    var store = new LandingZonesStore(options);
+    const store = new LandingZonesStore(options);
     return Observable(store);
 }
 
 export function CreateFileListStore(options) {
-    var store = new FileListStore(options);
+    const store = new FileListStore(options);
     return Observable(store);
 }
 
 export function CreateLandingZonesFilterStore(options) {
-    var store = new LandingZonesFilterStore(options);
+    const store = new LandingZonesFilterStore(options);
     return Observable(store);
 }
 
@@ -310,15 +309,15 @@ export function GetDFUWorkunits(params) {
 }
 
 export function DFUWorkunitsAction(workunits, actionType, callback) {
-    var request = {
+    const request = {
         wuids: workunits,
         Type: actionType
     };
     ESPRequest.flattenArray(request, "wuids", "ID");
 
     return ESPRequest.send("FileSpray", "DFUWorkunitsAction", {
-        request: request,
-        load: function (response) {
+        request,
+        load(response) {
             arrayUtil.forEach(workunits, function (item, index) {
                 item.refresh();
             });
@@ -344,7 +343,7 @@ export function DFUWorkunitsAction(workunits, actionType, callback) {
                 callback.load(response);
             }
         },
-        error: function (err) {
+        error(err) {
             if (callback && callback.error) {
                 callback.error(err);
             }
@@ -411,8 +410,8 @@ export function DeleteDropZoneFile(params) {
     // Single File Only
     return ESPRequest.send("FileSpray", "DeleteDropZoneFiles", params).then(function (response) {
         if (lang.exists("DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult", response)) {
-            var resultID = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].ID;
-            var resultMessage = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].Result;
+            const resultID = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].ID;
+            const resultMessage = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].Result;
             if (resultMessage.indexOf("Success") === 0) {
                 dojo.publish("hpcc/brToaster", {
                     Severity: "Message",

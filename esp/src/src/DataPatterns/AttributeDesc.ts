@@ -1,6 +1,6 @@
+import { StyledTable } from "@hpcc-js/html";
 import { Grid } from "@hpcc-js/layout";
 import { Html } from "@hpcc-js/other";
-import { StyledTable } from "@hpcc-js/html";
 import { config } from "./config";
 
 class AttributeTitle extends Html {
@@ -60,16 +60,16 @@ class AttributeSummary extends StyledTable {
 
     constructor(row) {
         super();
-        let fillRate = row.fill_rate === 100 || row.fill_rate === 0 ? row.fill_rate : row.fill_rate.toFixed(1);
+        const fillRate = row.fill_rate === 100 || row.fill_rate === 0 ? row.fill_rate : row.fill_rate.toFixed(1);
         this
             .data([
                 ["Cardinality", row.cardinality, "(~" + (row.cardinality / row.fill_count * 100).toFixed(0) + "%)"],
-                ["Filled", row.fill_count, fillRate <= config.fillRateRedThreshold ? `(<b style="color:${config.redColor}">` + fillRate + "%</b>)" : "(" + fillRate + "%)"],
+                ["Filled", row.fill_count, fillRate <= config.fillRateRedThreshold ? `(<b style="color:${config.redColor}">` + fillRate + "%</b>)" : "(" + fillRate + "%)"]
             ])
             .tbodyColumnStyles([
                 { "font-weight": "bold", "font-size": config.secondaryFontSize + "px", "width": "1%" },
                 { "font-weight": "normal", "font-size": config.secondaryFontSize + "px", "text-align": "right", "width": "auto" },
-                { "font-weight": "normal", "font-size": config.secondaryFontSize + "px", "text-align": "left", "width": "1%" },
+                { "font-weight": "normal", "font-size": config.secondaryFontSize + "px", "text-align": "left", "width": "1%" }
             ])
             ;
     }
