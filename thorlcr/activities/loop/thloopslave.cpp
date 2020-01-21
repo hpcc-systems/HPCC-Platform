@@ -513,7 +513,7 @@ public:
             for (; loopCounter<=maxIterations; loopCounter++)
             {
                 unsigned condLoopCounter = (helper->getFlags() & IHThorGraphLoopArg::GLFcounter) ? loopCounter : 0;
-                Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(1);
+                Owned<IThorGraphResults> results = boundGraph->queryGraph()->createThorGraphResults(1);
                 if (condLoopCounter)
                     boundGraph->prepareCounterResult(*this, results, condLoopCounter, 0);
                 sendLoopingCount(loopCounter, 0);
