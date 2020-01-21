@@ -144,6 +144,8 @@ class CWsDfuEx : public CWsDfu
     void clearFileProtections(IDistributedFile *df);
     bool changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
     bool changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
+    void addFileActionResult(const char* fileName, const char* nodeGroup, bool failed, const  char* msg,
+        IArrayOf<IEspDFUActionInfo>& actionResults);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsDfuEx(){};

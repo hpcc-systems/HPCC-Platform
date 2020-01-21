@@ -1549,6 +1549,18 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
     return true;
 }
 
+void CWsDfuEx::addFileActionResult(const char* fileName, const char* nodeGroup, bool failed, const  char* msg,
+    IArrayOf<IEspDFUActionInfo>& actionResults)
+{
+    Owned<IEspDFUActionInfo> result = createDFUActionInfo();
+    result->setFileName(fileName);
+    if (!isEmptyString(nodeGroup))
+        result->setNodeGroup(nodeGroup);
+    result->setFailed(failed);
+    result->setActionResult(msg);
+    actionResults.append(*result.getClear());
+}
+
 bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
 {
     CDFUChangeProtection protect = req.getProtect();
@@ -1574,6 +1586,7 @@ bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionReq
         userDesc->set(userID, context.queryPassword(), context.querySignature());
     }
 
+    IArrayOf<IEspDFUActionInfo> actionResults;
     for (unsigned i = 0; i < req.getLogicalFiles().length(); i++)
     {
         const char *file = req.getLogicalFiles().item(i);
@@ -1582,13 +1595,18 @@ bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionReq
 
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
-            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", file);
+        {
+            addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
+            continue;
+        }
 
         if (protect != CDFUChangeProtection_UnprotectAll)
             df->setProtect(userID, protect == CDFUChangeProtection_Protect ? true : false);
         else
             clearFileProtections(df);
+        addFileActionResult(file, nullptr, false, protect == CDFUChangeProtection_Protect ? "File protected" : "File unprotected", actionResults);
     }
+    resp.setActionResults(actionResults);
     return true;
 }
 
@@ -1627,6 +1645,7 @@ bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRe
         userDesc->set(userID, context.queryPassword(), context.querySignature());
     }
 
+    IArrayOf<IEspDFUActionInfo> actionResults;
     for (unsigned i = 0; i < req.getLogicalFiles().length();i++)
     {
         const char *file = req.getLogicalFiles().item(i);
@@ -1635,10 +1654,15 @@ bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRe
 
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
-            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", file);
-                
+        {
+            addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
+            continue;
+        }
+
         df->setRestrictedAccess(changeRestriction==CDFUChangeRestriction_Restrict);
+        addFileActionResult(file, nullptr, false, changeRestriction == CDFUChangeRestriction_Restrict ? "Changed to restricted" : "Changed to unrestricted", actionResults);
     }
+    resp.setActionResults(actionResults);
     return true;
 }
 
