@@ -53,7 +53,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
     registry, Menu, MenuItem, MenuSeparator, Select,
     tree, selector,
-    _TabContainerWidget, WsAccess, WsAccount, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
+    _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
     template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -244,7 +244,7 @@ define([
                 }
                 groupnames += "groupnames_i" + idx + "=" + item.name;
             }, this);
-            var base = new ESPBase.default();
+            var base = new ESPBaseMod.ESPBase();
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + groupnames);
         },
 
@@ -325,7 +325,7 @@ define([
                 }
                 usernames += "usernames_i" + idx + "=" + item.username;
             }, this);
-            var base = new ESPBase.default();
+            var base = new ESPBaseMod.ESPBase();
             window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + usernames);
         },
 

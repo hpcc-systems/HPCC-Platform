@@ -10,7 +10,7 @@ import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as entities from "dojox/html/entities";
 import * as parser from "dojox/xml/parser";
 
-import * as ESPBase from "./ESPBase";
+import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
