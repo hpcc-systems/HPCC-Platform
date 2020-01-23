@@ -3,34 +3,19 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/dom",
-    "dojo/dom-class",
-    "dojo/dom-form",
-    "dojo/date",
-    "dojo/on",
-    "dojo/topic",
 
     "dijit/registry",
-    "dijit/Menu",
-    "dijit/MenuItem",
-    "dijit/MenuSeparator",
-    "dijit/PopupMenuItem",
-
-    "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
     "src/ESPBase",
     "src/ESPUtil",
-    "src/ESPWorkunit",
-    "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/FilterDropDownWidget",
-    "hpcc/ECLSourceWidget",
     "src/WsTopology",
 
     "dojo/text!../templates/LogWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
+    "hpcc/ECLSourceWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -46,10 +31,9 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
-    registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-    selector,
-    _TabContainerWidget, ESPBaseMod, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, ECLSourceWidget, WsTopology,
+], function (declare, lang, i18n, nlsHPCC,
+    registry,
+    _TabContainerWidget, ESPBaseMod, ESPUtil, WsTopology,
     template) {
     return declare("LogWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,

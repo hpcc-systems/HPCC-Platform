@@ -4,27 +4,19 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
     "dojo/dom-class",
     "dojo/topic",
-
-    "dijit/registry",
-    "dijit/form/ToggleButton",
-    "dijit/ToolbarSeparator",
 
     "dgrid/tree",
 
     "hpcc/GridDetailsWidget",
     "src/ws_machine",
-    "src/ESPWorkunit",
-    "hpcc/DelayLoadWidget",
     "src/ESPUtil",
     "src/Utility"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass, topic,
-    registry, ToggleButton, ToolbarSeparator,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, topic,
     tree,
-    GridDetailsWidget, WsMachine, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
+    GridDetailsWidget, WsMachine, ESPUtil, Utility) {
     return declare("MonitoringWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

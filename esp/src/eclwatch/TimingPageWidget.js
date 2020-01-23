@@ -1,18 +1,10 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/on",
     "dojo/store/Observable",
 
     "dijit/registry",
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane",
-
-    "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
     "src/ESPWorkunit",
@@ -21,13 +13,11 @@ define([
     "src/Timings",
 
     "@hpcc-js/comms",
-    "@hpcc-js/common",
-    "@hpcc-js/eclwatch",
-    "@hpcc-js/chart",
 
     "dojo/text!../templates/TimingPageWidget.html",
 
     "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
@@ -38,11 +28,10 @@ define([
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, Observable,
-    registry, BorderContainer, TabContainer, ContentPane,
-    selector,
+], function (declare, i18n, nlsHPCC, Observable,
+    registry,
     _TabContainerWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, srcTimings,
-    hpccComms, hpccCommon, hpccEclWatch, hpccChart,
+    hpccComms,
     template) {
     return declare("TimingPageWidget", [_TabContainerWidget], {
         templateString: template,

@@ -4,7 +4,6 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
     "dojo/store/util/QueryResults",
 
     "dgrid/tree",
@@ -15,7 +14,7 @@ define([
     "src/ESPUtil",
     "src/ESPQuery",
     "hpcc/SFDetailsWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, QueryResults,
     tree, selector,
     GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery, SFDetailsWidget) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {

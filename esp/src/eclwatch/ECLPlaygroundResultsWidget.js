@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/dom",
 
     "dijit/registry",
 
@@ -10,15 +9,13 @@ define([
     "src/ESPQuery",
     "hpcc/ResultWidget",
     "hpcc/FullResultWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/VizWidget",
 
     "dojo/text!../templates/ECLPlaygroundResultsWidget.html",
 
     "dijit/layout/TabContainer"
-], function (declare, lang, dom,
+], function (declare, lang,
     registry,
-    _TabContainerWidget, ESPWorkunit, ESPQuery, ResultWidget, FullResultWidget, LFDetailsWidget, VizWidget,
+    _TabContainerWidget, ESPWorkunit, ESPQuery, ResultWidget, FullResultWidget,
     template) {
     return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget], {
         templateString: template,

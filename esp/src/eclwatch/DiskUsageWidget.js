@@ -3,20 +3,17 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/on",
     "dojo/dom-class",
 
     "dijit/registry",
 
-    "dgrid/selector",
-
     "hpcc/_Widget",
     "src/WsDfu",
     "src/ESPUtil",
-    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/DiskUsageWidget.html",
 
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -29,10 +26,9 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox"
 
-], function (declare, lang, i18n, nlsHPCC, on, domClass,
+], function (declare, lang, i18n, nlsHPCC, domClass,
     registry,
-    selector,
-    _Widget, WsDfu, ESPUtil, FilterDropDownWidget,
+    _Widget, WsDfu, ESPUtil,
     template) {
     return declare("DiskUsageWidget", [_Widget, ESPUtil.FormHelper], {
         templateString: template,

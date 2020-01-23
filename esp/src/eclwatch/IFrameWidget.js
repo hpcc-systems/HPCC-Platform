@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom-construct",
@@ -16,7 +15,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
     "dijit/layout/ContentPane"
-], function (declare, lang, i18n, nlsHPCC, domConstruct,
+], function (declare, i18n, nlsHPCC, domConstruct,
     registry,
     _Widget,
     template) {

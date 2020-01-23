@@ -1,38 +1,17 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
-    "dojo/dom-form",
-    "dojo/dom-attr",
-    "dojo/request/iframe",
-    "dojo/dom-class",
-    "dojo/query",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_TabContainerWidget",
-    "src/ESPWorkunit",
-    "src/ESPRequest",
-    "hpcc/TargetSelectWidget",
-    "hpcc/DelayLoadWidget",
-    "hpcc/InfoGridWidget",
-    "src/WsWorkunits",
-    "hpcc/GridDetailsWidget",
     "src/WsDFUXref",
 
     "dojo/text!../templates/XrefDetailsWidget.html",
 
+    "hpcc/DelayLoadWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -53,10 +32,9 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
+], function (declare, i18n, nlsHPCC, dom,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-    _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits, GridDetailsWidget, WsDFUXref,
+    _TabContainerWidget, WsDFUXref,
     template) {
     return declare("XrefDetailsWidget", [_TabContainerWidget], {
         templateString: template,

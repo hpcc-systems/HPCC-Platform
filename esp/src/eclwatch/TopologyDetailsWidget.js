@@ -1,38 +1,19 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
     "dojo/dom-construct",
-    "dojo/dom-form",
-    "dojo/dom-attr",
-    "dojo/request/iframe",
-    "dojo/dom-class",
-    "dojo/query",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_TabContainerWidget",
-    "src/ESPWorkunit",
-    "src/ESPRequest",
-    "hpcc/TargetSelectWidget",
-    "hpcc/ECLSourceWidget",
-    "hpcc/LogWidget",
-    "src/WsTopology",
-    "hpcc/GetNumberOfFilesToCopyWidget",
 
     "dojo/text!../templates/TopologyDetailsWidget.html",
 
+    "hpcc/ECLSourceWidget",
+    "hpcc/LogWidget",
+    "hpcc/RequestInformationWidget",
+    "hpcc/GetNumberOfFilesToCopyWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -50,10 +31,9 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domConstruct, domForm, domAttr, iframe, domClass, query, Memory, Observable,
+], function (declare, i18n, nlsHPCC, domConstruct,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-    _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, ECLSourceWidget, LogWidget, WsTopology, GetNumberOfFilesToCopyWidget,
+    _TabContainerWidget,
     template) {
     return declare("TopologyDetailsWidget", [_TabContainerWidget], {
         templateString: template,

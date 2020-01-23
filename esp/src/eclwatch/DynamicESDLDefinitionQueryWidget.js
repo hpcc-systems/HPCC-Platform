@@ -7,12 +7,8 @@ define([
     "dojo/dom",
 
     "dijit/registry",
-    "dijit/Menu",
-    "dijit/MenuItem",
     "dijit/MenuSeparator",
-    "dijit/PopupMenuItem",
     "dijit/Dialog",
-    "dijit/form/CheckBox",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
     "dijit/form/TextBox",
@@ -27,7 +23,7 @@ define([
     "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom,
-    registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog, Checkbox, ToolbarSeparator, Button, TextBox,
+    registry, MenuSeparator, Dialog, ToolbarSeparator, Button, TextBox,
     selector,
     GridDetailsWidget, TargetSelectWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
     return declare("DynamicESDLWidget", [GridDetailsWidget], {

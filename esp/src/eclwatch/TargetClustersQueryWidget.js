@@ -1,20 +1,10 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/on",
-    "dojo/dom",
-    "dojo/dom-class",
-    "dojo/dom-construct",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/form/Button",
-    "dijit/ToolbarSeparator",
-    "dijit/Dialog",
-    "dijit/form/TextBox",
 
     "dgrid/tree",
     "dgrid/selector",
@@ -24,18 +14,15 @@ define([
     "src/ESPPreflight",
     "src/ESPRequest",
     "src/WsTopology",
-    "src/WsESDLConfig",
     "src/Utility",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
-    "hpcc/DynamicESDLDefinitionQueryWidget",
-    "hpcc/TargetSelectWidget",
     "hpcc/MachineInformationWidget",
     "hpcc/IFrameWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domClass, domConstruct, topic,
-    registry, Button, ToolbarSeparator, Dialog, TextBox,
+], function (declare, i18n, nlsHPCC, topic,
+    registry,
     tree, selector,
-    GridDetailsWidget, PreflightDetailsWidget, ESPPreflight, ESPRequest, WsTopology, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, MachineInformationWidget, IFrameWidget) {
+    GridDetailsWidget, PreflightDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, DelayLoadWidget, ESPUtil, MachineInformationWidget, IFrameWidget) {
     return declare("TargetClustersQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 

@@ -9,11 +9,10 @@ define([
     "hpcc/GridDetailsWidget",
     "src/ESPLogicalFile",
     "src/ESPUtil",
-    "hpcc/SFDetailsWidget"
 
 ], function (declare, i18n, nlsHPCC,
     selector,
-    DelayLoadWidget, GridDetailsWidget, ESPLogicalFile, ESPUtil, SFDetailsWidget) {
+    DelayLoadWidget, GridDetailsWidget, ESPLogicalFile, ESPUtil) {
     return declare("FileBelongsToWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         logicalFile: null,

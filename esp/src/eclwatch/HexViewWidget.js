@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
@@ -18,7 +17,7 @@ define([
     "dijit/form/ToggleButton",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil,
+    function (declare, i18n, nlsHPCC, arrayUtil,
         registry,
         _Widget, hpccComms,
         template) {

@@ -4,10 +4,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
     "dojo/dom",
-    "dojo/dom-class",
-    "dojo/dom-construct",
 
     "dijit/registry",
     "dijit/form/Button",
@@ -19,7 +16,6 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "src/WsTopology",
     "src/WsESDLConfig",
     "src/Utility",
     "hpcc/DelayLoadWidget",
@@ -27,10 +23,10 @@ define([
     "hpcc/DynamicESDLDefinitionQueryWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domClass, domConstruct,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom,
     registry, Button, ToolbarSeparator, Dialog, TextBox,
     tree, selector,
-    GridDetailsWidget, WsTopology, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, DelayLoadWidget) {
+    GridDetailsWidget, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, DelayLoadWidget) {
     return declare("DynamicESDLQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 

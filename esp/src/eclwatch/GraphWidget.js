@@ -10,14 +10,10 @@ define([
     "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-style",
-    "dojo/store/Memory",
     "dojo/store/Observable",
-    "dojo/store/util/QueryResults",
     "dojo/Evented",
 
     "dijit/registry",
-    "dijit/layout/BorderContainer",
-    "dijit/layout/ContentPane",
 
     "dojox/xml/parser",
 
@@ -28,9 +24,10 @@ define([
 
     "dojo/text!../templates/GraphWidget.html",
 
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
-
     "dijit/TooltipDialog",
     "dijit/form/Form",
     "dijit/form/CheckBox",
@@ -42,8 +39,8 @@ define([
     "dijit/Fieldset",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults, Evented,
-    registry, BorderContainer, ContentPane,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Observable, Evented,
+    registry,
     parser,
     _Widget, ESPUtil, GraphStore, Utility,
     template) {

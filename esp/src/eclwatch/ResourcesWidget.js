@@ -1,10 +1,8 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
 
     "dijit/registry",
     "dijit/layout/ContentPane",
@@ -19,7 +17,7 @@ define([
     "src/WsTopology",
     "src/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
+], function (declare, i18n, nlsHPCC, arrayUtil,
     registry, ContentPane, Button,
     selector,
     GridDetailsWidget, ESPRequest, ESPWorkunit, DelayLoadWidget, WsTopology, ESPUtil) {

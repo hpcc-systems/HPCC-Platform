@@ -10,7 +10,6 @@ define([
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
-    "dijit/PopupMenuItem",
 
     "hpcc/_TabContainerWidget",
     "src/Utility",
@@ -27,7 +26,7 @@ define([
     "dijit/layout/ContentPane"
 
 ], function (declare, lang, i18n, nlsHPCC, Memory, Observable,
-    registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+    registry, Menu, MenuItem, MenuSeparator,
     _TabContainerWidget, Utility, ESPUtil,
     template) {
     return declare("GridDetailsWidget", [_TabContainerWidget], {

@@ -7,14 +7,7 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/topic",
-    "dojo/request/xhr",
-    "dojo/cookie",
-    "dojo/on",
 
-    "dijit/Dialog",
-    "dijit/form/Button",
-
-    "src/ESPUtil",
     "src/Utility",
     "src/Session",
     "hpcc/LockDialogWidget",
@@ -26,9 +19,8 @@ define([
     "css!dojo-themes/flat/flat.css",
     "css!hpcc/css/hpcc.css"
 
-], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic, xhr, cookie, on,
-    Dialog, Button,
-    ESPUtil, Utility, Session, LockDialogWidget,
+], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
+    Utility, Session, LockDialogWidget,
     entities, Toaster) {
 
     Session.initSession();

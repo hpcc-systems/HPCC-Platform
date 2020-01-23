@@ -1,20 +1,18 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
     "dijit/registry",
     "dijit/form/CheckBox",
-    "dijit/layout/ContentPane",
 
     "dgrid/editor",
 
     "hpcc/GridDetailsWidget",
     "src/ws_access",
     "src/ESPUtil"
-], function (declare, lang, i18n, nlsHPCC,
-    registry, CheckBox, ContentPane,
+], function (declare, i18n, nlsHPCC,
+    registry, CheckBox,
     editor,
     GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("ShowPermissionsWidget", [GridDetailsWidget], {

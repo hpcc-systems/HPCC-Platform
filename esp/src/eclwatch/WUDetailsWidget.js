@@ -4,23 +4,10 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
-    "dojo/dom-form",
     "dojo/dom-attr",
-    "dojo/request/iframe",
     "dojo/dom-class",
-    "dojo/on",
-    "dojo/query",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
 
     "dijit/registry",
-
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "src/Clippy",
 
@@ -28,15 +15,14 @@ define([
     "src/ESPWorkunit",
     "src/ESPActivity",
     "src/ESPRequest",
-    "hpcc/TargetSelectWidget",
-    "hpcc/DelayLoadWidget",
-    "hpcc/InfoGridWidget",
     "src/WsWorkunits",
 
     "src/WUStatus",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
+    "hpcc/DelayLoadWidget",
+    "hpcc/InfoGridWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -57,11 +43,10 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, on, query, Memory, Observable,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
     Clippy,
-    _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
+    _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, WsWorkunits,
     WUStatusModule,
     template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {

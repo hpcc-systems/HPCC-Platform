@@ -11,7 +11,6 @@ define([
     "dojo/store/Observable",
     "dojo/topic",
     "dojo/has",
-    "dojo/sniff",
 
     "dijit/registry",
 
@@ -31,7 +30,7 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has,
         registry,
         _Widget, ESPUtil, ESPWorkunit, Utility,
         template) {

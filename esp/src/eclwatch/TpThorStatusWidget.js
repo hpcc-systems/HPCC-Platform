@@ -12,7 +12,6 @@ define([
     "src/ESPRequest",
     "src/ESPTopology",
     "hpcc/DelayLoadWidget",
-    "src/WsTopology",
 
     "dojo/text!../templates/TpThorStatusWidget.html",
 
@@ -27,7 +26,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, i18n, nlsHPCC, dom, domConstruct, on,
     registry,
-    _TabContainerWidget, ESPRequest, ESPTopology, DelayLoadWidget, WsTopology,
+    _TabContainerWidget, ESPRequest, ESPTopology, DelayLoadWidget,
     template) {
     return declare("TpThorStatusWidget", [_TabContainerWidget], {
         templateString: template,

@@ -20,13 +20,12 @@ define([
     "src/ESPBase",
     "src/ESPWorkunit",
     "src/ESPLogicalFile",
-    "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer",
     "src/DataPatterns/DGridHeaderHook",
-    "@hpcc-js/common",
 
     "dojo/text!../templates/ResultWidget.html",
 
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
@@ -36,7 +35,7 @@ define([
 ], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery,
     registry, TextBox,
     Grid, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
-    _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer, DGridHeaderHookMod, hpccCommon,
+    _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, TableContainer, DGridHeaderHookMod,
     template) {
     return declare("ResultWidget", [_Widget], {
         templateString: template,

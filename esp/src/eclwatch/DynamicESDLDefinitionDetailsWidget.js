@@ -1,20 +1,19 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ECLSourceWidget",
     "src/WsESDLConfig",
 
     "dojo/text!../templates/DynamicESDLDefinitionDetailsWidget.html",
 
+    "hpcc/ECLSourceWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
-], function (declare, lang, i18n, nlsHPCC,
-    _TabContainerWidget, ECLSourceWidget, WsESDLConfig,
+], function (declare, i18n, nlsHPCC,
+    _TabContainerWidget, WsESDLConfig,
     template) {
     return declare("DynamicESDLDefinitionDetailsWidget", [_TabContainerWidget], {
         templateString: template,

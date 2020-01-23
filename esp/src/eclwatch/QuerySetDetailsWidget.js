@@ -10,21 +10,14 @@ define([
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "src/Clippy",
     "src/ESPQuery",
     "hpcc/_TabContainerWidget",
-    "hpcc/DelayLoadWidget",
     "src/Utility",
 
     "dojo/text!../templates/QuerySetDetailsWidget.html",
 
+    "hpcc/DelayLoadWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -39,8 +32,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all, arrayUtil,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-    Clippy, ESPQuery, _TabContainerWidget, DelayLoadWidget, Utility,
+    Clippy, ESPQuery, _TabContainerWidget, Utility,
     template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,

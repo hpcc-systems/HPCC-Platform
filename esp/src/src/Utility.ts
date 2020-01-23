@@ -589,6 +589,9 @@ export function resolve(hpccWidget, callback) {
         case "LogWidget":
             require(["hpcc/LogWidget"], doLoad);
             break;
+        case "LogVisualizationWidget":
+            require(["hpcc/LogVisualizationWidget"], doLoad);
+            break;
         case "LZBrowseWidget":
             require(["hpcc/LZBrowseWidget"], doLoad);
             break;
@@ -693,9 +696,6 @@ export function resolve(hpccWidget, callback) {
             break;
         case "TargetSelectWidget":
             require(["hpcc/TargetSelectWidget"], doLoad);
-            break;
-        case "TimingGridWidget":
-            require(["hpcc/TimingGridWidget"], doLoad);
             break;
         case "TimingPageWidget":
             require(["hpcc/TimingPageWidget"], doLoad);

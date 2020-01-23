@@ -8,13 +8,12 @@ define([
     "dijit/registry",
 
     "dijit/form/Button",
-    "dijit/ToolbarSeparator",
 
     "hpcc/GridDetailsWidget",
     "src/WsDfu",
     "src/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-    registry, Button, ToolbarSeparator,
+    registry, Button,
     GridDetailsWidget, WsDfu, ESPUtil) {
     return declare("FileHistoryWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,

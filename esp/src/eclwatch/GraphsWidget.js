@@ -6,7 +6,6 @@ define([
 
     "dijit/form/Button",
 
-
     "hpcc/GridDetailsWidget",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",

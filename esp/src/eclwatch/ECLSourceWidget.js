@@ -7,8 +7,6 @@ define([
     "dojo/request/xhr",
     "dojo/topic",
 
-    "dijit/layout/BorderContainer",
-    "dijit/layout/ContentPane",
     "dijit/registry",
 
     "src/CodeMirror",
@@ -18,12 +16,14 @@ define([
 
     "dojo/text!../templates/ECLSourceWidget.html",
 
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/form/Button"
 
 ], function (declare, lang, i18n, nlsHPCC, dom, xhr, topic,
-    BorderContainer, ContentPane, registry,
+    registry,
     CodeMirror,
     _Widget, ESPWorkunit,
     template) {

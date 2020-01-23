@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
@@ -13,7 +12,7 @@ define([
     "src/ws_access",
     "src/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, i18n, nlsHPCC,
     registry, CheckBox,
     editor,
     GridDetailsWidget, WsAccess, ESPUtil) {

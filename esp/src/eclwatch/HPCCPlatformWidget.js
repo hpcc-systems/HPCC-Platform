@@ -11,7 +11,6 @@ define([
     "dojo/dom-style",
     "dojo/dom-geometry",
     "dojo/cookie",
-    "dojo/on",
     "dojo/query",
     "dojo/topic",
     "dojo/request/xhr",
@@ -32,13 +31,13 @@ define([
     "src/ws_access",
     "src/WsSMC",
     "src/WsTopology",
-    "hpcc/DelayLoadWidget",
     "src/ws_machine",
     "hpcc/LockDialogWidget",
     "src/UserPreferences/EnvironmentTheme",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
+    "hpcc/DelayLoadWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/StackContainer",
@@ -58,11 +57,11 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, on, query, topic, xhr,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
     CodeMirror,
-    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, DelayLoadWidget, WsMachine, LockDialogWidget, EnvironmentTheme,
+    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme,
     template) {
 
     declare("HPCCColorPicker", [ColorPicker], {

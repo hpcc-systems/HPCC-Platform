@@ -1,12 +1,9 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
     "dojo/dom-form",
     "dojo/_base/array",
-    "dojo/on",
 
     "dijit/registry",
     "dijit/Menu",
@@ -15,14 +12,14 @@ define([
     "dgrid/selector",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/TargetSelectWidget",
     "hpcc/WUDetailsWidget",
     "src/WsWorkunits",
     "src/ESPUtil",
-    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/EventScheduleWorkunitWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -36,10 +33,10 @@ define([
     "dijit/TooltipDialog",
 
     "dojox/layout/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil, on,
+], function (declare, i18n, nlsHPCC, domForm, arrayUtil,
     registry, Menu, MenuItem,
     selector,
-    _TabContainerWidget, TargetSelectWidget, WUDetailsWidget, WsWorkunits, ESPUtil, FilterDropDownWidget,
+    _TabContainerWidget, WUDetailsWidget, WsWorkunits, ESPUtil,
     template) {
     return declare("EventScheduleWorkunitWidget", [_TabContainerWidget], {
         i18n: nlsHPCC,

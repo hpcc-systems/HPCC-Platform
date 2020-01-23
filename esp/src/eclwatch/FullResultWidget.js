@@ -4,7 +4,6 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
     "dojo/request/iframe",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -12,13 +11,10 @@ define([
     "dijit/registry",
 
     "dgrid/Grid",
-    "dgrid/selector",
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
     "src/ESPBase",
-    "src/ESPWorkunit",
-    "src/ESPLogicalFile",
     "src/ESPUtil",
 
     "dojo/text!../templates/FullResultWidget.html",
@@ -29,10 +25,10 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, iframe, Memory, Observable,
     registry,
-    Grid, selector, DijitRegistry,
-    _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, ESPUtil,
+    Grid, DijitRegistry,
+    _Widget, ESPBaseMod, ESPUtil,
     template) {
     return declare("FullResultWidget", [_Widget], {
         templateString: template,

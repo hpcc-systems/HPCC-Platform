@@ -9,19 +9,20 @@ define([
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
-    "dijit/layout/BorderContainer",
-    "dijit/layout/ContentPane",
     "dijit/registry",
 
     "src/CodeMirror",
 
     "src/WsPackageMaps",
 
-    "dojo/text!../templates/PackageSourceWidget.html"
+    "dojo/text!../templates/PackageSourceWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane"
 ],
     function (declare, lang, i18n, nlsHPCC, dom, topic,
         _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-        BorderContainer, ContentPane, registry,
+        registry,
         CodeMirror,
         WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {

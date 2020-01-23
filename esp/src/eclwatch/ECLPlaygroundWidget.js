@@ -3,34 +3,31 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/xhr",
     "dojo/dom",
     "dojo/query",
 
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane",
     "dijit/registry",
 
     "hpcc/_Widget",
+    "src/ESPWorkunit",
+    "src/ESPQuery",
+
+    "dojo/text!../templates/ECLPlaygroundWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "src/Graph7Widget",
     "hpcc/ECLPlaygroundResultsWidget",
-    "src/ESPWorkunit",
-    "src/ESPQuery",
-    "src/Utility",
-
-    "dojo/text!../templates/ECLPlaygroundWidget.html",
-
     "dijit/form/Button",
     "dijit/form/ToggleButton",
+    "hpcc/InfoGridWidget",
+    "hpcc/VizWidget"
 
-    "hpcc/InfoGridWidget"
-
-], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
-    BorderContainer, TabContainer, ContentPane, registry,
-    _Widget, EclSourceWidget, TargetSelectWidget, Graph7Widget, ResultsWidget, ESPWorkunit, ESPQuery, Utility,
+], function (declare, lang, i18n, nlsHPCC, dom, query,
+    registry,
+    _Widget, ESPWorkunit, ESPQuery,
     template) {
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,

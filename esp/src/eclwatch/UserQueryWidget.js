@@ -4,9 +4,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
     "dojo/dom-form",
-    "dojo/on",
     "dojo/promise/all",
 
     "dijit/registry",
@@ -23,16 +21,14 @@ define([
     "src/ws_account",
     "src/ESPBase",
     "src/ESPUtil",
-    "src/ESPRequest",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
-    "hpcc/FilterDropDownWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/ShowAccountPermissionsWidget",
     "hpcc/ShowIndividualPermissionsWidget",
 
     "dojo/text!../templates/UserQueryWidget.html",
 
+    "hpcc/FilterDropDownWidget",
+    "hpcc/TargetSelectWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -50,10 +46,10 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domForm, all,
     registry, Menu, MenuItem, MenuSeparator, Select,
     tree, selector,
-    _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget, TargetSelectWidget, ShowAccountPermissionsWidget, ShowIndividualPermissionsWidget,
+    _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, UserDetailsWidget, GroupDetailsWidget, ShowIndividualPermissionsWidget,
     template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,

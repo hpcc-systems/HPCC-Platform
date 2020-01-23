@@ -1,11 +1,7 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
 
     "dijit/registry",
     "dijit/form/CheckBox",
@@ -20,7 +16,7 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable,
+], function (declare, i18n, nlsHPCC,
     registry, CheckBox,
     editor,
     GridDetailsWidget, WsAccess, ESPUtil) {

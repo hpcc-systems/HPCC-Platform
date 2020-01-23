@@ -3,26 +3,24 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
-    "dojo/query",
     "dojo/topic",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/DelayLoadWidget",
-    "hpcc/ECLSourceWidget",
     "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapValidateWidget.html",
 
+    "hpcc/DelayLoadWidget",
+    "hpcc/ECLSourceWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/form/Select"
-], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
-    _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
+], function (declare, lang, i18n, nlsHPCC, topic, registry,
+    _TabContainerWidget, WsPackageMaps, template) {
     return declare("PackageMapValidateWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateWidget",

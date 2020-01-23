@@ -4,10 +4,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
     "dojo/dom-construct",
-    "dojo/on",
     "dojo/dom-class",
 
     "dijit/registry",
@@ -23,7 +20,7 @@ define([
     "src/Utility",
     "hpcc/DelayLoadWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on, domClass,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domConstruct, domClass,
     registry, Button, ToolbarSeparator,
     selector,
     GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, Utility, DelayLoadWidget) {

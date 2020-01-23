@@ -1,18 +1,12 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
     "dojo/dom-class",
-    "dojo/dom-form",
-    "dojo/date",
-    "dojo/on",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/Dialog",
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
@@ -25,12 +19,13 @@ define([
     "src/ESPDFUWorkunit",
     "src/FileSpray",
     "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/FilterDropDownWidget",
     "src/Utility",
 
     "dojo/text!../templates/GetDFUWorkunitsWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
+    "dijit/Dialog",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -46,10 +41,10 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
-    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+], function (declare, i18n, nlsHPCC, arrayUtil, domClass, topic,
+    registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
-    _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility,
+    _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, Utility,
     template) {
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
