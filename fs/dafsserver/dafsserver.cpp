@@ -4726,6 +4726,7 @@ public:
             case RFCappend:
             case RFCtreecopy:
             case RFCtreecopytmp:
+            case RFCremove:
                 slowCmdThrottler.addCommand(cmd, msg, client);
                 return;
             case RFCcloseIO:
@@ -4734,7 +4735,6 @@ public:
             case RFCsize:
             case RFCwrite:
             case RFCexists:
-            case RFCremove:
             case RFCrename:
             case RFCgetver:
             case RFCisfile:
