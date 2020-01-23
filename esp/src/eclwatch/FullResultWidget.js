@@ -32,7 +32,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
     registry,
     Grid, selector, DijitRegistry,
-    _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, ESPUtil,
+    _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, ESPUtil,
     template) {
     return declare("FullResultWidget", [_Widget], {
         templateString: template,
@@ -73,7 +73,7 @@ define([
 
         _doDownload: function (type) {
             //TODO Fix
-            var base = new ESPBase.default();
+            var base = new ESPBaseMod.ESPBase();
             if (lang.exists("result.Sequence", this)) {
                 var sequence = this.result.Sequence;
                 var downloadPdfIframeName = "downloadIframe_" + sequence;

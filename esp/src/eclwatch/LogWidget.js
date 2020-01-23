@@ -49,7 +49,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
-    _TabContainerWidget, ESPBase, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, ECLSourceWidget, WsTopology,
+    _TabContainerWidget, ESPBaseMod, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, ECLSourceWidget, WsTopology,
     template) {
     return declare("LogWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -100,7 +100,7 @@ define([
         },
 
         _doDownload: function (zip) {
-            var base = new ESPBase.default();
+            var base = new ESPBaseMod.ESPBase();
             var name = "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
             var type = "tpcomp_log";
             window.open(base.getBaseURL("WsTopology") + "/SystemLog?Name=" + name + "&Type=" + type + "&Zip=" + zip, "_blank");

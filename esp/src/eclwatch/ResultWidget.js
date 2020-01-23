@@ -36,7 +36,7 @@ define([
 ], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery,
     registry, TextBox,
     Grid, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
-    _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer, DGridHeaderHookMod, hpccCommon,
+    _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer, DGridHeaderHookMod, hpccCommon,
     template) {
     return declare("ResultWidget", [_Widget], {
         templateString: template,
@@ -84,7 +84,7 @@ define([
         },
 
         _doDownload: function (type) {
-            var base = new ESPBase.default();
+            var base = new ESPBaseMod.ESPBase();
             if (lang.exists("params.Sequence", this)) {
                 window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.params.Wuid + "&Sequence=" + this.params.Sequence, "_blank");
             } else if (lang.exists("params.LogicalName", this)) {

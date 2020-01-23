@@ -11,11 +11,10 @@ define([
 
     "dojox/xml/parser",
 
-    "hpcc/ESPBase",
     "src/ESPRequest"
 ], function (declare, lang, arrayUtil, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
-    ESPBase, ESPRequest) {
+    ESPRequest) {
         var GangliaMetricStore = declare([ESPRequest.Store], {
             service: "ws_rrd",
             action: "getAvailableMetrics",
