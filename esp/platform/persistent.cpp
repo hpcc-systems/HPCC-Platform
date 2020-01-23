@@ -154,7 +154,7 @@ public:
     virtual Linked<ISocket> getAvailable(SocketEndpoint* ep = nullptr, bool* pShouldClose = nullptr) override
     {
         synchronized block(m_mutex);
-        for (auto si:m_infomap)
+        for (auto& si:m_infomap)
         {
             CPersistentInfo* info = si.getValue();
             if (info && !info->inUse && (ep == nullptr || (info->ep != nullptr && *(info->ep) == *ep)))
@@ -274,12 +274,12 @@ public:
                 if(info->inUse && info->timeUsed + MAX_INFLIGHT_TIME*1000 < now)
                     socks2.push_back(*(ISocket**)(si.getKey()));
             }
-            for (auto s:socks1)
+            for (auto& s:socks1)
             {
                 PERSILOG(PersistentLogLevel::PLogMin, "PERSISTENT: Socket %d has been idle for %d seconds so remove it", s->OShandle(), m_maxIdleTime);
                 remove(s);
             }
-            for (auto s:socks2)
+            for (auto& s:socks2)
             {
                 PERSILOG(PersistentLogLevel::PLogMin, "PERSISTENT: Socket %d has been in flight for %d seconds, remove it", s->OShandle(), MAX_INFLIGHT_TIME);
                 remove(s);
