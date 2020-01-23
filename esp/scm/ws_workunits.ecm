@@ -507,6 +507,7 @@ ESPrequest [nil_remove] WUQueryRequest
     [min_ver("1.57")] ESParray<ESPstruct ApplicationValue> ApplicationValues;
     [min_ver("1.72")] string BeforeWU;
     [min_ver("1.72")] string AfterWU;
+    [min_ver("1.77")] unsigned TotalClusterTimeThresholdMilliSec(0);
 
     [depr_ver("1.02")] string After; //Not used since 1.02
     [depr_ver("1.02")] string Before; //Not used since 1.02
