@@ -3608,35 +3608,38 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
         StringBuffer buf;
         if (sizeFrom > 0)
             buf.append(sizeFrom);
-        buf.append("|");
+        buf.append(DFUQFilterSeparator);
         if (sizeTo > 0)
             buf.append(sizeTo);
         filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
         filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
     }
-    const char* startDate = req.getStartDate();
-    const char* endDate = req.getEndDate();
-    if((startDate && *startDate) || (endDate && *endDate))
-    {
-        StringBuffer buf;
-        if(startDate && *startDate)
-        {
-            StringBuffer wuFrom;
-            CDateTime wuTime;
-            wuTime.setString(startDate,NULL);
-            buf.append(wuTime.getString(wuFrom).str());
-        }
-        buf.append("|");
-        if(endDate && *endDate)
-        {
-            StringBuffer wuTo;
-            CDateTime wuTime;
-            wuTime.setString(endDate,NULL);
-            buf.append(wuTime.getString(wuTo).str());
-        }
-        filterBuf.append(DFUQFTstringRange).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFtimemodified));
-        filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
-    }
+
+    setTimeRangeFilter(req.getStartDate(), req.getEndDate(), DFUQFFtimemodified, filterBuf);
+    setTimeRangeFilter(req.getStartAccessedTime(), req.getEndAccessedTime(), DFUQFFaccessed, filterBuf);
+}
+
+void CWsDfuEx::setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf)
+{
+    if (isEmptyString(from) && isEmptyString(to))
+        return;
+
+    StringBuffer filterValue;
+    if (!isEmptyString(from))
+        appendTimeString(from, filterValue);
+    filterValue.append(DFUQFilterSeparator);
+    if (!isEmptyString(to))
+        appendTimeString(to, filterValue);
+
+    filterBuf.append(DFUQFTstringRange).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(filterID));
+    filterBuf.append(DFUQFilterSeparator).append(filterValue).append(DFUQFilterSeparator);
+}
+
+void CWsDfuEx::appendTimeString(const char *in, StringBuffer &out)
+{
+    CDateTime wuTime;
+    wuTime.setString(in, nullptr);
+    wuTime.getString(out);
 }
 
 void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUQResultField* sortOrder)
@@ -3666,6 +3669,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFnodegroup;
     else if (strieq(sortByPtr, "Modified"))
         sortOrder[0] = DFUQRFtimemodified;
+    else if (strieq(sortByPtr, "Accessed"))
+        sortOrder[0] = DFUQRFaccessed;
     else if (strieq(sortByPtr, "ContentType"))
         sortOrder[0] = DFUQRFkind;
     else
@@ -3808,6 +3813,13 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, 
             lFile->setIsZipfile(isFileCompressed);
         else
             lFile->setIsCompressed(isFileCompressed);
+
+        if (version >= 1.55)
+        {
+            StringBuffer accessed(file.queryProp(getDFUQResultFieldName(DFUQRFaccessed)));
+            if (!accessed.isEmpty())
+                lFile->setAccessed(accessed.replace('T', ' '));
+        }
 
         logicalFiles.append(*lFile.getClear());
     }

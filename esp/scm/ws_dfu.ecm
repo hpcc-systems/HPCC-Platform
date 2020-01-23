@@ -126,6 +126,7 @@ ESPStruct DFULogicalFile
     [min_ver("1.34")] bool IsProtected(false);
     [min_ver("1.41")] string KeyType;
     [min_ver("1.52")] int NumOfSubfiles;
+    [min_ver("1.55")] string Accessed;
 };
 
 ESPStruct DFUPart
@@ -274,6 +275,8 @@ ESPrequest [nil_remove] DFUQueryRequest
     [min_ver("1.24")] int64 CacheHint;
     [min_ver("1.30")] int MaxNumberOfFiles;
     [min_ver("1.30")] bool IncludeSuperOwner;
+    [min_ver("1.55")] string StartAccessedTime;
+    [min_ver("1.55")] string EndAccessedTime;
 };
 
 ESPresponse
