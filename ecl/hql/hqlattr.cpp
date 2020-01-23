@@ -37,18 +37,6 @@
 #include "hqlattr.hpp"
 #include "hqlmeta.hpp"
 
-static SpinLock * propertyLock;
-
-MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
-{
-    propertyLock = new SpinLock;
-    return true;
-}
-MODULE_EXIT()
-{
-    delete propertyLock;
-}
-
 // This file should contain most of the derived property calculation for nodes in the expression tree,
 // Other candidates are
 // checkConstant, getChilddatasetType(), getNumChildTables
@@ -3982,13 +3970,17 @@ void CHqlRealExpression::addProperty(ExprPropKind kind, IInterface * value)
 {
     if (value == static_cast<IHqlExpression *>(this))
         value = NULL;
-    CHqlDynamicProperty * attr = new CHqlDynamicProperty(kind, value);
 
-    SpinBlock block(*propertyLock);
     //theoretically we should test if the attribute has already been added by another thread, but in practice there is no
     //problem if the attribute is present twice.
-    attr->next = attributes.load(std::memory_order_acquire);
-    attributes.store(attr, std::memory_order_release);
+    CHqlDynamicProperty * attr = new CHqlDynamicProperty(kind, value);
+    CHqlDynamicProperty * head = attributes.load(std::memory_order_acquire);
+    for (;;)
+    {
+        attr->next = head;
+        if (attributes.compare_exchange_weak(head, attr, std::memory_order_acq_rel))
+            return;
+    }
 }
 
 
@@ -3999,12 +3991,12 @@ void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
 {
     if (kind == EPmeta)
     {
-        SpinBlock block(*propertyLock);
         //ensure once meta is set it is never modified
-        if (!metaProperty.load(std::memory_order_acquire))
+        IInterface * prev = metaProperty.load(std::memory_order_acquire);
+        if (!prev && metaProperty.compare_exchange_strong(prev, value, std::memory_order_acq_rel))
         {
+            //Value is guaranteed to stay alive for the duration of this call, so linking now is safe
             LINK(value);
-            metaProperty.store(value, std::memory_order_release);
         }
     }
     else
