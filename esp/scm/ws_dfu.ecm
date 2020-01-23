@@ -22,13 +22,16 @@ ESPenum DFUArrayActions : string
 {
     Delete("Delete"),
     AddToSuperfile("Add To Superfile"),
+    ChangeProtection("Change Protection"),
+    ChangeRestriction("Change Restriction")
 };
 
 ESPenum DFUChangeProtection : int
 {
     NoChange(0, "No Change"),
     Protect(1, "Protect"),
-    Unprotect(2, "Unprotect")
+    Unprotect(2, "Unprotect"),
+    UnprotectAll(3, "UnprotectAll")
 };
 
 
@@ -343,6 +346,8 @@ DFUArrayActionRequest
     ESParray<string> LogicalFiles;
     bool removeFromSuperfiles(false);
     bool removeRecursively(false);
+    [min_ver("1.55")] ESPenum DFUChangeProtection Protect;
+    [min_ver("1.55")] ESPenum DFUChangeRestriction Restrict;
 };
 
 ESPresponse
@@ -986,8 +991,8 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.54"),
-    default_client_version("1.54"),
+    version("1.55"),
+    default_client_version("1.55"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
