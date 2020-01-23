@@ -457,7 +457,6 @@ IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IP
 
 void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, bool includeFieldDetail, unsigned & numFields, unsigned & numFieldsUsed) const
 {
-    bool seenAll = true;
     ForEachChild(i, record)
     {
         IHqlExpression * cur = record->queryChild(i);
@@ -484,7 +483,6 @@ void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * recor
                     {
                         //could have an option to output unused fields, with code like the following:
                         //addSelect(xml, selected, thisUsed);
-                        seenAll = false;
                     }
                 }
                 break;

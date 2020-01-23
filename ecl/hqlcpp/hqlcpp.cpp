@@ -140,7 +140,7 @@ void SubStringInfo::bindToFrom(HqlCppTranslator & translator, BuildCtx & ctx)
 
 //---------------------------------------------------------------------------
 
-WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(999999999), function(_function), workflowOp(no_funcdef)
+WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(999999999), workflowOp(no_funcdef), function(_function)
 {
     IHqlExpression * body = function->queryChild(0);
     assertex(body->getOperator() == no_outofline);
@@ -495,6 +495,7 @@ bool canRemoveStringCast(ITypeInfo * to, ITypeInfo * from)
                 //Data never calls a conversion function...
                 if ((srcset == tgtset) || (to->getTypeCode() == type_data) || (from->getTypeCode() == type_data))
                     return true;
+                return false;
             }
         case type_qstring:
             return false;
@@ -1546,7 +1547,6 @@ void HqlCppTranslator::cacheOptions()
 
     //Some compound flags, which provide defaults for various other options.
     bool paranoid = getDebugFlag("paranoid", false);
-    bool releaseMode = getDebugFlag("release", true);
 
     struct DebugOption 
     {
@@ -2299,7 +2299,7 @@ void HqlCppTranslator::exportMappings(IWorkUnit * wu) const
     errorProcessor->exportMappings(wu);
 }
 
-void HqlCppTranslator::ThrowStringException(int code,const char *format, ...) const
+void HqlCppTranslator::throwStringExceptionV(int code,const char *format, ...) const
 {
     IHqlExpression * location = queryActiveActivityLocation();
     if (errorProcessor && location)
@@ -10785,8 +10785,8 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     callProcedure(ctx, strToQStrId, args);
                     break;
                 }
-                //fall through
             }
+            // fallthrough
         default:
             //Need to go via a temporary string.
             OwnedHqlExpr temp = pure.getTranslatedExpr();
@@ -11943,6 +11943,7 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
             doBuildUserFunctionReturn(subctx, type, branches->queryChild(1));
             break;
         }
+        // fallthrough
     default:
         {
             OwnedHqlExpr optimized = spotScalarCSE(value, NULL, queryOptions().spotCseInIfDatasetConditions);

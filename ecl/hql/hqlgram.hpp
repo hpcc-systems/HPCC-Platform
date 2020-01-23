@@ -1300,12 +1300,12 @@ private:
 
         Owned<IProperties> macroParms;
         IIterator *forLoop;
+        IXmlScope *xmlScope;
         IHqlExpression *macroExpr;
         Owned<IFileContents> forBody;
         Owned<IFileContents> forFilter;
         IAtom * hashDollar = nullptr;
 
-        IXmlScope *xmlScope;
 
         enum { HashStmtNone, HashStmtFor, HashStmtForAll, HashStmtLoop, HashStmtIf };
         int lastToken;

@@ -1038,7 +1038,6 @@ bool KeyedJoinInfo::processFilter()
 
     //Now need to transform the index into its real representation so
     //the hozed transforms take place.
-    unsigned payload = numPayloadFields(key);
     TableProjectMapper mapper(expandedKey);
     OwnedHqlExpr rightSelect = createSelector(no_right, key, joinSeq);
     OwnedHqlExpr newFilter = mapper.expandFields(keyedKeyFilter, rightSelect, rawKey, rawKey);

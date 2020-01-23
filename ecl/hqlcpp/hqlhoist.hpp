@@ -26,7 +26,7 @@ class CHqlExprGuard : public CInterface
 {
 public:
     CHqlExprGuard(IHqlExpression * _guard, IHqlExpression * _original, bool _guardContainsCandidate)
-        : guard(_guard), original(_original), guardContainsCandidate(_guardContainsCandidate)
+        : guardContainsCandidate(_guardContainsCandidate), guard(_guard), original(_original)
     {
     }
 

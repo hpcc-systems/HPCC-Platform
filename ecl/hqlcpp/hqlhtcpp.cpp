@@ -1692,7 +1692,7 @@ void MetaInstance::setMeta(HqlCppTranslator & translator, IHqlExpression * _reco
 unsigned LocationArray::findLocation(IHqlExpression * location)
 {
     ISourcePath * sourcePath = location->querySourcePath();
-    unsigned line = location->getStartLine();
+    int line = location->getStartLine();
     ForEachItem(i)
     {
         IHqlExpression & cur = item(i);
@@ -1720,7 +1720,7 @@ enum { createPrio = 1000, inputPrio = 3000, readyPrio = 4000, goPrio = 5000, don
 
 ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ctx, ThorActivityKind _kind, IHqlExpression * _dataset, const char * _activityArgName) :
     HqlExprAssociation(activeActivityMarkerExpr),
-    translator(_translator), classctx(ctx), startctx(ctx), createctx(ctx), nestedctx(ctx), onstartctx(ctx), numChildQueries(0)
+    translator(_translator), classctx(ctx), createctx(ctx), startctx(ctx), nestedctx(ctx), onstartctx(ctx)
 {
     activityExpr.set(_dataset);
     kind = _kind;
@@ -2563,7 +2563,7 @@ StringBuffer &expandLiteral(StringBuffer &s, const char *f)
         case '\"':
         case '\'':
             s.append('\\');
-            // fall into...
+            // fallthrough
         default:
             s.append(c);
             break;
@@ -2936,7 +2936,7 @@ void initBoundStringTarget(CHqlBoundTarget & target, ITypeInfo * type, const cha
 //---------------------------------------------------------------------------
 
 GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx & _ctx, const char * _className, const char * _baseName, const char * _accessorInterface, bool _hasCodeContext, bool _createIsVirtual)
-: translator(_translator), classctx(_ctx), nestedctx(_ctx), startctx(_ctx), createctx(_ctx), hasCodeContext(_hasCodeContext), createIsVirtual(_createIsVirtual)
+: translator(_translator), classctx(_ctx), nestedctx(_ctx), createctx(_ctx), startctx(_ctx), hasCodeContext(_hasCodeContext), createIsVirtual(_createIsVirtual)
 {
     className.set(_className);
     baseName.set(_baseName);
@@ -3640,7 +3640,6 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
     prefetcher.buildClass(RowMetaPrio);
     prefetcher.setIncomplete(true);
 
-    BuildCtx & classctx = prefetcher.classctx;
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
     bool ok;
     {
@@ -3651,7 +3650,6 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
         Owned<IReferenceSelector> selector = buildActiveRow(func.ctx, row->querySelector());
         ok = queryRecordOffsetMap(record, false)->buildReadAhead(*this, func.ctx, selector, helper);
     }
-
 
     if (ok)
     {
@@ -3693,7 +3691,6 @@ IHqlExpression * HqlCppTranslator::getRtlFieldKey(IHqlExpression * expr, IHqlExp
         {
         case type_bitfield:
             {
-                AColumnInfo * root = map->queryRootColumn();
                 CBitfieldInfo * resolved = static_cast<CBitfieldInfo *>(columnInfo);
                 assertex(resolved);
                 unsigned offset = resolved->queryBitfieldOffset();
@@ -3914,7 +3911,6 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
     //First generate a pseudo type entry for an ifblock.
     unsigned fieldType = type_ifblock|RFTMunknownsize;
     {
-        unsigned length = 0;
         StringBuffer childTypeName;
         unsigned childType = buildRtlRecordFields(childTypeName, ifblock->queryChild(1), rowRecord, rowTypeName);
         fieldType |= (childType & RFTMinherited);
@@ -6409,6 +6405,7 @@ IReferenceSelector * HqlCppTranslator::buildReference(BuildCtx & ctx, IHqlExpres
 #ifdef _DEBUG
             //Here to make tracing easier in a debugger
             IHqlExpression * field = expr->queryChild(1);
+            assertex(field);
 #endif
             Owned<IReferenceSelector> selector;
             if (isNewSelector(expr))
@@ -7270,7 +7267,6 @@ BoundRow * HqlCppTranslator::bindTableCursorOrRow(BuildCtx & ctx, IHqlExpression
 
 BoundRow * HqlCppTranslator::createBoundRow(IHqlExpression * dataset, IHqlExpression * bound)
 {
-    bool useAccessor = false;
     IHqlExpression * accessor = NULL;
     return new BoundRow(dataset->queryBody(), bound, accessor, queryRecordOffsetMap(dataset->queryRecord(), (accessor != NULL)));
 }
@@ -7958,30 +7954,6 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
 
     if (cluster)
         popCluster(subctx);
-}
-
-static bool isFilePersist(IHqlExpression * expr)
-{
-    for (;;)
-    {
-        switch (expr->getOperator())
-        {
-        case no_thor:
-            expr = expr->queryChild(0);
-            break;
-        case no_compound:
-            expr = expr->queryChild(1);
-            break;
-        case no_output:
-            return isFileOutput(expr);
-        case no_actionlist:
-        case no_orderedactionlist:
-            expr = expr->queryChild(expr->numChildren()-1);
-            break;
-        default:
-            return false;
-        }
-    }
 }
 
 IHqlExpression * HqlCppTranslator::calculatePersistInputCrc(BuildCtx & ctx, IHqlExpression * expr)
@@ -9724,7 +9696,6 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
     {
         beginGraph();
 
-        unsigned id = 0;
         OwnedHqlExpr graphTag = createAttribute(graphAtom, createUniqueId());
         OwnedHqlExpr resourced = getResourcedGraph(expr->queryChild(0), graphTag);
         if (resourced)
@@ -11109,7 +11080,7 @@ void HqlCppTranslator::addSchemaField(IHqlExpression *field, MemoryBuffer &schem
         break;
     case type_bitfield:
         schemaType.set(schemaType->queryPromotedType());
-        //fall through;
+        // fallthrough
     case type_dictionary:
     case type_table:
     case type_groupedtable:
@@ -11732,7 +11703,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
     IHqlExpression * dictionary = expr->queryChild(0);
     IHqlExpression * seq = querySequence(expr);
     IHqlExpression * name = queryResultName(expr);
-    int sequence = (int)getIntValue(seq, ResultSequenceInternal);
 
     OwnedHqlExpr dataset;
     switch (dictionary->getOperator())
@@ -12562,7 +12532,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
-    bool couldBeKeepOne = keepLimit && (!keepLimit->queryValue() || (keepLimit->queryValue()->getIntValue() <= 1));
+    //bool couldBeKeepOne = keepLimit && (!keepLimit->queryValue() || (keepLimit->queryValue()->getIntValue() <= 1));
     if (dataset1->queryRecord() == dataset2->queryRecord())
     {
         //more could use the compareLeftRight function instead of generating the same code 
@@ -13128,7 +13098,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNth(BuildCtx & ctx, IHql
 
     //If selecting 1st element of a non-grouped aggregate (which can only produce one row) then don't need to 
     //add the selectNth operator.
-    IHqlExpression * search = dataset;
     if (hasSingleRow(dataset))
     {
         IValue * indexValue = index->queryValue();
@@ -19066,7 +19035,7 @@ StringBuffer &expandDotLiteral(StringBuffer &s, const char *f)
         case '\"':
         case '\'':
             s.append('\\');
-            // fall into...
+            // fallthrough
         default:
             if (chars++ > 1000)
                 return s;
@@ -19261,8 +19230,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
     // DBGLOG("%s",title);
     LOG(MCdebugInfo(200), unknownJob, "Tracing expressions: %s", title);
-    static LogMsgCategory debug500 = MCdebugInfo(500);
-    static LogMsgCategory debug5000 = MCdebugInfo(5000);
+    static constexpr LogMsgCategory debug500 = MCdebugInfo(500);
     if(REJECTLOG(debug500))
         return;
 
@@ -19686,8 +19654,8 @@ bool HqlCppTranslator::needsRealThor(IHqlExpression *expr, unsigned flags)
             if (!containsAnyDataset(child0))
                 return false;
 //          return needsRealThor(child0, isFiltered, diskReadsOnHThor);
-            //fallthrough...
         }
+        // fallthrough...
 
     default:
         if (expr->isDataset())

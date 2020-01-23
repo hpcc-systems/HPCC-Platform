@@ -4878,7 +4878,6 @@ fieldAttr
                         }
     | DEFAULT '(' goodObject ')'
                         {
-                            IHqlExpression * arg = $3.queryExpr();
                             $$.setExpr(createExprAttribute(defaultAtom, $3.getExpr()), $1);
                         }
     | STRING_CONST
@@ -9024,7 +9023,6 @@ simpleDataSet
 
                             parser->inheritRecordMaxLength(dataset, record);
 
-                            bool hasFileposition = getBoolAttributeInList(extra, filepositionAtom, true);
                             record.setown(parser->checkIndexRecord(record, $5, extra));
 
                             parser->saveDiskAccessInformation($1, extra);
@@ -13055,7 +13053,7 @@ yybackup:
   if (yyn == YYPACT_NINF)
     goto yydefault;
 
-yyprocesschar:
+//yyprocesschar:
   yytoken = YYTRANSLATE (yychar);
 
   /* If the proper action on seeing token YYTOKEN is to reduce or to

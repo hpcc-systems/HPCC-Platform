@@ -346,7 +346,6 @@ void CChildDatasetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx 
     OwnedHqlExpr lengthTarget = convertAddressToValue(addressSize, sizetType);
 
     ITypeInfo * columnType = column->queryType();
-    IHqlExpression * record = column->queryRecord();
     OwnedHqlExpr value = addDatasetLimits(translator, ctx, selector, _value);
     ITypeInfo * valueType = value->queryType();
     assertRecordTypesMatch(valueType, columnType);

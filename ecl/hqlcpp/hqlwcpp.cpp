@@ -391,7 +391,6 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
     for (;;)
     {
         bool isPointer = false;
-        bool outOfLine= false;
         ITypeInfo * fullType = type;
         for (;;)
         {
@@ -404,7 +403,6 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
                 result.addConst();
                 break;
             case typemod_outofline:
-                outOfLine = false;
                 break;
             case typemod_ref:
                 isPointer = true;
@@ -984,7 +982,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_row:
         if (isConst)
             out.append("const ");
-        /* no break */
+        // fallthrough
     default:
         {
             Owned<ITypeInfo> argType = LINK(paramType);

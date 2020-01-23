@@ -2020,7 +2020,7 @@ void ClearTypeCache()
     }
     for (i = 0; i < _elements_in(bftt); i++)
     {
-        int j;
+        unsigned j;
         for (j = 0; j < _elements_in(bftt[0]); j++)
             ReleaseAndClear(bftt[i][j]);
     }
@@ -2995,10 +2995,6 @@ ICharsetInfo * getCharset(IAtom * atom)
 
 ICollationInfo * getCollation(IAtom * atom)
 {
-#if _DEBUG
-    const char* name = str(atom);
-#endif
-
     if ((atom == NULL) || (atom == asciiAtom) || (atom == dataAtom) || (atom == utf8Atom))
     {
         if (!asciiCollation)

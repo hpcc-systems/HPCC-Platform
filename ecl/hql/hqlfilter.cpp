@@ -93,24 +93,6 @@ static node_operator getModifiedOp(node_operator op, bool duplicate)
     }
 }
 
-static bool isSubString(IHqlExpression * expr)
-{
-    for(;;)
-    {
-        switch (expr->getOperator())
-        {
-        case no_substring:
-            return true;
-        case no_cast:
-        case no_implicitcast:
-            break;
-        default:
-            return false;
-        }
-        expr = expr->queryChild(0);
-    }
-}
-
 static IHqlExpression * querySubStringRange(IHqlExpression * expr)
 {
     for(;;)
@@ -1031,7 +1013,6 @@ static void extendRangeCheck(SharedHqlExpr & globalGuard, SharedHqlExpr & localC
     OwnedHqlExpr len = createValue(no_charlen, LINK(unsignedType), LINK(trim));
     ITypeInfo * lengthType = lengthExpr->queryType();
     Owned<ITypeInfo> compareType = getPromotedECLCompareType(unsignedType, lengthType);
-    node_operator compOp = compareEqual ? no_le : no_gt;
     OwnedHqlExpr positiveLen = createValue(no_maxlist, lengthExpr->getType(), createValue(no_list, makeSetType(LINK(lengthType)), LINK(lengthExpr), createConstant(lengthType->castFrom(false, I64C(0)))));
     OwnedHqlExpr test = createValue(no_le, makeBoolType(), ensureExprType(len, compareType), ensureExprType(positiveLen, compareType));
     test.setown(foldHqlExpression(test));
@@ -1044,7 +1025,6 @@ static void extendRangeCheck(SharedHqlExpr & globalGuard, SharedHqlExpr & localC
 
 IHqlExpression * FilterExtractor::getRangeLimit(ITypeInfo * fieldType, IHqlExpression * lengthExpr, IHqlExpression * value, int whichBoundary)
 {
-    type_t ftc = fieldType->getTypeCode();
     unsigned fieldLength = fieldType->getStringLen();
     IValue * constValue = value->queryValue();
 
@@ -1724,32 +1704,6 @@ const char * FilterExtractor::queryKeyName(StringBuffer & s)
         }
     }
     return s.str();
-}
-
-
-static bool isNextField(IHqlExpression * record, IHqlExpression * prevExpr, IHqlExpression * nextExpr)
-{
-    if ((prevExpr->getOperator() != no_select) || (nextExpr->getOperator() != no_select))
-        return false;
-    IHqlExpression * prevSelect = prevExpr->queryChild(0);
-    if (prevSelect != nextExpr->queryChild(0))
-        return false;
-    if (!containsOnlyLeft(prevExpr))
-        return false;
-    if (prevSelect->getOperator() != no_left)
-        record = prevSelect->queryRecord();
-
-    IHqlExpression * prevField = prevExpr->queryChild(1);
-    IHqlExpression * nextField = nextExpr->queryChild(1);
-
-    //Slow, but probably doesn't matter...
-    ForEachChild(i, record)
-    {
-        IHqlExpression * cur = record->queryChild(i);
-        if (cur == prevField)
-            return (record->queryChild(i+1) == nextField);
-    }
-    return false;
 }
 
 

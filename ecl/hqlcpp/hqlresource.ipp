@@ -248,9 +248,9 @@ public:
     IHqlExpression * original;
     LinkedHqlExpr hoisted;
     LinkedHqlExpr projectedHoisted;
-    bool forceHoist;
     bool alwaysHoist;
     bool isSingleNode;
+    bool forceHoist;
     IHqlExpression * projected;
 };
 

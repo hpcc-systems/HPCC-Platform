@@ -547,17 +547,6 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     return NULL;
 }
 
-static bool isSimpleComparisonArg(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_constant:
-    case no_getresult:
-        return true;
-    }
-    return false;
-}
-
 //---------------------------------------------------------------------------
 
 /*********************************************************
@@ -943,7 +932,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplat
  #ifdef _ARCH_X86_64_
         assertex((len & 15) == 0);  // We need to make sure we add an EVEN number of words to stack, so that it is 16-byte aligned before the callq
 
-        __int64 dummy1, dummy2,dummy3,dummy4;
+        __int64 dummy1, dummy3,dummy4;
 
         void * floatstack = fstack.getFloatMem(); 
         if (floatstack) { // sets xmm0-7
@@ -3393,7 +3382,6 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             if (childValue)
             {
                 Linked<ITypeInfo> exprType = expr->queryType();
-                ITypeInfo * childType = child->queryType();
                 size32_t childSize = childValue->getSize();
                 const void * rawvalue = childValue->queryValue();
                 unsigned newSize = exprType->getSize();
@@ -3985,7 +3973,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IHqlExpression * child = expr->queryChild(0);
             node_operator childOp = child->getOperator();
             // Can't optimize count of a dictionary in general, since the input dataset may contain duplicates which will be removed.
-            switch (child->getOperator())
+            switch (childOp)
             {
             case no_null:
                 return createConstant(0);
@@ -3996,7 +3984,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * child = expr->queryChild(0);
             node_operator childOp = child->getOperator();
-            switch (child->getOperator())
+            switch (childOp)
             {
             case no_null:
                 return createConstant(false);
@@ -4578,10 +4566,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return ret.getClear();
             }
 
-#if 0
             //This is pretty unlikely, and may introduce an ambiguity in LEFT (if selector sequences aren't unique)
             if (cvtRightProject && !isGrouped(expr))
             {
+#if 0
                 IHqlExpression * selSeq = querySelSeq(expr);
                 OwnedHqlExpr left = createSelector(no_left, child, selSeq);
                 OwnedHqlExpr null = createRow(no_newrow, createNullExpr(left));
@@ -4597,8 +4585,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
                 DBGLOG("Folder: Replace JOIN(<empty>, ds) with PROJECT");
                 return ret.getClear();
-            }
 #endif
+            }
             break;
         }
     case no_merge:
@@ -6842,9 +6830,8 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
             IHqlExpression * rhs = expr->queryChild(2);
             if (!rhs)
                 break;
-
-            //fall through
         }
+        //fallthrough
     case no_addfiles:
     case no_regroup:
     case no_nonempty:

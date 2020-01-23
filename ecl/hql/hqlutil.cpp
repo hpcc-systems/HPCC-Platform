@@ -67,13 +67,6 @@ static IHqlExpression * cachedLocalSequenceNumber;
 static IHqlExpression * cachedStoredSequenceNumber;
 static IHqlExpression * cachedOmittedValueExpr;
 
-static void initBoolAttr(IAtom * name, IHqlExpression * x[2])
-{
-    x[0] = createExprAttribute(name, createConstant(false));
-    x[1] = createExprAttribute(name, createConstant(true));
-}
-
-
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     sizetType = makeIntType(sizeof(size32_t), false);
@@ -1688,8 +1681,8 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
                     equalities.append(*mapped.getClear());
                     break;
                 }
-                //fall through
             }
+            //fallthrough
         default:
             if (containsSelector(cur, left) || containsSelector(cur, right))
                 conds.append(*LINK(cur));
@@ -3628,7 +3621,6 @@ bool isValidXmlRecord(IHqlExpression * expr)
 static void expandHintValue(StringBuffer & s, IHqlExpression * expr)
 {
     node_operator op = expr->getOperator();
-    node_operator childOp = no_none;
     switch (op)
     {
     case no_constant:

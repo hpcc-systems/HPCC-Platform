@@ -931,7 +931,6 @@ public:
     IErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
-    IStatisticTarget & statsTarget;
     unsigned maxErrors = DEFAULT_MAX_ERRORS;
     bool unsuppressImmediateSyntaxErrors = false;
     bool expandCallsWhenBound;
@@ -946,6 +945,7 @@ public:
     bool ignoreCache = false;
     bool ignoreSimplified = false;
     Linked<ICodegenContextCallback> codegenCtx;
+    IStatisticTarget & statsTarget;
     CIArrayOf<FileParseMeta> metaStack;
     IEclCachedDefinitionCollection * cache = nullptr;
     hash64_t optionHash = 0;

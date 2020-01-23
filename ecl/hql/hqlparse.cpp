@@ -86,8 +86,8 @@ class CTemplateContext : implements ITemplateContext, public CInterface
 {
     HqlLex * lexer;
     IXmlScope* m_xmlScope;
-    int m_startLine,m_startCol;
     HqlLookupContext & m_lookupContext;
+    int m_startLine,m_startCol;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -163,7 +163,7 @@ public:
 // ===================================== HqlLex ============================================
 
 HqlLex::HqlLex(HqlGram *parser, IFileContents * contents, IXmlScope *_xmlScope, IHqlExpression *_macroExpr)
- : yyParser(parser), xmlScope(LINK(_xmlScope)), macroExpr(_macroExpr), sourcePath(contents->querySourcePath())
+ : yyParser(parser), sourcePath(contents->querySourcePath()), xmlScope(LINK(_xmlScope)), macroExpr(_macroExpr)
 {
     assertex(parser);
     init(contents);
@@ -696,7 +696,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
         case ')':
             if (parenDepth==1)
                 return false;
-            // fall into
+            // fallthrough
         case ']':
             parenDepth--;
             curParam.append((char) tok);
@@ -968,7 +968,6 @@ void HqlLex::doLine(attribute & returnToken)
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
     forwhat.appendf("LINE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
@@ -1080,7 +1079,6 @@ void HqlLex::doError(attribute & returnToken, bool isError)
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",isError?"#ERROR":"#WARNING",returnToken.pos.lineno,returnToken.pos.column);
 
-    IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
@@ -1186,7 +1184,6 @@ void HqlLex::doTrace(attribute & returnToken)
     StringBuffer forwhat;
     forwhat.appendf("#TRACE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
@@ -1675,7 +1672,7 @@ void HqlLex::doPreprocessorLookup(const attribute & errpos, bool stringify, int 
             case '\\':
             case '\'':
                 *s++='\\';
-                // fall into
+                // fallthrough
             default:
                 *s++=c;
             }
@@ -2165,7 +2162,6 @@ int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, 
         }
         else if (next >= 128)
         {
-            const byte * temp = (byte *)finger;
             unsigned lenLeft = CUR_TOKEN_LENGTH - (size32_t)(finger - CUR_TOKEN_TEXT);
             int extraCharsRead = rtlSingleUtf8ToCodepage(bf, lenLeft, finger, ASCII_LIKE_CODEPAGE);
             if (extraCharsRead == -1)

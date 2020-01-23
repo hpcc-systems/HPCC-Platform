@@ -26,21 +26,6 @@
 #include "hqlthql.hpp"
 #include "hqlerror.hpp"
 
-static void getECL(IHqlExpression * expr, StringBuffer & s)
-{
-    toUserECL(s, expr, false);
-    if (s.length() > 2)
-        s.setLength(s.length()-2);
-}
-
-static const char * queryName(StringBuffer & s, IHqlExpression * expr)
-{
-    if (expr->queryName())
-        return s.append(expr->queryName()).str();
-    getECL(expr, s);
-    return s.str();
-}
-
 //---------------------------------------------------------------------------
 
 void ScopeCheckerBase::analyseExpr(IHqlExpression * expr)

@@ -1999,6 +1999,7 @@ bool CTreeOptimizer::isWorthMovingProjectOverLimit(IHqlExpression * project)
         case no_join:
             if (isKeyedJoin(expr))
                 return false;
+            return true;
         case no_selfjoin:
         case no_fetch:
         case no_normalize:
@@ -2010,7 +2011,7 @@ bool CTreeOptimizer::isWorthMovingProjectOverLimit(IHqlExpression * project)
         case no_newusertable:
             if (isAggregateDataset(expr))
                 return false;
-            //fallthrough.
+            //fallthrough
         case no_hqlproject:
             if (!isPureActivity(expr) || expr->hasAttribute(_countProject_Atom) || expr->hasAttribute(prefetchAtom))
                 return false;
@@ -2453,8 +2454,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             IHqlExpression * counterAttr = transformed->queryAttribute(_countProject_Atom);
             if (counterAttr && !transformContainsCounter(transformed->queryChild(1), counterAttr->queryChild(0)))
                 return removeAttribute(transformed, _countProject_Atom);
-            //fallthrough
         }
+        //fallthrough
     case no_newusertable:
         if (transformed->hasAttribute(keyedAtom))
         {
@@ -3408,6 +3409,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_newusertable:
                 if (isAggregateDataset(child))
                     break;
+                //fallthrough
             case no_hqlproject:
                 {
                     if (!isPureActivityIgnoringSkip(child) || hasUnknownTransform(child))

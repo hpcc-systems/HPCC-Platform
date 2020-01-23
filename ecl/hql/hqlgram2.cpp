@@ -75,11 +75,6 @@ static void setAttribute(int attrToken)
     attributeToTokenMap[attrToken] = attrToken;
 }
 
-static void setKeyword(int attrToken)
-{
-    attributeToTokenMap[attrToken] = attrToken;
-}
-
 //called if the attribute is clashes with another reserved word
 static void setAttribute(int attrToken, int lexToken)
 {
@@ -1149,7 +1144,6 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         }
 
         //Recalculated because it might be updated in modifyIndexPayloadRecord() above
-        bool hasFileposition = getBoolAttributeInList(flags, filepositionAtom, true);
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
         projectedDataset.setown(createDataset(no_selectfields, { LINK(dataset), LINK(record) }));
@@ -1442,7 +1436,7 @@ class SelfReferenceReplacer : public QuickHqlTransformer, public CInterface
 {
 public:
     SelfReferenceReplacer(HqlGram * _parser, IHqlExpression * _self)
-    : QuickHqlTransformer(selfReferenceReplacerInfo, nullptr), parser(_parser), self(_self)
+    : QuickHqlTransformer(selfReferenceReplacerInfo, nullptr), self(_self), parser(_parser)
     {
     }
 
@@ -6147,7 +6141,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == prefetchAtom) ok = true;
                     if (attr == mergeAtom) ok = true;
                     if (attr == groupedAtom) ok = true;
-                    /* no break */
+                    //fallthrough
                 case no_group:
                     if (attr == allAtom) ok = true;
                     if (attr == localAtom) ok = true;
@@ -6160,7 +6154,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     break;
                 case no_topn:
                     if (attr == bestAtom) ok = true;
-                    /* no break */
+                    //fallthrough
                 case no_sort:
                     if (attr == localAtom) ok = true;
                     if (attr == skewAtom) ok = true;
@@ -6176,7 +6170,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                 case no_mergejoin:
                     if (attr == dedupAtom) ok = true;
                     if (attr == assertAtom) ok = true;
-                    /* no break */
+                    //fallthrough
                 case no_nwayjoin:
                     if (attr == localAtom) ok = true;
                     if (attr == mofnAtom) ok = true;
@@ -6856,8 +6850,8 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
             IHqlExpression * record = formal->queryRecord();
             if (record->numChildren() == 0)
                 break;
-            // fallthrough
         }
+        // fallthrough
     default:
         if (formalTC == type_row)
             formalType = formalType->queryChildType();
@@ -8255,29 +8249,6 @@ bool HqlGram::isExplicitlyDistributed(IHqlExpression *e)
     return false;
 }
 
-static bool isFromFile(IHqlExpression * expr)
-{
-    for (;;)
-    {
-        switch (expr->getOperator())
-        {
-        case no_table:
-            return true;
-        case no_usertable:
-            if (isAggregateDataset(expr))
-                return false;
-            //fallthrough...
-        case no_filter:
-        case no_hqlproject:
-            expr = expr->queryChild(0);
-            break;
-        default:
-            return false;
-        }
-    }
-}
-
-
 static const char * getName(IHqlExpression * e)
 {
     if (e->queryName())
@@ -8354,7 +8325,6 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     bool lonly = join->hasAttribute(leftonlyAtom);
     bool ronly = join->hasAttribute(rightonlyAtom);
     bool fonly = join->hasAttribute(fullonlyAtom);
-    bool lo = join->hasAttribute(leftouterAtom) || lonly;
     bool ro = join->hasAttribute(rightouterAtom) || ronly;
     bool fo = join->hasAttribute(fullouterAtom) || fonly;
     bool keep = join->hasAttribute(keepAtom);
@@ -10049,7 +10019,6 @@ IHqlExpression * HqlGram::normalizeFunctionExpression(const attribute &idattr, D
 
 void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, const attribute & idattr, int assignPos, int semiColonPos)
 {
-    IHqlScope * exprScope = expr->queryScope();
     IHqlExpression * scopeExpr = queryExpression(scope);
     IIdAtom * moduleName = nullptr;
     if (!inType)
@@ -11926,8 +11895,8 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
                 return;
             }
         }
-        // fall into...
     }
+        //fallthrough
     
     default:
         msg.append(s);

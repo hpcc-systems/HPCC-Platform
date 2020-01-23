@@ -72,6 +72,7 @@ typedef const char * user_t;
 
 enum object_type 
 {
+    ob_none         = 0x0000,
 //Flags set on symbols
     ob_private      = 0x0000,
     ob_exported     = 0x0001,
@@ -120,6 +121,7 @@ struct HQL_API ECLlocation
 {
 public:
     inline ECLlocation() {}
+    ECLlocation(const ECLlocation & other) = default;
     ECLlocation(const IHqlExpression * _expr) { if (!extractLocationAttr(_expr)) clear(); }
     ECLlocation(int _line, int _column, int _position, ISourcePath * _sourcePath) { set(_line, _column, _position, _sourcePath); }
 

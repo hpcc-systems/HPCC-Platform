@@ -1127,8 +1127,8 @@ void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generat
 
     if (generateMeta)
     {
-        IPropertyTree* tos = curMeta().meta;
 #if 0
+        IPropertyTree* tos = curMeta().meta;
 # This is disabled as the location of the cache file needs to be
 # in the original location for now.  This may re-visited in the future.
         if (isSeparateFile && hasCacheLocation())
@@ -6664,7 +6664,7 @@ bool CHqlDataset::equals(const IHqlExpression & r) const
 {
     if (CHqlExpressionWithType::equals(r))
     {
-        const CHqlDataset & other = (const CHqlDataset &)r;
+        //const CHqlDataset & other = (const CHqlDataset &)r;
         //No need to check name - since it is purely derived from one of the arguments
         return true;
     }
@@ -7007,7 +7007,7 @@ void CHqlRecord::insertSymbols(IHqlExpression * expr)
         break;
     case no_ifblock:
         expr = expr->queryChild(1);
-        //fall through:
+        //fallthrough
     case no_record:
         {
             ForEachChild(idx, expr)
@@ -7572,7 +7572,7 @@ IHqlExpression *CHqlSymbolAnnotation::queryExpression()
 
 inline unsigned combineSymbolFlags(unsigned symbolFlags, bool exported, bool shared)
 {
-    return symbolFlags | (exported ? ob_exported : 0) | (shared ? ob_shared : 0);
+    return symbolFlags | (exported ? ob_exported : ob_none) | (shared ? ob_shared : ob_none);
 }
 
 CHqlSimpleSymbol::CHqlSimpleSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
@@ -7868,9 +7868,9 @@ IHqlExpression * createLocationAnnotation(IHqlExpression * _ownedBody, const ECL
 IHqlExpression * createLocationAnnotation(IHqlExpression * ownedBody, ISourcePath * sourcePath, int lineno, int column)
 {
 #ifdef _DEBUG
-    assertex(lineno != 0xdddddddd && column != 0xdddddddd);
-    assertex(lineno != 0xcdcdcdcd && column != 0xcdcdcdcd);
-    assertex(lineno != 0xcccccccc && column != 0xcccccccc);
+    assertex((unsigned)lineno != 0xdddddddd && (unsigned)column != 0xdddddddd);
+    assertex((unsigned)lineno != 0xcdcdcdcd && (unsigned)column != 0xcdcdcdcd);
+    assertex((unsigned)lineno != 0xcccccccc && (unsigned)column != 0xcccccccc);
 #endif
     if (suppressLocationAnnotations)
         return ownedBody;
@@ -8013,7 +8013,7 @@ IHqlExpression * createJavadocAnnotation(IHqlExpression * _ownedBody, IPropertyT
 //==============================================================================================================
 
 CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature)
-  : file(_file), sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature)
+  : implicitlySigned(_isSigned), file(_file), sourcePath(_sourcePath), gpgSignature(_gpgSignature)
 {
     delayedRead = false;
     if (!preloadFromFile())
@@ -8021,7 +8021,7 @@ CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath, bool _isS
 }
 
 CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature, timestamp_type _ts)
-: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature), ts(_ts)
+: implicitlySigned(_isSigned), ts(_ts), sourcePath(_sourcePath), gpgSignature(_gpgSignature)
 {
     if (query)
         setContents(strlen(query), query);
@@ -8030,7 +8030,7 @@ CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath, bool 
 }
 
 CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath, bool _isSigned, IHqlExpression * _gpgSignature, timestamp_type _ts)
-: sourcePath(_sourcePath), implicitlySigned(_isSigned), gpgSignature(_gpgSignature), ts(_ts)
+: implicitlySigned(_isSigned), ts(_ts), sourcePath(_sourcePath), gpgSignature(_gpgSignature)
 {
     setContents(len, query);
     delayedRead = false;
@@ -11946,7 +11946,6 @@ protected:
                 IValue * searchValue = folded->queryValue();
                 if (!searchValue)
                     break;
-                ITypeInfo * searchType = searchValue->queryType();
                 ForEachChildFrom(i, expr, 1)
                 {
                     IHqlExpression * cur = expr->queryChild(i);
@@ -12568,19 +12567,6 @@ extern IHqlExpression * createReboundFunction(IHqlExpression *func, HqlExprArray
 
 
 //---------------------------------------------------------------------------------------------------------------
-
-static void checkConsistent(IHqlExpression* e)
-{
-    //Check there are no datasets in the expression other than no_activetable
-    if (!e) return;
-    OwnedHqlExpr e1 = replaceSelector(e, NULL, querySelfReference());
-    OwnedHqlExpr e2 = replaceSelector(e, queryActiveTableSelector(), querySelfReference());
-    if (e1 != e2)
-    {
-        DBGLOG("Paranoia: type information wasn't correctly normalized");
-        e1.setown(replaceSelector(e, NULL, querySelfReference()));
-    }
-}
 
 //NOTE: The type information - e.g., distribution, grouping, sorting cannot include the dataset of the primary file
 //because for a no_newusertable etc. that would result in a circular reference.
@@ -14578,11 +14564,11 @@ public:
 };
 
 static TransformTrackingInfo transformExtraState[NUM_PARALLEL_TRANSFORMS+1];
-static bool isActiveMask[NUM_PARALLEL_TRANSFORMS+1];
 
 #if NUM_PARALLEL_TRANSFORMS==1
 const unsigned threadActiveExtraIndex=1;
 #else
+static bool isActiveMask[NUM_PARALLEL_TRANSFORMS+1];
 #ifdef _WIN32
 __declspec(thread) unsigned threadActiveExtraIndex;
 #else
