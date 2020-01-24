@@ -32,6 +32,7 @@ public:
 
 //interface  IValue (mostly implemented in derived classes)
 
+    using CInterfaceOf<IValue>::compare;
     virtual const void *queryValue() const { UNIMPLEMENTED; }
     virtual int compare(const void * mem);
     virtual ITypeInfo *getType();
@@ -300,6 +301,7 @@ public:
     IntValue(unsigned __int64 v, ITypeInfo *_type) : CValue(_type), val(v) {}
 
 // implementing IValue
+    using CValue::compare;
     virtual const void *queryValue() const;
     virtual const char *generateCPP(StringBuffer &s, CompilerType compiler);
     virtual const char *generateECL(StringBuffer &s);
@@ -331,6 +333,7 @@ public:
     PackedIntValue(IValue * v, ITypeInfo *_type) : CValue(_type), value(v) {}
 
 // implementing IValue
+    using CValue::compare;
     virtual const char *generateCPP(StringBuffer &s, CompilerType compiler)     { return value->generateCPP(s, compiler); }
     virtual const char *generateECL(StringBuffer &s)        { return value->generateECL(s); }
     virtual IValue * castTo(ITypeInfo * type)               { return value->castTo(type); }
@@ -367,6 +370,7 @@ public:
 
 // implementing IValue
 
+    using CValue::compare;
     virtual const char *generateCPP(StringBuffer &s, CompilerType compiler);
     virtual const char *generateECL(StringBuffer &s);
     virtual IValue * castTo(ITypeInfo * type);
@@ -398,6 +402,7 @@ public:
 
 // implementing IValue
 
+    using CValue::compare;
     virtual const void *queryValue() const;
     virtual const char *generateCPP(StringBuffer &s, CompilerType compiler);
     virtual const char *generateECL(StringBuffer &s);
