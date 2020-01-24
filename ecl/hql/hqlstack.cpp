@@ -158,26 +158,39 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
         UNIMPLEMENTED;
     case type_real:
 #ifdef MAXFPREGS
-        if (numFpRegs==MAXFPREGS) {
-            IERRLOG("Too many floating point registers needed in FuncCallStack::push");
-            return -1;
-        }
-        char tempbuf[sizeof(double)];
-        castParam->toMem(tempbuf);
+        {
+            if (numFpRegs==MAXFPREGS) {
+                IERRLOG("Too many floating point registers needed in FuncCallStack::push");
+                return -1;
+            }
+
+            const size_t size = argType->getSize();
+            if (size <= 4)
+            {
+                float tempFloat = 0.0;
+                castParam->toMem(&tempFloat);
 #ifdef FPREG_FIXEDSIZE
-        if (argType->getSize()<=4)
-            fpRegs[numFpRegs++] = *(float *)&tempbuf;
-        else
-            fpRegs[numFpRegs++] = *(double *)&tempbuf;
+                fpRegs[numFpRegs++] = tempFloat;
 #else
-        // Variable size FP registers as on arm/x64
-        if (argType->getSize()<=4)
-            fpRegs[numFpRegs].f = *(float *)&tempbuf;
-        else
-            fpRegs[numFpRegs].d = *(double *)&tempbuf;
-        fpSizes[numFpRegs++] = argType->getSize();
+                // Variable size FP registers as on arm/x64
+                fpRegs[numFpRegs].f = tempFloat;
+                fpSizes[numFpRegs++] = size;
 #endif
-        break;
+            }
+            else
+            {
+                double tempDouble = 0.0;
+                castParam->toMem(&tempDouble);
+
+#ifdef FPREG_FIXEDSIZE
+                fpRegs[numFpRegs++] = tempDouble;
+#else
+                fpRegs[numFpRegs].d = tempDouble;
+                fpSizes[numFpRegs++] = size;
+#endif
+            }
+            break;
+        }
 #else
     // fall through if no hw regs used for params
 #endif

@@ -189,6 +189,8 @@ interface IEclRepository: public IInterface
 //MORE: Make this more private
 interface IEclRepositoryCallback : public IEclRepository
 {
+    using IEclRepository::getSource;
+
 //Should only be called and implemented for concrete repositories
     virtual bool loadModule(IHqlRemoteScope * rScope, IErrorReceiver * errs, bool forceAll) = 0;
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;

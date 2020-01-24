@@ -158,11 +158,12 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 
   #Compiler complains about a memcpy of a structure that contains a union
   if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0.0")
-    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=class-memaccess")
+    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess")
+    set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess -Wno-sign-compare")
   endif()
 
-  #Compiler complains about an unused function yyunput
-  set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-function")
+  #Compiler complains about an unused function yyunput, and make sure that any warnings are not reported as errors
+  set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-unused-function -Wno-error")
 endif()
 
 if (WIN32)
