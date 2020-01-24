@@ -152,6 +152,8 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 
   if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=3")
+    #gcc incorrectly thinks that a function that never returns can fall through
+    set_source_files_properties (hqlfilter.cpp PROPERTIES COMPILE_FLAGS " -Wimplicit-fallthrough=0")
   endif()
 
   #Compiler complains about a memcpy of a structure that contains a union
@@ -161,8 +163,6 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 
   #Compiler complains about an unused function yyunput
   set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-function")
-  #gcc incorrectly thinks that a function that never returns can fall through
-  set_source_files_properties (hqlfilter.cpp PROPERTIES COMPILE_FLAGS " -Wimplicit-fallthrough=0")
 endif()
 
 if (WIN32)
