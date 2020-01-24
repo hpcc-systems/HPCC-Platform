@@ -128,8 +128,12 @@ IF (NOT WIN32)
 ENDIF()
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
+
   #implicit-fallthrough is currently disabled because it does not seem to process noreturn attributes on a virtual function correctly (throwStringExceptionV)
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor -Wimplicit-fallthrough=0")
+  if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0")
+  endif()
 endif()
 
 ADD_DEFINITIONS( -DHQLCPP_EXPORTS -D_USRDLL )
