@@ -1,0 +1,446 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+#include "xslprocessor.hpp"
+//  ===========================================================================
+
+EspInclude(common);
+EspInclude(ws_workunits_struct);
+
+ESPrequest [nil_remove] WURecreateQueryRequest
+{
+    string Target;
+    string QueryId;
+    ESParray<ESPstruct NamedValue> DebugValues;
+    string DestTarget;
+    bool Republish(0);
+    ESPEnum WUQueryActivationMode Activate;
+    bool NoReload(0);
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
+    string Comment;
+
+    string RemoteDali;
+    bool DontCopyFiles(false);
+    string SourceProcess;
+    bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
+    bool UpdateSuperFiles(false); //update content of superfiles if changed
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+
+    int Wait(-1);
+};
+
+ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
+{
+    string Wuid;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
+
+    string MemoryLimit;
+    nonNegativeInteger TimeLimit;
+    nonNegativeInteger WarnTimeLimit;
+    string Priority;
+    string Comment;
+
+    bool ReloadFailed;
+    bool Suspended;
+    string ErrorMessage;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
+ESPrequest WUQueryGetGraphRequest
+{
+    string Target;
+    string QueryId;
+    [min_ver("1.19")] string GraphName;
+    [min_version("1.21")] string SubGraphId;
+};
+
+ESPresponse [exceptions_inline] WUQueryGetGraphResponse
+{
+    ESParray<ESPstruct ECLGraphEx> Graphs;
+};
+
+ESPrequest WUQueryGetSummaryStatsRequest
+{
+    string Target;
+    string QueryId;
+    string FromTime; //YYYY-MM-DDTHH:MM:SS
+    string ToTime;
+    [min_ver("1.75")] bool IncludeRawStats(false);
+};
+
+ESPresponse [exceptions_inline] WUQueryGetSummaryStatsResponse
+{
+    ESParray<ESPstruct QuerySummaryStats> StatsList;
+    [min_ver("1.75")] ESParray<ESPstruct EndpointQueryStats> QueryStatsList;
+};
+
+ESPrequest [nil_remove] WUPublishWorkunitRequest
+{
+    string Wuid;
+    string Cluster;
+    string JobName;
+    int Activate;
+    bool NotifyCluster(false);
+    int Wait(10000);
+    bool NoReload(0);
+    bool UpdateWorkUnitName(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
+    string RemoteDali;
+    string Comment;
+    bool DontCopyFiles(false);
+    string SourceProcess;
+    bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
+    bool UpdateSuperFiles(false); //update content of superfiles if changed
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUPublishWorkunitResponse
+{
+    string Wuid;
+    string Result;
+    string QuerySet;
+    string QueryName;
+    string QueryId;
+    bool ReloadFailed;
+    [min_ver("1.39")] bool Suspended;
+    [min_ver("1.39")] string ErrorMessage;
+    ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
+ESPrequest [nil_remove] WUQueryConfigRequest
+{
+    string Target;
+    string QueryId;
+    int Wait(10000);
+    bool NoReload(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
+    string Comment;
+};
+
+ESPresponse [exceptions_inline] WUQueryConfigResponse
+{
+    bool ReloadFailed;
+    ESParray<ESPStruct WUQueryConfigResult, Result> Results;
+};
+
+ESPrequest WUQuerysetsRequest
+{
+    bool test;
+};
+
+ESPresponse [exceptions_inline] WUQuerysetsResponse
+{
+    ESParray<ESPstruct QuerySet> Querysets;
+};
+
+ESPrequest WUQuerySetDetailsRequest
+{
+    string  QuerySetName;
+    string  Filter;
+    string  ClusterName;
+    ESPenum WUQuerySetFilterType FilterType("All");
+    [min_ver("1.57")] bool CheckAllNodes(true);
+};
+
+ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
+{
+    string  QuerySetName;
+    ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
+    ESParray<ESPstruct QuerySetAlias> QuerysetAliases;
+    [min_ver("1.37")] string  ClusterName;
+    [min_ver("1.37")] string  Filter;
+    [min_ver("1.37")] ESPenum WUQuerySetFilterType FilterType;
+    [min_ver("1.37")] ESParray<string> ClusterNames;
+};
+
+ESPrequest [nil_remove] WUListQueriesRequest
+{
+    string  QuerySetName;
+    string  ClusterName;
+    string  LibraryName;
+    int64 MemoryLimitLow;
+    int64 MemoryLimitHigh;
+    nonNegativeInteger TimeLimitLow;
+    nonNegativeInteger TimeLimitHigh;
+    nonNegativeInteger WarnTimeLimitLow;
+    nonNegativeInteger WarnTimeLimitHigh;
+    nonNegativeInteger PriorityLow;
+    nonNegativeInteger PriorityHigh;
+    [min_ver("1.48")] bool Activated;
+    [min_ver("1.48")] bool SuspendedByUser;
+    [min_ver("1.50")] string WUID;
+    [min_ver("1.51")] string QueryID;
+    [min_ver("1.51")] string QueryName;
+    [min_ver("1.56")] string PublishedBy;
+
+    nonNegativeInteger PageSize(0);
+    nonNegativeInteger PageStartFrom(0);
+    string Sortby;
+    bool Descending(false);
+    int64 CacheHint;
+    string FileName;
+    [min_ver("1.57")] bool CheckAllNodes(true);
+};
+
+ESPresponse [exceptions_inline] WUListQueriesResponse
+{
+    int   NumberOfQueries;
+    int64 CacheHint;
+    ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
+};
+
+ESPrequest [nil_remove] WUListQueriesUsingFileRequest
+{
+    string Target;
+    string Process;
+    string FileName;
+};
+
+ESPresponse [exceptions_inline] WUListQueriesUsingFileResponse
+{
+    string Process;
+    string FileName;
+    ESParray<ESPstruct TargetQueriesUsingFile> Targets;
+};
+
+ESPrequest [nil_remove] WUQueryFilesRequest
+{
+    string Target;
+    string QueryId;
+};
+
+ESPresponse [exceptions_inline] WUQueryFilesResponse
+{
+    ESParray<ESPstruct FileUsedByQuery, File> Files;
+};
+
+ESPrequest WUQueryDetailsRequest
+{
+    string QueryId;
+    string QuerySet;
+    bool IncludeStateOnClusters(false);
+    bool IncludeSuperFiles(false);
+    bool IncludeWsEclAddresses(false);
+    [min_ver("1.57")] bool CheckAllNodes(true);
+};
+
+ESPresponse [exceptions_inline] WUQueryDetailsResponse
+{
+    string QueryId;
+    string QuerySet;
+    string QueryName;
+    string Wuid;
+    string Dll;
+    bool Suspended;
+    [min_ver("1.42")] bool Activated;
+    string SuspendedBy;
+    [min_ver("1.43")] ESParray<ESPstruct ClusterQueryState> Clusters;
+    string PublishedBy;
+    string Comment;
+
+    ESParray<string> LogicalFiles;
+    [min_ver("1.44")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] string Priority;
+    [min_ver("1.46")] string WUSnapShot; //Label
+    [min_ver("1.46")] string CompileTime;
+    [min_ver("1.46")] ESParray<string> LibrariesUsed;
+    [min_ver("1.46")] int CountGraphs;
+    [min_ver("1.46"), depr_ver("1.64")] ESParray<string> GraphIds;
+    [min_ver("1.50")] int ResourceURLCount;
+    [min_ver("1.51")] ESParray<string, Address> WsEclAddresses;
+    [min_ver("1.64")] ESParray<ESPstruct ECLGraph> WUGraphs;
+    [min_ver("1.64")] ESParray<ESPstruct ECLTimer> WUTimers;
+};
+
+ESPrequest WUMultiQuerySetDetailsRequest
+{
+    string  ClusterName;
+    string  QuerySetName;
+    string  Filter;
+    ESPenum WUQuerySetFilterType FilterType("All");
+    [min_ver("1.57")] bool CheckAllNodes(true);
+};
+
+ESPresponse [exceptions_inline] WUMultiQuerySetDetailsResponse
+{
+    string ClusterName;
+    ESParray<ESPstruct WUQuerySetDetail> Querysets;
+};
+
+ESPrequest WUQuerysetExportRequest
+{
+    string  Target;
+    bool Compress(true);
+    bool ActiveOnly(false);
+    bool Protect(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetExportResponse
+{
+    string Target;
+    bool Compressed;
+    binary Data;
+};
+
+ESPrequest WUQuerysetImportRequest
+{
+    string Target;
+    string QueryMask;
+    bool Replace(false);
+    bool ActiveOnly(false);
+    ESPenum QuerysetImportActivation Activation;
+    bool Compressed(true);
+    binary Data;
+
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool CopyFiles(true);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerysetImportResponse
+{
+    string  Target;
+    bool ClearedExisting(true);
+    bool Success(false);
+
+    ESParray<string, QueryId> ImportedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+    ESParray<string, QueryId> MissingWuids;
+    ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
+ESPrequest [nil_remove] WUUpdateQueryEntryRequest
+{
+    string QuerySet;
+    string QueryId;
+    string Comment;
+};
+
+ESPresponse [exceptions_inline] WUUpdateQueryEntryResponse
+{
+};
+
+ESPrequest WUQuerySetQueryActionRequest
+{
+    ESPenum QuerySetQueryActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetQueryActionItem, Query> Queries;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetQueryActionResponse
+{
+    ESPenum QuerySetQueryActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetQueryActionResult, Result> Results;
+};
+
+ESPrequest WUQuerySetAliasActionRequest
+{
+    ESPenum QuerySetAliasActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetAliasActionItem, Alias> Aliases;
+};
+
+ESPresponse [exceptions_inline] WUQuerySetAliasActionResponse
+{
+    ESPenum QuerySetAliasActionTypes Action;
+    string QuerySetName;
+    ESParray<ESPstruct QuerySetAliasActionResult, Result> Results;
+};
+
+ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
+{
+    string Source;
+    string Target;
+    string Cluster;
+    string DaliServer;
+    int Activate;
+    bool Overwrite(false);
+    bool DontCopyFiles(false);
+    int Wait(10000);
+    bool NoReload(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+    string priority;
+    string Comment;
+    string SourceProcess;
+    string DestName;
+    bool AllowForeignFiles(true);
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
+{
+    string QueryId;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};
+
+ESPrequest [nil_remove] WUCopyQuerySetRequest
+{
+    string Source;
+    string Target;
+    bool ActiveOnly(true);
+    bool CloneActiveState(true);
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool CopyFiles(true);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+    bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
+    bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
+    bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool IncludeFileErrors(false);
+};
+
+ESPresponse [exceptions_inline] WUCopyQuerySetResponse
+{
+    ESParray<string, QueryId> CopiedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+    [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+};

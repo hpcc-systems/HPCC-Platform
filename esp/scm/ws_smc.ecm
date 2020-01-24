@@ -18,6 +18,9 @@
 ////////////////////////////////////////////////////////////
 #include "ws_topology.hpp"
 EspInclude(ws_topology);
+EspInclude(ws_workunits_struct);
+EspInclude(ws_workunits_req_resp);
+EspInclude(ws_workunits_queryset_req_resp);
 #include "ws_workunits.hpp"
 EspInclude(ws_workunits);
 
