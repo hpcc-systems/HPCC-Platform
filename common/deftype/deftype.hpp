@@ -140,9 +140,6 @@ public:
 
     inline bool isBoolean() const { return getTypeCode() == type_boolean; }
     inline bool isUnsignedNumeric() { return (isInteger() || getTypeCode()==type_decimal) && !isSigned(); }
-
-private:
-    inline IValue * castFrom(__int64 value) { return NULL; }
 };
 
 interface IFunctionTypeExtra : public IInterface

@@ -50,6 +50,7 @@ public:
 
     virtual const char *getProxyName()          { return "CTypeInfo"; }
 
+    using CInterfaceOf<ITypeInfo>::castFrom;
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const UChar * text);
     virtual bool isReference()                  { return false; }
@@ -97,6 +98,7 @@ public:
     virtual type_t getTypeCode() const          { return type_string; };
 
     virtual unsigned getCardinality();
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -147,6 +149,8 @@ public:
     //N.B. getSize() in bytes, i.e. UChars*2; getStringLen in UChars, i.e. getSize()/2 (where length known)
     virtual unsigned getStringLen() { if(getSize()==UNKNOWN_LENGTH) return UNKNOWN_LENGTH; else return getSize()/2; }
     virtual unsigned getCardinality();
+
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -173,6 +177,7 @@ public:
     virtual type_t getTypeCode() const                { return type_varunicode; };
     virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length/2-1 : UNKNOWN_LENGTH; };
 
+    using CUnicodeTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual IValue * castFrom(size32_t len, const UChar * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
@@ -188,6 +193,7 @@ public:
     virtual unsigned getSize()                  { return UNKNOWN_LENGTH; };
     virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length/4 : UNKNOWN_LENGTH; };
 
+    using CUnicodeTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const UChar * text);
     virtual size32_t getAlignment() { return 1; };
     virtual StringBuffer &getECLType(StringBuffer & out);
@@ -202,6 +208,8 @@ public:
     virtual bool assignableFrom(ITypeInfo *t2);
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual const char *queryTypeName()         { return "data"; } // ???
+
+    using CStringTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
 
     virtual void serialize(MemoryBuffer &tgt)   
@@ -219,6 +227,7 @@ public:
     virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length-1 : UNKNOWN_LENGTH; };
     virtual unsigned getDigits()                { return length != UNKNOWN_LENGTH ? length-1 : UNKNOWN_LENGTH; };
 
+    using CStringTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual StringBuffer &getDescriptiveType(StringBuffer & out);
@@ -234,6 +243,7 @@ public:
     virtual unsigned getDigits()                { return strLength; }
 
 //  virtual bool assignableFrom(ITypeInfo *t2);
+    using CStringTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual const char *queryTypeName()         { return "var char"; } // ???
@@ -254,6 +264,7 @@ public:
     CCharTypeInfo(bool _case) : CTypeInfo(1), caseSensitive(_case) {};
     virtual type_t getTypeCode() const             { return type_char; };
 
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
@@ -272,6 +283,7 @@ public:
     virtual bool isInteger() { return true; };
 
     virtual bool assignableFrom(ITypeInfo *t2);
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual bool isScalar()                     { return true; }
@@ -306,6 +318,7 @@ public:
     virtual bool isInteger()                    { return false; };
     virtual bool isSigned()                     { return true; }
 
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -335,6 +348,7 @@ public:
     virtual bool isInteger() { return false; };
 
     virtual bool assignableFrom(ITypeInfo *t2);
+    using CHashedTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -367,6 +381,7 @@ public:
     ~CBitfieldTypeInfo() { ::Release(promoted); ::Release(storeType); }
     
     virtual bool assignableFrom(ITypeInfo *t2);
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual unsigned getBitSize()      { return bitLength; };
@@ -402,6 +417,7 @@ public:
     virtual bool isScalar()                     { return true; }
 
     virtual bool assignableFrom(ITypeInfo *t2);
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual unsigned getCardinality() { return 2; };
@@ -418,6 +434,7 @@ public:
     virtual bool isInteger() { return false; };
     virtual bool isScalar()                     { return false; }
 
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual unsigned getCardinality() { return 0; };
@@ -448,6 +465,7 @@ public:
     virtual bool isInteger()                { return false; };
     virtual bool isScalar()                 { return false; }
 
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value)                    { return NULL; }
     virtual IValue * castFrom(size32_t len, const char * text)  { return NULL; }
     virtual unsigned getCardinality()                           { return 0; };
@@ -496,6 +514,7 @@ public:
     virtual bool isScalar()                     { return true; }
 
     virtual bool assignableFrom(ITypeInfo *t2)                      { return true; }
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(double value);
     virtual IValue * castFrom(size32_t len, const char * text);
@@ -523,6 +542,7 @@ public:
     virtual bool isScalar()                     { return true; }
 
     virtual unsigned getCardinality() { return numValues; };
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
@@ -544,6 +564,7 @@ class CBasedTypeInfo : public CHashedTypeInfo
 public:
     CBasedTypeInfo(ITypeInfo *_basetype, int _size) : CHashedTypeInfo(_size), basetype(_basetype) {}
 
+    using CHashedTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value)    { assertThrow(false); return NULL; } 
     virtual IValue * castFrom(size32_t len, const char * text) { assertThrow(false); return NULL; }
     virtual bool isInteger() { return false; }
@@ -607,6 +628,7 @@ public:
     virtual type_t getTypeCode() const { return type_keyedint; };
 
     // Only used for generation of type information so no need to fully implement these
+    using CBasedTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual bool isSwappedEndian()              { return true; }
     virtual bool isInteger()                    { return true; };
@@ -629,6 +651,7 @@ public:
     virtual type_t getTypeCode() const { return type_packedint; };
 
     virtual bool assignableFrom(ITypeInfo *t2);
+    using CBasedTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual bool isInteger() { return true; };
@@ -820,6 +843,7 @@ public:
     virtual bool isInteger() { return false; };
     virtual bool isScalar()                     { return false; }
 
+    using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value)    { assertex(false); return NULL; }
     virtual IValue * castFrom(size32_t len, const char * text)       { assertex(false); return NULL; }
     virtual unsigned getCardinality() { return 0; };
@@ -883,6 +907,7 @@ public:
     virtual IValue * castFrom(bool isSignedValue, __int64 value)    { return baseType->castFrom(isSignedValue, value); }
     virtual IValue * castFrom(double value)                         { return baseType->castFrom(value); }
     virtual IValue * castFrom(size32_t len, const char * text)      { return baseType->castFrom(len, text); }
+    virtual IValue * castFrom(size32_t len, const UChar * text)     { return baseType->castFrom(len, text); }
     virtual StringBuffer &getECLType(StringBuffer & out)            { return baseType->getECLType(out); };
     virtual const char *queryTypeName()                             { return baseType->queryTypeName(); }
     virtual unsigned getCardinality()                               { return baseType->getCardinality(); }
