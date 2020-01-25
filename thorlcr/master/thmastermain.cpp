@@ -822,24 +822,28 @@ int main( int argc, char *argv[]  )
 
     try
     {
-        CSDSServerStatus &serverStatus = openThorServerStatus();
+        {
+            Owned<IRemoteConnection> servers = querySDS().connect("Status/Servers", myProcessSession(), RTM_LOCK_WRITE, 3000);
 
-        Owned<CRegistryServer> registry = new CRegistryServer();
-        StringBuffer thorEpStr;
-        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
-        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            CSDSServerStatus &serverStatus = openThorServerStatus();
 
-        serverStatus.queryProperties()->setProp("@thorname", thorname);
-        serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str()); // JCSMORE rename
-        serverStatus.queryProperties()->setProp("LogFile", logUrl.str()); // LogFile read by eclwatch (possibly)
-        serverStatus.queryProperties()->setProp("@nodeGroup", nodeGroup.str());
-        serverStatus.queryProperties()->setProp("@queue", queueName.str());
-        serverStatus.commitProperties();
+            StringBuffer thorEpStr;
+            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+            LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+
+            serverStatus.queryProperties()->setProp("@thorname", thorname);
+            serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str()); // JCSMORE rename
+            serverStatus.queryProperties()->setProp("LogFile", logUrl.str()); // LogFile read by eclwatch (possibly)
+            serverStatus.queryProperties()->setProp("@nodeGroup", nodeGroup.str());
+            serverStatus.queryProperties()->setProp("@queue", queueName.str());
+            serverStatus.commitProperties();
+        }
 
         addAbortHandler(ControlHandler);
         masterSlaveMpTag = allocateClusterMPTag();
         kjServiceMpTag = allocateClusterMPTag();
 
+        Owned<CRegistryServer> registry = new CRegistryServer();
         if (registry->connect())
         {
             unsigned totSlaveProcs = queryNodeClusterWidth();

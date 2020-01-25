@@ -1606,14 +1606,19 @@ void EclAgent::executeThorGraph(const char * graphName)
                     {
                         if (!thorStartLock.get())
                         {
+                            DBGLOG("mck - trying to get lock");
                             try
                             {
                                 thorStartLock.setown(querySDS().connect("/Locks/ThorStartLock", myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY | RTM_DELETE_ON_DISCONNECT, 5000));
+                                DBGLOG("mck - after connect() ...");
                             }
                             catch (ISDSException *sdse)
                             {
                                 if (sdse->errorCode() == SDSExcpt_LockTimeout)
+                                {
                                     sdse->Release();
+                                    DBGLOG("mck - timed out waiting for lock");
+                                }
                                 else
                                     throw;
                             }
@@ -1625,11 +1630,13 @@ void EclAgent::executeThorGraph(const char * graphName)
 
                         if (thorStartLock.get())
                         {
+                            DBGLOG("mck - have lock %llx %llx", thorStartLock->querySessionId(), myProcessSession());
                             StringBuffer startThorName;
                             StringBuffer startThorHost;
                             bool foundThorSlot = getThorOndemand(cluster.str(), queName.str(), startThorName, startThorHost);
                             if (foundThorSlot)
                             {
+                                DBGLOG("mck - found slot, %s", startThorName.str());
                                 // call may have taken some time, make one last check to see if a Thor accepted our init
                                 if (stopped)
                                     break;
@@ -1682,10 +1689,17 @@ void EclAgent::executeThorGraph(const char * graphName)
                                 ts.reset(START_THOR_RETRY_DELAY);
                             }
                             else
+                            {
+                                DBGLOG("mck - did not find slot, about to unlock lock");
                                 thorStartLock.clear();
+                            }
                         }
+                        else
+                            DBGLOG("mck - do not have lock");
                     }
                 }
+                DBGLOG("mck - about to end thread");
+                thorStartLock.clear();
                 return retCode;
             }
             void stop()
@@ -1697,10 +1711,16 @@ void EclAgent::executeThorGraph(const char * graphName)
 
         pollthread.start();
 
+        DBGLOG("mck - befor conversation initiated");
+
         Owned<IConversation> conversation = jq->initiateConversation(item, INFINITE);
+
+        DBGLOG("mck - after conversation accepted");
 
         pollthread.stop();
         pollthread.join();
+
+        DBGLOG("mck - after thread ended");
 
         bool got = conversation.get()!=NULL;
         if (!got)
@@ -1709,6 +1729,8 @@ void EclAgent::executeThorGraph(const char * graphName)
                 throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
             throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
         }
+
+        DBGLOG("mck - waiting for thor to send info back");
 
         // get the thor ep from whoever picked up
 
