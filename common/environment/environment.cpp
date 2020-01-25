@@ -172,7 +172,7 @@ public:
 };
 typedef std::unordered_map<std::string, Owned<CThorInstances>> ThorNameMap;
 
-static Linked<IConstEnvironment> todEnv;
+static Owned<IConstEnvironment> todEnv;
 static CriticalSection todCrit;
 
 //==========================================================================================
@@ -2780,6 +2780,8 @@ extern ENVIRONMENT_API void closeEnvironment()
             //this method is not meant to be invoked by multiple
             //threads concurrently but just in case...
             CriticalBlock block(getEnvSect);
+            CriticalBlock b(todCrit);
+            todEnv.clear();
 
             pFactory = factory;
             factory = nullptr;
@@ -2900,7 +2902,7 @@ bool getThorOndemand(const char *clusName, const char *queName, StringBuffer &st
     if (!todEnv.get())
     {
         Owned<IEnvironmentFactory> todFactory = getEnvironmentFactory(true);
-        todEnv.set(todFactory->openEnvironment());
+        todEnv.setown(todFactory->openEnvironment());
     }
 
     return todEnv->getThorToStart(clusName, queName, startThorName, startThorHost);
