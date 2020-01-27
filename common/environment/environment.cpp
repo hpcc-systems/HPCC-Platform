@@ -1728,9 +1728,25 @@ bool CLocalEnvironment::getThorToStart(const char *clusName, const char *queName
     // TODO: mck - could ask topology server for this info ...
 
     {
-        Owned<IRemoteConnection>conn = querySDS().connect("Status/Servers", myProcessSession(), RTM_LOCK_READ, 5000);
-        if (!conn.get())
-            throw MakeStringException(-1, "unable to SDS connect to /Status/Servers");
+        Owned<IRemoteConnection>conn;
+        try
+        {
+            conn.setown(querySDS().connect("Status/Servers", myProcessSession(), RTM_LOCK_WRITE, 5000));
+        }
+        catch (ISDSException *sdse)
+        {
+            if (sdse->errorCode() == SDSExcpt_LockTimeout)
+            {
+                sdse->Release();
+                return false;
+            }
+            else
+                throw;
+        }
+        catch (...)
+        {
+           throw;
+        }
 
         for (auto i : thorNameMap)
         {
