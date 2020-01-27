@@ -31,13 +31,13 @@ void CInfoCacheReaderThread::threadmain()
     unsigned int autoRebuildMillSeconds = 1000*autoRebuildSeconds;
     while (!stopping)
     {
-        if (!detached)
+        if (active)
         {
             try
             {
-                EspTimeSection timer("createInfoCache");
+                CCycleTimer timer;
                 Owned<CInfoCache> info = infoCacheReader->read();
-                PROGLOG("CInfoCacheReaderThread %s: InfoCache collected.", name.get());
+                PROGLOG("CInfoCacheReaderThread %s: InfoCache collected (%u seconds).", name.get(), timer.elapsedMs()/1000);
 
                 CriticalBlock b(crit);
                 infoCache.setown(info.getClear());

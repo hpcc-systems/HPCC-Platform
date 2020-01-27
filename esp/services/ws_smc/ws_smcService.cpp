@@ -141,15 +141,14 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
         m_PortalURL.append(portalURL);
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheSeconds", process, service);
-    unsigned activityInfoCacheSeconds = cfg->getPropInt(xpath.str(), DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND);
+    unsigned activityInfoCacheSeconds = cfg->getPropInt(xpath.str(), defaultActivityInfoCacheForceBuildSecond);
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/LogDaliConnection", process, service);
     if (cfg->getPropBool(xpath.str()))
         querySDS().setConfigOpt("Client/@LogConnection", "true");
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheAutoRebuildSeconds", process, service);
-    unsigned activityInfoCacheAutoRebuildSeconds = cfg->getPropInt(xpath.str(), DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND);
-    activityInfoCacheReader.setown(new CActivityInfoCacheReader());
-    activityInfoCacheReaderThread.setown(new CInfoCacheReaderThread(activityInfoCacheReader, "Activity Reader", activityInfoCacheAutoRebuildSeconds,
+    unsigned activityInfoCacheAutoRebuildSeconds = cfg->getPropInt(xpath.str(), defaultActivityInfoCacheAutoRebuildSecond);
+    activityInfoCacheReaderThread.setown(new CInfoCacheReaderThread(new CActivityInfoCacheReader(), "Activity Reader", activityInfoCacheAutoRebuildSeconds,
         activityInfoCacheSeconds));
 }
 
@@ -1260,7 +1259,7 @@ void CWsSMCEx::setActivityResponse(IEspContext &context, CActivityInfo* activity
     {
         StringBuffer s;
         resp.setActivityTime(activityInfo->queryTimeCached(s));
-        resp.setDaliDetached(activityInfoCacheReaderThread->isDaliDetached());
+        resp.setDaliDetached(!activityInfoCacheReaderThread->isActive());
     }
     if (version >= 1.16)
     {

@@ -25,8 +25,8 @@
 #include "WUXMLInfo.hpp"
 #include "InfoCacheReader.hpp"
 
-const unsigned DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND = 10;
-const unsigned DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND = 120;
+const unsigned defaultActivityInfoCacheForceBuildSecond = 10;
+const unsigned defaultActivityInfoCacheAutoRebuildSecond = 120;
 
 enum BulletType
 {
@@ -156,14 +156,12 @@ public:
     inline IArrayOf<IEspDFUJob>& queryDFURecoveryJobs() { return DFURecoveryJobs; };
 };
 
-class CActivityInfoCacheReader : public CInterface, implements IInfoCacheReader
+class CActivityInfoCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CActivityInfoCacheReader() {};
 
-    virtual CInfoCache* read()
+    virtual CInfoCache* read() override
     {
         Owned<IEspContext> espContext =  createEspContext();
         Owned<CActivityInfo> info = new CActivityInfo();
@@ -187,7 +185,6 @@ class CWsSMCEx : public CWsSMC
     bool m_EnableChatURL;
     CriticalSection crit;
     Owned<CInfoCacheReaderThread>   activityInfoCacheReaderThread;
-    Owned<CActivityInfoCacheReader> activityInfoCacheReader;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -213,13 +210,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        activityInfoCacheReaderThread->setDetachedState(false);
+        activityInfoCacheReaderThread->setActive(true);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        activityInfoCacheReaderThread->setDetachedState(true);
+        activityInfoCacheReaderThread->setActive(false);
         return true;
     }
 

@@ -768,13 +768,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        usageCacheReaderThread->setDetachedState(false);
+        usageCacheReaderThread->setActive(true);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        usageCacheReaderThread->setDetachedState(true);
+        usageCacheReaderThread->setActive(false);
         return true;
     }
     IConstEnvironment* getConstEnvironment();
@@ -854,11 +854,11 @@ private:
     void setUniqueMachineUsageReq(IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
     bool getEclAgentNameFromNodeGroupName(const char* nodeGroupName, StringBuffer& agentName);
     void getThorClusterNamesByGroupName(IPropertyTree* envRoot, const char* group, StringArray& thorClusters);
-    void readTargetClusterUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+    void readTargetClusterUsageResult(IEspContext& context, IPropertyTree* usageReq, const IPropertyTree* uniqueUsages,
         IArrayOf<IEspTargetClusterUsage>& targetClusterUsages);
-    void readNodeGroupUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+    void readNodeGroupUsageResult(IEspContext& context, IPropertyTree* usageReq, const IPropertyTree* uniqueUsages,
         IArrayOf<IEspNodeGroupUsage>& nodeGroupUsages);
-    void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, IPropertyTree* uniqueUsages,
+    void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, const IPropertyTree* uniqueUsages,
         IArrayOf<IEspComponentUsage>& componentUsages);
     bool readDiskSpaceResponse(const char* buf, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed);
     void addChannels(CGetMachineInfoData& machineInfoData, IPropertyTree* envRoot, const char* componentType, const char* componentName);
@@ -881,7 +881,6 @@ private:
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
-    Owned<CUsageCacheReader>    usageCacheReader;
     Owned<CInfoCacheReaderThread>    usageCacheReaderThread;
 };
 
@@ -898,7 +897,7 @@ public:
     StringBuffer          m_sSecurityString; 
     StringBuffer          m_sUserName; 
     StringBuffer          m_sPassword;
-    Linked<Cws_machineEx> m_pService;
+    Cws_machineEx*        m_pService;
 
     virtual void doWork() = 0;
 
@@ -976,17 +975,17 @@ class CUsageCache : public CInfoCache
 {
     Owned<IPropertyTree> usages;
 public:
-    CUsageCache() {};
+    CUsageCache() {}
 
-    void setUsages(IPropertyTree *tree) { usages.setown(tree); timeCached.setNow(); };
-    IPropertyTree *queryUsages() { return usages; };
+    void setUsages(IPropertyTree *tree) { usages.setown(tree); timeCached.setNow(); }
+    const IPropertyTree *queryUsages() const { return usages; }
 };
 
-class CUsageCacheReader : public CInterface, implements IInfoCacheReader
+class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
 {
-    Linked<Cws_machineEx> servicePtr;
+    Cws_machineEx *servicePtr;
 
-    IPropertyTree *setUsageReqAllMachines();
+    IPropertyTree *getUsageReqAllMachines();
     void addClusterUsageReq(IConstEnvironment *constEnv, const char *name, bool thorCluster, IPropertyTree *usageReq);
     void checkAndAddMachineUsageReq(IConstEnvironment *constEnv, const char *computer, IPropertyTree *logFolder,
         IPropertyTree *dataFolder,  IPropertyTree *repFolder, IPropertyTree *usageReq);
@@ -995,11 +994,9 @@ class CUsageCacheReader : public CInterface, implements IInfoCacheReader
     void addOtherComponentUsageReq(IConstEnvironment *constEnv, const char *name, const char *type, IPropertyTree *usageReq);
 
 public:
-    IMPLEMENT_IINTERFACE;
+    CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {}
 
-    CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {};
-
-    virtual CInfoCache *read();
+    virtual CInfoCache *read() override;
 };
 #endif //_ESPWIZ_ws_machine_HPP__
 

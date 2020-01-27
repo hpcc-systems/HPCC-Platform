@@ -112,6 +112,26 @@ public:
     }
 };
 
+const char* findComponentTypeFromProcessType(const char* ProcessType)
+{
+    if (strieq(ProcessType, eqDali))
+        return "dali";
+    if (strieq(ProcessType, eqEclAgent))
+        return "eclAgent";
+    if (strieq(ProcessType, eqDfu))
+        return "dfuserver";
+    if (strieq(ProcessType, eqEsp))
+        return "esp";
+    if (strieq(ProcessType, eqEclCCServer) || strieq(ProcessType, eqEclServer))
+        return "eclserver";
+    if (strieq(ProcessType, eqEclScheduler))
+        return "eclscheduler";
+    if (strieq(ProcessType, eqSashaServer))
+        return "sasha";
+
+    return nullptr;
+}
+
 void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     //Read settings from esp.xml
@@ -180,8 +200,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     unsigned machineUsageCacheForceRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", MACHINE_USAGE_CACHE_MINUTES);
     unsigned machineUsageCacheAutoRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheAutoRebuildMinutes", DEFAULT_MACHINE_USAGE_CACHE_AUTO_BUILD_MINUTES);
-    usageCacheReader.setown(new CUsageCacheReader(this));
-    usageCacheReaderThread.setown(new CInfoCacheReaderThread(usageCacheReader, "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
+    usageCacheReaderThread.setown(new CInfoCacheReaderThread(new CUsageCacheReader((Cws_machineEx *) this), "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
 }
 
 StringBuffer& Cws_machineEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
@@ -2489,7 +2508,8 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
     if (isEmptyString(name))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty Component name");
 
-    if (!strieq(type, eqDali) && !strieq(type, eqEclAgent) && !strieq(type, eqSashaServer))
+    const char* componentType = findComponentTypeFromProcessType(type);
+    if (!componentType)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Component usage function is not supported for %s", type);
 
     Owned<IPropertyTree> componentReq = createPTree("Component");
@@ -2738,7 +2758,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
 }
 
 void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq,
-    IPropertyTree* uniqueUsages, IArrayOf<IEspComponentUsage>& componentUsages)
+    const IPropertyTree* uniqueUsages, IArrayOf<IEspComponentUsage>& componentUsages)
 {
     Owned<IPropertyTreeIterator> components= usageReq->getElements("Component");
     ForEach(*components)
@@ -2844,30 +2864,30 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
         StringBuffer timeStr;
         IArrayOf<IEspComponentUsage> componentUsages;
         Owned<IPropertyTree> usageReq = createPTree("Req");
+
+        Owned<CUsageCache> usage;
+        Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            Owned<CUsageCache> usage = (CUsageCache*) usageCacheReaderThread->getCachedInfo();
+            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
-
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            readComponentUsageReq(req, constEnv, usageReq, nullptr);
-            readComponentUsageResult(context, usageReq, usage->queryUsages(), componentUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(usage, timeStr));
         }
         else
         {
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            Owned<IPropertyTree> uniqueUsages = createPTree("Usage");
-            readComponentUsageReq(req, constEnv, usageReq, uniqueUsages);
-            getMachineUsages(context, uniqueUsages);
-            readComponentUsageResult(context, usageReq, uniqueUsages, componentUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(nullptr, timeStr));
+            uniqueUsages.setown(createPTree("Usage"));
         }
+
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        readComponentUsageReq(req, constEnv, usageReq, uniqueUsages);
+        if (req.getBypassCachedResult())
+        {
+            getMachineUsages(context, uniqueUsages);
+        }
+        readComponentUsageResult(context, usageReq, uniqueUsages ? uniqueUsages : usage->queryUsages(), componentUsages);
+        if (version >= 1.17)
+            resp.setUsageTime(setUsageTimeStr(usage, timeStr));
 
         resp.setComponentUsages(componentUsages);
     }
@@ -2943,7 +2963,7 @@ void Cws_machineEx::readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& 
 }
 
 void Cws_machineEx::readTargetClusterUsageResult(IEspContext& context, IPropertyTree* usageReq,
-    IPropertyTree* uniqueUsages, IArrayOf<IEspTargetClusterUsage>& targetClusterUsages)
+    const IPropertyTree* uniqueUsages, IArrayOf<IEspTargetClusterUsage>& targetClusterUsages)
 {
     Owned<IPropertyTreeIterator> targetClusters= usageReq->getElements("TargetCluster");
     ForEach(*targetClusters)
@@ -2973,30 +2993,29 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
         StringBuffer timeStr;
         IArrayOf<IEspTargetClusterUsage> targetClusterUsages;
         Owned<IPropertyTree> usageReq = createPTree("Req");
+        Owned<CUsageCache> usage;
+        Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            Owned<CUsageCache> usage = (CUsageCache*) usageCacheReaderThread->getCachedInfo();
+            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
-
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            readTargetClusterUsageReq(req, constEnv, usageReq, nullptr);
-            readTargetClusterUsageResult(context, usageReq, usage->queryUsages(), targetClusterUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(usage, timeStr));
         }
         else
         {
-            Owned<IPropertyTree> uniqueUsages = createPTree("Usage");
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            readTargetClusterUsageReq(req, constEnv, usageReq, uniqueUsages);
-            getMachineUsages(context, uniqueUsages);
-            readTargetClusterUsageResult(context, usageReq, uniqueUsages, targetClusterUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(nullptr, timeStr));
+            uniqueUsages.setown(createPTree("Usage"));
         }
+
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        readTargetClusterUsageReq(req, constEnv, usageReq, uniqueUsages);
+        if (req.getBypassCachedResult())
+        {
+            getMachineUsages(context, uniqueUsages);
+        }
+        readTargetClusterUsageResult(context, usageReq, uniqueUsages ? uniqueUsages : usage->queryUsages(), targetClusterUsages);
+        if (version >= 1.17)
+            resp.setUsageTime(setUsageTimeStr(usage, timeStr));
 
         resp.setTargetClusterUsages(targetClusterUsages);
     }
@@ -3144,7 +3163,7 @@ void Cws_machineEx::readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, ICo
 }
 
 void Cws_machineEx::readNodeGroupUsageResult(IEspContext& context, IPropertyTree* usageReq,
-    IPropertyTree* uniqueUsages, IArrayOf<IEspNodeGroupUsage>& nodeGroupUsages)
+    const IPropertyTree* uniqueUsages, IArrayOf<IEspNodeGroupUsage>& nodeGroupUsages)
 {
     Owned<IPropertyTreeIterator> nodeGroups= usageReq->getElements("NodeGroup");
     ForEach(*nodeGroups)
@@ -3174,30 +3193,29 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
         StringBuffer timeStr;
         IArrayOf<IEspNodeGroupUsage> nodeGroupUsages;
         Owned<IPropertyTree> usageReq = createPTree("Req");
+        Owned<CUsageCache> usage;
+        Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            Owned<CUsageCache> usage = (CUsageCache*) usageCacheReaderThread->getCachedInfo();
+            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
-
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            readNodeGroupUsageReq(req, constEnv, usageReq, nullptr);
-            readNodeGroupUsageResult(context, usageReq, usage->queryUsages(), nodeGroupUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(usage, timeStr));
         }
         else
         {
-            Owned<IPropertyTree> uniqueUsages = createPTree("Usage");
-            Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-            readNodeGroupUsageReq(req, constEnv, usageReq, uniqueUsages);
-            getMachineUsages(context, uniqueUsages);
-            readNodeGroupUsageResult(context, usageReq, uniqueUsages, nodeGroupUsages);
-            if (version >= 1.17)
-                resp.setUsageTime(setUsageTimeStr(nullptr, timeStr));
+            uniqueUsages.setown(createPTree("Usage"));
         }
+
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+        readNodeGroupUsageReq(req, constEnv, usageReq, uniqueUsages);
+        if (req.getBypassCachedResult())
+        {
+            getMachineUsages(context, uniqueUsages);
+        }
+        readNodeGroupUsageResult(context, usageReq, uniqueUsages ? uniqueUsages : usage->queryUsages(), nodeGroupUsages);
+        if (version >= 1.17)
+            resp.setUsageTime(setUsageTimeStr(usage, timeStr));
         resp.setNodeGroupUsages(nodeGroupUsages);
     }
     catch(IException* e)
@@ -3273,7 +3291,7 @@ bool Cws_machineEx::onUpdateComponentStatus(IEspContext &context, IEspUpdateComp
 
 CInfoCache* CUsageCacheReader::read()
 {
-    Owned<IPropertyTree> uniqueUsages = setUsageReqAllMachines();
+    Owned<IPropertyTree> uniqueUsages = getUsageReqAllMachines();
 
     //Send usage command to each machine
     Owned<IEspContext> espContext =  createEspContext();
@@ -3284,7 +3302,7 @@ CInfoCache* CUsageCacheReader::read()
     return usageCache.getClear();
 }
 
-IPropertyTree* CUsageCacheReader::setUsageReqAllMachines()
+IPropertyTree* CUsageCacheReader::getUsageReqAllMachines()
 {
     //Collect network addresses and HPCC folders for all HPCC machines.
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
@@ -3461,29 +3479,15 @@ void CUsageCacheReader::addOtherComponentUsageReq(IConstEnvironment* constEnv, c
     if (isEmptyString(computer))
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get %s", xpath.str());
 
+    const char* componentType = findComponentTypeFromProcessType(type);
+    if (!componentType)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Component usage function is not supported for %s", type);
+
     //Find disk folders for log, data, etc.
     IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
 
-    StringAttr componentType;
-    if (strieq(type, eqDali))
-        componentType.set("dali");
-    else if (strieq(type, eqEclAgent))
-        componentType.set("eclAgent");
-    else if (strieq(type, eqDfu))
-        componentType.set("dfuserver");
-    else if (strieq(type, eqEsp))
-        componentType.set("esp");
-    else if (strieq(type, eqEsp))
-        componentType.set("esp");
-    else if (strieq(type, eqEclCCServer) || strieq(type, eqEclServer))
-        componentType.set("eclserver");
-    else if (strieq(type, eqEclScheduler))
-        componentType.set("eclscheduler");
-    else
-        componentType.set("sasha");
-
-    Owned<IPropertyTree> dataFolder = servicePtr->createDiskUsageReq(envDirectories, "data", componentType.get(), name);
-    Owned<IPropertyTree> logFolder = servicePtr->createDiskUsageReq(envDirectories, "log", componentType.get(), name);
+    Owned<IPropertyTree> dataFolder = servicePtr->createDiskUsageReq(envDirectories, "data", componentType, name);
+    Owned<IPropertyTree> logFolder = servicePtr->createDiskUsageReq(envDirectories, "log", componentType, name);
     Owned<IPropertyTree> repFolder;
     if (strieq(type, eqDali))
         repFolder.setown(servicePtr->createDiskUsageReq(envDirectories, "mirror", "dali", name));

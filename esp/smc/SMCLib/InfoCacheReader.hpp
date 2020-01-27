@@ -21,8 +21,8 @@
 #include "jliball.hpp"
 #include "bindutil.hpp"
 
-const unsigned DEFAULTINFOCACHEFORCEBUILDSECOND = 10;
-const unsigned DEFAULTINFOCACHEAUTOREBUILDSECOND = 120;
+const unsigned defaultInfoCacheForceBuildSecond = 10;
+const unsigned defaultInfoCacheAutoRebuildSecond = 120;
 
 class CInfoCache : public CSimpleInterfaceOf<IInterface>
 {
@@ -32,8 +32,8 @@ public:
 
     CInfoCache() {};
 
-    virtual bool isCachedInfoValid(unsigned timeOutSeconds);
-    virtual inline StringBuffer& queryTimeCached(StringBuffer& str) { return timeCached.getString(str, true); }
+    bool isCachedInfoValid(unsigned timeOutSeconds);
+    inline StringBuffer& queryTimeCached(StringBuffer& str) { return timeCached.getString(str, true); }
 };
 
 interface IInfoCacheReader : extends IInterface
@@ -45,11 +45,11 @@ class CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded>
 {
     StringAttr name;
     bool stopping = false;
-    bool detached = false;
+    bool active = true;
     bool first = true;
     bool firstBlocked = false;
-    unsigned autoRebuildSeconds = DEFAULTINFOCACHEAUTOREBUILDSECOND;
-    unsigned forceRebuildSeconds = DEFAULTINFOCACHEFORCEBUILDSECOND;
+    unsigned autoRebuildSeconds = defaultInfoCacheAutoRebuildSecond;
+    unsigned forceRebuildSeconds = defaultInfoCacheForceBuildSecond;
     Owned<CInfoCache> infoCache;
     Owned<IInfoCacheReader> infoCacheReader;
     Semaphore sem;
@@ -80,7 +80,7 @@ public:
         CLeavableCriticalBlock b(crit);
         if (first)
         {
-            if (detached)
+            if (!active)
                 return nullptr;
             firstBlocked = true;
             b.leave();
@@ -92,7 +92,7 @@ public:
 
         //Now, activityInfoCache should always be available.
         assertex(infoCache);
-        if (!detached && !infoCache->isCachedInfoValid(forceRebuildSeconds))
+        if (active && !infoCache->isCachedInfoValid(forceRebuildSeconds))
             rebuild();
         return infoCache.getLink();
     }
@@ -102,13 +102,13 @@ public:
         if (waiting.compare_exchange_strong(expected, false))
             sem.signal();
     }
-    void setDetachedState(bool _detached)
+    void setActive(bool _active)
     {
         CriticalBlock b(crit);
-        if (detached != _detached)
+        if (active != _active)
         {
-            detached = _detached;
-            if (detached)
+            active = _active;
+            if (!active)
             {
                 // NB: first will still be true, signal and getActivityInfo() will return null
                 if (firstBlocked)
@@ -121,7 +121,7 @@ public:
                 rebuild();
         }
     }
-    bool isDaliDetached() const { return detached; }
+    bool isActive() const { return active; }
 };
 
 #endif //_ESPWIZ_InfoCacheReader_HPP__
