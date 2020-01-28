@@ -740,7 +740,22 @@ void initSignals()
     signal(SIGALRM, caughtSIGALRM);
 
 #endif
-}   
+}
+
+static constexpr const char * defaultJson = R"!!({
+ "version": "1.0",
+ "EclCCServer": {
+    "daliServers": "dali",
+    "enableEclccDali": true,
+    "enableSysLog": true,
+    "generatePrecompiledHeader": true,
+    "maxEclccProcesses": 4,
+    "name": "myeclccserver",
+    "traceLevel": 1
+  }
+})!!";
+
+
 
 int main(int argc, const char *argv[])
 {
@@ -764,17 +779,17 @@ int main(int argc, const char *argv[])
 
     try
     {
-        globals.setown(createPTreeFromXMLFile("eclccserver.xml", ipt_caseInsensitive));
+        globals.setown(loadConfiguration(defaultJson, argv, "EclCCServer", "ECLCCSERVER", "eclccserver.xml", nullptr));
     }
     catch (IException * e)
     {
-        EXCLOG(e, "Failed to load eclccserver.xml");
+        UERRLOG(e);
         e->Release();
         return 1;
     }
     catch(...)
     {
-        OERRLOG("Failed to load eclccserver.xml");
+        OERRLOG("Failed to load configuration");
         return 1;
     }
 
