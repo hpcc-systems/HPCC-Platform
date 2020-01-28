@@ -41,7 +41,7 @@ unsigned aeronPollFragmentsLimit = 10;
 unsigned aeronIdleSleepMs = 1;
 
 static std::thread aeronDriverThread;
-static Semaphore driverStarted;
+static InterruptableSemaphore driverStarted;
 
 std::atomic<bool> aeronDriverRunning = { false };
 
@@ -104,11 +104,17 @@ int startAeronDriver()
         aeron_driver_close(driver);
         aeron_driver_context_close(context);
     }
+    catch (IException *E)
+    {
+        aeron_driver_close(driver);
+        aeron_driver_context_close(context);
+        driverStarted.interrupt(E);
+    }
     catch (...)
     {
         aeron_driver_close(driver);
         aeron_driver_context_close(context);
-        throw;
+        driverStarted.interrupt(makeStringException(0, "failed to start Aeron (unknown exception)"));
     }
     return 0;
 }
