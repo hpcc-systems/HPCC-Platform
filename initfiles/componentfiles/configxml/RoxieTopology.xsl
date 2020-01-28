@@ -22,7 +22,7 @@
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:template match="text()"/>
     <xsl:param name="process" select="'unknown'"/>
-    <xsl:param name="isLinuxInstance" select="0"/>
+    <xsl:param name="isLinuxInstance" select="1"/>
     <xsl:param name="outputFilePath"/>
     <xsl:param name="tempPath" select="'c:\temp\'"/>
     
