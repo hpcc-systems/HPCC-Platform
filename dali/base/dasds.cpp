@@ -1930,7 +1930,7 @@ class CCovenSDSManager : public CSDSManagerBase, implements ISDSManagerServer, i
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCovenSDSManager(ICoven &_coven, IPropertyTree &config, const char *dataPath);
+    CCovenSDSManager(ICoven &_coven, IPropertyTree &config, const char *dataPath, const char *daliName);
     ~CCovenSDSManager();
 
     void start();
@@ -2055,6 +2055,7 @@ public: // data
     unsigned writeTransactions;
     bool ignoreExternals;
     StringAttr dataPath;
+    StringAttr daliName;
     Owned<IPropertyTree> properties;
 private:
     void validateBackup();
@@ -5724,8 +5725,8 @@ IStoreHelper *createStoreHelper(const char *storeName, const char *location, con
 #pragma warning (disable : 4355)  // 'this' : used in base member initializer list
 #endif
 
-CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath) 
-    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), backupHandler(_config)
+CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const char *_dataPath, const char *_daliName)
+    : coven(_coven), config(_config), server(*this), dataPath(_dataPath), daliName(_daliName), backupHandler(_config)
 {
     config.Link();
     restartOnError = config.getPropBool("@restartOnUnhandled");
@@ -6049,13 +6050,10 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
 
             Owned <IMPServer> thisDali = getMPServer();
             assertex(thisDali);
-            IPropertyTree *thisDaliInfo = findDaliProcess(envTree, thisDali->queryMyNode()->endpoint());
-            assertex(thisDaliInfo);
 
-            const char *daliName = thisDaliInfo->queryProp("@name");
             if (daliName)
             {
-                VStringBuffer xpath("Software/DaliServerPlugin[@daliServers='%s']", daliName);
+                VStringBuffer xpath("Software/DaliServerPlugin[@daliServers='%s']", daliName.str());
                 Owned<IPropertyTreeIterator> plugins = envTree->getElements(xpath);
                 ForEach(*plugins)
                 {
@@ -8768,7 +8766,7 @@ public:
             sdsConfig.setown(config->getPropTree("SDS"));
         if (!sdsConfig)
             sdsConfig.setown(createPTree());
-        manager = new CCovenSDSManager(coven, *sdsConfig, config?config->queryProp("@dataPath"):NULL);
+        manager = new CCovenSDSManager(coven, *sdsConfig, config?config->queryProp("@dataPath"):NULL, config?config->queryProp("@name"):NULL);
         SDSManager = manager;
         addThreadExceptionHandler(manager);
         try { manager->loadStore(NULL, &cancelLoad); }
