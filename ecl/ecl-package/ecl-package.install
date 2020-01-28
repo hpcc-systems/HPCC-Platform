@@ -1,1 +1,2 @@
+#!/bin/sh
 installFile "$binPath/ecl-packagemap" "/usr/bin/ecl-packagemap" 1 || exit 1

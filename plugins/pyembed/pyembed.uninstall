@@ -1,1 +1,2 @@
+#!/bin/sh
 removeSymlink "$path/versioned/python2/libpyembed.so"

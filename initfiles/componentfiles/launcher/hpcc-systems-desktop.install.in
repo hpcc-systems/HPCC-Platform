@@ -1,1 +1,2 @@
+#!/bin/sh
 installFile @INSTALL_DIR@/share/hpcc-systems.desktop /usr/share/applications 1 || exit 1
