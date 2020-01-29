@@ -25,8 +25,8 @@
 #include "WUXMLInfo.hpp"
 #include "InfoCacheReader.hpp"
 
-const unsigned DEFAULTACTIVITYINFOCACHEFORCEBUILDSECOND = 10;
-const unsigned DEFAULTACTIVITYINFOCACHEAUTOREBUILDSECOND = 120;
+const unsigned defaultActivityInfoCacheForceBuildSecond = 10;
+const unsigned defaultActivityInfoCacheAutoRebuildSecond = 120;
 
 enum BulletType
 {
@@ -213,13 +213,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        activityInfoCacheReaderThread->setDetachedState(false);
+        activityInfoCacheReaderThread->setActive(true);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        activityInfoCacheReaderThread->setDetachedState(true);
+        activityInfoCacheReaderThread->setActive(false);
         return true;
     }
 
