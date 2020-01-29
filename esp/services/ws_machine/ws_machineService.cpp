@@ -1753,7 +1753,10 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
             description.append("Failed in getting Machine Information");
         else
             description = response;
-        pMachineInfo->setDescription(description.str());
+        if (version < 1.17)
+            pMachineInfo->setDescription(description.str());
+        else
+            pMachineInfo->setException(description.str());
     }
     else
     {
@@ -2758,6 +2761,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
 void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq,
     const IPropertyTree* uniqueUsages, IArrayOf<IEspComponentUsage>& componentUsages)
 {
+    double version = context.getClientVersion();
     Owned<IPropertyTreeIterator> components= usageReq->getElements("Component");
     ForEach(*components)
     {
@@ -2782,14 +2786,20 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
             IPropertyTree* uniqueMachineReqTree = uniqueUsages->queryPropTree(xpath);
             if (!uniqueMachineReqTree)
             {
-                machineUsage->setDescription("No data returns.");
+                if (version < 1.17)
+                    machineUsage->setDescription("No data returns.");
+                else
+                    machineUsage->setException("No data returns.");
                 machineUsages.append(*machineUsage.getClear());
                 continue;
             }
             const char* error = uniqueMachineReqTree->queryProp("@error");
             if (!isEmptyString(error))
             {
-                machineUsage->setDescription(error);
+                if (version < 1.17)
+                    machineUsage->setDescription(error);
+                else
+                    machineUsage->setException(error);
                 machineUsages.append(*machineUsage.getClear());
                 continue;
             }
@@ -2808,12 +2818,22 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
                 xpath.setf("Folder[@path='%s']", aDiskPath);
                 IPropertyTree* folderTree = uniqueMachineReqTree->queryPropTree(xpath);
                 if (!folderTree)
-                    diskUsage->setDescription("No data returns.");
+                {
+                    if (version < 1.17)
+                        diskUsage->setDescription("No data returns.");
+                    else
+                        diskUsage->setException("No data returns.");
+                }
                 else
                 {
                     const char* error = folderTree->queryProp("@error");
                     if (!isEmptyString(error))
-                        diskUsage->setDescription(error);
+                    {
+                        if (version < 1.17)
+                            diskUsage->setDescription(error);
+                        else
+                            diskUsage->setException(error);
+                    }
                     else
                     {
                         diskUsage->setAvailable(folderTree->getPropInt64("@available"));

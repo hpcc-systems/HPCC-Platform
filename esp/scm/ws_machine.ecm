@@ -31,6 +31,7 @@ ESPStruct [nil_remove] DiskUsage
     int64 InUse;
     int64 Available;
     int PercentAvailable;
+    [min_ver("1.17")] string Exception;
 };
 
 ESPStruct [nil_remove] MachineUsage
@@ -38,6 +39,7 @@ ESPStruct [nil_remove] MachineUsage
     string Name;
     string NetAddress;
     string Description;
+    [min_ver("1.17")] string Exception;
     ESParray<ESPstruct DiskUsage> DiskUsages;
 };
 
@@ -52,6 +54,7 @@ ESPStruct [nil_remove] ComponentUsage
     string Type;
     string Name;
     string Description;
+    [min_ver("1.17")] string Exception;
     ESParray<ESPstruct MachineUsage> MachineUsages;
 };
 
@@ -59,6 +62,7 @@ ESPStruct [nil_remove] TargetClusterUsage
 {
     string Name;
     string Description;
+    [min_ver("1.17")] string Exception;
     ESParray<ESPstruct ComponentUsage> ComponentUsages;
 };
 
@@ -66,6 +70,7 @@ ESPStruct [nil_remove] NodeGroupUsage
 {
     string Name;
     string Description;
+    [min_ver("1.17")] string Exception;
     ESParray<ESPstruct ComponentUsage> ComponentUsages;
 };
 
@@ -165,27 +170,28 @@ ESPstruct MachineInfoEx
 {
     string Address;
     [min_ver("1.04")] string ConfigAddress;
-   string Name;
-   string ProcessType;
+    string Name;
+    string ProcessType;
     string DisplayType;
     string Description;
-   string AgentVersion;
-   string Contact;
-   string Location;
-   string UpTime;
-   string ComponentName;
-   string ComponentPath;
-   [min_ver("1.13")] string RoxieState;
-   [min_ver("1.13")] string RoxieStateDetails;
-   int    OS;
-   [min_ver("1.10")] int    ProcessNumber;
-   [min_ver("1.16")] unsigned Channels;
-   ESParray<ESPstruct ProcessorInfo> Processors;
-   ESParray<ESPstruct StorageInfo> Storage;
-   ESParray<ESPstruct SWRunInfo> Running;
-   ESPstruct StorageInfo PhysicalMemory;
-   ESPstruct StorageInfo VirtualMemory;
+    string AgentVersion;
+    string Contact;
+    string Location;
+    string UpTime;
+    string ComponentName;
+    string ComponentPath;
+    [min_ver("1.13")] string RoxieState;
+    [min_ver("1.13")] string RoxieStateDetails;
+    int    OS;
+    [min_ver("1.10")] int    ProcessNumber;
+    [min_ver("1.16")] unsigned Channels;
+    ESParray<ESPstruct ProcessorInfo> Processors;
+    ESParray<ESPstruct StorageInfo> Storage;
+    ESParray<ESPstruct SWRunInfo> Running;
+    ESPstruct StorageInfo PhysicalMemory;
+    ESPstruct StorageInfo VirtualMemory;
     ESPstruct ComponentInfo ComponentInfo;
+    [min_ver("1.17")] string Exception;
 };
 
 
