@@ -605,6 +605,7 @@ protected:
 
 class HQLCPP_API DynamicColumnToOffsetMap : public ColumnToOffsetMap
 {
+    using ColumnToOffsetMap::addColumn;
 public:
     DynamicColumnToOffsetMap(unsigned _maxRecordSize);
 

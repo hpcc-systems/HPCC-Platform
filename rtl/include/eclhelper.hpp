@@ -2620,6 +2620,7 @@ struct IHThorRemoteArg : public IHThorArg
 struct IHThorLibraryCallArg : public IHThorArg
 {
     virtual void createParentExtract(rtlRowBuilder & builder) = 0;
+    using IHThorArg::queryOutputMeta;
     virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput) = 0;
     virtual char * getLibraryName() = 0;
 };

@@ -3596,7 +3596,7 @@ IIdAtom * CHqlExpression::queryId() const
 }
 
 //Can be called from updateFlagsAfterOperands to help track down inconsistencies
-static bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
+bool verifyTransform(IHqlExpression * record, IHqlExpression * expr)
 {
     ForEachChild(i, expr)
     {
@@ -6384,23 +6384,6 @@ IHqlDataset *CHqlRow::queryDataset()
 }
 
 //==============================================================================================================
-
-static bool isMany(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_attr:
-    case no_attr_expr:
-    case no_attr_link:
-        return (expr->queryName() == manyAtom);
-    case no_range:
-        return isMany(expr->queryChild(1));
-    case no_constant:
-        return (expr->queryValue()->getIntValue() > 1);
-    default:
-        UNIMPLEMENTED;
-    }
-}
 
 // Is this numeric expression evaluated to zero?
 bool isZero(IHqlExpression * expr)
@@ -14803,7 +14786,9 @@ public:
     }
 };
 
-static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur, HqlMapTransformer & transformer)
+// MORE - does not seem to be called?
+
+bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur, HqlMapTransformer & transformer)
 {
     switch (cur->getOperator())
     {

@@ -151,7 +151,8 @@ interface IExtRowStream: extends IRowStream
     virtual offset_t getOffset() const = 0;
     virtual offset_t getLastRowOffset() const = 0;
     virtual unsigned __int64 queryProgress() const = 0;
-    virtual void stop(CRC32 *crcout=NULL) = 0;
+    using IRowStream::stop;
+    virtual void stop(CRC32 *crcout) = 0;
     virtual const byte *prefetchRow() = 0;
     virtual void prefetchDone() = 0;
     virtual void reinit(offset_t offset,offset_t len,unsigned __int64 maxrows) = 0;
@@ -162,7 +163,8 @@ interface IExtRowStream: extends IRowStream
 interface IExtRowWriter: extends IRowWriter
 {
     virtual offset_t getPosition() = 0;
-    virtual void flush(CRC32 *crcout=NULL) = 0;
+    using IRowWriter::flush;
+    virtual void flush(CRC32 *crcout) = 0;
 };
 
 enum EmptyRowSemantics { ers_forbidden, ers_allow, ers_eogonly };

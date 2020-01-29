@@ -45,6 +45,7 @@ protected:
 
 class BlockDatasetCursor : public BaseDatasetCursor
 {
+    using BaseDatasetCursor::buildIterateClass;
 public:
     BlockDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
@@ -69,6 +70,7 @@ protected:
 
 class InlineLinkedDatasetCursor : public BaseDatasetCursor
 {
+    using BaseDatasetCursor::buildIterateClass;
 public:
     InlineLinkedDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
@@ -84,6 +86,7 @@ protected:
 
 class StreamedDatasetCursor : public BaseDatasetCursor
 {
+    using BaseDatasetCursor::buildIterateClass;
 public:
     StreamedDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
@@ -115,6 +118,7 @@ private:
 
 class MultiLevelDatasetCursor : public BaseDatasetCursor
 {
+    using BaseDatasetCursor::buildIterateClass;
 public:
     MultiLevelDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds);
 

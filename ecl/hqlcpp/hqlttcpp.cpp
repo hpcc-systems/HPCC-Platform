@@ -11165,7 +11165,7 @@ void LeftRightTransformer::process(HqlExprArray & exprs)
 
 
   */
-static void unwindAnnotations(HqlExprCopyArray & unwound, IHqlExpression * expr)
+void unwindAnnotations(HqlExprCopyArray & unwound, IHqlExpression * expr)
 {
     if (expr->getAnnotationKind() == annotate_none)
         return;
