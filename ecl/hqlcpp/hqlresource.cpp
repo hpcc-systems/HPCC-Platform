@@ -6377,9 +6377,9 @@ IHqlExpression * EclResourcer::createResourced(IHqlExpression * expr, ResourceGr
             if (!source->isAction())
             {
                 if (source->isDataset())
-                    source = createDatasetF(no_split, source, createAttribute(balancedAtom), createUniqueId(), NULL);
+                    source = createDataset(no_split, { source, createAttribute(balancedAtom), createUniqueId() });
                 else
-                    source = createRowF(no_split, source, createAttribute(balancedAtom), createUniqueId(), NULL);
+                    source = createRow(no_split, { source, createAttribute(balancedAtom), createUniqueId() });
 
                 ownerGraph->addSharedInput(expr->queryBody(), source);
             }

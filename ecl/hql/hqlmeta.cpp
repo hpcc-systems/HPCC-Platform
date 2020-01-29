@@ -1282,7 +1282,7 @@ IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *so
     IHqlExpression * ds = LINK(table);
     if (isGrouped(ds))
         ds = createDataset(no_group, ds, NULL);
-    return createDatasetF(no_sort, ds, LINK(sortList), attr, NULL);
+    return createDataset(no_sort, { ds, LINK(sortList), attr });
 }
 
 
@@ -1549,7 +1549,7 @@ IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr)
 
     assertex(!isGrouped(dataset) || expr->hasAttribute(globalAtom));
     OwnedHqlExpr attr = isLocalActivity(expr) ? createLocalAttribute() : NULL;
-    OwnedHqlExpr grouped = createDatasetF(no_group, LINK(dataset), LINK(grouping), LINK(attr), NULL);
+    OwnedHqlExpr grouped = createDataset(no_group, { LINK(dataset), LINK(grouping), LINK(attr) });
 
     HqlExprArray args;
     args.append(*grouped.getClear());
@@ -1579,7 +1579,7 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     const bool removeGrouping = ignoreGrouping && isGrouped(dataset);
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
     OwnedHqlExpr input = removeGrouping ? createDataset(no_group, LINK(dataset)) : LINK(dataset);
-    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(input), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
+    OwnedHqlExpr subsort = createDataset(no_subsort, { LINK(input), LINK(newOrder), LINK(alreadySorted), LINK(attr) });
     //Grouped subsorts never generated, global subsorts (if generated) get converted to a global group
     if (!isLocal && !alwaysLocal)
         subsort.setown(convertSubSortToGroupedSort(subsort));
@@ -1900,7 +1900,7 @@ static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlE
     
     LinkedHqlExpr ret = newTable;
     if (distribution || globalSort || localSort || grouping || groupSort)
-        ret.setown(createDatasetF(no_preservemeta, LINK(newTable), ensureNonNull(distribution), ensureNonNull(globalSort), ensureNonNull(localSort),  ensureNonNull(grouping), ensureNonNull(groupSort), NULL));
+        ret.setown(createDataset(no_preservemeta, { LINK(newTable), ensureNonNull(distribution), ensureNonNull(globalSort), ensureNonNull(localSort),  ensureNonNull(grouping), ensureNonNull(groupSort) }));
     return original->cloneAllAnnotations(ret);
 }
 

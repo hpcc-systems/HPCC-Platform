@@ -1224,7 +1224,7 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
                 IHqlExpression * common = findCommonExpression(lowerStrip,upperStrip);
                 if (common)
                 {
-                    joinOrder.slidingMatches.append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
+                    joinOrder.slidingMatches.append(*createValue(no_between, makeBoolType(), { LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common)) }));
                     return NULL;
                 }
             }
@@ -1333,7 +1333,7 @@ void JoinOrderSpotter::findImplicitBetween(IHqlExpression * condition, HqlExprAr
                         IHqlExpression * common = findCommonExpression(lowerStrip,upperStrip);
                         if (common)
                         {
-                            slidingMatches.append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
+                            slidingMatches.append(*createValue(no_between, makeBoolType(), { LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common)) }));
                             matched.append(*condition);
                             matched.append(cur);
                             pending.zap(cur);
@@ -1801,13 +1801,13 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
 {
     assertex(right);
     if (left->isDataset() || right->isDataset())
-        return createDataset(no_if, cond, createComma(left, right));
+        return createDataset(no_if, { cond, left, right });
 
     if (left->isDictionary() || right->isDictionary())
-        return createDictionary(no_if, cond, createComma(left, right));
+        return createDictionary(no_if, { cond, left, right });
 
     if (left->isDatarow() || right->isDatarow())
-        return createRow(no_if, cond, createComma(left, right));
+        return createRow(no_if, { cond, left, right });
 
     ITypeInfo * leftType = left->queryType();
     ITypeInfo * rightType = right->queryType();
@@ -4303,14 +4303,14 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
     switch (valueType->getTypeCode())
     {
     case type_table:
-        return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
+        return createDataset(no_getresult, { LINK(queryOriginalRecord(valueType)), LINK(seqAttr), LINK(aliasAttr) });
     case type_groupedtable:
-        return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
+        return createDataset(no_getresult, { LINK(queryOriginalRecord(valueType)), LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr) });
     case type_dictionary:
-        return createDictionary(no_workunit_dataset, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
+        return createDictionary(no_workunit_dataset, { LINK(queryOriginalRecord(valueType)), LINK(seqAttr), LINK(aliasAttr) });
     case type_row:
     case type_record:
-         return createRow(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
+         return createRow(no_getresult, { LINK(queryOriginalRecord(valueType)), LINK(seqAttr), LINK(aliasAttr) });
     }
 
     return createValue(no_getresult, valueType.getLink(), LINK(seqAttr), LINK(aliasAttr));
@@ -5775,8 +5775,8 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
         {
             OwnedHqlExpr field = createField(unnamedId, value->getType(), NULL);
             OwnedHqlExpr transform = createTransformForField(no_transform, field, value);
-            OwnedHqlExpr combine = createDatasetF(no_combine, LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq), NULL);
-            OwnedHqlExpr first = createRowF(no_selectnth, LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom), NULL);
+            OwnedHqlExpr combine = createDataset(no_combine, { LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq) });
+            OwnedHqlExpr first = createRow(no_selectnth, { LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom) });
             dataset.setown(createDatasetFromRow(first.getClear()));
             attribute.setown(createSelectExpr(LINK(dataset->queryNormalizedSelector()), LINK(field)));
             break;

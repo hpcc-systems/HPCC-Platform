@@ -359,7 +359,7 @@ IHqlExpression * createTableWithoutVirtuals(VirtualFieldsInfo & info, IHqlExpres
 
     VirtualRecordTransformCreator mapper(newDataset);
     IHqlExpression * newTransform = mapper.createMappingTransform(no_newtransform, record, newDataset);
-    OwnedHqlExpr projected = createDatasetF(no_newusertable, newDataset, LINK(record), newTransform, createAttribute(_internal_Atom), NULL);
+    OwnedHqlExpr projected = createDataset(no_newusertable, { newDataset, LINK(record), newTransform, createAttribute(_internal_Atom) });
     return tableExpr->cloneAllAnnotations(projected);
 }
 
@@ -380,7 +380,7 @@ static IHqlExpression * createTableFromSerialized(IHqlExpression * tableExpr)
     OwnedHqlExpr newTable = replaceChild(tableExpr->queryBody(), 1, diskRecordWithMeta);
 
     OwnedHqlExpr transform = createRecordMappingTransform(no_newtransform, record, newTable->queryNormalizedSelector());
-    OwnedHqlExpr projected = createDatasetF(no_newusertable, LINK(newTable), LINK(record), LINK(transform), createAttribute(_internal_Atom), NULL);
+    OwnedHqlExpr projected = createDataset(no_newusertable, { LINK(newTable), LINK(record), LINK(transform), createAttribute(_internal_Atom) });
     return tableExpr->cloneAllAnnotations(projected);
 }
 
@@ -536,7 +536,7 @@ IHqlExpression * HqlCppTranslator::buildIndexFromPhysical(IHqlExpression * expr)
 
         VirtualRecordTransformCreator mapper(newDataset);
         IHqlExpression * newTransform = mapper.createMappingTransform(no_newtransform, record, newDataset);
-        newProject.setown(createDatasetF(no_newusertable, LINK(newDataset), LINK(record), newTransform, createAttribute(_internal_Atom), NULL));
+        newProject.setown(createDataset(no_newusertable, { LINK(newDataset), LINK(record), newTransform, createAttribute(_internal_Atom) }));
         newProject.setown(tableExpr->cloneAllAnnotations(newProject));
     }
     else

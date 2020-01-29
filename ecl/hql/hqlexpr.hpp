@@ -1287,10 +1287,8 @@ extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3);
-extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3, IHqlExpression *p4);
-extern HQL_API IHqlExpression *createValueF(node_operator op, ITypeInfo * type, ...);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, HqlExprArray & args);        //NB: This deletes the array that is passed
-extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands);
+extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo *type, const std::initializer_list<IHqlExpression *> &operands, bool expandCommas=false);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max);
 
@@ -1310,9 +1308,7 @@ extern HQL_API IHqlExpression *createEnumType(ITypeInfo * _type, IHqlScope *_sco
 extern HQL_API IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1);
 extern HQL_API IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHqlExpression *p2);
 extern HQL_API IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3);
-extern HQL_API IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3, IHqlExpression *p4);
 
-extern HQL_API IHqlExpression *createList(node_operator op, ITypeInfo *type, IHqlExpression *p1);
 extern HQL_API IHqlExpression *createBinaryList(node_operator op, HqlExprArray & args);
 extern HQL_API IHqlExpression *createLeftBinaryList(node_operator op, HqlExprArray & args);
 
@@ -1329,16 +1325,16 @@ extern HQL_API IHqlExpression *createUtf8Constant(const char *constant);
 extern HQL_API IHqlExpression *createBlankString();
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset);
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset, IHqlExpression *elist);
-extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);       // inScope should only be set internally.
-extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);
+extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);
 extern HQL_API IHqlExpression *createDataset(node_operator op, const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *initializer, IHqlExpression *recordDef);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary);
 extern HQL_API IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms);
+extern HQL_API IHqlExpression *createDictionary(node_operator op, const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options);
 extern HQL_API IHqlExpression *createRow(node_operator op, IHqlExpression *Dataset, IHqlExpression *element = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, HqlExprArray & args);
-extern HQL_API IHqlExpression *createRowF(node_operator op, ...);
+extern HQL_API IHqlExpression *createRow(node_operator op, const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression *createRecord();
 extern HQL_API IHqlExpression *createRecord(const HqlExprArray & fields);
 extern HQL_API IHqlExpression *createExternalReference(IIdAtom * name, ITypeInfo *_type, IHqlExpression *props);
@@ -1391,7 +1387,7 @@ extern HQL_API IHqlExpression * createActionList(const HqlExprArray & actions, u
 extern HQL_API IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions, unsigned from, unsigned to);
 extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2);
 extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2, IHqlExpression * expr3);
-extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2, IHqlExpression * expr3, IHqlExpression * expr4);
+extern HQL_API IHqlExpression * createComma(const std::initializer_list<IHqlExpression *> &operands);
 extern HQL_API IHqlExpression * createComma(const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * createBalanced(node_operator op, ITypeInfo * type, const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * createBalanced(node_operator op, ITypeInfo * type, const HqlExprArray & exprs, unsigned first, unsigned last);
@@ -1575,7 +1571,6 @@ extern HQL_API void unwindChildren(HqlExprArray & children, const IHqlExpression
 extern HQL_API void unwindChildren(HqlExprCopyArray & children, const IHqlExpression * expr, unsigned first=0);
 extern HQL_API void unwindRealChildren(HqlExprArray & children, const IHqlExpression * expr, unsigned first);
 extern HQL_API void unwindAttributes(HqlExprArray & children, const IHqlExpression * expr);
-extern HQL_API void unwindList(HqlExprArray &dst, IHqlExpression * expr, node_operator op);
 extern HQL_API void unwindCopyList(HqlExprCopyArray &dst, IHqlExpression * expr, node_operator op);
 extern HQL_API void unwindCommaCompound(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHqlExpression * ds, unsigned max = (unsigned)-1);

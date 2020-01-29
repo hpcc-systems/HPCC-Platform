@@ -408,7 +408,7 @@ static IHqlExpression * convertScalarToDataset(IHqlExpression * expr)
             IHqlExpression * field = expr->queryChild(1);
             OwnedHqlExpr record = createRecord(field);
             OwnedHqlExpr assign = createAssign(createSelectExpr(createSelector(no_self, record, NULL), LINK(field)), LINK(newExpr));
-            OwnedHqlExpr row = createRow(no_projectrow, LINK(ds), createComma(createValue(no_transform, makeTransformType(record->getType()), LINK(assign)), LINK(selSeq)));
+            OwnedHqlExpr row = createRow(no_projectrow, { LINK(ds), createValue(no_transform, makeTransformType(record->getType()), LINK(assign)), LINK(selSeq) });
             return LINK(row);
             //Following is more strictly correct, but messes up the resourcing.
             //return createDatasetFromRow(LINK(row));

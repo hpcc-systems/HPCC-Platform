@@ -551,7 +551,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
             IHqlExpression * record = expr->queryRecord();
             OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
 
-            OwnedHqlExpr temp = createDatasetF(no_getresult, LINK(serializedRecord), LINK(seqAttr), LINK(nameAttr), NULL);
+            OwnedHqlExpr temp = createDataset(no_getresult, { LINK(serializedRecord), LINK(seqAttr), LINK(nameAttr) });
 
             //Do not use noBoundCheck for STORED because invalid xml may be provided that defines no rows.
             OwnedHqlExpr option = matchesConstantValue(seqAttr->queryChild(0), ResultSequenceStored) ? nullptr : createAttribute(noBoundCheckAtom);
