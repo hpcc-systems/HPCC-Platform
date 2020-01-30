@@ -2,27 +2,20 @@ define([
     "dojo/_base/declare",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/on",
-    "dojo/dom",
-    "dojo/dom-construct",
     "dojo/_base/lang",
 
     "dijit/form/CheckBox",
-    "dijit/form/TextBox",
     "dijit/form/ValidationTextBox",
     "dijit/registry",
     "dijit/form/ToggleButton",
     "dijit/form/Select",
     "dijit/ToolbarSeparator",
-    "dijit/layout/ContentPane",
 
     "dgrid/tree",
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
     "hpcc/PreflightDetailsWidget",
-    "hpcc/RequestInformationWidget",
-    "src/ESPRequest",
     "src/ESPTopology",
     "hpcc/TopologyDetailsWidget",
     "hpcc/DelayLoadWidget",
@@ -31,10 +24,10 @@ define([
     "src/ws_machine",
     "src/Utility"
 
-], function (declare, i18n, nlsHPCC, on, dom, domConstruct, lang,
-    CheckBox, TextBox, ValidationTextBox, registry, ToggleButton, Select, ToolbarSeparator, ContentPane,
+], function (declare, i18n, nlsHPCC, lang,
+    CheckBox, ValidationTextBox, registry, ToggleButton, Select, ToolbarSeparator,
     tree, selector,
-    GridDetailsWidget, PreflightDetailsWidget, RequestInformationWidget, ESPRequest, ESPTopology, TopologyDetailsWidget, DelayLoadWidget, ESPUtil, FilterDropDownWidget, WsMachine, Utility) {
+    GridDetailsWidget, PreflightDetailsWidget, ESPTopology, TopologyDetailsWidget, DelayLoadWidget, ESPUtil, FilterDropDownWidget, WsMachine, Utility) {
     return declare("TopologyWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,

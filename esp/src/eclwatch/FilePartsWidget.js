@@ -1,28 +1,23 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/registry",
-
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
 
-    "dojo/text!../templates/FilePartsWidget.html"
+    "dojo/text!../templates/FilePartsWidget.html",
+
+    "dijit/layout/ContentPane"
 ],
-    function (declare, lang, i18n, nlsHPCC, array, Memory, Observable,
-        registry,
-        OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+    function (declare, i18n, nlsHPCC, Memory, Observable,
+        OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
         _Widget,
         template) {
         return declare("FilePartsWidget", [_Widget], {

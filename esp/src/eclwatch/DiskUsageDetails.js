@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
@@ -24,7 +23,7 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, i18n, nlsHPCC,
     registry,
     _Widget, ESPUtil, DiskUsage,
     template) {

@@ -4,7 +4,6 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
     "dojo/dom-class",
 
     "dgrid/tree",
@@ -16,7 +15,7 @@ define([
     "src/ESPUtil",
     "src/Utility",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, domClass,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass,
     tree, selector,
     GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, Utility) {
     return declare("SourceFilesWidget", [GridDetailsWidget], {

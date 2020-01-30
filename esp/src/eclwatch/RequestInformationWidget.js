@@ -1,9 +1,7 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
     "dojo/dom-construct",
 
     "dijit/registry",
@@ -25,7 +23,7 @@ define([
     "dijit/TooltipDialog",
 
     "dojox/layout/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domConstruct,
+], function (declare, i18n, nlsHPCC, domConstruct,
     registry,
     _TabContainerWidget,
     template) {

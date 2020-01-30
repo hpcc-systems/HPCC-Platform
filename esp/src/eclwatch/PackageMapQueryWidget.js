@@ -5,10 +5,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-construct",
-    "dojo/dom-form",
-    "dojo/data/ObjectStore",
-    "dojo/on",
     "dojo/topic",
 
     "dijit/layout/_LayoutWidget",
@@ -18,20 +14,16 @@ define([
 
     "dgrid/selector",
 
-    "dojox/form/Uploader",
-    "dojox/form/uploader/FileList",
-
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
-    "hpcc/PackageMapValidateWidget",
     "src/WsPackageMaps",
     "src/ESPPackageProcess",
-    "hpcc/SFDetailsWidget",
     "src/ESPUtil",
-    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/PackageMapQueryWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -40,13 +32,14 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/Textarea",
+    "dijit/Fieldset",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     selector,
-    Uploader, FileUploader,
-    _TabContainerWidget, DelayLoadWidget, PackageMapValidateWidget, WsPackageMaps, ESPPackageProcess, SFDetailsWidget, ESPUtil, FilterDropDownWidget,
+    _TabContainerWidget, DelayLoadWidget, WsPackageMaps, ESPPackageProcess, ESPUtil,
     template) {
     return declare("PackageMapQueryWidget", [_TabContainerWidget], {
         templateString: template,

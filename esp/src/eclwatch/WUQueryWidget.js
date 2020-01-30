@@ -22,13 +22,13 @@ define([
     "src/ESPUtil",
     "src/ESPWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/FilterDropDownWidget",
     "src/Utility",
     "src/Clippy",
 
     "dojo/text!../templates/WUQueryWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -48,7 +48,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, date, topic, aspect, domClass,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
-    _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, Utility, Clippy,
+    _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, Utility, Clippy,
     template) {
     return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,

@@ -5,22 +5,18 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-form",
-    "dojo/on",
     "dojo/dom-style",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/form/Select",
-    "dijit/form/CheckBox",
 
     "hpcc/_Widget",
-    "hpcc/PreflightDetailsWidget",
-    "src/Utility",
     "src/ws_machine",
 
     "dojo/text!../templates/MachineInformationWidget.html",
 
+    "dijit/form/Select",
+    "dijit/form/CheckBox",
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog",
     "dijit/form/Form",
@@ -29,9 +25,9 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, domStyle, topic,
-    registry, Select, CheckBox,
-    _Widget, PreflightDetailsWidget, Utility, WsMachine,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle, topic,
+    registry,
+    _Widget, WsMachine,
     template) {
     return declare("MachineInformationWidget", [_Widget], {
         templateString: template,

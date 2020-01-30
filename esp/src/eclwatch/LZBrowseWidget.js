@@ -4,19 +4,13 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
     "dojo/dom-form",
     "dojo/dom-class",
     "dojo/request/iframe",
-    "dojo/on",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/Dialog",
-    "dijit/Menu",
     "dijit/MenuItem",
-    "dijit/MenuSeparator",
-    "dijit/PopupMenuItem",
     "dijit/form/TextBox",
     "dijit/form/ValidationTextBox",
 
@@ -30,14 +24,14 @@ define([
     "src/ESPRequest",
     "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/TargetComboBoxWidget",
-    "hpcc/SelectionGridWidget",
-    "hpcc/FilterDropDownWidget",
     "src/Utility",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
+    "hpcc/SelectionGridWidget",
+    "hpcc/FilterDropDownWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -59,10 +53,10 @@ define([
     "dojox/form/uploader/FileList",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
-    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, TextBox, ValidationTextBox,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domForm, domClass, iframe, topic,
+    registry, MenuItem, TextBox, ValidationTextBox,
     tree, editor, selector,
-    _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, SelectionGridWidget, FilterDropDownWidget, Utility,
+    _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, Utility,
     template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,

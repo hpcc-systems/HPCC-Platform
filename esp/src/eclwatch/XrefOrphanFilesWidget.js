@@ -1,30 +1,21 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/on",
-    "dojo/dom",
-    "dojo/dom-construct",
-    "dojo/dom-class",
 
     "dijit/registry",
-    "dijit/form/ToggleButton",
-    "dijit/ToolbarSeparator",
     "dijit/form/Button",
 
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
     "src/WsDFUXref",
-    "hpcc/DelayLoadWidget",
     "src/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domConstruct, domClass,
-    registry, ToggleButton, ToolbarSeparator, Button,
+], function (declare, i18n, nlsHPCC,
+    registry, Button,
     selector,
-    GridDetailsWidget, WsDFUXref, DelayLoadWidget, ESPUtil) {
+    GridDetailsWidget, WsDFUXref, ESPUtil) {
     return declare("XrefOrphanFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_OrphanFilesFor,

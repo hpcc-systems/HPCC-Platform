@@ -3,7 +3,6 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/on",
     "dojo/topic",
     "dojo/_base/array",
     "dojo/dom-form",
@@ -23,10 +22,10 @@ define([
     "src/ESPQuery",
     "src/ESPUtil",
     "src/Utility",
-    "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
+    "hpcc/SelectionGridWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -45,10 +44,10 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, on, topic, arrayUtil, domForm, topic,
+], function (declare, lang, i18n, nlsHPCC, topic, arrayUtil, domForm, topic,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
-    _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility, SelectionGridWidget,
+    _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,
     template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,

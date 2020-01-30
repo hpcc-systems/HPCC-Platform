@@ -1,24 +1,26 @@
 define([
     "dojo/_base/declare",
 
+    "dijit/registry",
+
+    "hpcc/_Widget",
+    "src/ESPWorkunit",
+
+    "dojo/text!../templates/DFUSearchWidget.html",
+
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Textarea",
     "dijit/TitlePane",
-    "dijit/registry",
-
-    "hpcc/_Widget",
     "hpcc/TargetSelectWidget",
     "hpcc/ResultsWidget",
-    "hpcc/InfoGridWidget",
-    "src/ESPWorkunit",
+    "hpcc/InfoGridWidget"
 
-    "dojo/text!../templates/DFUSearchWidget.html"
 ], function (declare,
-    BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry,
-    _Widget, TargetSelectWidget, ResultsWidget, InfoGridWidget, Workunit,
+    registry,
+    _Widget, Workunit,
     template) {
     return declare("DFUSearchWidget", [_Widget], {
         templateString: template,

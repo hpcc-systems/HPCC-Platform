@@ -1,17 +1,13 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-form",
-    "dojo/on",
     "dojo/dom-style",
 
     "dijit/registry",
     "dijit/form/Select",
-    "dijit/form/CheckBox",
 
     "hpcc/_Widget",
     "src/Utility",
@@ -20,13 +16,14 @@ define([
 
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog",
+    "dijit/form/CheckBox",
     "dijit/form/Form",
     "dijit/form/Button",
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, domStyle,
-    registry, Select, CheckBox,
+], function (declare, i18n, nlsHPCC, arrayUtil, dom, domStyle,
+    registry, Select,
     _Widget, Utility,
     template) {
     return declare("FilterDropDownWidget", [_Widget], {

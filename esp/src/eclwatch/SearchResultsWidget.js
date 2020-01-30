@@ -9,8 +9,6 @@ define([
     "dojo/on",
     "dojo/promise/all",
 
-    "dijit/form/Button",
-
     "dojox/widget/Standby",
     "dojox/validate",
 
@@ -29,7 +27,6 @@ define([
     "src/Utility"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
-    Button,
     Standby, validate,
     selector,
     GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {

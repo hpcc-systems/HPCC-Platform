@@ -4,13 +4,8 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom",
-    "dojo/dom-attr",
-    "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-form",
-    "dojo/date",
-    "dojo/on",
     "dojo/topic",
 
     "dijit/registry",
@@ -19,8 +14,6 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
-    "dijit/form/Textarea",
-    "dijit/form/ValidationTextBox",
 
     "dgrid/editor",
     "dgrid/selector",
@@ -33,10 +26,6 @@ define([
     "src/ESPLogicalFile",
     "src/ESPDFUWorkunit",
     "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/TargetComboBoxWidget",
-    "hpcc/FilterDropDownWidget",
-    "hpcc/SelectionGridWidget",
     "src/WsTopology",
     "src/Utility",
 
@@ -44,6 +33,10 @@ define([
 
     "dojo/text!../templates/DFUQueryWidget.html",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
+    "hpcc/FilterDropDownWidget",
+    "hpcc/SelectionGridWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -57,6 +50,7 @@ define([
     "dijit/form/CheckBox",
     "dijit/form/NumberTextBox",
     "dijit/form/RadioButton",
+    "dijit/form/ValidationTextBox",
     "dijit/Dialog",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
@@ -65,10 +59,10 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
-    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, domForm, topic,
+    registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     editor, selector, tree,
-    _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, FilterDropDownWidget, SelectionGridWidget, WsTopology, Utility,
+    _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, WsTopology, Utility,
     put,
     template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {

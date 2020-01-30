@@ -1,24 +1,14 @@
 define([
     "exports",
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-attr",
     "dojo/dom-class",
-    "dojo/dom-style",
     "dojo/query",
 
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane",
-    "dijit/Toolbar",
-    "dijit/form/Textarea",
-    "dijit/TitlePane",
     "dijit/registry",
-    "dijit/ProgressBar",
 
     "hpcc/_TabContainerWidget",
     "src/Clippy",
@@ -28,14 +18,21 @@ define([
 
     "dojo/text!../templates/DFUWUDetailsWidget.html",
 
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/Toolbar",
+    "dijit/ProgressBar",
+    "dijit/TitlePane",
+    "dijit/form/Textarea",
     "dijit/form/Select",
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/form/CheckBox",
     "dijit/ToolbarSeparator"
 
-], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domStyle, query,
-    BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
+], function (exports, declare, i18n, nlsHPCC, arrayUtil, dom, domClass, query,
+    registry,
     _TabContainerWidget, Clippy, FileSpray, ESPDFUWorkunit, DelayLoadWidget,
     template) {
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {

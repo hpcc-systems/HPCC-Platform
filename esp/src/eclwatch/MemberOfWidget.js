@@ -15,14 +15,13 @@ define([
 
     "hpcc/GridDetailsWidget",
     "src/ws_access",
-    "src/ws_account",
     "src/ESPUtil",
     "hpcc/TargetSelectWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
     registry, Button, ToolbarSeparator, Dialog,
     selector,
-    GridDetailsWidget, WsAccess, WsAccount, ESPUtil, TargetSelectWidget) {
+    GridDetailsWidget, WsAccess, ESPUtil, TargetSelectWidget) {
     return declare("MemberOfWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

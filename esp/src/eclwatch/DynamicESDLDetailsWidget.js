@@ -11,7 +11,6 @@ define([
     "src/Clippy",
 
     "hpcc/_TabContainerWidget",
-    "src/Utility",
     "src/WsESDLConfig",
 
     "dojo/text!../templates/DynamicESDLDetailsWidget.html",
@@ -40,7 +39,7 @@ define([
     function (declare, lang, i18n, nlsHPCC, dom, domAttr,
         registry,
         Clippy,
-        _TabContainerWidget, Utility, WsESDLConfig,
+        _TabContainerWidget, WsESDLConfig,
         template) {
         return declare("DynamicESDLDetailsWidget", [_TabContainerWidget], {
             templateString: template,

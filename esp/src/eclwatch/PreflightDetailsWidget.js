@@ -9,15 +9,11 @@ define([
     "dojo/dom-geometry",
     "dojo/_base/window",
 
-    "dijit/registry",
-    "dijit/form/TextBox",
-
     "hpcc/GridDetailsWidget",
     "src/ESPUtil",
     "src/ESPPreflight",
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, domConstruct, domGeom, win,
-    registry, TextBox,
     GridDetailsWidget, ESPUtil, ESPPreflight
 ) {
     return declare("PreflightDetailsWidget", [GridDetailsWidget], {

@@ -1,23 +1,20 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/topic",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/DelayLoadWidget",
-    "hpcc/PackageSourceWidget",
-    "hpcc/PackageMapPartsWidget",
     "src/Clippy",
     "src/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
 
+    "hpcc/PackageSourceWidget",
+    "hpcc/PackageMapPartsWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -25,8 +22,8 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/Toolbar"
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
-    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, PackageMapPartsWidget, Clippy, WsPackageMaps, template) {
+], function (declare, i18n, nlsHPCC, domAttr, domClass, topic, registry,
+    _TabContainerWidget, Clippy, WsPackageMaps, template) {
     return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",

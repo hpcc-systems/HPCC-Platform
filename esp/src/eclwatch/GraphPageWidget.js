@@ -3,28 +3,25 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/dom",
-    "dojo/dom-construct",
     "dojo/on",
     "dojo/html",
 
     "dijit/registry",
-    "dijit/Dialog",
 
     "dojox/html/entities",
 
     "hpcc/_Widget",
-    "hpcc/JSGraphWidget",
     "src/ESPUtil",
     "src/ESPWorkunit",
-    "hpcc/TimingTreeMapWidget",
     "src/WsWorkunits",
     "src/Utility",
 
     "dojo/text!../templates/GraphPageWidget.html",
 
+    "hpcc/JSGraphWidget",
+    "hpcc/TimingTreeMapWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -39,10 +36,10 @@ define([
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
-    registry, Dialog,
+], function (declare, lang, i18n, nlsHPCC, Deferred, dom, on, html,
+    registry,
     entities,
-    _Widget, JSGraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits, Utility,
+    _Widget, ESPUtil, ESPWorkunit, WsWorkunits, Utility,
     template) {
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,

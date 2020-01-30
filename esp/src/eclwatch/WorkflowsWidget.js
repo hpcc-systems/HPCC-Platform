@@ -1,23 +1,14 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "src/ESPWorkunit",
-    "hpcc/DelayLoadWidget",
     "src/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-    OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
-    GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+], function (declare, i18n, nlsHPCC,
+    GridDetailsWidget, ESPWorkunit, ESPUtil) {
     return declare("WorkflowsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

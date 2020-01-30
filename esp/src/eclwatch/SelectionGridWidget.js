@@ -1,6 +1,5 @@
 ﻿define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
@@ -9,8 +8,6 @@
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
     "dgrid/Selection",
-    "dgrid/editor",
-    "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
@@ -20,9 +17,9 @@
 
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane"
-], function (declare, lang, Memory, Observable,
+], function (declare, Memory, Observable,
     registry,
-    OnDemandGrid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry,
+    OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
     _Widget,
     template) {
     return declare("SelectionGridWidget", [_Widget], {

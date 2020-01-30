@@ -8,7 +8,6 @@ define([
 
     "dijit/registry",
     "dijit/form/Button",
-    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
     "dijit/Tooltip",
 
@@ -25,6 +24,7 @@ define([
 
     "dojo/text!../templates/ActivityPageWidget.html",
 
+    "dijit/form/ToggleButton",
     "dijit/layout/TabContainer",
     "dijit/layout/BorderContainer",
     "dijit/Toolbar",
@@ -32,7 +32,7 @@ define([
     "dijit/layout/ContentPane"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, domAttr,
-    registry, Button, ToggleButton, ToolbarSeparator, Tooltip,
+    registry, Button, ToolbarSeparator, Tooltip,
     selector, tree,
     GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage, Clippy,
     template

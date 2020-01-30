@@ -1,20 +1,10 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
-    "dojo/on",
-    "dojo/dom",
-    "dojo/dom-class",
-    "dojo/dom-construct",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/form/Button",
-    "dijit/ToolbarSeparator",
-    "dijit/Dialog",
-    "dijit/form/TextBox",
 
     "dgrid/tree",
     "dgrid/selector",
@@ -29,8 +19,8 @@ define([
     "hpcc/PreflightDetailsWidget",
     "hpcc/MachineInformationWidget",
     "hpcc/IFrameWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domClass, domConstruct, topic,
-    registry, Button, ToolbarSeparator, Dialog, TextBox,
+], function (declare, i18n, nlsHPCC, topic,
+    registry,
     tree, selector,
     GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, MachineInformationWidget, IFrameWidget) {
     return declare("CluserProcessesQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
@@ -42,7 +32,6 @@ define([
         machineFilterLoaded: null,
 
         postCreate: function (args) {
-            var context = this;
             this.inherited(arguments);
             this.openButton = registry.byId(this.id + "Open");
             this.refreshButton = registry.byId(this.id + "Refresh");

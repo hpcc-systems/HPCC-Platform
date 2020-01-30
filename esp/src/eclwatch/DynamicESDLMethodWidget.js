@@ -4,27 +4,21 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/dom-construct",
-    "dojo/dom-class",
-    "dojo/topic",
 
     "dijit/registry",
     "dijit/form/Button",
-    "dijit/ToolbarSeparator",
 
     "hpcc/GridDetailsWidget",
-    "src/ESPQuery",
     "src/ESPUtil",
     "src/WsESDLConfig",
 
-    "dgrid/selector",
     "dgrid/editor",
     "dgrid/tree"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domConstruct, domClass, topic,
-    registry, Button, ToolbarSeparator,
-    GridDetailsWidget, ESPQuery, ESPUtil, WsESDLConfig,
-    selector, editor, tree
+], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+    registry, Button,
+    GridDetailsWidget, ESPUtil, WsESDLConfig,
+    editor, tree
 ) {
     return declare("DynamicESDLMethodWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,

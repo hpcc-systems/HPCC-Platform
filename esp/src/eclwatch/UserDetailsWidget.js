@@ -3,42 +3,35 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
-    "dojo/dom-attr",
     "dojo/dom-form",
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_TabContainerWidget",
     "src/Clippy",
     "src/ws_access",
-    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/UserDetailsWidget.html",
 
+    "hpcc/DelayLoadWidget",
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
     "dijit/form/Form",
     "dijit/form/Textarea",
     "dijit/form/TextBox",
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
     "dijit/TitlePane",
     "dijit/Dialog",
 
     "dojox/form/PasswordValidator"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domForm,
+], function (declare, lang, i18n, nlsHPCC, domForm,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-    _TabContainerWidget, Clippy, WsAccess, DelayLoadWidget,
+    _TabContainerWidget, Clippy, WsAccess,
     template) {
     return declare("UserDetailsWidget", [_TabContainerWidget], {
         templateString: template,

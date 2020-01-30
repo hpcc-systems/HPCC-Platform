@@ -1,26 +1,15 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
-    "dojo/dom-attr",
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_TabContainerWidget",
-    "src/ws_access",
-    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/GroupDetailsWidget.html",
 
+    "hpcc/DelayLoadWidget",
     "dijit/form/Textarea",
     "dijit/form/TextBox",
     "dijit/form/Button",
@@ -30,10 +19,9 @@ define([
     "dijit/TitlePane",
     "dijit/Dialog"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr,
+], function (declare, i18n, nlsHPCC,
     registry,
-    OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-    _TabContainerWidget, WsAccess, DelayLoadWidget,
+    _TabContainerWidget,
     template) {
     return declare("GroupDetailsWidget", [_TabContainerWidget], {
         templateString: template,

@@ -4,15 +4,9 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
-    "dojo/dom",
-    "dojo/dom-form",
-    "dojo/dom-construct",
-    "dojo/dom-class",
     "dojo/promise/all",
 
     "dijit/registry",
-    "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
     "dijit/form/ValidationTextBox",
@@ -24,18 +18,15 @@ define([
     "dgrid/selector",
 
     "hpcc/GridDetailsWidget",
-    "src/WsDFUXref",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
     "src/WsPackageMaps",
     "src/Utility",
-    "hpcc/FilterDropDownWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/ECLSourceWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domForm, domConstruct, domClass, all,
-    registry, ToggleButton, ToolbarSeparator, Button, ValidationTextBox, Textarea, TextBox, CheckBox, Dialog,
+    "hpcc/FilterDropDownWidget"
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
+    registry, ToolbarSeparator, Button, ValidationTextBox, Textarea, TextBox, CheckBox, Dialog,
     selector,
-    GridDetailsWidget, WsDFUXref, DelayLoadWidget, ESPUtil, WsPackageMaps, Utility, FilterDropDownWidget, TargetSelectWidget, ECLSourceWidget) {
+    GridDetailsWidget, DelayLoadWidget, ESPUtil, WsPackageMaps, Utility, FilterDropDownWidget) {
     return declare("PackageMapPartsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.Parts,

@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
@@ -15,7 +14,7 @@ define([
 
     "hpcc/DelayLoadWidget"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, i18n, nlsHPCC,
     _TabContainerWidget, ESPRequest,
     template) {
     return declare("HPCCPlatformFilesWidget", [_TabContainerWidget], {

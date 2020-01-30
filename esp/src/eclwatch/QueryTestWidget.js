@@ -1,6 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
@@ -11,16 +10,17 @@ define([
     "src/WsTopology",
     "src/ESPQuery",
 
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
 
-    "dojo/text!../templates/QueryTestWidget.html"
+    "dojo/text!../templates/QueryTestWidget.html",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer"
+
+], function (declare, i18n, nlsHPCC, arrayUtil,
     registry,
     _TabContainerWidget, WsTopology, ESPQuery,
-    BorderContainer, TabContainer, ContentPane,
+    ContentPane,
     template) {
     return declare("QueryTestWidget", [_TabContainerWidget], {
         templateString: template,

@@ -11,11 +11,10 @@ define([
 
     "hpcc/GridDetailsWidget",
     "src/WsDfu",
-    "src/ESPUtil",
-    "hpcc/DelayLoadWidget"
+    "src/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
     registry, selector,
-    GridDetailsWidget, WsDfu, ESPUtil, DelayLoadWidget) {
+    GridDetailsWidget, WsDfu, ESPUtil) {
     return declare("FileBloomsWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 

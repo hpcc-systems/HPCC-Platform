@@ -4,13 +4,28 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/dom-form",
-    "dojo/query",
 
+    "dijit/registry",
+
+    "hpcc/_TabContainerWidget",
+    "hpcc/DelayLoadWidget",
+    "src/Clippy",
+    "src/ESPLogicalFile",
+    "src/ESPDFUWorkunit",
+    "src/FileSpray",
+    "src/DataPatternsWidget",
+
+    "dojo/text!../templates/LFDetailsWidget.html",
+
+    "hpcc/TargetSelectWidget",
+    "hpcc/TargetComboBoxWidget",
+    "hpcc/FileBelongsToWidget",
+    "hpcc/FileHistoryWidget",
+    "hpcc/FileBloomsWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -22,23 +37,6 @@ define([
     "dijit/form/Button",
     "dijit/form/DropDownButton",
     "dijit/TitlePane",
-    "dijit/registry",
-
-    "hpcc/_TabContainerWidget",
-    "hpcc/DelayLoadWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/TargetComboBoxWidget",
-    "src/Clippy",
-    "src/ESPLogicalFile",
-    "src/ESPDFUWorkunit",
-    "hpcc/FileBelongsToWidget",
-    "src/FileSpray",
-    "hpcc/FileHistoryWidget",
-    "hpcc/FileBloomsWidget",
-    "src/DataPatternsWidget",
-
-    "dojo/text!../templates/LFDetailsWidget.html",
-
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
     "dijit/form/ValidationTextBox",
@@ -49,9 +47,9 @@ define([
 
     "hpcc/TableContainer"
 
-], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
-    BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-    _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, TargetComboBoxWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileBelongsToWidget, FileSpray, FileHistoryWidget, FileBloomsWidget, DataPatternsWidget,
+], function (exports, declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, domForm,
+    registry,
+    _TabContainerWidget, DelayLoadWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileSpray, DataPatternsWidget,
     template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,

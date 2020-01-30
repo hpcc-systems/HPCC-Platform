@@ -5,23 +5,21 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/store/Memory",
-    "dojo/dom",
     "dojo/dom-class",
     "dojo/dom-style",
     "dojo/has",
 
     "dijit/registry",
 
-    "dojox/treemap/TreeMap",
-
     "hpcc/_Widget",
     "src/ESPWorkunit",
 
-    "dojo/text!../templates/TimingTreeMapWidget.html"
+    "dojo/text!../templates/TimingTreeMapWidget.html",
+
+    "dojox/treemap/TreeMap"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, dom, domClass, domStyle, has,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, domClass, domStyle, has,
         registry,
-        TreeMap,
         _Widget, ESPWorkunit,
         template) {
         return declare("TimingTreeMapWidget", [_Widget], {

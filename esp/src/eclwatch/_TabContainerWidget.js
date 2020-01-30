@@ -1,8 +1,5 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
-    "dojo/_base/array",
-    "dojo/dom",
     "dojo/hash",
     "dojo/router",
     "dojo/aspect",
@@ -10,7 +7,7 @@ define([
     "hpcc/_Widget",
 
     "dijit/registry"
-], function (declare, lang, arrayUtil, dom, hash, router, aspect,
+], function (declare, hash, router, aspect,
     _Widget,
     registry) {
 

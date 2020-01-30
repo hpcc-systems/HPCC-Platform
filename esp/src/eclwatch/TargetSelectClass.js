@@ -1,5 +1,4 @@
 define([
-    "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
@@ -9,9 +8,6 @@ define([
     "dojo/data/ItemFileReadStore",
     "dojo/promise/all",
     "dojo/store/Memory",
-    "dojo/on",
-
-    "dijit/registry",
 
     "src/WsTopology",
     "src/WsWorkunits",
@@ -21,8 +17,7 @@ define([
     "src/WsPackageMaps",
     "src/Utility"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory, on,
-    registry,
+], function (lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory,
     WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     return {

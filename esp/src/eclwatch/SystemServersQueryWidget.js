@@ -1,20 +1,13 @@
 define([
     "dojo/_base/declare",
-    "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
-    "dojo/on",
-    "dojo/dom",
     "dojo/dom-class",
-    "dojo/dom-construct",
     "dojo/topic",
 
     "dijit/registry",
-    "dijit/form/Button",
-    "dijit/ToolbarSeparator",
     "dijit/Dialog",
-    "dijit/form/TextBox",
 
     "dgrid/tree",
     "dgrid/selector",
@@ -27,13 +20,12 @@ define([
     "src/ESPUtil",
     "hpcc/DelayLoadWidget",
     "hpcc/PreflightDetailsWidget",
-    "hpcc/RequestInformationWidget",
     "hpcc/MachineInformationWidget",
     "hpcc/IFrameWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, dom, domClass, domConstruct, topic,
-    registry, Button, ToolbarSeparator, Dialog, TextBox,
+], function (declare, i18n, nlsHPCC, arrayUtil, domClass, topic,
+    registry, Dialog,
     tree, selector,
-    GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, RequestInformationWidget, MachineInformationWidget, IFrameWidget) {
+    GridDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, ESPUtil, DelayLoadWidget, PreflightDetailsWidget, MachineInformationWidget, IFrameWidget) {
     return declare("SystemServersQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 
