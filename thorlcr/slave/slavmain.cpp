@@ -2342,8 +2342,8 @@ void slaveMain(bool &jobListenerStopped)
     }
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
-    CJobListener jobListener(jobListenerStopped);
     CThorResourceSlave slaveResource;
+    CJobListener jobListener(jobListenerStopped);
     setIThorResource(slaveResource);
 
 #ifdef __linux__
