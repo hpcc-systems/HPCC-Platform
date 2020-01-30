@@ -148,8 +148,8 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheAutoRebuildSeconds", process, service);
     unsigned activityInfoCacheAutoRebuildSeconds = cfg->getPropInt(xpath.str(), defaultActivityInfoCacheAutoRebuildSecond);
-    activityInfoCacheReader.setown(new CActivityInfoCacheReader());
-    activityInfoCacheReaderThread.setown(new CInfoCacheReaderThread(activityInfoCacheReader, "Activity Reader", activityInfoCacheAutoRebuildSeconds,
+    //activityInfoCacheReader.setown(new CActivityInfoCacheReader());
+    activityInfoCacheReaderThread.setown(new CInfoCacheReaderThread(new CActivityInfoCacheReader(), "Activity Reader", activityInfoCacheAutoRebuildSeconds,
         activityInfoCacheSeconds));
 }
 

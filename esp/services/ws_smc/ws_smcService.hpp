@@ -189,7 +189,7 @@ class CWsSMCEx : public CWsSMC
     bool m_EnableChatURL;
     CriticalSection crit;
     Owned<CInfoCacheReaderThread>   activityInfoCacheReaderThread;
-    Owned<CActivityInfoCacheReader> activityInfoCacheReader;
+    //Owned<CActivityInfoCacheReader> activityInfoCacheReader;
 
 public:
     IMPLEMENT_IINTERFACE;

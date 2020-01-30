@@ -881,7 +881,7 @@ private:
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
-    Owned<CUsageCacheReader>    usageCacheReader;
+    //Owned<CUsageCacheReader>    usageCacheReader;
     Owned<CInfoCacheReaderThread>    usageCacheReaderThread;
 };
 
@@ -899,8 +899,8 @@ public:
     StringBuffer          m_sSecurityString; 
     StringBuffer          m_sUserName; 
     StringBuffer          m_sPassword;
-    Linked<Cws_machineEx> m_pService;
-    //Cws_machineEx*        m_pService = nullptr;
+    //Linked<Cws_machineEx> m_pService;
+    Cws_machineEx*        m_pService;
 
     virtual void doWork() = 0;
 
@@ -989,7 +989,8 @@ class CUsageCacheReader : public CInterface, implements IInfoCacheReader
 {
     //Linked<Cws_machineEx> servicePtr;
     //Cws_machineEx *servicePtr = nullptr;
-    Cws_machineEx &wsMachineService;
+    //Cws_machineEx &wsMachineService;
+    Cws_machineEx *servicePtr;
 
     IPropertyTree *getUsageReqAllMachines();
     void addClusterUsageReq(IConstEnvironment *constEnv, const char *name, bool thorCluster, IPropertyTree *usageReq);
@@ -1002,7 +1003,7 @@ class CUsageCacheReader : public CInterface, implements IInfoCacheReader
 public:
     IMPLEMENT_IINTERFACE;
 
-    CUsageCacheReader(Cws_machineEx &_service) : wsMachineService(_service) {}
+    CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {}
     //~CUsageCacheReader() { servicePtr = nullptr; }
 
     virtual CInfoCache *read();

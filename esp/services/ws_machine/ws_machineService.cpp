@@ -200,8 +200,8 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     unsigned machineUsageCacheForceRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", MACHINE_USAGE_CACHE_MINUTES);
     unsigned machineUsageCacheAutoRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheAutoRebuildMinutes", DEFAULT_MACHINE_USAGE_CACHE_AUTO_BUILD_MINUTES);
-    usageCacheReader.setown(new CUsageCacheReader(*this));
-    usageCacheReaderThread.setown(new CInfoCacheReaderThread(usageCacheReader, "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
+    //usageCacheReader.setown(new CUsageCacheReader((Cws_machineEx *) this));
+    usageCacheReaderThread.setown(new CInfoCacheReaderThread(new CUsageCacheReader((Cws_machineEx *) this), "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
 }
 
 StringBuffer& Cws_machineEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
@@ -3283,7 +3283,7 @@ CInfoCache* CUsageCacheReader::read()
 
     //Send usage command to each machine
     Owned<IEspContext> espContext =  createEspContext();
-    wsMachineService.getMachineUsages(*espContext, uniqueUsages);
+    servicePtr->getMachineUsages(*espContext, uniqueUsages);
 
     Owned<CUsageCache> usageCache = new CUsageCache();
     usageCache->setUsages(uniqueUsages.getClear());
@@ -3297,13 +3297,13 @@ IPropertyTree* CUsageCacheReader::getUsageReqAllMachines()
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
     IArrayOf<IConstComponent> componentList;
-    wsMachineService.listComponentsForCheckingUsage(constEnv, componentList);
+    servicePtr->listComponentsForCheckingUsage(constEnv, componentList);
 
     //Create a PTree which will be used to store the usages of all HPCC machines.
     Owned<IPropertyTree> uniqueUsages = createPTree("Usage");
 
     //Store the network addresses and HPCC folders into the PTree.
-    //Their usages may be added by calling wsMachineService.getMachineUsages().
+    //Their usages may be added by calling servicePtr->getMachineUsages().
     ForEachItemIn(i, componentList)
     {
         IConstComponent& component = componentList.item(i);
@@ -3331,11 +3331,11 @@ void CUsageCacheReader::addClusterUsageReq(IConstEnvironment* constEnv, const ch
 
     Owned<IPropertyTree> envRoot = &constEnv->getPTree();
     IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
-    Owned<IPropertyTree> logFolderReq = wsMachineService.createDiskUsageReq(envDirectories, "log", thorCluster ? "thor" : "roxie", name);
-    Owned<IPropertyTree> dataFolderReq = wsMachineService.createDiskUsageReq(envDirectories, "data", thorCluster ? "thor" : "roxie", name);
+    Owned<IPropertyTree> logFolderReq = servicePtr->createDiskUsageReq(envDirectories, "log", thorCluster ? "thor" : "roxie", name);
+    Owned<IPropertyTree> dataFolderReq = servicePtr->createDiskUsageReq(envDirectories, "data", thorCluster ? "thor" : "roxie", name);
     Owned<IPropertyTree> repFolderReq;
     if (thorCluster)
-        repFolderReq.setown(wsMachineService.createDiskUsageReq(envDirectories, "mirror", "thor", name));
+        repFolderReq.setown(servicePtr->createDiskUsageReq(envDirectories, "mirror", "thor", name));
 
     StringBuffer xpath;
     if (thorCluster)
@@ -3368,7 +3368,7 @@ void CUsageCacheReader::addClusterUsageReq(IConstEnvironment* constEnv, const ch
 void CUsageCacheReader::checkAndAddMachineUsageReq(IConstEnvironment* constEnv, const char* computer, IPropertyTree* logFolderReq,
     IPropertyTree* dataFolderReq,  IPropertyTree* repFolderReq, IPropertyTree* usageReq)
 {
-    Owned<IPropertyTree> machineReq = wsMachineService.createMachineUsageReq(constEnv, computer);
+    Owned<IPropertyTree> machineReq = servicePtr->createMachineUsageReq(constEnv, computer);
     VStringBuffer xpath("Machine[@netAddress='%s']", machineReq->queryProp("@netAddress"));
     IPropertyTree* foundMachineReqTree = usageReq->queryPropTree(xpath);
     if (!foundMachineReqTree)
@@ -3474,11 +3474,11 @@ void CUsageCacheReader::addOtherComponentUsageReq(IConstEnvironment* constEnv, c
     //Find disk folders for log, data, etc.
     IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
 
-    Owned<IPropertyTree> dataFolder = wsMachineService.createDiskUsageReq(envDirectories, "data", componentType, name);
-    Owned<IPropertyTree> logFolder = wsMachineService.createDiskUsageReq(envDirectories, "log", componentType, name);
+    Owned<IPropertyTree> dataFolder = servicePtr->createDiskUsageReq(envDirectories, "data", componentType, name);
+    Owned<IPropertyTree> logFolder = servicePtr->createDiskUsageReq(envDirectories, "log", componentType, name);
     Owned<IPropertyTree> repFolder;
     if (strieq(type, eqDali))
-        repFolder.setown(wsMachineService.createDiskUsageReq(envDirectories, "mirror", "dali", name));
+        repFolder.setown(servicePtr->createDiskUsageReq(envDirectories, "mirror", "dali", name));
 
     checkAndAddMachineUsageReq(constEnv, computer, logFolder, dataFolder, repFolder, usageReq);
 }
