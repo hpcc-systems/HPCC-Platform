@@ -30,7 +30,6 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/DiskUsageWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/DynamicESDLDefinitionDetailsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/DynamicESDLDetailsWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/DynamicESDLQueryWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/ECLPlaygroundResultsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/ECLPlaygroundWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/ECLSourceWidget.html
@@ -62,14 +61,11 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/LogWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/LZBrowseWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/MachineInformationWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/MonitoringWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageMapDetailsWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageMapPartsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageMapQueryWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageMapValidateContentWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageMapValidateWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PackageSourceWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/PreflightDetailsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/QuerySetDetailsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/QuerySetQueryWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/QueryTestWidget.html
@@ -77,8 +73,6 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/ResultWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/SelectionGridWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/SFDetailsWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/SourceFilesWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/TimingGridWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/TimingPageWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/TimingTreeMapWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/TopologyDetailsWidget.html
@@ -89,15 +83,6 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/WUDetailsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/WUQueryWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/XrefDetailsWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/templates/XrefQueryWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3BarChart.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3Choropleth.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3CooccurrenceGraph.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3ForceDirectedGraph.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3Histogram.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3PieChart.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3ScatterChart.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/templates/DojoD3WordCloud.css
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/DojoD3.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/DojoD3Choropleth.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/viz/DojoD3NDChart.js
@@ -108,7 +93,6 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/ActivityWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/ClusterProcessesQueryWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/CurrentUserDetailsWidget.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/debugConfig.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/DelayLoadWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/DFUQueryWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/DFUSearchWidget.js
@@ -196,7 +180,6 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TargetComboBoxWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TargetSelectClass.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TargetSelectWidget.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TimingGridWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TimingPageWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TimingTreeMapWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch/TopologyDetailsWidget.js
