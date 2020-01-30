@@ -892,14 +892,14 @@ class CWsMachineThreadParam : public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    virtual ~CWsMachineThreadParam() {}
+    virtual ~CWsMachineThreadParam() { m_pService = nullptr; }
 
     StringBuffer          m_sAddress;
     StringBuffer          m_sSecurityString; 
     StringBuffer          m_sUserName; 
     StringBuffer          m_sPassword;
-    Linked<Cws_machineEx> m_pService;
-    //Cws_machineEx*        m_pService = nullptr;
+    //Linked<Cws_machineEx> m_pService;
+    Cws_machineEx*        m_pService = nullptr;
 
     virtual void doWork() = 0;
 
@@ -983,11 +983,11 @@ public:
     const IPropertyTree *queryUsages() const { return usages; }
 };
 
-//class CUsageCacheReader : public CInterface, implements IInfoCacheReader
-class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
+class CUsageCacheReader : public CInterface, implements IInfoCacheReader
+//class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
 {
-    //Cws_machineEx *servicePtr = nullptr;
-    Linked<Cws_machineEx> servicePtr;
+    Cws_machineEx *servicePtr = nullptr;
+    //Linked<Cws_machineEx> servicePtr;
 
     IPropertyTree *getUsageReqAllMachines();
     void addClusterUsageReq(IConstEnvironment *constEnv, const char *name, bool thorCluster, IPropertyTree *usageReq);
@@ -998,12 +998,13 @@ class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
     void addOtherComponentUsageReq(IConstEnvironment *constEnv, const char *name, const char *type, IPropertyTree *usageReq);
 
 public:
-    //IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
     CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {}
+    ~CUsageCacheReader() { servicePtr = nullptr; }
 
-    //virtual CInfoCache *read();
-    virtual CInfoCache *read() override;
+    virtual CInfoCache *read();
+    //virtual CInfoCache *read() override;
 };
 #endif //_ESPWIZ_ws_machine_HPP__
 
