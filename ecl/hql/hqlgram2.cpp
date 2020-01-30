@@ -3169,6 +3169,7 @@ IHqlExpression * HqlGram::leaveLamdaExpression(attribute * paramattr, attribute 
 #endif
 class PseudoPatternScope : public CHqlScope
 {
+    using CHqlScope::defineSymbol;
 public:
     PseudoPatternScope(IHqlExpression * _patternList);
 
@@ -3189,8 +3190,8 @@ public:
 
     virtual bool isImplicit() const { return false; }
     virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(IIdAtom *, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
-    virtual bool getProp(IIdAtom *, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
+    virtual int getPropInt(IAtom *, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
+    virtual bool getProp(IAtom *, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
     virtual IHqlScope * queryConcreteScope() { return this; }

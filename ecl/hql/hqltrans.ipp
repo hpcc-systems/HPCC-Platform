@@ -820,9 +820,11 @@ public:
     inline AMergingTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) {}
 
     virtual IHqlExpression * queryAlreadyTransformed(IHqlExpression * childScope) = 0;
+    using NewTransformInfo::setTransformed;
     virtual void setTransformed(IHqlExpression * childScope, IHqlExpression * value) = 0;
 
     virtual IHqlExpression * queryAlreadyTransformedSelector(IHqlExpression * childScope) = 0;
+    using NewTransformInfo::setTransformedSelector;
     virtual void setTransformedSelector(IHqlExpression * childScope, IHqlExpression * value) = 0;
 
     inline bool recurseParentScopes()
@@ -961,6 +963,10 @@ public:
 
 class HQL_API NewSelectorReplacingInfo : public NewTransformInfo
 {
+    using NewTransformInfo::queryTransformed;
+    using NewTransformInfo::queryTransformedSelector;
+    using NewTransformInfo::setTransformed;
+    using NewTransformInfo::setTransformedSelector;
 public:
     NewSelectorReplacingInfo(IHqlExpression * _original) : NewTransformInfo(_original) {}
 

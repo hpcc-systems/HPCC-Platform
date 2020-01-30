@@ -49,6 +49,13 @@ public:
     virtual IOutputMetaData * queryOutputMeta() override { return NULL; }
 };
 
+class ECLRTL_API CThorSinkLibraryArg : public CThorArgOf<IHThorLibraryCallArg>
+{
+public:
+    virtual IOutputMetaData * queryOutputMeta() override { return NULL; }
+    virtual IOutputMetaData * queryOutputMeta(unsigned whichOutput) override { return NULL; }
+};
+
 class ECLRTL_API CThorIndexWriteArg : public CThorSinkArgOf<IHThorIndexWriteArg>
 {
 public:
@@ -1213,7 +1220,7 @@ class ECLRTL_API CThorRemoteArg : public CThorArgOf<IHThorRemoteArg>
     virtual void onLimitExceeded() override;
 };
 
-class ECLRTL_API CThorLibraryCallArg : public CThorSinkArgOf<IHThorLibraryCallArg>
+class ECLRTL_API CThorLibraryCallArg : public CThorSinkLibraryArg
 {
 };
 

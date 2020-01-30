@@ -1417,7 +1417,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             const void *row = rows[i];
             if (i == nextCBI)
             {
-                writer->flush();
+                writer->flush(NULL);
                 do
                 {
                     nextCB->filePosition(writer->getPosition());
@@ -1444,7 +1444,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, unsigned _spillCompInfo, boo
             }
             ++i;
         }
-        writer->flush();
+        writer->flush(NULL);
     }
     catch (IException *e)
     {

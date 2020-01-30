@@ -295,11 +295,11 @@ public:
     }
 // IExtRowStream
     virtual const void *nextRow() override { return stream->nextRow(); }
-    virtual void stop() override { stream->stop(); }
+    virtual void stop() override { stream->stop(NULL); }
     virtual offset_t getOffset() const override { return stream->getOffset(); }
     virtual offset_t getLastRowOffset() const override { return stream->getLastRowOffset(); }
     virtual unsigned __int64 queryProgress() const override { return stream->queryProgress(); }
-    virtual void stop(CRC32 *crcout=NULL) override { stream->stop(); }
+    virtual void stop(CRC32 *crcout) override { stream->stop(crcout); }
     virtual const byte *prefetchRow() override { return stream->prefetchRow(); }
     virtual void prefetchDone() override { stream->prefetchDone(); }
     virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows) override

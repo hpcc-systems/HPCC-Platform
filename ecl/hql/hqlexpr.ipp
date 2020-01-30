@@ -1163,6 +1163,7 @@ public:
     virtual int getPropInt(IAtom * a, int def) const override { return def; }
     virtual bool getProp(IAtom * a, StringBuffer &ret) const override { return false; }
 
+    using CHqlDelayedCall::clone;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
 
     virtual IHqlScope * queryConcreteScope() override;
