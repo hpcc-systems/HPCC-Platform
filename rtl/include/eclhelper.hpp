@@ -1101,7 +1101,7 @@ enum
     TDXtemporary        = 0x0001,
     TDXgrouped          = 0x0002,
     TDXcompress         = 0x0004,
-    TDXvarfilename      = 0x0008,       // filename is dependant on the context.
+    TDXvarfilename      = 0x0008,       // filename is dependent on the context.
     TDXupdateaccessed   = 0x0010,
     TDXdynamicfilename  = 0x0020,
     TDXjobtemp          = 0x0040,       // stay around while a wu is being executed.
@@ -1126,6 +1126,7 @@ enum
     TDRfilenamecallback = 0x01000000,
     TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
     TDRdynformatoptions = 0x04000000,
+    TDRinvariantfilename= 0x08000000,       // filename is non constant but has the same value for the whole query
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -1155,16 +1156,17 @@ enum
     TIRlimitskips       = 0x00000040,
     TIRstepleadequality = 0x00000080,               // all filters before the first stepping field are equalities
     TIRaggregateexists  = 0x00000100,               // only aggregate is exists()
-    TIRgroupmonitors    = 0x00000200,               // are segement monitors created for all group by conditions.
+    TIRgroupmonitors    = 0x00000200,               // are segment monitors created for all group by conditions.
     TIRlimitcreates     = 0x00000400,
     TIRkeyedlimitcreates= 0x00000800,
-    TIRvarfilename      = 0x00001000,       // filename is dependant on the context.
+    TIRvarfilename      = 0x00001000,               // filename is dependent on the context.
     TIRdynamicfilename  = 0x00002000,
     TIRunfilteredtransform = 0x00004000,
     TIRorderedmerge     = 0x00008000,
     TIRunordered        = 0x00010000,
     TIRnewfilters       = 0x00020000,               // Uses new style field filters
     TIRusesblob         = 0x00040000,               // Uses blob in the transform/projected row
+    TIRinvariantfilename= 0x00080000,               // filename is non constant but has the same value for the whole query
 };
 
 //flags for thor index write
@@ -1703,6 +1705,7 @@ enum {
     FFdatafileoptional           = 0x0001,
     FFvarfilename                = 0x0002,
     FFdynamicfilename            = 0x0004,
+    FFinvariantfilename          = 0x0008,
 };  
 
 // JoinTransformFlags

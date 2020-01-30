@@ -442,3 +442,14 @@ bool worthGeneratingRowAsSingleActivity(IHqlExpression * expr)
         expr = expr->queryChild(0);
     }
 }
+
+bool isNonConstantAndQueryInvariant(IHqlExpression * expr)
+{
+    if (expr->isConstant())
+        return false;
+    if (!expr->isIndependentOfScope())
+        return false;
+    if (isContextDependent(expr, true, false))
+        return false;
+    return true;
+}
