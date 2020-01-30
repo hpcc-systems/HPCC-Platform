@@ -156,14 +156,16 @@ public:
     inline IArrayOf<IEspDFUJob>& queryDFURecoveryJobs() { return DFURecoveryJobs; };
 };
 
-class CActivityInfoCacheReader : public CInterface, implements IInfoCacheReader
+//class CActivityInfoCacheReader : public CInterface, implements IInfoCacheReader
+class CActivityInfoCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    //IMPLEMENT_IINTERFACE;
 
     CActivityInfoCacheReader() {};
 
-    virtual CInfoCache* read()
+    //virtual CInfoCache* read()
+    virtual CInfoCache* read() override
     {
         Owned<IEspContext> espContext =  createEspContext();
         Owned<CActivityInfo> info = new CActivityInfo();

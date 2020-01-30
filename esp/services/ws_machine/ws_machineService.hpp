@@ -983,7 +983,8 @@ public:
     const IPropertyTree *queryUsages() const { return usages; }
 };
 
-class CUsageCacheReader : public CInterface, implements IInfoCacheReader
+//class CUsageCacheReader : public CInterface, implements IInfoCacheReader
+class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
 {
     //Cws_machineEx *servicePtr = nullptr;
     Linked<Cws_machineEx> servicePtr;
@@ -997,11 +998,12 @@ class CUsageCacheReader : public CInterface, implements IInfoCacheReader
     void addOtherComponentUsageReq(IConstEnvironment *constEnv, const char *name, const char *type, IPropertyTree *usageReq);
 
 public:
-    IMPLEMENT_IINTERFACE;
+    //IMPLEMENT_IINTERFACE;
 
     CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {}
 
-    virtual CInfoCache *read();
+    //virtual CInfoCache *read();
+    virtual CInfoCache *read() override;
 };
 #endif //_ESPWIZ_ws_machine_HPP__
 
