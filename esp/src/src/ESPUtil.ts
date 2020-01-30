@@ -429,13 +429,15 @@ export class UndefinedMemory extends UndefinedMemoryBase {
     }
 }
 
-export function Grid(pagination?, selection?, overrides?, compoundColumns?) {
+export function Grid(pagination?, selection?, overrides?, compoundColumns?, gridName?) {
     var baseClass = [];
     var params = {};
+    var rows =  Number(localStorage.getItem(gridName))
+
     if (pagination) {
         baseClass = [DGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
         lang.mixin(params, {
-            rowsPerPage: 50,
+            rowsPerPage: rows || 50,
             pagingLinks: 1,
             pagingTextBox: true,
             firstLastArrows: true,

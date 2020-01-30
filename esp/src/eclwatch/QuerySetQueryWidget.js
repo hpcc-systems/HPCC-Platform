@@ -326,7 +326,7 @@ define([
             initQuerySetGrid: function (params) {
                 var context = this;
                 var store = this.params.searchResults ? this.params.searchResults : ESPQuery.CreateQueryStore();
-                this.querySetGrid = new declare([ESPUtil.Grid(true, true)])({
+                this.querySetGrid = new declare([ESPUtil.Grid(true, true, false, false, "QuerySetQueryWidget")])({
                     store: store,
                     query: this.getGridQuery(),
                     sort: [{ attribute: "Id" }],

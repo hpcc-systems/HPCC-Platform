@@ -445,7 +445,7 @@ define([
             initWorkunitsGrid: function () {
                 var context = this;
                 this.store = this.params.searchResults ? this.params.searchResults : new ESPWorkunit.CreateWUQueryStore();
-                this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
+                this.workunitsGrid = new declare([ESPUtil.Grid(true, true, false, false, "WUQueryWidget")])({
                     store: this.store,
                     query: this.getFilter(),
                     columns: {
