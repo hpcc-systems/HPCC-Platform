@@ -186,6 +186,7 @@ int CEspHttpServer::processRequest()
 {
     m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
     m_response->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
+    m_response->enableCompression();
     try
     {
         if (m_request->receive(NULL)==-1) // MORE - pass in IMultiException if we want to see exceptions (which are not fatal)
@@ -453,7 +454,11 @@ int CEspHttpServer::onGetApplicationFrame(CHttpRequest* request, CHttpResponse* 
         response->setContentType("text/html; charset=UTF-8");
         response->setStatus(HTTP_STATUS_OK);
 
-        const char *timestr=ctime(&modtime);
+        char timestr[128];
+        ctime_r(&modtime, timestr);
+        int timelen = strlen(timestr);
+        if (timelen > 0 && timestr[timelen -1] == '\n')
+            timestr[timelen - 1] = '\0';
         response->addHeader("Last-Modified", timestr);
         response->send();
     }

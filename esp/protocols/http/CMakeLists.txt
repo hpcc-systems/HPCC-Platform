@@ -64,6 +64,7 @@ include_directories(
     ./../../services/common
     ./../../../system/security/shared
     ./../../../system/security/LdapSecurity
+    ./../../../system/security/zcrypt
     ./../../../system/mp 
     ./../../../dali/base
     ./../../../common/workunit
@@ -96,3 +97,10 @@ endif()
 if(USE_OPENLDAP)
     target_link_libraries(esphttp LdapSecurity)
 endif(USE_OPENLDAP)
+
+IF (USE_ZLIB)
+    target_link_libraries ( esphttp
+        ${ZLIB_LIBRARIES}
+        zcrypt
+    )
+ENDIF()

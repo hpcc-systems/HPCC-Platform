@@ -49,6 +49,10 @@ enum MessageLogFlag
     LOGCONTENT = 2
 };
 
+#define HTTP_HEADER_CONTENT_ENCODING  "Content-Encoding"
+#define HTTP_HEADER_TRANSFER_ENCODING "Transfer-Encoding"
+#define HTTP_HEADER_ACCEPT_ENCODING   "Accept-Encoding"
+
 class esp_http_decl CHttpMessage : implements IHttpMessage, public CInterface
 {
 protected:
@@ -70,6 +74,7 @@ protected:
     bool         m_persistentEligible = false;
     bool         m_persistentEnabled = false;
     bool         m_peerClosed = false;
+    bool         m_compressionEnabled = false;
 
     int m_paramCount;
     int m_attachCount;
@@ -119,6 +124,7 @@ public:
     void logSOAPMessage(const char* message, const char* prefix = NULL);
     void logMessage(const char *message, const char *prefix = NULL, const char *find = NULL, const char *replace = NULL);
     void logMessage(MessageLogFlag logFlag, const char *prefix = NULL);
+    void logMessage(MessageLogFlag logFlag, StringBuffer& content, const char *prefix = NULL);
 
     virtual StringBuffer& getContent(StringBuffer& content);
     virtual void setContent(const char* content);
@@ -152,6 +158,8 @@ public:
     virtual void setHeader(const char* headername, const char* headerval);
     virtual void addHeader(const char* headername, const char* headerval);
     virtual StringBuffer& getHeader(const char* headername, StringBuffer& headerval);
+    virtual bool hasHeader(const char* headername);
+    virtual void removeHeader(const char* headername);
     virtual int getParameterCount(){return m_paramCount;}
     virtual int getAttachmentCount(){return m_attachCount;}
     virtual IProperties *queryParameters();
@@ -259,6 +267,11 @@ public:
     virtual bool getPersistentEligible() { return m_persistentEligible; }
     virtual void setPersistentEnabled(bool enabled) { m_persistentEnabled = enabled; }
     virtual bool getPeerClosed() { return m_peerClosed; }
+    virtual void enableCompression();
+    virtual bool shouldCompress(int& compressType) { return false; }
+    virtual bool compressContent(StringBuffer* originalContent, int compressType) { return false; }
+    virtual bool shouldDecompress(int& compressType) { return false; }
+    virtual bool decompressContent(StringBuffer* originalContent, int compressType) { return false; }
 };
 
 
@@ -402,6 +415,10 @@ public:
     void CheckModifiedHTTPContent(bool modified, const char *lastModified, const char *etag, const char *contenttype, MemoryBuffer &content);
     bool getRespSent() { return m_respSent; }
     void setRespSent(bool sent) { m_respSent = sent; }
+    virtual bool shouldCompress(int& compressType);
+    virtual bool compressContent(StringBuffer* originalContent, int compressType);
+    virtual bool shouldDecompress(int& compressType);
+    virtual bool decompressContent(StringBuffer* originalContent, int compressType);
 };
 
 inline bool canRedirect(CHttpRequest &req)

@@ -75,6 +75,7 @@ void usage()
     puts("   -y: use default answers to yes or no prompts.");
     puts("   -wiz: ECL to ESP wizard mode.");
     puts("   -soapaction <url>: specify the soapaction.");
+    puts("   -compress: add header to the request to tell the server to compress the content if possible.");
     puts("   -version: print out soapplus version.");
 }
 
@@ -719,6 +720,11 @@ int main(int argc, char** argv)
             i++;
             in_fname = argv[i++];
             isEspLogFile = true;
+        }
+        else if(stricmp(argv[i], "-compress") == 0)
+        {
+            i++;
+            globals->setProp("compress", "1");
         }
         else if(stricmp(argv[i], "-version") == 0)
         {

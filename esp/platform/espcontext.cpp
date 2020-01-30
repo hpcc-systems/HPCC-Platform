@@ -87,6 +87,7 @@ private:
     Owned<IEspSecureContext> m_secureContext;
 
     StringAttr   m_transactionID;
+    IHttpMessage* m_request;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -590,6 +591,14 @@ public:
     virtual const char * queryTransactionID()
     {
         return m_transactionID.get();
+    }
+    virtual void setRequest(IHttpMessage* req)
+    {
+        m_request = req;
+    }
+    virtual IHttpMessage* queryRequest()
+    {
+        return m_request;
     }
 };
 
