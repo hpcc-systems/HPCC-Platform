@@ -768,13 +768,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        usageCacheReaderThread->setActive(true);
+        usageCacheReader->setActive(true);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        usageCacheReaderThread->setActive(false);
+        usageCacheReader->setActive(false);
         return true;
     }
     IConstEnvironment* getConstEnvironment();
@@ -881,7 +881,7 @@ private:
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
     Mutex                       mutex_machine_info_table;
-    Owned<CInfoCacheReaderThread>    usageCacheReaderThread;
+    Owned<CInfoCacheReader>     usageCacheReader;
 };
 
 //---------------------------------------------------------------------------------------------
@@ -981,7 +981,7 @@ public:
     const IPropertyTree *queryUsages() const { return usages; }
 };
 
-class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
+class CUsageCacheReader : public CInfoCacheReader
 {
     Cws_machineEx *servicePtr;
 
@@ -994,7 +994,10 @@ class CUsageCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
     void addOtherComponentUsageReq(IConstEnvironment *constEnv, const char *name, const char *type, IPropertyTree *usageReq);
 
 public:
-    CUsageCacheReader(Cws_machineEx *_service) : servicePtr(_service) {}
+    IMPLEMENT_IINTERFACE;
+
+    CUsageCacheReader(Cws_machineEx *_service, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
+        : servicePtr(_service), CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
 
     virtual CInfoCache *read() override;
 };

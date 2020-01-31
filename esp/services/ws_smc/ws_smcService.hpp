@@ -156,10 +156,11 @@ public:
     inline IArrayOf<IEspDFUJob>& queryDFURecoveryJobs() { return DFURecoveryJobs; };
 };
 
-class CActivityInfoCacheReader : public CSimpleInterfaceOf<IInfoCacheReader>
+class CActivityInfoCacheReader : public CInfoCacheReader
 {
 public:
-    CActivityInfoCacheReader() {};
+    CActivityInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
+        : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
 
     virtual CInfoCache* read() override
     {
@@ -184,7 +185,7 @@ class CWsSMCEx : public CWsSMC
     int m_BannerAction;
     bool m_EnableChatURL;
     CriticalSection crit;
-    Owned<CInfoCacheReaderThread>   activityInfoCacheReaderThread;
+    Owned<CInfoCacheReader>   activityInfoCacheReader;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -210,13 +211,13 @@ public:
 
     virtual bool attachServiceToDali() override
     {
-        activityInfoCacheReaderThread->setActive(true);
+        activityInfoCacheReader->setActive(true);
         return true;
     }
 
     virtual bool detachServiceFromDali() override
     {
-        activityInfoCacheReaderThread->setActive(false);
+        activityInfoCacheReader->setActive(false);
         return true;
     }
 

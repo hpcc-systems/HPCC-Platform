@@ -200,7 +200,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
 
     unsigned machineUsageCacheForceRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", MACHINE_USAGE_CACHE_MINUTES);
     unsigned machineUsageCacheAutoRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheAutoRebuildMinutes", DEFAULT_MACHINE_USAGE_CACHE_AUTO_BUILD_MINUTES);
-    usageCacheReaderThread.setown(new CInfoCacheReaderThread(new CUsageCacheReader((Cws_machineEx *) this), "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
+    usageCacheReader.setown(new CUsageCacheReader(this, "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
 }
 
 StringBuffer& Cws_machineEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
@@ -2869,7 +2869,7 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
         Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
+            usage.setown((CUsageCache*) usageCacheReader->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
         }
@@ -2997,7 +2997,7 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
         Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
+            usage.setown((CUsageCache*) usageCacheReader->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
         }
@@ -3197,7 +3197,7 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
         Owned<IPropertyTree> uniqueUsages;
         if (!req.getBypassCachedResult())
         {
-            usage.setown((CUsageCache*) usageCacheReaderThread->getCachedInfo());
+            usage.setown((CUsageCache*) usageCacheReader->getCachedInfo());
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
         }
