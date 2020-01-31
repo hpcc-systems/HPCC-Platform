@@ -2,14 +2,11 @@
 -   [latest](https://github.com/hpcc-systems/containers/docker/tree/platform/Dockerfile)
 
 # Quick reference
--   **Where to get help**:
-   [HPCCSystems Forum](https://hpccsystems.com/bb/)
--   **Where to file issues**:
-   [JIRA HPCC](https://track.hpccsystems.com/projects/HPCC/summary)
+-   **Where to get help**: [HPCCSystems Forum](https://hpccsystems.com/bb/)
+-   **Where to file issues**: [JIRA HPCC](https://track.hpccsystems.com/projects/HPCC/summary)
 -   **Maintained by**:
 builds@hpccsystems.com
--   **Source of this project**:
-   [https://github.com/hpcc-systems/HPCC-Platform](https://github.com/hpcc-systems/HPCC-Platform)
+-   **Source of this project**: [https://github.com/hpcc-systems/HPCC-Platform](https://github.com/hpcc-systems/HPCC-Platform)
 
 
 # What is HPCC Systems(r)

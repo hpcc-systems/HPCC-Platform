@@ -21,7 +21,7 @@ RUN if [ -z "${version}" ] ; then echo Missing HPCC version; exit 1; else : ; fi
 
 RUN set -ex; \
    apt-get update; \
-   apt-get install -y curl libarchive13 openjdk-8-jdk; \
+   apt-get install -y curl libarchive13 openjdk-8-jdk --fix-missing; \
    export VERSION_MMP=${version%-*}; \
    export CLIENTTOOLS_PACKAGE=hpccsystems-clienttools-community_${version}bionic_amd64.deb; \
    wget  "http://d2wulyp08c6njk.cloudfront.net/releases/CE-Candidate-${VERSION_MMP}/bin/clienttools/${CLIENTTOOLS_PACKAGE}"; \
