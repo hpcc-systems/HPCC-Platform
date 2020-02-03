@@ -486,6 +486,8 @@ EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integ
 EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, const varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
     lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit);
 
+
+
 /**
  * Sprays an xml file from a single machine and distributes it across the nodes of the destination group.
  *
@@ -521,6 +523,50 @@ EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 so
 
 EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE) :=
     lib_fileservices.FileServices.SprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit);
+
+
+
+/**
+ * Sprays an json file from a single machine and distributes it across the nodes of the destination group.
+ *
+ * @param sourceIP      The IP address of the file.
+ * @param sourcePath    The path and name of the file.
+ * @param sourceMaxRecordSize    The maximum size (in bytes) of the records in the file.
+ * @param sourceRowPath The JSON path that is used to delimit records in the source file.
+ * @param sourceEncoding The unicode encoding of the file.  (utf8,utf8n,utf16be,utf16le,utf32be,utf32le)
+ * @param destinationGroup The name of the group to distribute the file across.
+ * @param destinationLogicalName The logical name of the file to create.
+ * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
+ *                      Defaults to no timeout (-1).
+ * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
+ * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
+ * @param replicate     Whether to replicate the new file. Defaults to FALSE.
+ * @param compress      Whether to compress the new file. Defaults to FALSE.
+ * @param failIfNoSourceFile If TRUE it causes a missing source file to trigger a failure.  Defaults to FALSE.
+ * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
+ * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
+ * @param noSplit      Don't split a file part to multiple target parts. Default is FALSE.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required; OPTIONAL, defaults to an empty string
+ * @param userPw        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
+ * @return              The DFU workunit id for the job.
+ */
+
+EXPORT varstring fSprayJson(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowPath='/', varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fSprayJson(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowPath, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
+
+
+/**
+ * Same as fSprayJson, but does not return the DFU Workunit ID.
+ *
+ * @see fSprayJson
+ */
+
+EXPORT SprayJson(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowPath='/', varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.SprayJson(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowPath, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, username, userPw);
+
 
 /**
  * Copies a distributed file from multiple machines, and desprays it to a single file on a single machine.
