@@ -1,0 +1,155 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+###<REPLACE>###
+
+progname=setupPKI
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^home *= *" | sed -e 's/^home *= *//'`
+user=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user *= *" | sed -e 's/^user *= *//'`
+homePath=${PATH_PREFIX}/${user}
+
+certPath=${homePath}/certificate
+sbin_path="${INSTALL_DIR}/sbin"
+envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
+
+COMPS=$(${sbin_path}/configgen -env ${envfile} -list)
+printf "%s\n" $COMPS
+
+if [[ $rc -ne 0 ]]; then
+    log "$progname: failure to build COMPS from configgen call"
+    echo -e "\033[31merror\033[0m: $progname -> failure to build COMPS from configgen call"
+    exit 1
+fi
+
+comp.parser ${COMPS}
+
+if [ -z ${compArray} ];then
+   log  "There are no components configured to run on this node ..."
+   echo "There are no components configured to run on this node ..."
+   exit 3
+fi
+
+if [ ! -d ${certPath} ]; then
+    mkdir -p ${certPath}
+fi
+
+domainname=""
+if [ ! -e ${certPath}/cacert.pem ]; then
+    if [ "${CALOCATION}" != "" ]; then
+        cfssl info -remote ${CALOCATION} | cfssljson -bare ${certPath}/cacert
+        printf "Retrieved CA certificate from CA Server.\n"
+    else
+        read -p "Domain Name [local]: " domainname
+        if [ "$domainname" = "" ]; then
+            domainname=local
+        fi
+        openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/cacert-key.pem -out ${certPath}/cacert.csr -subj "/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer/CN=ca.${domainname}"
+        chmod 400 ${certPath}/cacert-key.pem
+        openssl x509 -req -days 3650 -in ${certPath}/cacert.csr -signkey ${certPath}/cacert-key.pem -sha256 -out ${certPath}/cacert.pem
+        printf "Generated self-signed CA certificate and privatekey.\n"
+    fi
+fi
+
+for i in "" ${compArray[@]} ; do
+    compName=""
+    componentType=""
+    if [ "$i" != "" ]; then
+        compName=""${i#*_}
+        comp.getByName ${compName}
+        componentType=""`echo ${comp_return} | awk -F" " '{print $1}' | awk -F"=" '{print $2}'`
+    fi
+
+    echo $compName   $componentType
+
+    if [ ! -d ${certPath}/$compName ]; then
+        mkdir -p ${certPath}/$compName
+    fi
+
+    if [ ! -e ${certPath}/$compName/key.pem ]; then
+        if [ "$domainname" =  "" ]; then
+             read -p "Domain Name [local]: " domainname
+             if [ "$domainname" = "" ]; then
+                 domainname=local
+             fi
+        fi
+        cn="hpcc.$domainname"
+        if [ "$compName" != "" ]; then
+             cn="$compName.$domainname"
+        fi
+        compSubject="/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer/CN=${cn}"
+        read -p "Generating key for $cn, hit any key to continue: " tmpvar
+        openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/$compName/key.pem -out ${certPath}/$compName/my.csr -subj "$compSubject"
+        chmod 400 ${certPath}/$compName/cacert-key.pem
+        rm -f ${certPath}/$compName/certificate.pem
+        printf "RSA key installed for user %-28s component %s ..." "$user" "$compName"
+        log_success_msg
+    else
+        printf "RSA keys are already installed for user %-15s component %s ..." "$user" "$compName"
+        log_success_msg
+    fi
+    if [ ! -e ${certPath}/$compName/certificate.pem ]; then
+        if [ "${CALOCATION}" = "" ]; then
+            openssl x509 -req -days 1825 -in ${certPath}/$compName/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/$compName/certificate.pem
+            if [ ! -e ${certPath}/$compName/certificate.pem ]; then
+                printf "Failed to generate certificate for component %s\n" "$compName"
+                exit 1
+            else
+                printf "Local CA signed Certificate installed for user %-14s component %s ..." "$user" "$compName"
+                log_success_msg
+            fi
+        else
+            cfssl sign -remote ${CALOCATION} ${certPath}/$compName/my.csr | cfssljson -bare ${certPath}/$compName/certificate
+            if [ ! -e ${certPath}/$compName/certificate.pem ]; then
+                printf "Failed to generate certificate for component %s\n" "$compName"
+                exit 1
+            else
+                printf "CA signed Certificate installed for user %-14s component %s ..." "$user" "$compName"
+                log_success_msg
+            fi
+        fi
+    else
+    printf "Certificate already installed for user %-9s component %s ..." "$user" "$compName"
+    log_success_msg
+fi
+
+done
+
+if [ ! -e ${homePath}/.ssh/id_rsa ]; then
+    if [ ! -d ${homePath}/.ssh ]; then
+        mkdir -p ${homePath}/.ssh
+        chmod 700 ${homePath}/.ssh
+    fi
+    cp ${certPath}/key.pem ${homePath}/.ssh/id_rsa
+    ssh-keygen -y -f ${certPath}/key.pem > ${homePath}/.ssh/id_rsa.pub
+    cat ${homePath}/.ssh/id_rsa.pub >> ${homePath}/.ssh/authorized_keys
+    printf "ssh keys installed for user %-12s ..." "$user"
+    log_success_msg
+else
+    printf "ssh keys already installed for %-9s ..." "$user"
+    log_success_msg
+fi
+
+echo ${CA_ADDR} > /tmp/caaddr.txt
+
+exit 0

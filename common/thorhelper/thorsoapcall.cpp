@@ -1332,6 +1332,20 @@ int CWSCHelperThread::run()
 
 //=================================================================================================
 
+ClientCertificate* createClientCertificate(const char* componentName)
+{
+    StringBuffer path(getenv("HOME"));
+    path.append(PATHSEPCHAR).append("certificate").append(PATHSEPCHAR).append(componentName).append(PATHSEPCHAR);
+    StringBuffer certpath(path), keypath(path);
+    certpath.append("certificate.pem");
+    keypath.append("key.pem");
+
+    ClientCertificate* certobj = new ClientCertificate();
+    certobj->certificate.set(certpath.str());
+    certobj->privateKey.set(keypath.str());
+    return certobj;
+}
+
 IWSCHelper * createSoapCallHelper(IWSCRowProvider *r, IEngineRowAllocator * outputAllocator, const char *authToken, WSCMode wscMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor)
 {
     return new CWSCHelper(r, outputAllocator, authToken, wscMode, clientCert, logctx, roxieAbortMonitor, STsoap);

@@ -38,9 +38,9 @@ if ( PLATFORM AND UNIX )
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/bash-vars.in" "${CMAKE_BINARY_DIR}/bash-vars")
     set(bash-vars "${CMAKE_BINARY_DIR}/bash-vars")
 
+    ADD_SUBDIRECTORY(etc)
     ADD_SUBDIRECTORY(bash)
     ADD_SUBDIRECTORY(bin)
-    ADD_SUBDIRECTORY(etc)
     ADD_SUBDIRECTORY(sbin)
 endif ()
 
