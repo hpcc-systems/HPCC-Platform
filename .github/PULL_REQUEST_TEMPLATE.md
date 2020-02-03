@@ -48,6 +48,7 @@
   - [ ] Performance
   - [ ] Security
   - [ ] Thread-safety
+  - [ ] Cloud-compatibility
   - [ ] Premature optimization
   - [ ] Existing deployed queries will not be broken
   - [ ] This change fixes the problem, not just the symptom
