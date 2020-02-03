@@ -1295,7 +1295,7 @@ void CDeploymentEngine::ensurePath(const char* filespec) const
     StringBuffer dir;
     splitDirTail(filespec, dir);
     bool flag = true;
-    EnvMachineOS os = MachineOsW2K;
+    EnvMachineOS os = MachineOsLinux;
 
     if (m_curInstance && m_curSSHUser.length() && m_curSSHKeyFile.length())
     {
