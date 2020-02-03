@@ -10,14 +10,13 @@ define([
     "dijit/registry",
 
     "src/Clippy",
+    "src/react/index",
 
     "hpcc/_TabContainerWidget",
     "src/ESPWorkunit",
     "src/ESPActivity",
     "src/ESPRequest",
     "src/WsWorkunits",
-
-    "src/WUStatus",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
@@ -46,8 +45,8 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass,
     registry,
     Clippy,
+    srcReact,
     _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, WsWorkunits,
-    WUStatusModule,
     template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -120,9 +119,6 @@ define([
             Clippy.attach(this.id + "ClippyButton");
             Clippy.attach(this.id + "ShareWUClippy");
 
-            this.wuStatus = new WUStatusModule.WUStatus()
-                .baseUrl("")
-                ;
         },
 
         startup: function (args) {
@@ -131,6 +127,7 @@ define([
         },
 
         destroy: function (args) {
+            srcReact.unrender(this.statusNode);
             this.zapDialog.destroyRecursive();
             this.inherited(arguments);
         },
@@ -175,7 +172,6 @@ define([
         _onAutoRefresh: function (event) {
             var autoRefresh = this.widget.AutoRefresh.get("checked");
             this.wu.disableMonitor(!autoRefresh);
-            this.wuStatus.disableMonitor(!autoRefresh);
         },
         _onRefresh: function (event) {
             this.wu.refresh(true);
@@ -316,11 +312,8 @@ define([
             this.infoGridWidget.init(params);
             this.checkIfClustersAllowed();
             this.checkThorLogStatus();
-            this.wuStatus
-                .target(this.id + "WUStatus")
-                .wuid(params.Wuid)
-                .lazyRender()
-                ;
+            this.statusNode = dom.byId(this.id + "WUStatus");
+            srcReact.render(srcReact.WUStatus, { wuid: params.Wuid }, this.statusNode);
 
             this.protected.on("change", function (evt) {
                 context._onSave();

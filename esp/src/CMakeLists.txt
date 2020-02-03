@@ -209,6 +209,9 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DataPatterns/PopularPatterns.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DataPatterns/Report.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DataPatterns/StatChart.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/react/index.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/react/render.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/react/wuStatus.tsx
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UserPreferences/EnvironmentTheme.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Clippy.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CodeMirror.ts
