@@ -35,10 +35,11 @@ isSmallFile := #IFDEFINED(root.isSmallFile, true);
 
 isUnBallanced := #IFDEFINED(root.isUnBallanced, false);
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := FileServices.GetDefaultDropZone() +'/' : STORED('dropzonePath');
 engine := thorlib.platform() : stored('thor');
 prefix := setup.Files(false, false).FilePrefix + '-' + WORKUNIT;
 nodes := thorlib.nodes();
+espUrl := FileServices.GetEspURL() + '/FileSpray';
 
 unsigned VERBOSE := 0;
 
@@ -163,18 +164,17 @@ sprayRec := RECORD
   string msg;
 end;
 
-//To spray a JSON file we use XML Spray
+//To spray a JSON file we use JSON Spray
 sprayRec doSpray(sprayRec l) := TRANSFORM
     SELF.sourceFileName := l.sourceFileName;
     SELF.targetFileName := l.targetFileName;
-    SELF.msg := FileServices.fSprayXml(
+    SELF.msg := FileServices.fSprayJson(
                                 SOURCEIP := '.',
                                 SOURCEPATH := l.sourceFileName,
-                                SOURCEROWTAG := 'Row',
                                 DESTINATIONGROUP := 'my'+engine,
                                 DESTINATIONLOGICALNAME := l.targetFileName,
                                 TIMEOUT := -1,
-                                ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
+                                ESPSERVERIPPORT := espUrl,
                                 ALLOWOVERWRITE := true
                                 );
     self.result := 'Spray Pass';

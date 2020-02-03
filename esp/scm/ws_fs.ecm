@@ -385,6 +385,8 @@ ESPrequest [nil_remove] SprayVariable
     [min_ver("1.11")] bool isJSON(false);
     [min_ver("1.14")] int expireDays;
     [min_ver("1.14")] string DFUServerQueue;
+    [min_ver("1.19")] string srcUsername;
+    [min_ver("1.19")] string srcPassword;
 };
 
 ESPresponse [exceptions_inline]
@@ -684,7 +686,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.18"),
+    version("1.19"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
