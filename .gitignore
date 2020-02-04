@@ -7,7 +7,6 @@ node_modules
 esp/src/lib
 esp/src/build
 esp/src/hpcc-js
-esp/src/gjs.md
 .vscode/
 .eclcc/
 eclcc.log
