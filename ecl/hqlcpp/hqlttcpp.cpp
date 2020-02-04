@@ -3057,6 +3057,18 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     IHqlExpression * rightDs = queryJoinRhs(expr);
     IHqlExpression * seq = querySelSeq(expr);
     node_operator op = expr->getOperator();
+    IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
+    if (onFail)
+    {
+        OwnedHqlExpr right = createSelector(no_right, rightDs, seq);
+        if (onFail->usesSelector(right))
+        {
+            //Replace all references to right with the default values
+            OwnedHqlExpr newFail = replaceSelectorWithNull(onFail, right);
+            assertex(!newFail->usesSelector(right));
+            return replaceOwnedAttribute(expr, newFail.getClear());
+        }
+    }
 
     if (op == no_join)
     {
