@@ -126,7 +126,7 @@ public:
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
     virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
-    virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { UNIMPLEMENTED; }
+    virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { UNIMPLEMENTED_X("MultiLevelDatasetCursor::buildIterateClass"); }
 
 protected:
     BoundRow * doBuildIterateLoop(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * breakVar, bool topLevel);
