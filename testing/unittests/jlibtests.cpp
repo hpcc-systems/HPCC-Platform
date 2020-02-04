@@ -1377,6 +1377,19 @@ public:
 
         CPPUNIT_ASSERT(!testTree->isCaseInsensitive());
         CPPUNIT_ASSERT(3 == testTree->getCount("sub*"));
+
+        testTree->addPropInt("newitem", 1);
+        testTree->addPropInt("newitem", 2);
+        testTree->addPropInt("./newitem", 3);
+        testTree->addPropInt("././newitem", 4);
+
+        Owned<IPropertyTreeIterator> xIter = testTree->getElements("./newitem");
+        unsigned match=1;
+        ForEach(*xIter)
+        {
+            CPPUNIT_ASSERT(match == xIter->query().getPropInt(nullptr));
+            ++match;
+        }
     }
 };
 
