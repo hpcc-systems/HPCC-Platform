@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: esp
+spec:
+  replicas: {{ .Values.hpcc.esp.replicas }}
+  selector:
+    matchLabels:
+      run: esp
+  template:
+    metadata:
+      labels:
+        run: esp
+    spec:
+      containers:
+      - name: esp
+        image: "hpccsystems/esp:{{ .Values.hpcc.version }}"
+        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: esp
+spec:
+  ports:
+  - port: 8010
+    protocol: TCP
+    targetPort: 8010
+  selector:
+    run: esp
+  type: LoadBalancer

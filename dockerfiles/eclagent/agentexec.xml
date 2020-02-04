@@ -1,0 +1,2 @@
+<agentexec allowedPipePrograms="*" daliServers="dali:7070" defaultMemoryLimitMB="300" logDir="" name="myeclagent" pluginDirectory="/opt/HPCCSystems/plugins" traceLevel="0" analyzeWorkunit="" thorConnectTimeout="600">
+</agentexec>

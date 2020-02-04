@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roxie
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: roxie
+  template:
+    metadata:
+      labels:
+        run: roxie
+    spec:
+      containers:
+      - name: roxie
+        image: "hpccsystems/roxie:{{ .Values.hpcc.version }}"
+        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        args: [ "--serverPort=9870" ]

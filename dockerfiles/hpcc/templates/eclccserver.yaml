@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eclccserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: eclccserver
+  template:
+    metadata:
+      labels:
+        run: eclccserver
+    spec:
+      containers:
+      - name: eclccserver
+        image: "hpccsystems/eclccserver:{{ .Values.hpcc.version }}"
+        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+

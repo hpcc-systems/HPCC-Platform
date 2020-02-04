@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dali
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: dali
+  template:
+    metadata:
+      labels:
+        run: dali
+    spec:
+      containers:
+      - name: dali
+        image: "hpccsystems/dali:{{ .Values.hpcc.version }}"
+        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dali
+spec:
+  ports:
+  - port: 7070
+    protocol: TCP
+    targetPort: 7070
+  selector:
+    run: dali
+  type: ClusterIP

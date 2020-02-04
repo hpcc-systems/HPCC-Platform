@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eclagent
+spec:
+  replicas: {{ .Values.hpcc.eclagent.replicas }}
+  selector:
+    matchLabels:
+      run: eclagent
+  template:
+    metadata:
+      labels:
+        run: eclagent
+    spec:
+      containers:
+      - name: eclagent
+        image: "hpccsystems/eclagent:{{ .Values.hpcc.version }}"
+        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+
