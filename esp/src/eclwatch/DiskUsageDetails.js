@@ -34,6 +34,19 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            var context = this;
+
+            this._diskSummaryPane = registry.byId(this.id + "DiskSummaryCP");
+            var origResize = this._diskSummaryPane.resize;
+            this._diskSummaryPane.resize = function (size) {
+                origResize.apply(this, arguments);
+                if (context._diskSummary) {
+                    context._diskSummary
+                        .resize({ width: size.w, height: size.h || context._diskSummaryPane.h })
+                        .lazyRender()
+                        ;
+                }
+            }
         },
 
         resize: function (args) {
@@ -56,10 +69,16 @@ define([
                 return;
 
             var context = this;
+            this._diskSummary = new DiskUsage.Summary(params.name)
+                .target(this.id + "DiskSummary")
+                .render()
+                .refresh()
+                ;
 
-            this._diskUsage = new DiskUsage.Details(params.details.Name)
+            this._diskUsage = new DiskUsage.Details(params.name)
                 .target(this.id + "DiskUsageGrid")
-                .details(params.details)
+                .render()
+                .refresh()
                 ;
 
             this._diskUsagePane = registry.byId(this.id + "DiskUsageGridCP");
@@ -78,6 +97,7 @@ define([
         },
 
         refreshGrid: function (clearSelection) {
+            this._diskSummary.refresh();
             this._diskUsage.refresh();
         }
     });
