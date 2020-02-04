@@ -12331,7 +12331,17 @@ public:
             Owned<IPropertyTree> metadata;
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
-            unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+            unsigned nodeSize = NODESIZE;
+            if (metadata)
+            {
+                nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+                if (metadata->getPropBool("_noSeek", false))
+                    flags |= TRAILING_HEADER_ONLY;
+                if (metadata->getPropBool("_useTrailingHeader", true))
+                    flags |= USE_TRAILING_HEADER;
+            }
+            else
+                flags |= USE_TRAILING_HEADER;
             Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
             class BcWrapper : implements IBlobCreator
             {

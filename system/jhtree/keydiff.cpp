@@ -413,7 +413,7 @@ public:
         if(!keyFileIO)
             throw MakeStringException(0, "Could not write index file %s", filename);
         keyStream.setown(createIOStream(keyFileIO));
-        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY;
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER;
         if(variableWidth)
             flags |= HTREE_VARSIZE;
         if(quickCompressed)

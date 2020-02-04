@@ -169,20 +169,6 @@ void CKeyHdr::load(KeyHdr &_hdr)
         throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %u. Key is version %u", KEYBUILD_VERSION, (unsigned) hdr.version);
 }
 
-void CKeyHdr::write(IWriteSeq *out, CRC32 *crc)
-{
-    unsigned nodeSize = hdr.nodeSize;
-    assertex(out->getRecordSize()==nodeSize);
-    MemoryAttr ma;
-    byte *buf = (byte *) ma.allocate(nodeSize); 
-    memcpy(buf, &hdr, sizeof(hdr));
-    memset(buf+sizeof(hdr), 0xff, nodeSize-sizeof(hdr));
-    SwapBigEndian(*(KeyHdr*) buf);
-    out->put(buf);
-    if (crc)
-        crc->tally(nodeSize, buf);
-}
-
 void CKeyHdr::write(IFileIOStream *out, CRC32 *crc)
 {
     unsigned nodeSize = hdr.nodeSize;
@@ -837,6 +823,12 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
         throw MakeStringException(4, "Invalid key %s: failed to read key header", filename);
     CKeyHdr keyHdr;
     keyHdr.load(hdr);
+    if (keyHdr.getKeyType() & USE_TRAILING_HEADER)
+    {
+        if (io->read(size - keyHdr.getNodeSize(), sizeof(hdr), &hdr) != sizeof(hdr))
+            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", filename);
+        keyHdr.load(hdr);
+    }
 
     _WINREV(hdr.phyrec);
     _WINREV(hdr.root);

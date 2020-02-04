@@ -1016,6 +1016,11 @@ CMemKeyIndex::CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, b
     if (io->length() < sizeof(hdr))
         throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
     memcpy(&hdr, io->base(), sizeof(hdr));
+    if (hdr.ktype & USE_TRAILING_HEADER)
+    {
+        _WINREV(hdr.nodeSize);
+        memcpy(&hdr, (io->base()+io->length()) - hdr.nodeSize, sizeof(hdr));
+    }
     init(hdr, isTLK, false);
 }
 
@@ -1042,6 +1047,12 @@ CDiskKeyIndex::CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool isTL
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
         throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
+    if (hdr.ktype & USE_TRAILING_HEADER)
+    {
+        _WINREV(hdr.nodeSize);
+        if (!io->read(io->size() - hdr.nodeSize, sizeof(hdr), &hdr))
+            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", _name);
+    }
     init(hdr, isTLK, allowPreload);
 }
 
@@ -3030,7 +3041,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
     void testStepping()
     {
-        buildTestKeys(false);
+        buildTestKeys(false, true, false);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
@@ -3138,20 +3149,24 @@ class IKeyManagerTest : public CppUnit::TestFixture
         removeTestKeys();
     }
 
-    void buildTestKeys(bool variable)
+    void buildTestKeys(bool variable, bool useTrailingHeader, bool noSeek)
     {
-        buildTestKey("keyfile1.$$$", false, variable);
-        buildTestKey("keyfile2.$$$", true, variable);
+        buildTestKey("keyfile1.$$$", false, variable, useTrailingHeader, noSeek);
+        buildTestKey("keyfile2.$$$", true, variable, useTrailingHeader, noSeek);
     }
 
-    void buildTestKey(const char *filename, bool skip, bool variable)
+    void buildTestKey(const char *filename, bool skip, bool variable, bool useTrailingHeader, bool noSeek)
     {
         OwnedIFile file = createIFile(filename);
         OwnedIFileIO io = file->openShared(IFOcreate, IFSHfull);
         Owned<IFileIOStream> out = createIOStream(io);
         unsigned maxRecSize = variable ? 18 : 10;
         unsigned keyedSize = 10;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0, nullptr, true, false);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |
+                (variable ? HTREE_VARSIZE : 0) |
+                (useTrailingHeader ? USE_TRAILING_HEADER : 0) |
+                (noSeek ? TRAILING_HEADER_ONLY : 0),
+                maxRecSize, NODESIZE, keyedSize, 0, nullptr, true, false);
 
         char keybuf[18];
         memset(keybuf, '0', 18);
@@ -3219,7 +3234,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         key->releaseBlobs();
     }
 protected:
-    void testKeys(bool variable)
+    void testKeys(bool variable, bool useTrailingHeader, bool noSeek)
     {
         const char *json = variable ?
                 "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
@@ -3239,7 +3254,7 @@ protected:
                 "}";
         Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
-        buildTestKeys(variable);
+        buildTestKeys(variable, useTrailingHeader, noSeek);
         {
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
             Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false, false);
@@ -3405,8 +3420,10 @@ protected:
     void testKeys()
     {
         ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
-        testKeys(false);
-        testKeys(true);
+        for (bool var : { false, true })
+            for (bool trail : { false, true })
+                for (bool noseek : { false, true })
+                    testKeys(var, trail, noseek);
     }
 };
 

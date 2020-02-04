@@ -105,12 +105,14 @@ public:
         prevLeafNode = NULL;
 
         assertex(nodeSize >= CKeyHdr::getSize());
-        assertex(nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header 
+        assertex(nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header
+        if (flags & TRAILING_HEADER_ONLY)
+            flags |= USE_TRAILING_HEADER;
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
         hdr->length = keyValueSize; 
-        hdr->ktype = flags; 
+        hdr->ktype = flags;
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
         hdr->maxkbn = nodeSize-sizeof(NodeHdr);
@@ -136,6 +138,7 @@ public:
 
     CKeyBuilderBase(CKeyHdr * chdr)
     {
+        sequence = 0;
         levels = 0;
         records = 0;
         prevLeafNode = NULL;
@@ -201,8 +204,13 @@ protected:
         if (out)
         {
             out->flush();
-            out->seek(0, IFSbegin);
-            keyHdr->write(out, crc);
+            if (keyHdr->getKeyType() & USE_TRAILING_HEADER)
+                keyHdr->write(out, crc);  // write a copy at end too, for use on systems that can't seek
+            if (!(keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
+            {
+                out->seek(0, IFSbegin);
+                keyHdr->write(out, crc);
+            }
         }
     }
 
@@ -641,6 +649,12 @@ extern jhtree_decl IKeyDesprayer * createKeyDesprayer(IFile * in, IFileIOStream 
 
     Owned<CKeyHdr> hdr = new CKeyHdr;
     hdr->load(*(KeyHdr *)buffer.get());
+    if (hdr->getKeyType() & USE_TRAILING_HEADER)
+    {
+        if (io->read(in->size() - hdr->getNodeSize(), sizeof(KeyHdr), (void *)buffer.get()) != sizeof(KeyHdr))
+            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", in->queryFilename());
+        hdr->load(*(KeyHdr*)buffer.get());
+    }
     hdr->getHdrStruct()->nument = 0;
     return new CKeyDesprayer(hdr, out);
 }

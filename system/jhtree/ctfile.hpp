@@ -31,10 +31,10 @@
 #define HTREE_FPOS_OFFSET   0x01 // Obsolete, not supported
 #define HTREE_TOPLEVEL_KEY  0x02
 #define COL_PREFIX          0x04
-#define COL_SUFFIX          0x08 // Obsolete, not supported
+#define TRAILING_HEADER_ONLY  0x08 // Leading header not updated - use trailing one
 #define HTREE_VARSIZE       0x10
 #define HTREE_FULLSORT_KEY  0x20
-#define INDAR_TRAILING_SEG  0x80 // Obsolete, not supported
+#define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
 #define KEYBUILD_VERSION 1 // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
@@ -132,7 +132,6 @@ public:
     CKeyHdr();
 
     void load(KeyHdr &_hdr);
-    void write(IWriteSeq *, CRC32 *crc = NULL);
     void write(IFileIOStream *, CRC32 *crc = NULL);
 
     unsigned int getMaxKeyLength();

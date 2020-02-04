@@ -158,6 +158,12 @@ int main(int argc, const char **argv)
                 MemoryAttr block(sizeof(KeyHdr));
                 io->read(0, sizeof(KeyHdr), (void *)block.get());
                 header->load(*(KeyHdr*)block.get());
+                if (header->getKeyType() & USE_TRAILING_HEADER)
+                {
+                    if (io->read(in->size() - header->getNodeSize(), sizeof(KeyHdr), (void *)block.get()) != sizeof(KeyHdr))
+                        throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", keyName);
+                    header->load(*(KeyHdr*)block.get());
+                }
 
                 printf("Key '%s'\nkeySize=%d keyedSize = %d NumParts=%x, Top=%d\n", keyName, key_size, keyedSize, index->numParts(), index->isTopLevelKey());
                 printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);

@@ -171,7 +171,17 @@ public:
             flags |= HTREE_TOPLEVEL_KEY;
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
-        unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+        unsigned nodeSize = NODESIZE;
+        if (metadata)
+        {
+            nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+            if (metadata->getPropBool("_noSeek", false))
+                flags |= TRAILING_HEADER_ONLY;
+            if (metadata->getPropBool("_useTrailingHeader", true))
+                flags |= USE_TRAILING_HEADER;
+        }
+        else
+            flags |= USE_TRAILING_HEADER;
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
