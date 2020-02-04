@@ -646,11 +646,11 @@ protected:
         case TAKchildif:
             return createRoxieServerIfActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isGraphIndependent(node));
         case TAKifaction:
-            return createRoxieServerIfActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerIfActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
         case TAKparallel:
-            return createRoxieServerParallelActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerParallelActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
         case TAKsequential:
-            return createRoxieServerSequentialActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerSequentialActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
         case TAKindexread:
             return createRoxieServerIndexReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node, remoteId);
         case TAKindexnormalize:
@@ -864,7 +864,7 @@ protected:
         case TAKwhen_dataset:
             return createRoxieServerWhenActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKwhen_action:
-            return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
+            return createRoxieServerWhenActionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, usageCount(node), isRootAction(node));
         case TAKdistribution:
             return createRoxieServerDistributionActivityFactory(id, subgraphId, *this, helperFactory, kind, node, isRootAction(node));
         case TAKexternalprocess:
