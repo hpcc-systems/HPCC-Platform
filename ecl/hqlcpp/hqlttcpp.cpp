@@ -10458,6 +10458,9 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             }
             break;
         case annotate_symbol:
+            if (!expr->getStartLine())
+                break;
+            //fallthrough
         case annotate_location:
             {
                 ErrorSeverityMapper::SymbolScope saved(errorMapper, expr);
