@@ -7867,10 +7867,16 @@ static void displayConfig(IPropertyTree * config, const char * componentTag)
 
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
 {
-    Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
-    IPropertyTree * componentDefault = defaultConfig->queryPropTree(componentTag);
-    if (!componentTag)
-        throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+    Owned<IPropertyTree> componentDefault;
+    if (defaultYaml)
+    {
+        Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
+        componentDefault.set(defaultConfig->queryPropTree(componentTag));
+        if (!componentDefault)
+            throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+    }
+    else
+        componentDefault.setown(createPTree(componentTag));
 
     Owned<IPropertyTree> config(mapJsonToXmlConfig(componentDefault));
     const char * optConfig = nullptr;
