@@ -372,6 +372,8 @@ define({
             LastRun: "Last Run",
             LearnMore: "Learn More",
             LegacyForm: "Legacy Form",
+            LegacyGraphWidget: "Legacy Graph Widget",
+            LegacyGraphLayout: "Legacy Graph Layout",
             Legend: "Legend",
             LDAPWarning: "<b>LDAP Services Error:</b>  &lsquo;Too Many Users&rsquo; - Please use a Filter.",
             LibrariesUsed: "Libraries Used",

@@ -10,8 +10,8 @@ import * as topic from "dojo/topic";
 
 import * as registry from "dijit/registry";
 
-import { ScopeGraph, Workunit } from "@hpcc-js/comms";
-import { Graph as GraphWidget, Subgraph, Vertex } from "@hpcc-js/graph";
+import { ECLGraph, ScopeGraph, Workunit } from "@hpcc-js/comms";
+import { Graph as GraphWidget, Graph2 as Graph2Widget, Subgraph, Vertex } from "@hpcc-js/graph";
 import { hashSum } from "@hpcc-js/util";
 
 // @ts-ignore
@@ -22,7 +22,7 @@ import { GraphStore, GraphTreeStore } from "./GraphStore";
 import { debounce, getImageURL, Persist } from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 import { WUGraphLegend } from "./WUGraphLegend";
-import { WUScopeController } from "./WUScopeController";
+import { WUScopeController, WUScopeController8 } from "./WUScopeController";
 
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
@@ -43,6 +43,42 @@ import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 import "dijit/TooltipDialog";
 import "hpcc/TableContainer";
+
+declare const dojoConfig;
+
+window["__hpcc_wasmFolder"] = dojoConfig.urlInfo.fullPath + "/dist";
+
+class DataGraph {
+    private _controller: WUScopeController = new WUScopeController();
+    private _widget: GraphWidget = new GraphWidget();
+
+    constructor() {
+    }
+
+    widget(): GraphWidget {
+        return this._widget;
+    }
+
+    controller(): WUScopeController {
+        return this._controller;
+    }
+}
+
+class DataGraph2 {
+    private _controller: WUScopeController8 = new WUScopeController8();
+    private _widget: Graph2Widget = new Graph2Widget();
+
+    constructor() {
+    }
+
+    widget(): Graph2Widget {
+        return this._widget;
+    }
+
+    controller(): WUScopeController8 {
+        return this._controller;
+    }
+}
 
 type _Widget = {
     id: string;
@@ -85,9 +121,8 @@ export class GraphTree7Widget {
     found = [];
     foundIndex = 0;
 
-    _graph: GraphWidget;
+    _graph: DataGraph | DataGraph2;
     protected _legend: WUGraphLegend;
-    _gc = new WUScopeController();
     protected treeStore = new GraphTreeStore();
     protected subgraphsStore = new GraphStore("Id");
     protected verticesStore = new GraphStore("Id");
@@ -95,15 +130,6 @@ export class GraphTree7Widget {
     private persist = new Persist("GraphTree7Widget");
 
     constructor() {
-        this._gc.minClick = (sg: Subgraph) => {
-            this.loadGraph(w => {
-                this._graph
-                    .selection([sg])
-                    .centerOnItem(sg)
-                    ;
-                this.syncSelectionFrom(this._graph);
-            });
-        };
     }
 
     //  Options ---
@@ -112,19 +138,22 @@ export class GraphTree7Widget {
         const optionsValues = this.optionsForm.getValues();
         this.persist.setObj("options", optionsValues);
         this.optionsDropDown.closeDropDown();
-        this.loadGraph();
+        this.initGraph();
+        this.refreshData();
+        this.refreshActionState();
     }
 
     _onOptionsReset() {
         this.optionsForm.setValues(this._optionsDefault);
-        this.loadGraph();
+        this.initGraph();
+        this.refreshData();
+        this.refreshActionState();
     }
 
     //  Data ---
     private _prevHashSum;
-    private _prevScopeGraph: Promise<ScopeGraph>;
+    private _prevScopeGraph: Promise<ECLGraph[]>;
     fetchScopeGraph(wuid: string, graphID: string, subgraphID: string = "", refresh: boolean = false): Promise<ScopeGraph> {
-        this.graphStatus.innerText = this.i18n.FetchingData;
         const hash = hashSum({
             wuid,
             graphID,
@@ -132,26 +161,28 @@ export class GraphTree7Widget {
         });
         if (!this._prevScopeGraph || refresh || this._prevHashSum !== hash) {
             this._prevHashSum = hash;
-            this._gc.clear();
+            this.graphStatus.innerText = this.i18n.FetchingData;
+            this._graph.controller().clear();
             const wu = Workunit.attach({ baseUrl: "" }, wuid);
-            this._prevScopeGraph = wu.fetchGraphs().then(graphs => {
-                for (const graph of graphs) {
-                    if (graph.Name === graphID) {
-                        return graph.fetchScopeGraph(subgraphID).then(scopedGraph => {
-                            this.graphStatus.innerText = this.i18n.Loading;
-                            return new Promise<ScopeGraph>((resolve, reject) => {
-                                setTimeout(() => {
-                                    this._gc.set(scopedGraph);
-                                    this._legend.data(this._gc.calcLegend());
-                                    resolve(scopedGraph);
-                                }, 0);
-                            });
-                        });
-                    }
-                }
-            });
+            this._prevScopeGraph = wu.fetchGraphs();
         }
-        return this._prevScopeGraph;
+        return this._prevScopeGraph.then(graphs => {
+            for (const graph of graphs) {
+                if (graph.Name === graphID) {
+                    return graph.fetchScopeGraph(subgraphID).then(scopedGraph => {
+                        this.graphStatus.innerText = this.i18n.Loading;
+                        return new Promise<ScopeGraph>((resolve, reject) => {
+                            this.graphStatus.innerText = "";
+                            setTimeout(() => {
+                                this._graph.controller().set(scopedGraph);
+                                this._legend.data(this._graph.controller().calcLegend());
+                                resolve(scopedGraph);
+                            }, 0);
+                        });
+                    });
+                }
+            }
+        });
     }
     //  --- ---
 
@@ -196,7 +227,7 @@ export class GraphTree7Widget {
     _initGraphControls() {
         aspect.after(registry.byId(this.id + "MainBorderContainer"), "resize", () => {
             if (this._graph) {
-                this._graph
+                this._graph.widget()
                     .resize()
                     .render()
                     ;
@@ -216,57 +247,65 @@ export class GraphTree7Widget {
     }
 
     _onRefresh() {
-        this.refreshData();
+        this.refreshData(true);
     }
 
     _onGraphRefresh() {
-        this._graph.data().subgraphs.forEach((sg: Subgraph) => {
-            sg.minState("normal");
-        });
-        delete this._graph["_prevLayout"];
+        if (this._graph instanceof DataGraph) {
+            this._graph.widget().data().subgraphs.forEach((sg: Subgraph) => {
+                sg.minState("normal");
+            });
+            delete this._graph.widget()["_prevLayout"];
+        } else {
+            this._graph.widget().resetLayout();
+        }
         this.loadGraph(w => {
-            this._graph.zoomToFit();
+            this._graph.widget().zoomToFit();
         });
     }
 
     _onPartial(args) {
-        this._graph.data().subgraphs.forEach((sg: Subgraph) => {
-            sg.minState("partial");
-        });
-        this.loadGraph(w => {
-            this._graph.zoomToFit();
-        });
+        if (this._graph instanceof DataGraph) {
+            this._graph.widget().data().subgraphs.forEach((sg: Subgraph) => {
+                sg.minState("partial");
+            });
+            this.loadGraph(w => {
+                this._graph.widget().zoomToFit();
+            });
+        }
     }
 
     _onMax(args) {
-        this._graph.data().subgraphs.forEach((sg: Subgraph) => {
-            sg.minState("normal");
-        });
-        this.loadGraph(w => {
-            this._graph.zoomToFit();
-        });
+        if (this._graph instanceof DataGraph) {
+            this._graph.widget().data().subgraphs.forEach((sg: Subgraph) => {
+                sg.minState("normal");
+            });
+            this.loadGraph(w => {
+                this._graph.widget().zoomToFit();
+            });
+        }
     }
 
     _onZoomToFit(args) {
-        this._graph.zoomToFit();
+        this._graph.widget().zoomToFit();
     }
 
     _onZoomToWidth(args) {
-        this._graph.zoomToWidth();
+        this._graph.widget().zoomToWidth();
     }
 
     _onZoomToPlus(args) {
-        this._graph.zoomPlus();
+        this._graph.widget().zoomPlus();
     }
 
     _onZoomToMinus(args) {
-        this._graph.zoomMinus();
+        this._graph.widget().zoomMinus();
     }
 
     _doFind(prev) {
         if (this.findText !== this.widget.FindField.value) {
             this.findText = this.widget.FindField.value;
-            this.found = this._gc.find(this.findText);
+            this.found = this._graph.controller().find(this.findText);
             this.syncSelectionFrom(this.found);
             this.foundIndex = -1;
         }
@@ -277,7 +316,13 @@ export class GraphTree7Widget {
             this.foundIndex = 0;
         }
         if (this.found.length) {
-            this._graph.centerOnItem(this._gc.item(this.found[this.foundIndex]));
+            if (this._graph instanceof DataGraph) {
+                const item = this._graph.controller().item(this.found[this.foundIndex]);
+                this._graph.widget().centerOnItem(item);
+            } else {
+                const item = this._graph.controller().item(this.found[this.foundIndex]);
+                this._graph.widget().centerOnItem(item.id);
+            }
         }
         this.refreshActionState();
     }
@@ -312,7 +357,7 @@ export class GraphTree7Widget {
         if (this.inherited(arguments))
             return;
 
-        this.initGraph();
+        this.initWidgets();
         this.initSubgraphs();
         this.initVertices();
         this.initEdges();
@@ -349,15 +394,16 @@ export class GraphTree7Widget {
         });
     }
 
-    refreshData() {
+    refreshData(refresh: boolean = false) {
         if (this.isWorkunit()) {
-            return this.loadGraphFromWu(this.wuid, this.graphName, this.subGraphId, true);
+            return this.loadGraphFromWu(this.wuid, this.graphName, this.subGraphId, refresh);
         } else if (this.isQuery()) {
         }
         return Promise.resolve();
     }
 
     loadGraphFromWu(wuid, graphName, subGraphId, refresh: boolean = false) {
+        this.initGraphController();
         return this.fetchScopeGraph(wuid, graphName, subGraphId, refresh).then(() => {
             this.loadGraph();
             this.loadSubgraphs();
@@ -367,37 +413,109 @@ export class GraphTree7Widget {
     }
 
     initGraph() {
-        this.graphStatus = dom.byId(this.id + "GraphStatus");
-        this._graph = new GraphWidget()
-            .target(this.id + "MainGraphWidget")
-            .layout("Hierarchy")
-            .applyScaleOnLayout(true)
-            .showToolbar(false)
-            .allowDragging(false)
-            .on("vertex_click", sel => {
-                this.syncSelectionFrom(this._graph);
-            })
-            .on("edge_click", sel => {
-                this.syncSelectionFrom(this._graph);
-            })
-            .on("progress", what => {
-                switch (what) {
-                    case "start":
-                    case "layout-start":
-                    case "layout-tick":
-                        this.graphStatus.innerText = this.i18n.PerformingLayout;
-                        break;
-                    case "layout-end":
-                    case "end":
-                    default:
-                        this.graphStatus.innerText = "";
-                        break;
-                }
-            });
+        const options = this.optionsForm.getValues();
+        const prevGraph = this._graph;
+        if (options.LegacyGraph.length) {
+            if (!(prevGraph instanceof DataGraph)) {
+                this._graph = new DataGraph();
+                this._graph.controller().minClick = (sg: Subgraph) => {
+                    this.loadGraph(w => {
+                        (this._graph as DataGraph).widget()
+                            .selection([sg])
+                            .centerOnItem(sg)
+                            ;
+                        this.syncSelectionFrom(this._graph);
+                    });
+                };
+            }
+        } else {
+            if (!(prevGraph instanceof DataGraph2)) {
+                this._graph = new DataGraph2();
+            }
+        }
+        if (this._graph !== prevGraph) {
+            if (prevGraph) {
+                prevGraph.widget().target(null);
+            }
+            if (this._graph instanceof DataGraph) {
+                this._graph.widget()
+                    .target(this.id + "MainGraphWidget")
+                    .layout("Hierarchy")
+                    .applyScaleOnLayout(true)
+                    .showToolbar(false)
+                    .allowDragging(false)
+                    .on("vertex_click", sel => {
+                        this.syncSelectionFrom(this._graph);
+                    })
+                    .on("edge_click", sel => {
+                        this.syncSelectionFrom(this._graph);
+                    })
+                    .on("progress", what => {
+                        switch (what) {
+                            case "start":
+                            case "layout-start":
+                            case "layout-tick":
+                                this.graphStatus.innerText = this.i18n.PerformingLayout;
+                                break;
+                            case "layout-end":
+                            case "end":
+                            default:
+                                this.graphStatus.innerText = "";
+                                break;
+                        }
+                    })
+                    ;
+            } else {
+                this._graph.widget()
+                    .target(this.id + "MainGraphWidget")
+                    .layout("DOT")
+                    .applyScaleOnLayout(true)
+                    .showToolbar(false)
+                    .allowDragging(false)
+                    .minScale(0)
+                    .maxScale(999999999)
+                    .on("subgraph_click", sel => {
+                        this.syncSelectionFrom(this._graph);
+                    })
+                    .on("vertex_click", sel => {
+                        this.syncSelectionFrom(this._graph);
+                    })
+                    .on("edge_click", sel => {
+                        this.syncSelectionFrom(this._graph);
+                    })
+                    .on("progress", what => {
+                        switch (what) {
+                            case "start":
+                            case "stop":
+                                break;
+                            case "layout-start":
+                            case "layout-tick":
+                                // render(Busy, { open: true }, this.id + "MainGraphWidgetStatus");
+                                this.graphStatus.innerText = this.i18n.PerformingLayout;
+                                break;
+                            case "layout-stop":
+                                this.graphStatus.innerText = "";
+                                // render(Busy, { open: false }, this.id + "MainGraphWidgetStatus");
+                                break;
+                        }
+                    })
+                    ;
+            }
+        }
+        if (this._graph instanceof DataGraph2) {
+            this._graph.widget().layout(options.LegacyLayout.length ? "Hierarchy" : "DOT");
+        }
+    }
 
-        this._graph.tooltipHTML((v: Vertex) => {
-            return this._gc.calcGraphTooltip2(v);
-        });
+    initWidgets() {
+        this.graphStatus = dom.byId(this.id + "GraphStatus");
+        this.initGraph();
+
+        if (this._graph instanceof DataGraph) {
+            this._graph.widget().tooltipHTML((v: Vertex) => {
+                return (this._graph.controller() as WUScopeController).calcGraphTooltip2(v);
+            });
+        }
 
         this._legend = new WUGraphLegend(this as any)
             .target(this.id + "LegendGrid")
@@ -406,30 +524,58 @@ export class GraphTree7Widget {
             })
             .on("mouseover", kind => {
                 const verticesMap: { [id: string]: boolean } = {};
-                for (const vertex of this._gc.vertices(kind)) {
-                    verticesMap[vertex.id()] = true;
+
+                if (this._graph instanceof DataGraph) {
+                    for (const vertex of this._graph.controller().vertices(kind)) {
+                        verticesMap[vertex.id()] = true;
+                    }
+                } else {
+                    for (const vertex of this._graph.controller().vertices(kind)) {
+                        verticesMap[vertex.id] = true;
+                    }
                 }
-                this._graph.highlightVerticies(verticesMap);
+                this._graph.widget().highlightVerticies(verticesMap);
             })
             .on("mouseout", kind => {
-                this._graph.highlightVerticies();
+                this._graph.widget().highlightVerticies();
             })
             ;
     }
 
-    loadGraph(callback?) {
+    initGraphController() {
         const options = this.optionsForm.getValues();
-        this._gc
-            .showSubgraphs(options.subgraph.length)
-            .showIcon(options.vicon.length)
-            .vertexLabelTpl(options.vlabel)
-            .edgeLabelTpl(options.elabel)
-            .disabled(this._legend.disabled())
-            ;
-        this._graph
-            .data(this._gc.graphData(), true)
-            .render(callback)
-            ;
+        if (this._graph instanceof DataGraph) {
+            this._graph.controller()
+                .showSubgraphs(options.subgraph.length)
+                .showIcon(options.vicon.length)
+                .vertexLabelTpl(options.vlabel)
+                .edgeLabelTpl(options.elabel)
+                .disabled(this._legend.disabled())
+                ;
+        } else {
+            this._graph.controller()
+                .showSubgraphs(options.subgraph.length)
+                .showIcon(options.vicon.length)
+                .vertexLabelTpl(options.vlabel)
+                .edgeLabelTpl(options.elabel)
+                .disabled(this._legend.disabled())
+                ;
+        }
+    }
+
+    loadGraph(callback?) {
+        this.initGraphController();
+        if (this._graph instanceof DataGraph) {
+            this._graph.widget()
+                .data(this._graph.controller().graphData(), true)
+                .render(callback)
+                ;
+        } else {
+            this._graph.widget()
+                .data(this._graph.controller().graphData())
+                .render(callback)
+                ;
+        }
         this._legend
             .render()
             ;
@@ -460,7 +606,7 @@ export class GraphTree7Widget {
     }
 
     loadSubgraphs() {
-        const subgraphs = this._gc.subgraphStoreData();
+        const subgraphs = this._graph.controller().subgraphStoreData();
         this.subgraphsStore.setData(subgraphs);
         const context = this;
         const img = getImageURL("folder.png");
@@ -487,7 +633,7 @@ export class GraphTree7Widget {
     }
 
     loadVertices() {
-        const vertices = this._gc.activityStoreData();
+        const vertices = this._graph.controller().activityStoreData();
         this.verticesStore.setData(vertices);
         const columns = [
             {
@@ -514,7 +660,7 @@ export class GraphTree7Widget {
     }
 
     loadEdges() {
-        const edges = this._gc.edgeStoreData();
+        const edges = this._graph.controller().edgeStoreData();
         this.edgesStore.setData(edges);
         const columns = [
             { label: this.i18n.ID, field: "Id", width: 50 }
@@ -527,31 +673,35 @@ export class GraphTree7Widget {
 
     centerOn(itemID?: string) {
         if (itemID) {
-            let refresh = false;
-            let scopeItem = this._gc.scopeItem(itemID);
-            while (scopeItem) {
-                const w = this._gc.item(scopeItem._.Id);
-                if (w && w instanceof Subgraph && w.minState() !== "normal") {
-                    w.minState("normal");
-                    refresh = true;
+            if (this._graph instanceof DataGraph) {
+                let refresh = false;
+                let scopeItem = this._graph.controller().scopeItem(itemID);
+                while (scopeItem) {
+                    const w = this._graph.controller().item(scopeItem._.Id);
+                    if (w && w instanceof Subgraph && w.minState() !== "normal") {
+                        w.minState("normal");
+                        refresh = true;
+                    }
+                    scopeItem = scopeItem.parent;
                 }
-                scopeItem = scopeItem.parent;
-            }
-            const w = this._gc.item(itemID);
-            if (w) {
-                if (refresh) {
-                    this._graph
-                        .data(this._gc.graphData(), true)   //  Force re-render
-                        .render(w => {
-                            setTimeout(() => {
-                                this._graph
-                                    .centerOnItem(w)
-                                    ;
-                            }, 1000);
-                        });
-                } else {
-                    this._graph.centerOnItem(w);
+                const w = this._graph.controller().item(itemID);
+                if (w) {
+                    if (refresh) {
+                        this._graph.widget()
+                            .data(this._graph.controller().graphData(), true)   //  Force re-render
+                            .render(() => {
+                                setTimeout(() => {
+                                    if (this._graph instanceof DataGraph) {
+                                        this._graph.widget().centerOnItem(w);
+                                    }
+                                }, 1000);
+                            });
+                    } else {
+                        this._graph.widget().centerOnItem(w);
+                    }
                 }
+            } else {
+                this._graph.widget().centerOnItem(itemID);
             }
         }
     }
@@ -583,6 +733,8 @@ export class GraphTree7Widget {
         this.setDisabled(this.id + "FindPrevious", this.foundIndex <= 0, "iconLeft", "iconLeftDisabled");
         this.setDisabled(this.id + "FindNext", this.foundIndex >= this.found.length - 1, "iconRight", "iconRightDisabled");
         this.setDisabled(this.id + "ActivityMetric", tab && tab.id !== this.id + "ActivitiesTreeMap");
+        this.setDisabled(this.id + "Partial", this._graph instanceof DataGraph2, "fa fa-window-restore", "disabled fa fa-window-restore");
+        this.setDisabled(this.id + "Max", this._graph instanceof DataGraph2, "fa fa-window-maximize", "disabled fa fa-window-maximize");
     }
 }
 
@@ -601,10 +753,18 @@ GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTr
                 selectedGlobalIDs = [this.subGraphId];
             }
         } else if (sourceControl === this._graph) {
-            selectedGlobalIDs = this._graph.selection()
-                .map((w: any) => this._gc.rItem(w))
-                .filter(item => !!item)
-                .map(item => item._.Id);
+            if (this._graph instanceof DataGraph) {
+                selectedGlobalIDs = this._graph.widget().selection()
+                    .map(w => (this._graph.controller() as WUScopeController).rItem(w as any))
+                    .filter(item => !!item)
+                    .map(item => item._.Id);
+            } else {
+                selectedGlobalIDs = this._graph.widget().selection()
+                    .map(w => (this._graph.controller() as WUScopeController8).rItem(w.id))
+                    .filter(item => !!item)
+                    .map(item => item._.Id)
+                    ;
+            }
         } else if (sourceControl === this.verticesGrid || sourceControl === this.edgesGrid || sourceControl === this.subgraphsGrid) {
             const items = sourceControl.getSelected();
             for (let i = 0; i < items.length; ++i) {
@@ -632,15 +792,20 @@ GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTr
 
     //  Refresh Graph Controls  ---
     if (sourceControl !== this._graph) {
-        const items = this._gc.items(selectedGlobalIDs);
-        this._graph.selection(items);
+        if (this._graph instanceof DataGraph) {
+            const items = this._graph.controller().items(selectedGlobalIDs);
+            this._graph.widget().selection(items);
+        } else {
+            const items = this._graph.controller().items(selectedGlobalIDs);
+            this._graph.widget().selection(items);
+        }
     }
 
     const propertiesDom = dom.byId(this.id + "Properties");
     propertiesDom.innerHTML = "";
     let html = "";
     for (const id of selectedGlobalIDs) {
-        html += this._gc.calcGraphTooltip(id, this.findText);
+        html += this._graph.controller().calcGraphTooltip(id, this.findText);
     }
     propertiesDom.innerHTML = html;
     const context = this;

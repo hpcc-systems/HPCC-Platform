@@ -74,6 +74,7 @@ define([
             this.downListForm = registry.byId(this.id + "DownListForm");
             this.fileName = registry.byId(this.id + "FileName");
             this.mineControl = registry.byId(this.id + "Mine");
+            this.wuCopyButton = registry.byId(this.id + "Copy");
         },
 
         startup: function (args) {
@@ -334,7 +335,6 @@ define([
                 this.mineControl.set("disabled", true);
             }
 
-            this.wuCopyButton = registry.byId(this.id + "Copy");
             Clippy.attachDomNode(this.wuCopyButton.domNode, function () {
                 var wuids = [];
                 arrayUtil.forEach(context.workunitsGrid.getSelected(), function (item, idx) {

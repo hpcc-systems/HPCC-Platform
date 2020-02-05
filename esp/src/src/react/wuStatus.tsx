@@ -31,7 +31,7 @@ const Steps = [
 
 const wuSteps = (compile: boolean) => {
     return compile ? [Steps[0], Steps[1], Steps[3]] : [...Steps];
-}
+};
 
 const wuStep = (wu?: Workunit): number => {
     switch (wu ? wu.StateID : WUStateID.Unknown) {
@@ -104,5 +104,5 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
                 })}
             </Stepper>;
         </MuiThemeProvider>
-    )
+    );
 };
