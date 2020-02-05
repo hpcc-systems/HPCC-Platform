@@ -280,7 +280,7 @@ add_custom_target( eclwatch_clean
 
 add_custom_command (
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
-    COMMAND npm install && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
+    COMMAND npm ci && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/package.json
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
