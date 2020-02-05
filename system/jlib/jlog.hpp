@@ -991,22 +991,19 @@ inline void IWARNLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline IException *IWARNLOG(IException *except, const char *prefix=nullptr)
+inline void IWARNLOG(IException *except, const char *prefix=nullptr)
 {
     LOG(MCinternalWarning, except, prefix);
-    return except;
 }
 
-inline IException *UWARNLOG(IException *except, const char *prefix=nullptr)
+inline void UWARNLOG(IException *except, const char *prefix=nullptr)
 {
     LOG(MCuserWarning, except, prefix);
-    return except;
 }
 
-inline IException *OWARNLOG(IException *except, const char *prefix=nullptr)
+inline void OWARNLOG(IException *except, const char *prefix=nullptr)
 {
     LOG(MCoperatorWarning, except, prefix);
-    return except;
 }
 
 inline void OERRLOG(LogMsgCode code, char const * format, ...) __attribute__((format(printf, 2, 3)));
@@ -1045,34 +1042,29 @@ inline void PROGLOG(LogMsgCode code, char const * format, ...)
     va_end(args);
 }
 
-inline IException *DBGLOG(IException *except, const char *prefix=NULL)
+inline void DBGLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCdebugInfo, except, prefix);
-    return except;
 }
 
-inline IException *IERRLOG(IException *except, const char *prefix=NULL)
+inline void IERRLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCinternalError, except, prefix);
-    return except;
 }
 
-inline IException *UERRLOG(IException *except, const char *prefix=NULL)
+inline void UERRLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCuserError, except, prefix);
-    return except;
 }
 
-inline IException *OERRLOG(IException *except, const char *prefix=NULL)
+inline void OERRLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCoperatorError, except, prefix);
-    return except;
 }
 
-inline IException *DISLOG(IException *except, const char *prefix=NULL)
+inline void DISLOG(IException *except, const char *prefix=NULL)
 {
     LOG(MCdisaster, except, prefix);
-    return except;
 }
 
 #define EXCLOG FLLOG
