@@ -25,6 +25,11 @@
 #include "jregexp.hpp"
 #include "jstring.hpp"
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#endif
+
 #include <algorithm>
 
 #define MAKE_LSTRING(name,src,length) \
@@ -7525,4 +7530,421 @@ IPropertyTree *createPTreeFromHttpParameters(const char *nameWithAttrs, IPropert
     }
 
     return createPTreeFromHttpPath(nameWithAttrs, content.getClear(), nestedRoot, flags);
+}
+
+
+IPropertyTree *createPTreeFromJSONFile(const char *filename, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
+{
+    Owned<IFile> in = createIFile(filename);
+    if (!in->exists())
+        return nullptr;
+
+    StringBuffer contents;
+    try
+    {
+        contents.loadFile(in);
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e);
+        e->Release();
+        return nullptr;
+    }
+
+    return createPTreeFromJSONString(contents.length(), contents.str(), flags, readFlags, iMaker);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static constexpr const char * currentVersion = "1.0";
+
+/*
+ * Convert the keys with a json file to attributes and tags within the property tree
+ * tags that start with a lower case letter are mapped to attributes (and must have a value)
+ * the special tag "#text# is used to set the text of an element
+ * otherwise the key creates an element, and is not expected to have a value
+*/
+static void mapJsonToXmlConfig(IPropertyTree & target, IPropertyTree & source)
+{
+    Owned<IAttributeIterator> aiter = source.getAttributes();
+    ForEach(*aiter)
+        target.addProp(aiter->queryName(), aiter->queryValue());
+
+    StringBuffer tempPath;
+    Owned<IPropertyTreeIterator> iter = source.getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree & child = iter->query();
+        const char * tag = child.queryName();
+        const char * value = child.queryProp("");
+        if (islower(*tag))
+        {
+            // JPtree does not currently distinguish between "" and nullptr, so assume it was ""
+            if (!value)
+                value = "";  // throw makeStringExceptionV(99, "Expected a value associated with key '%s'", tag);
+            StringBuffer attrName;
+            attrName.append("@").append(tag);
+            target.setProp(attrName, value);
+        }
+        else if (strsame(tag, "#text"))
+            target.setProp("", value);
+        else if (*tag == '-')
+        {
+            StringBuffer attrName;
+            attrName.append("@").append(tag+1);
+            target.setProp(attrName, value);
+        }
+        else if (value)
+        {
+            throw makeStringExceptionV(99, "Did not expect a value for key '%s'", tag);
+            target.setProp(tag, value);
+            //Should possibly report an error
+        }
+        else
+        {
+            IPropertyTree * targetChild = target.addPropTree(tag);
+            mapJsonToXmlConfig(*targetChild, child);
+        }
+    }
+}
+
+IPropertyTree * mapJsonToXmlConfig(IPropertyTree * source)
+{
+    Owned<IPropertyTree> target = createPTree(source->queryName());
+    mapJsonToXmlConfig(*target, *source);
+    return target.getClear();
+}
+
+//----------------------------------------------------
+
+static void mapXmlConfigToJson(IPropertyTree & target, IPropertyTree & source)
+{
+    Owned<IAttributeIterator> aiter = source.getAttributes();
+    ForEach(*aiter)
+    {
+        const char * name = aiter->queryName();
+        if (islower(name[1]))
+            target.addProp(name + 1, aiter->queryValue());
+        else
+        {
+            //StringBuffer propName;
+            //  propName.append("-").append(name + 1);
+            target.setProp(name, aiter->queryValue());
+        }
+    }
+
+    StringBuffer tempPath;
+    Owned<IPropertyTreeIterator> iter = source.getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree & child = iter->query();
+        const char * tag = child.queryName();
+        const char * value = child.queryProp("");
+        if (islower(*tag))
+        {
+            //MORE: Is this an error?
+            target.setProp(tag, value);
+        }
+        else
+        {
+            IPropertyTree * targetChild = target.addPropTree(tag);
+            mapXmlConfigToJson(*targetChild, child);
+            if (value)
+                targetChild->setProp("#text", value);
+        }
+    }
+}
+
+IPropertyTree * mapXmlConfigToJson(IPropertyTree * source)
+{
+    Owned<IPropertyTree> target = createPTree(source->queryName());
+    mapXmlConfigToJson(*target, *source);
+    return target.getClear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/*
+ * Use source to overwrite any changes in target
+ *   Attributes are replaced
+ *   Elements with no name attribute are assumed to match a single element in the target.  They are added if not present.
+ *   Elements with a name attribute are matched by name.  If there is a match and the source element has an attribute
+ *     '__remove__' then that element is removed, otherwise it is merged.  If there is no match it is added.
+*/
+
+void mergeConfiguration(IPropertyTree & target, IPropertyTree & source)
+{
+    Owned<IAttributeIterator> aiter = source.getAttributes();
+    ForEach(*aiter)
+        target.addProp(aiter->queryName(), aiter->queryValue());
+
+    StringBuffer tempPath;
+    Owned<IPropertyTreeIterator> iter = source.getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree & child = iter->query();
+        const char * tag = child.queryName();
+        const char * name = child.queryProp("@name");
+        const char * path = tag;
+        if (name)
+        {
+            tempPath.clear().append(path).append("[@name=\'").append(name).append("']");
+            path = tempPath;
+        }
+        if (child.queryProp("@__remove__"))
+        {
+            target.removeProp(path);
+        }
+        else
+        {
+            IPropertyTree * match = target.queryPropTree(path);
+            if (!match)
+            {
+                match = target.addPropTree(tag);
+                if (name)
+                    match->setProp("@name", name);
+            }
+            mergeConfiguration(*match, child);
+        }
+    }
+
+    const char * sourceValue = source.queryProp("");
+    if (sourceValue)
+        target.setProp("", sourceValue);
+}
+
+/*
+ * Load a json/yaml configuration file.
+ * If there is an extends tag in the root of the file then this file is applied as a delta to the base file
+ * the configuration is the contents of the tag within the file that matches the component tag.
+*/
+static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag)
+{
+    if (!checkFileExists(filename))
+        throw makeStringExceptionV(99, "Configuration file %s not found", filename);
+
+    const char * ext = pathExtension(filename);
+    Owned<IPropertyTree> configTree;
+    if (strieq(ext, ".yaml"))
+    {
+        throw makeStringExceptionV(99, "YAML Configuration file %s not yet supported", filename);
+        //MORE: Translate Tags to attributes if they start with a lower case letter
+    }
+    else if (strieq(ext, ".json"))
+    {
+        configTree.setown(createPTreeFromJSONFile(filename, 0, ptr_ignoreWhiteSpace, nullptr));
+        configTree.setown(mapJsonToXmlConfig(configTree));
+    }
+    else
+        throw makeStringExceptionV(99, "Unrecognised file extension %s", ext);
+
+    assert(configTree);
+    IPropertyTree * config = configTree->queryPropTree(componentTag);
+    if (!config)
+        throw makeStringExceptionV(99, "Section %s is missing from file %s", componentTag, filename);
+
+    const char * base = configTree->queryProp("@extends");
+    if (!base)
+        return LINK(config);
+
+    StringBuffer baseFilename;
+    splitFilename(filename, &baseFilename, &baseFilename, nullptr, nullptr, false);
+    addNonEmptyPathSepChar(baseFilename);
+    baseFilename.append(base);
+
+    Owned<IPropertyTree> baseTree = loadConfiguration(baseFilename, componentTag);
+    mergeConfiguration(*baseTree, *config);
+    return LINK(baseTree);
+}
+
+static constexpr const char * envPrefix = "HPCC_CONFIG_";
+static void applyEnvironmentConfig(IPropertyTree & target, const char * cptPrefix, const char * value)
+{
+    const char * name = value;
+    if (!startsWith(name, envPrefix))
+        return;
+
+    name += strlen(envPrefix);
+    if (cptPrefix)
+    {
+        if (!startsWith(name, cptPrefix))
+            return;
+        name += strlen(cptPrefix);
+        if (*name++ != '_')
+            return;
+    }
+
+    StringBuffer propName;
+    if (startsWith(name, "PROP_"))
+    {
+        propName.append("@");
+        name += 5;
+    }
+    const char * eq = strchr(value, '=');
+    if (eq)
+    {
+        propName.append(eq - name, name);
+        target.setProp(propName, eq + 1);
+    }
+    else
+    {
+        propName.append(name);
+        target.setProp(propName, nullptr);
+    }
+}
+
+IPropertyTree * createPTreeFromYAML(const char * yaml)
+{
+    if (*yaml == '{')
+        return createPTreeFromJSONString(yaml, 0, ptr_ignoreWhiteSpace, nullptr);
+
+    throw makeStringExceptionV(99, "Someone needs to implement a YAML parser");
+}
+
+static const char * extractOption(const char * option, const char * cur)
+{
+    if (startsWith(cur, option))
+    {
+        cur += strlen(option);
+        if (*cur == '=')
+            return cur + 1;
+        if (*cur)
+            return nullptr;
+        return "1";
+    }
+    return nullptr;
+}
+
+static bool ignoreOption(const char * name)
+{
+    return streq(name, "config") || streq(name, "outputconfig");
+}
+
+static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
+{
+    if (ignoreOption(option))
+        return;
+
+    if (islower(*option))
+    {
+        StringBuffer path;
+        path.append('@').append(option);
+        config->setProp(path, value);
+    }
+    else
+    {
+        //MORE: Some magic syntax to select nested options and set them??
+        config->setProp(option, value);
+    }
+}
+
+static void applyCommandLineOption(IPropertyTree * config, const char * option)
+{
+    const char * eq = strchr(option, '=');
+    if (eq)
+    {
+        StringBuffer name;
+        name.append(eq - option, option);
+        applyCommandLineOption(config, name, eq + 1);
+    }
+    else
+    {
+        //MORE: Support --x- and --x+?
+        applyCommandLineOption(config, option, "1");
+    }
+}
+
+static void displayConfig(IPropertyTree * config, const char * componentTag)
+{
+    Owned<IPropertyTree> recreated = createPTree();
+    Owned<IPropertyTree> json = mapXmlConfigToJson(config);
+    recreated->setProp("version", currentVersion);
+    recreated->addPropTree(componentTag, json.getClear());
+
+    StringBuffer jsonText;
+    toJSON(recreated, jsonText, 0, JSON_SortTags|JSON_Format);
+    printf("%s\n", jsonText.str());
+}
+
+jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
+{
+    Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
+    IPropertyTree * componentDefault = defaultConfig->queryPropTree(componentTag);
+    if (!componentTag)
+        throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+
+    Owned<IPropertyTree> config(mapJsonToXmlConfig(componentDefault));
+    const char * optConfig = nullptr;
+    bool outputConfig = false;
+    for (const char * * pArg = argv; *pArg; pArg++)
+    {
+        const char * cur = *pArg;
+        const char * matchConfig = extractOption("--config", cur);
+        if (matchConfig)
+            optConfig = matchConfig;
+        else if (strsame(cur, "--help"))
+        {
+            //MORE: displayHelp(config);
+            printf("%s <options>", argv[0]);
+            exit(0);
+        }
+        else if (strsame(cur, "--init"))
+        {
+            displayConfig(config, componentTag);
+            exit(0);
+        }
+        else if (strsame(cur, "--outputconfig"))
+        {
+            outputConfig = true;
+        }
+    }
+
+    Owned<IPropertyTree> delta;
+    if (optConfig)
+    {
+        if (streq(optConfig, "1"))
+            throw makeStringExceptionV(99, "Name of configuration file omitted (use --config=<filename>)");
+
+        if (!isAbsolutePath(optConfig))
+        {
+            StringBuffer fullpath;
+            appendCurrentDirectory(fullpath, false);
+            addNonEmptyPathSepChar(fullpath);
+            fullpath.append(optConfig);
+            delta.setown(loadConfiguration(fullpath, componentTag));
+        }
+        else
+            delta.setown(loadConfiguration(optConfig, componentTag));
+    }
+    else
+    {
+        if (checkFileExists(legacyFilename))
+            delta.setown(createPTreeFromXMLFile(legacyFilename, ipt_caseInsensitive));
+
+        if (delta && mapper)
+            delta.setown(mapper(delta));
+    }
+
+    if (delta)
+        mergeConfiguration(*config, *delta);
+
+    const char * * environment = const_cast<const char * *>(environ);
+    for (const char * * cur = environment; *cur; cur++)
+    {
+        applyEnvironmentConfig(*config, envPrefix, *cur);
+    }
+
+    for (const char * * pArg = argv; *pArg; pArg++)
+    {
+        const char * cur = *pArg;
+        if (startsWith(cur, "--"))
+            applyCommandLineOption(config, cur + 2);
+    }
+
+    if (outputConfig)
+    {
+        displayConfig(config, componentTag);
+        exit(0);
+    }
+
+    return config.getClear();
 }
