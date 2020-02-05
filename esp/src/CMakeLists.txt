@@ -268,6 +268,23 @@ else ()
     set ( ECLWATCH_BUILD "build" )
 endif ()
 
+set (NPM_ERROR "")
+execute_process(COMMAND npm --version OUTPUT_VARIABLE _VERSION RESULT_VARIABLE _NPM_VERSION_RESULT)
+if (NOT _NPM_VERSION_RESULT)
+    string (REPLACE "v" "" NPM_VERSION_STRING "${_VERSION}")
+    string (REPLACE "." ";" _VERSION_LIST "${NPM_VERSION_STRING}")
+    list (GET _VERSION_LIST 0 NPM_VERSION_MAJOR)
+    if (NPM_VERSION_MAJOR LESS 6)
+        set (NPM_ERROR "NPM version ${NPM_VERSION_MAJOR} is too old (expected >= 6), please install NodeJS as per https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC#prerequisites" )
+    endif ()
+else ()
+    set (NPM_ERROR "Unable to locate node/npm, please install NodeJS as per https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC#prerequisites" )
+endif ()
+
+if ( NOT "${NPM_ERROR}" STREQUAL "")
+    message ( FATAL_ERROR "${NPM_ERROR}" )
+endif ()
+
 add_custom_command (
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/no.file
     COMMAND npm run clean
