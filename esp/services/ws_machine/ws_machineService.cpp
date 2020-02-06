@@ -2507,7 +2507,7 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
     if (strieq(type, eqDali))
         componentType.set("dali");
     else if (strieq(type, eqEclAgent))
-        componentType.set("eclAgent");
+        componentType.set("eclagent");
     else
         componentType.set("sasha");
 
