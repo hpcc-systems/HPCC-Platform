@@ -1112,7 +1112,17 @@ bool HqlParseContext::createCache(const char * simplifiedEcl, bool isMacro)
         writeStringToStream(*stream, "</Cache>\n");
         stream->flush();
     }
-    cacheFile->move(filename);
+    try
+    {
+        cacheFile->rename(filename);
+    }
+    catch (IException * e)
+    {
+        // compilation shouldn't fail just because the cache couldn't be copied over
+        // (Copy over may fail when another process has created cache and using cache already)
+        DBGLOG(e);
+        e->Release();
+    }
     return true;
 }
 
