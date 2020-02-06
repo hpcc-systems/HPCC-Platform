@@ -455,7 +455,11 @@ int CEspHttpServer::onGetApplicationFrame(CHttpRequest* request, CHttpResponse* 
         response->setStatus(HTTP_STATUS_OK);
 
         char timestr[128];
+#ifdef _WIN32
+        ctime_s(timestr, 128, &modtime);
+#else
         ctime_r(&modtime, timestr);
+#endif
         int timelen = strlen(timestr);
         if (timelen > 0 && timestr[timelen -1] == '\n')
             timestr[timelen - 1] = '\0';
