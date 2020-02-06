@@ -15077,7 +15077,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
     IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * selSeq = querySelSeq(expr);
 
-    if (transformReturnsSide(expr, no_right, 1))
+    if (transformReturnsSide(expr, no_right, 1) && !isMultiLevelDatasetSelector(childDataset, false))
         return doBuildActivityNormalizeLinkedChild(ctx, expr);
 
     StringBuffer s;
