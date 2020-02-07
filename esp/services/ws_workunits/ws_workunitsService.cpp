@@ -1751,6 +1751,17 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
     return true;
 }
 
+bool addWUQueryFilterTotalClusterTime(WUSortField *filters, unsigned short &count, MemoryBuffer &filterBuf, unsigned milliseconds, WUSortField value)
+{
+    if (milliseconds == 0)
+        return false;
+
+    VStringBuffer vBuf("%u", milliseconds);
+    filters[count++] = value;
+    filterBuf.append(vBuf);
+    return true;
+}
+
 bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
 {
     if (isEmpty(appname))
@@ -1857,6 +1868,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
+
+    addWUQueryFilterTotalClusterTime(filters, filterCount, filterbuf, req.getTotalClusterTimeThresholdMilliSec(), WUSFtotalthortime);
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);

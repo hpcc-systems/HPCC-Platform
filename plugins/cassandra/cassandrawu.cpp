@@ -3417,6 +3417,22 @@ public:
         bool sortByThorTime = (baseSort == WUSFtotalthortime);
         bool needsPostSort = (baseSort != WUSFwuid && baseSort != WUSFtotalthortime);
         bool sortDescending = (sortorder & WUSFreverse) || needsPostSort;
+
+        bool keepThorTimeFilter = sortByThorTime;
+        if (!keepThorTimeFilter)
+        {
+            const WUSortField *filterPtr = filters;
+            while (filterPtr && *filterPtr)
+            {
+                WUSortField field = (WUSortField) (*filterPtr & 0xff);
+                if (field == WUSFtotalthortime)
+                {
+                    keepThorTimeFilter = true;
+                    break;
+                }
+            }
+        }
+
         if (!result)
         {
             Owned<CassMultiIterator> merger = new CassMultiIterator(needsPostSort ? NULL : cached, 0, 0, sortDescending); // We always merge by wuid (except when we merge by thor time... we turn the compare off then to make it an appender)
@@ -3426,7 +3442,7 @@ public:
                 unsigned found = cached->lookupStartRow(startWuid, thorTimeThreshold, startOffset);
                 if (found)
                 {
-                    if (!sortByThorTime)
+                    if (!keepThorTimeFilter)
                     {
                         if (sortDescending)
                             startWuid.setCharAt(startWuid.length()-1, startWuid.charAt(startWuid.length()-1)-1);  // we want to find the last wuid BEFORE
@@ -3492,7 +3508,7 @@ public:
                 case WUSFwuid: // Acts as wuidLo when specified as a filter
                 case WUSFwuidhigh:
                     // Wuid filters can be added to good and poor filters, and to remoteWild if they are done via merged sets rather than ranges...
-                    if (sortByThorTime)
+                    if (keepThorTimeFilter)
                         remoteWildFilters.append(*new PostFilter(field, fv, true));
                     else
                         mergeFilter(wuidFilters, field, fv);
@@ -3554,7 +3570,7 @@ public:
                     merger->addResult(*new CassandraResult(fetchDataForWuid(workunitInfoMappings, value, true)));
                 }
             }
-            else if (sortByThorTime)
+            else if (sortByThorTime || !thorTimeThreshold.isEmpty())
             {
                 merger->addPostFilters(goodFilters, 0);
                 merger->addPostFilters(poorFilters, 0);
@@ -4299,7 +4315,7 @@ private:
         getFieldNames(searchMappings+3, names, tableName);  // mappings+3 means we don't return the key columns (xpath, upper(keyPrefix), upper(key))
         VStringBuffer selectQuery("select %s from %s where xpath=? and fieldPrefix=?", names.str()+1, tableName.str());
         if (threshold && *threshold)
-            selectQuery.appendf(" where fieldValue >= ?");
+            selectQuery.appendf(" and fieldValue >= ?");
         if (descending)
             selectQuery.append(" ORDER BY fieldValue DESC, wuid ASC");
         else

@@ -6,6 +6,9 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 . $SCRIPT_DIR/parse_cmake.sh
+if [ -e pom.xml ] ; then
+  . $SCRIPT_DIR/parse_hpcc_pom.sh
+fi
 
 sync_git
 parse_cmake
