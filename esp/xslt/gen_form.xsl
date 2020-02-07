@@ -98,8 +98,8 @@
         <html>
             <head>
                 <title>ESP Service form</title>
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
         <link rel="stylesheet" type="text/css" href="files_/gen_form.css"/>
                 <script type="text/javascript" src="files_/req_array.js"/>
                 <script type="text/javascript" src="files_/hashtable.js"/>

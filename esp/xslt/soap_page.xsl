@@ -30,13 +30,13 @@
     <html>
         <head>
             <title>Soap Test Page</title>
-      <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-      <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
+      <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+      <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
 
-      <script type="text/javascript" src="/esp/files/get_input.js"/>
-      <script type="text/javascript" src="/esp/files/stack.js"/>
-      <script type="text/javascript" src="/esp/files/stringbuffer.js"/>
-      <script type="text/javascript" src="/esp/files/logout.js"/>
+      <script type="text/javascript" src="files_/get_input.js"/>
+      <script type="text/javascript" src="files_/stack.js"/>
+      <script type="text/javascript" src="files_/stringbuffer.js"/>
+      <script type="text/javascript" src="files_/logout.js"/>
 
 <script type="text/javascript">
 var showhttp = '<xsl:value-of select="$showhttp"/>';

@@ -24,9 +24,9 @@
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
                 <title><xsl:value-of select="@title"/><xsl:if test="@title!=''"> - </xsl:if>Enterprise Services Platform</title>
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
-        <link rel="shortcut icon" href="/esp/files/img/favicon.ico" />
+        <link rel="stylesheet" type="text/css" href="esp/files/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="esp/files/css/espdefault.css" />
+        <link rel="shortcut icon" href="esp/files/img/favicon.ico" />
         <script language="JavaScript1.2" id="menuhandlers">
             var passwordDays='<xsl:value-of select="@passwordDays"/>';
             <xsl:text disable-output-escaping="yes"><![CDATA[

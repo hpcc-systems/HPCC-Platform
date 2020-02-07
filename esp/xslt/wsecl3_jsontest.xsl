@@ -38,12 +38,12 @@
     <html>
       <head>
         <title>JSON Test Page</title>
-        <link rel="shortcut icon" href="/esp/files/img/affinity_favicon_1.ico" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
+        <link rel="shortcut icon" href="files_/img/affinity_favicon_1.ico" />
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
 
         <script>dojoConfig = {async:true, parseOnLoad:false}</script>
-        <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
+        <script src="files_/dist/dojoLib.eclwatch.js"></script>
     </head>
     <body class="yui-skin-sam" id="body">
       <h3>
