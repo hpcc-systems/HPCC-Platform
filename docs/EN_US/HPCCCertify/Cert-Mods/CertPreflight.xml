@@ -143,7 +143,21 @@
       available at a glance.</para>
 
       <para>If there are any alerts, the component(s) are highlighted,
-      indicating they require further attention.</para>
+      indicating they require further attention. </para>
+
+      <para>For example, the following image indicates there is an issue with
+      the DFU Server. </para>
+
+      <para><figure>
+          <title>System Server Alert</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/PF-SysFail01.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
     </sect2>
   </sect1>
 
