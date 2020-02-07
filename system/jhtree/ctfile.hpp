@@ -27,11 +27,10 @@
 
 #define NODESIZE 8192
 
-
-#define HTREE_FPOS_OFFSET   0x01 // Obsolete, not supported
+#define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
 #define HTREE_TOPLEVEL_KEY  0x02
 #define COL_PREFIX          0x04
-#define TRAILING_HEADER_ONLY  0x08 // Leading header not updated - use trailing one
+#define HTREE_QUICK_COMPRESSED 0x08 // See QUICK_COMPRESSED_KEY below
 #define HTREE_VARSIZE       0x10
 #define HTREE_FULLSORT_KEY  0x20
 #define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file

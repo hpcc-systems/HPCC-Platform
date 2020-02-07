@@ -106,13 +106,22 @@ extern bool isCompressedIndex(const char *filename)
         if (io->read(0, sizeof(hdr), &hdr) == sizeof(hdr))
         {
             SwapBigEndian(hdr);
-            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
             {
-                NodeHdr root;
-                if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
+                if (hdr.ktype & USE_TRAILING_HEADER)
                 {
-                    SwapBigEndian(root);
-                    return root.leftSib==0 && root.rightSib==0; 
+                    if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
+                        return false;
+                    SwapBigEndian(hdr);
+                }
+                if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+                {
+                    NodeHdr root;
+                    if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
+                    {
+                        SwapBigEndian(root);
+                        return root.leftSib==0 && root.rightSib==0;
+                    }
                 }
             }
         }
@@ -134,9 +143,19 @@ extern jhtree_decl bool isIndexFile(IFile *file)
         if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
             return false;
         SwapBigEndian(hdr);
-        if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
-            return false;
-        return true;    // Reasonable heuristic...
+        if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1)
+        {
+            if (hdr.ktype & USE_TRAILING_HEADER)
+            {
+                if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
+                    return false;
+                SwapBigEndian(hdr);
+
+            }
+            if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
+                return false;
+            return true;    // Reasonable heuristic...
+        }
     }
     catch (IException *E)
     {

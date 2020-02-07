@@ -406,6 +406,16 @@ int main(int argc, const char *argv[])
                 else
                 {
                     SwapBigEndian(h);
+                    if (h.ktype & USE_TRAILING_HEADER)
+                    {
+                        printf("Reading trailing key header\n");
+                        lseek(f, -h.nodeSize, SEEK_END);
+                        if (_read(f, &h, sizeof(h)) != sizeof(h))
+                        {
+                            noteError(0, "Could not read trailing key header\n");
+                        }
+                        SwapBigEndian(h);
+                    }
                     if (nodeAddress)
                     {
                         checkNode(f, h, nodeAddress);

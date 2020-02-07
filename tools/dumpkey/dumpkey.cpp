@@ -227,7 +227,7 @@ int main(int argc, const char **argv)
                         E->Release();
                     }
                 }
-                if (!diskmeta && metadata->hasProp("_record_ECL"))
+                if (!diskmeta && metadata && metadata->hasProp("_record_ECL"))
                 {
                     MultiErrorReceiver errs;
                     Owned<IHqlExpression> expr = parseQuery(metadata->queryProp("_record_ECL"), &errs);
