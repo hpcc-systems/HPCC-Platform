@@ -578,7 +578,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     compiler->setDebugLibrary(debugLibrary);
     if (!debug)
     {
-        int optimizeLevel = wu->getDebugValueInt("optimizeLevel", targetClusterType == RoxieCluster ? 3 : -1);
+        int optimizeLevel = wu->getDebugValueInt("optimizeLevel", targetClusterType == RoxieCluster ? 2 : -1);
         if (optimizeLevel != -1)
             compiler->setOptimizeLevel(optimizeLevel);
     }
