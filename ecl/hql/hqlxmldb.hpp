@@ -46,49 +46,6 @@ interface IXmlScope : public IInterface
 
 interface IEclRepository;
 
-interface ITemplateContext : public IInterface
-{
-    // context variables
-    virtual IXmlScope* queryXmlScope() = 0;
-
-    // convenient functions
-    virtual bool isInModule(const char* module_name, const char* attr_name) = 0;
-    virtual StringBuffer& getDataType(const char* field, StringBuffer& tgt) = 0;
-    
-    virtual StringBuffer& mangle(const char* src, StringBuffer& mangled) = 0;
-    virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) = 0;
-
-    virtual void reportError(int errNo,const char* format,...) __attribute__((format(printf, 3, 4))) = 0;
-    virtual void reportWarning(int warnNo,const char* format,...) __attribute__((format(printf, 3, 4))) = 0;
-
-    // Ideally, the user has no need to use this.
-    virtual IEclRepository* queryDataServer() = 0;
-};
-
-class EclTemplateBase
-{
-protected:
-    StringBuffer& m_result;
-    ITemplateContext* m_templateContext;
-
-public:
-    // constructor
-    EclTemplateBase(ITemplateContext* context, StringBuffer& result) 
-        : m_result(result), m_templateContext(context) { }
-
-    // convenient methods
-    IXmlScope* queryRootScope() { return m_templateContext->queryXmlScope(); }
-    ITemplateContext* queryContext() { return m_templateContext; }
-
-    bool isInModule(const char* moduleName, const char* attrName) { return m_templateContext->isInModule(moduleName,attrName); }
-    StringBuffer& mangle(const char* src, StringBuffer& mangled) { return m_templateContext->mangle(src,mangled); }
-    StringBuffer& demangle(const char* src, StringBuffer& mangled) { return m_templateContext->demangle(src,mangled); }
-    StringBuffer& getDataType(const char* field,StringBuffer& tgt) { return m_templateContext->getDataType(field,tgt); }
-
-    // action
-    virtual void doExpand() = 0;
-};
-
 #define HashFor(sub,scope)  \
     IIterator*  sub##Itr = scope->getScopes(#sub, false); \
     ForEach(*sub##Itr) \

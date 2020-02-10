@@ -1028,7 +1028,7 @@ void EclCC::evaluateResult(EclCompileInstance & instance)
         query = query->queryChild(0);
     if (query->getOperator()==no_createdictionary)
         query = query->queryChild(0);
-    OwnedHqlExpr folded = foldHqlExpression(instance.queryErrorProcessor(), query, NULL, HFOthrowerror|HFOloseannotations|HFOforcefold|HFOfoldfilterproject|HFOconstantdatasets);
+    OwnedHqlExpr folded = foldHqlExpression(instance.queryErrorProcessor(), query, HFOthrowerror|HFOloseannotations|HFOforcefold|HFOfoldfilterproject|HFOconstantdatasets);
     StringBuffer out;
     IValue *result = folded->queryValue();
     if (result)

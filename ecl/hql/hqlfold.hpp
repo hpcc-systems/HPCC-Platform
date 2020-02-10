@@ -27,8 +27,6 @@
 #include "hqlexpr.hpp"
 #include "hqlstack.hpp"
 
-interface ITemplateContext;
-
 //Options for the constant folding...
 enum { 
     HFOx_op_not_x       = 0x0001,                       // constant fold X AND NOT X => false, X OR NOT X => true
@@ -45,14 +43,14 @@ enum {
 
 
 /* Fold a single IHqlExpression * node */
-extern HQLFOLD_API IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned options, ITemplateContext *context);
+extern HQLFOLD_API IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned options);
 
 /* Fold an expression tree, but does not do anything with no_select/transform, so valid on non-normalized trees */
-extern HQLFOLD_API IHqlExpression * quickFoldExpression(IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
-extern HQLFOLD_API void quickFoldExpressions(HqlExprArray & target, const HqlExprArray & source, ITemplateContext *context, unsigned options);
+extern HQLFOLD_API IHqlExpression * quickFoldExpression(IHqlExpression * expr, unsigned options=0);
+extern HQLFOLD_API void quickFoldExpressions(HqlExprArray & target, const HqlExprArray & source, unsigned options);
 
 extern HQLFOLD_API IHqlExpression * foldHqlExpression(IHqlExpression * expr); // No errors reported.
-extern HQLFOLD_API IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
+extern HQLFOLD_API IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, unsigned options=0);
 extern HQLFOLD_API IHqlExpression * foldScopedHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * dataset, IHqlExpression * expr, unsigned options=0);
 extern HQLFOLD_API void foldHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & tgt, HqlExprArray & src, unsigned options=0);
 extern HQLFOLD_API IHqlExpression * getLowerCaseConstantExpr(IHqlExpression * expr);

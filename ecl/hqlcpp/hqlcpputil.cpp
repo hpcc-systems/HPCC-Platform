@@ -296,7 +296,7 @@ static void expandFieldNames(IErrorReceiver & errorProcessor, StringBuffer & out
                     HqlExprArray args;
                     args.append(*createConstant(lowerName.str()));
                     OwnedHqlExpr bound = createBoundFunction(NULL, formatFunc, args, NULL, true);
-                    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, bound, NULL, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+                    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, bound, HFOthrowerror|HFOfoldimpure|HFOforcefold);
                     assertex(folded->queryValue());
                     lowerName.clear();
                     getStringValue(lowerName, folded);

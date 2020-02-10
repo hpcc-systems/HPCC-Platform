@@ -80,64 +80,6 @@ public:
     }
 };
 
-// =========================== CTemplateContext =========================================
-
-class CTemplateContext : implements ITemplateContext, public CInterface
-{
-    HqlLex * lexer;
-    IXmlScope* m_xmlScope;
-    HqlLookupContext & m_lookupContext;
-    int m_startLine,m_startCol;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CTemplateContext(HqlLex * _lexer, HqlLookupContext & lookupContext, IXmlScope* xmlScope, int startLine,int startCol)
-     : lexer(_lexer), m_xmlScope(xmlScope), m_lookupContext(lookupContext),
-       m_startLine(startLine), m_startCol(startCol) {}
-
-    virtual IXmlScope* queryXmlScope()  { return m_xmlScope; }
-    virtual IEclRepository* queryDataServer()  { return m_lookupContext.queryRepository(); }
-
-    // convenient functions
-    virtual bool isInModule(const char* moduleName, const char* attrName) { return ::isInModule(m_lookupContext, moduleName,attrName); }
-    virtual StringBuffer& getDataType(const char* field, StringBuffer& tgt) { return lexer->doGetDataType(tgt, field, m_startLine, m_startCol); }
-
-    virtual StringBuffer& mangle(const char* src, StringBuffer& mangled) { return ::mangle(m_lookupContext.errs,src,mangled,false); }
-    virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) { return ::mangle(m_lookupContext.errs,mangled,demangled,true); }
-
-    virtual void reportError(int errNo,const char* format,...)  __attribute__((format(printf,3,4)));
-    virtual void reportWarning(int warnNo,const char* format,...) __attribute__((format(printf,3,4)));;
-};
-
-void CTemplateContext::reportError(int errNo,const char* format,...)
-{
-    if (m_lookupContext.errs)
-    {
-        va_list args;
-        va_start(args, format);
-        StringBuffer msg;
-        msg.valist_appendf(format,args);
-        m_lookupContext.errs->reportError(errNo,msg.str(),NULL,m_startLine,m_startCol,0);
-        va_end(args);
-    }
-}
-
-void CTemplateContext::reportWarning(int warnNo,const char* format,...)
-{
-    if (m_lookupContext.errs)
-    {
-        va_list args;
-        va_start(args, format);
-        StringBuffer msg;
-        msg.valist_appendf(format,args);
-        WarnErrorCategory category = CategoryUnusual; // a reasonable default
-        m_lookupContext.errs->reportWarning(category, warnNo,msg.str(),NULL,m_startLine,m_startCol,0);
-        va_end(args);
-    }
-}
-
-
 // ===================================== HqlLex ============================================
 
 class CHqlParserPseduoScope : public CHqlScope
@@ -1865,8 +1807,7 @@ IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * e
     {
         try
         {
-            CTemplateContext context(this, yyParser->lookupCtx, xmlScope, startLine, startCol);
-            OwnedHqlExpr folded = foldHqlExpression(*yyParser, expr, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+            OwnedHqlExpr folded = foldHqlExpression(*yyParser, expr, HFOthrowerror|HFOfoldimpure|HFOforcefold);
             if (folded)
             {
                 if (folded->queryValue())
@@ -1943,8 +1884,7 @@ void HqlLex::doApply(attribute & returnToken)
     OwnedHqlExpr actions = parseECL(curParam, queryTopXmlScope(), line, col);
     if (actions)
     {
-        CTemplateContext context(this, yyParser->lookupCtx, xmlScope,line,col);
-        OwnedHqlExpr folded = foldHqlExpression(*yyParser, actions, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+        OwnedHqlExpr folded = foldHqlExpression(*yyParser, actions, HFOthrowerror|HFOfoldimpure|HFOforcefold);
     }
     else
         reportError(returnToken, ERR_EXPECTED_CONST, "Constant expression expected");

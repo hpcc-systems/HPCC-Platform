@@ -21,7 +21,6 @@
 #include "hqltrans.ipp"
 #include "hqlutil.hpp"
 
-interface ITemplateContext;
 typedef IValue * (*binaryFoldFunc)(IValue * left, IValue * right);
 
 #define FOLD_PARENT         NewHqlTransformer
@@ -67,7 +66,7 @@ class CExprFolderTransformer : public FOLD_PARENT, public NullFolderMixin
 {
     typedef FOLD_PARENT PARENT;
 public:
-    CExprFolderTransformer(IErrorReceiver & _errorProcessor, ITemplateContext *templateContext, unsigned _options);
+    CExprFolderTransformer(IErrorReceiver & _errorProcessor, unsigned _options);
 
     void setScope(IHqlExpression * expr)                { stopDatasetTransform(expr); }
 
@@ -111,7 +110,6 @@ private:
     virtual IHqlExpression * transformExpanded(IHqlExpression * expr);              
 
 protected:
-    ITemplateContext *templateContext;
     IErrorReceiver & errorProcessor;
     unsigned foldOptions;
     StringBuffer nodeText[2];
