@@ -1052,66 +1052,70 @@ void PTree::resolveParentChild(const char *xpath, IPropertyTree *&parent, IPrope
         if (!pathIter->first())
             throw MakeIPTException(-1, "resolveParentChild: path not found %s", xpath);
 
-        IPropertyTree *currentPath = NULL;
-        bool multiplePaths = false;
-        bool multipleChildMatches = false;
-        for (;;)
+        /* If 'path' resolves to iterator of this, then treat as if no leading path
+         * i.e. "./x", or "././.x" is equivalent to "x"
+         */
+        if (this != &pathIter->query())
         {
-            // JCSMORE - a bit annoying has to be done again once path has been established
-            currentPath = &pathIter->query();
-            Owned<IPropertyTreeIterator> childIter = currentPath->getElements(prop);
-            if (childIter->first())
+            IPropertyTree *currentPath = NULL;
+            bool multiplePaths = false;
+            bool multipleChildMatches = false;
+            for (;;)
             {
-                child = &childIter->query();
-                if (parent)
-                    AMBIGUOUS_PATH("resolveParentChild", xpath);
-                if (!multipleChildMatches && childIter->next())
-                    multipleChildMatches = true;
+                // JCSMORE - a bit annoying has to be done again once path has been established
+                currentPath = &pathIter->query();
+                Owned<IPropertyTreeIterator> childIter = currentPath->getElements(prop);
+                if (childIter->first())
+                {
+                    child = &childIter->query();
+                    if (parent)
+                        AMBIGUOUS_PATH("resolveParentChild", xpath);
+                    if (!multipleChildMatches && childIter->next())
+                        multipleChildMatches = true;
 
+                    parent = currentPath;
+                }
+                if (pathIter->next())
+                    multiplePaths = true;
+                else break;
+            }
+            if (!parent)
+            {
+                if (multiplePaths) // i.e. no unique path to child found and multiple parent paths
+                    AMBIGUOUS_PATH("resolveParentChild", xpath);
                 parent = currentPath;
             }
-            if (pathIter->next())
-                multiplePaths = true;
-            else break;
-        }
-        if (!parent)
-        {
-            if (multiplePaths) // i.e. no unique path to child found and multiple parent paths
-                AMBIGUOUS_PATH("resolveParentChild", xpath);
-            parent = currentPath;
-        }
-        if (multipleChildMatches)
-            child = NULL; // single parent, but no single child.
-        path.set(prop);
-        const char *pstart = prop;
-        bool wild;
-        readWildId(prop, wild);
-        size32_t s = prop-pstart;
-        if (wild)
-            throw MakeXPathException(pstart, PTreeExcpt_XPath_ParseError, s-1, "Wildcards not permitted on add");
-        assertex(s);
-        path.set(pstart, s);
-        qualifier.set(prop);
-    }
-    else
-    {
-        assertex(prop && *prop);
-        parent = this;
-        const char *pstart = prop;
-        bool wild;
-        readWildId(prop, wild);
-        assertex(!wild);
-        size32_t s = prop-pstart;
-        if (*prop && *prop != '[')
-            throw MakeXPathException(pstart, PTreeExcpt_XPath_ParseError, s, "Qualifier expected e.g. [..]");
-        path.set(pstart, s);
-        if (checkChildren())
-            child = children->query(path);
-        if (child)
+            if (multipleChildMatches)
+                child = NULL; // single parent, but no single child.
+            path.set(prop);
+            const char *pstart = prop;
+            bool wild;
+            readWildId(prop, wild);
+            size32_t s = prop-pstart;
+            if (wild)
+                throw MakeXPathException(pstart, PTreeExcpt_XPath_ParseError, s-1, "Wildcards not permitted on add");
+            assertex(s);
+            path.set(pstart, s);
             qualifier.set(prop);
-        else
-            qualifier.clear();
-    }               
+            return;
+        }
+    }
+    assertex(prop && *prop);
+    parent = this;
+    const char *pstart = prop;
+    bool wild;
+    readWildId(prop, wild);
+    assertex(!wild);
+    size32_t s = prop-pstart;
+    if (*prop && *prop != '[')
+        throw MakeXPathException(pstart, PTreeExcpt_XPath_ParseError, s, "Qualifier expected e.g. [..]");
+    path.set(pstart, s);
+    if (checkChildren())
+        child = children->query(path);
+    if (child)
+        qualifier.set(prop);
+    else
+        qualifier.clear();
 }
 
 void PTree::addProp(const char *xpath, const char *val)
