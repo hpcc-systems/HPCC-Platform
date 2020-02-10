@@ -359,7 +359,7 @@ public:
           enforceOrder(_enforceOrder),
           isTLK(_isTLK)
     {
-        doCrc = true;
+        doCrc = (flags & USE_TRAILING_HEADER)==0;
         activeNode = NULL;
         activeBlobNode = NULL;
         duplicateCount = 0;
