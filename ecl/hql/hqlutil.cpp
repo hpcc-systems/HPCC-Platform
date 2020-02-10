@@ -1560,7 +1560,7 @@ IHqlExpression * createImpureOwn(IHqlExpression * expr)
 IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 {
     NullErrorReceiver errorProcessor;
-    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, NULL, HFOloseannotations);
+    OwnedHqlExpr folded = foldHqlExpression(errorProcessor, filename, HFOloseannotations);
     return normalizeFilenameExpr(folded);
 }
 
@@ -6805,7 +6805,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
         {
             OwnedHqlExpr cond = replaceSelfRefSelector(expr->queryChild(0), selector);
             OwnedHqlExpr mapped = mapper.transformRoot(cond);
-            mapped.setown(foldHqlExpression(errorProcessor, mapped, NULL, HFOfoldimpure|HFOforcefold));
+            mapped.setown(foldHqlExpression(errorProcessor, mapped, HFOfoldimpure|HFOforcefold));
             IValue * mappedValue = mapped->queryValue();
 
             if (included)

@@ -9169,7 +9169,7 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
     if (translate)
     {
         ECLlocation where(ds);
-        OwnedHqlExpr folded  = foldHqlExpression(errs, filename, nullptr, HFOforcefold);
+        OwnedHqlExpr folded  = foldHqlExpression(errs, filename, HFOforcefold);
         StringBuffer fileNameText;
         getStringValue(fileNameText, folded);
         if (fileNameText.length())   // PIPE creates a no_table with a blank filename, it seems
@@ -12046,11 +12046,11 @@ IHqlExpression * HqlTreeNormalizer::transformCaseToIfs(IHqlExpression * expr)
 
         OwnedHqlExpr test = createBoolExpr(no_eq, ensureExprType(testVar, type), transform(castCurValue));
         if (options.constantFoldNormalize)
-            test.setown(foldConstantOperator(test, 0, NULL));
+            test.setown(foldConstantOperator(test, 0));
         OwnedHqlExpr trueExpr = transform(cur->queryChild(1));
         elseExpr.setown(createIf(test.getClear(), trueExpr.getClear(), elseExpr.getClear()));
         if (options.constantFoldNormalize)
-            elseExpr.setown(foldConstantOperator(elseExpr, 0, NULL));
+            elseExpr.setown(foldConstantOperator(elseExpr, 0));
     }
     return elseExpr.getClear();
 }
@@ -12177,7 +12177,7 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
         IHqlExpression * cur = expr->queryChild(idx);
         elseExpr.setown(createIf(transform(cur->queryChild(0)), transform(cur->queryChild(1)), elseExpr.getClear()));
         if (options.constantFoldNormalize)
-            elseExpr.setown(foldConstantOperator(elseExpr, 0, NULL));
+            elseExpr.setown(foldConstantOperator(elseExpr, 0));
     }
     return elseExpr.getClear();
 }
@@ -12905,7 +12905,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
         break;
     }
     OwnedHqlExpr transformed = createTransformedBody(expr);
-    return foldConstantOperator(transformed, 0, NULL);
+    return foldConstantOperator(transformed, 0);
 }
 
 IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
@@ -13348,7 +13348,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             IHqlExpression * child = expr->queryChild(0);
             OwnedHqlExpr ret = transform(child);
-            OwnedHqlExpr folded  = foldHqlExpression(translator.queryErrorProcessor(), ret, NULL, HFOforcefold);
+            OwnedHqlExpr folded  = foldHqlExpression(translator.queryErrorProcessor(), ret, HFOforcefold);
             if (!folded->isConstant())
             {
                 StringBuffer s;
@@ -13743,7 +13743,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
     if (translator.queryOptions().constantFoldPostNormalize)
     {
         HqlExprArray transformed;
-        quickFoldExpressions(transformed, exprs, NULL, 0);
+        quickFoldExpressions(transformed, exprs, 0);
         replaceArray(exprs, transformed);
     }
 
