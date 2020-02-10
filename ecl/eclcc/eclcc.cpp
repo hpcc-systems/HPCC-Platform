@@ -305,9 +305,6 @@ protected:
     void setDebugOption(const char * name, bool value);
     void usage();
 
-    inline const char * queryTemplateDir() { return templatePath.length() ? templatePath.str() : NULL; }
-
-
 protected:
     Owned<IEclRepository> pluginsRepository;
     Owned<IEclRepository> libraryRepository;
@@ -322,7 +319,6 @@ protected:
     StringBuffer cppIncludePath;
     StringBuffer pluginsPath;
     StringBuffer hooksPath;
-    StringBuffer templatePath;
     StringBuffer eclLibraryPath;
     StringBuffer eclBundlePath;
     StringBuffer stdIncludeLibraryPath;
@@ -626,7 +622,6 @@ void EclCC::loadOptions()
             getAdditionalPluginsPath(libraryPath, syspath);
         }
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
-        extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
         extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share" PATHSEPSTR "ecllibrary" PATHSEPSTR);
         extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", homepath, PATHSEPSTR "bundles" PATHSEPSTR);
     }
@@ -797,12 +792,11 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
     {
         try
         {
-            const char * templateDir = queryTemplateDir();
             bool optSaveTemps = wu->getDebugValueBool("saveEclTempFiles", false);
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, templateDir, optTargetClusterType, &instance, false, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, optTargetClusterType, &instance, false, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -2038,7 +2032,6 @@ bool EclCC::processFiles()
         printf("ECLCC_INCLUDE_PATH=%s\n", cppIncludePath.str());
         printf("ECLCC_LIBRARY_PATH=%s\n", libraryPath.str());
         printf("ECLCC_PLUGIN_PATH=%s\n", pluginsPath.str());
-        printf("ECLCC_TPL_PATH=%s\n", templatePath.str());
         printf("HPCC_FILEHOOKS_PATH=%s\n", hooksPath.str());
         return true;
     }

@@ -96,15 +96,9 @@ static StringBuffer & appendCapital(StringBuffer & s, StringBuffer & _name)
 
 //---------------------------------------------------------------------------
 
-CppWriterTemplate::CppWriterTemplate()
+CppWriterTemplate::CppWriterTemplate(const char * codeTemplate)
 {
-    text = NULL;
-    len = 0;
-}
-
-CppWriterTemplate::~CppWriterTemplate()
-{
-    free(text);
+    loadTemplate(codeTemplate);
 }
 
 void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProperties * properties)
@@ -148,29 +142,17 @@ void CppWriterTemplate::generate(ISectionWriter & writer, unsigned pass, IProper
 
         finger = cur.position   + cur.len;
     }
-    char * end = text+len;
+    const char * end = text+len;
     if (output && (end > finger))
         outputQuoted(writer, end-finger, finger);
 
     writer.setOutput(NULL, NULL);
 }
 
-bool CppWriterTemplate::loadTemplate(const char * filename, const char *dir)
+void CppWriterTemplate::loadTemplate(const char * codeTemplate)
 {
-    StringBuffer tpl(dir);
-    if(tpl.length())
-        tpl.append(PATHSEPCHAR);
-    tpl.append(filename);
-
-    Owned<IFile> file = createIFile(tpl);
-    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
-    if (!io)
-        return false;
-    offset_t size = (size32_t)io->size();
-    if (size != (size32_t)size)
-        return false;
-    text = (char *)malloc((size_t)size);
-    len=io->read(0, (size32_t)size, text);
+    len = strlen(codeTemplate);
+    text = codeTemplate;
     
     unsigned index=0;
     unsigned startLine = 0;
@@ -233,7 +215,6 @@ bool CppWriterTemplate::loadTemplate(const char * filename, const char *dir)
             break;
         }
     }
-    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -2271,15 +2252,11 @@ void HqlCppSectionWriter::generateSection(unsigned delta, IAtom * section, unsig
 
 //---------------------------------------------------------------------------
 
-ITemplateExpander * createTemplateExpander(IFile * output, const char * filename, const char *dir)
+ITemplateExpander * createTemplateExpander(IFile * output, const char * codeTemplate)
 {
-    Owned<CppWriterTemplate> expander = new CppWriterTemplate;
-    if (expander->loadTemplate(filename, dir) || expander->loadTemplate(filename, ""))
-    {
-        expander->setOutput(output);
-        return expander.getClear();
-    }
-    return NULL;
+    Owned<CppWriterTemplate> expander = new CppWriterTemplate(codeTemplate);
+    expander->setOutput(output);
+    return expander.getClear();
 }
 
 ISectionWriter * createCppWriter(IHqlCppInstance & _instance, CompilerType compiler)
