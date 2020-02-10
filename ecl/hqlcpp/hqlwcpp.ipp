@@ -20,12 +20,10 @@
 class HQLCPP_API CppWriterTemplate : public CInterface, public ITemplateExpander
 {
 public:
-    CppWriterTemplate();
-    ~CppWriterTemplate();
+    CppWriterTemplate(const char * codeTemplate);
     IMPLEMENT_IINTERFACE
 
     virtual void generate(ISectionWriter & writer, unsigned pass, IProperties * properties = NULL);
-                    bool loadTemplate(const char * filename, const char *dir);
 
     void outputQuoted(ISectionWriter & writer, size32_t len, const char * str)
     {
@@ -45,7 +43,8 @@ public:
 
 
 private:
-  enum TplSectionType { TplEmbed, TplExpand, TplCondition, TplEndCondition };
+    void loadTemplate(const char * codeTemplate);
+    enum TplSectionType { TplEmbed, TplExpand, TplCondition, TplEndCondition };
     struct CppTemplateSection : public CInterface
     {
         TplSectionType  type;
@@ -56,7 +55,7 @@ private:
     };
 
 protected:
-    char * text;
+    const char * text;
     unsigned len;
     CIArray sections;
     Owned<IFile> out;

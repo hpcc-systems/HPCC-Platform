@@ -42,11 +42,102 @@
 #define IS_DEBUG_BUILD          false
 #endif
 
-#define MAIN_MODULE_TEMPLATE        "thortpl.cpp"
-#define HEADER_TEMPLATE             "thortpl.hpp"
-#define CHILD_MODULE_TEMPLATE       "childtpl.cpp"
+constexpr const char * headerTemplate = R"!!($?doNotIncludeInGeneratedCode$
+/*##############################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+############################################################################## */
 
-#define PROTO_TEMPLATE "prototpl.cpp"
+$?$/* Template for generating a header file for a multi-cpp file query */
+
+@mainprototypes@
+
+@parenthelpers@
+)!!";
+
+constexpr const char * mainTemplate = R"!!($?doNotIncludeInGeneratedCode$
+/*##############################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+############################################################################## */
+
+$?$/* Template for generating thor/hthor/roxie output */
+#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#endif
+#include "eclinclude4.hpp"
+@include@
+@prototype@
+$?multiFile$#include "$headerName$"
+$?$@literal@
+@declare@
+@helper@
+
+@go@
+
+extern "C" ECL_API IEclProcess* createProcess()
+{
+    @init@
+    return new MyEclProcess;
+}
+
+@userFunction@
+)!!";
+
+constexpr const char * childTemplate = R"!!($?doNotIncludeInGeneratedCode$
+/*##############################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+##############################################################################*/
+
+$?$/* Template for generating a child module for query */
+#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wextra"
+#endif
+#include "eclinclude4.hpp"
+@include@
+@prototype@
+
+#include "$headerName$"
+
+@helper@
+@userFunction@
+)!!";
 
 class NullContextCallback : implements ICodegenContextCallback, public CInterface
 {
@@ -71,8 +162,8 @@ protected:
 class HqlDllGenerator : implements IHqlExprDllGenerator, implements IAbortRequestCallback, public CInterface
 {
 public:
-    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, const char * _template_dir, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort) :
-        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), template_dir(_template_dir), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
+    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort) :
+        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
     {
         if (!ctxCallback)
             ctxCallback.setown(new NullContextCallback(_wu));
@@ -121,7 +212,6 @@ protected:
     StringAttr targetDir;
     Linked<IWorkUnit> wu;
     Owned<IHqlCppInstance> code;
-    const char * template_dir;
     ClusterType targetClusterType;
     Linked<ICodegenContextCallback> ctxCallback;
     unsigned defaultMaxCompileThreads;
@@ -206,7 +296,7 @@ void HqlDllGenerator::addLibrariesToCompiler()
 }
 
 
-void HqlDllGenerator::expandCode(StringBuffer & filename, const char * templateName, bool isHeader, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler)
+void HqlDllGenerator::expandCode(StringBuffer & filename, const char * codeTemplate, bool isHeader, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler)
 {
     filename.clear().append(wuname);
     if (pass != 0)
@@ -218,9 +308,7 @@ void HqlDllGenerator::expandCode(StringBuffer & filename, const char * templateN
     addDirectoryPrefix(fullname, targetDir).append(filename);
 
     Owned<IFile> out = createIFile(fullname.str());
-    Owned<ITemplateExpander> expander = createTemplateExpander(out, templateName, template_dir);
-    if (!expander)
-        throwError2(HQLERR_CouldNotOpenTemplateXatY, templateName, template_dir ? template_dir : ".");
+    Owned<ITemplateExpander> expander = createTemplateExpander(out, codeTemplate);
 
     Owned<ISectionWriter> writer = createCppWriter(*code, compiler);
     Owned<IProperties> props = createProperties(true);
@@ -538,16 +626,16 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
 
     StringBuffer fullname;
-    expandCode(fullname, MAIN_MODULE_TEMPLATE, false, code, isMultiFile, 0, targetCompiler);
+    expandCode(fullname, mainTemplate, false, code, isMultiFile, 0, targetCompiler);
     sourceFiles.append(fullname);
     sourceFlags.append(nullptr);
     sourceIsTemp.append(true);
     if (isMultiFile)
     {
-        expandCode(fullname, HEADER_TEMPLATE, true, code, true, 0, targetCompiler);
+        expandCode(fullname, headerTemplate, true, code, true, 0, targetCompiler);
         for (unsigned i= 0; i < translator.getNumExtraCppFiles(); i++)
         {
-            expandCode(fullname, CHILD_MODULE_TEMPLATE, false, code, true, i+1, targetCompiler);
+            expandCode(fullname, childTemplate, false, code, true, i+1, targetCompiler);
             sourceFiles.append(fullname);
             sourceFlags.append(nullptr);
             sourceIsTemp.append(true);
@@ -689,14 +777,14 @@ offset_t HqlDllGenerator::getGeneratedSize() const
 
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType)
 {
-    HqlDllGenerator generator(errs, "unknown", NULL, wu, NULL, targetClusterType, NULL, false, false);
+    HqlDllGenerator generator(errs, "unknown", NULL, wu, targetClusterType, NULL, false, false);
     return generator.getECLcomplexity(exprs);
 }
 
 
-extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads, bool okToAbort)
+extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads, bool okToAbort)
 {
-    return new HqlDllGenerator(errs, wuname, targetdir, wu, template_dir, targetClusterType, ctxCallback, checkForLocalFileUploads, okToAbort);
+    return new HqlDllGenerator(errs, wuname, targetdir, wu, targetClusterType, ctxCallback, checkForLocalFileUploads, okToAbort);
 }
 
 /*

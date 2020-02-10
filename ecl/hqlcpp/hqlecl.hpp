@@ -51,7 +51,7 @@ public:
     virtual void setSaveGeneratedFiles(bool value) = 0;
 };
 
-extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback * ctxCallback, bool checkForLocalFileUploads, bool okToAbort);
+extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, ClusterType targetClusterType, ICodegenContextCallback * ctxCallback, bool checkForLocalFileUploads, bool okToAbort);
 
 
 //Extract a single level of external libraries.
