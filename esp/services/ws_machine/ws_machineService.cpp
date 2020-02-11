@@ -2490,42 +2490,49 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
     if (!strieq(type, eqDali) && !strieq(type, eqEclAgent) && !strieq(type, eqSashaServer))
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Component usage function is not supported for %s", type);
 
-    Owned<IPropertyTree> envRoot = &constEnv->getPTree();
-    VStringBuffer xpath("Software/%s[@name='%s']/Instance/@computer", type, name);
-    const char* computer = envRoot->queryProp(xpath);
-    if (isEmptyString(computer))
-        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get %s", xpath.str());
-
-    Owned<IPropertyTree> machineReq = createMachineUsageReq(constEnv, computer);
-
-    IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
-    Owned<IPropertyTree> logFolder = createDiskUsageReq(envDirectories, "log", type, name);
-    if (logFolder)
-        machineReq->addPropTree(logFolder->queryName(), LINK(logFolder));
-
-    StringAttr componentType;
-    if (strieq(type, eqDali))
-        componentType.set("dali");
-    else if (strieq(type, eqEclAgent))
-        componentType.set("eclAgent");
-    else
-        componentType.set("sasha");
-
-    Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType.get(), name);
-    if (dataFolder)
-        machineReq->addPropTree(dataFolder->queryName(), LINK(dataFolder));
-
-    if (strieq(type, eqDali))
-    {
-        Owned<IPropertyTree> repFolder = createDiskUsageReq(envDirectories, "mirror", "dali", name);
-        if (repFolder)
-            machineReq->addPropTree(repFolder->queryName(), LINK(repFolder));
-    }
-
     Owned<IPropertyTree> componentReq = createPTree("Component");
     componentReq->addProp("@name", name);
     componentReq->addProp("@type", type);
-    componentReq->addPropTree(machineReq->queryName(), LINK(machineReq));
+
+    Owned<IPropertyTree> envRoot = &constEnv->getPTree();
+    VStringBuffer xpath("Software/%s[@name='%s']/Instance", type, name);
+    Owned<IPropertyTreeIterator> it = envRoot->getElements(xpath);
+    ForEach(*it)
+    {
+        IPropertyTree& instance = it->query();
+
+        const char* computer = instance.queryProp("@computer");
+        if (isEmptyString(computer))
+            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get %s", xpath.str());
+    
+        Owned<IPropertyTree> machineReq = createMachineUsageReq(constEnv, computer);
+    
+        IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
+        Owned<IPropertyTree> logFolder = createDiskUsageReq(envDirectories, "log", type, name);
+        if (logFolder)
+            machineReq->addPropTree(logFolder->queryName(), LINK(logFolder));
+    
+        StringAttr componentType;
+        if (strieq(type, eqDali))
+            componentType.set("dali");
+        else if (strieq(type, eqEclAgent))
+            componentType.set("eclagent");
+        else
+            componentType.set("sasha");
+    
+        Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType.get(), name);
+        if (dataFolder)
+            machineReq->addPropTree(dataFolder->queryName(), LINK(dataFolder));
+    
+        if (strieq(type, eqDali))
+        {
+            Owned<IPropertyTree> repFolder = createDiskUsageReq(envDirectories, "mirror", "dali", name);
+            if (repFolder)
+                machineReq->addPropTree(repFolder->queryName(), LINK(repFolder));
+        }
+
+        componentReq->addPropTree(machineReq->queryName(), LINK(machineReq));
+    }
     usageReq->addPropTree(componentReq->queryName(), LINK(componentReq));
 }
 
