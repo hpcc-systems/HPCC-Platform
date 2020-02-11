@@ -31,21 +31,22 @@ class RemoteFilename;
 class MemoryBuffer;
 class StringBuffer;
 interface IJlibDateTime;
-
+/**
+ * IDLLLocation tracks where a generated DLL (or other artefact?) is located, and supports copying them to a location where they are required
+ * In general this means copying from a location where they are only accessible via dafilesrv (and cannot therefore be directly loaded) to
+ * a local location where they can. However, DLLs in shared off-node mounts are not currently describable.
+ */
 enum DllLocationType
 {
-    DllLocationNowhere = 0,
-    DllLocationAnywhere = 1,
-    DllLocationDomain = 2,
-    DllLocationLocal = 3,
-    DllLocationDirectory = 4,
-    DllLocationSize = 5
+    DllLocationNowhere = 0,       // DLL does not exist anywhere
+    DllLocationAnywhere = 1,      // DLL exists but cannot be loaded directly
+    DllLocationLocal = 2,         // DLL exists on local machine but not in this process's DLL cache directory
+    DllLocationDirectory = 3      // DLL exists in this process's cache directory
 };
 
 interface IDllLocation : extends IInterface
 {
     virtual void getDllFilename(RemoteFilename & filename) = 0;
-    virtual bool getLibFilename(RemoteFilename & filename) = 0;
     virtual void getIP(IpAddress & ip) = 0;
     virtual DllLocationType queryLocation() = 0;
     virtual void remove(bool removeFiles, bool removeDirectory) = 0;
@@ -73,8 +74,6 @@ interface IDllServer : extends IInterface
     virtual void ensureAvailable(const char * name, DllLocationType location) = 0;
     virtual void getDll(const char * name, MemoryBuffer & dllText) = 0;
     virtual IDllEntry * getEntry(const char * name) = 0;
-    virtual void getLibrary(const char * name, MemoryBuffer & dllText) = 0;
-    virtual void getLocalLibraryName(const char * name, StringBuffer & libraryName) = 0;
     virtual DllLocationType isAvailable(const char * name) = 0;
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location) = 0;
     virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location) = 0;
@@ -86,6 +85,5 @@ interface IDllServer : extends IInterface
 extern DLLSERVER_API IDllServer & queryDllServer();
 extern DLLSERVER_API void closeDllServer();
 extern DLLSERVER_API void initDllServer(const char * localRoot);
-extern DLLSERVER_API void testDllServer();
 
 #endif

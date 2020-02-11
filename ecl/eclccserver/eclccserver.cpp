@@ -31,7 +31,6 @@
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
 
-static StringAttr dllPath;
 Owned<IPropertyTree> globals;
 
 //------------------------------------------------------------------------------------------------------------------
@@ -386,7 +385,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 StringBuffer realdllname, dllurl;
                 realdllname.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
 
-                StringBuffer realdllfilename(dllPath);
+                StringBuffer realdllfilename;
                 realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
 
                 StringBuffer wuXML;

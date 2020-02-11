@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: roxie
-        image: "hpccsystems/roxie:{{ .Values.hpcc.version }}"
-        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        image: "hpccsystems/roxie:{{ .Values.hpcc.image.version }}"
+        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
         args: [ "--serverPort=9870" ]

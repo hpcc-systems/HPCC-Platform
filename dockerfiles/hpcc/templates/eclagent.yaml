@@ -12,8 +12,22 @@ spec:
       labels:
         run: eclagent
     spec:
+      volumes:
+      - name: dllserver-pv-storage
+        persistentVolumeClaim:
+          claimName: dllserver-pv-claim
+      initContainers:
+      - name: volume-mount-hack
+        image: busybox
+        command: ["sh", "-c", "chown -R 999:1000 /var/lib/HPCCSystems/queries"]
+        volumeMounts:
+        - mountPath: "/var/lib/HPCCSystems/queries"
+          name: dllserver-pv-storage
       containers:
       - name: eclagent
-        image: "hpccsystems/eclagent:{{ .Values.hpcc.version }}"
-        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        image: "hpccsystems/eclagent:{{ .Values.hpcc.image.version }}"
+        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
+        volumeMounts:
+        - mountPath: "/var/lib/HPCCSystems/queries"
+          name: dllserver-pv-storage
 

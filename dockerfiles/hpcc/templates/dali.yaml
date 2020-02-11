@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: dali
-        image: "hpccsystems/dali:{{ .Values.hpcc.version }}"
-        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        image: "hpccsystems/dali:{{ .Values.hpcc.image.version }}"
+        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
 ---
 apiVersion: v1
 kind: Service
