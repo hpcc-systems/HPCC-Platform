@@ -1692,6 +1692,16 @@ void doStackProbe()
 #pragma GCC diagnostic pop
 #endif
 
+extern jlib_decl bool isCloud()
+{
+    static bool cloudy = []()
+        {
+            const char *env = getenv("HPCC_containerized");
+            return (env && atoi(env)==1);
+        }();
+    return cloudy;
+}
+
 #ifdef _WIN32
 
 DWORD dwTlsIndex = -1;
