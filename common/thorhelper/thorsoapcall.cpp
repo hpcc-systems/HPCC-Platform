@@ -657,9 +657,13 @@ interface IWSCAsyncFor: public IInterface
 };
 
 class CWSCHelper;
-IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options);
+IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options);
 
 //=================================================================================================
+
+#define CBExceptionPathExc     0x0001
+#define CBExceptionPathExcsExc 0x0002
+#define CBExceptionPathExcs    0x0004
 
 class CMatchCB : implements IXMLSelect, public CInterface
 {
@@ -667,22 +671,49 @@ class CMatchCB : implements IXMLSelect, public CInterface
     const Url &url;
     StringAttr tail;
     ColumnProvider * meta;
+    StringAttr excPath;
+    unsigned excFlags = 0;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMatchCB(IWSCAsyncFor &_parent, const Url &_url, const char *_tail, ColumnProvider * _meta) : parent(_parent), url(_url), tail(_tail), meta(_meta)
+    CMatchCB(IWSCAsyncFor &_parent, const Url &_url, const char *_tail, ColumnProvider * _meta, const char *_excPath, unsigned _excFlags) : parent(_parent), url(_url), tail(_tail), meta(_meta), excFlags(_excFlags), excPath(_excPath)
     {
+    }
+
+    bool checkGetExceptionEntry(bool check, Owned<IColumnProviderIterator> &excIter, IColumnProvider &parent, IColumnProvider *&excEntry, const char *path)
+    {
+        if (!check)
+            return false;
+        excIter.setown(parent.getChildIterator(path));
+        excEntry = excIter->first();
+        return excEntry != nullptr;
+    }
+
+    IColumnProvider *getExceptionEntry(Owned<IColumnProviderIterator> &excIter, IColumnProvider &parent)
+    {
+        IColumnProvider *excEntry = nullptr;
+        if (excPath.length())
+        {
+            checkGetExceptionEntry(true, excIter, parent, excEntry, excPath.str()); //set by user so don't try others
+            return excEntry;
+        }
+        if (checkGetExceptionEntry((excFlags & CBExceptionPathExc)!=0, excIter, parent, excEntry, "Exception"))
+            return excEntry;
+        if (checkGetExceptionEntry((excFlags & CBExceptionPathExcsExc)!=0, excIter, parent, excEntry, "Exceptions/Exception")) //ESP xml array
+            return excEntry;
+        checkGetExceptionEntry((excFlags & CBExceptionPathExcs)!=0, excIter, parent, excEntry, "Exceptions"); //json array
+        return excEntry;
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
     {
         Owned<IException> e;
-        if (tail.length())
+        if (tail.length()||excPath.length())
         {
             StringBuffer path(parent.getResponsePath());
             unsigned idx = (unsigned)entry.getInt(path.append("/@sequence").str());
-            Owned<IColumnProviderIterator> excIter = entry.getChildIterator("Exception");
-            IColumnProvider *excptEntry = excIter->first();
+            Owned<IColumnProviderIterator> excIter;
+            IColumnProvider *excptEntry = getExceptionEntry(excIter, entry);
             if (excptEntry)
             {
                 int code = (int)excptEntry->getInt("Code");
@@ -739,10 +770,11 @@ class CWSCHelperThread : public Thread
 {
 private:
     CWSCHelper * master;
-    virtual void outputXmlRows(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows, const char *itemtag=NULL, bool encode_off=false, char const * itemns = NULL);
-    virtual void createESPQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows);
-    virtual void createSOAPliteralOrEncodedQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows);
-    virtual void createXmlSoapQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows);
+    virtual void outputRows(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows, const char *itemtag=NULL, bool encode_off=false, char const * itemns = NULL);
+    virtual void createESPQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows);
+    virtual void createSOAPliteralOrEncodedQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows);
+    virtual void createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows);
+    virtual void createHttpPostQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows, bool appendRequestToName, bool appendEncodeFlag);
     virtual void processQuery(ConstPointerArray &inputRows);
     
     //Thread
@@ -767,6 +799,7 @@ private:
     SpinLock outputQLock;
     CriticalSection toXmlCrit, transformCrit, onfailCrit, timeoutCrit;
     unsigned done;
+    Owned<IPropertyTree> xpathHints;
     Linked<ClientCertificate> clientCert;
 
     static CriticalSection secureContextCrit;
@@ -795,6 +828,7 @@ public:
         helper = rowProvider->queryActionHelper();
         callHelper = rowProvider->queryCallHelper();
         flags = helper->getFlags();
+
         OwnedRoxieString s;
 
         authToken.append(_authToken);
@@ -825,6 +859,11 @@ public:
 
         if (flags & SOAPFhttpheaders)
             httpHeaders.set(s.setown(helper->getHttpHeaders()));
+        if (flags & SOAPFxpathhints)
+        {
+            s.setown(helper->getXpathHintsXml());
+            xpathHints.setown(createPTreeFromXMLString(s.get()));
+        }
 
         StringAttr proxyAddress;
         proxyAddress.set(s.setown(helper->getProxyAddress()));
@@ -852,8 +891,13 @@ public:
             if ((flags & SOAPFliteral) && (flags & SOAPFencoding))
                 throw MakeStringException(0, "SOAPCALL 'LITERAL' and 'ENCODING' options are mutually exclusive");
 
-            header.set(s.setown(helper->getHeader()));
-            footer.set(s.setown(helper->getFooter()));
+            rowHeader.set(s.setown(helper->getHeader()));
+            rowFooter.set(s.setown(helper->getFooter()));
+            if (flags & SOAPFmarkupinfo)
+            {
+                rootHeader.set(s.setown(helper->getRequestHeader()));
+                rootFooter.set(s.setown(helper->getRequestFooter()));
+            }
             if(flags & SOAPFnamespace)
             {
                 OwnedRoxieString ns = helper->getNamespaceName();
@@ -1080,7 +1124,7 @@ protected:
         else
             error.setown(e);
     }
-    void toXML(const byte * self, IXmlWriter & out) { CriticalBlock block(toXmlCrit); helper->toXML(self, out); }
+    void toXML(const byte * self, IXmlWriterExt & out) { CriticalBlock block(toXmlCrit); helper->toXML(self, out); }
     size32_t transformRow(ARowBuilder & rowBuilder, IColumnProvider * row) 
     { 
         CriticalBlock block(transformCrit); 
@@ -1118,8 +1162,10 @@ protected:
     StringAttr inputpath;
     StringBuffer service;
     StringBuffer acceptType;//for httpcall, text/plain, text/html, text/xml, etc
-    StringAttr header;
-    StringAttr footer;
+    StringAttr rowHeader;
+    StringAttr rowFooter;
+    StringAttr rootHeader;
+    StringAttr rootFooter;
     StringAttr xmlnamespace;
     IXmlToRowTransformer * rowTransformer;
 };
@@ -1129,64 +1175,65 @@ Owned<ISecureSocketContext> CWSCHelper::secureContext; // created on first use
 
 //=================================================================================================
 
-void CWSCHelperThread::outputXmlRows(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows, const char *itemtag, bool encode_off, char const * itemns)
+void CWSCHelperThread::outputRows(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows, const char *itemtag, bool encode_off, char const * itemns)
 {
     ForEachItemIn(idx, inputRows)
     {
-        if (itemtag)                //TAG
+        if (idx!=0)
+            xmlWriter.checkDelimiter();
+
+        if (itemtag && *itemtag)                //TAG
         {
-            xmlWriter.outputQuoted("<");
-            xmlWriter.outputQuoted(itemtag);
+            xmlWriter.outputBeginNested(itemtag, true);
             if(itemns)
-            {
-                xmlWriter.outputQuoted(" xmlns=\"");
-                xmlWriter.outputQuoted(itemns);
-                xmlWriter.outputQuoted("\"");
-            }
-            xmlWriter.outputQuoted(">");
+                xmlWriter.outputXmlns("xmlns", itemns);
         }
 
-        if (master->header.get())   //OPTIONAL HEADER (specified by "HEADING" option)
-            xmlWriter.outputQuoted(master->header.get());
+        if (master->rowHeader.get())   //OPTIONAL HEADER (specified by "HEADING" option)
+            xmlWriter.outputInline(master->rowHeader.get());
 
                                     //XML ROW CONTENT
         master->toXML((const byte *)inputRows.item(idx), xmlWriter);
 
-        if (master->footer.get())   //OPTION FOOTER
-            xmlWriter.outputQuoted(master->footer.get());
+        if (master->rowFooter.get())   //OPTION FOOTER
+            xmlWriter.outputInline(master->rowFooter.get());
 
         if (encode_off)             //ENCODING
-            xmlWriter.outputQuoted("<encode_>0</encode_>");
+            xmlWriter.outputInt(0, 1, "encode_");
 
-        if (itemtag)                //CLOSE TAG
-        {
-            xmlWriter.outputQuoted("</");
-            xmlWriter.outputQuoted(itemtag);
-            xmlWriter.outputQuoted(">");
-        }
+        if (itemtag && *itemtag)                //TAG
+            xmlWriter.outputEndNested(itemtag);
 
         master->addUserLogMsg((const byte *)inputRows.item(idx));
     }
 }
 
-void CWSCHelperThread::createESPQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows)
+void CWSCHelperThread::createHttpPostQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows, bool appendRequestToName, bool appendEncodeFlag)
 {
     StringBuffer method_tag;
-    method_tag.append(master->service).append("Request");
+    method_tag.append(master->service);
+    if (method_tag.length() && appendRequestToName)
+        method_tag.append("Request");
+
+    StringBuffer array_tag;
     StringAttr method_ns;
+
+    if (master->rootHeader.get())   //OPTIONAL ROOT REQUEST HEADER
+        xmlWriter.outputInline(master->rootHeader.get());
 
     if (inputRows.ordinality() > 1)
     {
-        xmlWriter.outputQuoted("<");
-        xmlWriter.outputQuoted(method_tag.str());
-        xmlWriter.outputQuoted("Array");
-        if (master->xmlnamespace.get())
+        if (!(master->flags & SOAPFnoroot))
         {
-            xmlWriter.outputQuoted(" xmlns=\"");
-            xmlWriter.outputQuoted(master->xmlnamespace.get());
-            xmlWriter.outputQuoted("\"");
+            if (method_tag.length())
+            {
+                array_tag.append(method_tag).append("Array");
+                xmlWriter.outputBeginNested(array_tag, true);
+                if (master->xmlnamespace.get())
+                    xmlWriter.outputXmlns("xmlns", master->xmlnamespace);
+            }
         }
-        xmlWriter.outputQuoted(">");
+        xmlWriter.outputBeginArray(method_tag);
     }
     else
     {
@@ -1194,65 +1241,68 @@ void CWSCHelperThread::createESPQuery(CommonXmlWriter &xmlWriter, ConstPointerAr
             method_ns.set(master->xmlnamespace.get());
     }
 
-    outputXmlRows(xmlWriter, inputRows, method_tag.str(), (inputRows.ordinality() == 1), method_ns.get());
+    outputRows(xmlWriter, inputRows, method_tag.str(), appendEncodeFlag ? (inputRows.ordinality() == 1) : false, method_ns.get());
 
     if (inputRows.ordinality() > 1)
     {
-        xmlWriter.outputQuoted("<encode_>0</encode_>");
-        xmlWriter.outputQuoted("</");
-        xmlWriter.outputQuoted(method_tag.str());
-        xmlWriter.outputQuoted("Array>");
+        xmlWriter.outputEndArray(method_tag);
+        if (appendEncodeFlag)
+            xmlWriter.outputInt(0, 1, "encode_");
+        if (!(master->flags & SOAPFnoroot))
+        {
+            if (method_tag.length())
+                xmlWriter.outputEndNested(array_tag);
+        }
     }
+
+    if (master->rootFooter.get())   //OPTIONAL ROOT REQUEST FOOTER
+        xmlWriter.outputInline(master->rootFooter.get());
+}
+
+void CWSCHelperThread::createESPQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows)
+{
+    createHttpPostQuery(xmlWriter, inputRows, true, true);
 }
 
 //Create servce xml request body, with binding usage of either Literal or Encoded
 //Note that Encoded usage requires type encoding for data fields
-void CWSCHelperThread::createSOAPliteralOrEncodedQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows)
+void CWSCHelperThread::createSOAPliteralOrEncodedQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows)
 {
-    xmlWriter.outputQuoted("<");
-    xmlWriter.outputQuoted(master->service);
+    xmlWriter.outputBeginNested(master->service, true);
 
     if (master->flags & SOAPFencoding)
-        xmlWriter.outputQuoted(" soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"");
+        xmlWriter.outputCString("http://schemas.xmlsoap.org/soap/encoding/", "@soapenv:encodingStyle");
 
     if (master->xmlnamespace.get())
-    {
-        xmlWriter.outputQuoted(" xmlns=\"");
-        xmlWriter.outputQuoted(master->xmlnamespace.get());
-        xmlWriter.outputQuoted("\"");
-    }
+        xmlWriter.outputXmlns("xmlns", master->xmlnamespace.get());
 
-    xmlWriter.outputQuoted(">");
+    outputRows(xmlWriter, inputRows);
 
-    outputXmlRows(xmlWriter, inputRows);
-
-    xmlWriter.outputQuoted("</");
-    xmlWriter.outputQuoted(master->service);
-    xmlWriter.outputQuoted(">");
+    xmlWriter.outputEndNested(master->service);
 }
 
 //Create SOAP body of http request
-void CWSCHelperThread::createXmlSoapQuery(CommonXmlWriter &xmlWriter, ConstPointerArray &inputRows)
+void CWSCHelperThread::createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows)
 {
     xmlWriter.outputQuoted("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    xmlWriter.outputQuoted("<soap:Envelope");
+    xmlWriter.outputBeginNested("soap:Envelope", true);
 
-    xmlWriter.outputQuoted(" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"");
+    xmlWriter.outputXmlns("soap", "http://schemas.xmlsoap.org/soap/envelope/");
     if (master->flags & SOAPFencoding)
     {   //SOAP RPC/encoded.  'Encoded' usage includes type encoding 
-        xmlWriter.outputQuoted(" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"");
-        xmlWriter.outputQuoted(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
+        xmlWriter.outputXmlns("xsd", "http://www.w3.org/2001/XMLSchema");
+        xmlWriter.outputXmlns("xsi", "http://www.w3.org/2001/XMLSchema-instance");
     }
-    xmlWriter.outputQuoted(">");
 
-    xmlWriter.outputQuoted("<soap:Body>");
+    xmlWriter.outputBeginNested("soap:Body", true);
 
     if (master->flags & SOAPFliteral  ||  master->flags & SOAPFencoding)
         createSOAPliteralOrEncodedQuery(xmlWriter, inputRows);
     else
         createESPQuery(xmlWriter, inputRows);
 
-    xmlWriter.outputQuoted("</soap:Body></soap:Envelope>");
+    xmlWriter.outputEndNested("soap:Body");
+    xmlWriter.outputEndNested("soap:Envelope");
 }
 
 void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
@@ -1263,14 +1313,24 @@ void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
         xmlWriteFlags |= XWFtrim;
     if ((master->flags & SOAPFpreserveSpace) == 0)
         xmlReadFlags |= ptr_ignoreWhiteSpace;
-        XMLWriterType xmlType = !(master->flags & SOAPFencoding) ? WTStandard : WTEncodingData64; 
-    CommonXmlWriter *xmlWriter = CreateCommonXmlWriter(xmlWriteFlags, 0, NULL, xmlType);
-    if (master->wscType == STsoap)
+
+    bool useMarkup = (master->flags & SOAPFmarkupinfo);
+
+    XMLWriterType xmlType = WTStandard;
+    if (useMarkup && (master->flags & SOAPFjson))
+        xmlType = (master->flags & SOAPFnoroot) ? WTJSONRootless : WTJSONObject;
+    else if (master->flags & SOAPFencoding)
+        xmlType = WTEncodingData64;
+
+    Owned<IXmlWriterExt> xmlWriter = createIXmlWriterExt(xmlWriteFlags, 0, nullptr, xmlType);
+    if (useMarkup)
+        createHttpPostQuery(*xmlWriter, inputRows, false, false);
+    else if (master->wscType == STsoap )
         createXmlSoapQuery(*xmlWriter, inputRows);
+    xmlWriter->finalize();
 
     Owned<IWSCAsyncFor> casyncfor = createWSCAsyncFor(master, *xmlWriter, inputRows, (PTreeReaderOptions) xmlReadFlags);
     casyncfor->For(master->numUrls, master->numUrlThreads,false,true); // shuffle URLS for poormans load balance
-    delete xmlWriter;
 }
 
 int CWSCHelperThread::run()
@@ -1435,7 +1495,7 @@ class CWSCAsyncFor : implements IWSCAsyncFor, public CInterface, public CAsyncFo
 private:
     CWSCHelper * master;
     ConstPointerArray &inputRows;
-    CommonXmlWriter &xmlWriter;
+    IXmlWriterExt &xmlWriter;
     IEngineRowAllocator * outputAllocator;
     CriticalSection processExceptionCrit;
     StringBuffer responsePath;
@@ -1602,7 +1662,13 @@ private:
                 request.append(hdr.append("\r\n"));
             }
             if (!httpHeaderBlockContainsHeader(httpheaders, "Content-Type"))
-                request.append("Content-Type: text/xml\r\n");
+            {
+                bool isJson = ((master->flags & SOAPFmarkupinfo) && (master->flags & SOAPFjson));
+                if (isJson)
+                    request.append("Content-Type: application/json\r\n");
+                else
+                    request.append("Content-Type: text/xml\r\n");
+            }
         }
         else if(master->wscType == SThttp)
             request.append("Accept: ").append(master->acceptType).append("\r\n");
@@ -1806,60 +1872,76 @@ private:
         return rval;
     }
 
+    inline const char *queryXpathHint(const char *name)
+    {
+        if (!master->xpathHints)
+            return nullptr;
+        return master->xpathHints->queryProp(name);
+    }
+
     void processEspResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
     {
         StringBuffer path(responsePath);
         path.append("/Results/Result/");
-        const char *tail;
+        const char *tail = nullptr;
+        const char *excPath = nullptr;
         if (master->rowTransformer && master->inputpath.get())
         {
             StringBuffer ipath;
             ipath.append("/Envelope/Body/").append(master->inputpath.get());
-            if((ipath.length() >= path.length()) && (0 == memcmp(ipath.str(), path.str(), path.length())))
-            {
+            tail = queryXpathHint("rowpath");
+            if(!tail && (ipath.length() >= path.length()) && (0 == memcmp(ipath.str(), path.str(), path.length())))
                 tail = ipath.str() + path.length();
-            }
             else
-            {
                 path.clear().append(ipath);
-                tail = NULL;
-            }
+            excPath = queryXpathHint("excpath");
         }
         else
             tail = "Dataset/Row";
 
-        CMatchCB matchCB(*this, url, tail, meta);
+        CMatchCB matchCB(*this, url, tail, meta, excPath, CBExceptionPathExc);
         Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0);
         while (xmlParser->next());
     }
-
     void processLiteralResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
     {
         StringBuffer path("/Envelope/Body/");
+        const char *tail = nullptr;
+        const char *excPath = nullptr;
         if(master->rowTransformer && master->inputpath.get())
+        {
             path.append(master->inputpath.get());
-        CMatchCB matchCB(*this, url, NULL, meta);
+            tail = queryXpathHint("rowpath");
+            excPath = queryXpathHint("excpath");
+        }
+        CMatchCB matchCB(*this, url, tail, meta, excPath, CBExceptionPathExc);
         Owned<IXMLParse> xmlParser = createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0);
         while (xmlParser->next());
     }
 
     void processHttpResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
     {
-        StringBuffer path;
+        const char *path = nullptr;
+        const char *tail = nullptr;
+        const char *excPath = nullptr;
         if(master->rowTransformer && master->inputpath.get())
-            path.append(master->inputpath.get());
-        CMatchCB matchCB(*this, url, NULL, meta);
+        {
+            path = master->inputpath.get();
+            tail = queryXpathHint("rowpath");
+            excPath = queryXpathHint("excpath");
+        }
+        CMatchCB matchCB(*this, url, tail, meta, excPath, CBExceptionPathExc | CBExceptionPathExcs | CBExceptionPathExcsExc);
         Owned<IXMLParse> xmlParser;
-        if (strieq(master->acceptType.str(), "application/json"))
-            xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0, true));
+        if (strieq(master->acceptType.str(), "application/json") || (master->flags & SOAPFjson))
+            xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0, true));
         else
-            xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path.str(), matchCB, options, (master->flags&SOAPFusescontents)!=0));
+            xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0));
         while (xmlParser->next());
     }
 
     void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
     {
-        if (master->wscType == SThttp)
+        if (master->wscType == SThttp || master->flags & SOAPFmarkupinfo)
             processHttpResponse(url, response, meta);
         else if (master->flags & SOAPFliteral)
             processLiteralResponse(url, response, meta);
@@ -1928,7 +2010,7 @@ private:
     }
 
 public:
-    CWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
+    CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
     {
         master = _master;
         outputAllocator = master->queryOutputAllocator();
@@ -2152,7 +2234,7 @@ public:
     inline virtual IEngineRowAllocator * getOutputAllocator() { return outputAllocator; }
 };
 
-IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
+IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
 {
     return new CWSCAsyncFor(_master, _xmlWriter, _inputRows, _options);
 }

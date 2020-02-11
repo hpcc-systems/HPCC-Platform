@@ -19,6 +19,7 @@ interface IXmlWriterExt : extends IXmlWriter
     virtual void outputNumericString(const char *field, const char *fieldname) = 0;
     virtual void outputInline(const char* text) = 0;
     virtual void finalize() = 0;
+    virtual void checkDelimiter() = 0;
 };
 
 class ECLRTL_API SimpleOutputWriter : implements IXmlWriterExt, public CInterface
@@ -33,6 +34,7 @@ public:
     virtual size32_t length() const override                { return out.length(); }
     virtual const char * str() const override               { return out.str(); }
     virtual void finalize() override                        {}
+    virtual void checkDelimiter() override                  {}
 
 
     virtual void outputQuoted(const char *text) override;
@@ -131,6 +133,7 @@ public:
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
     virtual void finalize() override                                {}
+    virtual void checkDelimiter() override                          {}
 
     virtual IInterface *saveLocation() const
     {
@@ -224,6 +227,7 @@ public:
     virtual unsigned length() const                                 { return out.length(); }
     virtual const char * str() const                                { return out.str(); }
     virtual void finalize() override                                {}
+    virtual void checkDelimiter() override                          { checkDelimit(); }
     virtual void rewindTo(unsigned int prevlen)                     { if (prevlen < out.length()) out.setLength(prevlen); }
     virtual IInterface *saveLocation() const
     {
@@ -549,6 +553,8 @@ public:
     virtual unsigned length() const { return out.length(); }
     virtual const char* str() const { return out.str(); }
     virtual void finalize() override {}
+    virtual void checkDelimiter() override {}
+
     virtual void rewindTo(IInterface* location) { };
     virtual void cutFrom(IInterface *location, StringBuffer& databuf) { };
     virtual IInterface* saveLocation() const

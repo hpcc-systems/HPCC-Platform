@@ -7598,6 +7598,31 @@ void HqlGram::checkSoapRecord(attribute & errpos)
     OwnedHqlExpr mapped = checkOutputRecord(record, errpos, allConstant, true);
 }
 
+inline bool hasHttpMarkupFlag(IHqlExpression *flags)
+{
+    if (!flags)
+        return false;
+    return (queryAttributeInList(jsonAtom, flags)!=nullptr || queryAttributeInList(xmlAtom, flags)!=nullptr);
+}
+
+IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op)
+{
+    if (op == (__int64) no_httpcall)
+        return createAttribute(jsonAtom);
+    return nullptr;
+}
+
+IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op, IHqlExpression *flags)
+{
+    if (op != (__int64) no_httpcall || hasHttpMarkupFlag(flags))
+        return LINK(flags);
+    return createComma(createAttribute(jsonAtom), flags);
+}
+
+IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op, IHqlExpression *flags, IHqlExpression *p1)
+{
+    return createComma(processHttpMarkupFlag(op, flags), p1);
+}
 
 IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs)
 {

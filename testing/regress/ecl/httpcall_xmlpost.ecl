@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -38,13 +38,16 @@ ServiceOutRecord :=
     END;
 
 // simple query->dataset form
-output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple'), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','1111')),record));
+output(SORT(HTTPCALL(targetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), XML, XPATH('*/Results/Result', rowpath('Dataset/Row')), LOG('simple'), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','1111')),record));
+
+// noroot / service name -- recreate root
+output(SORT(HTTPCALL(targetURL,'', { string unkname := 'FRED' }, dataset(ServiceOutRecord), XML(NOROOT, HEADING('<soapbase>', '</soapbase>')), XPATH('*/Results/Result', rowpath('Dataset/Row')), LOG('simple'), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','1111')),record));
 
 // double query->dataset form
-output(SORT(SOAPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG, HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','2222')),record));
+output(SORT(HTTPCALL(doubleTargetURL,'soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset[@name="Result 1"]/Row')), LOG, HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','2222')),record));
 
 // simple dataset->dataset form
-output(sort(SOAPCALL(d, targetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','3333')),record));
+output(sort(HTTPCALL(d, targetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset/Row')), HTTPHEADER('HPCC-Global-Id','12345678900'), HTTPHEADER('HPCC-Caller-Id','3333')),record));
 
 // double query->dataset form
 ServiceOutRecord doError(d l) := TRANSFORM
@@ -71,9 +74,9 @@ END;
 
 // Test some failure cases
 
-output(SORT(SOAPCALL(d, blacklistedTargetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname),TIMEOUT(1)), record));
-output(SORT(SOAPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN), HTTPHEADER('Global-Id','12345678900'), HTTPHEADER('Caller-Id','4444')),record));
-output(SORT(SOAPCALL(d, targetURL,'soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError3(LEFT)),MERGE(25),PARALLEL(1),RETRY(0), LOG(MIN)), record));
+output(SORT(HTTPCALL(d, blacklistedTargetURL,'soapbase', { unkname }, DATASET(ServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset/Row')), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname),TIMEOUT(1)), record));
+output(SORT(HTTPCALL(targetURL,'soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset/Row')),onFail(doError2),RETRY(0), LOG(MIN), HTTPHEADER('Global-Id','12345678900'), HTTPHEADER('Caller-Id','4444')),record));
+output(SORT(HTTPCALL(d, targetURL,'soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), XML, XPATH('soapbaseNOSUCHQUERYResponse/Results/Result', rowpath('Dataset/Row')), onFail(doError3(LEFT)),PARALLEL(1),RETRY(0), LOG(MIN)), record));
 
 childRecord := record
 unsigned            id;
@@ -90,5 +93,5 @@ FullServiceOutRecord :=
 
 //leak children when linked counted rows are enabled, because not all records are read
 //Use a count so the results are consistent, and nofold to prevent the code generator removing the child dataset...
-output(count(nofold(choosen(SOAPCALL(d, targetURL,'soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord)),1))));
-output(count(nofold(choosen(SOAPCALL(d, targetURL,'soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), merge(3)),2))));
+output(count(nofold(choosen(HTTPCALL(d, targetURL,'soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset/Row'))),1))));
+output(count(nofold(choosen(HTTPCALL(d, targetURL,'soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), XML, XPATH('soapbaseResponse/Results/Result', rowpath('Dataset/Row'))),2))));

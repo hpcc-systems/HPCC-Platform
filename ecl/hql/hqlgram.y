@@ -2689,58 +2689,66 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createValue(no_orderedactionlist, makeVoidType(), actions), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->checkSoapRecord($7);
-                            $$.setExpr(createValue(no_soapcall, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createValue(no_soapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), flags.getClear() }, true), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->checkSoapRecord($7);
-                            $$.setExpr(createValue(no_soapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr() }, true), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $9.getExpr());
+                            $$.setExpr(createValue(no_soapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), flags.getClear() }, true), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
                             parser->normalizeExpression($5, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_newsoapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr() }, true), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createValue(no_newsoapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear() }, true), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
                             parser->normalizeExpression($5, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_newsoapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr() }, true), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $11.getExpr());
+                            $$.setExpr(createValue(no_newsoapcall, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear() }, true), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->normalizeExpression($7, type_stringorunicode, false);
                             parser->checkSoapRecord($9);
-                            $$.setExpr(createValue(no_soapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $12.getExpr() }, true), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createValue(no_soapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear(), $12.getExpr() }, true), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' soapFlags ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->normalizeExpression($7, type_stringorunicode, false);
                             parser->checkSoapRecord($9);
-                            $$.setExpr(createValue(no_soapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $14.getExpr() }, true), $1);
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $11.getExpr());
+                            $$.setExpr(createValue(no_soapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear(), $14.getExpr() }, true), $1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->normalizeExpression($7, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_newsoapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $14.getExpr() }, true));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createValue(no_newsoapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), flags.getClear(), $14.getExpr() }, true));
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' soapFlags ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->normalizeExpression($7, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_newsoapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $13.getExpr(), $16.getExpr() }, true));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $13.getExpr());
+                            $$.setExpr(createValue(no_newsoapaction_ds, makeVoidType(), { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), flags.getClear(), $16.getExpr() }, true));
                             $$.setPosition($1);
                         }
     | KEYDIFF '(' dataSet ',' dataSet ',' expression keyDiffFlags ')'
@@ -3586,6 +3594,30 @@ outputFlag
                         }
     ;
 
+HTTPorSOAPcall
+    : HTTPCALL          {   $$.setInt(no_httpcall); $$.setPosition($1); }
+    | SOAPCALL          {   $$.setInt(no_soapcall); $$.setPosition($1); }
+    ;
+
+httpMarkupOptions
+    : httpMarkupOption
+    | httpMarkupOptions ',' httpMarkupOption
+                        {   $$.setExpr(createComma($1.getExpr(), $3.getExpr())); }
+    ;
+
+httpMarkupOption
+    : NOROOT            {   $$.setExpr(createAttribute(noRootAtom)); }
+    | HEADING '(' expression optCommaExpression ')'
+                        {
+                            //Markup heading is the root level heading, SOAPCALL/HTTPCALL heading is once per row for batched requests
+                            parser->normalizeExpression($3, type_string, false);
+                            if ($4.queryExpr())
+                                parser->normalizeExpression($4, type_string, false);
+                            $$.setExpr(createExprAttribute(headingAtom, $3.getExpr(), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 soapFlags
     : soapFlag
     | soapFlags ',' soapFlag
@@ -3613,6 +3645,17 @@ soapFlag
                             parser->normalizeExpression($3, type_string, false);
                             parser->validateXPath($3);
                             $$.setExpr(createExprAttribute(xpathAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | XPATH '(' expression ',' hintList ')'
+                        {
+                            //MORE: Really type_utf8 - and in lots of other places!
+                            parser->normalizeExpression($3, type_string, false);
+                            parser->validateXPath($3);
+                            HqlExprArray args;
+                            args.append(*$3.getExpr());
+                            $5.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(xpathAtom, args));
                             $$.setPosition($1);
                         }
     | GROUP             {
@@ -3715,6 +3758,26 @@ soapFlag
                         {
                             parser->normalizeExpression($3, type_string, false);
                             $$.setExpr(createExprAttribute(logAtom, $3.getExpr()), $1);
+                        }
+    | XML_TOKEN         {
+                            $$.setExpr(createAttribute(xmlAtom));
+                            $$.setPosition($1);
+                        }
+    | XML_TOKEN '(' httpMarkupOptions ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(xmlAtom, args), $1);
+                        }
+    | JSON_TOKEN        {
+                            $$.setExpr(createAttribute(jsonAtom));
+                            $$.setPosition($1);
+                        }
+    | JSON_TOKEN '(' httpMarkupOptions ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(jsonAtom, args), $1);
                         }
     ;
 
@@ -7599,50 +7662,58 @@ simpleDataRow
                             OwnedHqlExpr ds = parser->processIfProduction($3, $5, NULL);
                             $$.setExpr(createRow(no_selectnth, ds.getClear(), getSizetConstant(1)), $1);
                         }
-    | HTTPCALL '(' expression ',' expression ',' expression ',' recordDef ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' expression ',' recordDef ')'
                         {
+                            if ($1.getInt() != (__int64) no_httpcall)
+                                parser->reportError(ERR_EXPECTED, $1, "Expected HTTPCALL rather than SOAPCALL");
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
-                            IHqlExpression * ds = createDataset(no_httpcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr()));
+                            IHqlExpression * ds = createDataset(no_httpcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr() });
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                         }
-    | HTTPCALL '(' expression ',' expression ',' expression ',' recordDef ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' expression ',' recordDef ',' soapFlags ')'
                         {
+                            if ($1.getInt() != (__int64) no_httpcall)
+                                parser->reportError(ERR_EXPECTED, $1, "Expected HTTPCALL rather than SOAPCALL");
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
                             IHqlExpression * ds = createDataset(no_httpcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr() });
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' recordDef ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' recordDef ')'
                         {
                             parser->normalizeExpression($3);
                             parser->checkSoapRecord($7);
-                            IHqlExpression * ds = createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr() });
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            IHqlExpression * ds = createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear() });
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' recordDef ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' recordDef ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
                             parser->checkSoapRecord($7);
-                            IHqlExpression * ds = createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr() });
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $11.getExpr());
+                            IHqlExpression * ds = createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear() });
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
-                            IHqlExpression * ds = createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr() });
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            IHqlExpression * ds = createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear(), $11.getExpr() });
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ',' recordDef ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
-                            IHqlExpression * ds = createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), createComma($9.getExpr(), $11.getExpr(), $13.getExpr())));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $13.getExpr());
+                            IHqlExpression * ds = createDataset(no_newsoapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), createComma($9.getExpr(), $11.getExpr(), flags.getClear())));
                             $$.setExpr(createRow(no_selectnth, ds, createConstantOne()));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                         }
@@ -9585,67 +9656,75 @@ simpleDataSet
                                 parser->reportError(ERR_PARSER_CANNOTRECOVER,$1,"SKIP is only valid inside a TRANSFORM");
                             $$.setExpr(createDataset(no_skip, $3.getExpr()));
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
                             parser->checkSoapRecord($7);
-                            $$.setExpr(createDataset(no_soapcall, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $11.getExpr())));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $11.getExpr(), flags.getClear() }));
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
                             parser->checkSoapRecord($7);
-                            $$.setExpr(createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $11.getExpr(), $14.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $14.getExpr());
+                            $$.setExpr(createDataset(no_soapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $11.getExpr(), flags.getClear() }));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
-                            $$.setExpr(createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), flags.getClear(), $13.getExpr() }));
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')'
+    | HTTPorSOAPcall '(' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5);
-                            $$.setExpr(createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), $16.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $16.getExpr());
+                            $$.setExpr(createDataset(no_newsoapcall, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), flags.getClear() }));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
                             parser->checkSoapRecord($9);
-                            $$.setExpr(createDataset(no_soapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), $17.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createDataset(no_soapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), flags.getClear(), $17.getExpr() }));
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
                             parser->checkSoapRecord($9);
-                            $$.setExpr(createDataset(no_soapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), $16.getExpr(), $19.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $16.getExpr());
+                            $$.setExpr(createDataset(no_soapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $13.getExpr(), flags.getClear(), $19.getExpr() }));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
-                            $$.setExpr(createDataset(no_newsoapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $15.getExpr(), $19.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt());
+                            $$.setExpr(createDataset(no_newsoapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $15.getExpr(), flags.getClear(), $19.getExpr() }));
                             $$.setPosition($1);
                         }
-    | SOAPCALL '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
+    | HTTPorSOAPcall '(' startTopLeftSeqFilter ',' expression ',' expression ',' recordDef ',' transform ',' DATASET '(' recordDef ')' ',' soapFlags ')' endTopLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
-                            $$.setExpr(createDataset(no_newsoapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $15.getExpr(), $18.getExpr(), $21.getExpr() }));
+                            OwnedHqlExpr flags = parser->processHttpMarkupFlag($1.getInt(), $18.getExpr());
+                            $$.setExpr(createDataset(no_newsoapcall_ds, { $3.getExpr(), $5.getExpr(), $7.getExpr(), $9.getExpr(), $11.getExpr(), $15.getExpr(), flags.getClear(), $21.getExpr() }));
                             parser->checkOnFailRecord($$.queryExpr(), $1);
                             $$.setPosition($1);
                         }

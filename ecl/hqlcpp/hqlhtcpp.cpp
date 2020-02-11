@@ -17834,39 +17834,26 @@ void HqlCppTranslator::doBuildHttpHeaderStringFunction(BuildCtx &ctx, IHqlExpres
 ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpression * expr, bool isSink, bool isRoot)
 {
     ThorActivityKind tak;
-    const char * helper;
     unsigned firstArg = 0;
     IHqlExpression * dataset = NULL;
     Owned<ABoundActivity> boundDataset;
     IHqlExpression * selSeq = querySelSeq(expr);
-    if (expr->getOperator() == no_newsoapcall)
+
+    const char * helper= (isSink) ? "SoapAction" : "SoapCall";
+
+    switch (expr->getOperator())
     {
-        if (isSink)
-        {
-            tak = TAKsoap_rowaction;
-            helper = "SoapAction";
-        }
-        else
-        {
-            tak = TAKsoap_rowdataset;
-            helper = "SoapCall";
-        }
-    }
-    else
+    case no_newsoapcall:
+        tak = (isSink) ? TAKsoap_rowaction : TAKsoap_rowdataset;
+        break;
+    default:
     {
-        if (isSink)
-        {
-            tak = TAKsoap_datasetaction;
-            helper = "SoapAction";
-        }
-        else
-        {
-            tak = TAKsoap_datasetdataset;
-            helper = "SoapCall";
-        }
+        tak = (isSink) ? TAKsoap_datasetaction : TAKsoap_datasetdataset;
         dataset = expr->queryChild(0);
         boundDataset.setown(buildCachedActivity(ctx, dataset));
         firstArg = 1;
+        break;
+    }
     }
 
     StringBuffer s;
@@ -17898,6 +17885,26 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
         doBuildVarStringFunction(instance->startctx, "queryOutputIteratorPath", separator->queryChild(0));
+
+    bool isJSON = false;
+    IHqlExpression * markupAttr = expr->queryAttribute(xmlAtom);
+    if (!markupAttr)
+    {
+        markupAttr = expr->queryAttribute(jsonAtom);
+        if (markupAttr)
+            isJSON = true;
+    }
+
+    if (markupAttr)
+    {
+        //request header and footer are for the entire request, row header and footer is for each row
+        IHqlExpression * reqHeader = markupAttr->queryAttribute(headingAtom);
+        if (reqHeader)
+        {
+            doBuildVarStringFunction(instance->startctx, "getRequestHeader", reqHeader->queryChild(0));
+            doBuildVarStringFunction(instance->startctx, "getRequestFooter", reqHeader->queryChild(1));
+        }
+    }
 
     //virtual const char * getHeader()
     //virtual const char * getFooter()
@@ -17972,15 +17979,35 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         doBuildFunctionReturn(func.ctx, unknownStringType, logText);
     }
     bool usesContents = false;
+    bool hasXpathHints = false;
     if (!isSink)
     {
         //virtual IXmlToRowTransformer * queryTransformer()
         doBuildXmlReadMember(*instance, expr, "queryInputTransformer", usesContents);
 
         //virtual const char * getInputIteratorPath()
+        StringBuffer xpathHints;
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
         if (xpath)
+        {
             doBuildVarStringFunction(instance->startctx, "getInputIteratorPath", xpath->queryChild(0));
+
+            if (xpath->numChildren()>1)
+            {
+                hasXpathHints = true;
+                appendXMLOpenTag(xpathHints, "Hints");
+                ForEachChildFrom(i, xpath, 1)
+                {
+                    StringBuffer name, value;
+                    OwnedHqlExpr folded = foldHqlExpression(xpath->queryChild(i));
+                    getHintNameValue(folded, name, value);
+                    appendXMLTag(xpathHints, name.str(), value.str());
+                }
+                appendXMLCloseTag(xpathHints, "Hints");
+                OwnedHqlExpr xpathHintsExpr = createConstant(createStringValue(xpathHints.str(), xpathHints.length()));
+                doBuildVarStringFunction(instance->startctx, "getXpathHintsXml", xpathHintsExpr);
+            }
+        }
 
         IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
         if (onFail)
@@ -18023,7 +18050,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFhttpheaders");
         if (usesContents)
             flags.append("|SOAPFusescontents");
-
+        if (markupAttr)
+            flags.append("|SOAPFmarkupinfo");
+        if (hasXpathHints)
+            flags.append("|SOAPFxpathhints");
+        if (markupAttr)
+        {
+            if (markupAttr->hasAttribute(noRootAtom))
+                flags.append("|SOAPFnoroot");
+            if (isJSON)
+                flags.append("|SOAPFjson");
+            else
+                flags.append("|SOAPFxml");
+        }
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
     }
