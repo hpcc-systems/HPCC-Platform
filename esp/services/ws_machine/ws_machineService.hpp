@@ -729,8 +729,8 @@ public:
     int* getChannels(const char* key) { return channelsMap.getValue(key); };
 };
 
-const unsigned MACHINE_USAGE_CACHE_MINUTES = 3; //Force usage cache to rebuild
-const unsigned DEFAULT_MACHINE_USAGE_CACHE_AUTO_BUILD_MINUTES = 10;
+const unsigned machineUsageCacheMinutes = 3; //Force usage cache to rebuild
+const unsigned defaultMachineUsageCacheAutoBuildMinutes = 10;
 
 //---------------------------------------------------------------------------------------------
 
@@ -841,12 +841,9 @@ private:
     StringArray& listTargetClusterNames(IConstEnvironment* constEnv, StringArray& targetClusters);
     StringArray& listThorHThorNodeGroups(IConstEnvironment* constEnv, StringArray& nodeGroups);
     IArrayOf<IConstComponent>& listComponentsByType(IPropertyTree* envRoot, const char* componentType, IArrayOf<IConstComponent>& componentList);
-    void readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv,
-        IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
-    void readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv,
-        IPropertyTree* usageReq, IPropertyTree* uniqueUsages);
-    void readComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv, IPropertyTree* usageReq,
-        IPropertyTree* uniqueUsages);
+    IPropertyTree* readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv);
+    IPropertyTree* readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv);
+    IPropertyTree* readComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv);
     void readThorUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void readRoxieUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void readDropZoneUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);

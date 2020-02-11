@@ -139,10 +139,10 @@ public:
         infoCacheReaderThread.setown(new CInfoCacheReaderThread(this, _name, _autoRebuildSeconds, _forceRebuildSeconds));
     }
 
-    virtual CInfoCache* getCachedInfo() const { return infoCacheReaderThread->getCachedInfo(); }
-    virtual void buildCachedInfo() { infoCacheReaderThread->buildCachedInfo(); }
-    virtual void setActive(bool _active) { infoCacheReaderThread->setActive(_active); }
-    virtual bool isActive() const { return infoCacheReaderThread->isActive(); }
+    virtual CInfoCache* getCachedInfo() const override { return infoCacheReaderThread->getCachedInfo(); }
+    virtual void buildCachedInfo() override { infoCacheReaderThread->buildCachedInfo(); }
+    virtual void setActive(bool _active) override { infoCacheReaderThread->setActive(_active); }
+    virtual bool isActive() const override { return infoCacheReaderThread->isActive(); }
 
     virtual CInfoCache* read() = 0;
 };
