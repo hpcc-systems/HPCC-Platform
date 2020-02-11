@@ -45,21 +45,21 @@ public:
     virtual void                    mergeScopeWithContainer()       {}
     virtual void                    setIncomplete(bool _incomplete) { incomplete = _incomplete; }
     virtual void                    setIncluded(bool _included) { included = _included; }
+    virtual void                    setOptimize(bool value);
             void                    setPriority(unsigned _prio) { priority = _prio; }
     virtual void                    finishedFramework() { throwUnexpected(); }
 
 protected:
     bool hasChildren() const;
+    StringBuffer & appendTextExtra(StringBuffer & out) const;
 
 protected:
     unsigned short                      priority;       //64bit: pack with link count in CInterface
-#ifdef _DEBUG
     StmtKind                            kind;
-#else
-    unsigned char                       kind;
-#endif
     bool                                incomplete:1;
     bool                                included:1;
+    bool                                optimize:1;     // Should really be in a derived class, but this avoids extra memory
+    byte                                noOptimize:1;   // Should really be in a derived class, but this avoids extra memory
     HqlStmts *                          container;
     HqlExprArray                        exprs;
 };

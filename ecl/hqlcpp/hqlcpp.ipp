@@ -36,7 +36,6 @@
 #endif
 
 #define MAX_RECORD_SIZE     4096                // default value
-#define OPTIMIZE_FUNCTION_ATTRIBUTE " OPTIMIZE"
 
 enum GraphLocalisation {
     GraphNeverAccess,  // This variant of an activity never accesses the parent
@@ -442,11 +441,13 @@ protected:
 
 //===========================================================================
 
-enum
+enum MFoptions
 {
     MFdynamicproto = 1,             // Prototype for the function is not a literal string
     MFsingle = 2,                   // This will only be executed once per activity instance
     MFopt = 4,                      // An optional function that will not be generated if it is empty
+    MFoptimize = 8,                 // Ensure this function is optimized as well as possible
+    MFnooptimize = 16,              // Disable optimization - the function is too complicated
 };
 
 class MemberFunction
@@ -629,6 +630,8 @@ struct HqlCppOptions
     unsigned            checkDuplicateMinActivities;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
+    unsigned            maxOptimizeSize;
+    unsigned            minNoOptimizeSize;
     bool                peephole;
     bool                foldConstantCast;
     bool                optimizeBoolReturn;
