@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DALI name="mydali">
+  <SDS store="dalisds.xml" caseInsensitive="0" recoverFromIncErrors="true" 
+       environment="/etc/HPCCSystems/environment.xml">
+  </SDS>
+  <DFS/>
+  <Coven store="dalicoven.xml">
+    <Alerts>
+      <SNMPalert type="Processor" trigger="" warning="" minor="" major="" critical=""/>
+      <SNMPalert type="VirtualMemory" warning="" minor="" major="" critical=""/>
+      <SNMPalert type="Disk1" warning="" minor="" major="" critical=""/>
+      <SNMPalert type="Disk2" warning="" minor="" major="" critical=""/>
+      <SNMPalert type="Threads" warning="" minor="" major="" critical=""/>
+    </Alerts>
+  </Coven>
+</DALI>

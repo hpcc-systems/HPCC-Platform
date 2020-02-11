@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Environment>
+  <Software>
+    <EspProcess build="_" componentfilesDir="/opt/HPCCSystems/componentfiles" controlPort="8010" daliServers="dali:7070" 
+                description="ESP server" enableSEHMapping="true" formOptionsAccess="false" 
+                httpConfigAccess="true" logLevel="1" logRequests="false" logResponses="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" 
+                name="myesp" perfReportDelay="60" portalurl="http://hpccsystems.com/download" 
+                txSummaryLevel="1" txSummaryResourceReq="false" directory="/var/lib/HPCCSystems/myesp">
+      <Environment><EclWatch>http://.:8010</EclWatch></Environment>
+      <EspProtocol name="http" type="http_protocol" plugin="esphttp" maxRequestEntityLength="8000000"/>
+      <EspService name="WSESPControl_myesp" type="WSESPControl" plugin="ws_espcontrol"/>
+      <EspBinding name="WSESPControl_Binding_myesp" service="WSESPControl_myesp" protocol="http" type="ws_espcontrolSoapBinding" plugin="ws_espcontrol" netAddress="0.0.0.0" port="8010"/>
+      <EspService name="WsSMC_EclWatch_myesp" type="WsSMC" plugin="ws_smc"><ActivityInfoCacheSeconds>10</ActivityInfoCacheSeconds></EspService>
+      <EspBinding name="WsSMC_myespsmc_myesp" service="WsSMC_EclWatch_myesp" protocol="http" type="ws_smcSoapBinding" plugin="ws_smc" netAddress="0.0.0.0" port="8010" defaultBinding="true" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsWorkunits_EclWatch_myesp" type="WsWorkunits" plugin="ws_workunits"><ViewTimeout>1000</ViewTimeout><ClusterQueryStateThreadPoolSize>25</ClusterQueryStateThreadPoolSize><AWUsCacheMinutes>15</AWUsCacheMinutes><AllowNewRoxieOnDemandQuery>false</AllowNewRoxieOnDemandQuery><LayoutProgram>dot/dot -Tsvg -Gordering=out</LayoutProgram><StyleSheets><xslt name="atts">/esp/xslt/atts.xslt</xslt><xslt name="dot_update">/esp/xslt/dot_update.xslt</xslt><xslt name="dot">/esp/xslt/dot.xslt</xslt><xslt name="graphStats">/esp/xslt/graphStats.xslt</xslt><xslt name="graphupdate_gvc">/esp/xslt/graphupdate_gvc.xslt</xslt></StyleSheets></EspService>
+      <EspBinding name="WsWorkunits_myespsmc_myesp" service="WsWorkunits_EclWatch_myesp" protocol="http" type="ws_workunitsSoapBinding" plugin="ws_workunits" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsTopology_EclWatch_myesp" type="WsTopology" plugin="ws_topology" warnIfCpuLoadOver="95" warnIfFreeMemoryUnder="5" warnIfFreeStorageUnder="5"><AllowNewRoxieOnDemandQuery>false</AllowNewRoxieOnDemandQuery><SystemUseRewrite>false</SystemUseRewrite></EspService>
+      <EspBinding name="WsTopology_myespsmc_myesp" service="WsTopology_EclWatch_myesp" protocol="http" type="ws_topologySoapBinding" plugin="ws_topology" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsDfu_EclWatch_myesp" type="WsDfu" plugin="ws_dfu"><NodeGroupCacheMinutes>30</NodeGroupCacheMinutes><DisableUppercaseTranslation>false</DisableUppercaseTranslation><ViewTimeout>1000</ViewTimeout><StyleSheets><xslt name="def_file">./smc_xslt/def_file.xslt</xslt></StyleSheets><Plugins path="/Users/rchapman/hpcc/opt/HPCCSystems/plugins"/></EspService>
+      <EspBinding name="WsDfu_myespsmc_myesp" service="WsDfu_EclWatch_myesp" protocol="http" type="ws_dfuSoapBinding" plugin="ws_dfu" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsDfuXRef_EclWatch_myesp" type="WsDfuXRef" plugin="ws_dfu"><ViewTimeout>1000</ViewTimeout><LayoutProgram>dot/dot -Tsvg -Gordering=out</LayoutProgram><StyleSheets><xslt name="def_file">./smc_xslt/def_file.xslt</xslt></StyleSheets></EspService>
+      <EspBinding name="WsDfuXRef_myespsmc_myesp" service="WsDfuXRef_EclWatch_myesp" protocol="http" type="ws_dfuxrefSoapBinding" plugin="ws_dfu" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="FileSpray_Serv_EclWatch_myesp" type="FileSpray_Serv" plugin="ws_fs"><QueueLabel>dfuserver_queue</QueueLabel><MonitorQueueLabel>dfuserver_monitor_queue</MonitorQueueLabel></EspService>
+      <EspBinding name="FileSpray_Serv_myespsmc_myesp" service="FileSpray_Serv_EclWatch_myesp" protocol="http" type="FileSpray_Bind" plugin="ws_fs" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsFileIO_EclWatch_myesp" type="WsFileIO" plugin="ws_fileio"/>
+      <EspBinding name="WsFileIO_myespsmc_myesp" service="WsFileIO_EclWatch_myesp" protocol="http" type="WsFileIO" plugin="ws_fileio" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="WsPackageProcess_EclWatch_myesp" type="WsPackageProcess" plugin="ws_packageprocess"/>
+      <EspBinding name="WsPackageProcess_myespsmc_myesp" service="WsPackageProcess_EclWatch_myesp" protocol="http" type="WsPackageProcessSoapBinding" plugin="ws_packageprocess" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_machine_EclWatch_myesp" type="ws_machine" plugin="ws_machine" excludePartitions="/dev*,/sys,/proc/*" monitorDaliFileServer="false"><ProcessFilters>
+     <Platform name="Windows">
+      <ProcessFilter name="any">
+       <Process name="dafilesrv"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="DfuServerProcess"/>
+      <ProcessFilter multipleInstances="true" name="EclCCServerProcess"/>
+      <ProcessFilter multipleInstances="true" name="EspProcess">
+       <Process name="dafilesrv" remove="true"/>
+      </ProcessFilter>
+     </Platform>
+     <Platform name="Linux">
+      <ProcessFilter name="any">
+       <Process name="dafilesrv"/>
+      </ProcessFilter>
+      <ProcessFilter multipleInstances="true" name="DfuServerProcess"/>
+      <ProcessFilter multipleInstances="true" name="EclCCServerProcess"/>
+      <ProcessFilter multipleInstances="true" name="EspProcess">
+       <Process name="dafilesrv" remove="true"/>
+      </ProcessFilter>
+      <ProcessFilter name="GenesisServerProcess">
+       <Process name="httpd"/>
+       <Process name="atftpd"/>
+       <Process name="dhcpd"/>
+      </ProcessFilter>
+     </Platform>
+    </ProcessFilters></EspService>
+      <EspBinding name="ws_machine_myespsmc_myesp" service="ws_machine_EclWatch_myesp" protocol="http" type="ws_machineSoapBinding" plugin="ws_machine" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_account_EclWatch_myesp" type="ws_account" plugin="ws_account"/>
+      <EspBinding name="ws_account_myespsmc_myesp" service="ws_account_EclWatch_myesp" protocol="http" type="ws_accountSoapBinding" plugin="ws_account" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_access_EclWatch_myesp" type="ws_access" plugin="ws_access"><Resources><Binding name="myespsmc" service="EclWatch" port="8010" basedn="ou=SMC,ou=EspServices,ou=ecl" workunitsBasedn="ou=workunits,ou=ecl"/><Binding name="myws_ecl" service="ws_ecl" port="8002" basedn="ou=WsEcl,ou=EspServices,ou=ecl" workunitsBasedn="ou=workunits,ou=ecl"/><Binding name="myws_sqlbinding" service="ws_sql" port="8510" basedn="ou=WsSql,ou=EspServices,ou=ecl" workunitsBasedn="ou=workunits,ou=ecl"/><Binding name="DESDLBindingTemplate" service="DESDLServiceTemplate" port="0" basedn="ou=DynamicESDL,ou=EspServices,ou=ecl" workunitsBasedn=""/></Resources></EspService>
+      <EspBinding name="ws_access_myespsmc_myesp" service="ws_access_EclWatch_myesp" protocol="http" type="ws_accessSoapBinding" plugin="ws_access" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_config_EclWatch_myesp" type="ws_config" plugin="ws_config"/>
+      <EspBinding name="ws_config_myespsmc_myesp" service="ws_config_EclWatch_myesp" protocol="http" type="ws_configSoapBinding" plugin="ws_config" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_esdlconfig_EclWatch_myesp" type="ws_esdlconfig" plugin="ws_esdlconfig"/>
+      <EspBinding name="ws_esdlconfig_myespsmc_myesp" service="ws_esdlconfig_EclWatch_myesp" protocol="http" type="ws_esdlconfigSoapBinding" plugin="ws_esdlconfig" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_elk_EclWatch_myesp" type="ws_elk" plugin="ws_elk"><ELKIntegration><Kibana/><ElasticSearch/><LogStash/></ELKIntegration></EspService>
+      <EspBinding name="ws_elk_myespsmc_myesp" service="ws_elk_EclWatch_myesp" protocol="http" type="ws_elkSoapBinding" plugin="ws_elk" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_store_EclWatch_myesp" type="ws_store" plugin="ws_store"><StoreProvider lib="dalistorelib"/><Stores><Store description="Generic KeyVal store for HPCC Applications" name="HPCCApps" default="true"/></Stores></EspService>
+      <EspBinding name="ws_store_myespsmc_myesp" service="ws_store_EclWatch_myesp" protocol="http" type="ws_storeSoapBinding" plugin="ws_store" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_codesign_EclWatch_myesp" type="ws_codesign" plugin="ws_codesign"/>
+      <EspBinding name="ws_codesign_myespsmc_myesp" service="ws_codesign_EclWatch_myesp" protocol="http" type="ws_codesignSoapBinding" plugin="ws_codesign" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_ecl_ws_ecl_myesp" type="ws_ecl" plugin="ws_ecl">
+        <RoxieTimeout>300</RoxieTimeout>
+        <WorkunitTimeout>600</WorkunitTimeout>
+        <VIPS/>
+        <Targets/>
+      </EspService>
+      <EspBinding name="ws_ecl_myws_ecl_myesp" service="ws_ecl_ws_ecl_myesp" protocol="http" type="ws_eclSoapBinding" plugin="ws_ecl" netAddress="0.0.0.0" port="8002" defaultBinding="true" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="ws_sql_ws_sql_myesp" type="ws_sql" plugin="ws_sql"/>
+      <EspBinding name="ws_sql_myws_sqlbinding_myesp" service="ws_sql_ws_sql_myesp" protocol="http" type="ws_sqlSoapBinding" plugin="ws_sql" netAddress="0.0.0.0" port="8510" defaultBinding="true" wsdlServiceAddress="" defaultServiceVersion=""/>
+      <EspService name="DESDLServiceTemplate" type="DESDLServiceTemplate" plugin="esdl_svc_engine" namespaceBase="urn:hpccsystems:ws"/>
+      <EspBinding name="DESDLBindingTemplate" service="DESDLServiceTemplate" protocol="http" type="EsdlBinding" plugin="esdl_svc_engine" netAddress="0.0.0.0" port="0"/>
+   <Authentication checkViewPermissions="false" htpasswdFile="/etc/HPCCSystems/.htpasswd" ldapAuthMethod="kerberos" 
+                   ldapConnections="10" ldapServer="" method="none" passwordExpirationWarningDays="10"/>
+   </EspProcess>
+  </Software>
+</Environment>

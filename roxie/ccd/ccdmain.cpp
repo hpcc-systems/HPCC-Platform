@@ -529,10 +529,12 @@ static constexpr const char * defaultJson = R"!!({
   "version": "1.0",
   "Roxie": {
     "allFilesDynamic": true,
-    "numChannels": 1,
+    "daliServers": "dali",
     "localSlave": true,
-    "resolveLocally": true,
+    "numChannels": 1,
     "numServerThreads": 30,
+    "queueNames": "roxie.roxie",
+    "resolveLocally": true,
     "serverPorts": "9876,0",
     "RoxieFarmProcess":  {
       "name": "default",
