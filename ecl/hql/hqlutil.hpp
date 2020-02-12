@@ -598,6 +598,7 @@ public:
 
 protected:
     void expandParameter(IHqlExpression * expr, unsigned & nextParameter);
+    bool isSupportedParameterType(IHqlExpression & param) const;
     IHqlExpression * mapRealToLogical(const HqlExprArray & inputExprs, IHqlExpression * expr, IHqlExpression * libraryId);
     void mapLogicalToReal(HqlExprArray & mapped, IHqlExpression * expr, IHqlExpression * value);
 
