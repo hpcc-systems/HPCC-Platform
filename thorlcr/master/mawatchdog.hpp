@@ -52,7 +52,7 @@ public:
     virtual void stopReading() = 0;
 };
 
-CMasterWatchdogBase *createMasterWatchdog(bool udp=false);
+CMasterWatchdogBase *createMasterWatchdog(bool udp=false, bool startNow=false);
 
 #endif
 

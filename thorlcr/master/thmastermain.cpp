@@ -136,7 +136,7 @@ public:
     Linked<CMasterWatchdogBase> watchdog;
     IBitSet *status;
 
-    CRegistryServer()  : deregistrationWatch(*this)
+    CRegistryServer() : deregistrationWatch(*this)
     {
         status = createThreadSafeBitSet();
         msgDelay = SLAVEREG_VERIFY_DELAY;
@@ -196,70 +196,76 @@ public:
             watchdog->addSlave(ep);
         ++slavesRegistered;
     }
-    bool connect()
+    bool connect(unsigned slaves)
     {
-        unsigned slaves = queryNodeClusterWidth();
         LOG(MCdebugProgress, thorJob, "Waiting for %d slaves to register", slaves);
-        unsigned timeWaited = 0;
-        unsigned connected = 0;
-        Owned<IBitSet> connectedSet = createThreadSafeBitSet();
-        for (;;)
+
+        IPointerArrayOf<INode> connectedSlaves;
+        connectedSlaves.ensure(slaves);
+        unsigned remaining = slaves;
+        INode *_sender = nullptr;
+        CMessageBuffer msg;
+        while (remaining)
         {
-            CTimeMon tm(msgDelay);
-            UnsignedArray todo;
-            unsigned s = 0;
-            while ((s=connectedSet->scan(s, false)) < slaves)
-                todo.append(s++);
-            Owned<IShuffledIterator> shuffled = createShuffledIterator(todo.ordinality());
-            ForEach(*shuffled)
+            if (!queryWorldCommunicator().recv(msg, nullptr, MPTAG_THORREGISTRATION, &_sender, MP_WAIT_FOREVER))
             {
-                s = todo.item(shuffled->get());
-                unsigned remaining;
-                if (tm.timedout(&remaining))
-                    break;
-                PROGLOG("Verifying connection to slave %d", s+1);
-                if (queryWorldCommunicator().verifyConnection(&queryNodeGroup().queryNode(s+1), remaining))
-                {
-                    StringBuffer str;
-                    PROGLOG("verified connection with %s", queryNodeGroup().queryNode(s+1).endpoint().getUrlStr(str.clear()).str());
-                    ++connected;
-                    connectedSet->set(s);
-                }
-                if (stopped)
-                    return false;
+                ::Release(_sender);
+                PROGLOG("Failed to initialize slaves");
+                return false;
             }
-            timeWaited += tm.elapsed();
-            if (connected == slaves)
-                break;
+            Owned<INode> sender = _sender;
+            if (NotFound != connectedSlaves.find(sender))
+            {
+                StringBuffer epStr;
+                PROGLOG("Same slave registered twice!! : %s", sender->endpoint().getUrlStr(epStr).str());
+                return false;
+            }
+
+            /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
+             * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
+             */
+            unsigned slaveNum;
+            msg.read(slaveNum);
+            if (NotFound == slaveNum)
+            {
+                connectedSlaves.append(sender.getLink());
+                slaveNum = connectedSlaves.ordinality();
+            }
             else
             {
-                if (timeWaited >= MAX_SLAVEREG_DELAY)
-                    throw MakeThorException(TE_AbortException, "Have waited over %d minutes for all slaves to connect, quitting.", MAX_SLAVEREG_DELAY/1000/60);
-                unsigned outstanding = slaves - connected;
-                PROGLOG("Still Waiting for minimum %d slaves to connect", outstanding);
-                if ((outstanding) <= 5)
-                {
-                    unsigned s=0;
-                    for (;;)
-                    {
-                        unsigned ns = connectedSet->scan(s, false);
-                        if (ns<s || ns >= slaves)
-                            break;
-                        s = ns+1;
-                        StringBuffer str;
-                        PROGLOG("waiting for slave %d (%s)", s, queryNodeGroup().queryNode(s).endpoint().getUrlStr(str.clear()).str());
-                    }
-                }
-                msgDelay = (unsigned) ((float)msgDelay * 1.5);
-                if (timeWaited+msgDelay > MAX_SLAVEREG_DELAY)
-                    msgDelay = MAX_SLAVEREG_DELAY - timeWaited;
+                unsigned pos = slaveNum - 1; // NB: slaveNum is 1 based
+                while (connectedSlaves.ordinality() < pos)
+                    connectedSlaves.append(nullptr);
+                if (connectedSlaves.ordinality() == pos)
+                    connectedSlaves.append(sender.getLink());
+                else
+                    connectedSlaves.replace(sender.getLink(), pos);
             }
+            StringBuffer epStr;
+            PROGLOG("Slave %u connected from %s", slaveNum, sender->endpoint().getUrlStr(epStr).str());
+            --remaining;
         }
-        
+        assertex(slaves == connectedSlaves.ordinality());
+
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+
+        Owned<IGroup> processGroup;
+
+        // NB: in bare metal Thor is bound to a group and cluster/communicator have alreday been setup (see earlier setClusterGroup call)
+        if (clusterInitialized())
+            processGroup.set(&queryProcessGroup());
+        else
+        {
+            processGroup.setown(createIGroup(connectedSlaves.ordinality(), connectedSlaves.getArray()));
+            setupCluster(queryMyNode(), processGroup, channelsPerSlave, slaveBasePort, localThorPortInc);
+        }
+
         PROGLOG("Slaves connected, initializing..");
-        CMessageBuffer msg;
+        msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
-        queryRawGroup().serialize(msg);
+        processGroup->serialize(msg);
         globals->serialize(msg);
         msg.append(masterSlaveMpTag);
         msg.append(kjServiceMpTag);
@@ -268,6 +274,8 @@ public:
             PROGLOG("Failed to initialize slaves");
             return false;
         }
+
+        // Wait for confirmation from slaves
         PROGLOG("Initialization sent to slave group");
         try
         {
@@ -304,6 +312,8 @@ public:
                 }
                 registerNode(sender-1);
             }
+
+            // this is like a barrier, let slaves know all slaves are now connected
             PROGLOG("Slaves initialized");
             unsigned s=0;
             for (; s<slaves; s++)
@@ -315,6 +325,8 @@ public:
                     return false;
                 }
             }
+            if (watchdog)
+                watchdog->start();
             deregistrationWatch.start();
             return true;
         }
@@ -605,7 +617,9 @@ int main( int argc, char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
-    unsigned channelsPerSlave = 1;
+    unsigned numSlaves = globals->getPropInt("@numSlaves", 0); // >0 in container world, 0 in bare metal
+    unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+    unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
 
     ILogMsgHandler *logHandler;
     try
@@ -664,12 +678,6 @@ int main( int argc, char *argv[]  )
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
         if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
         {
             FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
@@ -840,7 +848,16 @@ int main( int argc, char *argv[]  )
         masterSlaveMpTag = allocateClusterMPTag();
         kjServiceMpTag = allocateClusterMPTag();
 
-        if (registry->connect())
+        if (0 == numSlaves) // bare metal
+        {
+            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+            Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+            numSlaves = queryNodeClusterWidth();
+        }
+
+        if (registry->connect(numSlaves))
         {
             unsigned totSlaveProcs = queryNodeClusterWidth();
             for (unsigned s=0; s<totSlaveProcs; s++)

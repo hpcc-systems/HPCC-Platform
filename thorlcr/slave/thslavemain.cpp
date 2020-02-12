@@ -90,7 +90,7 @@ static void replyError(unsigned errorCode, const char *errorMsg)
     Owned<IException> e = MakeStringException(errorCode, "%s", str.str());
     CMessageBuffer msg;
     serializeException(e, msg);
-    queryWorldCommunicator().send(msg, 0, MPTAG_THORREGISTRATION);
+    queryNodeComm().send(msg, 0, MPTAG_THORREGISTRATION);
 }
 
 static std::atomic<bool> isRegistered {false};
@@ -106,27 +106,36 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         ep.port = getFixedPort(getMasterPortBase(), TPORT_mp);
         Owned<INode> masterNode = createINode(ep);
         CMessageBuffer msg;
+        msg.append(mySlaveNum);
+        queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;
         PROGLOG("Initialization received");
         unsigned vmajor, vminor;
         msg.read(vmajor);
         msg.read(vminor);
+        Owned<IGroup> processGroup = deserializeIGroup(msg);
+        mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
+        assertex(NotFound != mySlaveNum);
+        mySlaveNum++; // 1 based;
+        unsigned configSlaveNum = globals->getPropInt("@SLAVENUM", NotFound);
+        if (NotFound != configSlaveNum)
+            assertex(mySlaveNum == configSlaveNum);
+
+        globals->Release();
+        globals = createPTree(msg);
+        mergeCmdParams(globals); // cmd line
+
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        setupCluster(masterNode, processGroup, channelsPerSlave, slaveBasePort, localThorPortInc);
+
         if (vmajor != THOR_VERSION_MAJOR || vminor != THOR_VERSION_MINOR)
         {
             replyError(TE_FailedToRegisterSlave, "Thor master/slave version mismatch");
             return false;
         }
-        Owned<IGroup> rawGroup = deserializeIGroup(msg);
-        globals->Release();
-        globals = createPTree(msg);
-        mergeCmdParams(globals); // cmd line
-
-        unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-        setClusterGroup(masterNode, rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
 
         unsigned numStrands, blockSize;
         if (globals->hasProp("Debug/@forceNumStrands"))
@@ -160,14 +169,15 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         }
         readUnderlyingType<mptag_t>(msg, masterSlaveMpTag);
         readUnderlyingType<mptag_t>(msg, kjServiceMpTag);
-        msg.clear();
-        msg.setReplyTag(MPTAG_THORREGISTRATION);
-        if (!queryNodeComm().reply(msg))
-            return false;
 
-        PROGLOG("Registration confirmation sent");
-        if (!queryNodeComm().recv(msg, 0, MPTAG_THORREGISTRATION)) // when all registered
+        msg.clear();
+        if (!queryNodeComm().send(msg, 0, MPTAG_THORREGISTRATION))
             return false;
+        PROGLOG("Registration confirmation sent");
+
+        if (!queryNodeComm().recv(msg, 0, MPTAG_THORREGISTRATION))
+            return false;
+        PROGLOG("Registration confirmation receipt received");
 
         ::masterNode = LINK(masterNode);
 
@@ -353,6 +363,18 @@ int main( int argc, char *argv[]  )
         if (!master)
             usage();
 
+        mySlaveNum = globals->getPropInt("@SLAVENUM", NotFound);
+        /* NB: in cloud/non-local storage mode, slave number is not known until after registration with the master
+        * For the time being log file names are based on their slave number, so can only start when known.
+        */
+        bool loggingStarted = false;
+        if (NotFound != mySlaveNum)
+        {
+            startSlaveLog();
+            loggingStarted = true;
+        }
+
+        // In container world, SLAVE= will not be used
         const char *slave = globals->queryProp("@SLAVE");
         if (slave)
         {
@@ -362,11 +384,10 @@ int main( int argc, char *argv[]  )
         else 
             slfEp.setLocalHost(0);
 
-        mySlaveNum = globals->getPropInt("@SLAVENUM");
-
+        // TBD: use new config/init system for generic handling of init settings vs command line overrides
+        if (0 == slfEp.port) // assume default from config if not on command line
+            slfEp.port = globals->getPropInt("@slaveport", THOR_BASESLAVE_PORT);
         setMachinePortBase(slfEp.port);
-        slfEp.port = getMachinePortBase();
-        startSlaveLog();
 
         setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
 
@@ -383,8 +404,12 @@ int main( int argc, char *argv[]  )
         localHostToNIC(masterEp);
         setMasterPortBase(masterEp.port);
         markNodeCentral(masterEp);
+
         if (RegisterSelf(masterEp))
         {
+            if (!loggingStarted)
+                startSlaveLog();
+
             if (globals->getPropBool("Debug/@slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
 

@@ -85,9 +85,12 @@ CMasterWatchdogBase::~CMasterWatchdogBase()
 
 void CMasterWatchdogBase::start()
 {
-    PROGLOG("Starting watchdog");
-    stopped = false;
-    threaded.init(this);
+    if (stopped)
+    {
+        PROGLOG("Starting watchdog");
+        stopped = false;
+        threaded.init(this);
+    }
 }
 
 void CMasterWatchdogBase::addSlave(const SocketEndpoint &slave)
@@ -260,10 +263,11 @@ class CMasterWatchdogUDP : public CMasterWatchdogBase
 {
     ISocket *sock;
 public:
-    CMasterWatchdogUDP()
+    CMasterWatchdogUDP(bool startNow)
     {
         sock = ISocket::udp_create(getFixedPort(TPORT_watchdog));
-        start();
+        if (startNow)
+            start();
     }
     ~CMasterWatchdogUDP()
     {
@@ -307,9 +311,10 @@ public:
 class CMasterWatchdogMP : public CMasterWatchdogBase
 {
 public:
-    CMasterWatchdogMP()
+    CMasterWatchdogMP(bool startNow)
     {
-        start();
+        if (startNow)
+            start();
     }
     virtual unsigned readData(MemoryBuffer &mb)
     {
@@ -327,10 +332,10 @@ public:
 
 /////////////////////
 
-CMasterWatchdogBase *createMasterWatchdog(bool udp)
+CMasterWatchdogBase *createMasterWatchdog(bool udp, bool startNow)
 {
     if (udp)
-        return new CMasterWatchdogUDP();
+        return new CMasterWatchdogUDP(startNow);
     else
-        return new CMasterWatchdogMP();
+        return new CMasterWatchdogMP(startNow);
 }
