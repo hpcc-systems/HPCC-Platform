@@ -2,7 +2,8 @@ ARG BASE_VER=7.8
 FROM hpccsystems/platform-build-base:${BASE_VER}
 
 WORKDIR /hpcc-dev
-RUN git clone https://github.com/hpcc-systems/HPCC-Platform.git && \
+ARG BUILD_USER=hpcc-systems
+RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
     cd HPCC-Platform && \
     git submodule update --init --recursive
 
