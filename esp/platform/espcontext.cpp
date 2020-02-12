@@ -517,7 +517,7 @@ public:
     virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name)
     {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, m_txSummary->getElapsedTime(), "ms", TokenSerializer(), logLevel);
+            m_txSummary->append(name, m_txSummary->getElapsedTime(), logLevel, "ms");
     }
     virtual void flushTraceSummary()
     {
@@ -525,7 +525,7 @@ public:
         if (m_txSummary)
         {
             m_txSummary->set("auth", authStatus.get(), LogMin);
-            m_txSummary->append("total", m_processingTime, "ms", TokenSerializer(), LogMin);
+            m_txSummary->append("total", m_processingTime, LogMin, "ms");
         }
     }
     virtual void addTraceSummaryCumulativeTime(LogLevel logLevel, const char* name, unsigned __int64 time)
