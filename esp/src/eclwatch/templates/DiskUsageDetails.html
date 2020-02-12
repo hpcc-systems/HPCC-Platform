@@ -6,6 +6,10 @@
             <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
             <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
         </div>
+        <div id="${id}DiskSummaryCP" style="height: 100px; padding:0px; overflow:hidden" data-dojo-props="splitter:true, region: 'top', minSize: 100" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}DiskSummary">
+            </div>
+        </div>
         <div id="${id}DiskUsageGridCP" style="border:0px; padding: 0px; border-color:none; overflow:hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
             <div id="${id}DiskUsageGrid">
             </div>

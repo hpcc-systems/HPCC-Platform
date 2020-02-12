@@ -235,7 +235,6 @@ define([
             var context = this;
 
             this._diskSummaryPane = registry.byId(this.id + "DiskSummaryCP");
-
             var origResize = this._diskSummaryPane.resize;
             this._diskSummaryPane.resize = function (size) {
                 origResize.apply(this, arguments);
@@ -537,7 +536,7 @@ define([
                     delayWidget: "DiskUsageDetails",
                     hpcc: {
                         params: {
-                            details: row.details
+                            name: row.details.Name
                         }
                     }
                 });
