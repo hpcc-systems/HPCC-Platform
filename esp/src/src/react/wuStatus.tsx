@@ -2,6 +2,8 @@ import { Workunit, WUStateID } from "@hpcc-js/comms";
 import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import Stepper from "@material-ui/core/Stepper";
+import { MuiThemeProvider  } from "@material-ui/core/styles";
+import { theme } from './theme';
 import * as React from "react";
 
 import "dojo/i18n";
@@ -88,15 +90,19 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
         };
     }, []);
 
-    return <Stepper activeStep={activeStep} alternativeLabel>
-        {steps.map((step, i) => {
-            const labelProps = {
-                error: i <= activeStep ? failed : false
-            };
-            const label = activeStep === i ? step.activeText : step.text;
-            return <Step key={i}>
-                <StepLabel {...labelProps}>{label}</StepLabel>
-            </Step>;
-        })}
-    </Stepper>;
+    return (
+        <MuiThemeProvider theme={theme}>
+            <Stepper activeStep={activeStep} alternativeLabel>
+                {steps.map((step, i) => {
+                    const labelProps = {
+                        error: i <= activeStep ? failed : false
+                    };
+                    const label = activeStep === i ? step.activeText : step.text;
+                    return <Step key={i}>
+                        <StepLabel {...labelProps}>{label}</StepLabel>
+                    </Step>;
+                })}
+            </Stepper>;
+        </MuiThemeProvider>
+    )
 };
