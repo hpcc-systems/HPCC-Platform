@@ -202,7 +202,6 @@ public:
 class CLCLockBlock : public CInterface
 {
     ReadWriteLock &lock;
-    bool readLocked; // false == writeLocked
     unsigned got, lnum;
 public:
     CLCLockBlock(ReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned _lnum) : lock(_lock), lnum(_lnum)
@@ -224,23 +223,24 @@ public:
             PrintStackReport();
         }
         got = msTick();
-        readLocked = readLock; // false == writeLocked
     };
     ~CLCLockBlock()
     {
-        if (readLocked)
-            lock.unlockRead();
-        else
-            lock.unlockWrite();
+        bool writeLocked = lock.queryWriteLocked();
+        lock.unlock();
         unsigned e=msTick()-got;
         if (e>readWriteSlowTracing)
         {
             StringBuffer s("TIME: CLCLockBlock(write=");
-            s.append(!readLocked).append(",lnum=").append(lnum).append(") took ").append(e).append(" ms");
+            s.append(writeLocked).append(",lnum=").append(lnum).append(") took ").append(e).append(" ms");
             DBGLOG("%s", s.str());
             if (readWriteStackTracing)
                 PrintStackReport();
         }
+    }
+    void changeToWrite(unsigned timeout)
+    {
+        lock.changeToWrite(timeout);
     }
 };
 #else
@@ -253,7 +253,6 @@ public:
 class CLCLockBlock : public CInterface
 {
     ReadWriteLock &lock;
-    bool readLocked; // false == writeLocked
 public:
     CLCLockBlock(ReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned lnum) : lock(_lock)
     {
@@ -261,30 +260,21 @@ public:
             lock.lockRead();
         else
             lock.lockWrite();
-        readLocked = readLock; // false == writeLocked
     };
     ~CLCLockBlock()
     {
-        if (readLocked)
-            lock.unlockRead();
-        else
-            lock.unlockWrite();
+        lock.unlock();
+    }
+    void changeToWrite(unsigned timeout)
+    {
+        lock.changeToWrite(timeout);
     }
 };
 #endif
-class CLCReadLockBlock : public CLCLockBlock
-{
-public:
-    CLCReadLockBlock(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum) : CLCLockBlock(lock, true, timeout, fname, lnum) { }
-};
-class CLCWriteLockBlock : public CLCLockBlock
-{
-public:
-    CLCWriteLockBlock(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum) : CLCLockBlock(lock, false, timeout, fname, lnum) { }
-};
+
 #ifdef USECHECKEDCRITICALSECTIONS
-#define CHECKEDDALIREADLOCKBLOCK(l,timeout)  Owned<CLCReadLockBlock> glue(block,__LINE__) = new CLCReadLockBlock(l,timeout,__FILE__,__LINE__)
-#define CHECKEDDALIWRITELOCKBLOCK(l,timeout)  Owned<CLCWriteLockBlock> glue(block,__LINE__) = new CLCWriteLockBlock(l,timeout,__FILE__,__LINE__)
+#define CHECKEDDALIREADLOCKBLOCK(l, timeout)  Owned<CLCLockBlock> glue(block,__LINE__) = new CLCLockBlock(l, true, timeout, __FILE__, __LINE__)
+#define CHECKEDDALIWRITELOCKBLOCK(l, timeout)  Owned<CLCLockBlock> glue(block,__LINE__) = new CLCLockBlock(l, false, timeout, __FILE__, __LINE__)
 #else
 #define CHECKEDDALIREADLOCKBLOCK(l,timeout)   ReadLockBlock glue(block,__LINE__)(l)
 #define CHECKEDDALIWRITELOCKBLOCK(l,timeout)  WriteLockBlock glue(block,__LINE__)(l)
@@ -1968,7 +1958,7 @@ public:
     unsigned __int64 getNextExternal() { return nextExternal++; }
     CServerConnection *createConnectionInstance(CRemoteTreeBase *root, SessionId sessionId, unsigned mode, unsigned timeout, const char *xpath, CRemoteTreeBase *&tree, ConnectionId connectionId, StringAttr *deltaPath, Owned<IPropertyTree> &deltaChange, Owned<CBranchChange> &branchChange, unsigned &additions);
     void createConnection(SessionId sessionId, unsigned mode, unsigned timeout, const char *xpath, CServerRemoteTree *&tree, ConnectionId &connectionId, bool primary, Owned<LinkingCriticalBlock> &connectCritBlock);
-    void disconnect(ConnectionId connectionId, bool deleteRoot=false, Owned<CLCLockBlock> *lockBlock=NULL);
+    void disconnect(ConnectionId connectionId, bool deleteRoot=false, CLCLockBlock *lockBlock=nullptr);
     void registerTree(__int64 serverId, CServerRemoteTree &tree);
     void unregisterTree(__int64 uniqId);
     CServerRemoteTree *queryRegisteredTree(__int64 uniqId);
@@ -2260,11 +2250,11 @@ void CServerConnection::aborted(SessionId id)
 {
     LOG(MCdebugInfo(100), unknownJob, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
 #if 0 // JCSMORE - think this is ok, but concerned about deadlock, change later.
-    Owned<CLCLockBlock> lockBlock = new CLCWriteLockBlock(((CCovenSDSManager &)manager).dataRWLock, readWriteTimeout, __FILE__, __LINE__);
+    Owned<CLCLockBlock> lockBlock = new CLCLockBlock(((CCovenSDSManager &)manager).dataRWLock, false, readWriteTimeout, __FILE__, __LINE__);
     SDSManager->disconnect(connectionId, false);
 #else
-    Owned<CLCLockBlock> lockBlock = new CLCReadLockBlock(((CCovenSDSManager &)manager).dataRWLock, readWriteTimeout, __FILE__, __LINE__);
-    SDSManager->disconnect(connectionId, false, &lockBlock);
+    Owned<CLCLockBlock> lockBlock = new CLCLockBlock(((CCovenSDSManager &)manager).dataRWLock, true, readWriteTimeout, __FILE__, __LINE__);
+    SDSManager->disconnect(connectionId, false, lockBlock);
 #endif
 }
 
@@ -4104,9 +4094,9 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     transactionLog.log("xpath='%s' mode=%d", xpath.get(), (unsigned)mode);
                 Owned<LinkingCriticalBlock> connectCritBlock = new LinkingCriticalBlock(manager.connectCrit, __FILE__, __LINE__);
                 if (RTM_CREATE == (mode & RTM_CREATE_MASK) || RTM_CREATE_QUERY == (mode & RTM_CREATE_MASK))
-                    lockBlock.setown(new CLCWriteLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                    lockBlock.setown(new CLCLockBlock(manager.dataRWLock, false, readWriteTimeout, __FILE__, __LINE__));
                 else
-                    lockBlock.setown(new CLCReadLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                    lockBlock.setown(new CLCLockBlock(manager.dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
                 if (queryTransactionLogging())
                     transactionLog.markExtra();
                 connectionId = 0;
@@ -4150,7 +4140,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 Owned<IMultipleConnector> mConnect = deserializeIMultipleConnector(mb);
                 mb.clear();
 
-                lockBlock.setown(new CLCReadLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                lockBlock.setown(new CLCLockBlock(manager.dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
 
                 try
                 {
@@ -4371,9 +4361,9 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 { 
                     CheckTime block1("DAMP_SDSCMD_DATA.1");
                     if (data || deleteRoot)
-                        lockBlock.setown(new CLCWriteLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                        lockBlock.setown(new CLCLockBlock(manager.dataRWLock, false, readWriteTimeout, __FILE__, __LINE__));
                     else
-                        lockBlock.setown(new CLCReadLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                        lockBlock.setown(new CLCLockBlock(manager.dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
                 }
                 unsigned dataStart = mb.getPos();
                 commitTimingBlock.recordSize(mb.length() - dataStart);
@@ -4419,11 +4409,11 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 catch (IException *)
                 {
                     if (disconnect)
-                        manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?NULL:&lockBlock);
+                        manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?nullptr:lockBlock);
                     throw;
                 }
                 if (disconnect)
-                    manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?NULL:&lockBlock);
+                    manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?nullptr:lockBlock);
 
                 break;
             }
@@ -6681,7 +6671,7 @@ StringBuffer &getMConnectString(IMultipleConnector *mConnect, StringBuffer &s)
 IRemoteConnections *CCovenSDSManager::connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout)
 {
     Owned<CLCLockBlock> lockBlock;
-    lockBlock.setown(new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+    lockBlock.setown(new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
 
     Owned<CRemoteConnections> remoteConnections = new CRemoteConnections;
     unsigned c;
@@ -6705,9 +6695,9 @@ IRemoteConnection *CCovenSDSManager::connect(const char *xpath, SessionId id, un
     {
         connectCritBlock.setown(new LinkingCriticalBlock(connectCrit, __FILE__, __LINE__));
         if (RTM_CREATE == (mode & RTM_CREATE_MASK) || RTM_CREATE_QUERY == (mode & RTM_CREATE_MASK))
-            lockBlock.setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+            lockBlock.setown(new CLCLockBlock(dataRWLock, false, readWriteTimeout, __FILE__, __LINE__));
         else
-            lockBlock.setown(new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+            lockBlock.setown(new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
     }
 
     CServerRemoteTree *_tree;
@@ -6865,9 +6855,9 @@ void CCovenSDSManager::installNotifyHandler(const char *handlerKey, ISDSNotifyHa
 // ISDSConnectionManager impl.
 void CCovenSDSManager::commit(CRemoteConnection &connection, bool *disconnectDeleteRoot)
 {
-    Owned<CLCWriteLockBlock> lockBlock;
+    Owned<CLCLockBlock> lockBlock;
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
-        lockBlock.setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+        lockBlock.setown(new CLCLockBlock(dataRWLock, false, readWriteTimeout, __FILE__, __LINE__));
 
     CClientRemoteTree *tree = (CClientRemoteTree *) connection.queryRoot();
 
@@ -6914,9 +6904,9 @@ void CCovenSDSManager::commit(CRemoteConnection &connection, bool *disconnectDel
 
 CRemoteTreeBase *CCovenSDSManager::get(CRemoteConnection &connection, __int64 serverId)
 {
-    Owned<CLCReadLockBlock> lockBlock;
+    Owned<CLCLockBlock> lockBlock;
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
-        lockBlock.setown(new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+        lockBlock.setown(new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
     CDisableFetchChangeBlock block(connection);
     CRemoteTreeBase *connectionRoot = (CRemoteTreeBase *) connection.queryRoot();
     Owned<CServerRemoteTree> tree = getRegisteredTree(connectionRoot->queryServerId());
@@ -6929,9 +6919,9 @@ CRemoteTreeBase *CCovenSDSManager::get(CRemoteConnection &connection, __int64 se
 
 void CCovenSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &connection, unsigned levels)
 {
-    Owned<CLCReadLockBlock> lockBlock;
+    Owned<CLCLockBlock> lockBlock;
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
-        lockBlock.setown(new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+        lockBlock.setown(new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
     CDisableFetchChangeBlock block(connection);
     Owned<CServerRemoteTree> serverParent = (CServerRemoteTree *)getRegisteredTree(parent.queryServerId());
     if (serverParent)
@@ -6940,9 +6930,9 @@ void CCovenSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &c
 
 void CCovenSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnection &connection, unsigned levels)
 {
-    Owned<CLCReadLockBlock> lockBlock;
+    Owned<CLCLockBlock> lockBlock;
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
-        lockBlock.setown(new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+        lockBlock.setown(new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__));
     CDisableFetchChangeBlock block(connection);
 
     ForEachItemIn(f, childLessList)
@@ -7032,7 +7022,7 @@ void CCovenSDSManager::_getChildren(CRemoteTreeBase &parent, CServerRemoteTree &
 
 IPropertyTreeIterator *CCovenSDSManager::getElements(CRemoteConnection &connection, const char *xpath)
 {
-    Owned<CLCReadLockBlock> lockBlock = new CLCReadLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__);
+    Owned<CLCLockBlock> lockBlock = new CLCLockBlock(dataRWLock, true, readWriteTimeout, __FILE__, __LINE__);
     CDisableFetchChangeBlock block(connection);
     Owned<CServerRemoteTree> serverConnRoot = (CServerRemoteTree *)getRegisteredTree(((CClientRemoteTree *)connection.queryRoot())->queryServerId());
     Owned<DaliPTArrayIterator> elements = new DaliPTArrayIterator();
@@ -7427,7 +7417,7 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
     if (close)
     {
         PROGLOG("forcing unlock & disconnection of connection : %s", connectionInfo.str());
-        Owned<CLCLockBlock> lockBlock = new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__);
+        Owned<CLCLockBlock> lockBlock = new CLCLockBlock(dataRWLock, false, readWriteTimeout, __FILE__, __LINE__);
         SDSManager->disconnect(connectionId, false);
     }
     else // leave connection open, just unlock
@@ -7818,7 +7808,7 @@ CServerConnection *CCovenSDSManager::getConnection(ConnectionId id)
     return conn;
 }
 
-void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLockBlock> *lockBlock)
+void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, CLCLockBlock *lockBlock)
 {
     Linked<CServerConnection> connection;
     { CHECKEDCRITICALBLOCK(cTableCrit, fakeCritTimeout);
@@ -7863,10 +7853,7 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
     if (deleteRoot)
     {
         if (lockBlock)
-        {
-            lockBlock->clear();
-            lockBlock->setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
-        }
+            lockBlock->changeToWrite(readWriteTimeout);
         connection->queryParent()->removeTree(tree);
         writeTransactions++;
         if (!orphaned)

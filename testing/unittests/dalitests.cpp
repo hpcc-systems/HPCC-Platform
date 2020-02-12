@@ -33,6 +33,7 @@
 #include "dautils.hpp"
 
 #include <vector>
+#include <future>
 
 #include "unittests.hpp"
 
@@ -804,6 +805,7 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSDSSubs);
         CPPUNIT_TEST(testSDSSubs2);
         CPPUNIT_TEST(testSDSNodeSubs);
+        CPPUNIT_TEST(testEphemeralLocks);
     CPPUNIT_TEST_SUITE_END();
 
     const IContextLogger &logctx;
@@ -1437,6 +1439,24 @@ public:
         }
 
         ASSERT(0xa68e2324 == results.getCRC() && "SDS Node notifcation differences");
+    }
+    void testEphemeralLocks()
+    {
+        auto createEphemeralLock = [&](const char *xpath, unsigned timeout, unsigned type)
+        {
+            unsigned mode = RTM_LOCK_WRITE | RTM_CREATE_QUERY | RTM_DELETE_ON_DISCONNECT;
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, timeout);
+            conn->commit();
+        };
+
+        unsigned numThreads = 100;
+        std::vector<std::future<void>> results;
+        const char *xpath = "/Locks/TestEphemeralLock";
+        unsigned timeout = 2000;
+        for (unsigned t=0; t<numThreads; t++)
+            results.push_back(std::async(std::launch::async, createEphemeralLock, xpath, timeout, t%2));
+        for (auto &f: results)
+            f.get();
     }
 };
 

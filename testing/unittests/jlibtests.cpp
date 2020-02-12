@@ -1529,16 +1529,16 @@ public:
         COUNTER extraValues[NUMVALUES];
     };
 
-    #define DO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
+    #define DO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS, NUMITERATIONS)   \
     { \
-        const char * title = #LOCK "," #COUNTER;\
+        const char * title = #LOCK "," #CLOCK "," #COUNTER;\
         LockTester<LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS> tester;\
-        uncontendedTimes.append(tester.run(title, 1, numIterations));\
-        minorTimes.append(tester.run(title, 2, numIterations));\
-        typicalTimes.append(tester.run(title, numCores / 2, numIterations));\
-        tester.run(title, numCores, numIterations);\
-        tester.run(title, numCores + 1, numIterations);\
-        contendedTimes.append(tester.run(title, numCores * 2, numIterations));\
+        uncontendedTimes.append(tester.run(title, 1, NUMITERATIONS));\
+        minorTimes.append(tester.run(title, 2, NUMITERATIONS));\
+        typicalTimes.append(tester.run(title, numCores / 2, NUMITERATIONS));\
+        tester.run(title, numCores, NUMITERATIONS);\
+        tester.run(title, numCores + 1, NUMITERATIONS);\
+        contendedTimes.append(tester.run(title, numCores * 2, NUMITERATIONS));\
     }
 
     //Use to common out a test
@@ -1558,35 +1558,89 @@ public:
     const unsigned numCores = getAffinityCpus();
     void runAllTests()
     {
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 2);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 2);
-        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 1, 1);
-        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 5, 1);
-        DO_TEST(Null, Null, CasCounter, 1, 1);
-        DO_TEST(Null, Null, CasCounter, 5, 1);
-        DO_TEST(Null, Null, unsigned __int64, 1, 1);
-        DO_TEST(Null, Null, unsigned __int64, 2, 1);
-        DO_TEST(Null, Null, unsigned __int64, 5, 1);
+        class WriteToReadLockBlock
+        {
+            ReadWriteLock *lock;
+        public:
+            WriteToReadLockBlock(ReadWriteLock &l) : lock(&l)
+            {
+                lock->lockWrite();
+            }
+            ~WriteToReadLockBlock()
+            {
+                if (lock)
+                {
+                    lock->changeToRead();
+                    lock->unlockRead();
+                }
+            }
+        };
+
+        class ReadToWriteLockBlock
+        {
+            ReadWriteLock *lock;
+        public:
+            ReadToWriteLockBlock(ReadWriteLock &l) : lock(&l)
+            {
+                lock->lockRead();
+            }
+            ~ReadToWriteLockBlock()
+            {
+                if (lock)
+                {
+                    // try to swap to write lock, a lot threads will fail to as highly contended.
+                    unsigned attempts = 5;
+                    while (true)
+                    {
+                        if (lock->changeToWrite(1))
+                            break;
+                        else if (0 == --attempts)
+                            break;
+                    }
+                    lock->unlock();
+                }
+            }
+        };
+
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1, numIterations);
+        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2, numIterations);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1, numIterations);
+        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 2, numIterations);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1, numIterations);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1, numIterations);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1, numIterations);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 2, numIterations);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 1, 1, numIterations);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 5, 1, numIterations);
+        DO_TEST(Null, Null, CasCounter, 1, 1, numIterations);
+        DO_TEST(Null, Null, CasCounter, 5, 1, numIterations);
+        DO_TEST(Null, Null, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(Null, Null, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(Null, Null, unsigned __int64, 5, 1, numIterations);
 
         //Read locks will fail to prevent values being lost, but the timings are useful in comparison with CriticalSection
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 2, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 5, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 2);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 2, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 5, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 2);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 5, 1, numIterations);
+        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 2, numIterations);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 5, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 2, numIterations);
+
+        DO_TEST(ReadWriteLock, WriteToReadLockBlock, unsigned __int64, 1, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteToReadLockBlock, unsigned __int64, 2, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteToReadLockBlock, unsigned __int64, 5, 1, numIterations);
+        DO_TEST(ReadWriteLock, WriteToReadLockBlock, unsigned __int64, 1, 2, numIterations);
+
+        DO_TEST(ReadWriteLock, ReadToWriteLockBlock, unsigned __int64, 1, 1, 10000);
+        DO_TEST(ReadWriteLock, ReadToWriteLockBlock, unsigned __int64, 2, 1, 10000);
+        DO_TEST(ReadWriteLock, ReadToWriteLockBlock, unsigned __int64, 5, 1, 10000);
+        DO_TEST(ReadWriteLock, ReadToWriteLockBlock, unsigned __int64, 1, 2, 10000);
 
         printf("Summary\n");
         summariseTimings("Uncontended", uncontendedTimes);
@@ -1597,10 +1651,10 @@ public:
 
     void summariseTimings(const char * option, UInt64Array & times)
     {
-        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
-                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)\n", option,
-                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23),
-                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25));
+        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u) w2r(%3" I64F "u) r2w(%3" I64F "u) "
+                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u) w2r(%3" I64F "u) r2w(%3" I64F "u)\n", option,
+                    times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23), times.item(27), times.item(31),
+                    times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25), times.item(29), times.item(33));
     }
 
 private:

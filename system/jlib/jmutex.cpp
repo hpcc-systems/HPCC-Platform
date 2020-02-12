@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-
 #include "platform.h"
 #include "jmutex.hpp"
 #include "jsuperhash.hpp"
@@ -321,7 +320,191 @@ void Monitor::notifyAll()
 
 //==================================================================================
 
-#ifdef USE_PTHREAD_RWLOCK
+#ifndef USE_PTHREAD_RWLOCK
+
+bool ReadWriteLock::lockRead(bool timed, unsigned timeout)
+{  
+    cs.enter(); 
+    if (writeLocks == 0) 
+    {
+        readLocks++;
+        cs.leave();
+    }
+    else
+    {
+        readWaiting++;
+        cs.leave();
+        if (timed)
+        {
+            if (!readSem.wait(timeout))
+            {
+                cs.enter(); 
+                if (!readSem.wait(0))
+                {
+                    readWaiting--;
+                    cs.leave();
+                    return false;
+                }
+                cs.leave();
+            }
+        }
+        else
+            readSem.wait();
+        //NB: waiting and locks adjusted before the signal occurs.
+    }
+    return true;
+}
+
+bool ReadWriteLock::lockWrite(bool timed, unsigned timeout)
+{
+    cs.enter();
+    if ((readLocks == 0) && (writeLocks == 0))
+    {
+        writeLocks++;
+        cs.leave();
+    }
+    else
+    {
+        writeWaiting++;
+        cs.leave();
+        if (timed)
+        {
+            if (!writeSem.wait(timeout))
+            {
+                cs.enter(); 
+                if (!writeSem.wait(0))
+                {
+                    writeWaiting--;
+                    cs.leave();
+                    return false;
+                }
+                cs.leave();
+            }
+        }
+        else
+            writeSem.wait();
+        //NB: waiting and locks adjusted before the signal occurs.
+    }
+#ifdef _DEBUG
+    exclWriteOwner = GetCurrentThreadId();
+#endif
+    return true;
+}
+
+bool ReadWriteLock::changeToWrite(bool timed, unsigned timeout)
+{
+    cs.enter();
+
+    // invalid use cases, changeToWrite must only be called when read locked.
+    if (writeLocks)
+    {
+        cs.leave();
+        throw makeStringException(9999, "Internal Error: ReadWriteLock::changeToWrite - already write locked");
+    }
+    else if (0 == readLocks)
+    {
+        cs.leave();
+        throw makeStringException(9999, "Internal Error: ReadWriteLock::changeToWrite - not read locked");
+    }
+
+    if (readLocks == 1)
+    {
+        readLocks--;
+        writeLocks++;
+        cs.leave();
+    }
+    else // readLocks>1
+    {
+        readToWriteWaiting++;
+        cs.leave();
+        if (timed)
+        {
+            if (!readToWriteSem.wait(timeout))
+            {
+                cs.enter(); 
+                if (!readToWriteSem.wait(0))
+                {
+                    readToWriteWaiting--;
+                    cs.leave();
+                    return false;
+                }
+                cs.leave();
+            }
+        }
+        else
+            readToWriteSem.wait();
+        //NB: waiting and locks adjusted before the signal occurs.
+    }
+#ifdef _DEBUG
+    exclWriteOwner = GetCurrentThreadId();
+#endif
+    return true;
+}
+
+bool ReadWriteLock::changeToRead()
+{
+    cs.enter();
+    if (!writeLocks)
+    {
+        cs.leave();
+        throw makeStringException(9999, "Internal Error: ReadWriteLock::changeToRead - not write locked");
+
+    }
+    --writeLocks;
+    dbgassertex(!readLocks);
+    readLocks++;
+    cs.leave();
+#ifdef _DEBUG
+    exclWriteOwner = 0;
+#endif
+    return true;
+}
+
+void ReadWriteLock::unlock()
+{
+    cs.enter(); 
+    if (readLocks) // implies this unlock() is paired with a previous read lock
+    {
+        readLocks--;
+        if (readToWriteWaiting && (1 == readLocks))
+        {
+            readToWriteWaiting--;
+            readLocks--;
+            writeLocks++;
+            readToWriteSem.signal();
+        }
+        else if (writeWaiting && (0 == readLocks))
+        {
+            writeWaiting--;
+            writeLocks++;
+            writeSem.signal();
+        }
+    }
+    else // implies this unlock() is paired with a previous write lock
+    {
+        writeLocks--;
+        dbgassertex(writeLocks == 0);
+        if (readWaiting)
+        {
+            unsigned numWaiting = readWaiting;
+            readWaiting = 0;
+            readLocks += numWaiting;
+            readSem.signal(numWaiting);
+        }
+        else if (writeWaiting)
+        {
+            writeWaiting--;
+            writeLocks++;
+            writeSem.signal();
+        }
+#ifdef _DEBUG
+        exclWriteOwner = 0;
+#endif
+    }
+    cs.leave();
+}
+
+#else
 
 bool ReadWriteLock::lockRead(unsigned timeout)
 {
