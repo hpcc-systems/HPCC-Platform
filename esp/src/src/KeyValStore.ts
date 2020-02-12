@@ -2,7 +2,7 @@ import { Store, ValueChangedMessage } from "@hpcc-js/comms";
 import { Dispatch, IObserverHandle } from "@hpcc-js/util";
 
 export interface IKeyValStore {
-    set(key: string, value: string, broadcast?: boolean): Promise<void>;
+    set(key: string, value: string, broadcast?: boolean, storename?: string, namespace?:string): Promise<void>;
     get(key: string, broadcast?: boolean): Promise<string | undefined>;
     getAll(broadcast?: boolean): Promise<{ [key: string]: string }>;
     delete(key: string, broadcast?: boolean): Promise<void>;

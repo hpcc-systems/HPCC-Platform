@@ -10,6 +10,7 @@ define([
 
     "src/Utility",
     "src/Session",
+    "src/KeyValStore",
     "hpcc/LockDialogWidget",
 
     "dojox/html/entities",
@@ -20,9 +21,11 @@ define([
     "css!hpcc/css/hpcc.css"
 
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
-    Utility, Session, LockDialogWidget,
+    Utility, Session, KeyValStore, LockDialogWidget,
     entities, Toaster) {
 
+    const store = KeyValStore.globalKeyValStore()
+    store.set("", "", false, "HPCCApps", "ECLWatch");
     Session.initSession();
 
     function startLoading(targetNode) {
