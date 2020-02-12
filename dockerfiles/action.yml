@@ -1,0 +1,21 @@
+name: 'Publish HPCC Platform'
+description: 'Uses the git branch as the docker tag and pushes the container'
+inputs:
+  build_ver:
+    description: 'The label (git tag) for the version you would like to build and push'
+    required: false
+  build_user:
+    description: 'The owner of the HPCC-Platform repository'
+    required: false
+  username:
+    description: 'The login username for docker hub'
+    required: true
+  password:
+    description: 'The login password for docker hub'
+    required: true
+outputs:
+  tag:
+    description: 'Is the tag, which was pushed'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
