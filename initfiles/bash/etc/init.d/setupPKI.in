@@ -1,0 +1,131 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+# Phase one of the PKI implementation that uses CA certificate/key pair to generate cert/key for all components.
+# CA Server support will be added in Phase two.
+
+###<REPLACE>###
+
+progname=setupPKI
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/etc/init.d/init-functions
+source  ${INSTALL_DIR}/etc/init.d/export-path
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^home *= *" | sed -e 's/^home *= *//'`
+USER_NAME=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user *= *" | sed -e 's/^user *= *//'`
+homePath=${PATH_PREFIX}/${USER_NAME}
+
+certPath=${homePath}/certificate
+sbin_path="${INSTALL_DIR}/sbin"
+envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
+
+COMPS=$(${sbin_path}/configgen -env ${envfile} -list)
+
+if [[ ${rc} -ne 0 ]]; then
+    log "${progname}: failure to build COMPS from configgen call"
+    echo -e "\033[31merror\033[0m: ${progname} -> failure to build COMPS from configgen call"
+    exit 1
+fi
+
+comp.parser ${COMPS}
+
+if [ -z ${compArray} ];then
+   log  "There are no components configured to run on this node ..."
+   echo "There are no components configured to run on this node ..."
+   exit 3
+fi
+
+if [ ! -d ${certPath} ]; then
+    mkdir -p ${certPath}
+fi
+
+domainname=${DOMAINNAME}
+if [ "$domainname" = "" ]; then
+    domainname=local
+fi
+
+subjbase="/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer"
+
+regenerate=0
+if [ ! -e ${certPath}/cacert-key.pem ] || [ ! -e ${certPath}/cacert.pem ]; then
+    rm -rf ${certPath}/cacert-key.pem ${certPath}/cacert.pem
+    subj="${subjbase}/CN=ca.${domainname}"
+    openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/cacert-key.pem -out ${certPath}/cacert.csr -subj "${subj}"
+    chmod 400 ${certPath}/cacert-key.pem
+    openssl x509 -req -days 365 -in ${certPath}/cacert.csr -signkey ${certPath}/cacert-key.pem -sha256 -out ${certPath}/cacert.pem
+    rm ${certPath}/cacert.csr
+    printf "Generated self-signed CA certificate and privatekey.\n"
+    regenerate=1
+fi
+
+for i in "" ${compArray[@]} ; do
+    compName=""
+    if [ "$i" != "" ]; then
+        compName=""${i#*_}
+    fi
+    if [ "${compName}" != "" ]; then
+         compNamePrint=${compName}
+    else
+         compNamePrint="\"\" (default)"
+    fi
+    if [ ! -d ${certPath}/${compName} ]; then
+        mkdir -p ${certPath}/${compName}
+    fi
+
+    if [ "${regenerate}" = "1" ] || [ ! -e ${certPath}/${compName}/key.pem ] || [ ! -e ${certPath}/${compName}/certificate.pem ]; then
+        if [ "${compName}" != "" ]; then
+             cn="${compName}.${domainname}"
+        else
+             cn="hpcc.${domainname}"
+        fi
+        compSubject="${subjbase}/CN=${cn}"
+        printf "Generating key for ${cn}\n"
+        rm -rf ${certPath}/${compName}/key.pem ${certPath}/${compName}/certificate.pem
+        openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/${compName}/key.pem -out ${certPath}/${compName}/my.csr -subj "${compSubject}"
+        chmod 400 ${certPath}/${compName}/key.pem
+        printf "PKI key installed for user %-32s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+        log_success_msg
+        openssl x509 -req -days 365 -in ${certPath}/${compName}/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/${compName}/certificate.pem
+        rm ${certPath}/${compName}/my.csr
+        if [ ! -e ${certPath}/${compName}/certificate.pem ]; then
+            printf "Failed to generate certificate for component %-15s\n" "${compNamePrint}"
+            exit 1
+        else
+            printf "Certificate from local CA installed for user %-14s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+            log_success_msg
+        fi
+    else
+            printf "PKI key and certificate are already installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+        log_success_msg
+    fi
+done
+
+if [ ! -e ${homePath}/.ssh/id_rsa ]; then
+    cp ${certPath}/key.pem ${homePath}/.ssh/id_rsa
+    ssh-keygen -y -f ${certPath}/key.pem > ${homePath}/.ssh/id_rsa.pub
+    cat ${homePath}/.ssh/id_rsa.pub >> ${homePath}/.ssh/authorized_keys
+    printf "ssh keys installed for user %-12s ..." "${USER_NAME}"
+    log_success_msg
+else
+    printf "ssh keys already installed for %-9s ..." "${USER_NAME}"
+    log_success_msg
+fi
+
+exit 0
