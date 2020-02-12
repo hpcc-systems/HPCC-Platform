@@ -249,6 +249,7 @@ extern jlib_decl unsigned msTick();
 extern jlib_decl unsigned usTick();
 extern jlib_decl int write_pidfile(const char * instance);
 extern jlib_decl void doStackProbe();
+extern jlib_decl bool isCloud();
 
 #ifndef arraysize
 #define arraysize(T) (sizeof(T)/sizeof(*T))
