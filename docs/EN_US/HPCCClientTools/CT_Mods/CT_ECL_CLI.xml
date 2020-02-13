@@ -244,8 +244,8 @@ ECLCC_PATH
                     <entry><graphic fileref="images/caution.png" scale="noin"
                     xml:base="../../" /></entry>
 
-                    <entry>We do not recommend storingword in an Environment
-                    Variable unless your system is secured.</entry>
+                    <entry>We do not recommend storing your password in an
+                    Environment Variable.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -289,9 +289,9 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>ecl deploy</entry>
 
-                  <entry>Creates a workunit on the HPCC Systems platform from the given
-                  ECL text, file, archive, shared object, or dll. The workunit
-                  is created in the <emphasis>compiled</emphasis>
+                  <entry>Creates a workunit on the HPCC Systems platform from
+                  the given ECL text, file, archive, shared object, or dll.
+                  The workunit is created in the <emphasis>compiled</emphasis>
                   state.</entry>
                 </row>
 
@@ -402,8 +402,8 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC Systems cluster as text rather than as a
-                  generated archive</entry>
+                  <entry>Send ECL query to HPCC Systems cluster as text rather
+                  than as a generated archive</entry>
                 </row>
 
                 <row>
@@ -727,8 +727,8 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC Systems cluster as text rather than as a
-                  generated archive</entry>
+                  <entry>Send ECL query to HPCC Systems cluster as text rather
+                  than as a generated archive</entry>
                 </row>
 
                 <row>
@@ -1111,8 +1111,8 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>--ecl-only</entry>
 
-                  <entry>Send ECL query to HPCC Systems cluster as text rather than as a
-                  generated archive</entry>
+                  <entry>Send ECL query to HPCC Systems cluster as text rather
+                  than as a generated archive</entry>
                 </row>
 
                 <row>
@@ -1690,10 +1690,10 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>ecl queries copy</entry>
 
                   <entry>Copies a query from one queryset to another. A query
-                  can be copied from one HPCC Systems environment to another by using
-                  a path which begins with '//' followed by the IP or hostname
-                  and Port of the source ECL Watch and then followed by the
-                  source queryset and query.</entry>
+                  can be copied from one HPCC Systems environment to another
+                  by using a path which begins with '//' followed by the IP or
+                  hostname and Port of the source ECL Watch and then followed
+                  by the source queryset and query.</entry>
                 </row>
 
                 <row>
