@@ -52,6 +52,8 @@ build_image dali ${BUILD_VER}
 build_image esp ${BUILD_VER}
 build_image eclccserver ${BUILD_VER}
 build_image eclagent ${BUILD_VER}
+build_image thormaster ${BUILD_VER}
+build_image thorslave ${BUILD_VER}
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_VER}"

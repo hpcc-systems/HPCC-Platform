@@ -137,6 +137,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
         }
 
+        ensurePTree(globals, "Debug");
         unsigned numStrands, blockSize;
         if (globals->hasProp("Debug/@forceNumStrands"))
             numStrands = globals->getPropInt("Debug/@forceNumStrands");
