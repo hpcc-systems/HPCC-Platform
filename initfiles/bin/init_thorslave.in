@@ -128,8 +128,8 @@ start_slaves()
             for (( slave=0; slave<${slavespernode}; slave++ )); do
                 slavenum=$(( ${clusternode} + (${slave} * ${clusternodes}) ))
                 if [ -z ${valgrindOptions} ]; then
-                    log "$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth/$hpcc_compname"
-                    ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
+                    log "$slavename --master=$master:$masterport --slave=.:$slaveport --slavenum=$slavenum --logDir=$logpth/$hpcc_compname"
+                    ./$slavename --master=$master:$masterport --slave=.:$slaveport --slavenum=$slavenum --slaveprocessnum=$slave --logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
                 else
                     cmd="valgrind ${valgrindOptions} --log-file=$logpth/$hpcc_compname/valgrind.thorslave.${slavenum}.log ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &"
                     log "${cmd}"

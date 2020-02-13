@@ -15,26 +15,13 @@
 #    limitations under the License.
 ##############################################################################
 
-# A version of the platform-core Dockerfile that keeps all the build artefacts in place, for use by developers wanting to debug the platform
+# Build container image for a single thormaster
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-build:${BUILD_LABEL}
-
-RUN apt-get install -y \
-    dnsutils \
-    nano 
-
-RUN groupadd -g 1000 hpcc
-RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
-RUN passwd -l hpcc 
-
-RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
-RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
-RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
-RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
+FROM hpccsystems/platform-core:${BUILD_LABEL}
 
 USER hpcc
+RUN mkdir -p /var/lib/HPCCSystems/thor
+WORKDIR /var/lib/HPCCSystems/thor
+ENTRYPOINT ["thorslave_lcr"]
 
-ENV PATH="/opt/HPCCSystems/bin:${PATH}"
-ENV HPCC_containerized=1
-ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries

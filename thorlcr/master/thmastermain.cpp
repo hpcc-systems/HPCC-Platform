@@ -607,14 +607,16 @@ int main( int argc, const char *argv[]  )
     else
         thorEp.setLocalHost(0);
 
-    setMasterPortBase(thorEp.port); // both same
-    thorEp.port = getMasterPortBase();
+    if (0 == thorEp.port)
+        thorEp.port = globals->getPropInt("@masterport", THOR_BASE_PORT);
+
+     // both same
+    setMasterPortBase(thorEp.port);
+    setMachinePortBase(thorEp.port);
 
     // Remove sentinel asap
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
-
-    setMachinePortBase(thorEp.port);
 
     EnableSEHtoExceptionMapping(); 
 #ifndef __64BIT__
@@ -775,7 +777,16 @@ int main( int argc, const char *argv[]  )
         if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
             globals->setProp("@thorTempDirectory", tempDirStr.str());
         else
+        {
             tempDirStr.append(globals->queryProp("@thorTempDirectory"));
+            if (0 == tempDirStr.length())
+            {
+                appendCurrentDirectory(tempDirStr, true);
+                if (tempDirStr.length())
+                    addPathSepChar(tempDirStr);
+                tempDirStr.append("temp");
+            }
+        }
         logDiskSpace(); // Log before temp space is cleared
         StringBuffer tempPrefix("thtmp");
         tempPrefix.append(getMasterPortBase()).append("_");

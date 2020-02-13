@@ -57,7 +57,8 @@ RUN apt-get install -y \
 
 COPY --from=build /opt/HPCCSystems /
 
-RUN useradd -s /bin/bash -r -U -c "hpcc runtime User" hpcc
+RUN groupadd -g 1000 hpcc
+RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
 RUN passwd -l hpcc 
 
 RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems

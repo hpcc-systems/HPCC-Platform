@@ -1,0 +1,126 @@
+{{ range $thor := $.Values.thor -}}
+{{- $masterPort := $thor.masterport | default 20000 -}}
+{{- $slavePort := $thor.slaveport | default 20100 -}}
+{{- $pvName  := printf "%s-pv" .name }}
+{{- $pvcName := printf "%s-pvc" .name }}
+{{- $slaveName := printf "%s-slave" .name }}
+{{- $serviceName := printf "%s-svc" .name }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: {{ .name | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ .name | quote }}
+    spec:
+      containers:
+      - name: {{ .name | quote }}
+        ports:
+          - containerPort: {{ $masterPort }}
+        args: [
+                {{ include "hpcc.utils.configArg" . }},
+                {{ include "hpcc.utils.daliArg" $ }},
+                --masterport={{ $masterPort }},
+                --numSlaves={{ $thor.numSlaves }}
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thormaster") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $slaveName | quote }}
+spec:
+  replicas: {{ $thor.numSlaves }}
+  selector:
+    matchLabels:
+      run: {{ $slaveName | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ $slaveName | quote }}
+    spec:
+      {{- if $.Values.global.singleNode | default false }}
+{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "mythorstorage" "volumePath" "/var/lib/HPCCSystems/hpcc-data") | indent 6 }}
+      {{- end }}
+      containers:
+        - name: {{ $slaveName | quote }}
+          args: [
+                  {{ include "hpcc.utils.configArg" . }},
+                  {{ include "hpcc.utils.daliArg" $ }},
+                  --slaveport={{ $slavePort }},
+                  --master={{ printf "%s:%v" $serviceName $masterPort }}
+                ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thorslave") | indent 10 }}
+          ports:
+            - containerPort: {{ $slavePort }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 10 }}
+          - name: "mythorstorage"
+            mountPath: "/var/lib/HPCCSystems/hpcc-data"
+        {{- if $thor.startDafilesrv | default false }}
+        - name: {{ printf "%s-dafilesrv" $slaveName | quote }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thorslave") | indent 10 }}
+          command: ["dafilesrv"]
+          ports:
+            - containerPort: 7100
+          volumeMounts:
+            - name: "mythorstorage"
+              mountPath: "/var/lib/HPCCSystems/hpcc-data"
+        {{- end }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      - name: "mythorstorage"
+        persistentVolumeClaim:
+          claimName: {{ $pvcName | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serviceName | quote }}
+spec:
+  ports:
+  - port: {{ $masterPort }}
+    protocol: TCP
+    targetPort: {{ $masterPort }}
+  selector:
+    run: {{ .name | quote }}
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $pvName | quote }}
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ $thor.storageSize }}
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ printf "%s/hpcc-data" $.Values.global.hostMountPath | quote }}
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvcName | quote }}
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ $thor.storageSize }}
+---
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
+{{- end }}

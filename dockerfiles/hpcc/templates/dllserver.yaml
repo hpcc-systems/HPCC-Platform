@@ -11,5 +11,5 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/var/lib/HPCCSystems/shared/queries"
+    path: {{ printf "%s/queries" $.Values.global.hostMountPath }}
     type: DirectoryOrCreate
