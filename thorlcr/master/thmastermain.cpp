@@ -551,8 +551,18 @@ bool ControlHandler(ahType type)
 }
 
 
+static constexpr const char * defaultJson = R"!!({
+"version": "1.0",
+"Thor": {
+    "daliServers": "dali",
+    "watchdogEnabled": "true",
+    "watchdogProgressEnabled": "true"
+}
+})!!";
+
+
 #include "thactivitymaster.hpp"
-int main( int argc, char *argv[]  )
+int main( int argc, const char *argv[]  )
 {
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
@@ -573,26 +583,22 @@ int main( int argc, char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        Owned<IFile> iFile = createIFile("thor.xml");
-        globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
+        globals.setown(loadConfiguration(defaultJson, argv, "Thor", "THOR", "thor.xml", nullptr));
     }
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
     globals->setProp("@masterBuildTag", BUILD_TAG);
-    char **pp = argv+1;
-    while (*pp)
-        loadCmdProp(globals, *pp++);
 
     setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
     StringBuffer daliServer;
-    if (!globals->getProp("@DALISERVERS", daliServer)) 
+    if (!globals->getProp("@daliServers", daliServer)) 
     {
-        LOG(MCerror, thorJob, "No Dali server list specified in THOR.XML (DALISERVERS=iport,iport...)\n");
+        LOG(MCerror, thorJob, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
         return 0; // no recycle
     }
 
     SocketEndpoint thorEp;
-    const char *master = globals->queryProp("@MASTER");
+    const char *master = globals->queryProp("@master");
     if (master)
     {
         thorEp.set(master);
@@ -617,7 +623,6 @@ int main( int argc, char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
-    unsigned numSlaves = globals->getPropInt("@numSlaves", 0); // >0 in container world, 0 in bare metal
     unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
     unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
 
@@ -848,7 +853,19 @@ int main( int argc, char *argv[]  )
         masterSlaveMpTag = allocateClusterMPTag();
         kjServiceMpTag = allocateClusterMPTag();
 
-        if (0 == numSlaves) // bare metal
+        unsigned numSlaves = 0;
+        if (isCloud())
+        {
+            if (!globals->hasProp("@numSlaves"))
+                throw makeStringException(0, "Number of slaves not defined (numSlaves)");
+            else
+            {
+                numSlaves = globals->getPropInt("@numSlaves", 0);
+                if (0 == numSlaves)
+                    throw makeStringException(0, "Number of slaves must be > 0 (numSlaves)");
+            }
+        }
+        else
         {
             unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
             unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
@@ -912,8 +929,6 @@ int main( int argc, char *argv[]  )
     stopPerformanceMonitor();
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
-    if (globals)
-        globals->Release();
     PROGLOG("Thor closing down 4");
     closeDllServer();
     PROGLOG("Thor closing down 3");

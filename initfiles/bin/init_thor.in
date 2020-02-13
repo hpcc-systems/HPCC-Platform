@@ -149,10 +149,10 @@ while [[ 1 ]]; do
     fi
 
     if [ -z ${valgrindOptions} ]; then
-        log "thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT"
-        nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
+        log "thormaster cmd : $instancedir/thormaster_$THORNAME --master=$THORMASTER:$THORMASTERPORT"
+        nohup $instancedir/thormaster_$THORNAME --master=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
     else
-        cmd="valgrind ${valgrindOptions} --log-file=$LOG_DIR/$THORNAME/valgrind.thormaster.log $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2>/dev/null 1>/dev/null &"
+        cmd="valgrind ${valgrindOptions} --log-file=$LOG_DIR/$THORNAME/valgrind.thormaster.log $instancedir/thormaster_$THORNAME --master=$THORMASTER:$THORMASTERPORT 2>/dev/null 1>/dev/null &"
         log "${cmd}"
         eval ${cmd}
     fi
