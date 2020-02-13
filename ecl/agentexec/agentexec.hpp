@@ -25,7 +25,7 @@
 class CEclAgentExecutionServer : public Thread
 {
 public:
-    CEclAgentExecutionServer();
+    CEclAgentExecutionServer(IPropertyTree *config);
     ~CEclAgentExecutionServer();
 
     void start();
@@ -40,6 +40,7 @@ private:
     StringAttr agentName;
     Owned<IJobQueue> queue;
     StringBuffer daliServers;
+    Linked<IPropertyTree> config;
 };
 
 #endif
