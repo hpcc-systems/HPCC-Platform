@@ -827,11 +827,17 @@ int main( int argc, const char *argv[]  )
         return -1;
     }
     StringBuffer queueName;
-    SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
-    getThorQueueNames(_queueNames, thorName);
-    queueName.set(_queueNames.str());
+
+    if (globals->hasProp("@clusters"))
+        getQueueNames(queueName, globals->queryProp("@clusters"), "EclCCServerProcess");
+    else
+    {
+        SCMStringBuffer _queueNames;
+        getThorQueueNames(_queueNames, thorName);
+        queueName.set(_queueNames.str());
+    }
 
     try
     {

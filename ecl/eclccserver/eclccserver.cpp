@@ -819,7 +819,15 @@ int main(int argc, const char *argv[])
         if (optMonitorInterval)
             startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
         SCMStringBuffer queueNames;
-        getEclCCServerQueueNames(queueNames, processName);
+
+        if (globals->hasProp("@clusters"))
+        {
+            StringBuffer res;
+            getQueueNames(res, globals->queryProp("@clusters"), "EclCCServerProcess");
+            queueNames.set(res);
+        }
+        else
+            getEclCCServerQueueNames(queueNames, processName);
         if (!queueNames.length())
             throw MakeStringException(0, "No clusters found to listen on");
         // The option has been renamed to avoid confusion with the similarly-named eclcc option, but

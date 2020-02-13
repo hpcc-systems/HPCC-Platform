@@ -7612,6 +7612,36 @@ extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *p
     return getProcessQueueNames(ret, process, "ThorCluster", THOR_QUEUE_EXT);
 }
 
+extern WORKUNIT_API StringBuffer &getQueueNames(StringBuffer &ret, const char *clusters, const char *process)
+{
+    const char *ext = nullptr;
+    if (streq("ThorCluster", process))
+        ext = THOR_QUEUE_EXT;
+    else if (streq("RoxieCluster", process))
+        ext = ROXIE_QUEUE_EXT;
+    else if (streq("EclAgentProcess", process))
+        ext = ECLAGENT_QUEUE_EXT;
+    else if (streq("EclCCServerProcess", process) || streq("EclServerProcess", process))
+        ext = ECLCCSERVER_QUEUE_EXT;
+    else if (streq("EclSchedulerProcess", process))
+        ext = ECLSCHEDULER_QUEUE_EXT;
+    else
+        throwUnexpected(); 
+
+    StringArray list;
+    list.appendListUniq(clusters, ",");
+    bool first = true;
+    ForEachItemIn(l, list)
+    {
+        if (!first)
+            ret.append(",");
+        else
+            first = true;
+        ret.append(list.item(l)).append(ext);
+    }
+    return ret;
+}
+
 extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster)
 {
     return ret.append(cluster).append(THOR_QUEUE_EXT);

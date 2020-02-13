@@ -105,7 +105,18 @@ int CEclAgentExecutionServer::run()
     {
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
-        getAgentQueueNames(queueNames, agentName);
+
+        StringBuffer clusters;
+        config->getProp("@clusters", clusters);
+        if (clusters.length())
+        {
+            StringBuffer res;
+            getQueueNames(res, clusters, "EclAgentProcess");
+            queueNames.set(res);
+        }
+        else
+            getAgentQueueNames(queueNames, agentName);
+
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
     }

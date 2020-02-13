@@ -422,11 +422,21 @@ void CJobManager::run()
 #endif
     querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
 
-    SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
-    getThorQueueNames(_queueNames, thorName);
-    queueName.set(_queueNames.str());
+
+    if (globals->hasProp("@clusters"))
+    {
+        StringBuffer res;
+        getQueueNames(res, globals->queryProp("@clusters"), "ThorCluster");
+        queueName.set(res);
+    }
+    else
+    {
+        SCMStringBuffer _queueNames;
+        getThorQueueNames(_queueNames, thorName);
+        queueName.set(_queueNames.str());
+    }
 
     jobq.setown(createJobQueue(queueName.get()));
     struct cdynprio: public IDynamicPriority
