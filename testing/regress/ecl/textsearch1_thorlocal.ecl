@@ -25,6 +25,8 @@ useLocal := #IFDEFINED(root.useLocal, false);
 //--- end of version configuration ---
 
 #option ('checkAsserts',false);
+#onwarning (3164, ignore);
+
 import $.Common.TextSearch;
 import $.Common.TextSearchQueries;
 import $.Setup;

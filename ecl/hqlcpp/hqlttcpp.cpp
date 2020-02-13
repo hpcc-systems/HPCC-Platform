@@ -12277,6 +12277,54 @@ IHqlExpression * HqlTreeNormalizer::transformMerge(IHqlExpression * expr)
     HqlExprArray children;
     transformChildren(expr, children);
 
+    if (!expr->hasAttribute(_implicitSorted_Atom))
+    {
+        //Check to see if the input dataset appear to be sorted by the merge sort criteria.  This must be done on the transformed
+        //expressions, otherwise there will be differences in the non-normalized form of fields etc.  It cannot be done earlier
+        //in the parser because the many expressions will not have been substituted.
+        bool hasLocal = isLocalActivity(expr);
+        bool isLocal = hasLocal || !translator.targetThor();
+        IHqlExpression * sortOrder = queryAttribute(sortedAtom, children);
+        ForEachItemIn(i, children)
+        {
+            IHqlExpression * cur = &children.item(i);
+            if (cur->isDataset())
+            {
+                Owned<IHqlExpression> dsOrder = getExistingSortOrder(cur, isLocal, true);
+                if (dsOrder)
+                {
+                    ForEachChild(iSort, sortOrder)
+                    {
+                        IHqlExpression * expected = sortOrder->queryChild(iSort);
+                        IHqlExpression * actual = dsOrder->queryChild(iSort);
+                        if (!actual || expected->queryBody() != actual->queryBody())
+                        {
+                            if (!actual || actual->isAttribute())
+                            {
+                                //Give a different warning if the last element of the sort order is missing - because it is possible
+                                //each of the inputs only has a single value for the other components and the last item is used
+                                //to control which order the streams are merged in.  Very obscure, but happens in regression suite.
+                                if (iSort +1 != sortOrder->numChildren())
+                                    translator.reportWarning(CategoryMistake, SeverityWarning, cur, HQLWRN_MergeInputPartiallyOrdered, "MERGE() argument %u appears to only be sorted by %u component(s)", i+1, iSort);
+                                else
+                                    translator.reportWarning(CategoryMistake, SeverityWarning, cur, HQLWRN_MergeInputLastMissing, "MERGE() argument %u appears to not be sorted by the last component of the merge order", i+1);
+                            }
+
+                            else
+                            {
+                                EclIR::dump_ir(expected, actual);
+                                translator.reportWarning(CategoryMistake, SeverityWarning, cur, HQLWRN_MergeInputIncompatible, "MERGE() argument %u appears to have a different sort order for component #%u", i+1, iSort+1);
+                            }
+                            break;
+                        }
+                    }
+                }
+                else
+                    translator.reportWarning(CategoryMistake, SeverityWarning, cur, HQLWRN_MergeInputUnordered, "MERGE() argument %u does not appear to be sorted", i+1);
+            }
+        }
+    }
+
     HqlExprArray args;
     reorderAttributesToEnd(args, children);
     return expr->clone(args);
