@@ -3430,6 +3430,7 @@ public:
                     keepThorTimeFilter = true;
                     break;
                 }
+                filterPtr++;
             }
         }
 
