@@ -326,6 +326,7 @@ int init_main(int argc, char* argv[])
 
     bool interactive = false;
 
+    StringAttr daliServer;
     for (int i = 1; i < argc; i++)
     {
         if (streq(argv[i], "-?") || streq(argv[i], "-h") || streq(argv[i], "-help")
@@ -335,6 +336,13 @@ int init_main(int argc, char* argv[])
             i++; // skip the instance that follows --daemon|-d
         else if(streq(argv[i], "interactive"))
             interactive = true;
+        else if (streq(argv[i], "--daliServers"))
+        {
+            i++;
+            if (i == argc)
+                usage();
+            daliServer.set(argv[i]);
+        }
         else if (strchr(argv[i],'='))
         {
             inputs->loadProp(argv[i]);
@@ -393,6 +401,8 @@ int init_main(int argc, char* argv[])
             procpt.set(envpt->queryPropTree(xpath.str()));
             if (!procpt)
                 throw MakeStringException(-1, "Config section [%s] not found", xpath.str());
+            if (daliServer.length()) // from cmdline
+                procpt->setProp("@daliServers", daliServer.get());
         }
         else
             throw MakeStringException(-1, "Failed to load config file %s", cfgfile);
