@@ -2634,7 +2634,7 @@ IArrayOf<IConstComponent>& Cws_machineEx::listComponentsForCheckingUsage(IConstE
     return componentList;
 }
 
-IPropertyTree* Cws_machineEx::readComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv)
+IPropertyTree* Cws_machineEx::getComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv)
 {
     IArrayOf<IConstComponent>& componentList = req.getComponents();
     if (!componentList.length())
@@ -2863,16 +2863,17 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
         IArrayOf<IEspComponentUsage> componentUsages;
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> usageReq = readComponentUsageReq(req, constEnv);
+        Owned<IPropertyTree> usageReq = getComponentUsageReq(req, constEnv);
 
         Owned<CUsageCache> usage;
-        Owned<IPropertyTree> uniqueUsages;
+        Owned<const IPropertyTree> uniqueUsages;
         if (req.getBypassCachedResult())
         {
-            uniqueUsages.setown(createPTree("Usage"));
+            Owned<IPropertyTree> tmpUniqueUsages = createPTree("Usage");
             //Add unique machines from the usageReq to uniqueUsages.
-            setUniqueMachineUsageReq(usageReq, uniqueUsages);
-            getMachineUsages(context, uniqueUsages);
+            setUniqueMachineUsageReq(usageReq, tmpUniqueUsages);
+            getMachineUsages(context, tmpUniqueUsages);
+            uniqueUsages.setown(tmpUniqueUsages.getClear());
         }
         else
         {
@@ -2881,7 +2882,7 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
             ESPLOG(LogMax, "GetComponentUsage: found UsageCache.");
-            uniqueUsages.set((IPropertyTree*) usage->queryUsages());
+            uniqueUsages.set(usage->queryUsages());
         }
 
         readComponentUsageResult(context, usageReq, uniqueUsages, componentUsages);
@@ -2909,7 +2910,7 @@ StringArray& Cws_machineEx::listTargetClusterNames(IConstEnvironment* constEnv, 
     return targetClusters;
 }
 
-IPropertyTree* Cws_machineEx::readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv)
+IPropertyTree* Cws_machineEx::getTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv)
 {
     StringArray& targetClusters = req.getTargetClusters();
     if (targetClusters.empty())
@@ -2986,21 +2987,22 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
 
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> usageReq = readTargetClusterUsageReq(req, constEnv);
+        Owned<IPropertyTree> usageReq = getTargetClusterUsageReq(req, constEnv);
 
         Owned<CUsageCache> usage;
-        Owned<IPropertyTree> uniqueUsages;
+        Owned<const IPropertyTree> uniqueUsages;
         if (req.getBypassCachedResult())
         {
-            uniqueUsages.setown(createPTree("Usage"));
+            Owned<IPropertyTree> tmpUniqueUsages = createPTree("Usage");
 
             Owned<IPropertyTreeIterator> targetClusterItr= usageReq->getElements("TargetCluster");
             ForEach(*targetClusterItr)
             {
                 IPropertyTree& targetCluster = targetClusterItr->query();
-                setUniqueMachineUsageReq(&targetCluster, uniqueUsages);
+                setUniqueMachineUsageReq(&targetCluster, tmpUniqueUsages);
             }
-            getMachineUsages(context, uniqueUsages);
+            getMachineUsages(context, tmpUniqueUsages);
+            uniqueUsages.setown(tmpUniqueUsages.getClear());
         }
         else
         {
@@ -3009,7 +3011,7 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
             ESPLOG(LogMax, "GetTargetClusterUsage: found UsageCache.");
-            uniqueUsages.set((IPropertyTree*) usage->queryUsages());
+            uniqueUsages.set(usage->queryUsages());
         }
         readTargetClusterUsageResult(context, usageReq, uniqueUsages, targetClusterUsages);
         if (version >= 1.17)
@@ -3114,7 +3116,7 @@ StringArray& Cws_machineEx::listThorHThorNodeGroups(IConstEnvironment* constEnv,
     return nodeGroups;
 }
 
-IPropertyTree* Cws_machineEx::readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv)
+IPropertyTree* Cws_machineEx::getNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv)
 {
     StringArray& nodeGroups = req.getNodeGroups();
     if (nodeGroups.empty())
@@ -3185,21 +3187,22 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
 
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> usageReq = readNodeGroupUsageReq(req, constEnv);
+        Owned<IPropertyTree> usageReq = getNodeGroupUsageReq(req, constEnv);
 
         Owned<CUsageCache> usage;
-        Owned<IPropertyTree> uniqueUsages;
+        Owned<const IPropertyTree> uniqueUsages;
         if (req.getBypassCachedResult())
         {
-            uniqueUsages.setown(createPTree("Usage"));
+            Owned<IPropertyTree> tmpUniqueUsages = createPTree("Usage");
 
             Owned<IPropertyTreeIterator> nodeGroupItr= usageReq->getElements("NodeGroup");
             ForEach(*nodeGroupItr)
             {
                 IPropertyTree& nodeGroup = nodeGroupItr->query();
-                setUniqueMachineUsageReq(&nodeGroup, uniqueUsages);
+                setUniqueMachineUsageReq(&nodeGroup, tmpUniqueUsages);
             }
-            getMachineUsages(context, uniqueUsages);
+            getMachineUsages(context, tmpUniqueUsages);
+            uniqueUsages.setown(tmpUniqueUsages.getClear());
         }
         else
         {
@@ -3208,7 +3211,7 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
             ESPLOG(LogMax, "GetNodeGroupUsage: found UsageCache.");
-            uniqueUsages.set((IPropertyTree*) usage->queryUsages());
+            uniqueUsages.set(usage->queryUsages());
         }
 
         readNodeGroupUsageResult(context, usageReq, uniqueUsages, nodeGroupUsages);

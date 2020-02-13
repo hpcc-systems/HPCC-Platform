@@ -841,9 +841,9 @@ private:
     StringArray& listTargetClusterNames(IConstEnvironment* constEnv, StringArray& targetClusters);
     StringArray& listThorHThorNodeGroups(IConstEnvironment* constEnv, StringArray& nodeGroups);
     IArrayOf<IConstComponent>& listComponentsByType(IPropertyTree* envRoot, const char* componentType, IArrayOf<IConstComponent>& componentList);
-    IPropertyTree* readTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv);
-    IPropertyTree* readNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv);
-    IPropertyTree* readComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv);
+    IPropertyTree* getTargetClusterUsageReq(IEspGetTargetClusterUsageRequest& req, IConstEnvironment* constEnv);
+    IPropertyTree* getNodeGroupUsageReq(IEspGetNodeGroupUsageRequest& req, IConstEnvironment* constEnv);
+    IPropertyTree* getComponentUsageReq(IEspGetComponentUsageRequest& req, IConstEnvironment* constEnv);
     void readThorUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void readRoxieUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
     void readDropZoneUsageReq(const char* name, IConstEnvironment* constEnv, IPropertyTree* usageReq);
