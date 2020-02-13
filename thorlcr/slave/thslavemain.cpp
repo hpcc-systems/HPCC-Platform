@@ -118,12 +118,11 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
         assertex(NotFound != mySlaveNum);
         mySlaveNum++; // 1 based;
-        unsigned configSlaveNum = globals->getPropInt("@SLAVENUM", NotFound);
+        unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
         if (NotFound != configSlaveNum)
             assertex(mySlaveNum == configSlaveNum);
 
-        globals->Release();
-        globals = createPTree(msg);
+        globals.setown(createPTree(msg));
         mergeCmdParams(globals); // cmd line
 
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
@@ -339,13 +338,7 @@ int main( int argc, char *argv[]  )
     Owned<CReleaseMutex> globalNamedMutex;
 #endif 
 
-    if (globals)
-        globals->Release();
-
-    {
-        Owned<IFile> iFile = createIFile("thor.xml");
-        globals = iFile->exists() ? createPTree(*iFile, ipt_caseInsensitive) : createPTree("Thor", ipt_caseInsensitive);
-    }
+    globals.setown(createPTree("Thor"));
     unsigned multiThorMemoryThreshold = 0;
 
     Owned<IException> unregisterException;
@@ -360,7 +353,7 @@ int main( int argc, char *argv[]  )
         mergeCmdParams(globals);
         cmdArgs = argv+1;
 
-        const char *master = globals->queryProp("@MASTER");
+        const char *master = globals->queryProp("@master");
         if (!master)
             usage();
 
@@ -376,7 +369,7 @@ int main( int argc, char *argv[]  )
         }
 
         // In container world, SLAVE= will not be used
-        const char *slave = globals->queryProp("@SLAVE");
+        const char *slave = globals->queryProp("@slave");
         if (slave)
         {
             slfEp.set(slave);
@@ -390,7 +383,7 @@ int main( int argc, char *argv[]  )
             slfEp.port = globals->getPropInt("@slaveport");
         setMachinePortBase(slfEp.port);
 
-        setSlaveAffinity(globals->getPropInt("@SLAVEPROCESSNUM"));
+        setSlaveAffinity(globals->getPropInt("@slaveprocessnum"));
 
         startMPServer(DCR_ThorSlave, getFixedPort(TPORT_mp), false);
 
@@ -545,7 +538,6 @@ int main( int argc, char *argv[]  )
     stopLogMsgReceivers();
 #endif
     stopMPServer();
-    ::Release(globals);
     releaseAtoms(); // don't know why we can't use a module_exit to destruct these...
 
     ExitModuleObjects(); // not necessary, atexit will call, but good for leak checking

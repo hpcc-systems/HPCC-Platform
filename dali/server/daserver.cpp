@@ -418,128 +418,131 @@ int main(int argc, char* argv[])
                     recursiveCreateDirectory(dataPath.str());
             }
 
-            // JCSMORE remoteBackupLocation should not be a property of SDS section really.
-            StringBuffer mirrorPath;
-            if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
-                serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
-
-            if (mirrorPath.length())
+            if (serverConfig->getPropBool("SDS/@backupEnabled", true))
             {
-                try
+                // JCSMORE remoteBackupLocation should not be a property of SDS section really.
+                StringBuffer mirrorPath;
+                if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
+                    serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
+
+                if (mirrorPath.length())
                 {
-                    addPathSepChar(mirrorPath);
                     try
                     {
-                        StringBuffer backupURL;
-                        if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
-                        { // local machine path, convert to url
-                            const char *backupnode = serverConfig->queryProp("SDS/@backupComputer");
-                            RemoteFilename rfn;
-                            if (backupnode&&*backupnode) {
-                                SocketEndpoint ep(backupnode);
-                                rfn.setPath(ep,mirrorPath.str());
+                        addPathSepChar(mirrorPath);
+                        try
+                        {
+                            StringBuffer backupURL;
+                            if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
+                            { // local machine path, convert to url
+                                const char *backupnode = serverConfig->queryProp("SDS/@backupComputer");
+                                RemoteFilename rfn;
+                                if (backupnode&&*backupnode) {
+                                    SocketEndpoint ep(backupnode);
+                                    rfn.setPath(ep,mirrorPath.str());
+                                }
+                                else {
+                                    OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
+                                    rfn.setLocalPath(mirrorPath.str());
+                                }
+                                rfn.getRemotePath(backupURL);
+                                mirrorPath.clear().append(backupURL);
                             }
-                            else {
-                                OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
-                                rfn.setLocalPath(mirrorPath.str());
-                            }
-                            rfn.getRemotePath(backupURL);
-                            mirrorPath.clear().append(backupURL);
+                            else
+                                backupURL.append(mirrorPath);
+                            recursiveCreateDirectory(backupURL.str());
+                            addPathSepChar(backupURL);
+                            serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
+                            PROGLOG("Backup URL = %s", backupURL.str());
                         }
-                        else
-                            backupURL.append(mirrorPath);
-                        recursiveCreateDirectory(backupURL.str());
-                        addPathSepChar(backupURL);
-                        serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
-                        PROGLOG("Backup URL = %s", backupURL.str());
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, "Failed to create remote backup directory, disabling backups", MSGCLS_warning);
+                            serverConfig->removeProp("SDS/@remoteBackupLocation");
+                            mirrorPath.clear();
+                            e->Release();
+                        }
+
+                        if (mirrorPath.length())
+                        {
+                            PROGLOG("Checking backup location: %s", mirrorPath.str());
+    #if defined(__linux__)
+                            if (serverConfig->getPropBool("@useNFSBackupMount", false))
+                            {
+                                RemoteFilename rfn;
+                                if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
+                                    rfn.setLocalPath(mirrorPath.str());
+                                else
+                                    rfn.setRemotePath(mirrorPath.str());                
+                                
+                                if (!rfn.getPort() && !rfn.isLocal())
+                                {
+                                    StringBuffer mountPoint;
+                                    serverConfig->getProp("@mountPoint", mountPoint);
+                                    if (!mountPoint.length())
+                                        mountPoint.append(DEFAULT_MOUNT_POINT);
+                                    addPathSepChar(mountPoint);
+                                    recursiveCreateDirectory(mountPoint.str());
+                                    PROGLOG("Mounting url \"%s\" on mount point \"%s\"", mirrorPath.str(), mountPoint.str());
+                                    bool ub = unmountDrive(mountPoint.str());
+                                    if (!mountDrive(mountPoint.str(), rfn))
+                                    {
+                                        if (!ub)
+                                            PROGLOG("Failed to remount mount point \"%s\", possibly in use?", mountPoint.str());
+                                        else
+                                            PROGLOG("Failed to mount \"%s\"", mountPoint.str());
+                                        return 0;
+                                    }
+                                    else
+                                        serverConfig->setProp("SDS/@remoteBackupLocation", mountPoint.str());
+                                    mirrorPath.clear().append(mountPoint);
+                                }
+                            }
+    #endif
+                            StringBuffer backupCheck(dataPath);
+                            backupCheck.append("bakchk.").append((unsigned)GetCurrentProcessId());
+                            OwnedIFile iFileDataDir = createIFile(backupCheck.str());
+                            OwnedIFileIO iFileIO = iFileDataDir->open(IFOcreate);
+                            iFileIO.clear();
+                            try
+                            {
+                                backupCheck.clear().append(mirrorPath).append("bakchk.").append((unsigned)GetCurrentProcessId());
+                                OwnedIFile iFileBackup = createIFile(backupCheck.str());
+                                if (iFileBackup->exists())
+                                {
+                                    PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
+                                    iFileDataDir->remove();
+                                    return 0;
+                                }
+                            }
+                            catch (IException *)
+                            {
+                                try { iFileDataDir->remove(); } catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
+                                throw;
+                            }
+                            iFileDataDir->remove();
+
+                            StringBuffer dest(mirrorPath.str());
+                            dest.append(DALICONF);
+                            copyFile(dest.str(), DALICONF);
+                            StringBuffer covenPath(dataPath);
+                            OwnedIFile ifile = createIFile(covenPath.append(DALICOVEN).str());
+                            if (ifile->exists())
+                            {
+                                dest.clear().append(mirrorPath.str()).append(DALICOVEN);
+                                copyFile(dest.str(), covenPath.str());
+                            }
+                        }
+                        if (serverConfig->getPropBool("@daliServixCaching", true))
+                            setDaliServixSocketCaching(true);
                     }
                     catch (IException *e)
                     {
-                        EXCLOG(e, "Failed to create remote backup directory, disabling backups", MSGCLS_warning);
+                        StringBuffer s("Failure whilst preparing dali backup location: ");
+                        LOG(MCoperatorError, unknownJob, e, s.append(mirrorPath).append(". Backup disabled").str());
                         serverConfig->removeProp("SDS/@remoteBackupLocation");
-                        mirrorPath.clear();
                         e->Release();
                     }
-
-                    if (mirrorPath.length())
-                    {
-                        PROGLOG("Checking backup location: %s", mirrorPath.str());
-#if defined(__linux__)
-                        if (serverConfig->getPropBool("@useNFSBackupMount", false))
-                        {
-                            RemoteFilename rfn;
-                            if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
-                                rfn.setLocalPath(mirrorPath.str());
-                            else
-                                rfn.setRemotePath(mirrorPath.str());                
-                            
-                            if (!rfn.getPort() && !rfn.isLocal())
-                            {
-                                StringBuffer mountPoint;
-                                serverConfig->getProp("@mountPoint", mountPoint);
-                                if (!mountPoint.length())
-                                    mountPoint.append(DEFAULT_MOUNT_POINT);
-                                addPathSepChar(mountPoint);
-                                recursiveCreateDirectory(mountPoint.str());
-                                PROGLOG("Mounting url \"%s\" on mount point \"%s\"", mirrorPath.str(), mountPoint.str());
-                                bool ub = unmountDrive(mountPoint.str());
-                                if (!mountDrive(mountPoint.str(), rfn))
-                                {
-                                    if (!ub)
-                                        PROGLOG("Failed to remount mount point \"%s\", possibly in use?", mountPoint.str());
-                                    else
-                                        PROGLOG("Failed to mount \"%s\"", mountPoint.str());
-                                    return 0;
-                                }
-                                else
-                                    serverConfig->setProp("SDS/@remoteBackupLocation", mountPoint.str());
-                                mirrorPath.clear().append(mountPoint);
-                            }
-                        }
-#endif
-                        StringBuffer backupCheck(dataPath);
-                        backupCheck.append("bakchk.").append((unsigned)GetCurrentProcessId());
-                        OwnedIFile iFileDataDir = createIFile(backupCheck.str());
-                        OwnedIFileIO iFileIO = iFileDataDir->open(IFOcreate);
-                        iFileIO.clear();
-                        try
-                        {
-                            backupCheck.clear().append(mirrorPath).append("bakchk.").append((unsigned)GetCurrentProcessId());
-                            OwnedIFile iFileBackup = createIFile(backupCheck.str());
-                            if (iFileBackup->exists())
-                            {
-                                PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
-                                iFileDataDir->remove();
-                                return 0;
-                            }
-                        }
-                        catch (IException *)
-                        {
-                            try { iFileDataDir->remove(); } catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
-                            throw;
-                        }
-                        iFileDataDir->remove();
-
-                        StringBuffer dest(mirrorPath.str());
-                        dest.append(DALICONF);
-                        copyFile(dest.str(), DALICONF);
-                        StringBuffer covenPath(dataPath);
-                        OwnedIFile ifile = createIFile(covenPath.append(DALICOVEN).str());
-                        if (ifile->exists())
-                        {
-                            dest.clear().append(mirrorPath.str()).append(DALICOVEN);
-                            copyFile(dest.str(), covenPath.str());
-                        }
-                    }
-                    if (serverConfig->getPropBool("@daliServixCaching", true))
-                        setDaliServixSocketCaching(true);
-                }
-                catch (IException *e)
-                {
-                    StringBuffer s("Failure whilst preparing dali backup location: ");
-                    LOG(MCoperatorError, unknownJob, e, s.append(mirrorPath).append(". Backup disabled").str());
-                    serverConfig->removeProp("SDS/@remoteBackupLocation");
-                    e->Release();
                 }
             }
         }
