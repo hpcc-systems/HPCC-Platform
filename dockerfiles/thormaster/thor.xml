@@ -1,0 +1,3 @@
+<Thor name="mythor" daliServers="dali" numSlaves="1" pluginsPath="/opt/HPCCSystems/plugins/" replicateAsync="false"
+      watchdogEnabled="true" watchdogProgressEnabled="true" globalMemorySize="4096">
+</Thor>

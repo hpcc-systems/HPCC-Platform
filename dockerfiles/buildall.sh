@@ -63,6 +63,8 @@ build_image esp
 build_image eclccserver
 build_image eclagent
 build_image toposerver
+build_image thormaster
+build_image thorslave
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"
