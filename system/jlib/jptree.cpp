@@ -7688,6 +7688,9 @@ void mergeConfiguration(IPropertyTree & target, IPropertyTree & source)
         IPropertyTree & child = iter->query();
         const char * tag = child.queryName();
         const char * name = child.queryProp("@name");
+        //Legacy support for old roxie configuration files that have repeated elements with no name tag
+        if (!name)
+            name = child.queryProp("@netAddress");
         const char * path = tag;
         if (name)
         {
