@@ -7356,8 +7356,10 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
-            IIdAtom * nestedName = createMangledName(expr, &cur);
+            if (!isSupportedParameterType(cur))
+                continue;
 
+            IIdAtom * nestedName = createMangledName(expr, &cur);
             //default values are handled elsewhere - lost from the mapped values here.
             HqlExprArray attrs;
             OwnedHqlExpr renamed = createParameter(nestedName, nextParameter++, cur.getType(), attrs);
@@ -7453,6 +7455,9 @@ IHqlExpression * LibraryInputMapper::mapRealToLogical(const HqlExprArray & input
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
+            if (!isSupportedParameterType(cur))
+                continue;
+
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             OwnedHqlExpr mapped = mapRealToLogical(inputExprs, param, libraryId);
 
@@ -7494,8 +7499,10 @@ void LibraryInputMapper::mapLogicalToReal(HqlExprArray & mapped, IHqlExpression 
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
+            if (!isSupportedParameterType(cur))
+                continue;
+
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
-            
             OwnedHqlExpr childValue = valueScope->lookupSymbol(cur.queryId(), LSFpublic, lookupCtx);
             mapLogicalToReal(mapped, param, childValue);
         }
@@ -7506,6 +7513,24 @@ void LibraryInputMapper::mapLogicalToReal(HqlExprArray & mapped, IHqlExpression 
         unsigned match = realParameters.find(*expr);
         assertex(match != NotFound);
         mapped.replace(*LINK(value), match);
+    }
+}
+
+bool LibraryInputMapper::isSupportedParameterType(IHqlExpression & param) const
+{
+    //Exclude any scope members that cannot be mapped to an expression
+    switch (param.queryType()->getTypeCode())
+    {
+    case type_record:
+    case type_transform:
+    case type_void:
+    case type_null:
+    case type_pattern:
+    case type_rule:
+    case type_token:
+        return false;
+    default:
+        return true;
     }
 }
 
