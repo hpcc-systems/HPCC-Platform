@@ -47,35 +47,23 @@ export function csvEncode(cell) {
     return '"' + String(cell).replace('"', '""') + '"';
 }
 
-export function espTime2Seconds(duration) {
+export function espTime2Seconds(duration?: string) {
     if (!duration) {
         return 0;
-    } else if (!isNaN(duration)) {
+    } else if (!isNaN(+duration)) {
         return parseFloat(duration);
     }
-    //  GH:  <n>ns or <m>ms or <s>s or [<d> days ][<h>:][<m>:]<s>[.<ms>]
-    var nsIndex = duration.indexOf("ns");
-    if (nsIndex !== -1) {
-        return parseFloat(duration.substr(0, nsIndex)) / 1000000000;
-    }
-    var msIndex = duration.indexOf("ms");
-    if (msIndex !== -1) {
-        return parseFloat(duration.substr(0, msIndex)) / 1000;
-    }
-    var sIndex = duration.indexOf("s");
-    if (sIndex !== -1 && duration.indexOf("days") === -1) {
-        return parseFloat(duration.substr(0, sIndex));
-    }
-
-    var dayTimeParts = duration.split(" days ");
-    var days = parseFloat(dayTimeParts.length > 1 ? dayTimeParts[0] : 0.0);
-    var time = dayTimeParts.length > 1 ? dayTimeParts[1] : dayTimeParts[0];
-    var secs = 0.0;
-    var timeParts = time.split(":").reverse();
-    for (var j = 0; j < timeParts.length; ++j) {
-        secs += parseFloat(timeParts[j]) * Math.pow(60, j);
-    }
-    return (days * 24 * 60 * 60) + secs;
+    const re = /(?:(?:(\d+).days.)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+\.\d+|\d+)s))|(?:(\d+\.\d+|\d+)ms|(\d+\.\d+|\d+)us|(\d+\.\d+|\d+)ns)/;
+    const match = re.exec(duration);
+    if (!match) return 0;
+    const days = +match[1] || 0;
+    const hours = +match[2] || 0;
+    const mins = +match[3] || 0;
+    const secs = +match[4] || 0;
+    const ms = +match[5] || 0;
+    const us = +match[6] || 0;
+    const ns = +match[7] || 0;
+    return (days * 24 * 60 * 60) + (hours * 60 * 60) + (mins * 60) + secs + ms / 1000 + us / 1000000 + ns / 1000000000;
 }
 
 export function espTime2SecondsTests() {
@@ -84,11 +72,11 @@ export function espTime2SecondsTests() {
         { str: "2.2ms", expected: 0.0022 },
         { str: "3.3ns", expected: 0.0000000033 },
         { str: "4.4", expected: 4.4 },
-        { str: "5:55.5", expected: 355.5 },
-        { str: "6:06:06.6", expected: 21966.6 },
-        { str: "6:06:6.6", expected: 21966.6 },
-        { str: "6:6:6.6", expected: 21966.6 },
-        { str: "7 days 7:07:7.7", expected: 630427.7 }
+        { str: "5m55.5s", expected: 355.5 },
+        { str: "6h06m06.6s", expected: 21966.6 },
+        { str: "6h06m6.6s", expected: 21966.6 },
+        { str: "6h6m6.6s", expected: 21966.6 },
+        { str: "7 days 7h07m7.7s", expected: 630427.7 }
     ];
     tests.forEach(function (test, idx) {
         if (espTime2Seconds(test.str) !== test.expected) {
