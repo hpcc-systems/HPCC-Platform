@@ -48,8 +48,8 @@ IF (NOT ICU_FOUND)
 
   if (USE_NATIVE_LIBRARIES)
     # if we didn't find in externals, look in system include path
-    FIND_PATH (ICU_INCLUDE_DIR NAMES unicode/uchar.h)
-    FIND_LIBRARY (ICU_LIBRARIES NAMES icuuc)
+    FIND_PATH (ICU_INCLUDE_DIR PATHS /usr/local/opt/icu4c/include NAMES unicode/uchar.h)
+    FIND_LIBRARY (ICU_LIBRARIES PATHS /usr/local/opt/icu4c/lib NAMES icuuc)
   endif()
 
   if(EXISTS ${ICU_INCLUDE_DIR}/unicode/uchar.h)
