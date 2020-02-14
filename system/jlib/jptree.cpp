@@ -7872,8 +7872,21 @@ static void displayConfig(IPropertyTree * config, const char * componentTag)
     printf("%s\n", jsonText.str());
 }
 
+static Owned<IPropertyTree> componentConfiguration;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    componentConfiguration.clear();
+}
+
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
 {
+    if (componentConfiguration)
+        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+
     Owned<IPropertyTree> componentDefault;
     if (defaultYaml)
     {
@@ -7959,5 +7972,24 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         exit(0);
     }
 
+    componentConfiguration.set(config);
     return config.getClear();
+}
+
+
+jlib_decl IPropertyTree & queryComponentConfiguration()
+{
+    if (!componentConfiguration)
+        throw makeStringException(99, "Configuration file has not yet been processed");
+    return *componentConfiguration;
+}
+
+jlib_decl IPropertyTree * queryCostsConfiguration()
+{
+    return queryComponentConfiguration().queryPropTree("System/Costs");
+}
+
+jlib_decl IPropertyTree * queryDataConfiguration()
+{
+    return queryComponentConfiguration().queryPropTree("System/Data");
 }
