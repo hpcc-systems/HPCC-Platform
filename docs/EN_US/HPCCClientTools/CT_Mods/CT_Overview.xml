@@ -22,13 +22,6 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
-
-          <entry>Command line ECL execution tool to facilitate automation of
-          ECL Code execution.</entry>
-        </row>
-
-        <row>
           <entry><emphasis role="bold">ECL</emphasis></entry>
 
           <entry>Command line ECL tool.</entry>
@@ -111,7 +104,7 @@
       <title>Installation</title>
 
       <para>The installation program installs all client tools, including the
-      ECL IDE, ECLPlus, DFUPlus, and the ECL Command line tools.</para>
+      ECL IDE, DFUPlus, and the ECL Command line tool.</para>
 
       <orderedlist>
         <listitem>
@@ -142,7 +135,7 @@
       <para><emphasis role="bold">Windows: </emphasis></para>
 
       <para>Run the executable file, for example:
-      hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe on your
+      hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe on your
       machine. Follow the prompts to complete the installation.</para>
 
       <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
@@ -174,16 +167,16 @@
       <para><emphasis role="bold">Mac OSX:</emphasis></para>
 
       <para>Run the installation file, for example:
-      hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Follow the
+      hpccsystems-clienttools_community-7.X.X-XDarwin-x86_64.dmg. Follow the
       prompts to complete the installation.</para>
     </sect2>
 
     <sect2 id="WinPath" role="brk">
       <title>Client Tools and the Windows Path</title>
 
-      <para>The HPCC Systems Client tools are designed to allow you to have more than
-      one version installed. For that reason, the choice to add the folder of
-      executable files to your system path is optional during
+      <para>The HPCC Systems Client tools are designed to allow you to have
+      more than one version installed. For that reason, the choice to add the
+      folder of executable files to your system path is optional during
       installation.</para>
 
       <para>If you plan to use only one version, it may be easier to add the

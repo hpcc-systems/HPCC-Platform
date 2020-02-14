@@ -15,16 +15,9 @@
 
       <tbody>
         <row>
-          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
-
-          <entry>Command line ECL execution tool to facilitate automation of
-          ECL Code execution.</entry>
-        </row>
-
-        <row>
           <entry><emphasis role="bold">ECL</emphasis></entry>
 
-          <entry>Command line ECL tool.</entry>
+          <entry>Command line ECL tool</entry>
         </row>
 
         <row>
@@ -104,7 +97,7 @@
       <title>Installation</title>
 
       <para>The installation program installs all client tools, including the
-      ECLPlus, DFUPlus, and the ECL Command line tools.</para>
+      DFUPlus and the ECL Command line tools.</para>
 
       <orderedlist>
         <listitem>
@@ -125,7 +118,7 @@
       <para><emphasis role="bold">Windows: </emphasis></para>
 
       <para>Run the executable file, for example:
-      hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe on your
+      hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe on your
       machine. Follow the prompts to complete the installation.</para>
 
       <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
@@ -205,7 +198,7 @@
 
       <para>If you install a version other than the delivered client tools you
       will have a folder in /opt/HPCCSystems that corresponds to the set of
-      client tools. So you could have a client tools 4.0.x, 4.2.x, 4.4.x,
+      client tools. So you could have a client tools 7.0.x, 7.2.x, 7.4.x,
       etc.</para>
 
       <para>For older versions, download the package(s), and install. Install
@@ -221,26 +214,26 @@
       client tools you installed.</para>
 
       <para><emphasis role="bold">For example</emphasis>, if you wanted to run
-      eclplus:</para>
+      DFUplus:</para>
 
-      <programlisting>eclplus action=view wuid=W12345678</programlisting>
+      <programlisting>dfuplus action=list server=http://127.0.0.1:8010</programlisting>
 
-      <para>To run eclplus for an older or another version of client tools,
-      for instance 4.0.x:</para>
+      <para>To run DFUplus for an older or another version of client tools,
+      for instance 7.0.x:</para>
 
-      <para><programlisting>/opt/HPCCSystems/4.0.x/clienttools/bin/eclplus action=view wuid=W12345678</programlisting></para>
+      <para><programlisting>/opt/HPCCSystems/7.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
 
       <para><emphasis role="bold">Windows</emphasis></para>
 
       <para>Client tools for Windows installs in a directory such as:
-      C:\Program Files (x86)\HPCCSystems\6.2.0\clienttools\bin where the
-      number (6.2.0 for example) corresponds to the version of the client
+      C:\Program Files (x86)\HPCCSystems\7.2.0\clienttools\bin where the
+      number (7.2.0 for example) corresponds to the version of the client
       tools.</para>
 
       <para>If you want access to one version of the command line client tools
       from any folder, you can add the \bin folder to your Path in Windows
       (for example, <emphasis role="bold">C:\Program Files
-      (x86)\HPCCSystems\6.2.0\clienttools\bin</emphasis> )</para>
+      (x86)\HPCCSystems\7.2.0\clienttools\bin</emphasis> )</para>
 
       <para>The Windows installer will prompt you to delete the previous
       version during installation. If you want to keep both, decline the offer
