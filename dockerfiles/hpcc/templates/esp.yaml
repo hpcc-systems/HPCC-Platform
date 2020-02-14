@@ -1,31 +1,40 @@
+{{ range $.Values.esp -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: esp
+  name: {{ .name | quote }}
 spec:
-  replicas: {{ .Values.hpcc.esp.replicas }}
+  replicas: {{ .replicas | default 1 }}
   selector:
     matchLabels:
-      run: esp
+      run: {{ .name | quote }}
   template:
     metadata:
       labels:
-        run: esp
+        run: {{ .name | quote }}
     spec:
       containers:
-      - name: esp
-        image: "hpccsystems/esp:{{ .Values.hpcc.image.version }}"
-        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
+      - name: {{ .name | quote }}
+        args: [
+                # {{ include "hpcc.utils.configArg" . }},
+                # {{ include "hpcc.utils.daliArg" $ }}
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "esp") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+---
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: esp
+  name: {{ .name | quote }}
 spec:
   ports:
   - port: 8010
     protocol: TCP
     targetPort: 8010
   selector:
-    run: esp
+    run: {{ .name | quote }}
   type: LoadBalancer
+{{- end }}

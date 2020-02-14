@@ -1,31 +1,42 @@
+{{ range $.Values.dali -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dali
+  name: {{ .name | quote }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: dali
+      run: {{ .name | quote }}
   template:
     metadata:
       labels:
-        run: dali
+        run: {{ .name | quote }}
     spec:
       containers:
-      - name: dali
-        image: "hpccsystems/dali:{{ .Values.hpcc.image.version }}"
-        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
+      - name: {{ .name | quote }}
+        args: [
+                # {{ include "hpcc.utils.configArg" . }} - dali does not support this yet
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "dali") | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.utils.addConfigVolumeMount" . | indent 8 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+---
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: dali
+  name: {{ .name | quote }}
 spec:
   ports:
   - port: 7070
     protocol: TCP
     targetPort: 7070
   selector:
-    run: dali
+    run: {{ .name | quote }}
   type: ClusterIP
+---
+{{- end }}

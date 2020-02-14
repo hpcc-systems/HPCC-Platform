@@ -1,22 +1,19 @@
+{{ range $.Values.eclccserver -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eclccserver
+  name: {{ .name | quote }}
 spec:
-  replicas: 1
+  replicas: {{ .replicas | default 1 }}
   selector:
     matchLabels:
-      run: eclccserver
+      run: {{ .name | quote }}
   template:
     metadata:
       labels:
-        run: eclccserver
+        run: {{ .name | quote }}
     spec:
-      volumes:
-      - name: dllserver-pv-storage
-        persistentVolumeClaim:
-          claimName: dllserver-pv-claim
-
+      {{ if $.Values.global.singleNode | default false -}}
       initContainers:
       # This is a bit of a hack, to ensure that the persistent storage mounted for dllserver
       # is writable. This is not something we would want to do if using anything other than
@@ -27,12 +24,17 @@ spec:
         volumeMounts:
         - mountPath: "/var/lib/HPCCSystems/queries"
           name: dllserver-pv-storage
-
+      {{- end }}
       containers:
-      - name: eclccserver
-        image: "hpccsystems/eclccserver:{{ .Values.hpcc.image.version }}"
-        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
-        volumeMounts:
-        - mountPath: "/var/lib/HPCCSystems/queries"
-          name: dllserver-pv-storage
-
+      - name: {{ .name | quote }}
+        args: [
+                {{ include "hpcc.utils.configArg" . }},
+                {{ include "hpcc.utils.daliArg" $ }}
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "eclccserver") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+---
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
+---
+{{- end }}

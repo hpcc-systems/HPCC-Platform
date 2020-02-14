@@ -1,19 +1,121 @@
+{{ range $roxie := $.Values.roxie -}}
+{{- if not $roxie.localSlave -}}
+{{- $toponame := printf "%s-toposerver" $roxie.name -}}
+{{- $numChannels := $roxie.numChannels | int | default 1 -}}
+{{- $topoport := $roxie.topoport | int | default 9004 -}}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: roxie
+  name: {{ $toponame | quote }}
 spec:
-  replicas: 1
+  replicas: {{ $roxie.topoReplicas | default 1 }}
   selector:
     matchLabels:
-      run: roxie
+      run: {{ $toponame | quote }}
   template:
     metadata:
       labels:
-        run: roxie
+        run: {{ $toponame | quote }}
     spec:
       containers:
-      - name: roxie
-        image: "hpccsystems/roxie:{{ .Values.hpcc.image.version }}"
-        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
-        args: [ "--serverPort=9870" ]
+      - name: {{ $toponame | quote }}
+        args: [ "--port={{ $topoport }}" ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "toposerver") | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.utils.addConfigVolumeMount" . | indent 8 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $toponame | quote }}
+spec:
+  ports:
+  - port: {{ $topoport  }}
+    protocol: TCP
+    targetPort: {{ $topoport }}
+  selector:
+    run: {{ $toponame | quote }}
+  clusterIP: None # Headless service
+
+---
+
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" $roxie) -}}
+
+---
+
+{{ if $roxie.serverReplicas -}}
+{{- $servername := printf "%s-server" $roxie.name -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $servername | quote }}
+spec:
+  replicas: {{ $roxie.serverReplicas }}
+  selector:
+    matchLabels:
+      run: {{ $servername | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ $servername | quote }}
+    spec:
+      containers:
+      - name: {{ $servername | quote }}
+        args: [
+                {{ include "hpcc.utils.configArg" . }},
+                {{ include "hpcc.utils.daliArg" $ }},
+                "--numChannels={{ $numChannels }}",
+                "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
+                "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
+                "--localSlave=false"
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+---
+
+{{ end -}}
+{{ range $c, $e := until ($roxie.numChannels|int) -}}
+{{- $channel := add $c 1 -}}
+{{- $name := printf "%s-slave-%d" $roxie.name $channel -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name | quote}}
+spec:
+  replicas: {{ $roxie.channelReplicas | default 2 }}
+  selector:
+    matchLabels:
+      run: {{ $name | quote}}
+  template:
+    metadata:
+      labels:
+        run: {{ $name | quote}}
+    spec:
+      containers:
+      - name: {{ $name | quote}}
+        args: [ 
+                {{ include "hpcc.utils.configArg" $roxie }},
+                {{ include "hpcc.utils.daliArg" $ }},
+                "--channels={{ $channel }}", 
+                "--serverPorts={{ if not $roxie.serverReplicas }}{{ template "hpcc.utils.portListToCommas" $roxie.ports }}{{ end }}",
+                "--numChannels={{ $numChannels }}",
+                "--localSlave=false", 
+                "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" $roxie | indent 8 }}
+{{ include "hpcc.utils.addVolumes" $roxie | indent 6 }}
+
+---
+
+{{- end }}
+{{- end }}
+{{- end }}
+ 

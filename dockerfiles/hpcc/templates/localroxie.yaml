@@ -1,0 +1,35 @@
+{{ range $roxie := $.Values.roxie -}}
+{{- if $roxie.localSlave -}}
+{{- $name := $roxie.name -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $roxie.name | quote }}
+spec:
+  replicas: {{ $roxie.serverReplicas | default 1 }}
+  selector:
+    matchLabels:
+      run: {{ $roxie.name | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ $roxie.name | quote }}
+    spec:
+      containers:
+      - name: {{ $roxie.name | quote }}
+        args: [
+                {{ include "hpcc.utils.configArg" $roxie }},
+                {{ include "hpcc.utils.daliArg" $ }},
+                "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
+                "--localSlave=true"
+              ]
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+---
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" $roxie ) -}}
+---
+{{- end }}
+{{- end }}
+ 
