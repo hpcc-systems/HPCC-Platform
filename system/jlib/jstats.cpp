@@ -66,7 +66,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 //--------------------------------------------------------------------------------------------------------------------
 
 // Textual forms of the different enumerations, first items are for none and all.
-static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", NULL };
+static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
 
@@ -432,6 +432,8 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
         return out.append(value);
     case SMeasureEnum:
         return out.append("Enum{").append(value).append("}"); // JCS->GH for now, should map to known enum text somehow
+    case SMeasureCost:
+        return out.appendf("$ %.06f", (double) value / 1E6);
     default:
         return out.append(value).append('?');
     }
@@ -613,6 +615,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureBool:          return "Is";
     case SMeasureId:            return "Id";
     case SMeasureFilename:      return "";
+    case SMeasureCost:          return "Cost";
     case SMeasureNone:          return nullptr;
     default:
         return "Unknown";
@@ -664,6 +667,7 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     case SMeasureBool:          return StatsMergeKeepNonZero;
     case SMeasureId:            return StatsMergeKeepNonZero;
     case SMeasureFilename:      return StatsMergeKeepNonZero;
+    case SMeasureCost:          return StatsMergeSum;
     default:
 #ifdef _DEBUG
         throwUnexpected();
@@ -878,7 +882,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(OsDiskRead) },
     { SIZESTAT(OsDiskWrite) },
     { TIMESTAT(Blocked) },
-    { CYCLESTAT(Blocked) }
+    { CYCLESTAT(Blocked) },
+    { STAT(Cost, Execute, SMeasureCost) },
 };
 
 

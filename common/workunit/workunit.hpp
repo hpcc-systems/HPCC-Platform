@@ -1655,6 +1655,8 @@ extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
 extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid=0);
+extern WORKUNIT_API double calculateThorCost(__int64 timeNs, unsigned clusterWidth);
+
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
 
 class WORKUNIT_API WorkUnitErrorReceiver : implements IErrorReceiver, public CInterface

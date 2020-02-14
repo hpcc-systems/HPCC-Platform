@@ -1306,6 +1306,12 @@ void PTree::addPropInt(const char *xpath, int val)
     addPropInt64(xpath, val); // underlying type always __int64 (now)
 }
 
+double PTree::getPropReal(const char *xpath, double dft) const
+{
+    const char *val = queryProp(xpath);
+    return val?atof(val):dft;
+}
+
 bool PTree::isCompressed(const char *xpath) const
 {
     if (!xpath)
@@ -8447,4 +8453,9 @@ void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsi
 void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     toYAML(tree, stream, indent, flags);
+}
+
+jlib_decl IPropertyTree * queryCostsConfiguration()
+{
+    return queryComponentConfig().queryPropTree("costs");
 }

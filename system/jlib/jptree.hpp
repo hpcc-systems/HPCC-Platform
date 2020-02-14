@@ -92,6 +92,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void setPropInt64(const char *xpath, __int64 val) = 0;
     virtual void addPropInt64(const char *xpath, __int64 val) = 0;
 
+    virtual double getPropReal(const char *xpath, double dft) const = 0;
+
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const = 0;
     virtual void setPropBin(const char *xpath, size32_t size, const void *data) = 0;
     virtual void addPropBin(const char *xpath, size32_t size, const void *data) = 0;
@@ -291,6 +293,7 @@ inline static bool isValidXPathChr(char c)
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv);
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *));
 jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree * config, const char * componentTag);
+jlib_decl IPropertyTree * queryCostsConfiguration();
 
 //The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().
 jlib_decl IPropertyTree & queryGlobalConfig();
