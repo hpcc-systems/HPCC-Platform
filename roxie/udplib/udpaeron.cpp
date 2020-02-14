@@ -36,7 +36,7 @@ extern "C" {
 
 // Configurable variables  // MORE - add relevant code to Roxie
 bool useEmbeddedAeronDriver = true;
-unsigned aeronConnectTimeout = 5000;
+unsigned aeronConnectTimeout = 10000;
 unsigned aeronPollFragmentsLimit = 10;
 unsigned aeronIdleSleepMs = 1;
 
@@ -89,6 +89,12 @@ int startAeronDriver()
         context->socket_sndbuf=2097152;
         context->initial_window_length=2097152;
 
+        aeron_driver_context_set_threading_mode(context, AERON_THREADING_MODE_SHARED);
+        aeron_driver_context_set_driver_timeout_ms(context, 60000);
+        aeron_driver_context_set_client_liveness_timeout_ns(context, 10000000000LL);
+        aeron_driver_context_set_timer_interval_ns(context, 10000000000LL);
+        aeron_driver_context_set_publication_linger_timeout_ns(context, 5000000000LL);
+
         if (aeron_driver_init(&driver, context) < 0)
             throw makeStringExceptionV(MSGAUD_operator, -1, "AERON: error initializing driver (%d) %s", aeron_errcode(), aeron_errmsg());
 
@@ -97,6 +103,10 @@ int startAeronDriver()
 
         driverStarted.signal();
         aeronDriverRunning = true;
+
+        aeron_driver_context_print_configuration(context);
+        fflush(NULL);
+
         while (is_running())
         {
             aeron_driver_main_idle_strategy(driver, aeron_driver_main_do_work(driver));
@@ -136,7 +146,11 @@ public:
             aeronDriverThread = std::thread([]() { startAeronDriver(); });
             driverStarted.wait();
         }
+
         aeron::Context context;
+
+        context.mediaDriverTimeout(60000);
+        context.resourceLingerTimeout(2000);
 
         if (udpTraceLevel)
         {
@@ -154,10 +168,13 @@ public:
                    DBGLOG("AeronReceiver: Unavailable image correlationId=%" I64F "d, sessionId=%d at position %" I64F "d from %s", (__int64) image.correlationId(), image.sessionId(), (__int64) image.position(), image.sourceIdentity().c_str());
                 });
         }
+
         aeron = aeron::Aeron::connect(context);
+
         loSub = addSubscription(myEndpoint, 0);
         hiSub = addSubscription(myEndpoint, 1);
         slaSub = addSubscription(myEndpoint, 2);
+
         aeron::fragment_handler_t handler = [this](const aeron::AtomicBuffer& buffer, aeron::util::index_t offset, aeron::util::index_t length, const aeron::Header& header)
         {
             collatePacket(buffer.buffer() + offset, length);
@@ -289,6 +306,29 @@ public:
         StringBuffer channel("aeron:udp?endpoint=");
         dest.getIpText(channel);
         channel.append(':').append(_dataPort);
+
+        if (useEmbeddedAeronDriver && !is_running())
+        {
+            aeronDriverThread = std::thread([]() { startAeronDriver(); });
+            driverStarted.wait();
+        }
+
+        aeron::Context context;
+
+        context.mediaDriverTimeout(60000);
+        context.resourceLingerTimeout(2000);
+
+        if (udpTraceLevel)
+        {
+            context.newPublicationHandler(
+                [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
+                {
+                    DBGLOG("AeronSender: Publication %s, correlation %" I64F "d, streamId %d, sessionId %d", channel.c_str(), (__int64) correlationId, streamId, sessionId);
+                });
+        }
+
+        aeron = aeron::Aeron::connect(context);
+
         for (unsigned queue = 0; queue < numQueues; queue++)
         {
             if (udpTraceLevel)
@@ -374,20 +414,6 @@ public:
       receiversTable([this](const IpAddress &ip) { return new UdpAeronReceiverEntry(ip, dataPort, aeron, numQueues);}),
       myIP(_myIP)
     {
-        if (useEmbeddedAeronDriver && !is_running())
-        {
-            aeronDriverThread = std::thread([]() { startAeronDriver(); });
-            driverStarted.wait();
-        }
-        aeron::Context context;
-        if (udpTraceLevel)
-            context.newPublicationHandler(
-                [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
-                {
-                    DBGLOG("AeronSender: Publication %s, correlation %" I64F "d, streamId %d, sessionId %d", channel.c_str(), (__int64) correlationId, streamId, sessionId);
-                });
-
-        aeron = aeron::Aeron::connect(context);
     }
     virtual void writeOwn(IUdpReceiverEntry &receiver, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) override
     {

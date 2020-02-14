@@ -926,7 +926,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             else
                 udpRequestToSendTimeout = 5000;
         }
-        udpRequestToSendAckTimeout = topology->getPropInt("@udpRequestToSendAckTimeout", 100);
+        udpPacketsRTSFactor = topology->getPropInt("@udpPacketsRTSFactor", 100);
+        if (udpPacketsRTSFactor == 0)
+            udpPacketsRTSFactor = 100;
+        udpRequestToSendAckTimeout = topology->getPropInt("@udpRequestToSendAckTimeout", 500);
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
         udpSnifferReadThreadPriority = topology->getPropInt("@udpSnifferReadThreadPriority", 3);
         udpSnifferSendThreadPriority = topology->getPropInt("@udpSnifferSendThreadPriority", 3);
@@ -1133,6 +1136,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!numChannels)
                 throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
             IpAddress myIP(".");
+            myNode.setIp(myIP);
             for (unsigned port: farmerPorts)
             {
                 VStringBuffer xpath("./RoxieFarmProcess[@port='%u']", port);

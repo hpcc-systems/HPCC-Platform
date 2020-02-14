@@ -36,8 +36,9 @@
 unsigned udpOutQsPriority = 0;
 unsigned udpMaxRetryTimedoutReqs = 0; // 0 means off (keep retrying forever)
 unsigned udpRequestToSendTimeout = 0; // value in milliseconds - 0 means calculate from query timeouts
-unsigned udpRequestToSendAckTimeout = 10; // value in milliseconds
+unsigned udpRequestToSendAckTimeout = 500; // value in milliseconds
 bool udpSnifferEnabled = true;
+unsigned udpPacketsRTSFactor = 100;
 
 using roxiemem::DataBuffer;
 // MORE - why use DataBuffers on output side?? We could use zeroCopy techniques if we had a dedicated memory area.
@@ -186,6 +187,12 @@ public:
         {
             UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
             unsigned length = header->length;
+            if (udpTraceLevel > 5)
+            {
+                StringBuffer s;
+                DBGLOG("UdpSender: sending packet, msgId:%u msgSeq:%u pktSeq:%u to node:%s", header->msgId, header->msgSeq, header->pktSeq, header->node.getTraceText(s).str());
+            }
+            // mck - NOTE: length is often <= 984 ...
             if (bucket)
             {
                 MTIME_SECTION(queryActiveTimer(), "bucket_wait");
@@ -258,8 +265,9 @@ public:
 
     inline void pushData(unsigned queue, DataBuffer *buffer)
     {
-        output_queue[queue].pushOwn(buffer);
-        if (!packetsQueued++)
+        int numActive = output_queue[queue].pushOwn(buffer);
+        packetsQueued++;
+        if ((numActive % udpPacketsRTSFactor) == 0)
             requestToSend();
     }
 
@@ -323,12 +331,28 @@ public:
                 SocketEndpoint sendFlowEp(_sendFlowPort, ip);
                 SocketEndpoint dataEp(_dataPort, ip);
                 send_flow_socket = ISocket::udp_connect(sendFlowEp);
+                send_flow_socket->set_send_buffer_size(udpFlowSocketsSize);
+                send_flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
+                if (udpTraceLevel > 1)
+                {
+                    int srs = send_flow_socket->get_receive_buffer_size();
+                    DBGLOG("UdpSender: send_flow send/recv buffsize = %d", srs);
+                }
+
                 data_socket = ISocket::udp_connect(dataEp);
                 if (isLocal)
                 {
                     data_socket->set_send_buffer_size(udpLocalWriteSocketSize);
                     if (udpTraceLevel > 0)
                         DBGLOG("UdpSender: sendbuffer set for local socket (size=%d)", udpLocalWriteSocketSize);
+                }
+                // mck - might be good to be able to set data_socket send/recv buffsize from config
+                //       instead of relying on OS wmem_default/rmem_default (udpDataSocketSize ?)
+                if (udpTraceLevel > 1)
+                {
+                    int dss = data_socket->get_send_buffer_size();
+                    int drs = data_socket->get_receive_buffer_size();
+                    DBGLOG("UdpSender: data_socket send/recv buffsize = %d/%d", dss, drs);
                 }
             }
             catch(IException *e) 
@@ -414,6 +438,10 @@ class CSendManager : implements ISendManager, public CInterface
         {
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender: send_resend_flow started");
+            // mck - should we match send_receive_flow thread (RR) priority ?
+#ifdef __linux__
+            setLinuxThreadPriority(2);
+#endif
             unsigned timeout = udpRequestToSendTimeout;
             while (running)
             {
@@ -431,14 +459,15 @@ class CSendManager : implements ISendManager, public CInterface
                         {
                             dest.timeouts++;
                             {
+                                unsigned pktsQueued = dest.packetsQueued.load(std::memory_order_relaxed);
                                 StringBuffer s;
-                                EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (max=%i) waiting ok_to_send msg from node=%s",
-                                        dest.timeouts, udpMaxRetryTimedoutReqs, dest.ip.getIpText(s).str());
+                                EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (max=%i) waiting ok_to_send msg (%u) from node=%s",
+                                        dest.timeouts, udpMaxRetryTimedoutReqs, pktsQueued, dest.ip.getIpText(s).str());
                             }
                             // 0 (zero) value of udpMaxRetryTimedoutReqs means NO limit on retries
                             if (udpMaxRetryTimedoutReqs && (dest.timeouts >= udpMaxRetryTimedoutReqs))
                                 dest.abort();
-                            else
+                            else // mck - should we adjust timeout value with each timeout cycle ?
                                 dest.requestToSend();
                         }
                         else if (expireTime-now < timeout)
@@ -478,9 +507,10 @@ class CSendManager : implements ISendManager, public CInterface
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
             flow_socket.setown(ISocket::udp_create(receive_port));
+            flow_socket->set_send_buffer_size(udpFlowSocketsSize);
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
-            DBGLOG("UdpSender: rcv_flow_socket created port=%d sockbuffsize=%d actualsize=%d", receive_port, udpFlowSocketsSize, actualSize);
+            DBGLOG("UdpSender: rcv_flow_socket created port=%d sockbuffsize=%d actual %d", receive_port, udpFlowSocketsSize, actualSize);
             start();
         }
         

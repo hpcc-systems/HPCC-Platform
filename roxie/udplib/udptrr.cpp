@@ -112,6 +112,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         ISocket *flowSocket = nullptr;
         UdpSenderEntry *nextSender = nullptr;  // Used to form list of all senders that have outstanding requests
         unsigned timeouts = 0;
+        unsigned numPackets = 0;
 
         // Set by sniffer, used by receive_flow. But races are unimportant
         unsigned timeStamp = 0;               // When it was marked busy (0 means not busy)
@@ -120,6 +121,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         {
             SocketEndpoint ep(port, dest);
             flowSocket = ISocket::udp_connect(ep);
+            flowSocket->set_send_buffer_size(udpFlowSocketsSize);
+            flowSocket->set_receive_buffer_size(udpFlowSocketsSize);
+            if (udpTraceLevel > 1)
+            {
+                int frs = flowSocket->get_receive_buffer_size();
+                DBGLOG("UdpSenderEntry: flowSocket send/recv buffsize = %d", frs);
+            }
         }
 
         ~UdpSenderEntry()
@@ -233,6 +241,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP, multicastTTL);
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0)
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
+            sniffer_socket->set_send_buffer_size(udpFlowSocketsSize);
             sniffer_socket->set_receive_buffer_size(udpFlowSocketsSize);
             if (udpTraceLevel)
             {
@@ -268,7 +277,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     unsigned int res;
                     sniff_msg msg;
-                    sniffer_socket->read(&msg, 1, sizeof(msg), res, 5);
+                    sniffer_socket->read(&msg, sizeof(msg), sizeof(msg), res, 5);
                     update(msg.nodeIp.getNodeAddress(), msg.cmd == sniffType::busy);
                 }
                 catch (IException *e) 
@@ -342,11 +351,20 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         unsigned okToSend(UdpSenderEntry *requester)
         {
             assert (!currentRequester);
-            unsigned max_transfer = parent.free_slots();
+            // mck - see comment in free_slots(), use previous algo for now ...
+            // unsigned max_transfer = parent.free_slots();
+            unsigned max_transfer = parent.input_queue->free_slots() * 0.80;
+            if (!max_transfer)
+                return udpRequestToSendAckTimeout;
             if (max_transfer > maxSlotsPerSender)
                 max_transfer = maxSlotsPerSender;
             unsigned timeout = ((max_transfer * DATA_PAYLOAD) / 100) + 10; // in ms assuming mtu package size with 100x margin on 100 Mbit network // MORE - hideous!
+            // max_transfer=50 => timeout=502, max_transfer=2 => timeout=30
+            if (timeout < udpRequestToSendAckTimeout)
+                timeout = udpRequestToSendAckTimeout;
             currentRequester = requester;
+            requester->numPackets = max_transfer;
+            // parent.inflight += max_transfer;
             requester->requestToSend(max_transfer, myNode.getNodeAddress());
             return timeout;
         }
@@ -438,6 +456,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
             flow_socket.setown(ISocket::udp_create(flow_port));
+            flow_socket->set_send_buffer_size(udpFlowSocketsSize);
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: receive_receive_flow created port=%d sockbuffsize=%d actual %d", flow_port, udpFlowSocketsSize, actualSize);
@@ -484,14 +503,20 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     switch (msg.cmd)
                     {
                     case flowType::request_to_send:
-                        if (pendingRequests || currentRequester)
+                        if (currentRequester)
                             enqueueRequest(sender);   // timeout does not change - there's still an active request
+                        else if (pendingRequests)
+                        {
+                            enqueueRequest(sender);
+                            timeout = sendNextOk();
+                        }
                         else
                             timeout = okToSend(sender);
                         break;
 
                     case flowType::send_completed:
-                        parent.inflight += msg.packets;
+                        // parent.inflight -= msg.packets;
+                        // DBGLOG("send_completed: inflight: %d msg packets: %u", (int)parent.inflight, msg.packets);
                         if (noteDone(sender) && pendingRequests)
                             timeout = sendNextOk();
                         else
@@ -499,7 +524,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         break;
 
                     case flowType::request_to_send_more:
-                        parent.inflight += msg.packets;
+                        // parent.inflight -= msg.packets;
+                        // DBGLOG("rts_more: inflight: %d msg packets: %u", (int)parent.inflight, msg.packets);
                         if (noteDone(sender))
                         {
                             if (pendingRequests)
@@ -524,18 +550,24 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         // A timeout implies that there is an active permission to send, but nothing has happened.
                         // Could be a really busy (or crashed) slave, could be a lost packet
                         if (currentRequester)
+                        {
+                            // parent.inflight -= currentRequester->numPackets;
+                            // DBGLOG("timeout: inflight: %d req->numpkts: %u", (int)parent.inflight, currentRequester->numPackets);
                             timeout = timedOut(currentRequester);
+                        }
                     }
                     else if (running)
                     {
                         StringBuffer s;
                         DBGLOG("UdpReceiver: failed %i %s", flow_port, e->errorMessage(s).str());
+                        // parent.inflight = 0;
                     }
                     e->Release();
                 }
                 catch (...)
                 {
                     DBGLOG("UdpReceiver: receive_receive_flow::run unknown exception");
+                    // parent.inflight = 0;
                 }
             }
             return 0;
@@ -557,9 +589,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (check_max_socket_read_buffer(ip_buffer) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System socket max read buffer is less than %u", ip_buffer);
             receive_socket = ISocket::udp_create(parent.data_port);
+            receive_socket->set_send_buffer_size(ip_buffer);
             receive_socket->set_receive_buffer_size(ip_buffer);
             size32_t actualSize = receive_socket->get_receive_buffer_size();
-            DBGLOG("UdpReceiver: rcv_data_socket created port=%d requested sockbuffsize=%d actual sockbuffsize=%d", parent.data_port, ip_buffer, actualSize);
+            DBGLOG("UdpReceiver: rcv_data_socket created port=%d requested sockbuffsize=%d actual %d", parent.data_port, ip_buffer, actualSize);
             running = false;
         }
 
@@ -595,15 +628,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     unsigned int res;
                     b = bufferManager->allocate();
-                    receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
-                    parent.inflight--;
+                    receive_socket->read(b->data, sizeof(UdpPacketHeader), DATA_PAYLOAD, res, 5);
+                    // parent.inflight--;
                     // MORE - reset it to zero if we fail to read data, or if avail_read returns 0.
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
                     assert(hdr.length == res && hdr.length > sizeof(hdr));
                     if (udpTraceLevel > 5) // don't want to interrupt this thread if we can help it
                     {
                         StringBuffer s;
-                        DBGLOG("UdpReceiver: %u bytes received, node=%s", res, hdr.node.getTraceText(s).str());
+                        DBGLOG("UdpReceiver: %u bytes received, msgId:%u msgSeq:%u pktSeq:%u node=%s", res, hdr.msgId, hdr.msgSeq, hdr.pktSeq, hdr.node.getTraceText(s).str());
                     }
                     parent.input_queue->pushOwn(b);
                     b = NULL;
@@ -679,6 +712,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     int free_slots()
     {
+        // mck - skip for now, several attempts at keeping track of inflight do not seem accurate enough and cause
+        //       too few packets to be sent as time goes on.  TODO - look into decay of inflight by X pkts/s ...
         int free = input_queue->free_slots();  // May block if collator thread is not removing from my queue fast enough
         // Ignore inflight if negative (can happen because we read some inflight before we see the send_done)
         int i = inflight.load(std::memory_order_relaxed);

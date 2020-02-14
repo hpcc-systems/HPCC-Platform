@@ -74,7 +74,7 @@ class queue_t
     
 public: 
     void interrupt();
-    void pushOwn(roxiemem::DataBuffer *buffer);
+    int pushOwn(roxiemem::DataBuffer *buffer);
     roxiemem::DataBuffer *pop();
     bool empty() ;
     bool dataQueued(const void *key, PKT_CMP_FUN pkCmpFn);

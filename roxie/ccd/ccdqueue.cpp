@@ -266,11 +266,12 @@ void openMulticastSocket()
         }
         else
             DBGLOG("Roxie: multicastTTL not set");
+        multicastSocket->set_send_buffer_size(udpMulticastBufferSize);
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
         if (actualSize < udpMulticastBufferSize)
         {
-            DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: multicast socket buffer size could not be set requested=%d actual %d", udpMulticastBufferSize, actualSize);
             throwUnexpected();
         }
         if (traceLevel)
@@ -1109,7 +1110,13 @@ public:
                 if (!isUser)
                     EXCLOG(E, "throwRemoteException");
             }
-            
+            // topology not always valid and Aeron etc. can throw anytime
+            if (!topology.get())
+            {
+                EXCLOG(E, "no Topology available in throwRemoteException");
+                E->Release();
+                return;
+            }
             RoxiePacketHeader &header = packet->queryHeader();
             unsigned mySubChannel = topology->queryChannelInfo(header.channel).subChannel();
             // I failed to do the query, but already sent out IBYTI - resend it so someone else can try

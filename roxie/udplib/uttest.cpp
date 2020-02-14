@@ -24,6 +24,7 @@
 #include "jthread.hpp"
 #include "jsocket.hpp"
 #include "jsem.hpp"
+#include "jisem.hpp"
 #include "jdebug.hpp"
 #include <time.h>
 
@@ -43,7 +44,9 @@ void usage()
     printf(
         "--jumboFrames\n"
         "--useAeron\n"
+        "--multicastip a.b.c.d\n"
         "--udpLocalWriteSocketSize nn\n"
+        "--udpFlowSocketsSize nn\n"
         "--udpRetryBusySenders nn\n"
         "--maxPacketsPerSender nn\n"
         "--udpQueueSize nn\n"
@@ -54,6 +57,7 @@ void usage()
         "--dontSendToSelf\n"
         "--sendSize nnMB\n"
         "--rawSpeedTest\n"
+        "--sendMaxRate nn [--sendMaxRatePeriod nn]\n"
         "--rawBufferSize nn\n"
         );
     ExitModuleObjects();
@@ -61,8 +65,8 @@ void usage()
     exit(1);
 }
 
-const char *multicastIPStr = "239.1.1.1";
-IpAddress multicastIP(multicastIPStr);
+char multicastIPStr[256] = { "239.1.1.1" };
+IpAddress multicastIP;
 unsigned udpNumQs = 1;
 unsigned numNodes;
 unsigned myIndex;
@@ -88,6 +92,9 @@ bool incrementRowSize = variableRows;
 unsigned maxRowSize=5000;
 unsigned minRowSize=1;
 bool readRows = true;
+
+unsigned sendMaxRate = 0;
+unsigned sendMaxRatePeriod = 1;
 
 IpAddressArray allNodes;
 
@@ -290,10 +297,18 @@ void testNxN()
     if (maxPacketsPerSender > udpQueueSize)
         maxPacketsPerSender = udpQueueSize;
     Owned <ISendManager> sendMgr;
+
+    Owned<TokenBucket> bucket;
+
     if (useAeron)
         sendMgr.setown(createAeronSendManager(7000, udpNumQs, myNode.getNodeAddress()));
     else
-        sendMgr.setown(createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, NULL));
+    {
+        if (sendMaxRate && sendMaxRatePeriod)
+            bucket.setown(new TokenBucket(sendMaxRate, sendMaxRatePeriod, sendMaxRate));
+        sendMgr.setown(createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, bucket));
+    }
+
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];
@@ -623,7 +638,8 @@ int main(int argc, char * argv[] )
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
 
     {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
+        // Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("/tmp", "uttest");
         lf->setCreateAliasFile(false);
         lf->setRolling(false);
         lf->setAppend(false);
@@ -643,6 +659,7 @@ int main(int argc, char * argv[] )
 //  queryLogMsgManager()->enterQueueingMode();
 //  queryLogMsgManager()->setQueueDroppingLimit(512, 32);
     udpRequestToSendTimeout = 5000;
+    udpRequestToSendAckTimeout = 500;
     for (c = 1; c < argc; c++)
     {
         const char *ip = argv[c];
@@ -656,7 +673,7 @@ int main(int argc, char * argv[] )
                     usage();
                 udpQueueSize = atoi(argv[c]);
             }
-            if (strcmp(ip, "--udpRTSTimeout")==0)
+            else if (strcmp(ip, "--udpRTSTimeout")==0)
             {
                 c++;
                 if (c==argc || !isdigit(*argv[c]))
@@ -671,6 +688,13 @@ int main(int argc, char * argv[] )
             {
                 useAeron = true;
             }
+            else if (strcmp(ip, "--multicastip")==0)
+            {
+                c++;
+                if (c==argc)
+                    usage();
+                strcpy(multicastIPStr, argv[c]);
+            }
             else if (strcmp(ip, "--rawSpeedTest")==0)
             {
                 doRawTest = true;
@@ -681,6 +705,13 @@ int main(int argc, char * argv[] )
                 if (c==argc)
                     usage();
                 udpLocalWriteSocketSize = atoi(argv[c]);
+            }
+            else if (strcmp(ip, "--udpFlowSocketsSize")==0)
+            {
+                c++;
+                if (c==argc)
+                    usage();
+                udpFlowSocketsSize = atoi(argv[c]);
             }
             else if (strcmp(ip, "--udpRetryBusySenders")==0)
             {
@@ -739,6 +770,22 @@ int main(int argc, char * argv[] )
                     usage();
                 rawBufferSize = atoi(argv[c]);
             }
+            else if (strcmp(ip, "--sendMaxRate")==0)
+            {
+                c++;
+                if (c==argc)
+                    usage();
+                sendMaxRate = atoi(argv[c]);
+            }
+            else if (strcmp(ip, "--sendMaxRatePeriod")==0)
+            {
+                c++;
+                if (c==argc)
+                    usage();
+                sendMaxRatePeriod = atoi(argv[c]);
+                if (sendMaxRatePeriod == 0)
+                    sendMaxRatePeriod = 1;
+            }
             else
                 usage();
         }
@@ -768,6 +815,9 @@ int main(int argc, char * argv[] )
             printf("Added node %s\n", ip);
         }
     }
+
+    multicastIP.ipset(multicastIPStr);
+
     if (doRawTest)
         rawSendTest();
     else if (doSortSimulator)

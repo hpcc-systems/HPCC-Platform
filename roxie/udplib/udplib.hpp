@@ -163,6 +163,7 @@ extern UDPLIB_API unsigned udpLocalWriteSocketSize;
 extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;
 extern UDPLIB_API unsigned udpRequestToSendTimeout;
 extern UDPLIB_API unsigned udpRequestToSendAckTimeout;
+extern UDPLIB_API unsigned udpPacketsRTSFactor;
 
 extern UDPLIB_API unsigned udpRetryBusySenders;
 extern UDPLIB_API bool udpSnifferEnabled;

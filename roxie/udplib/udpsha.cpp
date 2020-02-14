@@ -132,20 +132,22 @@ void queue_t::interrupt()
     data_avail.interrupt();
 }
 
-void queue_t::pushOwn(DataBuffer *buf)
+int queue_t::pushOwn(DataBuffer *buf)
 {
     while (!free_space.wait(3000))
     {
         if (udpTraceLevel >= 1)
             DBGLOG("queue_t::pushOwn blocked for 3 seconds waiting for free_space semaphore, activeBuffers == %d", active_buffers);
     }
+    int numActive = 0;
     c_region.enter();
     int next = (last + 1) % element_count;
     elements[last].data = buf;
     last = next;
-    active_buffers++;
+    numActive = active_buffers++;
     c_region.leave();
     data_avail.signal();
+    return numActive;
 }
 
 DataBuffer *queue_t::pop()
