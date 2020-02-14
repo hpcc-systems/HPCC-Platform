@@ -2217,10 +2217,6 @@ enum
     SOAPFxml            = 0x010000
 };
 
-enum
-{
-};
-
 struct IHThorWebServiceCallActionArg : public IHThorArg
 {
     virtual const char * getHosts() = 0;
