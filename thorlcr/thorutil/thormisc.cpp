@@ -57,11 +57,12 @@
 #define SDS_LOCK_TIMEOUT 30000
 
 static Owned<INode> masterNode;
-static Owned<IGroup> nodeGroup;
-static Owned<IGroup> clusterGroup;
-static Owned<IGroup> slaveGroup;
-static Owned<IGroup> dfsGroup;
-static Owned<ICommunicator> nodeComm;
+static Owned<IGroup> processGroup; // group of slave processes
+static Owned<IGroup> nodeGroup;    // master + processGroup
+static Owned<IGroup> slaveGroup;   // group containing all channels
+static Owned<IGroup> clusterGroup; // master + slaveGroup
+static Owned<IGroup> dfsGroup;     // same as slaveGroup, but without ports
+static Owned<ICommunicator> nodeComm; // communicator based on nodeGroup (master+slave processes)
 
 
 mptag_t masterSlaveMpTag;
@@ -79,6 +80,7 @@ MODULE_EXIT()
 {
     masterNode.clear();
     nodeGroup.clear();
+    processGroup.clear();
     clusterGroup.clear();
     slaveGroup.clear();
     dfsGroup.clear();
@@ -810,51 +812,48 @@ StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *query
     return compoundName.append('V').append(version).append('_').append(queryName);
 }
 
-void setupGroups(INode *master, IGroup *slaveGroup)
+void setupGroups(INode *_masterNode, IGroup *_processGroup, IGroup *_slaveGroup)
 {
-    // slaveGroup contains all slaves (including virtuals) but excludes master
+    masterNode.set(_masterNode);
+    processGroup.set(_processGroup);
+    slaveGroup.set(_slaveGroup);
+
+    // nodeGroup contains master + all slave processes (excludes virtual slaves)
+    nodeGroup.setown(processGroup->add(LINK(masterNode), 0));
 
     // clusterGroup contains master + all slaves (including virtuals)
-    clusterGroup.setown(slaveGroup->add(LINK(master), 0));
+    clusterGroup.setown(slaveGroup->add(LINK(masterNode), 0));
 
     // dfsGroup is same as slaveGroup, but stripped of ports. So is a IP group as wide as slaveGroup, used for publishing
-    IArrayOf<INode> slaveGroupNodes;
+    IArrayOf<INode> dfsGroupNodes;
     Owned<INodeIterator> nodeIter = slaveGroup->getIterator();
     ForEach(*nodeIter)
-        slaveGroupNodes.append(*createINodeIP(nodeIter->query().endpoint(), 0));
-    dfsGroup.setown(createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray()));
+        dfsGroupNodes.append(*createINodeIP(nodeIter->query().endpoint(), 0));
+    dfsGroup.setown(createIGroup(dfsGroupNodes.ordinality(), dfsGroupNodes.getArray()));
 
     nodeComm.setown(createCommunicator(nodeGroup));
 }
     
-void setupCluster(INode *_masterNode, IGroup *processGroup, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
+void setupCluster(INode *_masterNode, IGroup *_processGroup, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
-    masterNode.set(_masterNode);
-
-    // nodeGroup container master + all slave processes (excludes virtual slaves)
-    nodeGroup.setown(processGroup->add(masterNode, 0));
-
     IArrayOf<INode> slaveGroupNodes;
     for (unsigned s=0; s<channelsPerSlave; s++)
     {
-        for (unsigned p=0; p<processGroup->ordinality(); p++)
+        for (unsigned p=0; p<_processGroup->ordinality(); p++)
         {
-            INode &processNode = processGroup->queryNode(p);
+            INode &processNode = _processGroup->queryNode(p);
             SocketEndpoint ep = processNode.endpoint();
             ep.port = ep.port + (s * portInc);
             Owned<INode> node = createINode(ep);
             slaveGroupNodes.append(*node.getClear());
         }
     }
-    slaveGroup.setown(createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray()));
-
-    setupGroups(masterNode, slaveGroup);
+    Owned<IGroup> _slaveGroup = createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray());
+    setupGroups(_masterNode, _processGroup, _slaveGroup);
 }
 
 void setClusterGroup(INode *_masterNode, IGroup *rawGroup, unsigned slavesPerNode, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
-    masterNode.set(_masterNode);
-
     SocketEndpointArray epa;
     OwnedMalloc<unsigned> hostStartPort, hostNextStartPort;
     hostStartPort.allocateN(rawGroup->ordinality());
@@ -876,8 +875,7 @@ void setClusterGroup(INode *_masterNode, IGroup *rawGroup, unsigned slavesPerNod
             hostNextStartPort[hostPos] += (slavesPerNode * channelsPerSlave * portInc);
         }
     }
-    IArrayOf<INode> slaveGroupNodes, nodeGroupNodes;
-    nodeGroupNodes.append(*LINK(masterNode));
+    IArrayOf<INode> slaveGroupNodes, processGroupNodes;
     for (unsigned s=0; s<channelsPerSlave; s++)
     {
         for (unsigned p=0; p<slavesPerNode; p++)
@@ -889,23 +887,20 @@ void setClusterGroup(INode *_masterNode, IGroup *rawGroup, unsigned slavesPerNod
                 Owned<INode> node = createINode(ep);
                 slaveGroupNodes.append(*node.getLink());
                 if (0 == s)
-                    nodeGroupNodes.append(*node.getLink());
+                    processGroupNodes.append(*node.getLink());
             }
         }
     }
-
-    // nodeGroup container master + all slave processes (excludes virtual slaves)
-    nodeGroup.setown(createIGroup(nodeGroupNodes.ordinality(), nodeGroupNodes.getArray()));
-
-    slaveGroup.setown(createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray()));
-
-    setupGroups(masterNode, slaveGroup);
+    Owned<IGroup> _processGroup = createIGroup(processGroupNodes.ordinality(), processGroupNodes.getArray());
+    Owned<IGroup> _slaveGroup = createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray());
+    setupGroups(_masterNode, _processGroup, _slaveGroup);
 }
 
 bool clusterInitialized() { return NULL != nodeComm; }
 INode &queryMasterNode() { return *masterNode; }
 ICommunicator &queryNodeComm() { return *nodeComm; }
 IGroup &queryNodeGroup() { return *nodeGroup; }
+IGroup &queryProcessGroup() { return *processGroup; }
 IGroup &queryClusterGroup() { return *clusterGroup; }
 IGroup &querySlaveGroup() { return *slaveGroup; }
 IGroup &queryDfsGroup() { return *dfsGroup; }

@@ -363,6 +363,17 @@ int main( int argc, char *argv[]  )
         if (!master)
             usage();
 
+        mySlaveNum = globals->getPropInt("@SLAVENUM", NotFound);
+        /* NB: in cloud/non-local storage mode, slave number is not known until after registration with the master
+        * For the time being log file names are based on their slave number, so can only start when known.
+        */
+        bool loggingStarted = false;
+        if (NotFound != mySlaveNum)
+        {
+            startSlaveLog();
+            loggingStarted = true;
+        }
+
         // In container world, SLAVE= will not be used
         const char *slave = globals->queryProp("@SLAVE");
         if (slave)
@@ -394,10 +405,10 @@ int main( int argc, char *argv[]  )
         setMasterPortBase(masterEp.port);
         markNodeCentral(masterEp);
 
-        mySlaveNum = globals->getPropInt("@SLAVENUM", NotFound);
         if (RegisterSelf(masterEp))
         {
-            startSlaveLog();
+            if (!loggingStarted)
+                startSlaveLog();
 
             if (globals->getPropBool("Debug/@slaveDaliClient"))
                 enableThorSlaveAsDaliClient();

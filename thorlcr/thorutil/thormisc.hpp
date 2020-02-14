@@ -483,6 +483,7 @@ extern graph_decl void setClusterGroup(INode *masterNode, IGroup *group, unsigne
 extern graph_decl bool clusterInitialized();
 extern graph_decl INode &queryMasterNode();
 extern graph_decl IGroup &queryNodeGroup();
+extern graph_decl IGroup &queryProcessGroup();
 extern graph_decl ICommunicator &queryNodeComm();
 extern graph_decl IGroup &queryClusterGroup();
 extern graph_decl IGroup &querySlaveGroup();

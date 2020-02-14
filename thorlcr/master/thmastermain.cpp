@@ -136,7 +136,7 @@ public:
     Linked<CMasterWatchdogBase> watchdog;
     IBitSet *status;
 
-    CRegistryServer()  : deregistrationWatch(*this)
+    CRegistryServer() : deregistrationWatch(*this)
     {
         status = createThreadSafeBitSet();
         msgDelay = SLAVEREG_VERIFY_DELAY;
@@ -221,8 +221,8 @@ public:
                 return false;
             }
 
-            /* NB: in base metal setup, the slaves know which slave they in advance, and send their slavenum at registration.
-             * In container setup, they do not send a slave by default and instead are given a # once all are registered
+            /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
+             * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
              */
             unsigned slaveNum;
             msg.read(slaveNum);
@@ -251,8 +251,16 @@ public:
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
 
-        Owned<IGroup> processGroup = createIGroup(connectedSlaves.ordinality(), connectedSlaves.getArray());
-        setupCluster(queryMyNode(), processGroup, channelsPerSlave, slaveBasePort, localThorPortInc);
+        Owned<IGroup> processGroup;
+
+        // NB: in bare metal Thor is bound to a group and cluster/communicator have alreday been setup (see earlier setClusterGroup call)
+        if (clusterInitialized())
+            processGroup.set(&queryProcessGroup());
+        else
+        {
+            processGroup.setown(createIGroup(connectedSlaves.ordinality(), connectedSlaves.getArray()));
+            setupCluster(queryMyNode(), processGroup, channelsPerSlave, slaveBasePort, localThorPortInc);
+        }
 
         PROGLOG("Slaves connected, initializing..");
         msg.clear();
