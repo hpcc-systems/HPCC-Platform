@@ -1,9 +1,9 @@
-sudo : false
 language: node_js
 node_js:
-  - '6'
+  - "12"
 before_install:
   - cd ./esp/src
-after_script:
-  - npm run copy-res;
-  - npm run bundle;
+install:
+  - npm ci
+before_script:
+  - npm run build;
