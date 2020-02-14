@@ -14,8 +14,8 @@ spec:
     spec:
       containers:
       - name: esp
-        image: "hpccsystems/esp:{{ .Values.hpcc.version }}"
-        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        image: "hpccsystems/esp:{{ .Values.hpcc.image.version }}"
+        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
 ---
 apiVersion: v1
 kind: Service

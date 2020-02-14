@@ -9,6 +9,8 @@ hpcc:
     replicas: 2
   esp:
     replicas: 2
+  dllserver:
+    storageSize: 3Gi
 
   image:
     version: master-2020-02-10

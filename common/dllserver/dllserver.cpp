@@ -35,30 +35,6 @@
 
 #define CONNECTION_TIMEOUT     30000
 
-static Owned<IConstDomainInfo> hostDomain;
-
-IConstDomainInfo * getDomainFromIp(const char * ip)
-{
-    Owned<IEnvironmentFactory> ef = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> env = ef->openEnvironment();
-    Owned<IConstMachineInfo> curMachine = env->getMachineByAddress(ip);
-    if (!curMachine)
-        return NULL;
-    return curMachine->getDomain();
-}
-
-
-IConstDomainInfo * cachedHostDomain()
-{
-    if (!hostDomain)
-    {
-        StringBuffer ipText;
-        queryHostIP().getIpText(ipText);
-        hostDomain.setown(getDomainFromIp(ipText.str()));
-    }
-    return hostDomain;
-}
-
 static void getMangledTag(StringBuffer & path, const char * name)
 {
     path.append("Dll");
@@ -147,12 +123,6 @@ static void deleteLocationFiles(IDllLocation & cur, bool removeDirectory)
     Owned<IFile> file = createIFile(filename);
     file->remove();
 
-    if (cur.getLibFilename(filename))
-    {
-        file.setown(createIFile(filename));
-        file->remove();
-    }
-
     if (removeDirectory)
     {
         //Finally try and remove the directory - this will fail if it isn't empty
@@ -184,24 +154,6 @@ public:
         SocketEndpoint ep(locationRoot->queryProp("@ip"));
         filename.setPath(ep, locationRoot->queryProp("@dll"));
     }
-    virtual bool getLibFilename(RemoteFilename & filename)
-    {
-        const char * lib = locationRoot->queryProp("@lib");
-        if (!lib) return false;
-
-#ifndef _WIN32
-        int namelen = strlen(lib);
-        StringBuffer libnamebuf(lib);
-        if(!((namelen >= 3) && (strcmp(lib+namelen-3, ".so") == 0)))
-        {
-            libnamebuf.append(".so");
-            lib = libnamebuf.str();
-        }
-#endif
-        SocketEndpoint ep(locationRoot->queryProp("@ip"));
-        filename.setPath(ep, lib);
-        return true;
-    }
     virtual void getIP(IpAddress & ip)
     {
         ip.ipset(locationRoot->queryProp("@ip"));
@@ -219,12 +171,6 @@ public:
                 return DllLocationDirectory;
             return DllLocationLocal;
         }
-#ifdef _WIN32
-        Owned<IConstDomainInfo> curDomain = getDomainFromIp(locationRoot->queryProp("@ip"));
-        IConstDomainInfo * hostDomain = cachedHostDomain();
-        if (curDomain && hostDomain && (curDomain == hostDomain))
-            return DllLocationDomain;
-#endif
         return DllLocationAnywhere;
     }
     virtual void remove(bool removeFiles, bool removeDirectory);
@@ -263,7 +209,7 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
     ForEach(*iter)
     {
         IPropertyTree & cur = iter->query();
-        if (propsMatch(cur, *locationRoot, "@ip") && propsMatch(cur, *locationRoot, "@dll") && propsMatch(cur, *locationRoot, "@lib"))
+        if (propsMatch(cur, *locationRoot, "@ip") && propsMatch(cur, *locationRoot, "@dll"))
         {
             conn->queryRoot()->removeTree(&cur);
             break;
@@ -382,7 +328,6 @@ IDllLocation * DllEntry::getBestLocation()
         }
     }
     throwError1(DSVERR_CouldNotFindDll, root->queryProp("@name"));
-    return NULL;
 }
 
 IDllLocation * DllEntry::getBestLocationCandidate()
@@ -477,41 +422,38 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class DllServer : implements IDllServer, public CInterface
+class DllServerBase : public CInterfaceOf<IDllServer>
 {
 public:
-    DllServer(const char * _rootDir);
-    IMPLEMENT_IINTERFACE
-
-    virtual IIterator * createDllIterator();
-    virtual void ensureAvailable(const char * name, DllLocationType location);
-    virtual void getDll(const char * name, MemoryBuffer & dllText);
-    virtual IDllEntry * getEntry(const char * name);
-    virtual void getLibrary(const char * name, MemoryBuffer & dllText);
-    virtual void getLocalLibraryName(const char * name, StringBuffer & libraryName);
-    virtual DllLocationType isAvailable(const char * name);
+    DllServerBase(const char * _rootDir) : rootDir(_rootDir) {}
+    virtual IIterator * createDllIterator() override;
+    virtual void getDll(const char * name, MemoryBuffer & dllText) override;
+    virtual IDllEntry * getEntry(const char * name) override;
+    virtual DllLocationType isAvailable(const char * name) override;
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location);
     virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location);
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory);
-    virtual void registerDll(const char * name, const char * kind, const char * dllPath);
-    virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry);
-
+    virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry) override;
 protected:
-    void copyFileLocally(RemoteFilename & targetName, RemoteFilename & sourceName);
     DllEntry * doGetEntry(const char * name);
-    void doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath);
     IDllLocation * getBestMatch(const char * name);
-    IDllLocation * getBestMatchEx(const char * name);
     ILoadedDllEntry * doLoadDll(const char * name, DllLocationType location, bool resourcesOnly);
 
-protected:
     StringAttr rootDir;
 };
 
-DllServer::DllServer(const char * _rootDir) 
+class DllServer : public DllServerBase
 {
-    rootDir.set(_rootDir); 
-}
+public:
+    DllServer(const char * _rootDir) : DllServerBase(_rootDir) {};
+
+    virtual void ensureAvailable(const char * name, DllLocationType location) override;
+    virtual void registerDll(const char * name, const char * kind, const char * dllPath) override;
+
+protected:
+    void copyFileLocally(RemoteFilename & targetName, RemoteFilename & sourceName);
+    void doRegisterDll(const char * name, const char * kind, const char * dllPath);
+};
 
 void DllServer::copyFileLocally(RemoteFilename & targetName, RemoteFilename & sourceName)
 {
@@ -533,14 +475,14 @@ void DllServer::copyFileLocally(RemoteFilename & targetName, RemoteFilename & so
     source->copyTo(target, 0, NULL, true);
 }
 
-IIterator * DllServer::createDllIterator()
+IIterator * DllServerBase::createDllIterator()
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/GeneratedDlls", myProcessSession(), 0, CONNECTION_TIMEOUT);
     IPropertyTree * root = conn->queryRoot();
     return conn ? (IIterator *)new DllIterator(root, root->getElements("*"), rootDir) : (IIterator *)new CNullIterator;
 }
 
-DllEntry * DllServer::doGetEntry(const char * name)
+DllEntry * DllServerBase::doGetEntry(const char * name)
 {
     Owned<IRemoteConnection> conn = getEntryConnection(name, 0);
     if (conn)
@@ -548,12 +490,12 @@ DllEntry * DllServer::doGetEntry(const char * name)
     return NULL;
 }
 
-IDllEntry * DllServer::createEntry(IPropertyTree *owner, IPropertyTree *entry)
+IDllEntry * DllServerBase::createEntry(IPropertyTree *owner, IPropertyTree *entry)
 {
     return new DllEntry(entry, rootDir, owner);
 }
 
-void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath)
+void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath)
 {
     RemoteFilename dllRemote;
     StringBuffer ipText, dllText;
@@ -603,18 +545,6 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     locationTree->setProp("@ip", ipText.str());
     locationTree->setProp("@dll", dllText.str());
 
-    if (libPath && strlen(libPath))
-    {
-        RemoteFilename libRemote;
-        libRemote.setRemotePath(libPath);
-        if (!dllRemote.queryIP().ipequals(libRemote.queryIP()))
-            throwError(DSVERR_DllLibIpMismatch);
-
-        StringBuffer libText;
-        libRemote.getLocalPath(libText);
-        locationTree->setProp("@lib", libText.str());
-    }
-
     conn->queryRoot()->addPropTree("location", locationTree);
 }
 
@@ -633,19 +563,12 @@ void DllServer::ensureAvailable(const char * name, DllLocationType location)
         bestLocation->getDllFilename(sourceName);
         copyFileLocally(dllName, sourceName);
         dllName.getRemotePath(remoteDllPath);
-
-        if (bestLocation->getLibFilename(sourceName))
-        {
-            copyFileLocally(libName, sourceName);
-            libName.getRemotePath(remoteLibPath);
-        }
-
-        doRegisterDll(name, "**Error**", remoteDllPath.str(), remoteLibPath.str());
+        doRegisterDll(name, "**Error**", remoteDllPath.str());
         assertex(isAvailable(name) >= DllLocationLocal);
     }
 }
 
-IDllLocation * DllServer::getBestMatch(const char * name)
+IDllLocation * DllServerBase::getBestMatch(const char * name)
 {
     Owned<DllEntry> match = doGetEntry(name);
     if (!match)
@@ -654,26 +577,16 @@ IDllLocation * DllServer::getBestMatch(const char * name)
     return match->getBestLocation();
 }
 
-
-IDllLocation * DllServer::getBestMatchEx(const char * name)
-{
-    IDllLocation * location = getBestMatch(name);
-    if (!location)
-        throwError1(DSVERR_CouldNotFindDll, name);
-    return location;
-}
-
-
-IDllEntry * DllServer::getEntry(const char * name)
+IDllEntry * DllServerBase::getEntry(const char * name)
 {
     return doGetEntry(name);
 }
 
 
-void DllServer::getDll(const char * name, MemoryBuffer & dllText)
+void DllServerBase::getDll(const char * name, MemoryBuffer & dllText)
 {
     RemoteFilename filename;
-    Owned<IDllLocation> match = getBestMatchEx(name);
+    Owned<IDllLocation> match = getBestMatch(name);
     match->getDllFilename(filename);
 
     Owned<IFile> file = createIFile(filename);
@@ -681,32 +594,7 @@ void DllServer::getDll(const char * name, MemoryBuffer & dllText)
     read(io, 0, (size32_t)-1, dllText);
 }
 
-void DllServer::getLibrary(const char * name, MemoryBuffer & libText)
-{
-    RemoteFilename filename;
-    Owned<IDllLocation> match = getBestMatchEx(name);
-    if (!match->getLibFilename(filename))
-        throwError1(DSVERR_NoAssociatedLib, name);
-
-    Owned<IFile> file = createIFile(filename);
-    OwnedIFileIO io = file->open(IFOread);
-    read(io, 0, (size32_t)-1, libText);
-}
-
-void DllServer::getLocalLibraryName(const char * name, StringBuffer & libraryName)
-{
-    RemoteFilename filename;
-    Owned<IDllLocation> match = getBestMatchEx(name);
-    if (match->queryLocation() < DllLocationLocal)
-        throwError1(DSVERR_LibNotLocal, name);
-
-    if (!match->getLibFilename(filename))
-        throwError1(DSVERR_NoAssociatedLib, name);
-
-    filename.getLocalPath(libraryName);
-}
-
-DllLocationType DllServer::isAvailable(const char * name)
+DllLocationType DllServerBase::isAvailable(const char * name)
 {
     try
     {
@@ -721,27 +609,22 @@ DllLocationType DllServer::isAvailable(const char * name)
     return DllLocationNowhere;
 }
 
-ILoadedDllEntry * DllServer::loadDll(const char * name, DllLocationType type)
+ILoadedDllEntry * DllServerBase::loadDll(const char * name, DllLocationType type)
 {
     return doLoadDll(name, type, false);
 }
 
-ILoadedDllEntry * DllServer::loadDllResources(const char * name, DllLocationType type)
+ILoadedDllEntry * DllServerBase::loadDllResources(const char * name, DllLocationType type)
 {
     return doLoadDll(name, type, true);
 }
 
-ILoadedDllEntry * DllServer::doLoadDll(const char * name, DllLocationType type, bool resourcesOnly)
+ILoadedDllEntry * DllServerBase::doLoadDll(const char * name, DllLocationType type, bool resourcesOnly)
 {
-#ifdef _WIN32
-    if (type < DllLocationDomain)
-        type = DllLocationDomain;
-#else
     if (type < DllLocationLocal)
         type = DllLocationLocal;
-#endif
     ensureAvailable(name, type);
-    Owned<IDllLocation> location = getBestMatchEx(name);
+    Owned<IDllLocation> location = getBestMatch(name);
     RemoteFilename rfile;
     location->getDllFilename(rfile);
     StringBuffer x;
@@ -750,7 +633,7 @@ ILoadedDllEntry * DllServer::doLoadDll(const char * name, DllLocationType type, 
     return createDllEntry(x.str(), false, NULL, resourcesOnly);
 }
 
-void DllServer::removeDll(const char * name, bool removeDlls, bool removeDirectory)
+void DllServerBase::removeDll(const char * name, bool removeDlls, bool removeDirectory)
 {
     Owned<IDllEntry> entry = getEntry(name);
     if (entry)
@@ -759,12 +642,101 @@ void DllServer::removeDll(const char * name, bool removeDlls, bool removeDirecto
 
 void DllServer::registerDll(const char * name, const char * kind, const char * dllLocation)
 {
-    doRegisterDll(name, kind, dllLocation, NULL);
+    doRegisterDll(name, kind, dllLocation);
 }
 
 //---------------------------------------------------------------------------
 
-static DllServer * dllServer;
+class SharedVolumeDllServer : public DllServerBase
+{
+public:
+    SharedVolumeDllServer(const char * _mountPath) : DllServerBase(_mountPath) {};
+
+    virtual void ensureAvailable(const char * name, DllLocationType location) override;
+    virtual void registerDll(const char * name, const char * kind, const char * dllPath) override;
+};
+
+void SharedVolumeDllServer::ensureAvailable(const char * name, DllLocationType location)
+{
+    Owned<DllEntry> match = doGetEntry(name);
+    if (!match)
+        throwError1(DSVERR_CouldNotFindDll, name);
+    // MORE - if we still want to have roxie copy to directory, may need code here
+#ifdef _DEBUG
+    Owned<IDllLocation> bestLocation = match->getBestLocation();
+    assertex (bestLocation->queryLocation() >= location);
+#endif
+}
+
+void SharedVolumeDllServer::registerDll(const char * name, const char * kind, const char * dllPath)
+{
+    RemoteFilename dllRemote;
+    dllRemote.setRemotePath(dllPath);
+    assertex(dllRemote.isLocal());
+    StringBuffer sourceLocalPath;
+
+    dllRemote.getLocalPath(sourceLocalPath);
+
+    StringBuffer mountPath(rootDir);
+    addPathSepChar(mountPath);
+    splitFilename(sourceLocalPath.str(),NULL,NULL,&mountPath,&mountPath);
+
+    // Copy file to mountpath, if not already there
+    OwnedIFile source = createIFile(dllRemote);
+    OwnedIFile target = createIFile(mountPath);
+    if (!target->exists())
+    {
+        source->copyTo(target, 0, NULL, true);
+    }
+
+    Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);
+    if (conn)
+    {
+        /* check the entry doesn't exist already....
+         * Ideally the connection above would be a RTM_LOCK_READ and be changed to a RTM_LOCK_WRITE only when 'location' not found
+         */
+        Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("location");
+        ForEach(*iter)
+        {
+            IPropertyTree & cur = iter->query();
+            if ((stricmp(cur.queryProp("@ip"),"localhost") == 0) &&
+                (stricmp(cur.queryProp("@dll"),mountPath.str()) == 0))
+                return;
+        }
+    }
+    else
+    {
+        /* in theory, two clients/threads could get here at the same time
+         * in practice only one client/thread will be adding a unique named generated dll
+         */
+        StringBuffer xpath;
+        xpath.append("/GeneratedDlls/");
+        getMangledTag(xpath, name);
+
+        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, CONNECTION_TIMEOUT));
+        assertex(conn); // RTM_CREATE_QUERY will create GeneratedDlls parent node if it doesn't exist.
+
+        IPropertyTree * entry = conn->queryRoot();
+        entry->setProp("@name", name);
+        entry->setProp("@kind", kind);
+
+        Owned<IJlibDateTime> now = createDateTimeNow();
+        StringBuffer nowText;
+        StringBufferAdaptor strval(nowText);
+        now->getString(strval);
+        entry->setProp("@created", nowText.str());
+    }
+
+    IPropertyTree * locationTree = createPTree("location");
+    locationTree->setProp("@ip", "localhost");
+    locationTree->setProp("@dll", mountPath.str());
+
+    conn->queryRoot()->addPropTree("location", locationTree);
+}
+
+//---------------------------------------------------------------------------
+
+static IDllServer * dllServer;
 CriticalSection dllServerCrit;
 
 IDllServer & queryDllServer()
@@ -772,16 +744,25 @@ IDllServer & queryDllServer()
     CriticalBlock b(dllServerCrit);
     if (!dllServer)
     {
-        const char* dllserver_root = getenv("DLLSERVER_ROOT");
-        StringBuffer dir;
-        if(dllserver_root == NULL)
+        if (isCloud())
         {
-            if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
-                dllserver_root = dir.str();
-            else
-                dllserver_root = DEFAULT_SERVER_ROOTDIR;
+            const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+            assertex(dllserver_root != nullptr);
+            dllServer = new SharedVolumeDllServer(dllserver_root);
         }
-        initDllServer(dllserver_root);
+        else
+        {
+            const char* dllserver_root = getenv("DLLSERVER_ROOT");
+            StringBuffer dir;
+            if(dllserver_root == NULL)
+            {
+                if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
+                    dllserver_root = dir.str();
+                else
+                    dllserver_root = DEFAULT_SERVER_ROOTDIR;
+            }
+            dllServer = new DllServer(dllserver_root);
+        }
     }
 
     return *dllServer;
@@ -789,7 +770,7 @@ IDllServer & queryDllServer()
 
 void closeDllServer()
 {
-    hostDomain.clear();
+    CriticalBlock b(dllServerCrit);
     if (dllServer)
     {
         dllServer->Release();
@@ -848,27 +829,4 @@ void cleanUpOldDlls()
     }
 }
 
-
-void testDllServer()
-{
-    IDllServer & server = queryDllServer();
-    Owned<IDllEntry> oldentry2 = server.getEntry("WorkUnit1");
-    if (oldentry2)
-        oldentry2->remove(false, false);
-    server.registerDll("WorkUnit1","workunit","\\\\ghalliday\\c$\\edata\\ecl\\regress\\process0.dll");
-    assertex(server.isAvailable("WorkUnit1") == DllLocationLocal);
-    server.ensureAvailable("WorkUnit1",DllLocationLocal);
-    server.registerDll("WorkUnit1","workunit","\\\\1.1.1.1\\c$\\edata\\ecl\\regress\\process0.dll");
-
-    const char * abcFilename = "\\\\127.0.0.1\\c$\\temp\\dlltest\abc";
-    Owned<IFile> temp = createIFile(abcFilename);
-    recursiveCreateDirectoryForFile(abcFilename);
-    Owned<IFileIO> io = temp->open(IFOcreate);
-    io->write(0, 10, "abcdefghij");
-    io.clear();
-    server.registerDll("WorkUnitAbc","workunit",abcFilename);
-    server.removeDll("WorkUnitAbc", true, true);
-
-    cleanUpOldDlls();
-}
 

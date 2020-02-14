@@ -12,8 +12,27 @@ spec:
       labels:
         run: eclccserver
     spec:
+      volumes:
+      - name: dllserver-pv-storage
+        persistentVolumeClaim:
+          claimName: dllserver-pv-claim
+
+      initContainers:
+      # This is a bit of a hack, to ensure that the persistent storage mounted for dllserver
+      # is writable. This is not something we would want to do if using anything other than
+      # local storage (which is only sensible on single-node systems).
+      - name: volume-mount-hack
+        image: busybox
+        command: ["sh", "-c", "chown -R 999:1000 /var/lib/HPCCSystems/queries"]
+        volumeMounts:
+        - mountPath: "/var/lib/HPCCSystems/queries"
+          name: dllserver-pv-storage
+
       containers:
       - name: eclccserver
-        image: "hpccsystems/eclccserver:{{ .Values.hpcc.version }}"
-        imagePullPolicy: {{ .Values.hpcc.pullPolicy }}
+        image: "hpccsystems/eclccserver:{{ .Values.hpcc.image.version }}"
+        imagePullPolicy: {{ .Values.hpcc.image.pullPolicy }}
+        volumeMounts:
+        - mountPath: "/var/lib/HPCCSystems/queries"
+          name: dllserver-pv-storage
 
