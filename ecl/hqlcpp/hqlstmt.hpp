@@ -224,9 +224,9 @@ public:
 
 //used when creating the statement graph
     virtual void            mergeScopeWithContainer() = 0;
+    virtual void            setForceOptimize(bool value) = 0;
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
-    virtual void            setOptimize(bool value) = 0;
     virtual void            finishedFramework() = 0;
 };
 

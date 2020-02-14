@@ -266,9 +266,9 @@ MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classc
 {
     stmt = ctx.addQuotedFunction(text, (flags & MFdynamicproto) != 0);
     if (flags & MFoptimize)
-        stmt->setOptimize(true);
+        stmt->setForceOptimize(true);
     else if (flags & MFnooptimize)
-        stmt->setOptimize(false);
+        stmt->setForceOptimize(false);
 }
 
 MemberFunction::~MemberFunction() noexcept(false)
@@ -279,10 +279,12 @@ MemberFunction::~MemberFunction() noexcept(false)
     {
         //This estimate is before the peephole optimize is applied, so may be a large over estimate
         unsigned estimatedSize = calcTotalChildren(stmt);
+        //If the function is smaller than the optimize threshold then force optimization on
         if (maxOptimizeSize && (estimatedSize <= maxOptimizeSize))
-            stmt->setOptimize(true);
+            stmt->setForceOptimize(true);
+        //If the function is larger than the no-optimize threshold then force optimization off
         else if (minNoOptimizeSize && (estimatedSize >= minNoOptimizeSize))
-            stmt->setOptimize(false);
+            stmt->setForceOptimize(false);
     }
 
     //Do not process the aliases if we are aborting from an error
