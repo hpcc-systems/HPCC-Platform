@@ -36,7 +36,7 @@
 unsigned udpOutQsPriority = 0;
 unsigned udpMaxRetryTimedoutReqs = 0; // 0 means off (keep retrying forever)
 unsigned udpRequestToSendTimeout = 0; // value in milliseconds - 0 means calculate from query timeouts
-unsigned udpRequestToSendAckTimeout = 10; // value in milliseconds
+unsigned udpRequestToSendAckTimeout = 1000; // value in milliseconds
 bool udpSnifferEnabled = true;
 
 using roxiemem::DataBuffer;
@@ -259,8 +259,13 @@ public:
     inline void pushData(unsigned queue, DataBuffer *buffer)
     {
         output_queue[queue].pushOwn(buffer);
-        if (!packetsQueued++)
+        if (!packetsQueued)
+        {
+            packetsQueued++;
             requestToSend();
+        }
+        else
+            packetsQueued++;
     }
 
     DataBuffer *popQueuedData() 

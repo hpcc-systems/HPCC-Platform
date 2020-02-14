@@ -293,6 +293,8 @@ void TopologyManager::update()
 
 const ITopologyServer &TopologyManager::getCurrent()
 {
+    if (!useDynamicServers)
+        return *currentTopology.getLink();
     SpinBlock b(lock);
     return *currentTopology.getLink();
 }

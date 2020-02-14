@@ -43,6 +43,7 @@ void usage()
     printf(
         "--jumboFrames\n"
         "--useAeron\n"
+        "--multicastip a.b.c.d\n"
         "--udpLocalWriteSocketSize nn\n"
         "--udpRetryBusySenders nn\n"
         "--maxPacketsPerSender nn\n"
@@ -61,8 +62,8 @@ void usage()
     exit(1);
 }
 
-const char *multicastIPStr = "239.1.1.1";
-IpAddress multicastIP(multicastIPStr);
+char multicastIPStr[256] = { "239.1.1.1" };
+IpAddress multicastIP;
 unsigned udpNumQs = 1;
 unsigned numNodes;
 unsigned myIndex;
@@ -623,7 +624,8 @@ int main(int argc, char * argv[] )
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
 
     {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
+        // Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("/tmp", "uttest");
         lf->setCreateAliasFile(false);
         lf->setRolling(false);
         lf->setAppend(false);
@@ -643,6 +645,7 @@ int main(int argc, char * argv[] )
 //  queryLogMsgManager()->enterQueueingMode();
 //  queryLogMsgManager()->setQueueDroppingLimit(512, 32);
     udpRequestToSendTimeout = 5000;
+    udpRequestToSendAckTimeout = 1000;
     for (c = 1; c < argc; c++)
     {
         const char *ip = argv[c];
@@ -670,6 +673,13 @@ int main(int argc, char * argv[] )
             else if (strcmp(ip, "--useAeron")==0)
             {
                 useAeron = true;
+            }
+            else if (strcmp(ip, "--multicastip")==0)
+            {
+                c++;
+                if (c==argc)
+                    usage();
+                strcpy(multicastIPStr, argv[c]);
             }
             else if (strcmp(ip, "--rawSpeedTest")==0)
             {
@@ -768,6 +778,9 @@ int main(int argc, char * argv[] )
             printf("Added node %s\n", ip);
         }
     }
+
+    multicastIP.ipset(multicastIPStr);
+
     if (doRawTest)
         rawSendTest();
     else if (doSortSimulator)

@@ -268,7 +268,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     unsigned int res;
                     sniff_msg msg;
-                    sniffer_socket->read(&msg, 1, sizeof(msg), res, 5);
+                    sniffer_socket->read(&msg, sizeof(msg), sizeof(msg), res, 5);
                     update(msg.nodeIp.getNodeAddress(), msg.cmd == sniffType::busy);
                 }
                 catch (IException *e) 
@@ -346,6 +346,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (max_transfer > maxSlotsPerSender)
                 max_transfer = maxSlotsPerSender;
             unsigned timeout = ((max_transfer * DATA_PAYLOAD) / 100) + 10; // in ms assuming mtu package size with 100x margin on 100 Mbit network // MORE - hideous!
+            if (timeout < udpRequestToSendTimeout)
+                timeout = udpRequestToSendTimeout;
             currentRequester = requester;
             requester->requestToSend(max_transfer, myNode.getNodeAddress());
             return timeout;
@@ -595,7 +597,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     unsigned int res;
                     b = bufferManager->allocate();
-                    receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
+                    receive_socket->read(b->data, sizeof(UdpPacketHeader), DATA_PAYLOAD, res, 5);
                     parent.inflight--;
                     // MORE - reset it to zero if we fail to read data, or if avail_read returns 0.
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
@@ -692,14 +694,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             }
             i = 0;
         }
-        else if (i >= free)
+        else if (i > free)
         {
             if (udpTraceLevel)
                 DBGLOG("UdpReceiver: ERROR: more packets in flight (%d) than slots free (%d)", i, free);  // Should never happen
             inflight = i = free-1;
         }
         if (i && udpTraceLevel > 1)
-            DBGLOG("UdpReceiver: adjusting free_slots to allow for %d in flight", i);
+            DBGLOG("UdpReceiver: adjusting free_slots to allow for %d in flight (%d)", i, free - i);
         return free - i;
     }
 

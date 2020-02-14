@@ -1133,6 +1133,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!numChannels)
                 throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
             IpAddress myIP(".");
+            // also set myNode here
+            myNode.setIp(myIP);
             for (unsigned port: farmerPorts)
             {
                 VStringBuffer xpath("./RoxieFarmProcess[@port='%u']", port);
