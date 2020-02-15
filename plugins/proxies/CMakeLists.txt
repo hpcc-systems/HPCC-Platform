@@ -20,6 +20,22 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION plu
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION plugins COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION plugins COMPONENT Runtime)
 
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrcleanlib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscorelib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_canadacleanlib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cmslib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_datalib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_dmslib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_entityscorelib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fingerprintlib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_hktlib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_namelib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ofaclib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ziplib.eclmod DESTINATION plugins COMPONENT Runtime)
+
+
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_date.eclmod DESTINATION plugins COMPONENT Runtime)
+
 IF (USE_OPENSSL)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
 ENDIF()
