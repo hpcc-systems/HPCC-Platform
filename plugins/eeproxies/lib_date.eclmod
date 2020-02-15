@@ -1,0 +1,91 @@
+/*##############################################################################
+
+    Copyright (C) <2010>  <LexisNexis Risk Data Management Inc.>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+export Date_i2_YYYYMM(unsigned2 i) := if(i=0,
+                      '      ',
+                      (string4)((i-1) div 12 + 1900)+intformat(((i-1) % 12)+1,2,1));
+
+export Date_MMDDYY_I2(string6 s) := IF ( (unsigned8)s=0,
+                      0,
+                      (unsigned8)(IF(s[5..6]<'40','20','19')+s[5..6]+s[1..4]));
+
+export date_overlap_first(unsigned8 lf, unsigned8 ll,
+                          unsigned8 rf, unsigned8 rl) :=
+
+  MAP ( lf > rl => 0,
+        rf > ll => 0,
+        lf > rf => lf,
+        rf );
+
+export date_overlap_last(unsigned8 lf, unsigned8 ll,
+                         unsigned8 rf, unsigned8 rl) :=
+
+  MAP ( lf > rl => 0,
+        rf > ll => 0,
+        ll > rl => rl,
+        ll );
+
+export date_overlap(unsigned8 lf, unsigned8 ll,
+                    unsigned8 rf, unsigned8 rl) :=
+
+  MAP( date_overlap_last(lf,ll,rf,rl)=0 => if (date_overlap_first(lf,ll,rf,rl)=0,0,1),
+       date_overlap_first(lf,ll,rf,rl)=0 => 1,
+       (date_overlap_last(lf,ll,rf,rl) div 100 - date_overlap_first(lf,ll,rf,rl) div 100) * 12 +
+        date_overlap_last(lf,ll,rf,rl)%100-date_overlap_first(lf,ll,rf,rl) % 100);
+
+export Date_YYYYMM_i2(string6 dte) := if(dte='',0,((integer)(dte[1..4])-1900)*12+(integer)(dte[5..6]));
+
+
+export LeapYear(integer2 year) := year % 4 = 0 and ( year % 100 != 0 or year % 400 = 0);
+
+INTEGER2 dayofyr(integer1 month,integer1 day) :=
+        CHOOSE( month,0,31,59,90,120,151,181,212,243,273,304,334 ) + day;
+
+export INTEGER2 DayOfYear(integer4 year,integer1 month,integer1 day) :=
+        dayofyr(month,day) + IF( LeapYear(year) and month > 2, 1, 0);
+
+export DaysSince1900(integer2 year, integer1 month, integer1 day) :=
+  ((integer)year-1900)*365+(year-1901) div 4 + DayOfYear(year,month,day);
+
+//this works only with dates in YYYYMMDD format
+export integer8 DaysApart(string8 d1, string8 d2) :=
+    abs(DaysSince1900((integer2)(d1[1..4]), (integer1)(d1[5..6]), (integer1)(d1[7..8])) -
+    DaysSince1900((integer2)(d2[1..4]), (integer1)(d2[5..6]), (integer1)(d2[7..8])));
+
+export EarliestDate(integer l, integer r) := if ( l=0 or (r<>0 and r<l),r,l);
+
+export earliestdatestring(string20 l,string20 r) := if ( l='' or r<>'' and r<l,r,l);
+
+export Format_Date(integer2 year, integer1 month, integer1 day) :=
+          (string4)year+'/'+intformat(month,2,1)+'/'+intformat(day,2,1);
+
+import lib_stringlib;
+
+// WORKS FOR DATES IN FORMAT OF YYYYMMDD
+today := lib_stringlib.StringLib.getdateYYYYMMDD();
+
+thismonth := (integer2)(today[5..6]);
+thisday := (integer2)(today[7..8]);
+thisyear := (integer2)(today[1..4]);
+
+export getage(string8 dob) := if(thismonth < (integer2)(dob[5..6]) or
+          (thismonth = (integer2)(dob[5..6]) and thisday < (integer2)(dob[7..8])),
+          thisyear - (integer2)(dob[1..4]) - 1,
+          thisyear - (integer2)(dob[1..4]));
+
+export LatestDate(integer l, integer r) := if ( r>l,r,l);

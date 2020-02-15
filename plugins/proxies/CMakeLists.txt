@@ -13,12 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION plugins COMPONENT Runtime)
+set (proxies_out_dir "plugins")
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION  ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 
 IF (USE_OPENSSL)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
