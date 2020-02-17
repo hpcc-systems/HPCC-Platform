@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Environment>
   <Software>
-    <EspProcess build="_" componentfilesDir="/opt/HPCCSystems/componentfiles" controlPort="8010" daliServers="dali:7070" 
+    <EspProcess build="_" componentfilesDir="/opt/HPCCSystems/componentfiles" controlPort="8010" daliServers="mydali:7070" 
                 description="ESP server" enableSEHMapping="true" formOptionsAccess="false" 
                 httpConfigAccess="true" logLevel="1" logRequests="false" logResponses="false" maxBacklogQueueSize="200" maxConcurrentThreads="0" 
                 name="myesp" perfReportDelay="60" portalurl="http://hpccsystems.com/download" 
