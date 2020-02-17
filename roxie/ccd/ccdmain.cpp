@@ -409,7 +409,6 @@ public:
     }
 };
 
-static SocketEndpointArray topologyServers;
 static std::vector<RoxieEndpointInfo> myRoles;
 static std::vector<unsigned> farmerPorts;
 static std::vector<std::pair<unsigned, unsigned>> slaveChannels;
@@ -536,6 +535,8 @@ static constexpr const char * defaultJson = R"!!({
     "queueNames": "roxie.roxie",
     "resolveLocally": true,
     "serverPorts": "9876,0",
+    "roxieMulticastEnabled": false,
+    "useAeron": false,
     "RoxieFarmProcess":  {
       "name": "default",
       "port": 9876,
@@ -675,15 +676,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         const char *topos = topology->queryProp("@topologyServers");
+        StringArray topoValues;
         if (topos)
-        {
-            StringArray topoValues;
             topoValues.appendList(topos, ",", true);
-            ForEachItemIn(idx, topoValues)
-            {
-                topologyServers.append(SocketEndpoint(topoValues.item(idx)));  // MORE - in cloud case we may need to explicitly find all pods for a single service?
-            }
-        }
         const char *serverPorts = topology->queryProp("@serverPorts");
         if (serverPorts)
         {
@@ -858,7 +853,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             envInstallNASHooks(nas);
         }
         useDynamicServers = topology->getPropBool("@useDynamicServers", !useOldTopology);
-        useAeron = topology->getPropBool("@useAeron", useDynamicServers);
+        useAeron = topology->getPropBool("@useAeron", false);
         localSlave = topology->getPropBool("@localSlave", false);
         numChannels = topology->getPropInt("@numChannels", 0);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
@@ -930,7 +925,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
         
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true);   // enable use of multicast for sending requests to slaves
+        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to slaves
         if (udpSnifferEnabled && !roxieMulticastEnabled)
         {
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
@@ -1128,6 +1123,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!numChannels)
                 throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
             IpAddress myIP(".");
+            myNode.setIp(myIP);
             for (unsigned port: farmerPorts)
             {
                 VStringBuffer xpath("RoxieFarmProcess[@port='%u']", port);
@@ -1162,9 +1158,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
-        if (useDynamicServers && topologyServers.length())
+        if (useDynamicServers && topoValues.length())
         {
-            startTopoThread(topologyServers, myRoles, traceLevel);
+            startTopoThread(topoValues, myRoles, traceLevel);
         }
         ROQ = createOutputQueueManager(snifferChannel, numSlaveThreads);
         ROQ->setHeadRegionSize(headRegionSize);
