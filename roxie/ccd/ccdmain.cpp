@@ -1122,6 +1122,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             else
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
         }
+        if (useAeron)
+            setAeronProperties(topology);
 
         if (useDynamicServers)
         {
