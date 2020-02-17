@@ -17,7 +17,7 @@ WORKDIR /hpcc-dev
 RUN mkdir build
 WORKDIR /hpcc-dev/build
 
-RUN JAVA_HOME=`/usr/libexec/java_home` cmake /hpcc-dev/HPCC-Platform -Wno-dev 
+RUN JAVA_HOME=`/usr/libexec/java_home` cmake /hpcc-dev/HPCC-Platform -Wno-dev DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 RUN make -j$(nproc) jlib
 RUN make -j$(nproc) esp

@@ -20,6 +20,7 @@ fi
 
 if [[ -z ${BUILD_VER} ]] ; then
   echo Current tag could not be located
+  echo Perhaps you meant to run incr.sh ?
   exit 2
 fi
 
@@ -52,6 +53,7 @@ build_image dali ${BUILD_VER}
 build_image esp ${BUILD_VER}
 build_image eclccserver ${BUILD_VER}
 build_image eclagent ${BUILD_VER}
+build_image toposerver ${BUILD_VER}
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_VER}"

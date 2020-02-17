@@ -36,6 +36,10 @@ RUN dpkg -i *.deb ; \
     apt-get clean && \
     rm *.deb
 
+RUN apt-get install -y \
+    dnsutils \
+    nano 
+
 USER hpcc
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
