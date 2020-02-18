@@ -19,6 +19,7 @@
 #include "udplib.hpp"
 #include "udptopo.hpp"
 #include "roxie.hpp"
+#include "portlist.h"
 #include <thread>
 #include <string>
 #include <sstream>
@@ -208,15 +209,15 @@ class TopologyManager
 {
 public:
     TopologyManager() { currentTopology.setown(new CTopologyServer); };
-    void setServers(const SocketEndpointArray &_topoServers);
+    void setServers(const StringArray &_topoServers);
     void setRoles(const std::vector<RoxieEndpointInfo> &myRoles);
     const ITopologyServer &getCurrent();
 
-    void update();
+    bool update();
 private:
     Owned<const ITopologyServer> currentTopology;
     SpinLock lock;
-    SocketEndpointArray topoServers;
+    StringArray topoServers;
     const unsigned topoConnectTimeout = 1000;
     const unsigned maxReasonableResponse = 32*32*1024;  // At ~ 32 bytes per entry, 1024 channels and 32-way redundancy that's a BIG cluster!
     StringBuffer md5;
@@ -225,59 +226,65 @@ private:
 
 static TopologyManager topologyManager;
 
-void TopologyManager::update()
+bool TopologyManager::update()
 {
+    bool updated = false;
     ForEachItemIn(idx, topoServers)
     {
         try
         {
-            Owned<ISocket> topo = ISocket::connect_timeout(topoServers.item(idx), topoConnectTimeout);
-            if (topo)
+            SocketEndpointArray eps;
+            eps.fromName(topoServers.item(idx), TOPO_SERVER_PORT);
+            ForEachItemIn(idx, eps)
             {
-                unsigned topoBufLen = md5.length()+topoBuf.length();
-                _WINREV(topoBufLen);
-                topo->write(&topoBufLen, 4);
-                topo->write(md5.str(), md5.length());
-                topo->write(topoBuf.str(), topoBuf.length());
-                unsigned responseLen;
-                topo->read(&responseLen, 4);
-                _WINREV(responseLen);
-                if (!responseLen)
+                const SocketEndpoint &ep = eps.item(idx);
+                Owned<ISocket> topo = ISocket::connect_timeout(ep, topoConnectTimeout);
+                if (topo)
                 {
-                    StringBuffer s;
-                    DBGLOG("Unexpected empty response from topology server %s", topoServers.item(idx).getUrlStr(s).str());
-                }
-                else
-                {
-                    if (responseLen > maxReasonableResponse)
+                    unsigned topoBufLen = md5.length()+topoBuf.length();
+                    _WINREV(topoBufLen);
+                    topo->write(&topoBufLen, 4);
+                    topo->write(md5.str(), md5.length());
+                    topo->write(topoBuf.str(), topoBuf.length());
+                    unsigned responseLen;
+                    topo->read(&responseLen, 4);
+                    _WINREV(responseLen);
+                    if (!responseLen)
                     {
-                        StringBuffer s;
-                        DBGLOG("Unexpectedly large response (%u) from topology server %s", responseLen, topoServers.item(idx).getUrlStr(s).str());
+                        DBGLOG("Unexpected empty response from topology server %s", topoServers.item(idx));
                     }
                     else
                     {
-                        MemoryBuffer mb;
-                        char *mem = (char *)mb.reserveTruncate(responseLen);
-                        topo->read(mem, responseLen);
-                        if (responseLen>=md5.length() && mem[0]=='=')
+                        if (responseLen > maxReasonableResponse)
                         {
-                            if (md5.length()==0 || memcmp(mem, md5.str(), md5.length())!=0)
-                            {
-                                const char *eol = strchr(mem, '\n');
-                                if (eol)
-                                {
-                                    eol++;
-                                    md5.clear().append(eol-mem, mem);  // Note: includes '\n'
-                                    Owned<const ITopologyServer> newServer = new CTopologyServer(eol);
-                                    SpinBlock b(lock);
-                                    currentTopology.swap(newServer);
-                                }
-                            }
+                            DBGLOG("Unexpectedly large response (%u) from topology server %s", responseLen, topoServers.item(idx));
                         }
                         else
                         {
-                            StringBuffer s;
-                            DBGLOG("Unexpected response from topology server %s: %.*s", topoServers.item(idx).getUrlStr(s).str(), responseLen, mem);
+                            MemoryBuffer mb;
+                            char *mem = (char *)mb.reserveTruncate(responseLen);
+                            topo->read(mem, responseLen);
+                            if (responseLen>=md5.length() && mem[0]=='=')
+                            {
+                                if (md5.length()==0 || memcmp(mem, md5.str(), md5.length())!=0)
+                                {
+                                    const char *eol = strchr(mem, '\n');
+                                    if (eol)
+                                    {
+                                        eol++;
+                                        md5.clear().append(eol-mem, mem);  // Note: includes '\n'
+                                        Owned<const ITopologyServer> newServer = new CTopologyServer(eol);
+                                        SpinBlock b(lock);
+                                        currentTopology.swap(newServer);
+                                        updated = true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                StringBuffer s;
+                                DBGLOG("Unexpected response from topology server %s: %.*s", topoServers.item(idx), responseLen, mem);
+                            }
                         }
                     }
                 }
@@ -285,10 +292,12 @@ void TopologyManager::update()
         }
         catch (IException *E)
         {
+            DBGLOG("While connecting to %s", topoServers.item(idx));
             EXCLOG(E);
             E->Release();
         }
     }
+    return updated;
 }
 
 const ITopologyServer &TopologyManager::getCurrent()
@@ -297,7 +306,7 @@ const ITopologyServer &TopologyManager::getCurrent()
     return *currentTopology.getLink();
 }
 
-void TopologyManager::setServers(const SocketEndpointArray &_topoServers)
+void TopologyManager::setServers(const StringArray &_topoServers)
 {
     ForEachItemIn(idx, _topoServers)
         topoServers.append(_topoServers.item(idx));
@@ -306,6 +315,7 @@ void TopologyManager::setServers(const SocketEndpointArray &_topoServers)
 void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topoBuf.clear();
+    DBGLOG("TopologyManager::setRoles - %d roles", (int) myRoles.size());
     for (const auto &role : myRoles)
     {
         switch (role.role)
@@ -344,9 +354,9 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void startTopoThread(const SocketEndpointArray &topoServers, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
+extern UDPLIB_API void startTopoThread(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
 {
-    topologyManager.setServers(topoServers);
+    topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
     topoThread = std::thread([traceLevel]()
     {
@@ -354,9 +364,9 @@ extern UDPLIB_API void startTopoThread(const SocketEndpointArray &topoServers, c
         unsigned waitTime = 1000;  // First time around we don't wait as long, so that system comes up faster
         while (!abortTopo.wait(waitTime))
         {
-            topologyManager.update();
-            if (traceLevel > 2)
+            if (topologyManager.update() && traceLevel)
             {
+                DBGLOG("Topology information updated:");
                 Owned<const ITopologyServer> c = getTopology();
                 const SocketEndpointArray &eps = c->querySlaves(0);
                 ForEachItemIn(idx, eps)
