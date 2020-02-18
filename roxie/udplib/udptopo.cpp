@@ -19,6 +19,7 @@
 #include "udplib.hpp"
 #include "udptopo.hpp"
 #include "roxie.hpp"
+#include "portlist.h"
 #include <thread>
 #include <string>
 #include <sstream>
@@ -232,53 +233,58 @@ bool TopologyManager::update()
     {
         try
         {
-            SocketEndpoint ep(topoServers.item(idx));  // MORE - there may be more than one IP
-            Owned<ISocket> topo = ISocket::connect_timeout(ep, topoConnectTimeout);
-            if (topo)
+            SocketEndpointArray eps;
+            eps.fromName(topoServers.item(idx), TOPO_SERVER_PORT);
+            ForEachItemIn(idx, eps)
             {
-                unsigned topoBufLen = md5.length()+topoBuf.length();
-                _WINREV(topoBufLen);
-                topo->write(&topoBufLen, 4);
-                topo->write(md5.str(), md5.length());
-                topo->write(topoBuf.str(), topoBuf.length());
-                unsigned responseLen;
-                topo->read(&responseLen, 4);
-                _WINREV(responseLen);
-                if (!responseLen)
+                const SocketEndpoint &ep = eps.item(idx);
+                Owned<ISocket> topo = ISocket::connect_timeout(ep, topoConnectTimeout);
+                if (topo)
                 {
-                    DBGLOG("Unexpected empty response from topology server %s", topoServers.item(idx));
-                }
-                else
-                {
-                    if (responseLen > maxReasonableResponse)
+                    unsigned topoBufLen = md5.length()+topoBuf.length();
+                    _WINREV(topoBufLen);
+                    topo->write(&topoBufLen, 4);
+                    topo->write(md5.str(), md5.length());
+                    topo->write(topoBuf.str(), topoBuf.length());
+                    unsigned responseLen;
+                    topo->read(&responseLen, 4);
+                    _WINREV(responseLen);
+                    if (!responseLen)
                     {
-                        DBGLOG("Unexpectedly large response (%u) from topology server %s", responseLen, topoServers.item(idx));
+                        DBGLOG("Unexpected empty response from topology server %s", topoServers.item(idx));
                     }
                     else
                     {
-                        MemoryBuffer mb;
-                        char *mem = (char *)mb.reserveTruncate(responseLen);
-                        topo->read(mem, responseLen);
-                        if (responseLen>=md5.length() && mem[0]=='=')
+                        if (responseLen > maxReasonableResponse)
                         {
-                            if (md5.length()==0 || memcmp(mem, md5.str(), md5.length())!=0)
-                            {
-                                const char *eol = strchr(mem, '\n');
-                                if (eol)
-                                {
-                                    eol++;
-                                    md5.clear().append(eol-mem, mem);  // Note: includes '\n'
-                                    Owned<const ITopologyServer> newServer = new CTopologyServer(eol);
-                                    SpinBlock b(lock);
-                                    currentTopology.swap(newServer);
-                                    updated = true;
-                                }
-                            }
+                            DBGLOG("Unexpectedly large response (%u) from topology server %s", responseLen, topoServers.item(idx));
                         }
                         else
                         {
-                            StringBuffer s;
-                            DBGLOG("Unexpected response from topology server %s: %.*s", topoServers.item(idx), responseLen, mem);
+                            MemoryBuffer mb;
+                            char *mem = (char *)mb.reserveTruncate(responseLen);
+                            topo->read(mem, responseLen);
+                            if (responseLen>=md5.length() && mem[0]=='=')
+                            {
+                                if (md5.length()==0 || memcmp(mem, md5.str(), md5.length())!=0)
+                                {
+                                    const char *eol = strchr(mem, '\n');
+                                    if (eol)
+                                    {
+                                        eol++;
+                                        md5.clear().append(eol-mem, mem);  // Note: includes '\n'
+                                        Owned<const ITopologyServer> newServer = new CTopologyServer(eol);
+                                        SpinBlock b(lock);
+                                        currentTopology.swap(newServer);
+                                        updated = true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                StringBuffer s;
+                                DBGLOG("Unexpected response from topology server %s: %.*s", topoServers.item(idx), responseLen, mem);
+                            }
                         }
                     }
                 }
