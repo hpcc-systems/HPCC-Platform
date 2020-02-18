@@ -69,10 +69,6 @@
               xpointer="xpointer(//*[@id='The_ECL_Ide'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml"
-              xpointer="xpointer(//*[@id='Command_Line_ECL'])"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-
   <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
               xpointer="xpointer(//*[@id='ECL_CLI'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
