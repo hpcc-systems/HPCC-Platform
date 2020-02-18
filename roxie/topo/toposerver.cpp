@@ -269,6 +269,16 @@ void doServer(ISocket *socket)
     pinger.join();
 }
 
+static constexpr const char * defaultJson = R"!!({
+  "version": "1.0",
+  "TopoServer": {
+    "logdir": "",
+    "port": 9004,
+    "stdlog": true,
+    "traceLevel": 1
+  },
+})!!";
+
 int main(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
@@ -289,7 +299,6 @@ int main(int argc, const char *argv[])
     removeSentinelFile(sentinelFile);
     try
     {
-        Owned<IProperties> globals = createProperties(true);
         for (unsigned i=0; i<(unsigned)argc; i++)
         {
             if (stricmp(argv[i], "--help")==0 ||
@@ -304,38 +313,10 @@ int main(int argc, const char *argv[])
                     return EXIT_FAILURE;
                 }
             }
-            else
-                globals->loadProp(argv[i], true);  // We ignore unrecognized options for now
         }
 
         // locate settings xml file in runtime dir
-        char currentDirectory[_MAX_DIR];
-        if (!getcwd(currentDirectory, sizeof(currentDirectory)))
-        {
-            perror("getcwd failure");
-            return EXIT_FAILURE;
-        }
-        topologyFile.set(currentDirectory);
-        addNonEmptyPathSepChar(topologyFile);
-        topologyFile.append(PATHSEPCHAR).append("toposerver.xml");
-        IPropertyTree *topology;
-        if (checkFileExists(topologyFile.str()))
-            topology = createPTreeFromXMLFile(topologyFile.str(), ipt_lowmem);
-        else
-            topology = createPTreeFromXMLString(
-                "<TopoServerProcess port='9004' traceLevel='1'>"
-                "</TopoServerProcess>"
-                , ipt_lowmem
-                );
-        if (globals->hasProp("--traceLevel"))
-            topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
-        if (globals->hasProp("--port"))
-            topology->setProp("@port", globals->queryProp("--port"));
-        if (globals->hasProp("--stdlog"))
-            topology->setProp("@stdlog", globals->queryProp("--stdlog"));
-        if (globals->hasProp("--logdir"))
-            topology->setProp("@logdir", globals->queryProp("--logdir"));
-
+        Owned<IPropertyTree> topology = loadConfiguration(defaultJson, argv, "TopoServer", "TOPOSERVER", "toposerver.xml", nullptr);
         traceLevel = topology->getPropInt("@traceLevel", 1);
         topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
         if (topology->getPropBool("@stdlog", traceLevel != 0))
@@ -343,7 +324,7 @@ int main(int argc, const char *argv[])
         else
             removeLog();
         const char *logdir = topology->queryProp("@logdir");
-        if (logdir)
+        if (logdir && *logdir)
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir, "toposerver");
             lf->setMaxDetail(TopDetail);
