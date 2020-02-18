@@ -39,11 +39,11 @@
                }                     
                     ]]></xsl:text>
           </script>
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/resize/assets/skins/sam/resize.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/layout/assets/skins/sam/layout.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
-        <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/resize/assets/skins/sam/resize.css" />
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/layout/assets/skins/sam/layout.css" />
+        <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
+        <script type="text/javascript" src="files_/scripts/espdefault.js">&#160;</script>
         <script language="JavaScript">
           var app_name = '<xsl:value-of select="@appName"/>';
         </script>

@@ -22,9 +22,9 @@
         <html>
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-        <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
-        <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
+        <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+        <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
+        <script type="text/javascript" src="files_/scripts/espdefault.js">&#160;</script>
         <script language="JavaScript1.2">
         <xsl:text disable-output-escaping="yes"><![CDATA[
           function go(url)

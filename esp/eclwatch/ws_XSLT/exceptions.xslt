@@ -3,12 +3,12 @@
    <xsl:template match="/Exceptions">
       <html>
          <head>
-           <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-           <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
-           <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
-           <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css" />
-           <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
-           <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
+           <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
+           <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
+           <link rel="stylesheet" type="text/css" href="files_/css/eclwatch.css" />
+           <link rel="stylesheet" type="text/css" href="files_/yui/build/menu/assets/skins/sam/menu.css" />
+           <link rel="stylesheet" type="text/css" href="files_/yui/build/button/assets/skins/sam/button.css" />
+           <script type="text/javascript" src="files_/scripts/espdefault.js">&#160;</script>
            <script type="text/javascript"><xsl:text disable-output-escaping="yes"><![CDATA[
                     var index = 1;
                         function onLoad()

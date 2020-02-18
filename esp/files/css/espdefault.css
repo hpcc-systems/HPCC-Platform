@@ -66,12 +66,12 @@ a:active.espnavlink {
 .espnavcollapse 
 {
     width:18px;top:0;right:1;height:15px;position:absolute;zoom:1;
-    background:transparent url(/esp/files/yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -120px;border:1px solid #808080;
+    background:transparent url(../yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -120px;border:1px solid #808080;
 }
 .espnavexpand 
 {
     width:18px;top:0;right:1;height:15px;position:absolute;zoom:1;
-    background:transparent url(/esp/files/yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -140px;border:1px solid #808080;
+    background:transparent url(../yui/build/layout/assets/skins/sam/layout_sprite.png) no-repeat -20px -140px;border:1px solid #808080;
 }
 
 div.wugroup 
