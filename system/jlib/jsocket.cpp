@@ -6301,6 +6301,87 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
     return true;
 }
 
+bool SocketEndpointArray::fromName(const char *name, unsigned defport)
+{
+    // Lookup a single name that may resolve to multiple IPs in a headless service scenario
+    StringArray portSplit;
+    portSplit.appendList(name, ":");
+    switch (portSplit.ordinality())
+    {
+    case 2:
+        defport = atoi(portSplit.item(1));
+        name = portSplit.item(0);
+        // fallthrough
+    case 1:
+        break;
+    default:
+        throw MakeStringException(-1, "Invalid name %s SocketEndpointArray::fromName", name);
+    }
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
+    if (IP4only)
+#endif
+    {
+        CriticalBlock c(hostnamesect);
+        hostent * entry = gethostbyname(name);
+        if (entry && entry->h_addr_list[0])
+        {
+            unsigned ptr = 0;
+            for (;;)
+            {
+                ptr++;
+                if (entry->h_addr_list[ptr]==NULL)
+                    break;
+                SocketEndpoint ep;
+                ep.setNetAddress(sizeof(unsigned),entry->h_addr_list[ptr]);
+                ep.port = defport;
+                append(ep);
+            }
+        }
+        return ordinality()>0;
+    }
+#if defined(__linux__) || defined (__APPLE__) || defined(getaddrinfo)
+    struct addrinfo hints;
+    memset(&hints,0,sizeof(hints));
+    struct addrinfo  *addrInfo = NULL;
+    memset(&hints,0,sizeof(hints));
+    int ret = getaddrinfo(name, NULL , &hints, &addrInfo);
+    if (ret == 0)
+    {
+        struct addrinfo  *ai;
+        for (ai = addrInfo; ai; ai = ai->ai_next)
+        {
+            // DBGLOG("flags=%d, family=%d, socktype=%d, protocol=%d, addrlen=%d, canonname=%s",ai->ai_flags,ai->ai_family,ai->ai_socktype,ai->ai_protocol,ai->ai_addrlen,ai->ai_canonname?ai->ai_canonname:"NULL");
+            if (ai->ai_protocol == IPPROTO_IP)
+            {
+                switch (ai->ai_family)
+                {
+                    case AF_INET:
+                    {
+                        SocketEndpoint ep;
+                        ep.setNetAddress(sizeof(in_addr),&(((sockaddr_in *)ai->ai_addr)->sin_addr));
+                        ep.port = defport;
+                        append(ep);
+                        // StringBuffer s;
+                        // DBGLOG("Lookup %s found %s", name, ep.getUrlStr(s).str());
+                        break;
+                    }
+                case AF_INET6:
+                    {
+                        SocketEndpoint ep;
+                        ep.setNetAddress(sizeof(in_addr6),&(((sockaddr_in6 *)ai->ai_addr)->sin6_addr));
+                        ep.port = defport;
+                        append(ep);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    freeaddrinfo(addrInfo);
+#endif
+    return ordinality()>0;
+}
+
 void SocketEndpointArray::fromText(const char *text,unsigned defport) 
 {
     // this is quite complicated with (mixed) IPv4 and IPv6
