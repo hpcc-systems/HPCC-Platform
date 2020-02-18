@@ -269,15 +269,14 @@ void doServer(ISocket *socket)
     pinger.join();
 }
 
-static constexpr const char * defaultJson = R"!!({
-  "version": "1.0",
-  "TopoServer": {
-    "logdir": "",
-    "port": 9004,
-    "stdlog": true,
-    "traceLevel": 1
-  },
-})!!";
+static constexpr const char * defaultYaml = R"!!(
+  version: "1.0"
+  TopoServer:
+    logdir: ""
+    port: 9004
+    stdlog: true
+    traceLevel: 1
+)!!";
 
 int main(int argc, const char *argv[])
 {
@@ -316,7 +315,7 @@ int main(int argc, const char *argv[])
         }
 
         // locate settings xml file in runtime dir
-        Owned<IPropertyTree> topology = loadConfiguration(defaultJson, argv, "TopoServer", "TOPOSERVER", "toposerver.xml", nullptr);
+        Owned<IPropertyTree> topology = loadConfiguration(defaultYaml, argv, "TopoServer", "TOPOSERVER", "toposerver.xml", nullptr);
         traceLevel = topology->getPropInt("@traceLevel", 1);
         topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
         if (topology->getPropBool("@stdlog", traceLevel != 0))
