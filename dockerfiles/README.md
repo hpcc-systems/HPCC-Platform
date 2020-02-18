@@ -1,3 +1,6 @@
+Docker images
+=============
+
 Docker images related to HPCC are structured as follows
 
 hpccsystems/platform-build-base
@@ -6,7 +9,7 @@ This image contains all the development packages required to build the hpcc plat
 but no HPCC code or sources. It changes rarely. The current version is tagged 7.8 and
 is based on Ubuntu 18.04 base image
 
-hpccsystems/platform-build
+**hpccsystems/platform-build**
 
 Building this image builds an installation package (.deb file) for a specified git tag
 of the HPCC platform sources. The Dockerfile takes two arguments, naming the version of
@@ -19,17 +22,15 @@ working on a branch that is not yet tagged or merged into upstream, that uses
 hpccsystems/platform-build as a base in order to avoid the need for full rebuilds each time
 the image is built.
 
-hpccsystems/plaform-core
+**hpccsystems/plaform-core**
 
 This uses the .deb file from a hpccsystems/plaform-build image to install a copy of the
 full platform code, without specialization to a specific component.
 
-hpccsystems/dali
-hpccsystems/roxie
-hpccsystems/esp
-hpccsystems/eclagent
-hpccsystems/eclcc
-etc
+**hpccsystems/dali**  
+**hpccsystems/roxie**  
+**hpccsystems/esp**  
+**etc**  
 
 These are specializations of the platform-core image to run a specific component.
 Portions of the platform-core that are not needed by this component may be removed.
@@ -39,3 +40,34 @@ a cloud cluster.
 If launched without further parameters or configuration, a system with default
 settings can be started, but it will be more normal to apply some configuration at
 container launch time.
+
+---
+
+Helm chart
+==========
+
+The Helm chart in hpcc/ can be used to deploy an entire HPCC environment to a K8s cluster.
+
+Roxie modes under K8s
+---------------------
+
+When running under K8s, Roxie has 3 fundamental modes of operation:
+
+  1. Scalable array of one-way roxie servers
+
+     Set localSlave=true, replicas=initial number of pods
+
+  2. Per-channel-scalable array of combined servers/slaves
+
+     localSlave=false, numChannels=nn, replicas=initial number of pods per channel (default 2)
+
+     There will be numChannels*replicas pods in total
+
+  3. Scalable array of servers with per-channel-scalable array of slaves
+
+     localSlave=false, numChannels=nn, replicas=pods/channel, serverReplicas=initial number of server pods
+
+     There will be numChannels*replicas slave pods and serverReplicas server pods in total
+  
+     This mode is somewhat experimental at present!
+  

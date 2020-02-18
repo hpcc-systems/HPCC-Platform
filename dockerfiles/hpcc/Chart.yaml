@@ -1,6 +1,7 @@
 apiVersion: v2
 name: hpcc
-description: An example  Helm chart for launching a HPCC cluster using Kubernetes
+description: An example Helm chart for launching a HPCC cluster using Kubernetes
+icon: https://hpccsystems.com/sites/default/files/header-logo_0.png
 type: application
 
 # This is the chart version. This version number should be incremented each time you make changes

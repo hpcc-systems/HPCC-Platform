@@ -1,0 +1,3 @@
+poo: "{{ $.Values.global.image.version }}"
+poo2: "{{ $.Values.global.image.version }}"
+poo3: "{{ $.Values.global.image.version }}"
