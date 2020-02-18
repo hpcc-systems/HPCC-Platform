@@ -85,6 +85,7 @@ define([
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
             this.logoutBtn = registry.byId(this.id + "Logout");
+            this.lockBtn = registry.byId(this.id + "Lock");
             this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.setToolbarDialog = registry.byId(this.id + "SetToolbarDialog");
@@ -339,6 +340,7 @@ define([
         checkIfSessionsAreActive: function () {
             if (cookie("ESPSessionTimeoutSeconds")) {
                 this.logoutBtn.set("disabled", false);
+                this.lockBtn.set("disabled", false);
                 dom.byId("UserDivider").textContent = " / ";
                 dom.byId("Lock").textContent = this.i18n.Lock;
             }

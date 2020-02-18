@@ -351,17 +351,40 @@ hr.dashedLine {
     padding-bottom:10px;
 }
 
-@media (max-width: 959px){
+@media screen and (max-width: 1920px){
     .flat .hpccTitlebar {
-        height:100px;
+        height:50px;
     }
+
     #BannerEnvironmentText{
         width:25%;
         display: none;
         margin-top:10px;
+        border:solid 1px white;
     }
-    .seperator:first-child{
-        display:none;
+
+    .flat .envrionmentText {
+        width: 25%;
+    }
+}
+
+@media screen and (max-width: 1400px){
+    .flat .envrionmentText {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 1040px){
+    #userAccount {
+        display: none;
+    }
+
+    #MonitorStatus {
+        display: none;
+    }
+
+    .seperator {
+        display: none;
     }
 }
 
