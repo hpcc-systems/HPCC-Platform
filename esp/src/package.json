@@ -25,7 +25,7 @@
     "start:dev": "ws",
     "dev-start": "ws",
     "dev-link": "rimraf ./node_modules/@hpcc-js && mklink /J .\\node_modules\\@hpcc-js ..\\..\\..\\hpcc-js\\packages",
-    "dev-unlink": "rimraf ./node_modules/@hpcc-js && npm install",
+    "dev-unlink": "rimraf ./node_modules/@hpcc-js && npm ci",
     "test": "run-s lint"
   },
   "main": "src/stub.js",
