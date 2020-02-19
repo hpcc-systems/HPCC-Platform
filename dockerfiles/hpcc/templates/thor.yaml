@@ -30,7 +30,7 @@ spec:
                 --masterport={{ $masterPort }},
                 --numSlaves={{ $thor.numSlaves }}
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thormaster") | indent 8 }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
 {{ include "hpcc.utils.addVolumes" . | indent 6 }}
 ---
@@ -59,7 +59,7 @@ spec:
                   --slaveport={{ $slavePort }},
                   --master={{ printf "%s:%v" $serviceName $masterPort }}
                 ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thorslave") | indent 10 }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 10 }}
           ports:
             - containerPort: {{ $slavePort }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 10 }}
@@ -67,7 +67,7 @@ spec:
             mountPath: "/var/lib/HPCCSystems/hpcc-data"
         {{- if $thor.startDafilesrv | default false }}
         - name: {{ printf "%s-dafilesrv" $slaveName | quote }}
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "thorslave") | indent 10 }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 10 }}
           command: ["dafilesrv"]
           ports:
             - containerPort: 7100

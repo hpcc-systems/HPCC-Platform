@@ -18,7 +18,7 @@ spec:
         args: [
                 # {{ include "hpcc.utils.configArg" . }} - dali does not support this yet
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "dali") | indent 8 }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}
         volumeMounts:
 {{ include "hpcc.utils.addConfigVolumeMount" . | indent 8 }}
       volumes:
