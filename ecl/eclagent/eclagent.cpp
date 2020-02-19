@@ -53,6 +53,7 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 #include "anawu.hpp"
+#include "eclagent.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -3324,7 +3325,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         try
         {
-            agentTopology.setown(createPTreeFromXMLFile("agentexec.xml", ipt_caseInsensitive));
+            agentTopology.setown(loadConfiguration(eclagentDefaultJson, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
         }
         catch (IException *E)
         {
