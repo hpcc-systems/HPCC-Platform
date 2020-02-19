@@ -18,11 +18,6 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
-if [[ -n ${INPUT_BUILDTYPE} ]] ; then
-  buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
-  suffix=-$INPUT_BUILDTYPE
-fi
-
 if [[ -z ${BUILD_VER} ]] ; then
   echo Current tag could not be located
   echo Perhaps you meant to run incr.sh ?
@@ -51,6 +46,12 @@ build_image() {
 }
 
 build_image platform-build-base ${BASE_VER}
+
+if [[ -n ${INPUT_BUILDTYPE} ]] ; then
+  buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
+  suffix=-$INPUT_BUILDTYPE
+fi
+
 build_image platform-build ${BUILD_VER} ${BASE_VER}
 build_image platform-core ${BUILD_VER}
 build_image roxie ${BUILD_VER}
