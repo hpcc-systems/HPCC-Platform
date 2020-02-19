@@ -1725,3 +1725,7 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     -moz-box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
     box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
 }
+
+.dijitTab.tabStripButton {
+    background-color: transparent;
+}
