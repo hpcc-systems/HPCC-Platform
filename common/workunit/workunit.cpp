@@ -13526,12 +13526,30 @@ IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char *
 
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc, unsigned minActivity, unsigned maxActivity)
 {
-    StringBuffer hostname;
-    queryHostIP().getIpText(hostname);
-
-    StringBuffer fullPathname;
-    makeAbsolutePath(name, fullPathname);
-    query->addAssociatedFile(type, fullPathname, hostname, description, crc, minActivity, maxActivity);
+    StringBuffer fullPathName;
+    makeAbsolutePath(name, fullPathName);
+    if (isCloud())
+    {
+        const char *dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+        assertex(dllserver_root != nullptr);
+        StringBuffer destPathName(dllserver_root);
+        addNonEmptyPathSepChar(destPathName);
+        splitFilename(fullPathName.str(), nullptr, nullptr, &destPathName, &destPathName);
+        OwnedIFile source = createIFile(fullPathName);
+        OwnedIFile target = createIFile(destPathName);
+        if (!target->exists())
+        {
+            source->copyTo(target, 0, NULL, true);
+        }
+        query->addAssociatedFile(type, destPathName, "localhost", description, crc, minActivity, maxActivity);
+        // Should we delete the local files? May not matter...
+    }
+    else
+    {
+        StringBuffer hostname;
+        queryHostIP().getIpText(hostname);
+        query->addAssociatedFile(type, fullPathName, hostname, description, crc, minActivity, maxActivity);
+    }
 }
 
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
