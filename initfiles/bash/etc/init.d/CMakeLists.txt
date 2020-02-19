@@ -38,5 +38,3 @@ if ( PLATFORM )
     install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
     install ( PROGRAMS hpcc-init.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif()
-
-install(CODE "execute_process (COMMAND bash -c \"${CMAKE_CURRENT_BINARY_DIR}/setupPKI\")" COMPONENT Runtime)
