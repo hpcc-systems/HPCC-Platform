@@ -64,6 +64,8 @@ define([
         graphsWidgetLoaded: false,
         logsWidget: null,
         logsWidgetLoaded: false,
+        eclWidgetNew: null,
+        eclWidgetNewLoaded: false,
         eclWidget: null,
         eclWidgetLoaded: false,
         xmlWidget: null,
@@ -91,6 +93,7 @@ define([
             this.timersWidget = registry.byId(this.id + "_Timers");
             this.graphsWidget = registry.byId(this.id + "_Graphs");
             this.logsWidget = registry.byId(this.id + "_Logs");
+            this.eclWidgetNew = registry.byId(this.id + "_ECLNew");
             this.eclWidget = registry.byId(this.id + "_ECL");
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.publishForm = registry.byId(this.id + "PublishForm");
@@ -369,6 +372,11 @@ define([
             } else if (currSel.id === this.logsWidget.id && !this.logsWidgetLoaded) {
                 this.logsWidgetLoaded = true;
                 this.logsWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id === this.eclWidgetNew.id && !this.eclWidgetNewLoaded) {
+                this.eclWidgetNewLoaded = true;
+                this.eclWidgetNew.init({
                     Wuid: this.wu.Wuid
                 });
             } else if (currSel.id === this.eclWidget.id && !this.eclWidgetLoaded) {

@@ -476,6 +476,9 @@ export function resolve(hpccWidget, callback) {
         case "ECLSourceWidget":
             require(["hpcc/ECLSourceWidget"], doLoad);
             break;
+        case "ECLSourceWidgetNew":
+            require(["hpcc/ECLSourceWidgetNew"], doLoad);
+            break;
         case "EventScheduleWorkunitWidget":
             require(["hpcc/EventScheduleWorkunitWidget"], doLoad);
             break;
