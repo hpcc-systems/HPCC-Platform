@@ -18,6 +18,11 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+if [[ -n ${INPUT_BUILDTYPE} ]] ; then
+  buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
+  suffix=-$INPUT_BUILDTYPE
+fi
+
 if [[ -z ${BUILD_VER} ]] ; then
   echo Current tag could not be located
   echo Perhaps you meant to run incr.sh ?
@@ -37,10 +42,10 @@ build_image() {
   [[ -z $base ]] || local usebase="--build-arg BASE_VER=$base"
   local useuser="--build-arg BUILD_USER=$BUILD_USER"
 
-  if ! docker pull hpccsystems/${name}:${ver} ; then
-    docker image build -t hpccsystems/${name}:${ver} ${usever} ${usebase} ${useuser} ${name}/ 
+  if ! docker pull hpccsystems/${name}:${ver}${suffix} ; then
+    docker image build -t hpccsystems/${name}:${ver}${suffix} ${usever} ${usebase} ${useuser} ${buildtype} ${name}/ 
     if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${ver}
+      docker push hpccsystems/${name}:${ver}${suffix}
     fi
   fi
 }

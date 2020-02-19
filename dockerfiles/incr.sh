@@ -6,7 +6,7 @@
 # Pass in a get commit (that you previously built using this script) if you want to override the default calculation
 # of the base build
 
-HEAD=$(git rev-parse --short HEAD)
+HEAD=$(git rev-parse --short HEAD)-Debug
 PREV=$1
 [[ -z ${PREV} ]] && PREV=$(git log --format=format:%h $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-core --format {{.Tag}} | head -n 1`)
 [[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)
@@ -22,7 +22,11 @@ else
     
     echo Building local incremental images based on ${PREV}
         
-    docker image build -t hpccsystems/platform-build:${HEAD} --build-arg BUILD_VER=${PREV} --build-arg COMMIT=${HEAD} platform-build-incremental/
+    if [[ -n "$FORCE" ]] ; then
+      docker image build -t hpccsystems/platform-build:${HEAD} --build-arg BUILD_VER=${HEAD} --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
+    else
+      docker image build -t hpccsystems/platform-build:${HEAD} --build-arg BUILD_VER=${PREV} --build-arg COMMIT=${HEAD} platform-build-incremental/
+    fi
     docker image build -t hpccsystems/platform-core:${HEAD} --build-arg BUILD_VER=${HEAD} platform-core-debug/  
     
     docker image build -t hpccsystems/roxie:${HEAD} --build-arg BUILD_VER=${HEAD} roxie/

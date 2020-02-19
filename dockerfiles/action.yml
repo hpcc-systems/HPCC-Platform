@@ -13,6 +13,9 @@ inputs:
   password:
     description: 'The login password for docker hub'
     required: true
+  buildtype:
+    description: 'The build type - Debug, RelWithDebInfo, or Release'
+    required: false
 outputs:
   tag:
     description: 'Is the tag, which was pushed'
