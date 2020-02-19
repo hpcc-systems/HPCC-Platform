@@ -24,7 +24,7 @@ define([
     Utility, Session, KeyValStore, LockDialogWidget,
     entities, Toaster) {
 
-    const store = KeyValStore.globalKeyValStore()
+    var store = KeyValStore.globalKeyValStore();
     store.set("", "", false, "HPCCApps", "ECLWatch");
     Session.initSession();
 
