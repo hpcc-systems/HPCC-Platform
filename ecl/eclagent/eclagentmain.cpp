@@ -24,17 +24,6 @@
 #include <cppunit/ui/text/TestRunner.h>
 #endif
 
-void usage()
-{
-    printf("USAGE: eclagent WUID=wuid options\n"
-           "       eclagent PROCESS=dllname options\n"
-           "options are:\n"
-           "       DALISERVERS=daliEp,daliEp\n"
-           "       VERSIONS=1 (prints full version info)\n"
-           "       WFRESET=1  (performs workflow reset on starting)\n"
-           "       NORETRY=1  (immediately fails if workunit is in failed state)\n");
-}
-
 extern int STARTQUERY_API eclagent_main(int argc, const char *argv[], StringBuffer * embeddedWU, bool standAlone);
 
 int main(int argc, const char *argv[])
@@ -64,33 +53,25 @@ int main(int argc, const char *argv[])
     }
 #endif
 
-    if (argc==1 || *argv[1]=='?' || *argv[1]=='-')
+    EnableSEHtoExceptionMapping();
+    InitModuleObjects();
+    int ret = 0;
+    try
     {
-        usage();
-        return 2;
+        ret = eclagent_main(argc, argv, NULL, false);
     }
-    else
+    catch (IException *E)
     {
-        EnableSEHtoExceptionMapping();
-        InitModuleObjects();
-        int ret = 0;
-        try
-        {
-            ret = eclagent_main(argc, argv, NULL, false);
-        }
-        catch (IException *E)
-        {
-            EXCLOG(E, "Eclagent execution error");
-            E->Release();
-            ret = 2;
-        }
-        catch (...)
-        {
-            IERRLOG("Eclagent execution error: Unexpected exception");
-            ret = 2;
-        }
-        releaseAtoms();
-        ExitModuleObjects();
-        return ret;
+        EXCLOG(E, "Eclagent execution error");
+        E->Release();
+        ret = 2;
     }
+    catch (...)
+    {
+        IERRLOG("Eclagent execution error: Unexpected exception");
+        ret = 2;
+    }
+    releaseAtoms();
+    ExitModuleObjects();
+    return ret;
 }

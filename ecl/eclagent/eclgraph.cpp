@@ -1510,7 +1510,7 @@ void EclAgent::executeThorGraph(const char * graphName)
     StringAttr owner(wuRead->queryUser());
     StringAttr cluster(wuRead->queryClusterName());
     int priority = wuRead->getPriorityValue();
-    unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", config->getPropInt("@thorConnectTimeout", 60));
+    unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", agentTopology->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
     if (!c)
         throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
@@ -1689,7 +1689,7 @@ void EclAgent::executeThorGraph(const char * graphName)
 
 void EclAgent::updateWULogfile()
 {
-    if (logMsgHandler && config->hasProp("@name"))
+    if (logMsgHandler && agentTopology->hasProp("@name"))
     {
         StringBuffer logname;
         bool ok = logMsgHandler->getLogName(logname);
@@ -1700,7 +1700,7 @@ void EclAgent::updateWULogfile()
             rlf.getRemotePath(logname.clear());
 
             Owned <IWorkUnit> w = updateWorkUnit();
-            w->addProcess("EclAgent", config->queryProp("@name"), GetCurrentProcessId(), logname.str());
+            w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
         }
         else
         {

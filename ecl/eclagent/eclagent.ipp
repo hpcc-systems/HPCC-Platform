@@ -43,6 +43,8 @@ class EclGraph;
 typedef unsigned __int64 graphid_t;
 typedef unsigned __int64 activityid_t;
 
+extern Owned<IPropertyTree> agentTopology;
+
 //=================================================================================
 
 //The following don't link their arguments because that creates a circular reference
@@ -365,7 +367,7 @@ private:
     bool writeResultsToStdout;
     bool useNewDiskReadActivity;
     Owned<IUserDescriptor> standAloneUDesc;
-    outputFmts outputFmt;
+    outputFmts outputFmt = ofSTD;
     unsigned __int64 stopAfter;
     mutable CriticalSection wusect;
     StringArray tempFiles;
@@ -384,8 +386,6 @@ private:
     Owned<IProbeManager> probeManager;
     StringAttr allowedPipeProgs;
     SafePluginMap *pluginMap;
-    IProperties *globals;
-    IPropertyTree *config;
     ILogMsgHandler *logMsgHandler;
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
@@ -446,7 +446,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, IProperties *_globals, IPropertyTree *_config, ILogMsgHandler * _logMsgHandler);
+    EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, ILogMsgHandler * _logMsgHandler);
     ~EclAgent();
 
     void setBlocked();
