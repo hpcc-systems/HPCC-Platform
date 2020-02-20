@@ -37,10 +37,10 @@ build_image() {
   [[ -z $base ]] || local usebase="--build-arg BASE_VER=$base"
   local useuser="--build-arg BUILD_USER=$BUILD_USER"
 
-  if ! docker pull hpccsystems/${name}:${ver}${suffix} ; then
-    docker image build -t hpccsystems/${name}:${ver}${suffix} ${usever} ${usebase} ${useuser} ${buildtype} ${name}/ 
+  if ! docker pull hpccsystems/${name}:${ver} ; then
+    docker image build -t hpccsystems/${name}:${ver} ${usever} ${usebase} ${useuser} ${buildtype} ${name}/ 
     if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${ver}${suffix}
+      docker push hpccsystems/${name}:${ver}
     fi
   fi
 }
@@ -49,7 +49,7 @@ build_image platform-build-base ${BASE_VER}
 
 if [[ -n ${INPUT_BUILDTYPE} ]] ; then
   buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
-  suffix=-$INPUT_BUILDTYPE
+  BUILD_VER==${BUILD_VER}-$INPUT_BUILDTYPE
 fi
 
 build_image platform-build ${BUILD_VER} ${BASE_VER}
