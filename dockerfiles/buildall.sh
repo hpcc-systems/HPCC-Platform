@@ -49,7 +49,7 @@ build_image platform-build-base ${BASE_VER}
 
 if [[ -n ${INPUT_BUILDTYPE} ]] ; then
   buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
-  BUILD_VER==${BUILD_VER}-$INPUT_BUILDTYPE
+  BUILD_VER=${BUILD_VER}-$INPUT_BUILDTYPE
 fi
 
 build_image platform-build ${BUILD_VER} ${BASE_VER}
