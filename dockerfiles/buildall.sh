@@ -1,24 +1,30 @@
 #!/bin/bash
 
-#eval $(minikube docker-env)
-#docker rm $(docker ps -q -f 'status=exited')
-#docker rmi $(docker images -q -f "dangling=true")
+BASE_VER=7.8                                    # The docker hub label for the platform-build-base image. Changes rarely.
+BUILD_TAG=$(git describe --exact-match --tags)  # The git tag for the images we are building
+BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
+BUILD_USER=hpcc-systems                         # The github repo owner
+BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
 
-BASE_VER=7.8
-BUILD_VER=$1
-BUILD_USER=$2
-[[ -z ${BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
-[[ -z ${BUILD_USER} ]] && BUILD_USER=${GITHUB_REPOSITORY%/*}
-[[ -z ${BUILD_USER} ]] && BUILD_USER=hpcc-systems
-[[ -z ${BUILD_VER} ]] && BUILD_VER=${INPUT_BUILD_VER}
-[[ -z ${BUILD_VER} ]] && BUILD_VER=$(git describe --exact-match --tags)
+# These values are set in a GitHub workflow build
+
+[[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
+[[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
+[[ -n ${GITHUB_REPOSITORY} ]] && BUILD_USER=${GITHUB_REPOSITORY%/*}
+
+if [[ -n ${INPUT_BUILDTYPE} ]] ; then
+  BUILD_TYPE=$INPUT_BUILDTYPE
+  BUILD_LABEL=${BUILD_TAG}-$INPUT_BUILDTYPE
+else
+  BUILD_TYPE=RelWithDebInfo
+fi
 
 if [[ -n ${INPUT_USERNAME} ]] ; then
   echo ${INPUT_PASSWORD} | docker login -u ${INPUT_USERNAME} --password-stdin ${INPUT_REGISTRY}
   PUSH=1
 fi
 
-if [[ -z ${BUILD_VER} ]] ; then
+if [[ -z ${BUILD_TAG} ]] ; then
   echo Current tag could not be located
   echo Perhaps you meant to run incr.sh ?
   exit 2
@@ -31,37 +37,34 @@ pushd $DIR 2>&1 > /dev/null
 
 build_image() {
   local name=$1
-  local ver=$2
-  local base="$3"
-  [[ -z $ver ]] || local usever="--build-arg BUILD_VER=$ver"
-  [[ -z $base ]] || local usebase="--build-arg BASE_VER=$base"
-  local useuser="--build-arg BUILD_USER=$BUILD_USER"
+  local label=$2
+  [[ -z ${label} ]] && label=$BUILD_LABEL
 
-  if ! docker pull hpccsystems/${name}:${ver} ; then
-    docker image build -t hpccsystems/${name}:${ver} ${usever} ${usebase} ${useuser} ${buildtype} ${name}/ 
+  if ! docker pull hpccsystems/${name}:${label} ; then
+    docker image build -t hpccsystems/${name}:${label} \
+       --build-arg BASE_VER=${BASE_VER} \
+       --build-arg BUILD_TAG=${BUILD_TAG} \
+       --build-arg BUILD_LABEL=${BUILD_LABEL} \
+       --build-arg BUILD_USER=${BUILD_USER} \
+       --build-arg BUILD_TYPE=${BUILD_TYPE} \
+       ${name}/ 
     if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${ver}
+      docker push hpccsystems/${name}:${label}
     fi
   fi
 }
 
 build_image platform-build-base ${BASE_VER}
-
-if [[ -n ${INPUT_BUILDTYPE} ]] ; then
-  buildtype="--build-arg BUILD_TYPE=$INPUT_BUILDTYPE"
-  BUILD_VER=${BUILD_VER}-$INPUT_BUILDTYPE
-fi
-
-build_image platform-build ${BUILD_VER} ${BASE_VER}
-build_image platform-core ${BUILD_VER}
-build_image roxie ${BUILD_VER}
-build_image dali ${BUILD_VER}
-build_image esp ${BUILD_VER}
-build_image eclccserver ${BUILD_VER}
-build_image eclagent ${BUILD_VER}
-build_image toposerver ${BUILD_VER}
+build_image platform-build
+build_image platform-core
+build_image roxie
+build_image dali
+build_image esp
+build_image eclccserver
+build_image eclagent
+build_image toposerver
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
-  echo "::set-output name=${BUILD_VER}"
+  echo "::set-output name=${BUILD_LABEL}"
   docker logout
 fi

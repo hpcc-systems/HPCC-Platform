@@ -11,6 +11,9 @@ PREV=$1
 [[ -z ${PREV} ]] && PREV=$(git log --format=format:%h $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-core --format {{.Tag}} | head -n 1`)
 [[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)
 
+BUILD_TYPE=Debug
+BUILD_LABEL=${HEAD}-Debug
+
 if [[ "$HEAD" == "$PREV$FORCE" ]]  # set environment variable FORCE before running to override this check
 then
     echo Docker image hpccsystems/platform-core:${HEAD} already exists
@@ -23,18 +26,18 @@ else
     echo Building local incremental images based on ${PREV}
         
     if [[ -n "$FORCE" ]] ; then
-      docker image build -t hpccsystems/platform-build:${HEAD} --build-arg BUILD_VER=${HEAD} --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
+      docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
     else
-      docker image build -t hpccsystems/platform-build:${HEAD} --build-arg BUILD_VER=${PREV} --build-arg COMMIT=${HEAD} platform-build-incremental/
+      docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg BUILD_VER=${PREV} --build-arg COMMIT=${HEAD} platform-build-incremental/
     fi
-    docker image build -t hpccsystems/platform-core:${HEAD} --build-arg BUILD_VER=${HEAD} platform-core-debug/  
+    docker image build -t hpccsystems/platform-core:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} platform-core-debug/  
     
-    docker image build -t hpccsystems/roxie:${HEAD} --build-arg BUILD_VER=${HEAD} roxie/
-    docker image build -t hpccsystems/dali:${HEAD} --build-arg BUILD_VER=${HEAD} dali/
-    docker image build -t hpccsystems/esp:${HEAD} --build-arg BUILD_VER=${HEAD} esp/
-    docker image build -t hpccsystems/eclccserver:${HEAD} --build-arg BUILD_VER=${HEAD} eclccserver/
-    docker image build -t hpccsystems/eclagent:${HEAD} --build-arg BUILD_VER=${HEAD} eclagent/
-    docker image build -t hpccsystems/toposerver:${HEAD} --build-arg BUILD_VER=${HEAD} toposerver/
+    docker image build -t hpccsystems/roxie:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} roxie/
+    docker image build -t hpccsystems/dali:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} dali/
+    docker image build -t hpccsystems/esp:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} esp/
+    docker image build -t hpccsystems/eclccserver:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} eclccserver/
+    docker image build -t hpccsystems/eclagent:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} eclagent/
+    docker image build -t hpccsystems/toposerver:${BUILD_LABEL} --build-arg BUILD_VER=${HEAD} toposerver/
     
     echo Built hpccsystems/*:${HEAD}
 fi
