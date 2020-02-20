@@ -1,5 +1,5 @@
-ARG BUILD_LABEL
-FROM hpccsystems/platform-build:${BUILD_LABEL}
+ARG PREV_LABEL
+FROM hpccsystems/platform-build:${PREV_LABEL}
 
 ARG USER=richardkchapman
 WORKDIR /hpcc-dev/HPCC-Platform
