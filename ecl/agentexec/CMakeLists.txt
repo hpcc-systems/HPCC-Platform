@@ -38,6 +38,7 @@ include_directories (
          ./../../system/mp 
          ./../../dali/base
          ./../../system/security/shared
+         ./../eclagent
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "agentexec.hpp"
 #include "jutil.hpp"
+#include "eclagent.hpp"
 
 Owned<CEclAgentExecutionServer> execSvr = NULL;
 
@@ -241,19 +242,6 @@ bool ControlHandler()
 
 //---------------------------------------------------------------------------------
 
-static constexpr const char * defaultJson = R"!!({
-"version": "1.0",
-"EclAgent": {
-    "analyzeWorkunit": true,
-    "daliServers": "dali",
-    "defaultMemoryLimitMB": 300,
-    "name": "myeclagent",
-    "thorConnectTimeout":600,
-    "traceLevel": 0
-}
-})!!";
-
-
 int main(int argc, const char *argv[]) 
 { 
     for (unsigned i=0;i<(unsigned)argc;i++) {
@@ -273,7 +261,7 @@ int main(int argc, const char *argv[])
     try
     {
         DBGLOG("AgentExec: Loading config file 'agentexec.xml'");
-        config.setown(loadConfiguration(defaultJson, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
+        config.setown(loadConfiguration(eclagentDefaultJson, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
     }
     catch (IException *e) 
     {
