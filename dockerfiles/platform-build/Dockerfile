@@ -8,9 +8,9 @@ RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev/HPCC-Platform
-ARG BUILD_VER=master
+ARG BUILD_TAG=none
 RUN git fetch origin && \
-    git checkout ${BUILD_VER} && \
+    git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev

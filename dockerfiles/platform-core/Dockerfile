@@ -1,5 +1,5 @@
-ARG BUILD_VER
-FROM hpccsystems/platform-build:${BUILD_VER} as build
+ARG BUILD_LABEL
+FROM hpccsystems/platform-build:${BUILD_LABEL} as build
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt clean && \

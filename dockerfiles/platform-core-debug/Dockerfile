@@ -1,7 +1,7 @@
 # A version of the platform-core Dockerfile that keeps all the build artefacts in place, for use by developers wanting to debug the platform
 
-ARG BUILD_VER
-FROM hpccsystems/platform-build:${BUILD_VER}
+ARG BUILD_LABEL
+FROM hpccsystems/platform-build:${BUILD_LABEL}
 
 RUN apt-get install -y \
     dnsutils \

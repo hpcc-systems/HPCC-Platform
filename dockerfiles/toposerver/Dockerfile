@@ -1,5 +1,5 @@
-ARG BUILD_VER
-FROM hpccsystems/platform-core:${BUILD_VER}
+ARG BUILD_LABEL
+FROM hpccsystems/platform-core:${BUILD_LABEL}
 
 USER hpcc
 RUN mkdir -p /var/lib/HPCCSystems/toposerver
