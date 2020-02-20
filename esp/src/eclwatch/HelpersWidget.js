@@ -284,7 +284,7 @@ define([
                 this.logData.push({
                     id: "H:" + i,
                     Type: helpers[i].Type,
-                    Description: helpers[i].IPAddress ? "//" + helpers[i].IPAddress + helpers[i].Name : helpers[i].Name,
+                    Description: Utility.pathTail(helpers[i].Name),
                     FileSize: helpers[i].FileSize,
                     Orig: helpers[i]
                 });
