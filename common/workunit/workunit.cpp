@@ -7380,8 +7380,6 @@ public:
                         primaryThorProcesses.append(thorName);
                 }
                 unsigned nodes = thor.getCount("ThorSlaveProcess");
-                if (!nodes)
-                    throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: Thor cluster can not have 0 slave processes");
                 unsigned slavesPerNode = thor.getPropInt("@slavesPerNode", 1);
                 unsigned channelsPerSlave = thor.getPropInt("@channelsPerSlave", 1);
                 unsigned ts = nodes * slavesPerNode * channelsPerSlave;
@@ -7389,9 +7387,6 @@ public:
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
-                bool islcr = !thor.getPropBool("@Legacy");
-                if (!islcr)
-                    throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: Legacy Thor no longer supported");
             }
             platform = ThorLCRCluster;
         }
@@ -7763,7 +7758,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
 {
     const char *clustname = cluster->queryProp("@name");
 
-    // MORE - at the moment configenf specifies eclagent and thor queues by (in effect) placing an 'example' thor or eclagent in the topology 
+    // MORE - at the moment configenv specifies eclagent and thor queues by (in effect) placing an 'example' thor or eclagent in the topology
     // that uses the queue that will be used.
     // We should and I hope will change that, at which point the code below gets simpler
 
@@ -7788,7 +7783,8 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
         if (thorName) 
         {
             xpath.clear().appendf("Software/ThorCluster[@name=\"%s\"]", thorName);
-            thors.append(*environment->getPropTree(xpath.str()));
+            if (environment->hasProp(xpath.str()))
+                thors.append(*environment->getPropTree(xpath.str()));
         }
     }
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");

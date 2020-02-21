@@ -29,16 +29,25 @@ RUN apt-get install -y \
 
 RUN apt-get install -y \
   libxslt1.1
-  
-COPY --from=build /hpcc-dev/build/*.deb /
-RUN dpkg -i *.deb ; \
-    apt-get install -f && \
-    apt-get clean && \
-    rm *.deb
 
 RUN apt-get install -y \
     dnsutils \
     nano 
+
+COPY --from=build /opt/HPCCSystems /
+
+#RUN dpkg -i *.deb ; \
+#    apt-get install -f && \
+#    apt-get clean && \
+#    rm *.deb
+
+RUN useradd -s /bin/bash -r -U -c "hpcc runtime User" hpcc
+RUN passwd -l hpcc 
+
+RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
+RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
+RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
+RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 USER hpcc
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"

@@ -9,4 +9,5 @@ ARG COMMIT
 
 RUN git fetch ${USER} && git checkout ${COMMIT} 
 WORKDIR /hpcc-dev/build
-RUN rm *.deb && make -j$(($(nproc)*3/2)) package
+RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DCMAKE_BUILD_TYPE=Debug
+RUN make -j$(($(nproc)*3/2)) install

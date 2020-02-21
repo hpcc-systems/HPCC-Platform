@@ -18,7 +18,7 @@
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-systems.desktop DESTINATION share COMPONENT Runtime )
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/LN.png DESTINATION share COMPONENT Runtime )
 
-if(PLATFORM)
+if(PLATFORM AND NOT CONTAINERIZED)
     SET_DEPENDENCIES(CPACK_DEBIAN_PACKAGE_DEPENDS xterm)
     configure_file(hpcc-systems-desktop.install.in hpcc-systems-desktop.install @ONLY)
     configure_file(hpcc-systems-desktop.uninstall.in hpcc-systems-desktop.uninstall @ONLY)
