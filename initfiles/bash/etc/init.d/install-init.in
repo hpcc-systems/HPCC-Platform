@@ -231,34 +231,36 @@ else
     log_success_msg
 fi
 
-if [ ! -d ${homePath}/certificate ]; then
-    mkdir -p ${homePath}/certificate
-fi
+## for now turn off certificate logic if we're switching to setupPKI and distributePKI
 
-if [ ! -e ${homePath}/certificate/key.pem ]; then
-    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
-        1>/dev/null 2>&1
-    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
-        -out ${homePath}/certificate/public.key.pem 
-    chmod 0644 ${homePath}/certificate/public.key.pem
-    rm -f ${homePath}/certificate/key.pem.pub
-    printf "RSA key installed for user %-28s ..." "$user"
-    log_success_msg
-else
-    printf "RSA keys are already installed for user %-15s ..." "$user"
-    log_success_msg
-fi
-
-if [ ! -e ${homePath}/certificate/certificate.pem ]; then
-    openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
-        -days 365 -out ${homePath}/certificate/certificate.pem \
-        -batch 1>/dev/null 2>&1
-    printf "Self Signed Certificate installed for user %-12s ..." "$user"
-    log_success_msg
-else
-    printf "Self Signed Certificate already installed for %-9s ..." "$user"
-    log_success_msg
-fi
+#if [ ! -d ${homePath}/certificate ]; then
+#    mkdir -p ${homePath}/certificate
+#fi
+#
+#if [ ! -e ${homePath}/certificate/key.pem ]; then
+#    ssh-keygen -t rsa -N '' -f ${homePath}/certificate/key.pem \
+#        1>/dev/null 2>&1
+#    openssl rsa -in ${homePath}/certificate/key.pem -pubout \
+#        -out ${homePath}/certificate/public.key.pem 
+#    chmod 0644 ${homePath}/certificate/public.key.pem
+#    rm -f ${homePath}/certificate/key.pem.pub
+#    printf "RSA key installed for user %-28s ..." "$user"
+#    log_success_msg
+#else
+#    printf "RSA keys are already installed for user %-15s ..." "$user"
+#    log_success_msg
+#fi
+#
+#if [ ! -e ${homePath}/certificate/certificate.pem ]; then
+#    openssl req -new -key ${homePath}/certificate/key.pem -keyform PEM -x509 \
+#        -days 365 -out ${homePath}/certificate/certificate.pem \
+#        -batch 1>/dev/null 2>&1
+#    printf "Self Signed Certificate installed for user %-12s ..." "$user"
+#    log_success_msg
+#else
+#    printf "Self Signed Certificate already installed for %-9s ..." "$user"
+#    log_success_msg
+#fi
 
 # Added code to change environment.conf file user home directory location for key generation
 if [ "$homeBase" != "$home" ]; then

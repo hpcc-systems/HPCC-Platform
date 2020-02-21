@@ -1,0 +1,126 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+set -x
+exec 3>&2 2>./safe_copyPKI.log
+
+INSTALL_DIR=/opt/HPCCSystems
+CONFIG_DIR=/etc/HPCCSystems
+ENV_XML_FILE=environment.xml
+ENV_CONF_FILE=environment.conf
+PID_DIR=/var/run/HPCCSystems
+LOCK_DIR=/var/lock/HPCCSystems
+LOG_DIR=/var/log/HPCCSystems
+INIT_PATH=/etc/init.d
+
+
+progname=safe_copyPKI
+
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+source ${INSTALL_DIR}/etc/init.d/init-functions
+source ${INSTALL_DIR}/etc/init.d/export-path
+
+HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
+SECTION=${1:-DEFAULT}
+PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^home *= *" | sed -e 's/^home *= *//'`
+USER_NAME=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^user *= *" | sed -e 's/^user *= *//'`
+homePath=${PATH_PREFIX}/${USER_NAME}
+
+certPath=${homePath}/certificate
+sbin_path="${INSTALL_DIR}/sbin"
+envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
+
+if [ "$(whoami)" != "${USER}" ]; then
+   echo ""
+   echo "The script must run as $USER."
+   echo ""
+   exit 1
+fi
+
+createScriptFile() {
+
+  cat > $SCRIPT_FILE <<SCRIPTFILE
+#!/bin/bash
+IP=\$1
+
+set -x
+exec 3>&2 2>./safe-\$(date -Ins).log
+
+if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
+  echo "\$IP: Host is alive."
+  CAN_SSH="\`ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP exit > /dev/null 2>&1; echo \$?\`"
+  if [ "\$CAN_SSH" -eq 255 ]; then
+    echo "\$IP: Cannot SSH to host.";
+  fi
+  
+  IS_LOCAL="\`ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP ls $SCRIPT_FILE > /dev/null 2>&1; echo \$?\`"
+  if [ "\$IS_LOCAL" -ne 0 ]; then
+    echo "\$IP: Fetching complist for \$IP"
+  else
+    echo "\$IP: running on local machine, nothing to do"
+    exit 0
+  fi
+  
+  ## get list of components on remote machine
+  OIFS=\$IFS
+  IFS=\$'\\n'
+  complist=(\$($sbin_path/configgen -env $envfile -ip \$IP -list | awk 'BEGIN { FS="=";} {print \$1;}'))
+  IFS=\$OIFS
+
+  mkdir -p $HOME/tmp_certs
+  for i in "" \${complist[@]} ; do
+    compName=""
+    if [ "\$i" != "" ]; then
+      compName=""\${i#*_}
+    fi
+    if [ -n "\$compName" ]; then
+      ## allow for overwrite
+      ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP sudo rm -rf $certPath/\$compName > /dev/null 2>&1
+      sudo cp -R $certPath/\$compName $HOME/tmp_certs
+    fi
+  done
+  
+  sudo chown -R $USER:$USER $HOME/tmp_certs
+  scp -r -i $HOME/.ssh/id_rsa $HOME/tmp_certs $USER@\$IP:$HOME
+  ## copy full directory over
+  ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP sudo cp -R $HOME/tmp_certs/ $certPath > /dev/null 2>&1
+  ## ensure $USER_NAME is owner
+  ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP sudo chown -R $USER_NAME:$USER_NAME $certPath > /dev/null 2>&1
+  ## cleanup
+  rm -rf $HOME/tmp_certs
+  ssh -i $HOME/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER@\$IP rm -rf $HOME/tmp_certs > /dev/null 2>&1
+
+else
+  echo "\$IP: Cannot Ping host? (Host Alive?)"
+  exit 1
+fi
+SCRIPTFILE
+
+chmod +x ${SCRIPT_FILE}
+}
+
+SCRIPT_FILE=/tmp/distributePKI_$$
+createScriptFile
+
+sudo ${INSTALL_DIR}/etc/init.d/setupPKI
+
+OPTION="-e ${CONFIG_DIR}/${ENV_CONF_FILE} -s ${SECTION:-DEFAULT} -x"
+eval sudo ${INSTALL_DIR}/sbin/cluster_script.py -f ${SCRIPT_FILE} $OPTION
+
+rm -rf ${SCRIPT_FILE}
+
+set +x
