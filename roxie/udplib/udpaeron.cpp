@@ -438,7 +438,13 @@ extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsign
 {
     return new CRoxieAeronSendManager(dataPort, numQueues, myIP);
 }
+
 #else
+
+extern UDPLIB_API void setAeronProperties(const IPropertyTree *config)
+{
+}
+
 extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep)
 {
     UNIMPLEMENTED;
