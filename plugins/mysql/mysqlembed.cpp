@@ -31,6 +31,10 @@
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
 
+#if (MYSQL_VERSION_ID >= 80000)
+  typedef bool my_bool;
+#endif
+
 __declspec(noreturn) static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
 static unsigned mysqlCacheCheckPeriod = 10000;
