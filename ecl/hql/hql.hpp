@@ -24,7 +24,6 @@
 #endif
 
 #include "hqlatoms.hpp"
-#include "build-config.h"
 
 #ifdef _DEBUG
  //#define TEST_INDEX_PROJECT  // Force index translation (to default specified record) on all indexes - for testing!
