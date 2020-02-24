@@ -7860,16 +7860,15 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option)
     }
 }
 
-static void displayConfig(IPropertyTree * config, const char * componentTag)
+jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree * config, const char * componentTag)
 {
     Owned<IPropertyTree> recreated = createPTree();
     Owned<IPropertyTree> json = mapXmlConfigToJson(config);
     recreated->setProp("version", currentVersion);
     recreated->addPropTree(componentTag, json.getClear());
 
-    StringBuffer jsonText;
     toJSON(recreated, jsonText, 0, JSON_SortTags|JSON_Format);
-    printf("%s\n", jsonText.str());
+    return jsonText;
 }
 
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
@@ -7902,7 +7901,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         }
         else if (strsame(cur, "--init"))
         {
-            displayConfig(config, componentTag);
+            StringBuffer jsonText;
+            regenerateConfig(jsonText, config, componentTag);
+            printf("%s\n", jsonText.str());
             exit(0);
         }
         else if (strsame(cur, "--outputconfig"))
@@ -7955,7 +7956,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     if (outputConfig)
     {
-        displayConfig(config, componentTag);
+        StringBuffer jsonText;
+        regenerateConfig(jsonText, config, componentTag);
+        printf("%s\n", jsonText.str());
         exit(0);
     }
 
