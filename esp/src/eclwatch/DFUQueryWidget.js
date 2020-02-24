@@ -77,6 +77,7 @@ define([
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.filter = registry.byId(this.id + "Filter");
+            this.iconFilter = registry.byId(this.id + "IconFilter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.importForm = registry.byId(this.id + "ImportForm");
             this.importTargetSelect = registry.byId(this.id + "ImportTargetSelect");
@@ -394,8 +395,8 @@ define([
             }).then(function (response) {
                 if (lang.exists("DFUQueryResponse", response)) {
                     if (response.DFUQueryResponse.Warning && dojo.byId(context.id).offsetParent !== null) {
-                        context.filter.open();
-                        context.filter.setFilterMessage(context.i18n.FilesWarning);
+                        context.filter.iconFilter.style.color = "red";
+                        context.filter.iconFilter.title = response.DFUQueryResponse.Warning;
                     } else {
                         context.filter.setFilterMessage("");
                     }
@@ -444,11 +445,13 @@ define([
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();
+                context.checkIfWarning();
             });
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
                 context.workunitsGrid._currentPage = 0;
                 context.refreshGrid();
+                context.checkIfWarning();
             });
             topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
                 context.refreshGrid();

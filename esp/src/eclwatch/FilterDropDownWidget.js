@@ -151,13 +151,15 @@ define([
 
         refreshState: function () {
             if (this.exists()) {
-                this.iconFilter.src = Utility.getImageURL("filter1.png");
+                this.iconFilter.style.color = "#1A9BD7";
+                this.iconFilter.title = this.i18n.Filter;
                 dom.byId(this.id + "FilterDropDown_label").innerHTML = this.params.ownLabel !== undefined && this.params.ownLabel !== null ? this.params.ownLabel : this.i18n.FilterSet;
                 domStyle.set(this.id + "FilterDropDown_label", {
                     "font-weight": "bold"
                 });
             } else {
-                this.iconFilter.src = Utility.getImageURL("noFilter1.png");
+                this.iconFilter.style.color = "lightgrey";
+                this.iconFilter.title = this.i18n.Filter;
                 dom.byId(this.id + "FilterDropDown_label").innerHTML = this.i18n.Filter;
                 domStyle.set(this.id + "FilterDropDown_label", {
                     "font-weight": "normal"
