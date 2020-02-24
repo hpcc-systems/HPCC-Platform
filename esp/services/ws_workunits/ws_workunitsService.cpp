@@ -52,6 +52,7 @@
 #include "rtlformat.hpp"
 
 #include "package.h"
+#include "build-config.h"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"

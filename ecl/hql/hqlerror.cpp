@@ -16,9 +16,10 @@
 ############################################################################## */
 
 #include "jlog.hpp"
+#include "build-config.h"
+
 #include "hqlerror.hpp"
 #include "hqlerrors.hpp"
-
 //---------------------------------------------------------------------------------------------------------------------
 
 ErrorSeverity getSeverity(IAtom * name)

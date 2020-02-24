@@ -26,6 +26,7 @@
 #include "jmisc.hpp"
 #include "hqlerrors.hpp"
 #include "hql.hpp"
+#include "build-config.h"
 #include "hqlgram.hpp"
 #include "eclrtl.hpp"
 
