@@ -196,7 +196,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 #endif
 
     StringBuffer cmdLine(command);
-    cmdLine.append(" WUID=").append(wuid).append(" DALISERVERS=").append(daliServers);
+    cmdLine.append(" --wuid=").append(wuid).append(" --daliServers=").append(daliServers);
 
     DWORD runcode;
     PROGLOG("AgentExec: Executing '%s'", cmdLine.str());
