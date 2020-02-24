@@ -27,8 +27,7 @@
     "dev-start-ws": "ws",
     "dev-start": "run-p bundle-watch dev-start-ws",
     "dev-start-verbose": "ws --verbose.include request response",
-    "dev-link": "rimraf ./node_modules/@hpcc-js && mklink /J .\\node_modules\\@hpcc-js ..\\..\\..\\hpcc-js\\packages",
-    "dev-unlink": "rimraf ./node_modules/@hpcc-js && npm install",
+    "rm-hpcc": "rimraf ./node_modules/@hpcc-js",
     "test": "run-s lint"
   },
   "main": "src/stub.js",

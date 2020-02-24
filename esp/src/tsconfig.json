@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "outDir": "./lib",
         "target": "es5",
         "module": "amd",
@@ -21,7 +22,13 @@
             "es2015"
         ],
         "typeRoots": [],
-        "types": []
+        "types": [],
+        "paths": {
+            "@hpcc-js/*": [
+                "./node_modules/@hpcc-js/*",
+                "../../../hpcc-js/packages/*"
+            ]
+        }
     },
     "include": [
         "src/**/*"

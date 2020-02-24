@@ -1,7 +1,10 @@
+var fs = require("fs");
+
 function getConfig(env) {
     // dojoRoot is defined if we're running in node (i.e. building)
     var dojoRoot = env.dojoRoot;
     var baseUrl = dojoRoot ? "." : "/esp/files";
+    var hpccBaseUrl = fs.existsSync(baseUrl + "/node_modules/@hpcc-js") ? baseUrl + "/node_modules/@hpcc-js" : baseUrl + "/../../../hpcc-js/packages";
 
     return {
         baseUrl: baseUrl,
@@ -20,29 +23,29 @@ function getConfig(env) {
             "templates": baseUrl + "/eclwatch/templates",
             "ecl": baseUrl + "/eclwatch/ecl",
             "css": baseUrl + "/loader/css",
-            "@hpcc-js/api": baseUrl + "/node_modules/@hpcc-js/api/dist/index",
-            "@hpcc-js/chart": baseUrl + "/node_modules/@hpcc-js/chart/dist/index",
-            "@hpcc-js/common": baseUrl + "/node_modules/@hpcc-js/common/dist/index",
-            "@hpcc-js/comms": baseUrl + "/node_modules/@hpcc-js/comms/dist/index",
-            "@hpcc-js/composite": baseUrl + "/node_modules/@hpcc-js/composite/dist/index",
-            "@hpcc-js/dgrid": baseUrl + "/node_modules/@hpcc-js/dgrid/dist/index",
-            "@hpcc-js/dgrid-shim": baseUrl + "/node_modules/@hpcc-js/dgrid-shim/dist/index",
-            "@hpcc-js/eclwatch": baseUrl + "/node_modules/@hpcc-js/eclwatch/dist/index",
-            "@hpcc-js/form": baseUrl + "/node_modules/@hpcc-js/form/dist/index",
-            "@hpcc-js/graph": baseUrl + "/node_modules/@hpcc-js/graph/dist/index",
-            "@hpcc-js/layout": baseUrl + "/node_modules/@hpcc-js/layout/dist/index",
-            "@hpcc-js/html": baseUrl + "/node_modules/@hpcc-js/html/dist/index",
-            "@hpcc-js/map": baseUrl + "/node_modules/@hpcc-js/map/dist/index",
-            "@hpcc-js/other": baseUrl + "/node_modules/@hpcc-js/other/dist/index",
-            "@hpcc-js/react": baseUrl + "/node_modules/@hpcc-js/react/dist/index",
-            "@hpcc-js/timeline": baseUrl + "/node_modules/@hpcc-js/timeline/dist/index",
-            "@hpcc-js/tree": baseUrl + "/node_modules/@hpcc-js/tree/dist/index",
-            "@hpcc-js/util": baseUrl + "/node_modules/@hpcc-js/util/dist/index",
-            "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : baseUrl + "/node_modules/@hpcc-js/map/TopoJSON",
+            "@hpcc-js/api": hpccBaseUrl + "/api/dist/index",
+            "@hpcc-js/chart": hpccBaseUrl + "/chart/dist/index",
+            "@hpcc-js/common": hpccBaseUrl + "/common/dist/index",
+            "@hpcc-js/comms": hpccBaseUrl + "/comms/dist/index",
+            "@hpcc-js/composite": hpccBaseUrl + "/composite/dist/index",
+            "@hpcc-js/dgrid": hpccBaseUrl + "/dgrid/dist/index",
+            "@hpcc-js/dgrid-shim": hpccBaseUrl + "/dgrid-shim/dist/index",
+            "@hpcc-js/eclwatch": hpccBaseUrl + "/eclwatch/dist/index",
+            "@hpcc-js/form": hpccBaseUrl + "/form/dist/index",
+            "@hpcc-js/graph": hpccBaseUrl + "/graph/dist/index",
+            "@hpcc-js/layout": hpccBaseUrl + "/layout/dist/index",
+            "@hpcc-js/html": hpccBaseUrl + "/html/dist/index",
+            "@hpcc-js/map": hpccBaseUrl + "/map/dist/index",
+            "@hpcc-js/other": hpccBaseUrl + "/other/dist/index",
+            "@hpcc-js/react": hpccBaseUrl + "/react/dist/index",
+            "@hpcc-js/timeline": hpccBaseUrl + "/timeline/dist/index",
+            "@hpcc-js/tree": hpccBaseUrl + "/tree/dist/index",
+            "@hpcc-js/util": hpccBaseUrl + "/util/dist/index",
+            "@hpcc-js/TopoJSON": dojoRoot ? "/esp/files/dist/TopoJSON" : hpccBaseUrl + "/map/TopoJSON",
             "clipboard": baseUrl + "/node_modules/clipboard/dist/clipboard",
             "codemirror": baseUrl + "/node_modules/codemirror",
             "crossfilter": baseUrl + "/node_modules/crossfilter2/crossfilter.min",
-            "font-awesome": baseUrl + "/node_modules/@hpcc-js/common/font-awesome",
+            "font-awesome": hpccBaseUrl + "/common/font-awesome",
             "tslib": baseUrl + "/node_modules/tslib/tslib"
         },
         packages: [
