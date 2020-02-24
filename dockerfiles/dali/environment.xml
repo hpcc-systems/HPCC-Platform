@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Environment>
+ <Software>
+  <DaliServerProcess build="_"
+                     buildSet="dali"
+                     name="mydali"
+                     recoverFromIncErrors="true">
+  <WhiteList enabled='false'/>                     
+  </DaliServerProcess>
+
+  <EclAgentProcess name="myeclagent"/>
+  <ThorCluster name="mythor"/>
+  <RoxieCluster name="myroxie"/>
+
+  
+  <Directories name="HPCCSystems">
+   <Category dir="/var/log/[NAME]/[INST]" name="log"/>
+   <Category dir="/var/lib/[NAME]/[INST]" name="run"/>
+   <Category dir="/etc/[NAME]/[INST]" name="conf"/>
+   <Category dir="/var/lib/[NAME]/[INST]/temp" name="temp"/>
+   <Category dir="/var/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
+   <Category dir="/var/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
+   <Category dir="/var/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
+   <Category dir="/var/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
+   <Category dir="/var/lib/[NAME]/queries/[INST]" name="query"/>
+   <Category dir="/var/lock/[NAME]/[INST]" name="lock"/>
+   <Category dir="/var/lib/[NAME]/hpcc-data4/[COMPONENT]" name="data4"/>
+   <Category dir="/var/lib/[NAME]/keys" name="keys"/>
+  </Directories>
+  <Topology build="_" buildSet="topology" name="topology">
+   <Cluster name="hthor" prefix="hthor" alias="">
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <EclAgentProcess process="myeclagent"/>
+    <EclCCServerProcess process="myeclccserver"/>
+   </Cluster>
+   <Cluster name="thor" prefix="thor" alias="">
+    <EclAgentProcess process="myeclagent"/>
+    <EclCCServerProcess process="myeclccserver"/>
+    <ThorCluster process="mythor"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+   </Cluster>
+   <Cluster name="roxie" prefix="roxie" alias="">
+    <RoxieCluster process="myroxie"/>
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+   </Cluster>
+   <Cluster name="thor_roxie" prefix="thor" alias="">
+    <EclCCServerProcess process="myeclccserver"/>
+    <ThorCluster process="mythor"/>
+    <RoxieCluster process="myroxie"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+   </Cluster>
+  </Topology>
+ </Software>
+</Environment>

@@ -13,7 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (configmgr)
+
+if (NOT CONTAINERIZED)
+  add_subdirectory (configmgr)
+endif()
 
 set ( SCRIPTS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/bpsreport.js

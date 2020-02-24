@@ -7906,6 +7906,14 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
             printf("%s\n", jsonText.str());
             exit(0);
         }
+#ifdef _DEBUG
+        else if (strsame(cur, "--hold"))
+        {
+            bool held = true;
+            while (held)
+                Sleep(5);
+        }
+#endif
         else if (strsame(cur, "--outputconfig"))
         {
             outputConfig = true;

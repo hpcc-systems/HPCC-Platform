@@ -144,6 +144,8 @@ void usage(void)
  */
 static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
 {
+    if (isCloud())
+        return false;
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
     assertex(conn);
 
@@ -365,6 +367,14 @@ int main(int argc, char* argv[])
             port = atoi(argv[++i]);
         else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
             myrank = atoi(argv[++i]);
+#ifdef _DEBUG
+        else if (streq(argv[i],"--hold"))
+        {
+            bool held = true;
+            while (held)
+                Sleep(5);
+        }
+#endif
         else {
             usage();
             return EXIT_FAILURE;

@@ -8,8 +8,8 @@
 
 HEAD=$(git rev-parse --short HEAD)
 PREV=$1
-[[ -z ${PREV} ]] && PREV=$(git log --format=format:%h $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-core --format {{.Tag}} | head -n 1`)
-[[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)
+[[ -z ${PREV} ]] && PREV=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-build --format {{.Tag}} | head -n 1`)
+[[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)-Debug
 
 BUILD_TYPE=Debug
 BUILD_LABEL=${HEAD}-Debug
@@ -29,7 +29,7 @@ else
     if [[ -n "$FORCE" ]] ; then
       docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${HEAD}-Debug --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
     else
-      docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV}-Debug --build-arg COMMIT=${HEAD} --build-arg USER=${GITHUB_USER} platform-build-incremental/
+      docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg COMMIT=${HEAD} --build-arg USER=${GITHUB_USER} platform-build-incremental/
     fi
     docker image build -t hpccsystems/platform-core:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} platform-core-debug/  
     

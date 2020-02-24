@@ -18,11 +18,11 @@ RUN mkdir build
 WORKDIR /hpcc-dev/build
 
 ARG BUILD_TYPE=RelWithDebInfo
-RUN JAVA_HOME=`/usr/libexec/java_home` cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 
 RUN make -j$(nproc) jlib
 RUN make -j$(nproc) esp
 RUN make -j$(nproc) roxie
 RUN make  ws_workunits  ecl
 RUN make -j$(nproc)
-RUN make -j$(nproc) package
+RUN make -j$(nproc) install

@@ -2611,6 +2611,7 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
 
 void CActivityInfoReader::threadmain()
 {
+#ifndef _CONTAINERIZED
     PROGLOG("WsSMC CActivityInfoReader Thread started.");
     unsigned int autoRebuildMillSeconds = 1000*autoRebuildSeconds;
     while (!stopping)
@@ -2658,4 +2659,5 @@ void CActivityInfoReader::threadmain()
             waiting.compare_exchange_strong(expected, false);
         }
     }
+#endif
 }
