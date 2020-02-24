@@ -5313,7 +5313,7 @@ void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &stat
     wu->setState(state);
     Owned<IWUException> e = wu->createException();
     e->setExceptionCode(isEcl ? 1001 : 1000);
-    e->setExceptionMessage(isEcl ? "EclServer terminated unexpectedly" : "Workunit terminated unexpectedly");
+    e->setExceptionMessage(isEcl ? "EclCC terminated unexpectedly" : "Workunit terminated unexpectedly");
 }
 
 static CriticalSection deleteDllLock;
