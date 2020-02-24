@@ -30,7 +30,7 @@ PREV=$1
 
 BUILD_TYPE=Debug
 BUILD_LABEL=${HEAD}-Debug
-GITHUB_USER=richardkchapman
+GITHUB_USER=$(git remote get-url origin | sed s/.*:// | sed s+/.*++)
 
 if [[ "$HEAD" == "$PREV$FORCE" ]]  # set environment variable FORCE before running to override this check
 then
