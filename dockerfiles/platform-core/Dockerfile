@@ -1,3 +1,24 @@
+##############################################################################
+#
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+##############################################################################
+
+# Create base container image to be used by all HPCC processes 
+# MORE - some of these dependencies are probably not needed by all derived containers - perhaps we should move them
+# Others may not be wanted at all in container mode - xterm,sshserver for example??
+
 ARG BUILD_LABEL
 FROM hpccsystems/platform-build:${BUILD_LABEL} as build
 FROM ubuntu:18.04
@@ -35,11 +56,6 @@ RUN apt-get install -y \
     nano 
 
 COPY --from=build /opt/HPCCSystems /
-
-#RUN dpkg -i *.deb ; \
-#    apt-get install -f && \
-#    apt-get clean && \
-#    rm *.deb
 
 RUN useradd -s /bin/bash -r -U -c "hpcc runtime User" hpcc
 RUN passwd -l hpcc 
