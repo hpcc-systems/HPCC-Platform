@@ -528,7 +528,6 @@ static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 Roxie:
   allFilesDynamic: true
-  daliServers: dali
   localSlave: true
   numChannels: 1
   numServerThreads: 30
