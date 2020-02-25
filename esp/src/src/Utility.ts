@@ -756,6 +756,12 @@ export function getURL(name) {
     return dojoConfig.urlInfo.resourcePath + "/" + name;
 }
 
+export function pathTail(path: string) {
+    //  Assuming we need to support windows paths as well...
+    const pathParts = path.split("\\").join("/").split("/"); 
+    return pathParts.pop();
+}
+
 export function getImageURL(name) {
     return this.getURL("img/" + name);
 }
