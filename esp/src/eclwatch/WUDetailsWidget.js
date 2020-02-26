@@ -168,6 +168,7 @@ define([
         },
         _onRestore: function (event) {
             this.wu.restore();
+            this.checkThorLogStatus();
         },
         _onAutoRefresh: function (event) {
             var autoRefresh = this.widget.AutoRefresh.get("checked");
