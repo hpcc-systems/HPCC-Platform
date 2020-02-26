@@ -1,0 +1,846 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+#include "xslprocessor.hpp"
+//  ===========================================================================
+
+EspInclude(common);
+
+//The ESPenum ECLWUActions has to be matched by the ECLWUActionNames[] in ws_workunitsService.cpp.
+ESPenum ECLWUActions : string
+{
+    Abort("Abort"),
+    Delete("Delete"),
+    EventDeschedule("Deschedule"),
+    EventReschedule("Reschedule"),
+    Pause("Pause"),
+    PauseNow("PauseNow"),
+    Protect("Protect"),
+    Unprotect("Unprotect"),
+    Restore("Restore"),
+    Resume("Resume"),
+    SetToFailed("SetToFailed"),
+};
+
+ESPenum EclDefinitionActions : string
+{
+    SyntaxCheck("SyntaxCheck"),
+    Deploy("Deploy"),
+    Publish("Publish"),
+};
+
+ESPenum ErrorMessageFormat : string
+{
+    XML("xml"),
+    JSON("json"),
+    Text("text")
+};
+
+
+ESPenum WUFileType : string
+{
+    XML("XML"),
+    CPP("cpp"),
+    DLL("dll"),
+    Res("res"),
+    LOG("log"),
+    WUECL("WUECL"),
+    ThorLog("ThorLog"),
+    ThorSlaveLog("ThorSlaveLog"),
+    EclAgentLog("EclAgentLog"),
+    ArchiveQuery("ArchiveQuery"),
+};
+
+ESPenum WUFileDownloadOption : int
+{
+    OriginalText(0, "OriginalText"),
+    Attachment(1,   "Attachment"),
+    ZIP(2,          "ZIP"),
+    GZIP(3,         "GZIP")
+};
+
+ESPenum WUQueryActivationMode : int
+{
+    NoActivate(0, "Do not activate query"),
+    Activate(1, "Activate query"),
+    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
+    ActivateDeletePrevious(3, "Activate query, delete previous")
+};
+
+ESPenum WUExceptionSeverity : string
+{
+    INFO("info"),
+    WARNING("warning"),
+    ERROR("error"),
+    ALERT("alert")
+};
+
+ESPenum WUQuerySetFilterType : string
+{
+    ALL("All"),
+    ID("Id"),
+    NAME("Name"),
+    ALIAS("Alias"),
+    STATUS("Status")
+};
+
+ESPenum QuerysetImportActivation : string
+{
+    None("None"),
+    ImportedActive("ActivateImportedActive")
+};
+
+ESPenum QuerySetQueryActionTypes : string
+{
+    Suspend("Suspend"),
+    Unsuspend("Unsuspend"),
+    ToggleSuspend("ToggleSuspend"),
+    Activate("Activate"),
+    Delete("Delete"),
+    RemoveAllAliases("RemoveAllAliases"),
+    ResetQueryStats("ResetQueryStats")
+};
+
+SCMenum WUINFOType
+{
+    WUGRAPHS,
+    WUTIMINGS,
+    WUACTIONS,
+    WURESULTS
+};
+
+ESPStruct [nil_remove] ECLException
+{
+    string Source;
+    string Severity;
+    int Code;
+    string Message;
+    string FileName;
+    int LineNo;
+    int Column;
+    [min_ver("1.63")] int Activity;
+    [min_ver("1.69")] string Scope;
+    [min_ver("1.69")] int Priority;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLSchemaItem
+{
+    string ColumnName;
+    string ColumnType;
+    int    ColumnTypeCode;
+    bool   isConditional(false);
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLResult
+{
+    string Name;
+    int    Sequence;
+    string Value;
+    string Link;
+    string FileName;
+    bool   IsSupplied;
+    bool   ShowFileContent(true);
+    int64  Total;
+
+    ESParray<ESPstruct ECLSchemaItem>    ECLSchemas;
+    [min_ver("1.39")] string XmlSchema;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLTimingData
+{
+    string Name;
+    int GraphNum;
+    int SubGraphNum;
+    int GID;
+    int Min;
+    int MS;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLGraph
+{
+    string Name;
+    string Label;
+    string Type;
+    bool Running;
+    [min_ver("1.09")] bool Complete;
+    [min_ver("1.14")] bool Failed;
+    int64 RunningId;
+    [min_ver("1.53")]string WhenStarted;
+    [min_ver("1.53")]string WhenFinished;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLGraphEx
+{
+    string Name;
+    string Label;
+    string Type;
+    string Graph;
+    bool Running;
+    int64 RunningId;
+    [min_ver("1.21")] bool Complete;
+    [min_ver("1.21")] bool Failed;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLSourceFile
+{
+    [min_ver("1.01")] string FileCluster;
+    string Name;
+    [min_ver("1.12")] bool IsSuperFile;
+    [min_ver("1.27")] int Subs;
+    int Count;
+
+    [min_ver("1.27")] ESParray<ESPstruct ECLSourceFile>    ECLSourceFiles;
+};
+//  ===========================================================================
+ESPStruct [nil_remove] ECLTimer
+{
+    string Name;
+    string Value;
+    int count;
+    [min_ver("1.20")] string GraphName;
+    [min_ver("1.20")] int SubGraphId;
+    [min_ver("1.72")] int64 Timestamp;
+    [min_ver("1.72")] string When;
+};
+
+//  ===========================================================================
+ESPStruct [nil_remove] ECLHelpFile
+{
+    string Name;
+    string Type;
+    [min_ver("1.32")] string IPAddress;
+    [min_ver("1.32")] string Description;
+    [min_ver("1.43")] int64 FileSize;
+    [min_ver("1.44")] unsigned PID(0);
+    [min_ver("1.58")] unsigned minActivityId(0);
+    [min_ver("1.58")] unsigned maxActivityId(0);
+};
+
+//  ===========================================================================
+ESPStruct [nil_remove] ECLQuery
+{
+    string Text;
+    string Cpp;
+    string ResTxt;
+    string Dll;
+    string ThorLog;
+    [min_ver("1.35")] string QueryMainDefinition;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QueryStatsRecord
+{
+    string StartTime;
+    int64 ElapsedTimeMs;
+    int64 MemoryUsed;
+    int64 BytesOut;
+    int SlavesReplyLen;
+    bool Failed;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QuerySummaryStats
+{
+    string Endpoint;
+    string Status;
+    string StartTime;
+    string EndTime;
+    int CountTotal;
+    int CountFailed;
+    int AverageSlavesReplyLen;
+    int64 AverageBytesOut;
+    int64 SizeAvgPeakMemory;
+    int64 TimeAvgTotalExecuteMinutes;
+    int64 TimeMinTotalExecuteMinutes;
+    int64 TimeMaxTotalExecuteMinutes;
+    int64 Percentile97;
+    bool Percentile97Estimate;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] QueryStats
+{
+    string ID; //QueryID or Global
+    ESParray<ESPstruct QuerySummaryStats> AggregateQueryStatsList;
+    ESParray<ESPstruct QueryStatsRecord> QueryStatsRecordList;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] EndpointQueryStats
+{
+    string Endpoint;
+    string Status;
+    ESParray<ESPstruct QueryStats> QueryStatsList;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] DebugValue
+{
+    string Name;
+    string Value;
+};
+
+ESPStruct [nil_remove] WUActionResult
+{
+    string Wuid;
+    string Action;
+    string Result;
+};
+
+ESPStruct [nil_remove] ApplicationValue
+{
+    string Application;
+    string Name;
+    string Value;
+};
+
+ESPStruct [nil_remove] ECLWorkflow
+{
+    string WFID;
+    string EventName("");
+    string EventText("");
+    int Count(-1);
+    int CountRemaining(-1);
+};
+
+ESPStruct [nil_remove] ThorLogInfo
+{
+    string ProcessName;
+    string ClusterGroup;
+    string LogDate;
+    int    NumberSlaves;
+};
+
+ESPStruct [nil_remove] ECLWorkunitLW
+{
+    string Wuid;
+    string Owner; //IConstWorkUnitInfo queryUser()
+    string JobName;
+    string WuScope;
+    string ClusterName;
+    int State;
+    string StateDesc;
+    int Action;
+    string ActionDesc;
+    int Priority;
+    string PriorityDesc;
+    int PriorityLevel;
+    bool IsProtected;
+    xsdDateTime DateTimeScheduled;
+
+    unsigned TotalClusterTime;
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+};
+
+ESPStruct [nil_remove] ECLWorkunit
+{
+    string Wuid;
+    string Owner;
+    string Cluster;
+    [min_ver("1.07")] string RoxieCluster;
+    string Jobname;
+    string Queue;
+    int StateID;    //Equiv to workunit::state
+    string State;   //Equiv to workunit::stateDesc
+    string StateEx;
+    string Description;
+    bool Protected;
+    bool Active;
+    int Action;
+    [min_ver("1.33")] string ActionEx;
+    xsdDateTime DateTimeScheduled;
+    int PriorityClass;
+    int PriorityLevel;
+    string Scope;
+    string Snapshot;
+    int    ResultLimit;
+    [min_ver("1.01")] bool Archived;
+    [min_ver("1.30")] bool IsPausing(false);
+    [min_ver("1.30")] bool ThorLCR(false);
+    [min_ver("1.01")] int EventSchedule;
+    [min_ver("1.02"), depr_ver("1.71")] bool HaveSubGraphTimings;
+    [min_ver("1.28"), depr_ver("1.53")] string TotalThorTime;
+    [min_ver("1.53")] string TotalClusterTime;
+    [min_ver("1.59")] string AbortBy;
+    [min_ver("1.59")] string AbortTime;
+
+    ESPstruct ECLQuery Query;
+    [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;
+    ESParray<ESPstruct ECLException>    Exceptions;
+    ESParray<ESPstruct ECLGraph>        Graphs;
+    ESParray<ESPstruct ECLSourceFile>   SourceFiles;
+    ESParray<ESPstruct ECLResult>       Results;
+    ESParray<ESPstruct ECLResult>       Variables;
+    ESParray<ESPstruct ECLTimer>        Timers;
+    ESParray<ESPstruct DebugValue>      DebugValues;
+    ESParray<ESPstruct ApplicationValue> ApplicationValues;
+    [min_ver("1.01")] ESParray<ESPstruct ECLWorkflow> Workflows;
+    [min_ver("1.02")] ESParray<ESPstruct ECLTimingData> TimingData;
+    [min_ver("1.05")] ESParray<string, AllowedCluster> AllowedClusters;
+    [min_ver("1.17")] int ErrorCount;
+    [min_ver("1.17")] int WarningCount;
+    [min_ver("1.17")] int InfoCount;
+    [min_ver("1.52")] int AlertCount;
+    [min_ver("1.17")] int GraphCount;
+    [min_ver("1.17")] int SourceFileCount;
+    [min_ver("1.17")] int ResultCount;
+    [min_ver("1.17")] int VariableCount;
+    [min_ver("1.17")] int TimerCount;
+    [min_ver("1.17")] bool HasDebugValue;
+    [min_ver("1.17")] int ApplicationValueCount;
+    [min_ver("1.22")] string XmlParams;
+    [min_ver("1.23")] int AccessFlag;
+    [min_ver("1.24")] int ClusterFlag;
+    [min_ver("1.29")] string HelpersDesc;
+    [min_ver("1.29")] string GraphsDesc;
+    [min_ver("1.29")] string SourceFilesDesc;
+    [min_ver("1.29")] string ResultsDesc;
+    [min_ver("1.29")] string VariablesDesc;
+    [min_ver("1.29")] string TimersDesc;
+    [min_ver("1.29")] string DebugValuesDesc;
+    [min_ver("1.29")] string ApplicationValuesDesc;
+    [min_ver("1.29")] string WorkflowsDesc;
+    [min_ver("1.31")] bool HasArchiveQuery;
+    [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
+    [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
+    [min_ver("1.50")] int ResultViewCount;
+    [min_ver("1.50")] int ResourceURLCount;
+    [min_ver("1.50")] int DebugValueCount;
+    [min_ver("1.50")] int WorkflowCount;
+    [min_ver("1.67")] int HelpersCount;
+};
+
+ESPStruct [nil_remove] WUECLAttribute
+{
+    string ModuleName;
+    string AttributeName;
+    bool IsLocked;
+    bool IsCheckedOut;
+    bool IsSandbox;
+    bool IsOrphaned;
+};
+
+//  ===========================================================================
+ESPStruct NetworkNode
+{
+    int Category;
+    string id;
+};
+
+ESPStruct [nil_remove] ClusterEndpoint
+{
+    string URL;
+    string Status;
+    int NumQueryFileToCopy;
+};
+
+ESPStruct LogicalFileUpload
+{
+    int     Type;
+    string  Source;
+    string  Destination;
+    string  EventTag;
+};
+
+//  ===========================================================================
+
+ESPStruct [nil_remove] ECLJob
+{
+    string Wuid;
+    string Graph;
+    string State;
+    string StartedDate;
+    string FinishedDate;
+    string Cluster;
+    [min_ver("1.06")] string GraphNum;
+    [min_ver("1.06")] string SubGraphNum;
+    [min_ver("1.06")] string NumOfRuns;
+    [min_ver("1.06")] int Duration;
+};
+
+ESPStruct [nil_remove] ThorQueue
+{
+    string DT;
+    string RunningWUs;
+    string QueuedWUs;
+    string WaitingThors;
+    string ConnectedThors;
+    string IdledThors;
+    string RunningWU1;
+    string RunningWU2;
+};
+
+ESPStruct [nil_remove] ResubmittedWU
+{
+    string WUID;
+    string ParentWUID;
+};
+
+ESPStruct WUFileOption
+{
+    ESPenum WUFileType FileType;
+    string Name; //CPP, ThorLog, and EclAgentLog: required; XML: optional
+    string IPAddress; //CPP/XML: required; ThorSlaveLog: required for legacy WU
+    string Description; //CPP/XML: required
+    string Process; //EclAgentLog and ThorSlaveLog: optional
+    string LogDate; //ThorSlaveLog: required
+    string ClusterGroup; //ThorSlaveLog: not required for legacy WU
+    string PlainText; //XML: optional
+    int SlaveNumber(1); //ThorSlaveLog: optional
+    int64 SizeLimit(0);
+};
+
+ESPStruct [nil_remove] ScheduledWU
+{
+    string Wuid;
+    string Cluster("");
+    string EventName("");
+    string EventText("");
+    string JobName("");
+    [min_ver("1.51")] int StateID;
+    [min_ver("1.51")] string State("");
+    [min_ver("1.51")] string Owner("");
+};
+
+ESPStruct [nil_remove] ServerInfo
+{
+    string Name("");
+    string NetAddress("");
+};
+
+ESPStruct WULogicalFileCopyInfo
+{
+    bool IsIndex;
+    string LogicalName;
+    string DfuCopyWuid;
+    string DfuCopyError;
+    ESParray<string> Clusters;
+};
+
+ESPStruct WUCopyLogicalClusterFileSections
+{
+    string ClusterName;
+    ESParray<ESPstruct WULogicalFileCopyInfo> OnCluster;
+    ESParray<ESPstruct WULogicalFileCopyInfo> NotOnCluster;
+    ESParray<ESPstruct WULogicalFileCopyInfo> Foreign;
+    ESParray<ESPstruct WULogicalFileCopyInfo> NotFound;
+};
+
+
+ESPStruct QuerySet
+{
+    string  QuerySetName;
+};
+
+ESPStruct ClusterQueryState
+{
+    string Cluster;
+    string State;
+    [min_ver("1.46")] string Errors;
+    [min_ver("1.47")] bool MixedNodeStates;
+};
+
+ESPStruct [nil_remove] QuerySetQuery
+{
+    string Id;
+    string Name;
+    string Wuid;
+    string Dll;
+    bool Suspended;
+    ESParray<ESPstruct ClusterQueryState> Clusters;
+    string memoryLimit;
+    nonNegativeInteger timeLimit;
+    nonNegativeInteger warnTimeLimit;
+    string priority;
+    string Comment;
+    [min_ver("1.45")] string QuerySetId;
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] bool Activated;
+    [min_ver("1.46")] string PublishedBy;
+    [min_ver("1.48")] string snapshot;
+};
+
+ESPStruct QuerySetAlias
+{
+    string Id;
+    string Name;
+};
+
+ESPStruct [nil_remove] QueryUsingFile
+{
+    string Id;
+    string Package;
+};
+
+ESPStruct [nil_remove] TargetQueriesUsingFile
+{
+    string Target;
+    string PackageMap;
+    ESParray<ESPstruct QueryUsingFile> Queries;
+};
+
+
+ESPStruct [nil_remove] FileUsedByQuery
+{
+    string FileName;
+    int64 FileSize;
+    unsigned NumberOfParts;
+};
+
+ESPStruct QuerySuperFile
+{
+    string Name;
+    ESParray<string, File> SubFiles;
+    [min_ver("1.57")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
+};
+
+ESPstruct WUQuerySetDetail
+{
+    string  QuerySetName;
+    ESParray<ESPstruct QuerySetQuery> Queries;
+    ESParray<ESPstruct QuerySetAlias> Aliases;
+};
+
+ESPStruct QuerySetQueryClientState
+{
+    string Suspended;
+};
+
+ESPStruct QuerySetQueryActionItem
+{
+    string QueryId;
+    ESPstruct QuerySetQueryClientState ClientState;
+};
+
+ESPStruct QuerySetQueryActionResult
+{
+    string QueryId;
+    bool Suspended;
+    bool Success;
+    int Code;
+    string Message;
+};
+
+ESPenum QuerySetAliasActionTypes : string
+{
+    Deactivate("Deactivate")
+};
+
+ESPStruct QuerySetAliasActionItem
+{
+    string Name;
+};
+
+ESPStruct QuerySetAliasActionResult
+{
+    string Name;
+    bool Success;
+    int Code;
+    string Message;
+};
+
+ESPStruct DeploymentFeatures
+{
+    bool UseCompression;
+};
+
+ESPStruct [nil_remove] WUStatisticItem
+{
+    string Creator;
+    string CreatorType;
+    string Scope;
+    string ScopeType;
+    string Description;
+    string TimeStamp;
+    string Measure;
+    string Kind;
+    string Value;
+    int64 RawValue;
+    int64 Count;
+    int64 Max;
+    [min_ver("1.62")] string Wuid;
+};
+
+ESPStruct [nil_remove] WUArchiveFile
+{
+    string Name;
+    string Key;
+    string SourcePath;
+    string Path;        //nested (parent) module names for this <Attribute>
+};
+
+ESPStruct [nil_remove] WUArchiveModule
+{
+    string Name;
+    string FullName;
+    unsigned Flags;
+    string Key;
+    string Plugin;
+    string SourcePath;
+    string Version;
+    string Path;        //nested (parent) module names for this <Module>
+    ESParray<ESPstruct WUArchiveModule, ArchiveModule> ArchiveModules;
+    ESParray<ESPstruct WUArchiveFile, File> Files;
+};
+
+// Request related structures
+ESPstruct WUPropertyFilter
+{
+    string Name;                                // Attribute Name to match
+                                                // Match attribute's RawValue
+    [optional] string ExactValue;
+    [optional] string MinValue;
+    [optional] string MaxValue;
+};
+
+// Filters that indicates which nodes are explicitly matched
+// Scopes can be used at the same time as Ids.
+// ScopeTypes cannot be used at the same time as Scopes or Ids.
+// PropertyFilters (attributes or statistics) is applied to all matches
+ESPStruct WUScopeFilter
+{
+    [optional] integer MaxDepth(9999);          // Maximum depth to return matches from (omitted means no limit)
+    [optional] ESParray<string, Scope> Scopes;  // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] ESParray<string, id> Ids;        // Return scope with given node id
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+    [optional] ESParray<ESPstruct WUPropertyFilter, PropertyFilter> PropertyFilters;
+};
+
+// This provides the filter which indicates which nodes are implicitly matched
+// Once a match is found, all nested scopes to a depth of depth are implicitly matched, provided they match the nested filter
+ESPStruct WUNestedFilter
+{
+    [optional] unsigned Depth(9999);            // How many nodes deep relative to matched scope id(s)
+                                                // 0 - implies return only the given scope id
+                                                // 1 - return only the immediate child of the given scope
+                                                // n - return children to 'n' level deep
+    [optional] ESParray<string, ScopeType> ScopeTypes;   // Return scope of a given type
+};
+
+// Additional properties that are returned for a scopeType
+ESPStruct WUExtraProperties
+{
+    string scopeType;                   // A type of scope e.g., activity/edge
+    [optional] ESParray<string, Property> Properties; // a list of properties to return, omitted means none
+};
+
+// If measure and attributes are omitted then all matches are returned
+// Measure and Attributes/ScopeAttributes are mutually exclusive.
+// Measure set to blank or Attributes set to empty will prevent any attributes being returned.
+ESPStruct WUPropertiesToReturn
+{
+    bool AllStatistics(false);
+    bool AllAttributes(false);
+    bool AllHints(false);
+    bool AllScopes(false);
+    bool AllProperties(false);
+    [min_ver("1.76")] bool AllNotes(false);
+    [optional] uint64 MinVersion;       // Only return properties where the version is later than this version.
+    [optional] string Measure;          // E.g. Time, Num, Size
+    [optional] ESParray<string, Property> Properties; // a list of properties to return
+    [optional] ESParray<ESPstruct WUExtraProperties, Extra> ExtraProperties;
+};
+
+ESPStruct WUScopeOptions
+{
+    bool IncludeMatchedScopesInResults(true);
+    bool IncludeScope(true);
+    bool IncludeId(false);
+    bool IncludeScopeType(false);
+};
+
+// Controls which information is returned for the statistics
+ESPStruct WUPropertyOptions
+{
+    bool IncludeName(true);
+    bool IncludeRawValue(false);
+    bool IncludeFormatted(true);
+    bool IncludeMeasure(true);
+    bool IncludeCreator(false);
+    bool IncludeCreatorType(false);
+};
+
+// ----------------------------------------------------------------------------------
+// Response related structures
+ESPstruct [nil_remove] WUResponseProperty
+{
+    [optional] string Name;         // Name of attribute
+    [optional] string RawValue;     // Value of attribute
+    [optional] string Formatted;    // Formatted value of attribute
+    [optional] string Measure;      // What type is this attribute
+    [optional] string Creator;      // Which engine created it
+    [optional] string CreatorType;  // What type of engine created it.
+};
+
+ESPstruct [nil_remove] WUResponseNote
+{
+    [optional] string Source;       // Thor, Eclcc, Analyser etc
+    [optional] string Message;
+    [optional] nonNegativeInteger ErrorCode;
+    [optional] string Severity;
+    [optional] nonNegativeInteger Cost;
+};
+
+ESPstruct [nil_remove] WUResponseScope
+{
+    [optional] string ScopeName;        // Fully qualified scope (See definition of "Scope" in workunit.hpp)
+    [optional] string Id;               // Node/Graph id
+    [optional] string ScopeType;        // e.g. Activity, Edge
+    [optional] ESParray<ESPstruct WUResponseProperty, Property> Properties;
+    [optional, min_ver("1.76")] ESParray<ESPstruct WUResponseNote, Note> Notes;
+};
+
+ESPStruct WUQueryConfigResult
+{
+    string  QueryId;
+};
+
+// ----------------------------------------------------------------------------------
+ESPenum WUDetailsAttrValueType : string
+{
+    Single("Single"),
+    List("List"),
+    Multi("Multi"),
+};
+
+ESPStruct WUDetailsMetaProperty
+{
+    string Name;
+    ESPenum WUDetailsAttrValueType ValueType;
+};
+
+ESPStruct WUDetailsActivityInfo
+{
+    unsigned Kind;
+    string Name;
+    boolean IsSink;
+    boolean IsSource;
+};
+
+ESPStruct [nil_remove] WUEclDefinitionActionResult
+{
+    string EclDefinition;
+    string Action;
+    string WUID;
+    string QueryID;
+    string Result;
+};

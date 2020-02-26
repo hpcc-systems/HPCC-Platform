@@ -30,8 +30,14 @@ set (    SRCS
          ../../../dali/sasha/sacmd.cpp
          ../../../dali/dfu/dfuutil.cpp
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_workunits_struct_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_workunits_req_resp_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_workunits_queryset_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
+         ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_struct.ecm
+         ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_req_resp.ecm
+         ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_queryset_req_resp.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits.ecm
          ${HPCC_SOURCE_DIR}/esp/clients/roxiecontrol.cpp
          ws_workunitsPlugin.cpp
