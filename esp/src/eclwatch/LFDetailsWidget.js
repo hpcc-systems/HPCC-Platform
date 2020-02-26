@@ -26,6 +26,7 @@ define([
     "hpcc/FileBelongsToWidget",
     "hpcc/FileHistoryWidget",
     "hpcc/FileBloomsWidget",
+    "hpcc/FileProtectListWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -75,6 +76,7 @@ define([
         fileBelongsTo: null,
         fileHistoryWidget: null,
         fileBloomsWidget: null,
+        fileProtectListWidget: null,
 
         logicalFile: null,
         prevState: "",
@@ -97,6 +99,7 @@ define([
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
             this.fileHistoryWidget = registry.byId(this.id + "_FileHistory");
             this.fileBloomsWidget = registry.byId(this.id + "_FileBlooms");
+            this.fileProtectListWidget = registry.byId(this.id + "_FileProtectList");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayTooltiopDialog = registry.byId(this.id + "DesprayTooltipDialog");
@@ -346,6 +349,10 @@ define([
                     this.fileBloomsWidget.init({
                         Name: this.logicalFile.Name
                     });
+                } else if (currSel.id === this.fileProtectListWidget.id) {
+                    this.fileProtectListWidget.init({
+                        Name: this.logicalFile.Name
+                    });
                 } else {
                     currSel.init(currSel.params);
                 }
@@ -405,6 +412,7 @@ define([
                 this.fileBelongsToWidget.reset();
                 this.fileHistoryWidget.reset();
                 this.fileBloomsWidget.reset();
+                this.fileProtectListWidget.reset();
             } else if (name === "Name") {
                 this.updateInput("RenameSourceName", oldValue, newValue);
                 this.updateInput("RenameTargetName", oldValue, newValue);
