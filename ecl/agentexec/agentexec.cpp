@@ -260,7 +260,7 @@ int main(int argc, const char *argv[])
     Owned<IPropertyTree> config;
     try
     {
-        config.setown(loadConfiguration(eclagentDefaultJson, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
+        config.setown(loadConfiguration(eclagentDefaultYaml, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
     }
     catch (IException *e) 
     {

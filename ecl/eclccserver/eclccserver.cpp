@@ -741,18 +741,17 @@ void initSignals()
 #endif
 }
 
-static constexpr const char * defaultJson = R"!!({
- "version": "1.0",
- "EclCCServer": {
-    "daliServers": "dali",
-    "enableEclccDali": true,
-    "enableSysLog": true,
-    "generatePrecompiledHeader": true,
-    "maxEclccProcesses": 4,
-    "name": "myeclccserver",
-    "traceLevel": 1
-  }
-})!!";
+static constexpr const char * defaultYaml = R"!!(
+ version: "1.0"
+ EclCCServer:
+    daliServers: dali
+    enableEclccDali: true
+    enableSysLog: true
+    generatePrecompiledHeader: true
+    maxEclccProcesses: 4
+    name: myeclccserver
+    traceLevel: 1
+)!!";
 
 
 
@@ -778,7 +777,7 @@ int main(int argc, const char *argv[])
 
     try
     {
-        globals.setown(loadConfiguration(defaultJson, argv, "EclCCServer", "ECLCCSERVER", "eclccserver.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "EclCCServer", "ECLCCSERVER", "eclccserver.xml", nullptr));
     }
     catch (IException * e)
     {

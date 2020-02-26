@@ -17,16 +17,15 @@
 #ifndef ECLAGENT_HPP
 #define ECLAGENT_HPP
 
-constexpr const char * eclagentDefaultJson = R"!!({
-"version": "1.0",
-"EclAgent": {
-    "analyzeWorkunit": true,
-    "daliServers": "dali",
-    "defaultMemoryLimitMB": 300,
-    "name": "myeclagent",
-    "thorConnectTimeout":600,
-    "traceLevel": 0
-}
-})!!";
+static constexpr const char * eclagentDefaultYaml = R"!!(
+version: "1.0"
+EclAgent:
+    analyzeWorkunit: true
+    daliServers: dali
+    defaultMemoryLimitMB: 300
+    name: myeclagent
+    thorConnectTimeout: 600
+    traceLevel: 0
+)!!";
 
 #endif
