@@ -469,7 +469,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IExcep
 extern graph_decl void reportExceptionToWorkunitCheckIgnore(IConstWorkUnit &workunit, IException *e, ErrorSeverity severity=SeverityWarning);
 
 
-extern graph_decl IPropertyTree *globals;
+extern graph_decl Owned<IPropertyTree> globals;
 extern graph_decl mptag_t masterSlaveMpTag;
 extern graph_decl mptag_t kjServiceMpTag;
 enum SlaveMsgTypes:unsigned { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };

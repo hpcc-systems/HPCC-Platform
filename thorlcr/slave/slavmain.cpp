@@ -62,7 +62,7 @@ void enableThorSlaveAsDaliClient()
 {
 #ifdef ISDALICLIENT
     PROGLOG("Slave activated as a Dali client");
-    const char *daliServers = globals->queryProp("@DALISERVERS");
+    const char *daliServers = globals->queryProp("@daliServers");
     if (!daliServers)
         throw MakeStringException(0, "No Dali server list specified");
     Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);

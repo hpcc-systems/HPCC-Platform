@@ -1562,7 +1562,7 @@ public:
         if (_foreignNode && !_foreignNode->isNull())
             foreignNode.set(*_foreignNode);
         else
-            foreignNode.set(globals->queryProp("@DALISERVERS"));
+            foreignNode.set(globals->queryProp("@daliServers"));
         return ::getGlobalUniqueIds(num, &foreignNode);
     }
     virtual bool allowDaliAccess() const
