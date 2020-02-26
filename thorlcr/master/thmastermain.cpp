@@ -678,11 +678,6 @@ int main( int argc, char *argv[]  )
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
-        {
-            FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
-            return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
-        }
 
         if (globals->getPropBool("@useNASTranslation", true))
         {
@@ -859,6 +854,12 @@ int main( int argc, char *argv[]  )
 
         if (registry->connect(numSlaves))
         {
+            if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
+            {
+                FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
+                return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
+            }
+
             unsigned totSlaveProcs = queryNodeClusterWidth();
             for (unsigned s=0; s<totSlaveProcs; s++)
             {
