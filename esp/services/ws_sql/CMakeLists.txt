@@ -104,6 +104,7 @@ if(WSSQL_SERVICE)
     add_dependencies(ws_sql espscm sql2ecl)
     target_link_libraries(
         ws_sql
+        ws_workunits
         ws_dfu
         jlib
         xmllib
