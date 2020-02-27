@@ -291,6 +291,10 @@ inline static bool isValidXPathChr(char c)
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *));
 jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree * config, const char * componentTag);
 
+//The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().
+jlib_decl IPropertyTree & queryGlobalConfig();
+jlib_decl IPropertyTree & queryComponentConfig();
+
 /*
  YAML to PTree support
    By default YAML scalars become PTree attributes unless the YAML has an !element or !el YAML tag specifying that the scalar
@@ -323,6 +327,5 @@ jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree 
 jlib_decl IPropertyTree *createPTreeFromYAMLString(const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLString(unsigned len, const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-
 
 #endif

@@ -7821,7 +7821,7 @@ static const char * extractOption(const char * option, const char * cur)
 
 static bool ignoreOption(const char * name)
 {
-    return streq(name, "config") || streq(name, "outputconfig");
+    return streq(name, "config") || streq(name, "global") || streq(name, "outputconfig");
 }
 
 static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
@@ -7869,8 +7869,37 @@ jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree 
     return jsonText;
 }
 
+static Owned<IPropertyTree> componentConfiguration;
+static Owned<IPropertyTree> globalConfiguration;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    componentConfiguration.clear();
+    globalConfiguration.clear();
+}
+
+IPropertyTree & queryComponentConfig()
+{
+    if (!componentConfiguration)
+        throw makeStringException(99, "Configuration file has not yet been processed");
+    return *componentConfiguration;
+}
+
+IPropertyTree & queryGlobalConfig()
+{
+    if (!globalConfiguration)
+        throw makeStringException(99, "Configuration file has not yet been processed");
+    return *globalConfiguration;
+}
+
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
 {
+    if (componentConfiguration)
+        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+
     Owned<IPropertyTree> componentDefault;
     if (defaultYaml)
     {
@@ -7886,13 +7915,17 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     Linked<IPropertyTree> config(componentDefault);
     const char * optConfig = nullptr;
+    const char * optGlobal = nullptr;
     bool outputConfig = false;
     for (const char * * pArg = argv; *pArg; pArg++)
     {
         const char * cur = *pArg;
         const char * matchConfig = extractOption("--config", cur);
+        const char * matchGlobal = extractOption("--global", cur);
         if (matchConfig)
             optConfig = matchConfig;
+        else if (matchGlobal)
+            optGlobal = matchGlobal;
         else if (strsame(cur, "--help"))
         {
             //MORE: displayHelp(config);
@@ -7970,6 +8003,12 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         exit(0);
     }
 
+    if (optGlobal)
+        globalConfiguration.setown(loadConfiguration(optGlobal, "Global"));
+    if (!globalConfiguration)
+        globalConfiguration.setown(createPTree("Global"));
+
+    componentConfiguration.set(config);
     return config.getClear();
 }
 
