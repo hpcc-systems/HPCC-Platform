@@ -28,7 +28,7 @@ RUN if ! git config remote.${USER}.url > /dev/null ; then git remote add ${USER}
 
 ARG COMMIT
 
-RUN git fetch ${USER} && git checkout ${COMMIT} 
+RUN git fetch ${USER} && git checkout ${COMMIT} && git submodule update --init --recursive
+
 WORKDIR /hpcc-dev/build
-RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DCMAKE_BUILD_TYPE=Debug
 RUN make -j$(($(nproc)*3/2)) install
