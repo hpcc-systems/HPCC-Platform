@@ -25,9 +25,11 @@ spec:
         - mountPath: "/var/lib/HPCCSystems/queries"
           name: dllserver-pv-storage
       {{- end }}
+      serviceAccountName: hpcc
       containers:
       - name: {{ .name | quote }}
         args: [
+                "--containerPerCompile=1",
                 {{ include "hpcc.utils.configArg" . }},
                 {{ include "hpcc.utils.daliArg" $ }}
               ]
@@ -35,6 +37,28 @@ spec:
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
 {{ include "hpcc.utils.addVolumes" . | indent 6 }}
 ---
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
+{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) }}
+  jobspec.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: %jobname
+    spec:
+      template:
+        spec:
+          containers:
+          - name: %jobname
+            image: {{ include "hpcc.utils.imageName" (dict "root" $ "imagename" "eclccserver") }}
+            command: [
+                        "eclccserver",
+                        {{ include "hpcc.utils.configArg" . }},
+                        {{ include "hpcc.utils.daliArg" $ }},
+                        %args
+                     ]
+{{ include "hpcc.utils.addVolumeMounts" . | indent 12 }}
+{{ include "hpcc.utils.addVolumes" . | indent 10 }}
+          restartPolicy: Never
+      backoffLimit: 0
+      
 ---
 {{- end }}
