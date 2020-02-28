@@ -55,6 +55,8 @@ RUN apt-get install -y \
     dnsutils \
     nano 
 
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+
 COPY --from=build /opt/HPCCSystems /
 
 RUN groupadd -g 1000 hpcc
