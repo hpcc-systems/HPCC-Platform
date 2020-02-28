@@ -1318,6 +1318,17 @@ public:
     {
         traceStartDelayPeriod = secs;
     }
+    bool waitAvailable(unsigned timeout)
+    {
+        if (!defaultmax)
+            return true;
+        if (availsem.wait(timeout))
+        {
+            availsem.signal();
+            return true;
+        }
+        return false;
+    }
 };
 
 

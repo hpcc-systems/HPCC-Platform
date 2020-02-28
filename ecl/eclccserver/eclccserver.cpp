@@ -652,6 +652,12 @@ public:
         {
             try
             {
+                if (!pool->waitAvailable(10000))
+                {
+                    if (globals->getPropInt("@traceLevel", 0) > 2)
+                        DBGLOG("Blocked for 10 seconds waiting for an available compiler thread");
+                    continue;
+                }
                 Owned<IJobQueueItem> item = queue->dequeue();
                 if (item.get())
                 {
