@@ -717,6 +717,9 @@ interface INamedGroupStore : extends IGroupResolver
     virtual INamedGroupIterator *getIterator() = 0;
     virtual INamedGroupIterator *getIterator(IGroup *match, bool exact=false) = 0;
     virtual void add(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
+    virtual void ensure(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
+    virtual void ensureNasGroup(size32_t size) = 0;
+    virtual StringBuffer &getNasGroupName(StringBuffer &groupName, size32_t size) const = 0;
     virtual unsigned removeNode(const char *logicalgroupname, const char *nodeToRemove) = 0;
     virtual void remove(const char *logicalgroupname) = 0;
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;

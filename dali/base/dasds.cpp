@@ -8762,6 +8762,9 @@ public:
             LOG(MCdebugInfo(100), unknownJob, "Failed to load main store");
             throw;
         }
+        // In nas/non-local storage mode, create a published named group for 1-way files to use
+        if (isCloud())
+            queryNamedGroupStore().ensureNasGroup(1);
         storeLoaded = true;
         manager->start();
     }

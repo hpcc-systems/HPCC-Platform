@@ -7,9 +7,9 @@ metadata:
 spec:
   storageClassName: manual
   capacity:
-    storage: 10Gi
+    storage: {{ .Values.global.dllserver.storageSize }}
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: {{ printf "%s/queries" $.Values.global.hostMountPath }}
+    path: {{ printf "%s/queries" $.Values.global.dataStorage.hostMountPath }}
     type: DirectoryOrCreate
