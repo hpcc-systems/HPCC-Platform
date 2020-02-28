@@ -186,6 +186,13 @@ int CEclAgentExecutionServer::run()
 
 int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 {
+#ifdef _CONTAINERIZED
+    if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
+    {
+        runK8sJob("eclagent", wuid);
+        return true;
+    }
+#endif
     //build eclagent command line
     StringBuffer command;
 
@@ -196,7 +203,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 #endif
 
     StringBuffer cmdLine(command);
-    cmdLine.append(" --wuid=").append(wuid).append(" --daliServers=").append(daliServers);
+    cmdLine.append(" --workunit=").append(wuid).append(" --daliServers=").append(daliServers);
 
     DWORD runcode;
     PROGLOG("AgentExec: Executing '%s'", cmdLine.str());
@@ -244,6 +251,7 @@ bool ControlHandler()
 
 int main(int argc, const char *argv[]) 
 { 
+#ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
             if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -253,6 +261,7 @@ int main(int argc, const char *argv[])
             break;
         }
     }
+#endif
     InitModuleObjects();
 
     addAbortHandler(ControlHandler);

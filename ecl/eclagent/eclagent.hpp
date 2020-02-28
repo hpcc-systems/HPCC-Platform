@@ -21,7 +21,6 @@ static constexpr const char * eclagentDefaultYaml = R"!!(
 version: "1.0"
 EclAgent:
     analyzeWorkunit: true
-    daliServers: dali
     defaultMemoryLimitMB: 300
     name: myeclagent
     thorConnectTimeout: 600

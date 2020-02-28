@@ -13807,3 +13807,43 @@ bool isValidMemoryValue(const char *memoryUnit)
     }
     return false;
 }
+
+#ifdef _CONTAINERIZED
+void runK8sJob(const char *name, const char *wuid)
+{
+    VStringBuffer jobname("%s-%s", name, wuid);
+    jobname.toLowerCase();
+    VStringBuffer args("--workunit=%s", wuid);
+    StringBuffer jobYaml;
+    jobYaml.loadFile("/etc/config/jobspec.yaml", false);
+    jobYaml.replaceString("%jobname", jobname.str());
+    jobYaml.replaceString("%args", args.str());
+    StringBuffer output, error;
+    unsigned ret = runExternalCommand(output, error, "kubectl apply -f -", jobYaml.str());
+    DBGLOG("kubectl output: %s", output.str());
+    if (error.length())
+        DBGLOG("kubectl error: %s", error.str());
+    if (ret)
+    {
+        DBGLOG("Using job yaml %s", jobYaml.str());
+        throw makeStringException(0, "Failed to start kubectl job");
+    }
+
+    VStringBuffer waitJob("kubectl wait --for=condition=complete --timeout=10h job/%s", jobname.str());  // MORE - make timeout configurable
+    ret = runExternalCommand(output.clear(), error.clear(), waitJob.str(), nullptr);
+    DBGLOG("kubectl wait output: %s", output.str());
+    if (error.length())
+        DBGLOG("kubectl wait error: %s", error.str());
+    if (ret)
+        throw makeStringException(0, "Failed to run kubectl wait");
+#ifndef _DEBUG
+    VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
+    ret = runExternalCommand(output.clear(), error.clear(), deleteJob.str(), nullptr);
+    DBGLOG("kubectl delete output: %s", output.str());
+    if (error.length())
+        DBGLOG("kubectl delete error: %s", error.str());
+    if (ret)
+        throw makeStringException(0, "Failed to run kubectl delete");
+#endif
+}
+#endif

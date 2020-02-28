@@ -44,6 +44,7 @@ spec:
     metadata:
       name: %jobname
     spec:
+      ttlSecondsAfterFinished: 100
       template:
         spec:
           containers:

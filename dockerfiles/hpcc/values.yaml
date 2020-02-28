@@ -24,6 +24,10 @@ dali:
 eclagent:
 - name: myeclagent
   replicas: 1
+  config: |
+    version: 1.0
+    EclAgent:
+      containerPerAgent: true
     
 eclccserver:
 - name: myeclccserver
@@ -33,7 +37,7 @@ esp:
 - name: myesp
   replicas: 1
 
-roxie:
+xroxie:
   - name: roxie1
     ports: [ 9876, 0 ]
     localSlave: 1
