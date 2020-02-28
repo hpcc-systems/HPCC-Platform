@@ -3281,7 +3281,7 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
 
 void usage()
 {
-    printf("USAGE: eclagent --wuid=wuid options\n"
+    printf("USAGE: eclagent --workunit=wuid options\n"
            "options include:\n"
            "       --daliServers=daliEp\n"
            "       --traceLevel=n\n"
@@ -3537,9 +3537,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
         if (!standAloneWorkUnit)
         {
-            agentTopology->getProp("@wuid", wuid);
+            agentTopology->getProp("@workunit", wuid);
             if (!wuid.length())
-                throw MakeStringException(0, "wuid not specified");
+                throw MakeStringException(0, "workunit not specified");
         }
         else
         {
@@ -3631,6 +3631,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         EXCLOG(e, "EclAgent");
         e->Release();
+        retcode = 2;
     }
 
     if (daliDownMonitor)
