@@ -5,6 +5,12 @@ global:
   
   dllserver:
     storageSize: 3Gi
+  
+  dataStorage:
+    storageSize: 100G
+    # For singleMode only. Host mount point root for persistent storage.
+    hostMountPath: "/docker-host-mnt"
+    startDafilesrv: false # Temporary until non attached storage functionality added
 
   image:
     # This should probably say "latest" or "stable" in the example script, but set to a specific version in production systems
@@ -18,8 +24,6 @@ global:
   
   singleNode: true
 
-  # For singleMode only. Host mount point root for persistent storage.
-  hostMountPath: "/docker-host-mnt"
 
 
 dali:
@@ -64,5 +68,3 @@ thor:
     masterport: 20000
     numSlaves: 2
     slaveport: 20100
-    startDafilesrv: true # Temporary until non attached storage functionality added
-    storageSize: 100G

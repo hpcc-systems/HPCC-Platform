@@ -11,5 +11,5 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: {{ printf "%s/queries" $.Values.global.hostMountPath }}
+    path: {{ printf "%s/queries" $.Values.global.dataStorage.hostMountPath }}
     type: DirectoryOrCreate

@@ -7304,6 +7304,35 @@ public:
         }
     }
 
+    void addGroup(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster, const char *dir, GroupType groupType, bool overwrite)
+    {
+        dbgassertex(hosts.size());
+        StringBuffer name(logicalgroupname);
+        name.toLowerCase();
+        name.trim();
+        StringBuffer prop;
+        prop.appendf("Group[@name=\"%s\"]",name.str());
+        CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
+        if (!overwrite && connlock.conn->queryRoot()->hasProp(prop.str()))
+            return;
+        connlock.conn->queryRoot()->removeProp(prop.str());
+        if (0 == hosts.size())
+            return;
+        Owned<IPropertyTree> groupTree = doAddHosts(connlock, name.str(), hosts, cluster, dir);
+        SocketEndpointArray eps;
+        if (!loadGroup(groupTree, eps, nullptr, nullptr))
+        {
+            IWARNLOG("CNamedGroupStore.add: failed to add group '%s', due to unresolved hosts", name.str());
+            return;
+        }
+        Owned<IGroup> group = createIGroup(eps);
+        {
+            CriticalBlock block(cachesect);
+            cache.kill();
+            cache.append(*new CNamedGroupCacheEntry(group, name, dir, groupType));
+        }
+    }
+
     virtual void addUnique(IGroup *group,StringBuffer &lname, const char *dir) override
     {
         if (group->ordinality()==1)
@@ -7358,29 +7387,26 @@ public:
 
     virtual void add(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster, const char *dir, GroupType groupType) override
     {
-        dbgassertex(hosts.size());
-        StringBuffer name(logicalgroupname);
-        name.toLowerCase();
-        name.trim();
-        StringBuffer prop;
-        prop.appendf("Group[@name=\"%s\"]",name.str());
-        CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
-        connlock.conn->queryRoot()->removeProp(prop.str());
-        if (0 == hosts.size())
-            return;
-        Owned<IPropertyTree> groupTree = doAddHosts(connlock, name.str(), hosts, cluster, dir);
-        SocketEndpointArray eps;
-        if (!loadGroup(groupTree, eps, nullptr, nullptr))
-        {
-            IWARNLOG("CNamedGroupStore.add: failed to add group '%s', due to unresolved hosts", name.str());
-            return;
-        }
-        Owned<IGroup> group = createIGroup(eps);
-        {
-            CriticalBlock block(cachesect);
-            cache.kill();
-            cache.append(*new CNamedGroupCacheEntry(group, name, dir, groupType));
-        }
+        addGroup(logicalgroupname, hosts, cluster, dir, groupType, true);
+    }
+
+    virtual void ensure(const char *logicalgroupname, const std::vector<std::string> &hosts, bool cluster, const char *dir, GroupType groupType) override
+    {
+        addGroup(logicalgroupname, hosts, cluster, dir, groupType, false);
+    }
+
+    virtual void ensureNasGroup(size32_t size) override
+    {
+        std::vector<std::string> hosts;
+        for (unsigned n=0; n<size; n++)
+            hosts.push_back("localhost");
+        VStringBuffer nasGroupName("__nas__%u", size);
+        ensure(nasGroupName, hosts, false, nullptr, grp_unknown);
+    }
+
+    virtual StringBuffer &getNasGroupName(StringBuffer &groupName, size32_t size) const override
+    {
+        return groupName.append("__nas__").append(size);
     }
 
     virtual unsigned removeNode(const char *logicalgroupname, const char *nodeToRemove) override

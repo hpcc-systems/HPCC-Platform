@@ -352,6 +352,8 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
         OwnedRoxieString cluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
         if(!cluster)
             break;
+        if (isCloud())
+            throw makeStringException(0, "Output clusters not supported in cloud environment");
         if(!clusterHandler)
         {
             if(extend)
@@ -651,7 +653,17 @@ void CHThorDiskWriteActivity::publish()
     {
         // add cluster
         StringBuffer mygroupname;
-        Owned<IGroup> mygrp = agent.getHThorGroup(mygroupname);
+        Owned<IGroup> mygrp;
+        if (isCloud())
+        {
+            queryNamedGroupStore().getNasGroupName(mygroupname, 1);
+            mygrp.setown(queryNamedGroupStore().lookup(mygroupname));
+        }
+        else
+        {
+            if (!agent.queryResolveFilesLocally())
+                mygrp.setown(agent.getHThorGroup(mygroupname));
+        }
         ClusterPartDiskMapSpec partmap; // will get this from group at some point
         desc->setNumParts(1);
         desc->setPartMask(base.str());
@@ -1205,8 +1217,16 @@ void CHThorIndexWriteActivity::execute()
         // add cluster
         StringBuffer mygroupname;
         Owned<IGroup> mygrp = NULL;
-        if (!agent.queryResolveFilesLocally())
-            mygrp.setown(agent.getHThorGroup(mygroupname));
+        if (isCloud())
+        {
+            queryNamedGroupStore().getNasGroupName(mygroupname, 1);
+            mygrp.setown(queryNamedGroupStore().lookup(mygroupname));
+        }
+        else
+        {
+            if (!agent.queryResolveFilesLocally())
+                mygrp.setown(agent.getHThorGroup(mygroupname));
+        }
         ClusterPartDiskMapSpec partmap; // will get this from group at some point
         desc->setNumParts(1);
         desc->setPartMask(base.str());
