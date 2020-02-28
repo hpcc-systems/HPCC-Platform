@@ -13,10 +13,10 @@
 {{- define "hpcc.utils.generateConfigMapFromFile" -}}
 {{- if hasKey .me "configFile" -}}
 {{- $filename := (printf "files/%s" .me.configFile) -}}
-{{- .me.name -}}.json: |
+{{- .me.name -}}.yaml: |
 {{ tpl (.root.Files.Get $filename) .root | indent 2 -}}
 {{- else if hasKey .me "config" -}}
-{{- .me.name -}}.json: |
+{{- .me.name -}}.yaml: |
 {{ .me.config | indent 2 -}}
 {{- end -}}
 {{- end -}}
@@ -29,10 +29,10 @@ apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap 
 data:
-  global.json: |
-    {
-      "version": {{ .root.Values.global.image.version | quote }}
-    }
+  global.yaml: |
+    version: "1.0"
+    Global:
+      imageVersion: {{ .root.Values.global.image.version | quote }}
 {{ include "hpcc.utils.generateConfigMapFromFile" . | indent 2 }}
 {{ end -}}
 
@@ -69,8 +69,8 @@ volumeMounts:
 {{- /* Add config arg for a component */ -}}
 {{- define "hpcc.utils.configArg" -}}
 {{- if or (hasKey . "configFile") (hasKey . "config") -}}
-"--config=/etc/config/{{ .name }}.json", {{ end -}}
-"--global=/etc/config/global.json"
+"--config=/etc/config/{{ .name }}.yaml", {{ end -}}
+"--global=/etc/config/global.yaml"
 {{- end -}}
 
 {{- /* Add dali arg for a component */ -}}

@@ -33,43 +33,22 @@ esp:
 - name: myesp
   replicas: 1
 
-notroxie:
+roxie:
   - name: roxie1
     ports: [ 9876, 0 ]
     localSlave: 1
-    Xconfig: |
-     {
-      "array": [
-        1,
-        2,
-        3
-      ],
-      "boolean": true,
-      "number": 123,
-      "object": {
-        "a": "b",
-        "c": "d",
-        "e": "f"
-      },
-      "string": "Hello World"
-     }
+    configFile: "roxie.yaml"
     
-roxie:
   - name: roxie2
-    ports: [ 9876, 0 ]
-    numChannels: 2
-    topoport: 9004
-    XconfigFile: "roxie.yaml"
-   
-notroxie: 
-  - name: roxie3
     ports: 9876
     numChannels: 2
     serverReplicas: 1
     topoReplicas: 2
     topoport: 9004
-    Xconfig: |
-      hello there
+    config: |
+      version: 1.0
+      Roxie:
+        useAeron: true
 
 
     
