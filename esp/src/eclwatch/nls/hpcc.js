@@ -656,6 +656,7 @@ define({
             Results: "Result(s)",
             Resume: "Resume",
             RetainSuperfileStructure: "Retain Superfile Structure",
+            RetainSuperfileStructureReason: "Retain Superfile Structure must be enabled when more than 1 subfile exists.",
             RetypePassword: "Retype Password",
             Reverse: "Reverse",
             RoxieFileCopy: "Roxie Files Copy Status",

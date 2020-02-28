@@ -8,6 +8,36 @@
                     <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.DeleteSuperfile2}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}CopyDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Copy}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}CopyForm" style="width: 650px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Target}</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}CopyTargetSelect" title="${i18n.Group}:" name="destGroup" colspan="2" style="width:100%;display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget" />
+                                        <input id="${id}CopyTargetName" title="${i18n.TargetName}:" name="destLogicalName" colspan="2" style="width:100%;" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Options}</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}CopyTargetOverwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyTargetReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyTargetNoSplit" title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyTargetCompress" title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyTargetWrap" title="${i18n.Wrap}:" name="Wrap" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyTargetRetainSuperfileStructure" title="${i18n.RetainSuperfileStructure}:" checked="true" name="superCopy" data-dojo-type="dijit.form.CheckBox" readonly="false"/>
+                                        <input id="${id}CopyPreserveCompression" title="${i18n.PreserveCompression}:" checked="true" name="preserveCompression" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}CopyExpireDays" title="${i18n.ExpireDays}:" name="ExpireDays" data-dojo-type="dijit.form.NumberTextBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onCopyOk" data-dojo-type="dijit.form.Button">${i18n.Copy}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>

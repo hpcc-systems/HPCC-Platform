@@ -49,6 +49,7 @@ define([
         baseClass: "SFDetailsWidget",
         i18n: nlsHPCC,
 
+        copyForm: null,
         borderContainer: null,
         tabContainer: null,
         summaryWidget: null,
@@ -59,6 +60,9 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.copyForm = registry.byId(this.id + "CopyForm");
+            this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
+            this.CopyTargetRetainSuperfileStructure = registry.byId(this.id + "CopyTargetRetainSuperfileStructure")
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.deleteBtn = registry.byId(this.id + "Delete");
             this.removeBtn = registry.byId(this.id + "Remove");
@@ -106,13 +110,15 @@ define([
             }
         },
         _onCopyOk: function (event) {
-            this.logicalFile.copy({
-                request: domForm.toObject(this.id + "CopyDialog")
-            });
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
-        },
-        _onCopyCancel: function (event) {
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
+            if (this.copyForm.validate()) {
+                var context = this;
+                this.logicalFile.copy({
+                    request: domForm.toObject(this.id + "CopyForm")
+                }).then(function (response) {
+                    context._handleResponse("CopyResponse.result", response);
+                });
+                registry.byId(this.id + "CopyDropDown").closeDropDown();
+            }
         },
         _onDesprayOk: function (event) {
             this.logicalFile.despray({
@@ -139,6 +145,10 @@ define([
                 return;
 
             var context = this;
+
+            this.copyTargetSelect.init({
+                Groups: true
+            });
             if (params.Name) {
                 this.logicalFile = ESPLogicalFile.Get("", params.Name);
                 var data = this.logicalFile.getData();
@@ -151,6 +161,11 @@ define([
                 this.logicalFile.refresh();
             }
             this.subfilesGrid.startup();
+
+            if (this.logicalFile.isSuperfile === true && this.logicalFile.NumOfSubfiles > 1 && this.logicalFile.KeyType !== undefined) {
+                this.CopyTargetRetainSuperfileStructure.readOnly = true;
+                this.CopyTargetRetainSuperfileStructure.setAttribute('title', nlsHPCC.RetainSuperfileStructureReason);
+            }
         },
 
         initSubfilesGrid: function () {
