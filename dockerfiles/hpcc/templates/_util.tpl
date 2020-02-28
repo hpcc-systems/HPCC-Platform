@@ -78,9 +78,15 @@ volumeMounts:
 "--daliServers={{ (index .Values.dali 0).name }}"
 {{- end -}}
 
+{{- /* Get image name */ -}}
+{{- define "hpcc.utils.imageName" -}}
+{{- /* Pass in a dictionary with root and imagename defined */ -}}
+{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .root.Values.global.image.version }}
+{{- end -}}
+
 {{- /* Add image attributes for a component */ -}}
 {{- /* Pass in a dictionary with root and imagename defined */ -}}
 {{- define "hpcc.utils.addImageAttrs" -}}
-image: "{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .root.Values.global.image.version }}"
+image: "{{ include "hpcc.utils.imageName" . }}"
 imagePullPolicy: {{ .root.Values.global.image.pullPolicy }}
 {{- end -}}

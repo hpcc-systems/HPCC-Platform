@@ -175,7 +175,6 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
-    StringAttr clusterName;
     StringBuffer idxStr;
     StringArray filesSeen;
 
@@ -440,7 +439,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 
 public:
     IMPLEMENT_IINTERFACE;
-    EclccCompileThread(const char *_clusterName, unsigned _idx) : clusterName(_clusterName)
+    EclccCompileThread(unsigned _idx)
     {
         idxStr.append(_idx);
     }
@@ -452,6 +451,45 @@ public:
     virtual void threadmain() override
     {
         DBGLOG("Compile request processing for workunit %s", wuid.get());
+#ifdef _CONTAINERIZED
+        if (globals->getPropBool("@containerPerCompile", false) && !globals->hasProp("@workunit"))
+        {
+            VStringBuffer jobname("eclccserver-%s", wuid.get());
+            jobname.toLowerCase();
+            VStringBuffer args("--workunit=%s", wuid.str());
+            StringBuffer jobYaml;
+            jobYaml.loadFile("/etc/config/jobspec.yaml", false);
+            jobYaml.replaceString("%jobname", jobname.str());
+            jobYaml.replaceString("%args", args.str());
+            StringBuffer output, error;
+            unsigned ret = runExternalCommand(output, error, "kubectl apply -f -", jobYaml.str());
+            DBGLOG("kubectl output: %s", output.str());
+            if (error.length())
+                DBGLOG("kubectl error: %s", error.str());
+            if (ret)
+            {
+                DBGLOG("Using job yaml %s", jobYaml.str());
+                throw makeStringException(0, "Failed to start kubectl job");
+            }
+
+            VStringBuffer waitJob("kubectl wait --for=condition=complete --timeout=10h job/%s", jobname.str());
+            ret = runExternalCommand(output.clear(), error.clear(), waitJob.str(), nullptr);
+            DBGLOG("kubectl wait output: %s", output.str());
+            if (error.length())
+                DBGLOG("kubectl wait error: %s", error.str());
+            if (ret)
+                throw makeStringException(0, "Failed to run kubectl wait");
+
+            VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
+            ret = runExternalCommand(output.clear(), error.clear(), deleteJob.str(), nullptr);
+            DBGLOG("kubectl delete output: %s", output.str());
+            if (error.length())
+                DBGLOG("kubectl delete error: %s", error.str());
+            if (ret)
+                throw makeStringException(0, "Failed to run kubectl delete");
+            return;
+        }
+#endif
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         workunit.setown(factory->updateWorkUnit(wuid.get()));
         if (!workunit)
@@ -468,7 +506,7 @@ public:
             return;
         }
         CSDSServerStatus serverstatus("ECLCCserverThread");
-        serverstatus.queryProperties()->setProp("@cluster",clusterName.get());
+        serverstatus.queryProperties()->setProp("@cluster",globals->queryProp("@name"));
         serverstatus.queryProperties()->setProp("@thread", idxStr.str());
         serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
         serverstatus.commitProperties();
@@ -608,7 +646,6 @@ static void removePrecompiledHeader()
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
     StringAttr queueName;
-    StringAttr clusterName;
     unsigned poolSize;
     Owned<IThreadPool> pool;
 
@@ -620,14 +657,14 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
 
 public:
     IMPLEMENT_IINTERFACE;
-    EclccServer(const char *_queueName, const char *_clusterName, unsigned _poolSize)
-        : queueName(_queueName), clusterName(_clusterName), poolSize(_poolSize), serverstatus("ECLCCserver")
+    EclccServer(const char *_queueName, unsigned _poolSize)
+        : queueName(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
-        serverstatus.queryProperties()->setProp("@cluster",clusterName.get());
-        serverstatus.queryProperties()->setProp("@queue",queueName.get());
+        serverstatus.queryProperties()->setProp("@cluster", globals->queryProp("@name"));
+        serverstatus.queryProperties()->setProp("@queue", queueName.get());
         serverstatus.commitProperties();
     }
 
@@ -687,7 +724,7 @@ public:
     virtual IPooledThread *createNew()
     {
         CriticalBlock b(threadActiveCrit);
-        return new EclccCompileThread(clusterName, threadsActive++);
+        return new EclccCompileThread(threadsActive++);
     }
 
     virtual bool onAbort() 
@@ -757,6 +794,7 @@ static constexpr const char * defaultYaml = R"!!(
 
 int main(int argc, const char *argv[])
 {
+#ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
             if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -766,7 +804,7 @@ int main(int argc, const char *argv[])
             break;
         }
     }
-
+#endif
     InitModuleObjects();
     initSignals();
     NoQuickEditSection x;
@@ -796,7 +834,7 @@ int main(int argc, const char *argv[])
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
 #ifndef _WIN32
-    if (globals->getPropBool("@generatePrecompiledHeader",true))
+    if (globals->getPropBool("@generatePrecompiledHeader", true))
         generatePrecompiledHeader();
     else
         removePrecompiledHeader();
@@ -813,21 +851,32 @@ int main(int argc, const char *argv[])
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
         openLogFile();
-        unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
-        if (optMonitorInterval)
-            startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
-        SCMStringBuffer queueNames;
-        getEclCCServerQueueNames(queueNames, processName);
-        if (!queueNames.length())
-            throw MakeStringException(0, "No clusters found to listen on");
-        // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
-        // still accept the old name if the new one is not present.
-        unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
-        EclccServer server(queueNames.str(), processName, maxThreads);
-        // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
-        // put in its own "scope" to force the flush
-        writeSentinelFile(sentinelFile);
-        server.run();
+        const char *wuid = globals->queryProp("@workunit");
+        if (wuid)
+        {
+            // One shot mode
+            EclccCompileThread compiler(0);
+            compiler.init(const_cast<char *>(wuid));
+            compiler.threadmain();
+        }
+        else
+        {
+            unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
+            if (optMonitorInterval)
+                startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
+            SCMStringBuffer queueNames;
+            getEclCCServerQueueNames(queueNames, processName);
+            if (!queueNames.length())
+                throw MakeStringException(0, "No clusters found to listen on");
+            // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
+            // still accept the old name if the new one is not present.
+            unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
+            EclccServer server(queueNames.str(), maxThreads);
+            // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
+            // put in its own "scope" to force the flush
+            writeSentinelFile(sentinelFile);
+            server.run();
+        }
     }
     catch (IException * e)
     {

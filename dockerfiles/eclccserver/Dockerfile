@@ -20,6 +20,9 @@
 ARG BUILD_LABEL
 FROM hpccsystems/platform-core:${BUILD_LABEL}
 
+USER root
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+
 USER hpcc
 RUN mkdir -p /var/lib/HPCCSystems/eclccserver
 WORKDIR /var/lib/HPCCSystems/eclccserver
