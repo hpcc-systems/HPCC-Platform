@@ -109,14 +109,14 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
   </sect2>
 
   <sect2 id="Landing_Zone_Files">
-    <title>Arquivos da Zona de entrada de arquivos<indexterm>
+    <title>Arquivos da Zona de Entrada<indexterm>
         <primary>Landing Zone files</primary>
       </indexterm></title>
 
     <para>Você também pode ler e gravar arquivos diretamente em uma zona de
     entrada de arquivos (ou qualquer outra caixa endereçável por IP) que não
     foi sprayed para o Thor. A zona de entrada de arquivos deve estar
-    executando o programa utilitário dafileserv. Se a caixa for uma caixa
+    executando o programa utilitário dafileserv. Se o host for um host
     Windows, dafileserv deve ser instalado como serviço.</para>
 
     <para>A sintaxe é semelhante a:</para>
@@ -134,11 +134,11 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>Os nomes de arquivo lógicos da ECL não fazem distinção entre
     maiúsculas e minúsculas. Os nomes físicos são, por padrão, em minúsculas,
-    o que pode causar problemas quando a zona de entrada de arquivos é uma
-    caixa Linux (o Linux faz distinção entre maiúsculas e minúsculas). Os
-    caracteres podem ser convertidos explicitamente em maiúsculas
-    acrescentando o caractere de escape circunflexo (^) ao início do nome,
-    como neste exemplo:</para>
+    o que pode causar problemas quando a zona de entrada de arquivos é um host
+    Linux (o Linux faz distinção entre maiúsculas e minúsculas). Os caracteres
+    podem ser convertidos explicitamente em maiúsculas acrescentando o
+    caractere de escape circunflexo (^) ao início do nome, como neste
+    exemplo:</para>
 
     <programlisting>MyFile :=DATASET('~file::10.150.50.12::c$::^Advanced^E^C^L::myfile',RecStruct,FLAT);</programlisting>
 

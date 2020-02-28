@@ -384,18 +384,18 @@ depending on where they wind up.-->
         </sect3>
 
         <sect3 id="GraphsTab">
-          <title>Aba Gráficos</title>
+          <title>Aba Graphs</title>
 
           <para>A aba Graphs oferece acesso as interpretações gráficas da
           consulta. Isso pode auxiliar na visualização sobre como a consulta
-          foi executada. A aba Graphs exibe uma lista de todos os gráficos
+          foi executada. A aba Graphs exibe uma lista de todos os grafos
           gerados pela consulta selecionada, juntamente com algumas
           informações adicionais como medidas de tempo. Para exibir um gráfico
           específico, basta selecioná-lo e escolher a opção “Open" ou clicar
           duas vezes no gráfico listado.</para>
 
           <figure>
-            <title>Lista de Gráficos</title>
+            <title>Lista de Grafos</title>
 
             <mediaobject>
               <imageobject>
@@ -408,7 +408,7 @@ depending on where they wind up.-->
           gráfico(s) selecionado(s).</para>
 
           <para><figure>
-              <title>Gráficos</title>
+              <title>Grafos</title>
 
               <mediaobject>
                 <imageobject>
@@ -417,9 +417,9 @@ depending on where they wind up.-->
               </mediaobject>
             </figure>Ao abrir um gráfico, a imagem se divide em três seções
           menores com cada uma exibindo alguns componentes relevantes do
-          gráfico da consulta. Observe a miríade dos controles de gráficos e
-          as abas na borda de cada aba. Use estes controles para visualizar os
-          diferentes aspectos dos gráficos.</para>
+          gráfico da consulta. Observe a miríade dos controles de grafos e as
+          abas na borda de cada aba. Use estes controles para visualizar os
+          diferentes aspectos dos grafos.</para>
 
           <para>O botão Advanced, localizado na área de controle principal do
           gráfico, oferece acesso a outras opções de representação gráfica
@@ -586,18 +586,18 @@ depending on where they wind up.-->
       <sect2 id="Package_Maps" role="brk">
         <title>Package Maps</title>
 
-        <para>O Data Package Maps fornece uma referência ao conteúdo de uma
+        <para>O package maps fornece uma referência ao conteúdo de uma
         superchave usada em consultas que substitui a definição original. O
-        mapeamento de arquivos do Data Package Map pode ser organizado em uma
+        mapeamento de arquivos do package map pode ser organizado em uma
         coleção de arquivos definindo alguns subconjuntos de consultas, ou
         organizados por vários agrupamentos tais como funções, arquivos,
         desenvolvedores, etc. Estes subconjuntos são denominados <emphasis
         role="bold">parts (partes)</emphasis> Para obter mais informações
-        sobre os Data Package Map consulte o aba <emphasis>Roxie
+        sobre os package map consulte o aba <emphasis>Roxie
         Reference</emphasis> .</para>
 
-        <para>Você pode acessar a página de Data Package Map a partir do link
-        do ícone "Queries". Pressione o botão <emphasis role="bold">Package
+        <para>Você pode acessar a página de package map a partir do link do
+        ícone "Queries". Pressione o botão <emphasis role="bold">Package
         Maps</emphasis> na barra de navegação do submenu para acessar os
         Package Maps em seu cluster. <figure>
             <title>Package Maps</title>
@@ -611,41 +611,39 @@ depending on where they wind up.-->
 
         <para>A página Package Maps mostra todos os package maps carregados em
         seu cluster. Você pode Adicionar (Add), Ativar (Activate), Desativar
-        (Deactivate), Remover (Delete) ou Abrir (Open) um Data Package Map.
-        Para ver um Data Package Map, selecione um Data Package Map na
-        lista.</para>
+        (Deactivate), Remover (Delete) ou Abrir (Open) um package map. Para
+        ver um package map, selecione um package map na lista.</para>
 
         <para>Para atualizar os mapas do pacote de dados que estão sendo
-        usados, é possível editar o arquivo do Data Package Map ou adicionar
-        um novo e depois ativá-lo. É possível remover o arquivo antigo mais
+        usados, é possível editar o arquivo do package map ou adicionar um
+        novo e depois ativá-lo. É possível remover o arquivo antigo mais
         tarde.</para>
 
         <sect3 id="Package_Map_Actions">
-          <title id="Packagemap_Actions">Ações do Data Package Map</title>
+          <title id="Packagemap_Actions">Ações do Package Map</title>
 
           <para>É possível executar ações em seus mapas do pacote de dados a
-          partir da aba "Data Package Maps" no ECL Watch.</para>
+          partir da aba "Package Maps" no ECL Watch.</para>
 
           <sect4 id="Open_Pkg_Map">
             <title>Abrir Package Map</title>
 
-            <para>Para visualizar um Data Package Map, selecione o mapa
-            desejado e pressione o botão <emphasis role="bold">Open</emphasis>
-            . Isso abrirá uma nova aba onde você pode acessar abas adicionais
-            com informações sobre o pacote, o XML, e validar o mapas do pacote
-            de dados.</para>
+            <para>Para visualizar um package map, selecione o mapa desejado e
+            pressione o botão <emphasis role="bold">Open</emphasis> . Isso
+            abrirá uma nova aba onde você pode acessar abas adicionais com
+            informações sobre o pacote, o XML, e validar o mapas do pacote de
+            dados.</para>
           </sect4>
 
           <sect4 id="Add_PKG_Map">
             <title>Adicionar Package Map</title>
 
-            <para>Para adicionar um Data Package Map ao clusters de
-            destino:</para>
+            <para>Para adicionar um package map ao clusters de destino:</para>
 
             <orderedlist>
               <listitem>
-                <para>Selecione um Data Package Map a ser adicionado marcando
-                a caixa de seleção próxima a ele.</para>
+                <para>Selecione um package map a ser adicionado marcando a
+                caixa de seleção próxima a ele.</para>
               </listitem>
 
               <listitem>
@@ -678,8 +676,8 @@ depending on where they wind up.-->
               <listitem>
                 <para>Selecione um <emphasis role="bold">Process
                 Filter</emphasis> a partir da lista suspensa. O filtro de
-                processo determina em qual cluster Roxie físico o Data Package
-                Map será carregado.</para>
+                processo determina em qual cluster Roxie físico o package map
+                será carregado.</para>
               </listitem>
 
               <listitem>

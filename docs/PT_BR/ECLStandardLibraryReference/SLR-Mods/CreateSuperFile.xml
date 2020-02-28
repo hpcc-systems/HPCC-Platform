@@ -66,8 +66,8 @@
   (o padrão), as partes dos subarquivos são intercaladas para que possam ser
   encontradas localmente.</para>
 
-  <para>Por exemplo, se em um cluster de 4 dimensões existirem 3 arquivos (A,
-  B e C), as partes serão as seguintes:</para>
+  <para>Por exemplo, se em um cluster de 4 nós existirem 3 arquivos (A, B e
+  C), as partes serão as seguintes:</para>
 
   <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 1</para>
 
@@ -77,14 +77,15 @@
 
   <para>A._1_of_4, B._1_of_4 e C_1_of_4 estão no nó 4</para>
 
-  <para>Lendo o superfile criado com <emphasis>sequentialparts</emphasis>
-  FALSE, no Thor lerá as partes na ordem:</para>
+  <para>A leitura do superarquivo criado no Thor com
+  <emphasis>sequentialparts</emphasis> FALSE se dará na seguinte
+  ordem::</para>
 
   <para>[A1,B1,C1,] [A2,B2,C2,] [A3,B3,C3,] [A4,B4,C4]</para>
 
   <para>para que as leituras sejam todas locais (ou seja, A1, B1 e C1 no nó 1,
-  etc.). Definir <emphasis>sequentialparts</emphasis> como TRUE lerá as partes
-  na ordem do subarquivo, da seguinte forma:</para>
+  etc.). Definir <emphasis>sequentialparts</emphasis> como TRUE resultará na
+  leitura das partes na ordem do subarquivo, da seguinte forma:</para>
 
   <para>[A1,A2,A3,] [A4,B1,B2] [,B3,B4,C1,] [C2,C3,C4]</para>
 

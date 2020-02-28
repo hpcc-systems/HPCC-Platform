@@ -65,7 +65,7 @@
     principalmente ao acionar funções que tenham efeitos colaterais, quando o
     valor do retorno não é importante.</para>
 
-    <para>O segundo form da ação <emphasis role="bold">EVALUATE</emphasis>
+    <para>A segunda forma da ação <emphasis role="bold">EVALUATE</emphasis>
     recursivamente expande e avalia as definições exportadas do
     <emphasis>módulo</emphasis> . Se um <emphasis>defname</emphasis> for
     especificado, apenas essa definição será avaliada.</para>
@@ -108,7 +108,7 @@ EVALUATE(M2);
   </sect2>
 
   <sect2 id="EVALUATE_function">
-    <title>EVALUATE function</title>
+    <title>Função EVALUATE</title>
 
     <para><emphasis role="bold">EVALUATE(</emphasis><indexterm>
         <primary>EVALUATE function</primary>
@@ -159,7 +159,7 @@ EVALUATE(M2);
   </sect2>
 
   <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
-    <title>Acessando Field-level Data em um Registro Específico</title>
+    <title>Acessando dados em nível de campo em um Registro Específico</title>
 
     <para>Para acessar os dados de nível de campo em um registro específico,
     os recursos de indexação do conjunto de registro deve ser usado para

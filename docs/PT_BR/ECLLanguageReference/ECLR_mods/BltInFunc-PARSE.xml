@@ -173,9 +173,9 @@
   ou uma operação de análise XML .</para>
 
   <sect2 id="PARSE_Text_Data">
-    <title>Análise de Texto<indexterm>
+    <title>PARSE de Dados<indexterm>
         <primary>PARSE Text</primary>
-      </indexterm> Data</title>
+      </indexterm> Textuais</title>
 
     <para>A primeira forma opera sobre o <emphasis>dataset</emphasis>,
     localizando registros cujos <emphasis>dados</emphasis> possuem um
@@ -465,9 +465,9 @@ outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
   </sect2>
 
   <sect2 id="PARSE_XML_Data">
-    <title>PARSE XML<indexterm>
+    <title>PARSE de dados <indexterm>
         <primary>PARSE XML</primary>
-      </indexterm> Data</title>
+      </indexterm> XML</title>
 
     <para>A segunda forma funciona a partir de um <emphasis>dataset</emphasis>
     XML, analisando os <emphasis>dados </emphasis> XML e criando um recordset
@@ -553,9 +553,9 @@ textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
   </sect2>
 
   <sect2 id="Extended_PARSE_Examples">
-    <title>Exemplos de PARSE Extendido<indexterm>
+    <title>Exemplos de PARSE Estendido<indexterm>
         <primary>Extended PARSE</primary>
-      </indexterm> Examples<indexterm>
+      </indexterm><indexterm>
         <primary>PARSE Examples</primary>
       </indexterm><indexterm>
         <primary>Extended PARSE Examples</primary>

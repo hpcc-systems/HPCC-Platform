@@ -219,7 +219,7 @@
 
           <entry>Opcional. Limita o número de registros secundários anexados
           ao primário. A função CHOOSEN é usada de maneira implícita todas as
-          vezes em que o dataset secundário for lido.</entry>
+          vezes em que o DATASET filho for lido.</entry>
         </row>
 
         <row>
@@ -333,8 +333,8 @@
   abaixo).</para>
 
   <para>A sexta forma é usada apenas como um tipo de valor em uma estrutura
-  RECORD para definir um dataset secundário (consulte <emphasis
-  role="bold">DATASETs secundários</emphasis> abaixo).</para>
+  RECORD para definir um DATASET filho (consulte <emphasis
+  role="bold">DATASETs filhos</emphasis> abaixo).</para>
 
   <para>A sétima forma é usada apenas como um tipo de valor a ser transferido
   para os parâmetros DATASET<indexterm>
@@ -1053,9 +1053,9 @@ Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
   </sect2>
 
   <sect2 id="Named_Output_DATASETs">
-    <title>Saída nomeada DATASET<indexterm>
+    <title>DATASET<indexterm>
         <primary>Named Output Dataset</primary>
-      </indexterm>s</title>
+      </indexterm>s de saída nomeada</title>
 
     <para><emphasis> attr</emphasis><emphasis role="bold"> :=
     DATASET(</emphasis><emphasis> </emphasis><emphasis
@@ -1119,10 +1119,9 @@ OUTPUT(ds);</programlisting>
     <para>A estrutura RECORD aninhada, <indexterm>
         <primary>estruturas RECORD aninhadas</primary>
       </indexterm>, pode(m) ser representada(s) por registros aninhados dentro
-    de registros. Os datasets secundários aninhados também podem ser
-    inicializados dentro das funções TRANSFORM usando datasets em linha
-    (consulte a discussão <emphasis role="bold">DATASETs
-    secundários</emphasis> ).</para>
+    de registros. Os DATASETs filhos aninhados também podem ser inicializados
+    dentro das funções TRANSFORM usando datasets em linha (consulte a
+    discussão <emphasis role="bold">DATASETs filhos</emphasis> ).</para>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
@@ -1206,7 +1205,7 @@ DATASET(s,{STRING txt});
         <primary>Single-Row Dataset</primary>
       </indexterm><indexterm>
         <primary>Expressões</primary>
-      </indexterm> Dataset Single Row</title>
+      </indexterm></title>
 
     <para><emphasis role="bold"> DATASET(</emphasis><emphasis> row
     </emphasis><emphasis role="bold">)</emphasis></para>
@@ -1286,7 +1285,7 @@ OUTPUT(p3);</programlisting>
   </sect2>
 
   <sect2 id="Child_DATASETs">
-    <title>DATASET secundário<indexterm>
+    <title>DATASETs filho<indexterm>
         <primary>Child Dataset</primary>
       </indexterm>s</title>
 
@@ -1306,7 +1305,7 @@ OUTPUT(p3);</programlisting>
 
     <para>Esta forma é usada como um tipo de valor dentro de uma estrutura
     RECORD para definir os registros de <indexterm>
-        <primary>dataset secundário</primary>
+        <primary>DATASET filho</primary>
       </indexterm> em um arquivo simples não normalizado. A forma que não
     contém COUNT ou LENGTH é a mais simples de usar, e simplesmente significa
     que o dataset, o comprimento e os dados estão armazenados em myfield. A
@@ -1328,9 +1327,9 @@ OUTPUT(p3);</programlisting>
     <para><emphasis role="bold"> DATASET fieldname (forma antiga -- não será
     mais usada após-SR9)</emphasis></para>
 
-    <para>Qualquer operação pode ser realizada nos datasets secundários no
-    hthor e no Motor de entrega rápida de dados (Roxie), porém apenas as
-    operações a seguir são suportadas na refinaria de dados (Thor):</para>
+    <para>Qualquer operação pode ser realizada nos DATASETs filhos no hthor e
+    no Motor de entrega rápida de dados (Roxie), porém apenas as operações a
+    seguir são suportadas na refinaria de dados (Thor):</para>
 
     <para>1) PROJECT, CHOOSEN, TABLE (não agrupadas), e filtros em tabelas
     secundárias.</para>
@@ -1357,7 +1356,7 @@ OUTPUT(p3);</programlisting>
 
     <para>7) TABLEs temporárias também podem ser usadas em conjunção.</para>
 
-    <para>8) A inicialização de datasets secundários em definições TABLE
+    <para>8) A inicialização de DATASETs filhos em definições TABLE
     temporária, permite que [ ] seja utilizado para inicializar 0
     elementos.</para>
 
@@ -1455,10 +1454,9 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
       </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
     role="bold">)</emphasis></para>
 
-    <para>Esta forma é usada apenas como Tipo de valor para tr<indexterm>
-        <primary>ansferir um parâmetro DATASET</primary>
-      </indexterm>, especificar os tipos de retorno da função ou definir um
-    SET OF (CONJUNTO DE) datasets. Se GROUPED estiver presente, o parâmetro
+    <para>Esta forma é usada apenas como Tipo de valor para passagem de
+    parâmetros, especificar os tipos de retorno da função ou definir um SET OF
+    (CONJUNTO DE) datasets. Se GROUPED estiver presente, o parâmetro
     transferido precisa ter sido agrupado através da função GROUP . As
     palavras-chave LINKCOUNTED e STREAMED são usadas principalmente nas
     funções BEGINC++ ou nas funções de biblioteca externa C++.</para>
@@ -1559,7 +1557,7 @@ OUTPUT(b_Name);</programlisting>
   </sect2>
 
   <sect2 id="DATASET_from_DICTIONARY">
-    <title>DATASET do DICIONÁRIO</title>
+    <title>DATASET de DICIONÁRIO</title>
 
     <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
     </emphasis><emphasis role="bold">)</emphasis></para>

@@ -35,7 +35,7 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">Day</emphasis> retorna o número de Day
+  <para>A função <emphasis role="bold">Day</emphasis> retorna o número do dia
   do valor <emphasis>date</emphasis> .</para>
 
   <para>Exemplo:</para>

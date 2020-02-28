@@ -50,10 +50,10 @@
     <sect1 id="configuring-a-multi-node-system">
       <title>Utilizando o Gerenciador de Configurações</title>
 
-      <para>Esta seção irá orientá-lo a configurar um ambiente do HPCC usando
-      o Gerenciador de Configurações.</para>
+      <para>Esta seção irá orientá-lo a configurar um ambiente do HPCC Systems
+      usando o Gerenciador de Configurações.</para>
 
-      <para>O pacote HPCC precisa estar instalado em ALL (TODOS) os
+      <para>O pacote HPCC Systems precisa estar instalado em TODOS os
       nós.</para>
 
       <para>É possível usar qualquer ferramenta ou script de shell
@@ -396,7 +396,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
       <para>Esse é um tópico administrativo de sistema elaborado para fornecer
       algumas explicações sobre um aspecto da administração de sistema do HPCC
-      System.</para>
+      Systems.</para>
     </sect1>
 
     <sect1 id="System_sizings">
@@ -414,9 +414,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         podendo funcionar até mesmo em hardware inferior. A lista a seguir
         contém as especificações de hardware mínimas sugeridas. Como requesito
         absolutamente mínimo, você deve considerar os seguintes componentes de
-        hardware para seu HPCC System. Essas diretrizes foram condensadas com
-        base no uso real de missão crítica (tempo ativo) com alto volume de
-        dados. <informaltable border="all" colsep="1" rowsep="1">
+        hardware para seu HPCC System. Essas diretrizes foram estabelecidas
+        com base no uso real de missão crítica (tempo ativo) com alto volume
+        de dados. <informaltable border="all" colsep="1" rowsep="1">
             <tgroup cols="3">
               <colspec colwidth="94.50pt"/>
 

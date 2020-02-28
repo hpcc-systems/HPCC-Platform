@@ -129,7 +129,7 @@ END;
   </sect2>
 
   <sect2 id="Starting_Point_Data">
-    <title>Ponto de Inicial dos Dados</title>
+    <title>Dados iniciais</title>
 
     <programlisting>//define data for record generation:
              //100 possible middle initials, 52 letters and 48 blanks
@@ -477,10 +477,10 @@ P2 := PARALLEL(B1,B2,B3);
 
     <programlisting>IMPORT $;</programlisting>
 
-    <para>Isso IMPORTs (IMPORTA) todos os arquivos na pasta ProgrammersGuide
-    (incluindo a definição de estrutura MODULE DeclareData). A referência a
-    qualquer dado do DeclareData é feita ao anexar $.DeclareData ao nome da
-    definição EXPORT que precisa ser usada, como mostrado a seguir:</para>
+    <para>Isso IMPORTa todos os arquivos na pasta ProgrammersGuide (incluindo
+    a definição de estrutura MODULE DeclareData). A referência a qualquer dado
+    do DeclareData é feita ao anexar $.DeclareData ao nome da definição EXPORT
+    que precisa ser usada, como mostrado a seguir:</para>
 
     <programlisting>MyFile := $.DeclareData.Person.File;  //rename $DeclareData.Person.File to MyFile to make 
                                       //subsequent code simpler</programlisting>

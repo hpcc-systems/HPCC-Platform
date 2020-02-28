@@ -272,8 +272,8 @@
             <entry><emphasis>datatype</emphasis></entry>
 
             <entry>O tipo de valor do campo de dados. Pode ser um dataset
-            secundário (consultar DATASET). Se omitido, o tipo de valor
-            corresponde ao tipo de resultado da expressão
+            filho (consultar DATASET). Se omitido, o tipo de valor corresponde
+            ao tipo de resultado da expressão
             <emphasis>defaultvalue</emphasis> .</entry>
           </row>
 
@@ -332,13 +332,12 @@
           <row>
             <entry><emphasis>childdataset</emphasis></entry>
 
-            <entry>Uma declaração de dataset secundário (veja as discussões
-            DATASET e DICTIONARY), que implicitamente define todos os campos
-            do secundário no <emphasis>datatype </emphasis>,
-            <emphasis>identifier (identificador)</emphasis>, e
-            <emphasis>defaultvalue (valor padrão)</emphasis> já definidos (se
-            estiver presente na estrutura RECORD do dataset
-            secundário).</entry>
+            <entry>Uma declaração de dataset filho (veja as discussões DATASET
+            e DICTIONARY), que implicitamente define todos os campos do filho
+            no <emphasis>datatype </emphasis>, <emphasis>identifier
+            (identificador)</emphasis>, e <emphasis>defaultvalue (valor
+            padrão)</emphasis> já definidos (se estiver presente na estrutura
+            RECORD do dataset secundário).</entry>
           </row>
         </tbody>
       </tgroup>
@@ -604,7 +603,7 @@ END;</programlisting>
 
             <entry>Especifica o número máximo de
             <emphasis>registros</emphasis> permitidos em um campo do DATASET
-            secundário (semelhante ao MAXLENGTH acima).</entry>
+            filho (semelhante ao MAXLENGTH acima).</entry>
           </row>
 
           <row>
@@ -1003,7 +1002,7 @@ OUTPUT(B,,'~RTTEST::test.xml', XML);
 */
 </programlisting>
 
-    <para>Outro exemplo XML com um dataset secundário com 1 campo.</para>
+    <para>Outro exemplo XML com um DATASET filho com 1 campo.</para>
 
     <programlisting>cr := RECORD,MAXLENGTH(1024)
   STRING phoneEx{XPATH('')};

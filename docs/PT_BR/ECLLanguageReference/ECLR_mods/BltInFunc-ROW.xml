@@ -82,9 +82,9 @@
   seja válido.</para>
 
   <sect2 id="ROW_Form_1">
-    <title>ROW Form 1</title>
+    <title>Forma 1 do ROW</title>
 
-    <para>O primeiro form cria um registro a partir dos dados embutidos nos
+    <para>A primeira forma cria um registro a partir dos dados embutidos nos
     <emphasis>campos</emphasis>, estruturada como definido por
     <emphasis>recstruct</emphasis><indexterm>
         <primary>recstruct</primary>
@@ -118,9 +118,9 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
   </sect2>
 
   <sect2 id="ROW_Form_2">
-    <title>ROW Form 2</title>
+    <title>Forma 2 do ROW</title>
 
-    <para>A segunda form cria um registro a partir da <emphasis>row
+    <para>A segunda forma cria um registro a partir da <emphasis>row
     </emphasis>especificada, usando <emphasis>resultrec<indexterm>
         <primary>resultrec</primary>
       </indexterm> </emphasis>da mesma maneira que a função TABLE opera. É
@@ -154,13 +154,13 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));
   </sect2>
 
   <sect2 id="ROW_Form_3">
-    <title>ROW Form 3</title>
+    <title>Forma 3 do ROW</title>
 
-    <para>O terceiro form usa uma função TRANSFORM para gerar seu resultado de
-    registro único. A função <emphasis>transform</emphasis> deve adotar pelo
-    menos um parâmetro: um registro LEFT, o qual deve estar no mesmo formato
-    que o registro de entrada. O formato do registro resultante deve ser
-    distinto do de entrada.</para>
+    <para>A terceira forma usa uma função TRANSFORM para gerar seu resultado
+    de registro único. A função <emphasis>transform</emphasis> deve adotar
+    pelo menos um parâmetro: um registro LEFT, o qual deve estar no mesmo
+    formato que o registro de entrada. O formato do registro resultante deve
+    ser distinto do de entrada.</para>
 
     <para>Exemplo:</para>
 

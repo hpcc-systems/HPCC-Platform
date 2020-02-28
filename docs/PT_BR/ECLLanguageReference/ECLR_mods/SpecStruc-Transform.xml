@@ -161,7 +161,7 @@
   incrementados mesmo quando SKIP elimina a criação do registro atual.</para>
 
   <sect2 id="Transformation_Attribute_Definitions">
-    <title>Definições do Atributos de Transformação</title>
+    <title>Definições dos Atributos de Transformação</title>
 
     <para>As definições de atributos dentro da estrutura TRANSFORM são usadas
     para converter os dados passados como parâmetros para o formato

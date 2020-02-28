@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Expressions_and_Operators" role="nobrk">
@@ -10,20 +10,23 @@
 
   <para>Expressions<indexterm>
       <primary>As Expressões</primary>
-    </indexterm>  são avaliadas da esquerda para a direita e de dentro para fora (em funções aninhadas). Os Parêntesis podem ser usados para alterar a ordem de precedência padrão da avaliação para todos os operadores.</para>
+    </indexterm> são avaliadas da esquerda para a direita e de dentro para
+  fora (em funções aninhadas). Os Parêntesis podem ser usados para alterar a
+  ordem de precedência padrão da avaliação para todos os operadores.</para>
 
   <sect2 id="Arithmetic_Operators">
-    <title>Operadores Aritiméticos</title>
+    <title>Operadores Aritméticos</title>
 
-    <para>Os operadores padrão arithmetic<indexterm>
+    <para>Os operadores padrão aritméticos<indexterm>
         <primary>arithmetic operators</primary>
-      </indexterm>  são suportados para uso em expressões, listadas aqui em sua avaliação:</para>
+      </indexterm> são suportados para uso em expressões, listados aqui em sua
+    avaliação:</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
-        <colspec colwidth="194.80pt" />
+        <colspec colwidth="194.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -79,7 +82,10 @@
 
     <para>Divisão por Zero<indexterm>
         <primary>Divisão por zero</primary>
-      </indexterm>  gera um resultado de valor zero (0), em vez de reportar um erro de "divisão por zero". Isso evita que dados inválidos ou inesperados cancelem um job longo. O comportamento padrão pode ser alterado usando</para>
+      </indexterm> gera um resultado de valor zero (0), em vez de reportar um
+    erro de "divisão por zero". Isso evita que dados inválidos ou inesperados
+    cancelem um job longo. O comportamento padrão pode ser alterado
+    usando</para>
 
     <programlisting>#OPTION ('divideByZero', 'zero'); //evaluate to zero</programlisting>
 
@@ -87,9 +93,9 @@
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
-        <colspec colwidth="194.80pt" />
+        <colspec colwidth="194.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -107,7 +113,11 @@
           <row>
             <entry>'nan'</entry>
 
-            <entry>Isto é atualmente suportado apenas para números reais. A Divisão por zero cria um NaN inativo, que será propagado em todas as expressões reais em que é usado. Você pode usar NOT ISVALID(x) para testar se um valor é ou não um NaN. A divisão de inteiros e decimais por zero continua a retornar 0.</entry>
+            <entry>Isto é atualmente suportado apenas para números reais. A
+            Divisão por zero cria um NaN inativo, que será propagado em todas
+            as expressões reais em que é usado. Você pode usar NOT ISVALID(x)
+            para testar se um valor é ou não um NaN. A divisão de inteiros e
+            decimais por zero continua a retornar 0.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -117,15 +127,16 @@
   <sect2 id="Bitwise_Operators">
     <title>Operadores Bitwise</title>
 
-    <para>Bitwise operators<indexterm>
+    <para>Operadores Bitwise<indexterm>
         <primary>Bitwise operators</primary>
-      </indexterm>  são suportados para uso em expressões, listadas aqui em sua avaliação:</para>
+      </indexterm> são suportados para uso em expressões, listadas aqui em sua
+    avaliação:</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
-        <colspec colwidth="194.80pt" />
+        <colspec colwidth="194.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -163,21 +174,21 @@
       </tgroup>
     </informaltable>
 
-    <para></para>
+    <para/>
   </sect2>
 
   <sect2 id="Bitshift_Operators">
     <title>Operadores Bitshift</title>
 
-    <para>Bitshift operators<indexterm>
+    <para>Operadores Bitshift <indexterm>
         <primary>Bitshift operators</primary>
-      </indexterm>  são suportados para um em expressõe "inteiras":</para>
+      </indexterm> são suportados para um em expressõe "inteiras":</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
-        <colspec colwidth="194.80pt" />
+        <colspec colwidth="194.80pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -199,7 +210,7 @@
       </tgroup>
     </informaltable>
 
-    <para></para>
+    <para/>
   </sect2>
 
   <sect2 id="Comparison_Operators">
@@ -207,25 +218,25 @@
 
     <para><emphasis>Os seguintes operadores de comparação<indexterm>
         <primary>comparison operator</primary>
-      </indexterm>s</emphasis>  são suportados:</para>
+      </indexterm>s</emphasis> são suportados:</para>
 
-    <para></para>
+    <para/>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="3">
-        <colspec colwidth="194.80pt" />
+        <colspec colwidth="194.80pt"/>
 
-        <colspec colwidth="50" />
+        <colspec colwidth="50"/>
 
         <tbody>
           <row>
             <entry>Equivalence<indexterm>
                 <primary>Equivalence</primary>
-              </indexterm> </entry>
+              </indexterm></entry>
 
             <entry>=</entry>
 
-            <entry>retorna TRUE ou FALSE </entry>
+            <entry>retorna TRUE ou FALSE</entry>
           </row>
 
           <row>
@@ -299,7 +310,11 @@
       </tgroup>
     </informaltable>
 
-    <para>O operador “Maior ou igual a”  <emphasis
-    role="underline">deve</emphasis>  primeiramente apresentar o sinal “Maior que” (&gt;). Para a expressão a &lt;=&gt; b, o operador de comparação de equivalência retorna -1 se a&lt;b, 0 se a=b, e 1 se a&gt;b. Quando as STRINGs são comparadas quanto à equivalência, os espaços atrás são ignorados.</para>
+    <para>O operador “Maior ou igual a” <emphasis
+    role="underline">deve</emphasis> primeiramente apresentar o sinal “Maior
+    que” (&gt;). Para a expressão a &lt;=&gt; b, o operador de comparação de
+    equivalência retorna -1 se a&lt;b, 0 se a=b, e 1 se a&gt;b. Quando as
+    STRINGs são comparadas quanto à equivalência, os espaços atrás são
+    ignorados.</para>
   </sect2>
 </sect1>

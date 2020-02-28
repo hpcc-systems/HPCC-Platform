@@ -65,7 +65,7 @@
               </row>
 
               <row>
-                <entry>Cancelar publicação</entry>
+                <entry>unpublish</entry>
 
                 <entry>Remove uma consulta de um grupo de consultas</entry>
               </row>
@@ -3031,7 +3031,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
       </sect2>
 
       <sect2 id="eclpackagevalidate" role="brk">
-        <title>Validar ecl packagemap</title>
+        <title>ecl packagemap validate</title>
 
         <para><emphasis role="bold">ecl packagemap validate &lt;target&gt;
         [&lt;filename&gt;] </emphasis></para>

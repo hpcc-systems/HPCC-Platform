@@ -27,21 +27,21 @@
           <entry><emphasis>superfile</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome lógico do
-          superfile.</entry>
+          superarquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>subfile</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome lógico do
-          subfile. Esse subfile pode ser outro superfile.</entry>
+          subarquivo. Esse subarquivo pode ser outro superarquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>atpos</emphasis></entry>
 
-          <entry>Um inteiro que especifica a posição do subfile no superfile.
-          <emphasis>subfile</emphasis> na definição
+          <entry>Um inteiro que especifica a posição do subarquivo no
+          superarquivo. <emphasis>subfile</emphasis> na definição
           <emphasis>superfile</emphasis>. Se omitido, o padrão é zero (0), que
           posiciona o <emphasis>subfile </emphasis> no final do
           <emphasis>superfile</emphasis>.</entry>
@@ -51,9 +51,9 @@
           <entry><emphasis>addcontents</emphasis></entry>
 
           <entry>Um indicador booleano que, se definido como TRUE, especifica
-          que o <emphasis>subfile</emphasis> é também um superfile e que o
-          conteúdo desse superfile são adicionados ao superfile, em vez de sua
-          referência. Se omitido, o padrão é adicionar por referência
+          que o <emphasis>subfile</emphasis> é também um superarquivo e que o
+          conteúdo desse superarquivo são adicionados ao superarquivo, em vez
+          de sua referência. Se omitido, o padrão é adicionar por referência
           (addcontents := FALSE).</entry>
         </row>
 
@@ -61,13 +61,13 @@
           <entry><emphasis>strict</emphasis></entry>
 
           <entry>Um indicador booleano que especifica, no caso de um
-          <emphasis>subfile</emphasis> que também é um superfile, se a
-          existência do superfile deve ser verificada e se um erro deve ser
-          gerado se o superfile<emphasis> </emphasis> não existe. Além disso,
-          se <emphasis>addcontents</emphasis> estiver definido como TRUE, será
-          verificado se o <emphasis>subfile</emphasis> que é um superfile não
-          está vazio. Se omitido, o padrão é falso. Se omitido, o padrão é
-          falso.</entry>
+          <emphasis>subfile</emphasis> que também é um superarquivo, se a
+          existência do superarquivo deve ser verificada e se um erro deve ser
+          gerado se o superarquivo<emphasis> </emphasis> não existe. Além
+          disso, se <emphasis>addcontents</emphasis> estiver definido como
+          TRUE, será verificado se o <emphasis>subfile</emphasis> que é um
+          superarquivo não está vazio. Se omitido, o padrão é falso. Se
+          omitido, o padrão é falso.</entry>
         </row>
 
         <row>
@@ -85,8 +85,8 @@
   <emphasis>superfile</emphasis> devem ter exatamente o mesmo tipo e formato
   da estrutura.</para>
 
-  <para>Essa função pode ser incluída em uma transação de superfile, mas isso
-  não é obrigatório.</para>
+  <para>Essa função pode ser incluída em uma transação de superarquivo, mas
+  isso não é obrigatório.</para>
 
   <para>Exemplo:</para>
 

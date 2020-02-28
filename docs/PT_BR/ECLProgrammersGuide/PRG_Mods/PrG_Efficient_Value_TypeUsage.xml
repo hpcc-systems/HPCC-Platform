@@ -193,7 +193,7 @@ STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
   </sect2>
 
   <sect2 id="User-Defined_Data_Types">
-    <title>Tipos de Dados User-Defined</title>
+    <title>Tipos de Dados Definidos pelo Usuário</title>
 
     <para>Há várias maneiras de definir seus próprios tipos de dados no ECL.
     As estruturas RECORD e TYPE são as mais comuns.</para>

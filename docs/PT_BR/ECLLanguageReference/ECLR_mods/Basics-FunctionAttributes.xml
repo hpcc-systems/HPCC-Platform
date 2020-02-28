@@ -81,7 +81,7 @@
   </informaltable>
 
   <sect2 id="Simple_Value_Type_Parameters">
-    <title>Parâmetros simples de tipo de valor</title>
+    <title>Parâmetros simples de tipo value</title>
 
     <para>Se <emphasis>ValueType</emphasis> opcional for um dos tipos simples
     (BOOLEAN, INTEGER, REAL, DECIMAL, STRING, QSTRING, UNICODE, DATA,

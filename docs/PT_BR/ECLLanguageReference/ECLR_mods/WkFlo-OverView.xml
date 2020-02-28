@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Workflow_Overview">
-  <title>Visão Geral do Workflow</title>
+  <title>Visão Geral do Fluxo de Trabalho</title>
 
   <para>O controle do fluxo de trabalho no ECL é geralmente manuseado
   automaticamente pelo sistema. Ele distingue quais processos podem ser

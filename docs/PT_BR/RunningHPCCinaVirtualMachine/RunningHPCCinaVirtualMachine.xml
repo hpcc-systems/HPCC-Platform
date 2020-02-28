@@ -2,10 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book id="Running_HPCC_In_A_Virtual_Machine" lang="en_US" xml:base="../">
-  <title>Executando o HPCC em uma Virtual Machine</title>
+  <title>Executando o HPCC em uma Máquina Virtual</title>
 
   <bookinfo>
-    <title>HPCC em uma Virtual Machine</title>
+    <title>HPCC em uma Máquina Virtual</title>
 
     <mediaobject>
       <imageobject>
@@ -180,7 +180,7 @@
     Oracle</para>
 
     <sect1 id="VM_VirtualBox">
-      <title>.</title>
+      <title>VM VirtualBox</title>
 
       <para>O software de virtualização da Oracle, VM VirtualBox, suporta a
       execução da imagem da máquina virtual do HPCC.</para>
@@ -536,10 +536,10 @@
           <?dbfo keep-together="always"?>
 
           <para>No menu Advanced do ECL Watch, selecione o link <emphasis
-          role="bold">Additional Resurces </emphasis>.</para>
+          role="bold">Downloads</emphasis>.</para>
 
           <para><figure>
-              <title>Página Recursos do ECL Watch</title>
+              <title>Menu Downloads</title>
 
               <mediaobject>
                 <imageobject>
@@ -991,7 +991,7 @@ OUTPUT(L);</programlisting></para>
       <?hard-pagebreak ?>
 
       <sect2 id="VM_RoxieExampleAnagram2">
-        <title>Exemplo Roxie: Anagram2 Anagram2</title>
+        <title>Exemplo Roxie: Anagram2</title>
 
         <para>Neste exemplo, vamos baixar um arquivo de dados de código aberto
         com palavras do dicionário, fazer o spray (distribuir aos nós) desse
@@ -1041,8 +1041,8 @@ OUTPUT(L);</programlisting></para>
           todos os nós no cluster do HPCC . O poder do HPCC vem da sua
           capacidade de atribuir vários processadores para trabalhar nas
           diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
-          Edition, que possui apenas um nó único, os dados precisam ser
-          distribuídos aos nós do cluster.</para>
+          Edition, que possui apenas um nó único, os dados precisam passar
+          pela operação de spray.</para>
 
           <orderedlist>
             <listitem>
@@ -1126,7 +1126,7 @@ OUTPUT(L);</programlisting></para>
         </sect3>
 
         <sect3 id="VM_Spray_the_Data_to_THOR">
-          <title>Spray do arquivo de dados para o sua <emphasis> Cluster da
+          <title>Spray do arquivo de dados para o seu<emphasis> Cluster da
           Refinaria de Dados (Thor)</emphasis></title>
 
           <para>Para usar o arquivo de dados em seu HPCC System, é preciso
@@ -1253,7 +1253,7 @@ OUTPUT(L);</programlisting></para>
         </sect3>
 
         <sect3 id="VM_RunTheQueryOnThor">
-          <title>Executa a consulta no Thor<parameter/></title>
+          <title>Execute a consulta no Thor<parameter/></title>
 
           <para><orderedlist>
               <listitem>
@@ -1522,7 +1522,7 @@ OUTPUT(ValidWords)
         <sect3 id="VM_Deploy_the_Query_to_Roxie">
           <title>Publicar a consulta Roxie</title>
 
-          <para>Agora vamos publicar s consulta em um cluster Roxie.</para>
+          <para>Agora vamos publicar a consulta em um cluster Roxie.</para>
 
           <orderedlist>
             <listitem>
@@ -1889,7 +1889,7 @@ OUTPUT(ValidWords)
             realizar a pesquisa de dados. Durante o tutorial, você aprenderá
             como processar e indexar os dados, e depois como gravar e publicar
             uma consulta para pesquisar dados. O tutorial auto-conduzido e os
-            dados que o acompanha estão disponíveis na página de Recursos do
+            dados que o acompanham estão disponíveis na página de Recursos do
             ECL Watch.</para>
           </listitem>
 
@@ -1983,7 +1983,7 @@ OUTPUT(ValidWords)
 
         <qandaentry>
           <question>
-            <para>Posso executar a VM em meu computador Linux?</para>
+            <para>Posso executar a VM em meu computador Mac?</para>
           </question>
 
           <answer>

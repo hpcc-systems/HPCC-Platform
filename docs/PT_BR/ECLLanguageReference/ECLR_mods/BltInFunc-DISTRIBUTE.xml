@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DISTRIBUTE">
-  <title>DISTRIBUTE<indexterm>
+  <title>DISTRIBUTE "Randômico"<indexterm>
       <primary>DISTRIBUTE</primary>
     </indexterm></title>
 
@@ -220,9 +220,10 @@
     HASH . Somente os 32 bits inferiores do valor da
     <emphasis>expressão</emphasis> são usados; portanto, HASH ou HASH32 são a
     escolha ideal. Os registros para os quais a <emphasis>expressão</emphasis>
-    avalia a mesma terminarão no mesmo nó. DISTRIBUTE executa implicitamente
-    uma operação de módulo se o valor da <emphasis>expressão</emphasis> não
-    estiver no intervalo do número de nós disponíveis.</para>
+    apresenta o mesmo resultado que estão no mesmo nó. DISTRIBUTE executa
+    implicitamente uma operação de módulo se o valor da
+    <emphasis>expressão</emphasis> não estiver no intervalo do número de nós
+    disponíveis.</para>
 
     <para>Se a opção MERGE for especificada, o <emphasis>recordset </emphasis>
     precisa ter sido classificado localmente pelas expressões
@@ -230,7 +231,7 @@
   </sect2>
 
   <sect2 id="Index-based_DISTRIBUTE">
-    <title>Index-based DISTRIBUTE</title>
+    <title>DISTRIBUTE baseado em Index</title>
 
     <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
     index </emphasis><emphasis role="bold">[</emphasis><emphasis>,
@@ -245,7 +246,7 @@
   </sect2>
 
   <sect2 id="Skew-based_DISTRIBUTE">
-    <title>Skew-based DISTRIBUTE</title>
+    <title>DISTRIBUTE baseado em Skew</title>
 
     <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
     </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> maxskew

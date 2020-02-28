@@ -6,8 +6,8 @@
   Complexas</emphasis></title>
 
   <para>As técnicas de codificação ECL usadas nas consultas Roxie podem ser
-  bastante complexas, usando múltiplas chaves, chaves de contéudo, JOINs de
-  meia chave, a função KEYDIFF e vários outros recursos da linguagem ECL. No
+  bastante complexas, usando múltiplas chaves, chaves de contéudo, HALF-KEYED
+  JOINS, a função KEYDIFF e vários outros recursos da linguagem ECL. No
   entanto, todas essas técnicas compartilham do mesmo objetivo: maximizar o
   desempenho da consulta para que seu resultado seja entregue do modo mais
   eficiente possível, maximizando a taxa de produtividade de transação total
@@ -76,19 +76,19 @@ END;</programlisting>
   </sect2>
 
   <sect2 id="PG_Keyed_Joins">
-    <title>Joins chavedos</title>
+    <title>KEYED JOINS</title>
 
     <para>Embora a função FETCH tenha sido projetada especificamente para
-    acesso indexados aos dados, na prática, a operação JOIN de meia chave é
+    acesso indexados aos dados, na prática, a operação HALF-KEYED JOINs é
     normalmente usada em consultas Roxie. A principal razão para isso é a
     flexibilidade oferecida por JOIN.</para>
 
-    <para>As vantagens de uso de operações JOIN com chave em qualquer consulta
+    <para>As vantagens de uso de operações KEYED JOINs em qualquer consulta
     são discutidas de maneira mais detalhada no tópico <emphasis>Como usar
     chaves ECL (arquivos INDEX)</emphasis> . Essas vantagens garantem
     benefícios tremendos para as consultas Roxie. Devido à natureza do Roxie,
-    a melhor vantagem de JOINs com chave vem do uso de JOINs de meia chave que
-    utilizam chaves de conteúdo (acabando com a necessidade de operações FETCH
+    a melhor vantagem de JOINs com chave vem do uso de HALF-KEYED JOINS que
+    utilizam índices payload (acabando com a necessidade de operações FETCH
     adicionais).</para>
   </sect2>
 

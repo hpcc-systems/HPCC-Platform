@@ -417,7 +417,7 @@
   <sect2 id="SOAPCALL_Function">
     <title>Função SOAPCALL<indexterm>
         <primary>Função</primary>
-      </indexterm> SOAPCALL</title>
+      </indexterm></title>
 
     <para>Esta forma de função SOAPCALL <indexterm>
         <primary>SOAPCALL</primary>
@@ -509,7 +509,7 @@ OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP),
   <sect2 id="SOAPCALL_Action">
     <title>Ação SOAPCALL<indexterm>
         <primary>action</primary>
-      </indexterm> SOAPCALL</title>
+      </indexterm></title>
 
     <para>A segunda forma de SOAPCALL (a ação), pode adotar como entrada um
     registro individual ou um conjunto de registros. Nenhum dos tipos de

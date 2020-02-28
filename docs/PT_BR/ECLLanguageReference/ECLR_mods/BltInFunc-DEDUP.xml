@@ -299,7 +299,7 @@ DEDUP(SomeFile1, Value1, HASH, BEST(Value2));
 // 004 KC C</programlisting>
 
   <sect2 id="Complex_Record_Set_Conditions">
-    <title>Condições Record Set Complex</title>
+    <title>Condições complexas de Record Set</title>
 
     <para>A função DEDUP <indexterm>
         <primary>DEDUP function</primary>

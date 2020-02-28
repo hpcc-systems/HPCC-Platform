@@ -182,11 +182,11 @@
     </informaltable></para>
 
   <para>A função <emphasis role="bold">PROJECT </emphasis> processa todos os
-  registros no <emphasis>recordset </emphasis>, os quais realizam a função
+  registros no <emphasis>recordset </emphasis>, realizam a função
   <emphasis>transform</emphasis> em cada registro por vez.</para>
 
-  <para>O form PROJECT(<emphasis>recordset,record</emphasis>) é basicamente um
-  sinônimo abreviado para:</para>
+  <para>A forma 1 PROJECT(<emphasis>recordset,record</emphasis>) é basicamente
+  um sinônimo abreviado para:</para>
 
   <para>PROJECT(<emphasis>recordset</emphasis>,TRANSFORM(<emphasis>record</emphasis>,SELF
   := LEFT)).</para>
@@ -197,9 +197,9 @@
   <emphasis>recordset</emphasis> de entrada.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Project">
-    <title>Função TRANSFORM<indexterm>
+    <title>Requisitos da Função <indexterm>
         <primary>Função TRANSFORM</primary>
-      </indexterm> Requisitos<indexterm>
+      </indexterm> TRANSFORM<indexterm>
         <primary>Requerimentos da Função TRANSFORM</primary>
       </indexterm><indexterm>
         <primary>Requisitos TRANSFORM</primary>
@@ -307,7 +307,7 @@ Rec# Value1 Value2 CatValues
   </sect2>
 
   <sect2 id="BuiltinFunction_PROJECT">
-    <title>PROJECT - Module</title>
+    <title>PROJECT - Módulo</title>
 
     <para><emphasis role="bold">PROJECT<indexterm>
         <primary>PROJECT</primary>

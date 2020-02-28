@@ -59,9 +59,9 @@
         <row>
           <entry><emphasis>foreigndali</emphasis></entry>
 
-          <entry>Opcional. O endereço IP do Dali estrangeiro usado para
-          resolver o arquivo. Um valor em branco significa que o arquivo é
-          resolvido localmente. Se omitido, o padrão é em branco.</entry>
+          <entry>Opcional. O endereço IP do Dali externo usado para resolver o
+          arquivo. Um valor em branco significa que o arquivo é resolvido
+          localmente. Se omitido, o padrão é em branco.</entry>
         </row>
 
         <row>

@@ -65,14 +65,14 @@
   <chapter>
     <title>Dynamic ESDL</title>
 
-    <para>A ESDL (Enterprise Service Description Language) dinâmica é uma
-    metodologia que ajuda você a desenvolver e gerenciar interfaces de
-    consulta baseadas na Web de forma rápida e consistente.</para>
+    <para>A Dynamic ESDL é uma metodologia que ajuda você a desenvolver e
+    gerenciar interfaces de consulta baseadas na Web de forma rápida e
+    consistente.</para>
 
     <para>A Dynamic ESDL adota uma abordagem de desenvolvimento
-    "interface-first". Ela aproveita a linguagem ESDL para criar uma interface
-    comum "contract" de modo que ambos os desenvolvedores de consultas Roxie e
-    de interface Web possam aderir. O objetivo é permitir que os
+    "interface-first". Ela aproveita a linguagem ESDL para criar um contrato
+    de interface comum de modo que ambos os desenvolvedores de consultas Roxie
+    e de interface Web possam aderir. O objetivo é permitir que os
     desenvolvedores criem web-services de produção com interfaces limpas que
     capazes de evoluir e crescer ao longo do tempo sem interromper as
     aplicações existentes.</para>
@@ -85,8 +85,8 @@
     <para>A capacidade do ESDL de definir e reutilizar estruturas comuns ajuda
     a manter as interfaces consistentes entre os métodos.</para>
 
-    <para>O serviço Dynamic ESDL foi desenvolvido para dimensionar
-    horizontalmente, e ganchos são fornecidos para adicionar processos de
+    <para>O serviço Dynamic ESDL foi desenvolvido para escalar
+    horizontalmente, e webhooks são fornecidos para adicionar processos de
     registro (logging) e segurança personalizados para ajudar a criar web
     services totalmente "prontos para produção".</para>
 
@@ -536,7 +536,7 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             IP e porta do servidor Roxie, finalmente, o queryname é o nome
             publicado (alias) da consulta. Para um Roxie de vários nós, você
             pode usar um intervalo na forma de nnn.nnn.nnn.n-nnn. O ESP agenda
-            pedidos para o destino Roxie em um round-robin.</para>
+            pedidos para o destino Roxie usando lógica round-robin.</para>
 
             <para>Opicionalmente, seu método pode incluir informações de
             contexto conforme ilustrado no exemplo a seguir. As informações de

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="StartSuperFileTransaction">
@@ -15,10 +15,17 @@
 
   <para>Return:<emphasis> </emphasis>Nulo</para>
 
-  <para>A função  <emphasis role="bold">StartSuperFileTransaction
-  </emphasis> inicia um período de transação para a manutenção do superfile. O período de transação é terminado chamando a função FinishSuperFileTransaction. Dentro do período de transação, vários superfiles podem ser mantidos adicionando, removendo, limpando, alternando e substituindo subfiles.</para>
+  <para>A função <emphasis role="bold">StartSuperFileTransaction </emphasis>
+  inicia um período de transação para a manutenção do superarquivo. O período
+  de transação é terminado chamando a função FinishSuperFileTransaction.
+  Dentro do período de transação, vários superarquivos podem ser mantidos
+  adicionando, removendo, limpando, alternando e substituindo subfiles.</para>
 
-  <para>A função FinishSuperFileTransaction reverte automaticamente a transação se qualquer erro ou falha ocorre durante o período de transação. Se nenhum erro ocorrer, a confirmação ou reversão da transação será controlada pelo parâmetro  <emphasis>rollback </emphasis> da função FinishSuperFileTransaction.</para>
+  <para>A função FinishSuperFileTransaction reverte automaticamente a
+  transação se qualquer erro ou falha ocorre durante o período de transação.
+  Se nenhum erro ocorrer, a confirmação ou reversão da transação será
+  controlada pelo parâmetro <emphasis>rollback </emphasis> da função
+  FinishSuperFileTransaction.</para>
 
   <para>Exemplo:</para>
 

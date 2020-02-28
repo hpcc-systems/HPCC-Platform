@@ -35,9 +35,9 @@
 
   <para>A função <emphasis role="bold">HASH</emphasis> retorna um valor hash
   de 32 bits derivado de todos os valores da
-  <emphasis>expressionlist</emphasis>. Os espaços atrás são aparados dos
-  campos da string (ou UNICODE) antes de o valor ser calculado (a conversão
-  para DATA impede isso).</para>
+  <emphasis>expressionlist</emphasis>. Espaços no final da string são
+  removidos (ou UNICODE) antes de o valor ser calculado (a conversão para DATA
+  impede isso).</para>
 
   <para>Exemplo:</para>
 
