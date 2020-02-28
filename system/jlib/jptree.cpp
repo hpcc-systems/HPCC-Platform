@@ -7972,7 +7972,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     }
     else
     {
-        if (checkFileExists(legacyFilename))
+        if (legacyFilename && checkFileExists(legacyFilename))
             delta.setown(createPTreeFromXMLFile(legacyFilename, ipt_caseInsensitive));
 
         if (delta && mapper)
