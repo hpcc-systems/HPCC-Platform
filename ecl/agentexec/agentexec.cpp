@@ -20,80 +20,61 @@
 #include "jmisc.hpp"
 #include "jlog.hpp"
 #include "jfile.hpp"
-#include "agentexec.hpp"
 #include "jutil.hpp"
 #include "eclagent.hpp"
 
-Owned<CEclAgentExecutionServer> execSvr = NULL;
+class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
+{
+public:
+    CEclAgentExecutionServer(IPropertyTree *config);
+    ~CEclAgentExecutionServer();
 
+    int run();
+    virtual IPooledThread *createNew() override;
+private:
+    bool executeWorkunit(const char * wuid);
+
+    const char *agentName;
+    const char *daliServers;
+    Owned<IJobQueue> queue;
+    Linked<IPropertyTree> config;
+#ifdef _CONTAINERIZED
+    Owned<IThreadPool> pool;
+#endif
+};
 
 //---------------------------------------------------------------------------------
 
-CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : Thread("Workunit Execution Server"), config(_config)
+CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : config(_config)
 {
-    started = false;
+    //Build logfile from component properties settings
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclagent");
+    lf->setCreateAliasFile(false);
+    lf->beginLogging();
+    PROGLOG("Logging to %s",lf->queryLogFileSpec());
+
+    agentName = config->queryProp("@name");
+    assertex(agentName);
+    setStatisticsComponentName(SCThthor, agentName, true);
+
+    daliServers = config->queryProp("@daliServers");
+    assertex(daliServers);
+#ifdef _CONTAINERIZED
+    unsigned poolSize = config->getPropInt("@maxActive", 100);
+    pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
+#endif
 }
+
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
-    if (started)
-        stop();
+#ifdef _CONTAINERIZED
+    pool->joinAll(false, INFINITE);
+#endif
     if (queue)
-        queue.getClear();
+        queue->cancelAcceptConversation();
 }
 
-
-void CEclAgentExecutionServer::start()
-{
-    if (started)
-    {
-        DBGLOG("START called when already started\n");
-        assert(false);
-    }
-
-    {
-        //Build logfile from component properties settings
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclagent");
-        lf->setCreateAliasFile(false);
-        lf->beginLogging();
-        PROGLOG("Logging to %s",lf->queryLogFileSpec());
-    }
-
-    //get name of workunit job queue
-    StringBuffer sb;
-    config->getProp("@name", sb.clear());
-    agentName.set(sb);
-    if (!agentName.length())
-    {
-        OERRLOG("'name' not specified in config file\n");
-        throwUnexpected();
-    }
-    setStatisticsComponentName(SCThthor, agentName, true);
-
-    //get dali server(s)
-    config->getProp("@daliServers", daliServers);
-    if (!daliServers.length())
-    {
-        OERRLOG("'daliServers' not specified in config file\n");
-        throwUnexpected();
-    }
-
-    started = true;
-    Thread::start();
-    Thread::join();
-}
-
-//---------------------------------------------------------------------------------
-
-void CEclAgentExecutionServer::stop()
-{
-    if (started)
-    {
-        started = false;
-        if (queue)
-            queue->cancelAcceptConversation();
-    }
-}
 
 //---------------------------------------------------------------------------------
 
@@ -129,8 +110,16 @@ int CEclAgentExecutionServer::run()
 
     try 
     {
-        while (started)
+        while (true)
         {
+#ifdef _CONTAINERIZED
+            if (!pool->waitAvailable(10000))
+            {
+                if (config->getPropInt("@traceLevel", 0) > 2)
+                    DBGLOG("Blocked for 10 seconds waiting for an available agent slot");
+                continue;
+            }
+#endif
             PROGLOG("AgentExec: Waiting on queue(s) '%s'", queueNames.str());
             Owned<IJobQueueItem> item = queue->dequeue();
             if (item.get())
@@ -153,10 +142,7 @@ int CEclAgentExecutionServer::run()
             }
             else
             {
-                if (started)
-                   IERRLOG("Unexpected dequeue of bogus job queue item, exiting agentexec");
-                removeSentinelFile(sentinelFile);//no reason to restart
-                assert(!started);
+                removeSentinelFile(sentinelFile); // no reason to restart
                 break;
             }
         }
@@ -184,15 +170,75 @@ int CEclAgentExecutionServer::run()
 
 //---------------------------------------------------------------------------------
 
-int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
+#ifdef _CONTAINERIZED
+class WaitThread : public CInterfaceOf<IPooledThread>
+{
+public:
+    WaitThread(const char *_dali) : dali(_dali)
+    {
+    }
+    virtual void init(void *param) override
+    {
+        wuid.set((const char *) param);
+    }
+    virtual bool stop() override
+    {
+        return false;
+    }
+    virtual bool canReuse() const override
+    {
+        return false;
+    }
+    virtual void threadmain() override
+    {
+        try
+        {
+            if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
+            {
+                runK8sJob("eclagent", wuid);
+            }
+            else
+            {
+                VStringBuffer exec("eclagent --workunit=%s --daliServers=%s", wuid.str(), dali.str());
+                Owned<IPipeProcess> pipe = createPipeProcess();
+                if (!pipe->run("eclagent", exec.str(), ".", false, true, false, 0, false))
+                    throw makeStringExceptionV(0, "Failed to run %s", exec.str());
+            }
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            E->Release();
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+            if (workunit)
+            {
+                workunit->setState(WUStateFailed);
+                workunit->commit();
+            }
+        }
+    }
+private:
+    StringAttr wuid;
+    StringAttr dali;
+};
+#endif
+
+IPooledThread *CEclAgentExecutionServer::createNew()
 {
 #ifdef _CONTAINERIZED
-    if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
-    {
-        runK8sJob("eclagent", wuid);
-        return true;
-    }
+    return new WaitThread(daliServers);
+#else
+    throwUnexpected();
 #endif
+}
+
+bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
+{
+#ifdef _CONTAINERIZED
+    pool->start((void *) wuid);
+    return true;
+#else
     //build eclagent command line
     StringBuffer command;
 
@@ -234,17 +280,7 @@ int CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     }
 
     return success && runcode == 0;
-}
-
-//---------------------------------------------------------------------------------
-
-bool ControlHandler()
-{
-    if (execSvr)
-    {
-        execSvr->stop();
-    }
-    return false;
+#endif
 }
 
 //---------------------------------------------------------------------------------
@@ -264,8 +300,6 @@ int main(int argc, const char *argv[])
 #endif
     InitModuleObjects();
 
-    addAbortHandler(ControlHandler);
-
     Owned<IPropertyTree> config;
     try
     {
@@ -277,23 +311,21 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    int retcode = 0;
     try
     {
-        execSvr.setown(new CEclAgentExecutionServer(config));
-        execSvr->start();
+        CEclAgentExecutionServer server(config);
+        server.run();
     } 
     catch (...)
     {
         printf("Unexpected error running agentexec server\r\n");
-    }
-    if (execSvr)
-    {
-        execSvr->stop();
+        retcode = 1;
     }
 
     closedownClientProcess();
     releaseAtoms();
     ExitModuleObjects();
 
-    return 0;
+    return retcode;
 }

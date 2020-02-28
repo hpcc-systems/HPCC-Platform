@@ -32,6 +32,7 @@ eclagent:
     version: 1.0
     EclAgent:
       containerPerAgent: true
+      maxActive: 2
     
 eclccserver:
 - name: myeclccserver

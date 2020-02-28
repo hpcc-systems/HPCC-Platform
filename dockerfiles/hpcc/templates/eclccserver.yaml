@@ -41,6 +41,13 @@ spec:
           containers:
           - name: %jobname
             image: {{ include "hpcc.utils.imageName" (dict "root" $ "imagename" "eclccserver") }}
+            resources:
+              requests:
+                #request-memory
+                #request-cpu
+              limits:
+                #limit-memory
+                #limit-cpu
             command: [
                         "eclccserver",
                         {{ include "hpcc.utils.configArg" . }},
