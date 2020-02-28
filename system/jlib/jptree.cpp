@@ -7895,6 +7895,17 @@ IPropertyTree & queryGlobalConfig()
     return *globalConfiguration;
 }
 
+jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv)
+{
+    for (const char * * pArg = argv; *pArg; pArg++)
+    {
+        const char * cur = *pArg;
+        if (startsWith(cur, "--"))
+            applyCommandLineOption(config, cur + 2);
+    }
+    return config;
+}
+
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
 {
     if (componentConfiguration)
@@ -7988,12 +7999,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         applyEnvironmentConfig(*config, envPrefix, *cur);
     }
 
-    for (const char * * pArg = argv; *pArg; pArg++)
-    {
-        const char * cur = *pArg;
-        if (startsWith(cur, "--"))
-            applyCommandLineOption(config, cur + 2);
-    }
+    loadArgsIntoConfiguration(config, argv);
 
     if (outputConfig)
     {

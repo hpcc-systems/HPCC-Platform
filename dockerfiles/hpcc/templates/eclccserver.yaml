@@ -13,17 +13,8 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      {{ if $.Values.global.singleNode | default false -}}
-      initContainers:
-      # This is a bit of a hack, to ensure that the persistent storage mounted for dllserver
-      # is writable. This is not something we would want to do if using anything other than
-      # local storage (which is only sensible on single-node systems).
-      - name: volume-mount-hack
-        image: busybox
-        command: ["sh", "-c", "chown -R 999:1000 /var/lib/HPCCSystems/queries"]
-        volumeMounts:
-        - mountPath: "/var/lib/HPCCSystems/queries"
-          name: dllserver-pv-storage
+      {{- if $.Values.global.singleNode | default false }}
+{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "dllserver-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") | indent 6 }}
       {{- end }}
       serviceAccountName: hpcc
       containers:

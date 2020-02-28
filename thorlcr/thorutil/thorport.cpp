@@ -63,12 +63,12 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
   
 void setMachinePortBase(unsigned short base)
 {
-    machineportbase = base?base:THOR_BASESLAVE_PORT;
+    machineportbase = base;
 }
 
 void setMasterPortBase(unsigned short base)
 {
-    masterportbase = base?base:THOR_BASE_PORT;
+    masterportbase = base;
 }
 
 unsigned short getMasterPortBase()

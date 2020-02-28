@@ -74,12 +74,7 @@ static unsigned mySlaveNum;
 static const unsigned defaultStrandBlockSize = 512;
 static const unsigned defaultForceNumStrands = 0;
 
-static char **cmdArgs;
-void mergeCmdParams(IPropertyTree *props)
-{
-    while (*cmdArgs)
-        loadCmdProp(props, *cmdArgs++);
-}
+static const char **cmdArgs;
 
 static void replyError(unsigned errorCode, const char *errorMsg)
 {
@@ -123,7 +118,11 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             assertex(mySlaveNum == configSlaveNum);
 
         globals.setown(createPTree(msg));
-        mergeCmdParams(globals); // cmd line
+
+        /* NB: preserve command line option overrides
+         * Not sure if any cmdline options are actually needed by this stage..
+         */
+        loadArgsIntoConfiguration(globals, cmdArgs);
 
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
@@ -136,6 +135,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
         }
 
+        ensurePTree(globals, "Debug");
         unsigned numStrands, blockSize;
         if (globals->hasProp("Debug/@forceNumStrands"))
             numStrands = globals->getPropInt("Debug/@forceNumStrands");
@@ -304,7 +304,7 @@ void setSlaveAffinity(unsigned processOnNode)
 }
 
 
-int main( int argc, char *argv[]  )
+int main( int argc, const char *argv[]  )
 {
     // If using systemd, we will be using daemon code, writing own pid
     for (unsigned i=0;i<(unsigned)argc;i++) {
@@ -349,8 +349,7 @@ int main( int argc, char *argv[]  )
             return 1;
         }
         cmdArgs = argv+1;
-        mergeCmdParams(globals);
-        cmdArgs = argv+1;
+        loadArgsIntoConfiguration(globals, cmdArgs);
 
         const char *master = globals->queryProp("@master");
         if (!master)
