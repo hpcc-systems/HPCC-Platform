@@ -123,7 +123,13 @@ struct jhtree_decl NodeHdr
 //#pragma pack(4)
 #pragma pack(pop)
 
-class jhtree_decl CKeyHdr : public CInterface
+class CWritableKeyNode : public CInterface
+{
+public:
+    virtual void write(IFileIOStream *, CRC32 *crc) = 0;
+};
+
+class jhtree_decl CKeyHdr : public CWritableKeyNode
 {
 private:
     KeyHdr hdr;
@@ -131,7 +137,7 @@ public:
     CKeyHdr();
 
     void load(KeyHdr &_hdr);
-    void write(IFileIOStream *, CRC32 *crc = NULL);
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
 
     unsigned int getMaxKeyLength();
     bool isVariable();
@@ -169,7 +175,7 @@ public:
 
 };
 
-class jhtree_decl CNodeBase : public CInterface
+class jhtree_decl CNodeBase : public CWritableKeyNode
 {
 protected:
     NodeHdr hdr;
@@ -181,6 +187,7 @@ protected:
     bool isVariable;
 
 public:
+    virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
     inline offset_t getFpos() const { return fpos; }
     inline size32_t getKeyLen() const { return keyLen; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
@@ -330,7 +337,7 @@ public:
     CWriteNodeBase(offset_t fpos, CKeyHdr *keyHdr);
     ~CWriteNodeBase();
 
-    void write(IFileIOStream *, CRC32 *crc = NULL);
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
     void setLeftSib(offset_t leftSib) { hdr.leftSib = leftSib; }
     void setRightSib(offset_t rightSib) { hdr.rightSib = rightSib; }
 };

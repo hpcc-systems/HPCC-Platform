@@ -111,5 +111,6 @@ interface IKeyDesprayer : public IInterface
 };
 
 extern jhtree_decl IKeyDesprayer * createKeyDesprayer(IFile * in, IFileIOStream * out);
+extern jhtree_decl bool checkReservedMetadataName(const char *name);
 
 #endif
