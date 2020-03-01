@@ -17,6 +17,7 @@ spec:
 {{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "dllserver-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") | indent 6 }}
       {{- end }}
       serviceAccountName: hpcc
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       containers:
       - name: {{ .name | quote }}
         args: [
