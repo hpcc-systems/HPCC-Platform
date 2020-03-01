@@ -442,6 +442,10 @@ define([
                 this.checkIfWarning();
             }
 
+            this.filter.init({
+                ws_key: "DFUQueryRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();

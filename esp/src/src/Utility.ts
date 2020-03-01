@@ -265,6 +265,14 @@ export function downloadToCSV(grid, rows, fileName) {
     download(csvContent, fileName, "text/csv");
 }
 
+export function isObjectEmpty(obj) {
+    for (const prop in obj) {
+        if (obj.hasOwnProperty(prop))
+            return false;
+    }
+    return true;
+}
+
 /* alphanum.js (C) Brian Huisman
  * Based on the Alphanum Algorithm by David Koelle
  * The Alphanum Algorithm is discussed at http://www.DaveKoelle.com
@@ -758,7 +766,7 @@ export function getURL(name) {
 
 export function pathTail(path: string) {
     //  Assuming we need to support windows paths as well...
-    const pathParts = path.split("\\").join("/").split("/"); 
+    const pathParts = path.split("\\").join("/").split("/");
     return pathParts.pop();
 }
 

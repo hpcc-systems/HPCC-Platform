@@ -11,6 +11,8 @@ define([
 
     "hpcc/_Widget",
     "src/Utility",
+    "src/react/index",
+    "src/UserPreferences/Recent",
 
     "dojo/text!../templates/FilterDropDownWidget.html",
 
@@ -24,7 +26,7 @@ define([
 
 ], function (declare, i18n, nlsHPCC, arrayUtil, dom, domStyle,
     registry, Select,
-    _Widget, Utility,
+    _Widget, Utility, srcReact, Recent,
     template) {
     return declare("FilterDropDownWidget", [_Widget], {
         templateString: template,
@@ -38,6 +40,7 @@ define([
         filterLabel: null,
         filterMessage: null,
         tableContainer: null,
+        username: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -52,6 +55,10 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.iconFilter = dom.byId(this.id + "IconFilter");
+        },
+
+        destroy: function (args) {
+            srcReact.unrender(this.recentFilterNode);
         },
 
         //  Hitched actions  ---
@@ -98,6 +105,7 @@ define([
         },
 
         toObject: function () {
+            var context = this;
             if (this.filterDropDown.get("disabled")) {
                 return {};
             }
@@ -111,6 +119,15 @@ define([
                     }
                 }
             });
+            if (this.userName !== null) {
+                if (!Utility.isObjectEmpty(retVal)) {
+                    Recent.addToStack(this.params.ws_key, retVal, 5).then(function(val){
+                        if (val) {
+                            context.loadRecentFilters(retVal);
+                        }
+                    });
+                }
+            }
             return retVal;
         },
 
@@ -130,6 +147,15 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
+
+            this.userName = dojoConfig.username;
+            if (this.userName !== null) {
+                this.recentFilterNode = dom.byId(this.id + "RecentFilters");
+
+                if (params.widget) {
+                    srcReact.render(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} }, this.recentFilterNode);
+                }
+            }
         },
 
         open: function (event) {
@@ -147,6 +173,14 @@ define([
 
         reset: function (disable) {
             this.filterForm.reset();
+        },
+
+        loadRecentFilters: function (retVal) {
+            this.recentFilterNode = dom.byId(this.id + "RecentFilters");
+
+            if (this.params.widget) {
+                srcReact.render(srcReact.RecentFilters, { ws_key: this.params.ws_key, widget: this.params.widget, filter: retVal }, this.recentFilterNode);
+            }
         },
 
         refreshState: function () {

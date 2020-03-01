@@ -72,6 +72,10 @@ define([
             });
             this.initEventGrid();
 
+            this.filter.init({
+                ws_key: "EventScheduleWorkunitRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();
