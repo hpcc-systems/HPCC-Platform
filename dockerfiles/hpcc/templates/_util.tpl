@@ -10,7 +10,7 @@
 
 {{- /* Generate local config info into config section */ -}}
 {{- /* Pass in a dictionary with root and me defined */ -}}
-{{- define "hpcc.utils.generateConfigMapFromFile" -}}
+{{- define "hpcc.utils.generateComponentConfigMap" -}}
 {{- if hasKey .me "configFile" -}}
 {{- $filename := (printf "files/%s" .me.configFile) -}}
 {{- .me.name -}}.yaml: |
@@ -33,7 +33,7 @@ data:
     version: "1.0"
     Global:
       imageVersion: {{ .root.Values.global.image.version | quote }}
-{{ include "hpcc.utils.generateConfigMapFromFile" . | indent 2 }}
+{{ include "hpcc.utils.generateComponentConfigMap" . | indent 2 }}
 {{ end -}}
 
 {{- /* Add a ConfigMap volume for a component */ -}}
