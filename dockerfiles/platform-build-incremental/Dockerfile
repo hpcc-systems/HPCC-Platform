@@ -22,7 +22,13 @@
 ARG PREV_LABEL
 FROM hpccsystems/platform-build:${PREV_LABEL}
 
-ARG USER=richardkchapman
+RUN apt-get install -y \
+    dnsutils \
+    nano 
+
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+
+ARG USER
 WORKDIR /hpcc-dev/HPCC-Platform
 RUN if ! git config remote.${USER}.url > /dev/null ; then git remote add ${USER} https://github.com/${USER}/HPCC-Platform.git ; fi
 

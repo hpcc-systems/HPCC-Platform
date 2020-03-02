@@ -13809,6 +13809,27 @@ bool isValidMemoryValue(const char *memoryUnit)
 }
 
 #ifdef _CONTAINERIZED
+
+static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, const char *process)
+{
+    StringBuffer s;
+    unsigned memRequest = workunit->getDebugValueInt(s.clear().appendf("%s-memRequest", process), 0);
+    unsigned memLimit = workunit->getDebugValueInt(s.clear().appendf("%s-memLimit", process), 0);
+    if (memLimit && memLimit < memRequest)
+        memLimit = memRequest;
+    if (memRequest)
+        jobYaml.replaceString("#request-memory", s.clear().appendf("memory: \"%uMi\"", memRequest));
+    if (memLimit)
+        jobYaml.replaceString("#limit-memory", s.clear().appendf("memory: \"%uMi\"", memLimit));
+    unsigned cpuRequest = workunit->getDebugValueInt(s.clear().appendf("%s-cpuRequest", process), 0);
+    unsigned cpuLimit = workunit->getDebugValueInt(s.clear().appendf("%s-cpuLimit", process), 0);
+    if (cpuLimit && cpuLimit < cpuRequest)
+        cpuLimit = cpuRequest;
+    if (cpuRequest)
+        jobYaml.replaceString("#request-cpu", s.clear().appendf("cpu: \"%um\"", cpuRequest));
+    if (cpuLimit)
+        jobYaml.replaceString("#limit-cpu", s.clear().appendf("cpu: \"%um\"", cpuLimit));
+}
 void runK8sJob(const char *name, const char *wuid)
 {
     VStringBuffer jobname("%s-%s", name, wuid);
@@ -13818,6 +13839,15 @@ void runK8sJob(const char *name, const char *wuid)
     jobYaml.loadFile("/etc/config/jobspec.yaml", false);
     jobYaml.replaceString("%jobname", jobname.str());
     jobYaml.replaceString("%args", args.str());
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    if (factory)
+    {
+        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+        if (workunit)
+            setResources(jobYaml, workunit, name);
+    }
+
     StringBuffer output, error;
     unsigned ret = runExternalCommand(output, error, "kubectl apply -f -", jobYaml.str());
     DBGLOG("kubectl output: %s", output.str());
@@ -13828,7 +13858,7 @@ void runK8sJob(const char *name, const char *wuid)
         DBGLOG("Using job yaml %s", jobYaml.str());
         throw makeStringException(0, "Failed to start kubectl job");
     }
-
+    // MORE - blocks indefinitely here if you request too many resources
     VStringBuffer waitJob("kubectl wait --for=condition=complete --timeout=10h job/%s", jobname.str());  // MORE - make timeout configurable
     ret = runExternalCommand(output.clear(), error.clear(), waitJob.str(), nullptr);
     DBGLOG("kubectl wait output: %s", output.str());

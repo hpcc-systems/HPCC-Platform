@@ -26,7 +26,6 @@ project( agentexec )
 
 set (    SRCS 
          agentexec.cpp 
-         agentexec.hpp 
     )
 
 include_directories ( 
