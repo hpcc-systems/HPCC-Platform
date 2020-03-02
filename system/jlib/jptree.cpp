@@ -7945,9 +7945,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         }
         else if (strsame(cur, "--init"))
         {
-            StringBuffer jsonText;
-            regenerateConfig(jsonText, config, componentTag);
-            printf("%s\n", jsonText.str());
+            printf("%s\n", defaultYaml);
             exit(0);
         }
 #ifdef _DEBUG
