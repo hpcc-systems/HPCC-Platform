@@ -746,15 +746,15 @@ void initSignals()
 }
 
 static constexpr const char * defaultYaml = R"!!(
- version: "1.0"
- EclCCServer:
-    daliServers: dali
-    enableEclccDali: true
-    enableSysLog: true
-    generatePrecompiledHeader: true
-    maxEclccProcesses: 4
-    name: myeclccserver
-    traceLevel: 1
+version: "1.0"
+EclCCServer:
+  daliServers: dali
+  enableEclccDali: true
+  enableSysLog: true
+  generatePrecompiledHeader: true
+  maxEclccProcesses: 4
+  name: myeclccserver
+  traceLevel: 1
 )!!";
 
 
