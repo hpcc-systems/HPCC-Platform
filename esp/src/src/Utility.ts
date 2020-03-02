@@ -483,6 +483,9 @@ export function resolve(hpccWidget, callback) {
         case "FilePartsWidget":
             require(["hpcc/FilePartsWidget"], doLoad);
             break;
+        case "FileProtectListWidget":
+            require(["hpcc/FileProtectListWidget"], doLoad);
+            break;
         case "FilterDropDownWidget":
             require(["hpcc/FilterDropDownWidget"], doLoad);
             break;
