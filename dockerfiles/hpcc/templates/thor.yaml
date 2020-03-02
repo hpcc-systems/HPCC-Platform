@@ -1,84 +1,133 @@
 {{ range $thor := $.Values.thor -}}
 {{- $masterPort := $thor.masterport | default 20000 -}}
 {{- $slavePort := $thor.slaveport | default 20100 -}}
+{{- $eclagentName := printf "%s-agent" .name }}
 {{- $slaveName := printf "%s-slave" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .name | quote }}
+  name: {{ $eclagentName | quote }}
 spec:
-  replicas: 1
+  replicas: {{ $thor.eclagent.replicas | default 1 }}
   selector:
     matchLabels:
-      run: {{ .name | quote }}
+      run: {{ $eclagentName | quote }}
   template:
     metadata:
       labels:
-        run: {{ .name | quote }}
+        run: {{ $eclagentName | quote }}
     spec:
-      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
+      serviceAccountName: hpcc
       containers:
-      - name: {{ .name | quote }}
+      - name: {{ $eclagentName | quote }}
         ports:
           - containerPort: {{ $masterPort }}
         args: [
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }},
-                --masterport={{ $masterPort }},
-                --numSlaves={{ $thor.numSlaves }}
+                {{ include "hpcc.daliArg" $ }}
               ]
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ $slaveName | quote }}
-spec:
-  replicas: {{ $thor.numSlaves }}
-  selector:
-    matchLabels:
-      run: {{ $slaveName | quote }}
-  template:
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" .) }}
+{{- if $thor.eclagent }}
+    eclagent:
+{{ toYaml $thor.eclagent | indent 6 }}
+{{- end }}
+  eclagent-jobspec.yaml: |
+    apiVersion: batch/v1
+    kind: Job
     metadata:
-      labels:
-        run: {{ $slaveName | quote }}
+      name: %jobname
     spec:
-      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
-      containers:
-        - name: {{ $slaveName | quote }}
-          args: [
-                  {{ include "hpcc.configArg" . }},
-                  {{ include "hpcc.daliArg" $ }},
-                  --slaveport={{ $slavePort }},
-                  --master={{ printf "%s:%v" $serviceName $masterPort }}
-                ]
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 10 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 10 }}
-          ports:
-            - containerPort: {{ $slavePort }}
-{{ include "hpcc.addVolumeMounts" . | indent 10 }}
-      volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.addVolumes" $ | indent 6 }}
+      ttlSecondsAfterFinished: 100
+      template:
+        spec:
+          serviceAccountName: hpcc
+          {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 10 }}
+          containers:
+          - name: %jobname
+            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
+            resources:
+              requests:
+                #request-memory
+                #request-cpu
+              limits:
+                #limit-memory
+                #limit-cpu
+            command: [
+                        "eclagent",
+                        {{ include "hpcc.configArg" . }},
+                        {{ include "hpcc.daliArg" $ }},
+                        %args
+                     ]
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
+          volumes:
+{{ include "hpcc.addConfigVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" $ | indent 10 }}
+          restartPolicy: Never
+      backoffLimit: 0
+  thormaster-jobspec.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: %jobname
+    spec:
+      ttlSecondsAfterFinished: 100
+      template:
+        spec:
+          serviceAccountName: hpcc
+          {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 10 }}
+          containers:
+          - name: %jobname
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 12 }}
+            args: [
+                    {{ include "hpcc.configArg" . }},
+                    {{ include "hpcc.daliArg" $ }},
+                    %args
+                  ]
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
+          volumes:
+{{ include "hpcc.addConfigVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" $ | indent 10 }}
+          restartPolicy: Never
+      backoffLimit: 0
+  thorslave-jobspec.yaml: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: %jobname
+    spec:
+      parallelism: {{ $thor.numSlaves }}
+      ttlSecondsAfterFinished: 100
+      template:
+        spec:
+          serviceAccountName: hpcc
+          containers:
+          - name: %jobname
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 12 }}
+            args: [
+                    {{ include "hpcc.configArg" . }},
+                    {{ include "hpcc.daliArg" $ }},
+                    %args
+                  ]
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
+            - name: wsl-pv
+              mountPath: "/var/lib/HPCCSystems/thor/logs"
+          volumes:
+{{ include "hpcc.addConfigVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" $ | indent 10 }}
+          - name: wsl-pv
+            persistentVolumeClaim:
+              claimName: "wsl-pv-claim"
+          restartPolicy: Never
+      backoffLimit: 0
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $serviceName | quote }}
-spec:
-  ports:
-  - port: {{ $masterPort }}
-    protocol: TCP
-    targetPort: {{ $masterPort }}
-  selector:
-    run: {{ .name | quote }}
-  type: ClusterIP
----
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" .) -}}
 {{- end }}

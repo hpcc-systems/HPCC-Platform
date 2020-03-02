@@ -19,6 +19,7 @@
 #include "jlib.hpp"
 
 #include "environment.hpp"
+#include "workunit.hpp"
 #include "wujobq.hpp"
 #include "nbcd.hpp"
 #include "rtlread_imp.hpp"
@@ -2268,6 +2269,31 @@ protected:
     {
         assertex(workUnit);
         StringAttr wuid(workUnit->queryWuid());
+
+#ifdef _CONTAINERIZED
+        // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
+        setWUState(WUStateBlocked);
+            
+        VStringBuffer job("%s-%s", wuid.get(), graphName);
+        runK8sJob("thormaster", wuid, job, true, { { "graphName", graphName} });
+
+        if (workUnit->getExceptionCount())
+        {
+            Owned<IConstWUExceptionIterator> iter = &workUnit->getExceptions();
+            ForEach(*iter)
+            {
+                IConstWUException &e = iter->query();
+                SCMStringBuffer str;
+                e.getExceptionSource(str);
+                if (streq("thormasterexception", str.s))
+                {
+                    str.clear();
+                    e.getExceptionMessage(str);
+                    throw makeStringException(e.getExceptionCode(), str.str());
+                }
+            }
+        }
+#else    
         StringAttr owner(workUnit->queryUser());
         StringAttr cluster(workUnit->queryClusterName());
 
@@ -2440,7 +2466,7 @@ protected:
             workUnit->forceReload();
         }
         while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
-
+#endif
     }
 };
 

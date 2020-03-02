@@ -454,7 +454,7 @@ public:
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@containerPerCompile", false) && !globals->hasProp("@workunit"))
         {
-            runK8sJob("eclccserver", wuid.get());
+            runK8sJob("eclccserver", wuid, wuid);
             return;
         }
 #endif

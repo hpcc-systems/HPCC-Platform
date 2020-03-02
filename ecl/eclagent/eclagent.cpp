@@ -3316,7 +3316,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         try
         {
-            agentTopology.setown(loadConfiguration(eclagentDefaultYaml, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
+            agentTopology.setown(loadConfiguration(eclagentDefaultYaml, argv, "eclagent", "ECLAGENT", "agentexec.xml", nullptr));
         }
         catch (IException *E)
         {

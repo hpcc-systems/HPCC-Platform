@@ -43,9 +43,7 @@ spec:
   clusterIP: None # Headless service
 
 ---
-
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie) -}}
-
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie) }}
 ---
 
 {{ if $roxie.serverReplicas -}}

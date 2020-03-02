@@ -88,7 +88,15 @@ int CEclAgentExecutionServer::run()
     {
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
+#ifdef _CONTAINERIZED
+        config->getProp("@queueNames", queueNames.s);
+        
+        // temporary
+        if (0 == queueNames.length())
+            getAgentQueueNames(queueNames, agentName);
+#else
         getAgentQueueNames(queueNames, agentName);
+#endif
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
     }
@@ -196,7 +204,7 @@ public:
         {
             if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
             {
-                runK8sJob("eclagent", wuid);
+                runK8sJob("eclagent", wuid, wuid);
             }
             else
             {
@@ -304,7 +312,7 @@ int main(int argc, const char *argv[])
     Owned<IPropertyTree> config;
     try
     {
-        config.setown(loadConfiguration(eclagentDefaultYaml, argv, "EclAgent", "ECLAGENT", "agentexec.xml", nullptr));
+        config.setown(loadConfiguration(eclagentDefaultYaml, argv, "eclagent", "ECLAGENT", "agentexec.xml", nullptr));
     }
     catch (IException *e) 
     {

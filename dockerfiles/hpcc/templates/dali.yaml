@@ -25,7 +25,7 @@ spec:
       volumes:
 {{ include "hpcc.addConfigVolume" . | indent 6 }}
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "dali" "me" .) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "dali" "me" .) }}
 ---
 apiVersion: v1
 kind: Service

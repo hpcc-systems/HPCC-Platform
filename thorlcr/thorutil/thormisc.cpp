@@ -600,6 +600,7 @@ public:
     CriticalSection crit;
     bool altallowed;
     bool cleardir;
+    unsigned slaveNum = 0;
 
     CTempNameHandler()
     {
@@ -618,10 +619,11 @@ public:
             return alttempdir;
         return tempdir; 
     }
-    void setTempDir(const char *name, const char *_tempPrefix, bool clear)
+    void setTempDir(unsigned _slaveNum, const char *name, const char *_tempPrefix, bool clear)
     {
         assertex(name && *name);
         CriticalBlock block(crit);
+        slaveNum = _slaveNum;
         assertex(tempdir.isEmpty()); // should only be called once
         tempPrefix.set(_tempPrefix);
         StringBuffer base(name);
@@ -685,7 +687,7 @@ public:
             name.append(alttempdir);
         else
             name.append(tempdir);
-        name.append(tempPrefix).append((unsigned)GetCurrentProcessId()).append('_').append(++num);
+        name.append(tempPrefix).append((unsigned)GetCurrentProcessId()).append('_').append(slaveNum).append('_').append(++num);
         if (suffix)
             name.append("__").append(suffix);
         name.append(".tmp");
@@ -699,9 +701,9 @@ void GetTempName(StringBuffer &name, const char *prefix,bool altdisk)
     TempNameHandler.getTempName(name, prefix, altdisk);
 }
 
-void SetTempDir(const char *name, const char *tempPrefix, bool clear)
+void SetTempDir(unsigned slaveNum, const char *name, const char *tempPrefix, bool clear)
 {
-    TempNameHandler.setTempDir(name, tempPrefix, clear);
+    TempNameHandler.setTempDir(slaveNum, name, tempPrefix, clear);
 }
 
 void ClearDir(const char *dir)
