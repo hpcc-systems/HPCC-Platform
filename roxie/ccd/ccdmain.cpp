@@ -532,7 +532,6 @@ Roxie:
   numChannels: 1
   numServerThreads: 30
   queueNames: roxie.roxie
-  resolveLocally: true
   serverPorts: "9876,0"
   roxieMulticastEnabled: false
   useAeron: false
@@ -743,6 +742,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 farmerPorts.push_back(port);
             }
         }
+
+        if (!topology->hasProp("@resolveLocally"))
+            topology->setPropBool("@resolveLocally", !topology->hasProp("@daliServers"));
 
         traceLevel = topology->getPropInt("@traceLevel", runOnce ? 0 : 1);
         if (traceLevel > MAXTRACELEVEL)
