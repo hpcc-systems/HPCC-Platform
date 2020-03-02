@@ -254,10 +254,10 @@ jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned in
 jlib_decl void printXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void dbglogXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 
-#define JSON_SortTags 0x01
+#define JSON_SortTags XML_SortTags
 #define JSON_Format   0x02
-#define JSON_Sanitize 0x08
-#define JSON_SanitizeAttributeValues 0x10
+#define JSON_Sanitize XML_Sanitize
+#define JSON_SanitizeAttributeValues XML_SanitizeAttributeValues
 
 jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format);
 jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format);
@@ -328,5 +328,19 @@ jlib_decl IPropertyTree & queryComponentConfig();
 jlib_decl IPropertyTree *createPTreeFromYAMLString(const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLString(unsigned len, const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+
+#define YAML_SortTags XML_SortTags
+#define YAML_Sanitize XML_Sanitize
+#define YAML_SanitizeAttributeValues XML_SanitizeAttributeValues
+
+jlib_decl StringBuffer &toYAML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags);
+jlib_decl void toYAML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags);
+
+jlib_decl void saveYAML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
+jlib_decl void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=0);
+jlib_decl void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
+jlib_decl void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
+jlib_decl void printYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
+jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
 
 #endif

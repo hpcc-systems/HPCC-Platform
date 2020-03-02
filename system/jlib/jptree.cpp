@@ -5367,6 +5367,21 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
 //////////////////////////
 /////////////////////////
 
+inline bool checkSanitizedHide(const char *val)
+{
+    if (!val || !*val)
+        return false;
+    return !(streq(val, "0") || streq(val, "1") || strieq(val, "true") || strieq(val, "false") || strieq(val, "yes") || strieq(val, "no"));
+}
+
+inline bool checkSanitizeFlagsAndHide(const char *val, byte flags, bool attribute)
+{
+    bool sanitize = (attribute) ? ((flags & YAML_SanitizeAttributeValues)!=0) : ((flags & YAML_Sanitize)!=0);
+    if (sanitize)
+        return checkSanitizedHide(val);
+    return false;
+}
+
 static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
 {
     const char *name = tree->queryName();
@@ -5410,15 +5425,8 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
                 const char *val = it->queryValue();
                 if (val)
                 {
-                    if (flags & XML_SanitizeAttributeValues)
-                    {
-                        if (strcmp(val, "0")==0 || strcmp(val, "1")==0 || stricmp(val, "true")==0 || stricmp(val, "false")==0 || stricmp(val, "yes")==0 || stricmp(val, "no")==0)
-                            encodeXML(val, out, ENCODE_NEWLINES, (unsigned)-1, true);
-                        else
-                        {
-                            writeCharsNToStream(out, '*', strlen(val));
-                        }
-                    }
+                    if (checkSanitizeFlagsAndHide(val, flags, true))
+                        writeCharsNToStream(out, '*', strlen(val));
                     else
                         encodeXML(val, out, ENCODE_NEWLINES, (unsigned)-1, true);
                 }
@@ -5480,10 +5488,10 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
             // NOTE - we don't output anything for binary.... is that ok?
             if (thislevel)
             {
-                if (strcmp(thislevel, "0")==0 || strcmp(thislevel, "1")==0 || stricmp(thislevel, "true")==0 || stricmp(thislevel, "false")==0 || stricmp(thislevel, "yes")==0 || stricmp(thislevel, "no")==0)
-                    writeStringToStream(out, thislevel);
-                else
+                if (checkSanitizedHide(thislevel))
                     writeCharsNToStream(out, '*', strlen(thislevel));
+                else
+                    writeStringToStream(out, thislevel);
             }
         }
         else if (isBinary)
@@ -5552,18 +5560,19 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
         writeCharToStream(out, '>');
 }
 
+class CStringBufferMarkupIOAdapter : public CInterfaceOf<IIOStream>
+{
+    StringBuffer &out;
+public:
+    CStringBufferMarkupIOAdapter(StringBuffer &_out) : out(_out) { }
+    virtual void flush() override { }
+    virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+    virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
+};
+
 jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, unsigned flags)
 {
-    class CAdapter : implements IIOStream, public CInterface
-    {
-        StringBuffer &out;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CAdapter(StringBuffer &_out) : out(_out) { }
-        virtual void flush() override { }
-        virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
-    } adapter(ret);
+    CStringBufferMarkupIOAdapter adapter(ret);
     _toXML(tree->queryBranch(NULL), adapter, indent, flags);
     return ret;
 }
@@ -5661,7 +5670,7 @@ static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimi
     writeCharToStream(out, '"');
 }
 
-static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32_t len, bool &delimit)
+static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32_t len, bool &delimit, bool hidden)
 {
     checkWriteJSONDelimiter(out, delimit);
     delimit = true;
@@ -5671,7 +5680,10 @@ static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32
         return;
     }
     writeCharToStream(out, '"');
-    JBASE64_Encode(val, len, out, false);
+    if (hidden)
+        JBASE64_Encode("****", strlen("****"), out, false);
+    else
+        JBASE64_Encode(val, len, out, false);
     writeCharToStream(out, '"');
 }
 
@@ -5716,10 +5728,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
                 {
                     writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
                     if (flags & JSON_SanitizeAttributeValues)
-                    {
-                        bool hide = !(streq(val, "0") || streq(val, "1") || strieq(val, "true") || strieq(val, "false") || strieq(val, "yes") || strieq(val, "no"));
-                        writeJSONValueToStream(out, val, delimit, hide);
-                    }
+                        writeJSONValueToStream(out, val, delimit, checkSanitizedHide(val));
                     else
                     {
                         StringBuffer encoded;
@@ -5797,12 +5806,10 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
         if (complex)
             writeJSONNameToStream(out, isBinary ? "#valuebin" : "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
         if (isBinary)
-            writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit);
+            writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit, flags & XML_Sanitize);
         else
         {
-            // NOTE - JSON_Sanitize won't output anything for binary.... is that ok?
-            bool hide = (flags & JSON_Sanitize) && thislevel && !(streq(thislevel, "0") || streq(thislevel, "1") || strieq(thislevel, "true") || strieq(thislevel, "false") || strieq(thislevel, "yes") || strieq(thislevel, "no"));
-            writeJSONValueToStream(out, thislevel, delimit, hide);
+            writeJSONValueToStream(out, thislevel, delimit, checkSanitizeFlagsAndHide(thislevel, flags, false));
         }
     }
 
@@ -5820,16 +5827,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 
 jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
 {
-    class CAdapter : implements IIOStream, public CInterface
-    {
-        StringBuffer &out;
-    public:
-        IMPLEMENT_IINTERFACE;
-        CAdapter(StringBuffer &_out) : out(_out) { }
-        virtual void flush() override { }
-        virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
-        virtual size32_t write(size32_t len, const void * data) override { out.append(len, (const char *)data); return len; }
-    } adapter(ret);
+    CStringBufferMarkupIOAdapter adapter(ret);
     bool delimit = false;
     _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, true);
     return ret;
@@ -5840,7 +5838,6 @@ void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte fla
     bool delimit = false;
     _toJSON(tree, out, indent, flags, delimit, true);
 }
-
 
 static inline void skipWS(const char *&xpath)
 {
@@ -7858,15 +7855,14 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option)
     }
 }
 
-jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree * config, const char * componentTag)
+jlib_decl StringBuffer & regenerateConfig(StringBuffer &yamlText, IPropertyTree * config, const char * componentTag)
 {
     Owned<IPropertyTree> recreated = createPTree();
-    Owned<IPropertyTree> json = mapXmlConfigToJson(config);
-    recreated->setProp("version", currentVersion);
-    recreated->addPropTree(componentTag, json.getClear());
+    recreated->setProp("@version", currentVersion);
+    recreated->addPropTree(componentTag, LINK(config));
 
-    toJSON(recreated, jsonText, 0, JSON_SortTags|JSON_Format);
-    return jsonText;
+    toYAML(recreated, yamlText, 0, YAML_SortTags);
+    return yamlText;
 }
 
 static Owned<IPropertyTree> componentConfiguration;
@@ -8001,9 +7997,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     if (outputConfig)
     {
-        StringBuffer jsonText;
-        regenerateConfig(jsonText, config, componentTag);
-        printf("%s\n", jsonText.str());
+        StringBuffer yamlText;
+        regenerateConfig(yamlText, config, componentTag);
+        printf("%s\n", yamlText.str());
         exit(0);
     }
 
@@ -8034,7 +8030,7 @@ public:
         yaml_parser_set_input_string(&parser, (const unsigned char *)buf, bufLength);
         noRoot = 0 != ((unsigned)readerOptions & (unsigned)ptr_noRoot);
         if (!noRoot)
-            rootTag.set("_object_"); //may support _array_ option later
+            rootTag.set("__object__"); //may support _array_ option later
     }
     ~CYAMLBufferReader()
     {
@@ -8096,6 +8092,7 @@ public:
     }
     virtual void loadMap(const char *tagname)
     {
+        bool binaryContent = false;
         StringBuffer content;
         if (tagname && *tagname)
             iEvent->beginNode(tagname, parser.offset);
@@ -8130,10 +8127,26 @@ public:
             {
                 //!el or !element will be our local tag (custom schema type) for an element
                 //ptree toYAML should set this for element scalars, and parent text content
-                if (event.data.scalar.tag && (streq((const char *)event.data.scalar.tag, "!el") || streq((const char *)event.data.scalar.tag, "!element")))
+                const char *tag = (const char *)event.data.scalar.tag;
+                if (tag && (streq(tag, "!binary") || streq(tag, "!!binary")))
                 {
                     if (streq(elname, "^")) //text content of parent node
-                        content.append(event.data.scalar.length, (const char *) event.data.scalar.value);
+                    {
+                        binaryContent = true;
+                        JBASE64_Decode((const char *) event.data.scalar.value, content.clear());
+                    }
+                    else
+                    {
+                        StringBuffer decoded;
+                        JBASE64_Decode((const char *) event.data.scalar.value, decoded);
+                        iEvent->beginNode(elname, parser.offset);
+                        iEvent->endNode(elname, decoded.length(), (const void *) decoded.str(), true, parser.offset);
+                    }
+                }
+                else if (tag && (streq(tag, "!el") || streq(tag, "!element")))
+                {
+                    if (streq(elname, "^")) //text content of parent node
+                        content.set((const char *) event.data.scalar.value);
                     else
                     {
                         iEvent->beginNode(elname, parser.offset);
@@ -8166,7 +8179,7 @@ public:
             yaml_event_delete(&event);
         }
         if (tagname && *tagname)
-            iEvent->endNode(tagname, content.length(), content, false, parser.offset);
+            iEvent->endNode(tagname, content.length(), content, binaryContent, parser.offset);
     }
     virtual void load() override
     {
@@ -8276,4 +8289,273 @@ IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flags, PTreeRe
     }
 
     return createPTreeFromYAMLString(contents.length(), contents, flags, readFlags, iMaker);
+}
+
+static int yaml_write_iiostream(void *data, unsigned char *buffer, size_t size)
+{
+    IIOStream *out = (IIOStream *) data;
+    out->write(size, (void *)buffer);
+    out->flush();
+    return 0;
+}
+
+class YAMLEmitter
+{
+    yaml_emitter_t emitter;
+    yaml_event_t event;
+    IIOStream &out;
+public:
+    YAMLEmitter(IIOStream &ios, int indent) : out(ios)
+    {
+        if (!yaml_emitter_initialize(&emitter))
+            throw MakeStringException(0, "YAMLEmitter: failed to initialize");
+        yaml_emitter_set_output(&emitter, yaml_write_iiostream, &out);
+        yaml_emitter_set_canonical(&emitter, false);
+        yaml_emitter_set_unicode(&emitter, true);
+        yaml_emitter_set_indent(&emitter, indent);
+
+        beginStream();
+        beginDocument();
+    }
+    ~YAMLEmitter()
+    {
+        endDocument();
+        endStream();
+        yaml_emitter_delete(&emitter);
+    }
+    yaml_char_t *getTag(bool binary, bool element)
+    {
+        if (binary)
+            return (yaml_char_t *) "!binary";
+        if (element)
+            return (yaml_char_t *) "!el";
+        return nullptr;
+    }
+    void emit()
+    {
+        yaml_emitter_emit(&emitter, &event);
+    }
+    void checkInit(int success, const char *descr)
+    {
+        if (success==0)
+            throw MakeStringException(0, "YAMLEmitter: %s failed", descr);
+    }
+    void writeValue(const char *value, bool element, bool hidden, bool binary)
+    {
+        yaml_scalar_style_t style = binary ? YAML_LITERAL_SCALAR_STYLE : YAML_ANY_SCALAR_STYLE;
+        const yaml_char_t *tag = getTag(binary, element);
+        bool implicit = tag==nullptr;
+        StringBuffer s;
+        if (!value)
+            value = "null";
+        else if (hidden)
+            value = (binary) ? "KioqKg==" : s.appendN(strlen(value), '*').str(); //KioqKg== is base64 of ****
+        checkInit(yaml_scalar_event_initialize(&event, nullptr, tag, (yaml_char_t *) value, -1, implicit, implicit, style), "yaml_scalar_event_initialize");
+        emit();
+    }
+    void writeName(const char *name)
+    {
+        dbgassertex(name!=nullptr);
+        return writeValue(name, false, false,false);
+    }
+    void writeNamedValue(const char *name, const char *value, bool element, bool hidden)
+    {
+        writeName(name);
+        writeValue(value, element, hidden, false);
+    }
+    void writeAttribute(const char *name, const char *value, bool hidden)
+    {
+        writeNamedValue(name, value, false, hidden);
+    }
+    void beginMap()
+    {
+        checkInit(yaml_mapping_start_event_initialize(&event, nullptr, nullptr, 0, YAML_BLOCK_MAPPING_STYLE), "yaml_mapping_start_event_initialize");
+        emit();
+    }
+    void endMap()
+    {
+        checkInit(yaml_mapping_end_event_initialize(&event), "yaml_mapping_end_event_initialize");
+        emit();
+    }
+    void beginSequence(const char *name)
+    {
+        if (name)
+            writeName(name);
+
+        checkInit(yaml_sequence_start_event_initialize(&event, nullptr, nullptr, 0, YAML_BLOCK_SEQUENCE_STYLE), "yaml_sequence_start_event_initialize");
+        emit();
+    }
+    void endSequence()
+    {
+        checkInit(yaml_sequence_end_event_initialize(&event), "yaml_sequence_end_event_initialize");
+        emit();
+    }
+    void beginDocument()
+    {
+        checkInit(yaml_document_start_event_initialize(&event, nullptr, nullptr, nullptr, true), "yaml_document_start_event_initialize");
+        emit();
+    }
+    void endDocument()
+    {
+        checkInit(yaml_document_end_event_initialize(&event, true), "yaml_document_end_event_initialize");
+        emit();
+    }
+
+    void beginStream()
+    {
+        checkInit(yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING), "yaml_stream_start_event_initialize");
+        emit();
+    }
+    void endStream()
+    {
+        checkInit(yaml_stream_end_event_initialize(&event), "yaml_stream_end_event_initialize");
+        emit();
+    }
+};
+
+static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bool root=false, bool isArrayItem=false)
+{
+    const char *name = tree->queryName();
+    if (!root && !isArrayItem)
+    {
+        if (!name || !*name)
+            name = "__unnamed__";
+        yaml.writeName(name);
+    }
+
+    Owned<IAttributeIterator> it = tree->getAttributes(true);
+    bool hasAttributes = it->first();
+    bool complex = (hasAttributes || tree->hasChildren());
+    if (complex)
+        yaml.beginMap();
+
+    if (hasAttributes)
+    {
+        ForEach(*it)
+        {
+            const char *key = it->queryName()+1;
+            const char *val = it->queryValue();
+            yaml.writeAttribute(key, val, checkSanitizeFlagsAndHide(val, flags, true));
+        }
+    }
+    StringBuffer _content;
+    const char *content = nullptr; // to avoid uninitialized warning
+    bool isBinary = tree->isBinary(NULL);
+    bool isNull;
+    if (isBinary)
+    {
+        MemoryBuffer thislevelbin;
+        isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
+        if (!isNull)
+            JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), _content, true);
+        content = _content.str();
+    }
+    else if (tree->isCompressed(NULL))
+    {
+        isNull = false; // can't be empty if compressed;
+        verifyex(tree->getProp(NULL, _content));
+        content = _content.str();
+    }
+    else
+        isNull = (NULL == (content = tree->queryProp(NULL)));
+
+    if (isNull && !root && !complex)
+    {
+        yaml.writeValue("null", false, false, false);
+        return;
+    }
+
+    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & YAML_SortTags) ? iptiter_sort : iptiter_null);
+    //note that detection of repeating elements relies on the fact that ptree elements
+    //of the same name will be grouped together
+    bool repeatingElement = false;
+    sub->first();
+    while(sub->isValid())
+    {
+        Linked<IPropertyTree> element = &sub->query();
+        const char *name = element->queryName();
+        if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
+        {
+            yaml.beginSequence(name);
+            repeatingElement = true;
+        }
+
+        _toYAML(element, yaml, flags, false, repeatingElement);
+
+        if (repeatingElement && (!sub->isValid() || !streq(name, sub->query().queryName())))
+        {
+            yaml.endSequence();
+            repeatingElement = false;
+        }
+    }
+
+    if (!isNull)
+    {
+        if (complex)
+            yaml.writeName("^");
+        //repeating/array/sequence items are implicitly elements, no need for tag
+        yaml.writeValue(content, isArrayItem ? false : true, checkSanitizeFlagsAndHide(content, flags, false), isBinary);
+    }
+
+    if (complex)
+        yaml.endMap();
+}
+
+
+static void _toYAML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool root=false, bool isArrayItem=false)
+{
+    YAMLEmitter yaml(out, indent);
+    _toYAML(tree, yaml, flags, true, false);
+}
+
+jlib_decl StringBuffer &toYAML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
+{
+    CStringBufferMarkupIOAdapter adapter(ret);
+    _toYAML(tree->queryBranch(NULL), adapter, indent, flags, true);
+    return ret;
+}
+
+void toYAML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
+{
+    _toYAML(tree, out, indent, flags, true);
+}
+
+void printYAML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer yaml;
+    toYAML(tree, yaml, indent, flags);
+    printf("%s", yaml.str());
+}
+
+void dbglogYAML(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer yaml;
+    toYAML(tree, yaml, indent, flags);
+    DBGLOG("%s", yaml.str());
+}
+
+void saveYAML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    OwnedIFile ifile = createIFile(filename);
+    saveYAML(*ifile, tree, indent, flags);
+}
+
+void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    OwnedIFileIO ifileio = ifile.open(IFOcreate);
+    if (!ifileio)
+        throw MakeStringException(0, "saveXML: could not find %s to open", ifile.queryFilename());
+    saveYAML(*ifileio, tree, indent, flags);
+}
+
+void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    Owned<IIOStream> stream = createIOStream(&ifileio);
+    stream.setown(createBufferedIOStream(stream));
+    saveYAML(*stream, tree, indent, flags);
+}
+
+void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    toYAML(tree, stream, indent, flags);
 }
