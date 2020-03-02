@@ -1,5 +1,4 @@
 {{ range $.Values.eclagent -}}
-{{- $dataPath := "/var/lib/HPCCSystems/hpcc-data" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,7 +14,7 @@ spec:
         run: {{ .name | quote }}
     spec:
       {{- if $.Values.global.singleNode | default false }}
-{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "mystorage" "volumePath" $dataPath) | indent 6 }}
+{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") | indent 6 }}
       {{- end }}
       serviceAccountName: hpcc
       containers:
@@ -26,12 +25,7 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
-        - name: "mystorage"
-          mountPath: {{ $dataPath | quote }}
 {{ include "hpcc.utils.addVolumes" . | indent 6 }}
-      - name: "mystorage"
-        persistentVolumeClaim:
-          claimName: "datastorage-pvc"
 ---
 {{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) }}
   jobspec.yaml: |
@@ -60,12 +54,7 @@ spec:
                         %args
                      ]
 {{ include "hpcc.utils.addVolumeMounts" . | indent 12 }}
-            - name: "mystorage"
-              mountPath: {{ $dataPath | quote }}
 {{ include "hpcc.utils.addVolumes" . | indent 10 }}
-          - name: "mystorage"
-            persistentVolumeClaim:
-              claimName: "datastorage-pvc"
           restartPolicy: Never
       backoffLimit: 0
       

@@ -49,6 +49,12 @@ data:
   mountPath: /etc/config
 {{- end -}}
 
+{{- /* Add data volume mount for a component */ -}}
+{{- define "hpcc.utils.addDataVolumeMount" -}}
+- name: datastorage-pv
+  mountPath: "/var/lib/HPCCSystems/hpcc-data"
+{{- end -}}
+
 {{- /* Add standard volumes for a component */ -}}
 {{- define "hpcc.utils.addVolumes" -}}
 volumes:
@@ -56,12 +62,16 @@ volumes:
 - name: dllserver-pv-storage
   persistentVolumeClaim:
     claimName: dllserver-pv-claim
+- name: datastorage-pv
+  persistentVolumeClaim:
+    claimName: datastorage-pv-claim
 {{- end -}}
 
 {{- /* Add standard volume mounts for a component */ -}}
 {{- define "hpcc.utils.addVolumeMounts" -}}
 volumeMounts:
 {{ include "hpcc.utils.addConfigVolumeMount" . }}
+{{ include "hpcc.utils.addDataVolumeMount" . }}
 - name: dllserver-pv-storage
   mountPath: "/var/lib/HPCCSystems/queries"
 {{- end -}}
