@@ -736,19 +736,12 @@ extern "C" void caughtSIGALRM(int sig)
     DBGLOG("Caught sigalrm %d", sig);
 }
 
-extern "C" void caughtSIGTERM(int sig)
-{
-    DBGLOG("Caught sigterm %d", sig);
-}
-
 void initSignals()
 {
 #ifndef _WIN32
-//  signal(SIGTERM, caughtSIGTERM);
     signal(SIGPIPE, caughtSIGPIPE);
     signal(SIGHUP, caughtSIGHUP);
     signal(SIGALRM, caughtSIGALRM);
-
 #endif
 }
 
