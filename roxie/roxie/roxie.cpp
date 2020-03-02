@@ -25,12 +25,13 @@ static void roxie_server_usage()
 
     // Not documenting use of internal options: selftest, restarts, enableSysLog and host
     printf("\nService:\n");
+#ifndef _CONTAINERIZED
     printf("  --daemon|-d <instanceName>: Run daemon as instance\n");
-    printf("  --topology=[XML-file]     : Reads Roxie topology (default RoxieTopology.xml)\n");
+#endif
     printf("  --port=[integer]          : Network port (default 9876)\n");
     printf("One-off query:\n");
-    printf("  --loadWorkunit=[so|dll]   : Load and execute shared library\n");
-    printf("  --[xml|csv|raw]           : Output format (default ascii)\n");
+    printf("  --loadWorkunit=[so/dll]   : Load and execute named query dll\n");
+    printf("  --workunit=wuid           : Load and execute named workunit\n");
     printf("\n");
 
     // If changing these, please change ccdmain.cpp's roxie_common_usage() as well
@@ -39,7 +40,6 @@ static void roxie_server_usage()
     printf("  --tracelevel=[integer]    : Amount of information to dump on logs\n");
     printf("  --stdlog=[boolean]        : Standard log format (based on tracelevel)\n");
     printf("  --logfile=[filename]      : Outputs to logfile, rather than stdout\n");
-    printf("  --topology=[filename]     : Load configuration from named xml file (default RoxieTopology.xml)\n");
     printf("  --help|-h                 : This message\n");
     printf("\n");
 }

@@ -548,6 +548,7 @@ Roxie:
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
+#ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
             if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -557,6 +558,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             break;
         }
     }
+#endif
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
@@ -718,6 +720,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             setStatisticsComponentName(SCTroxie, "roxie", true);
 
         Owned<const IQueryDll> standAloneDll;
+        const char *wuid = topology->queryProp("@workunit");
         if (topology->hasProp("@loadWorkunit"))
         {
             StringBuffer workunitName;
@@ -730,7 +733,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (checkEmbeddedWorkUnitXML(dll))
                 standAloneDll.setown(createExeQueryDll(argv[0]));
         }
-        if (standAloneDll)
+        if (standAloneDll || wuid)
         {
             unsigned port = topology->getPropInt("@port", 0);
             runOnce = port == 0;
@@ -1186,14 +1189,12 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
-            if (topology->getPropBool("@wu", false))
+            if (wuid)
             {
                 Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);
                 try
                 {
-                    VStringBuffer x("-%s", argv[0]);
-                    roxieServer->runOnce(x);
-                    fflush(stdout);  // in windows if output is redirected results don't appear without flushing
+                    roxieServer->runOnce(wuid);
                 }
                 catch (IException *E)
                 {

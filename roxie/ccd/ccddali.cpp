@@ -617,6 +617,8 @@ public:
             else
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to locate dll workunit info");
         }
+        if (topology->hasProp("@workunit"))    // This really only works properly in one-shot mode
+            userdesc.set(w->queryUserDescriptor());
         w->commit();
         w.clear();
         return wuFactory->openWorkUnit(wuid);
