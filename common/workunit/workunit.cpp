@@ -13182,13 +13182,51 @@ static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, 
     if (cpuLimit)
         jobYaml.replaceString("#limit-cpu", s.clear().appendf("cpu: \"%um\"", cpuLimit));
 }
-void runK8sJob(const char *name, const char *wuid)
+
+
+#ifndef _DEBUG
+void deleteK8sJob(const char *componentName, const char *job)
 {
-    VStringBuffer jobname("%s-%s", name, wuid);
+    VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
+    StringBuffer output, error;
+    bool ret = runExternalCommand(output, error, deleteJob.str(), nullptr);
+    DBGLOG("kubectl delete output: %s", output.str());
+    if (error.length())
+        DBGLOG("kubectl delete error: %s", error.str());
+    if (ret)
+        throw makeStringException(0, "Failed to run kubectl delete");
+}
+#endif
+
+void waitK8sJob(const char *componentName, const char *job)
+{
+    VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
-    VStringBuffer args("--workunit=%s", wuid);
+
+    // MORE - blocks indefinitely here if you request too many resources
+    VStringBuffer waitJob("kubectl wait --for=condition=complete --timeout=10h job/%s", jobname.str());  // MORE - make timeout configurable
+    StringBuffer output, error;
+    bool ret = runExternalCommand(output, error, waitJob.str(), nullptr);
+    DBGLOG("kubectl wait output: %s", output.str());
+    if (error.length())
+        DBGLOG("kubectl wait error: %s", error.str());
+    if (ret)
+        throw makeStringException(0, "Failed to run kubectl wait");
+#ifndef _DEBUG
+    deleteK8sJob(componentName, job);
+#endif
+}
+
+void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
+{
+    VStringBuffer jobname("%s-%s", componentName, job);
+    jobname.toLowerCase();
+    VStringBuffer args("\"--workunit=%s\"", wuid);
+    for (const auto &p: extraParams)
+        args.append(',').newline().append("\"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
+    VStringBuffer jobSpecFilename("/etc/config/%s.yaml", componentName); // default to /etc/config/jobspec.yaml
     StringBuffer jobYaml;
-    jobYaml.loadFile("/etc/config/jobspec.yaml", false);
+    jobYaml.loadFile(jobSpecFilename, false);
     jobYaml.replaceString("%jobname", jobname.str());
     jobYaml.replaceString("%args", args.str());
 
@@ -13197,7 +13235,7 @@ void runK8sJob(const char *name, const char *wuid)
     {
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (workunit)
-            setResources(jobYaml, workunit, name);
+            setResources(jobYaml, workunit, componentName);
     }
 
     StringBuffer output, error;
@@ -13210,22 +13248,12 @@ void runK8sJob(const char *name, const char *wuid)
         DBGLOG("Using job yaml %s", jobYaml.str());
         throw makeStringException(0, "Failed to start kubectl job");
     }
-    // MORE - blocks indefinitely here if you request too many resources
-    VStringBuffer waitJob("kubectl wait --for=condition=complete --timeout=10h job/%s", jobname.str());  // MORE - make timeout configurable
-    ret = runExternalCommand(output.clear(), error.clear(), waitJob.str(), nullptr);
-    DBGLOG("kubectl wait output: %s", output.str());
-    if (error.length())
-        DBGLOG("kubectl wait error: %s", error.str());
-    if (ret)
-        throw makeStringException(0, "Failed to run kubectl wait");
-#ifndef _DEBUG
-    VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
-    ret = runExternalCommand(output.clear(), error.clear(), deleteJob.str(), nullptr);
-    DBGLOG("kubectl delete output: %s", output.str());
-    if (error.length())
-        DBGLOG("kubectl delete error: %s", error.str());
-    if (ret)
-        throw makeStringException(0, "Failed to run kubectl delete");
-#endif
+}
+
+void runK8sJob(const char *componentName, const char *wuid, const char *job, bool wait, const std::list<std::pair<std::string, std::string>> &extraParams)
+{
+    launchK8sJob(componentName, wuid, job, extraParams);
+    if (wait)
+        waitK8sJob(componentName, job);
 }
 #endif

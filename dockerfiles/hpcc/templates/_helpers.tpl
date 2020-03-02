@@ -52,8 +52,12 @@ Generate local config info into config section
 {{- else -}}
 {{- .me.name -}}.yaml: |
   version: 1.0
+{{- if .component }}
   {{ .component }}:
 {{ toYaml .me | indent 4 -}}
+{{ else }}
+{{ toYaml .me | indent 2 -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 

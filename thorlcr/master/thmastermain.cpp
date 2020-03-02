@@ -50,7 +50,7 @@
 #include "dalienv.hpp"
 #include "dasds.hpp"
 #include "dllserver.hpp"
-
+#include "workunit.hpp"
 #include "rmtfile.hpp"
 
 #include "portlist.h"
@@ -563,6 +563,7 @@ thor:
 #include "thactivitymaster.hpp"
 int main( int argc, const char *argv[]  )
 {
+#ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
             if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -572,6 +573,7 @@ int main( int argc, const char *argv[]  )
             break;
         }
     }
+#endif
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
@@ -582,7 +584,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(defaultYaml, argv, "thor", "THOR", "thor.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "Thor", "THOR", "thor.xml", nullptr));
     }
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
@@ -859,25 +861,38 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numSlaves = 0;
-        if (isCloud())
-        {
-            if (!globals->hasProp("@numSlaves"))
-                throw makeStringException(0, "Number of slaves not defined (numSlaves)");
-            else
-            {
-                numSlaves = globals->getPropInt("@numSlaves", 0);
-                if (0 == numSlaves)
-                    throw makeStringException(0, "Number of slaves must be > 0 (numSlaves)");
-            }
-        }
+        StringBuffer cloudJobName;
+        const char *workunit = nullptr;
+        const char *graphName = nullptr;
+#ifdef _CONTAINERIZED
+        if (!globals->hasProp("@numSlaves"))
+            throw makeStringException(0, "Number of slaves not defined (numSlaves)");
         else
         {
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-            Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
-            numSlaves = queryNodeClusterWidth();
+            numSlaves = globals->getPropInt("@numSlaves", 0);
+            if (0 == numSlaves)
+                throw makeStringException(0, "Number of slaves must be > 0 (numSlaves)");
         }
+
+        workunit = globals->queryProp("@workunit");
+        graphName = globals->queryProp("@graphName");
+        if (isEmptyString(workunit))
+            throw makeStringException(0, "missing --workunit");
+        if (isEmptyString(graphName))
+            throw makeStringException(0, "missing --graphName");
+        cloudJobName.appendf("%s-%s", workunit, graphName);
+
+        StringBuffer myIp;
+        queryHostIP().getIpText(myIp);
+
+        launchK8sJob("thorslave", workunit, cloudJobName, { { "graphName", graphName}, { "master", myIp.str() } });
+#else
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+        numSlaves = queryNodeClusterWidth();
+#endif
 
         if (registry->connect(numSlaves))
         {
@@ -920,11 +935,17 @@ int main( int argc, const char *argv[]  )
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
-            thorMain(logHandler);
+            // NB: workunit/graphName only set in one-shot mode (if isCloud())
+            thorMain(logHandler, workunit, graphName);
             LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }
         else
             PROGLOG("Registration aborted");
+#ifdef _CONTAINERIZED
+        registry.clear();
+        waitK8sJob("thorslave", cloudJobName);
+        setExitCode(0);
+#endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
     }
     catch (IException *e) 

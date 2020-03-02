@@ -1506,6 +1506,35 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 
 void EclAgent::executeThorGraph(const char * graphName)
 {
+#ifdef _CONTAINERIZED
+    // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
+    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
+    {
+        Owned<IWorkUnit> w = updateWorkUnit();
+        w->setState(WUStateBlocked);
+    }
+    unlockWorkUnit();
+        
+    VStringBuffer job("%s-%s", wuid.str(), graphName);
+    runK8sJob("thormaster", wuid, job, true, { { "graphName", graphName} });
+
+    if (wuRead->getExceptionCount())
+    {
+        Owned<IConstWUExceptionIterator> iter = &wuRead->getExceptions();
+        ForEach(*iter)
+        {
+            IConstWUException &e = iter->query();
+            SCMStringBuffer str;
+            e.getExceptionSource(str);
+            if (streq("thormasterexception", str.s))
+            {
+                str.clear();
+                e.getExceptionMessage(str);
+                throw makeStringException(e.getExceptionCode(), str.str());
+            }
+        }
+    }
+#else
     StringAttr wuid(wuRead->queryWuid());
     StringAttr owner(wuRead->queryUser());
     StringAttr cluster(wuRead->queryClusterName());
@@ -1683,6 +1712,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         reloadWorkUnit();
     }
     while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
+#endif
 }
 
 //In case of logfile rollover, update logfile name(s) stored in workunit

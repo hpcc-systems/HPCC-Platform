@@ -57,6 +57,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     CFifoFileCache querySoCache;
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
+    Owned<IException> exitException;
 
     Owned<IDeMonServer> demonServer;
     atomic_t            activeTasks;
@@ -233,6 +234,8 @@ public:
     void reply(IConstWorkUnit *workunit, const char *wuid, IException *e, const SocketEndpoint &agentep, bool allDone);
 
     void run();
+    bool execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep);
+    IException *queryExitException() { return exitException; }
 
 // IExceptionHandler
     bool fireException(IException *e);
@@ -408,6 +411,42 @@ bool CJobManager::fireException(IException *e)
         jobList.item(j).fireException(e);
     jobList.kill();
     return true;
+}
+
+bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char *graphName, const SocketEndpoint &agentep)
+{
+    try
+    {
+        if (!workunit) // check workunit is available and ready to run.
+            throw MakeStringException(0, "Could not locate workunit %s", wuid);
+        if (workunit->getCodeVersion() == 0)
+            throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
+        if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
+            throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+
+        if (debugListener)
+        {
+            WorkunitUpdate wu(&workunit->lock());
+            StringBuffer sb;
+            queryHostIP().getIpText(sb);
+            wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
+            wu->setDebugAgentListenerPort(debugListener->getPort());
+        }
+
+        return doit(workunit, graphName, agentep);
+    }
+    catch (IException *e) 
+    { 
+        IThorException *te = QUERYINTERFACE(e, IThorException);
+        if (te && tea_shutdown==te->queryAction()) 
+            stopped = true;
+        reply(workunit, wuid, e, agentep, false); 
+    }
+    catch (CATCHALL) 
+    { 
+        reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false); 
+    }
+    return false;
 }
 
 void CJobManager::run()
@@ -664,23 +703,7 @@ void CJobManager::run()
         {
             factory.setown(getWorkUnitFactory());
             workunit.setown(factory->openWorkUnit(wuid));
-            if (!workunit) // check workunit is available and ready to run.
-                throw MakeStringException(0, "Could not locate workunit %s", wuid);
-            if (workunit->getCodeVersion() == 0)
-                throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
-            if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
-                throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
-
-            if (debugListener)
-            {
-                WorkunitUpdate wu(&workunit->lock());
-                StringBuffer sb;
-                queryHostIP().getIpText(sb);
-                wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
-                wu->setDebugAgentListenerPort(debugListener->getPort());
-            }
-
-            allDone = doit(workunit, graphName, agentep);
+            allDone = execute(workunit, wuid, graphName, agentep);
             daliLock.clear();
             reply(workunit, wuid, NULL, agentep, allDone);
         }
@@ -772,6 +795,16 @@ void CJobManager::replyException(CJobMaster &job, IException *e)
 void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *e, const SocketEndpoint &agentep, bool allDone)
 {
     CriticalBlock b(replyCrit);
+#ifdef _CONTAINERIZED
+    // JCSMORE ignore pause/resume cases for now.
+    if (e)
+    {
+        if (!exitException)
+            exitException.setown(e);
+        return;
+    }
+#else
+    workunit->forceReload();
     if (!conversation) 
         return;
     StringBuffer s;
@@ -822,6 +855,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, MEDIUMTIMEOUT);
     if (checkThorNodeSwap(globals->queryProp("@name"),e?wuid:NULL,(unsigned)-1))
         abortThor(e, TEC_Swap, false);
+#endif
 }
 
 bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp)
@@ -1044,7 +1078,7 @@ void closeThorServerStatus()
     }
 }
 
-void thorMain(ILogMsgHandler *logHandler)
+void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
@@ -1071,9 +1105,33 @@ void thorMain(ILogMsgHandler *logHandler)
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
-        try {
+        try
+        {
             LOG(MCdebugProgress, thorJob, "Listening for graph");
-            jobManager->run();
+
+            if (wuid) // one-shot, quits after running
+            {
+                Owned<IWorkUnitFactory> factory;
+                Owned<IConstWorkUnit> workunit;
+                factory.setown(getWorkUnitFactory());
+                workunit.setown(factory->openWorkUnit(wuid));
+                SocketEndpoint dummyAgentEp;
+                jobManager->execute(workunit, wuid, graphName, dummyAgentEp);
+                IException *e = jobManager->queryExitException();
+                if (e)
+                {
+                    Owned<IWorkUnit> w = &workunit->lock();
+                    Owned<IWUException> we = w->createException();
+                    we->setSeverity(SeverityInformation);
+                    StringBuffer errStr;
+                    e->errorMessage(errStr);
+                    we->setExceptionMessage(errStr);
+                    we->setExceptionSource("thormasterexception");
+                    we->setExceptionCode(e->errorCode());
+                }
+            }  
+            else
+                jobManager->run();
         }
         catch (IException *e)
         {
