@@ -551,14 +551,13 @@ bool ControlHandler(ahType type)
 }
 
 
-static constexpr const char * defaultJson = R"!!({
-"version": "1.0",
-"Thor": {
-    "daliServers": "dali",
-    "watchdogEnabled": "true",
-    "watchdogProgressEnabled": "true"
-}
-})!!";
+static constexpr const char * defaultYaml = R"!!(
+version: 1.0
+Thor:
+  daliServers: dali
+  watchdogEnabled: true
+  watchdogProgressEnabled: true
+)!!";
 
 
 #include "thactivitymaster.hpp"
@@ -583,7 +582,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(defaultJson, argv, "Thor", "THOR", "thor.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "Thor", "THOR", "thor.xml", nullptr));
     }
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
