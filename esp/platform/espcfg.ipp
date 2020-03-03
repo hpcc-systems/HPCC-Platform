@@ -116,14 +116,12 @@ public:
 
     virtual ~CSessionCleaner()
     {
-        stopping = true;
-        sem.signal();
-        join();
     }
 
     void setIsDetached(bool isDetached) {m_isDetached = isDetached;}
 
     virtual int run();
+    void stop();
 };
 
 static CriticalSection attachcrit;
@@ -219,6 +217,8 @@ public:
 
     ~CEspConfig()
     {
+         if (m_sessionCleaner.get() != nullptr)
+            m_sessionCleaner->stop();
         closedownClientProcess();
     }
 
@@ -243,6 +243,7 @@ public:
 
     void loadAll()
     {
+        loadProtocols();
         DBGLOG("loadServices");
         try
         {
@@ -254,7 +255,6 @@ public:
                 UERRLOG("Could not load ESP service(s) while DETACHED from DALI - Consider re-attaching ESP process.");
             throw(ie);
         }
-        loadProtocols();
         loadBindings();
         if(useDali)
             startEsdlMonitor();

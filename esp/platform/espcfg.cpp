@@ -167,6 +167,13 @@ int CSessionCleaner::run()
     return 0;
 }
 
+void CSessionCleaner::stop()
+{
+    stopping = true;
+    sem.signal();
+    join();
+}
+
 void CEspConfig::ensureSDSSessionDomains()
 {
     bool hasAuthDomainSettings = false;
