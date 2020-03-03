@@ -106,13 +106,22 @@ extern bool isCompressedIndex(const char *filename)
         if (io->read(0, sizeof(hdr), &hdr) == sizeof(hdr))
         {
             SwapBigEndian(hdr);
-            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+            if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
             {
-                NodeHdr root;
-                if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
+                if (hdr.ktype & USE_TRAILING_HEADER)
                 {
-                    SwapBigEndian(root);
-                    return root.leftSib==0 && root.rightSib==0; 
+                    if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
+                        return false;
+                    SwapBigEndian(hdr);
+                }
+                if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.root && hdr.root % hdr.nodeSize == 0 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+                {
+                    NodeHdr root;
+                    if (io->read(hdr.root, sizeof(root), &root) == sizeof(root))
+                    {
+                        SwapBigEndian(root);
+                        return root.leftSib==0 && root.rightSib==0;
+                    }
                 }
             }
         }
@@ -134,9 +143,19 @@ extern jhtree_decl bool isIndexFile(IFile *file)
         if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
             return false;
         SwapBigEndian(hdr);
-        if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
-            return false;
-        return true;    // Reasonable heuristic...
+        if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1)
+        {
+            if (hdr.ktype & USE_TRAILING_HEADER)
+            {
+                if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
+                    return false;
+                SwapBigEndian(hdr);
+
+            }
+            if (!hdr.root || !hdr.nodeSize || !hdr.root || size % hdr.nodeSize || hdr.root % hdr.nodeSize || hdr.root >= size)
+                return false;
+            return true;    // Reasonable heuristic...
+        }
     }
     catch (IException *E)
     {
@@ -167,20 +186,6 @@ void CKeyHdr::load(KeyHdr &_hdr)
 
     if (0xffff != hdr.version && KEYBUILD_VERSION < hdr.version)
         throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %u. Key is version %u", KEYBUILD_VERSION, (unsigned) hdr.version);
-}
-
-void CKeyHdr::write(IWriteSeq *out, CRC32 *crc)
-{
-    unsigned nodeSize = hdr.nodeSize;
-    assertex(out->getRecordSize()==nodeSize);
-    MemoryAttr ma;
-    byte *buf = (byte *) ma.allocate(nodeSize); 
-    memcpy(buf, &hdr, sizeof(hdr));
-    memset(buf+sizeof(hdr), 0xff, nodeSize-sizeof(hdr));
-    SwapBigEndian(*(KeyHdr*) buf);
-    out->put(buf);
-    if (crc)
-        crc->tally(nodeSize, buf);
 }
 
 void CKeyHdr::write(IFileIOStream *out, CRC32 *crc)
@@ -837,6 +842,12 @@ extern jhtree_decl void validateKeyFile(const char *filename, offset_t nodePos)
         throw MakeStringException(4, "Invalid key %s: failed to read key header", filename);
     CKeyHdr keyHdr;
     keyHdr.load(hdr);
+    if (keyHdr.getKeyType() & USE_TRAILING_HEADER)
+    {
+        if (io->read(size - keyHdr.getNodeSize(), sizeof(hdr), &hdr) != sizeof(hdr))
+            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", filename);
+        keyHdr.load(hdr);
+    }
 
     _WINREV(hdr.phyrec);
     _WINREV(hdr.root);

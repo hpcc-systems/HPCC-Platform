@@ -12240,7 +12240,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         {
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
-            if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
+            if(*nameBuff == '_' && !checkReservedMetadataName(name))
             {
                 OwnedRoxieString fname(helper.getFileName());
                 throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
@@ -12331,7 +12331,11 @@ public:
             Owned<IPropertyTree> metadata;
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
-            unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+            unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+            if (metadata->getPropBool("_noSeek", false))
+                flags |= TRAILING_HEADER_ONLY;
+            if (metadata->getPropBool("_useTrailingHeader", true))
+                flags |= USE_TRAILING_HEADER;
             Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
             class BcWrapper : implements IBlobCreator
             {

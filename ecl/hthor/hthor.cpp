@@ -1129,7 +1129,12 @@ void CHThorIndexWriteActivity::execute()
         Owned<IPropertyTree> metadata;
         buildUserMetadata(metadata);
         buildLayoutMetadata(metadata);
-        unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+        unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+        if (metadata->getPropBool("_noSeek", false))
+            flags |= TRAILING_HEADER_ONLY;
+        if (metadata->getPropBool("_useTrailingHeader", true))
+            flags |= USE_TRAILING_HEADER;
+
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
         if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
             keyMaxSize -= sizeof(offset_t);
@@ -1324,7 +1329,7 @@ void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata
     {
         StringBuffer name(nameLen, nameBuff);
         StringBuffer value(valueLen, valueBuff);
-        if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
+        if(*nameBuff == '_' && !checkReservedMetadataName(name))
         {
             OwnedRoxieString fname(helper.getFileName());
             throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());

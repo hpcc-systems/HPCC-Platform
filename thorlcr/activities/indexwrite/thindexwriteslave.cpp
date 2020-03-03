@@ -171,7 +171,12 @@ public:
             flags |= HTREE_TOPLEVEL_KEY;
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
-        unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+        // NOTE - if you add any more flags here, be sure to update checkReservedMetadataName
+        unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+        if (metadata->getPropBool("_noSeek", false))
+            flags |= TRAILING_HEADER_ONLY;
+        if (metadata->getPropBool("_useTrailingHeader", true))
+            flags |= USE_TRAILING_HEADER;
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
@@ -185,7 +190,7 @@ public:
         {
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
-            if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
+            if(*nameBuff == '_' && !checkReservedMetadataName(name))
                 throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), logicalFilename.get());
             if(!validateXMLTag(name.str()))
                 throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), logicalFilename.get());

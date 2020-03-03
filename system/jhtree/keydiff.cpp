@@ -230,7 +230,7 @@ public:
             quickCompressed = false;
         else
             throw MakeStringException(0, "Index file %s did not have compression flags set, unsupported", filename);
-        unsigned optionalFlags = (HTREE_VARSIZE | HTREE_QUICK_COMPRESSED_KEY | HTREE_TOPLEVEL_KEY | HTREE_FULLSORT_KEY);
+        unsigned optionalFlags = (HTREE_VARSIZE | HTREE_QUICK_COMPRESSED_KEY | HTREE_TOPLEVEL_KEY | HTREE_FULLSORT_KEY | TRAILING_HEADER_ONLY | USE_TRAILING_HEADER);
         unsigned requiredFlags = COL_PREFIX;
 #ifdef _DEBUG
         if((flags & ~optionalFlags) != requiredFlags)
@@ -413,7 +413,7 @@ public:
         if(!keyFileIO)
             throw MakeStringException(0, "Could not write index file %s", filename);
         keyStream.setown(createIOStream(keyFileIO));
-        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY;
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER;
         if(variableWidth)
             flags |= HTREE_VARSIZE;
         if(quickCompressed)

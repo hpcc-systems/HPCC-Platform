@@ -27,14 +27,13 @@
 
 #define NODESIZE 8192
 
-
-#define HTREE_FPOS_OFFSET   0x01 // Obsolete, not supported
+#define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
 #define HTREE_TOPLEVEL_KEY  0x02
 #define COL_PREFIX          0x04
-#define COL_SUFFIX          0x08 // Obsolete, not supported
+#define HTREE_QUICK_COMPRESSED 0x08 // See QUICK_COMPRESSED_KEY below
 #define HTREE_VARSIZE       0x10
 #define HTREE_FULLSORT_KEY  0x20
-#define INDAR_TRAILING_SEG  0x80 // Obsolete, not supported
+#define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
 #define KEYBUILD_VERSION 1 // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
@@ -124,7 +123,13 @@ struct jhtree_decl NodeHdr
 //#pragma pack(4)
 #pragma pack(pop)
 
-class jhtree_decl CKeyHdr : public CInterface
+class CWritableKeyNode : public CInterface
+{
+public:
+    virtual void write(IFileIOStream *, CRC32 *crc) = 0;
+};
+
+class jhtree_decl CKeyHdr : public CWritableKeyNode
 {
 private:
     KeyHdr hdr;
@@ -132,8 +137,7 @@ public:
     CKeyHdr();
 
     void load(KeyHdr &_hdr);
-    void write(IWriteSeq *, CRC32 *crc = NULL);
-    void write(IFileIOStream *, CRC32 *crc = NULL);
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
 
     unsigned int getMaxKeyLength();
     bool isVariable();
@@ -171,7 +175,7 @@ public:
 
 };
 
-class jhtree_decl CNodeBase : public CInterface
+class jhtree_decl CNodeBase : public CWritableKeyNode
 {
 protected:
     NodeHdr hdr;
@@ -183,6 +187,7 @@ protected:
     bool isVariable;
 
 public:
+    virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
     inline offset_t getFpos() const { return fpos; }
     inline size32_t getKeyLen() const { return keyLen; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
@@ -332,7 +337,7 @@ public:
     CWriteNodeBase(offset_t fpos, CKeyHdr *keyHdr);
     ~CWriteNodeBase();
 
-    void write(IFileIOStream *, CRC32 *crc = NULL);
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
     void setLeftSib(offset_t leftSib) { hdr.leftSib = leftSib; }
     void setRightSib(offset_t rightSib) { hdr.rightSib = rightSib; }
 };
