@@ -41,6 +41,7 @@
 #include "ws_topology.hpp"
 #include <string>
 #include <set>
+#include "sacmd.hpp"
 
 
 using std::set;
@@ -208,6 +209,8 @@ public:
 private:
     Owned<IRemoteConnection> conn;
 };
+
+extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu);
 
 #endif //_ESPWIZ_TpWrapper_HPP__
 

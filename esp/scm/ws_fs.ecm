@@ -22,6 +22,7 @@ ESPenum DFUWUActions : string
     Unprotect("Unprotect"),
     Restore("Restore"),
     SetToFailed("SetToFailed"),
+    Archive("Archive"),
 };
 
 ESPStruct [nil_remove] DFUWorkunit

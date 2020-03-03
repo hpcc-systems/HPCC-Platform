@@ -49,7 +49,8 @@ include_directories (
          ./../../../common/remote 
          ./../../clients 
          ./../../../tools/swapnode 
-         ./../../../dali/base 
+         ./../../../dali/base
+         ./../../../dali/sasha
          ./../ws_workunits 
          ./../../bindings 
          ./../../smc/SMCLib 

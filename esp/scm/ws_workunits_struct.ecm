@@ -34,6 +34,7 @@ ESPenum ECLWUActions : string
     Restore("Restore"),
     Resume("Resume"),
     SetToFailed("SetToFailed"),
+    Archive("Archive"),
 };
 
 ESPenum EclDefinitionActions : string

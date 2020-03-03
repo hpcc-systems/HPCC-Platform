@@ -48,6 +48,7 @@
 #include "fvresultset.ipp"
 #include "ws_wudetails.hpp"
 #include "wuerror.hpp"
+#include "TpWrapper.hpp"
 
 #include "rtlformat.hpp"
 
@@ -60,7 +61,7 @@
 
 #define ESP_WORKUNIT_DIR "workunits/"
 
-#define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
+#define WU_SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
 const unsigned MAX_ZAP_BUFFER_SIZE = 10000000; //10M
 
@@ -84,9 +85,9 @@ public:
 };
 
 //The ECLWUActionNames[] has to match with the ESPenum ECLWUActions in the ecm file.
-static unsigned NumOfECLWUActionNames = 11;
+static unsigned NumOfECLWUActionNames = 12;
 static const char *ECLWUActionNames[] = { "Abort", "Delete", "Deschedule", "Reschedule", "Pause",
-    "PauseNow", "Protect", "Unprotect", "Restore", "Resume", "SetToFailed", NULL };
+    "PauseNow", "Protect", "Unprotect", "Restore", "Resume", "SetToFailed", "Archive", nullptr };
 
 class CECLWUActionsEx : public SoapEnumParamNew<CECLWUActions>
 {
@@ -112,7 +113,38 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
     if (!wuids.length())
         return true;
 
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    if ((action == CECLWUActions_Restore) || (action == CECLWUActions_Archive))
+    {
+        StringBuffer msg;
+        ForEachItemIn(i, wuids)
+        {
+            StringBuffer wuidStr(wuids.item(i));
+            const char* wuid = wuidStr.trim().str();
+            if (isEmpty(wuid))
+            {
+                msg.appendf("Empty Workunit ID at %u. ", i);
+                continue;
+            }
+            if ((action == CECLWUActions_Archive) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full))
+                msg.appendf("Access denied for Workunit %s. ", wuid);
+        }
+        if (!msg.isEmpty())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, msg);
+
+        Owned<ISashaCommand> cmd = archiveOrRestoreWorkunits(wuids, params, action == CECLWUActions_Archive, false);
+        ForEachItemIn(idx, wuids)
+        {
+            StringBuffer reply;
+            cmd->getId(idx, reply);
+
+            const char* wuid = wuids.item(idx);
+            if ((action == CECLWUActions_Restore) && !validateWsWorkunitAccess(context, wuid, SecAccess_Full))
+                reply.appendf("Access denied for Workunit %s. ", wuid);
+
+            AuditSystemAccess(context.queryUserId(), true, "%s", reply.str());
+        }
+        return true;
+    }
 
     bool bAllSuccess = true;
     const char* strAction = (action < NumOfECLWUActionNames) ? ECLWUActionNames[action] : "Unknown Action";
@@ -132,50 +164,13 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
 
             PROGLOG("%s %s", strAction, wuid);
-            if ((action == CECLWUActions_Restore) || (action == CECLWUActions_EventDeschedule))
+            if (action == CECLWUActions_EventDeschedule)
             {
-                switch(action)
-                {
-                case CECLWUActions_Restore:
-                {
-                    SocketEndpoint ep;
-                    if (params->hasProp("sashaServerIP"))
-                        ep.set(params->queryProp("sashaServerIP"), params->getPropInt("sashaServerPort"));
-                    else
-                        getSashaNode(ep);
-
-                    Owned<ISashaCommand> cmd = createSashaCommand();
-                    cmd->setAction(SCA_RESTORE);
-                    cmd->addId(wuid);
-
-                    Owned<INode> node = createINode(ep);
-                    if (!node)
-                        throw MakeStringException(ECLWATCH_INODE_NOT_FOUND,"INode not found.");
-
-                    StringBuffer s;
-                    if (!cmd->send(node, 1*60*1000))
-                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
-                            "Sasha (%s) took too long to respond from: Restore workunit %s.",
-                            ep.getUrlStr(s).str(), wuid);
-
-                    if (cmd->numIds()==0)
-                        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Could not Archive/restore %s",wuid);
-
-                    StringBuffer reply;
-                    cmd->getId(0,reply);
-
-                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Full, false)
+                    || !context.validateFeatureAccess(OTHERS_WU_ACCESS, SecAccess_Full, false))
                     ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
-                    break;
-                }
-                case CECLWUActions_EventDeschedule:
-                    if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Full, false)
-                        || !context.validateFeatureAccess(OTHERS_WU_ACCESS, SecAccess_Full, false))
-                        ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
-                    descheduleWorkunit(wuid);
-                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                    break;
-                }
+                descheduleWorkunit(wuid);
+                AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
             }
             else
             {
@@ -317,7 +312,7 @@ bool doUnProtectWorkunits(IEspContext& context, StringArray& wuids, IArrayOf<ICo
 
 static void checkUpdateQuerysetLibraries()
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, WU_SDS_LOCK_TIMEOUT);
     if (!globalLock)
         return;
 
@@ -706,7 +701,7 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
 
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
-        if ((action == CECLWUActions_Restore) && !sashaServerIp.isEmpty())
+        if (((action == CECLWUActions_Restore) || (action == CECLWUActions_Archive)) && !sashaServerIp.isEmpty())
         {
             params->setProp("sashaServerIP", sashaServerIp.get());
             params->setProp("sashaServerPort", sashaServerPort);

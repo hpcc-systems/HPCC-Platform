@@ -49,7 +49,8 @@ include_directories (
          ./../../../common/workunit 
          ./../../../common/remote 
          ./../../clients 
-         ./../../../dali/base 
+         ./../../../dali/base
+         ./../../../dali/sasha
          ./../../clients/LoggingClient 
          ./../../bindings 
          ./../../bindings/SOAP/xpp 

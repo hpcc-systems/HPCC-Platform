@@ -50,7 +50,8 @@ include_directories (
          ./../../../common/roxiecommlib
          ./../../../common/workunit
          ./../../clients 
-         ./../../../dali/base 
+         ./../../../dali/base
+         ./../../../dali/sasha
          ./../../bindings 
          ./../../bindings/SOAP/xpp 
          ./../../../esp/platform 

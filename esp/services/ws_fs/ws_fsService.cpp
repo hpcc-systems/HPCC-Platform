@@ -1560,8 +1560,8 @@ bool markWUFailed(IDFUWorkUnitFactory *f, const char *wuid)
     return false;
 }
 
-static unsigned NumOfDFUWUActionNames = 5;
-static const char *DFUWUActionNames[] = { "Delete", "Protect" , "Unprotect" , "Restore" , "SetToFailed" };
+static unsigned NumOfDFUWUActionNames = 6;
+static const char *DFUWUActionNames[] = { "Delete", "Protect" , "Unprotect" , "Restore" , "SetToFailed", "Archive" };
 
 bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsActionRequest &req, IEspDFUWorkunitsActionResponse &resp)
 {
@@ -1572,35 +1572,48 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         CDFUWUActions action = req.getType();
         if (action == DFUWUActions_Undefined)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Action not defined.");
+        const char* actionStr = (action < NumOfDFUWUActionNames) ? DFUWUActionNames[action] : "Unknown";
 
         StringArray& wuids = req.getWuids();
         if (!wuids.ordinality())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit not defined.");
 
-        Owned<INode> node;
-        Owned<ISashaCommand> cmd;
-        StringBuffer sashaAddress;
-        if (action == CDFUWUActions_Restore)
+        if ((action == CDFUWUActions_Restore) || (action == CDFUWUActions_Archive))
         {
-            IArrayOf<IConstTpSashaServer> sashaservers;
-            CTpWrapper dummy;
-            dummy.getTpSashaServers(sashaservers);
-            ForEachItemIn(i, sashaservers)
+            StringBuffer msg;
+            ForEachItemIn(i, wuids)
             {
-                IConstTpSashaServer& sashaserver = sashaservers.item(i);
-                IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
-                sashaAddress.append(sashaservermachine.item(0).getNetaddress());
+                StringBuffer wuidStr(wuids.item(i));
+                const char* wuid = wuidStr.trim().str();
+                if (isEmptyString(wuid))
+                    msg.appendf("Empty Workunit ID at %u. ", i);
             }
-            if (sashaAddress.length() < 1)
-            {
-                throw MakeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND,"Archive server not found.");
-            }
+            if (!msg.isEmpty())
+                throw makeStringException(ECLWATCH_INVALID_INPUT, msg);
 
-            SocketEndpoint ep(sashaAddress.str(), DEFAULT_SASHA_PORT);
-            node.setown(createINode(ep));
-            cmd.setown(createSashaCommand());
-            cmd->setAction(SCA_RESTORE);
-            cmd->setDFU(true);
+            Owned<ISashaCommand> cmd = archiveOrRestoreWorkunits(wuids, nullptr, action == CDFUWUActions_Archive, true);
+            IArrayOf<IEspDFUActionResult> results;
+            ForEachItemIn(x, wuids)
+            {
+                Owned<IEspDFUActionResult> res = createDFUActionResult();
+                res->setID(wuids.item(x));
+                res->setAction(actionStr);
+
+                StringBuffer reply;
+                if (action == CDFUWUActions_Restore)
+                    reply.set("Restore ID: ");
+                else
+                    reply.set("Archive ID: ");
+
+                if (cmd->getId(x, reply))
+                    res->setResult(reply.str());
+                else
+                    res->setResult("Failed to get Archive/restore ID.");
+
+                results.append(*res.getLink());
+            }
+            resp.setDFUActionResults(results);
+            return true;
         }
 
         IArrayOf<IEspDFUActionResult> results;
@@ -1608,7 +1621,6 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         for(unsigned i = 0; i < wuids.ordinality(); ++i)
         {
             const char* wuid = wuids.item(i);
-            const char* actionStr = (action < NumOfDFUWUActionNames) ? DFUWUActionNames[action] : "Unknown";
 
             Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
             res->setID(wuid);
@@ -1625,19 +1637,6 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
                     if (!factory->deleteWorkUnit(wuid))
                         throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT, "Failed in deleting workunit.");
                     res->setResult("Success");
-                    break;
-                case CDFUWUActions_Restore:
-                    cmd->addId(wuid);
-                    if (!cmd->send(node,1*60*1000))
-                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
-                            "Sasha (%s) took too long to respond from: Restore workunit %s.",
-                            sashaAddress.str(), wuid);
-                    {
-                        StringBuffer reply("Restore ID: ");
-                        if (!cmd->getId(0, reply))
-                            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Failed to get ID.");
-                        res->setResult(reply.str());
-                    }
                     break;
                 case CDFUWUActions_Protect:
                 case CDFUWUActions_Unprotect:
