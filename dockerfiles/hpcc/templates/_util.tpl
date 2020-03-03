@@ -33,6 +33,7 @@ data:
     version: "1.0"
     Global:
       imageVersion: {{ .root.Values.global.image.version | quote }}
+      singleNode: {{ .root.Values.global.singleNode }}
 {{ include "hpcc.utils.generateComponentConfigMap" . | indent 2 }}
 {{ end -}}
 
@@ -80,15 +81,23 @@ volumeMounts:
 
 {{- /* Get image name */ -}}
 {{- define "hpcc.utils.imageName" -}}
-{{- /* Pass in a dictionary with root and imagename defined */ -}}
+{{- /* Pass in a dictionary with root, me and imagename defined */ -}}
+{{- if .me.image -}}
+{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .me.image.version | default .root.Values.global.image.version }}
+{{- else -}}
 {{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .root.Values.global.image.version }}
+{{- end -}}
 {{- end -}}
 
 {{- /* Add image attributes for a component */ -}}
-{{- /* Pass in a dictionary with root and imagename defined */ -}}
+{{- /* Pass in a dictionary with root, me and imagename defined */ -}}
 {{- define "hpcc.utils.addImageAttrs" -}}
-image: "{{ include "hpcc.utils.imageName" . }}"
-imagePullPolicy: {{ .root.Values.global.image.pullPolicy }}
+image: {{ include "hpcc.utils.imageName" . | quote }}
+{{ if .me.image -}}
+imagePullPolicy: {{ .me.image.pullPolicy | default .root.Values.global.image.pullPolicy | default "IfNotPresent" }}
+{{- else -}}
+imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent" }}
+{{- end -}}
 {{- end -}}
 
 {{- /* A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV */ -}}

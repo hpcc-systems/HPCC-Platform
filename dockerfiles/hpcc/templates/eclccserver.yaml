@@ -25,7 +25,7 @@ spec:
                 {{ include "hpcc.utils.configArg" . }},
                 {{ include "hpcc.utils.daliArg" $ }}
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "imagename" "eclccserver") | indent 8 }}
+{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "eclccserver") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
 {{ include "hpcc.utils.addVolumes" . | indent 6 }}
 ---
@@ -41,7 +41,7 @@ spec:
         spec:
           containers:
           - name: %jobname
-            image: {{ include "hpcc.utils.imageName" (dict "root" $ "imagename" "eclccserver") }}
+            image: {{ include "hpcc.utils.imageName" (dict "root" $ "me" . "imagename" "eclccserver") }}
             resources:
               requests:
                 #request-memory
