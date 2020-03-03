@@ -82,6 +82,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   else()
     option(USE_NUMA "Configure use of numa" ON)
   endif()
+  option(USE_AWS "Configure use of aws" ON)
 
   IF (WIN32)
      option(USE_NATIVE_LIBRARIES "Search standard OS locations (otherwise in EXTERNALS_DIRECTORY) for 3rd party libraries" OFF)
