@@ -1,6 +1,9 @@
 import { createMuiTheme } from "@material-ui/core/styles";
 
 export const theme = createMuiTheme({
+    typography: {
+        fontSize: 15
+    },
     palette: {
       primary: {
           main: "#1a9bd7",
@@ -22,6 +25,27 @@ export const theme = createMuiTheme({
             },
             completed: {
                 color: "#1a9bd7"
+            }
+        },
+        MuiTableContainer: {
+            root: {
+                margin: "20px 0px"
+            }
+        },
+        MuiButton: {
+            root: {
+                "color": "white",
+                "&:hover": {
+                    background: "primary",
+                    color: "white",
+                    boxShadow: "none"
+                }
+            }
+        },
+        MuiTableCell: {
+            head: {
+               fontWeight: 600,
+               width: "50%"
             }
         }
     }

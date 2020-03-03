@@ -40,6 +40,8 @@
     "@hpcc-js/other": "2.13.12",
     "@hpcc-js/tree": "2.9.1",
     "@material-ui/core": "4.8.3",
+    "@material-ui/icons": "^4.9.1",
+    "@material-ui/lab": "^4.0.0-alpha.42",
     "clipboard": "2.0.4",
     "codemirror": "5.50.2",
     "dijit": "1.16.0",

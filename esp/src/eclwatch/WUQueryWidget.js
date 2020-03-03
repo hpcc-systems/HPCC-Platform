@@ -295,6 +295,10 @@ define([
             this.initWorkunitsGrid();
 
             var context = this;
+            this.filter.init({
+                ws_key: "WUQueryRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context._onFilterType();
                 context.refreshHRef();

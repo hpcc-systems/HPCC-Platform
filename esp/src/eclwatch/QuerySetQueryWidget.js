@@ -158,6 +158,10 @@ define([
             this.initQuerySetGrid();
 
             var context = this;
+            this.filter.init({
+                ws_key: "QuerySetQueryRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();

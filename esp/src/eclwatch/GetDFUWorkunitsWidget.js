@@ -231,6 +231,10 @@ define([
             });
 
             var context = this;
+            this.filter.init({
+                ws_key: "GetDFUWorkunitsRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();

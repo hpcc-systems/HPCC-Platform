@@ -534,6 +534,10 @@ define([
                 DropZones: true,
                 includeBlank: true
             });
+            this.filter.init({
+                ws_key: "LZBrowseRecentFilter",
+                widget: this.widget
+            });
             this.filter.on("clear", function (evt) {
                 context.refreshHRef();
                 context.refreshGrid();
