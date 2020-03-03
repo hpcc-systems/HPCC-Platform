@@ -1726,7 +1726,10 @@ bool addWUQueryFilter(WUSortField *filters, unsigned short &count, MemoryBuffer 
         return false;
     filters[count++] = value;
     if ((value & WUSFwild) != 0 && !containsWildcard(name))
-        buff.append("*").append(name).append("*");
+    {
+        VStringBuffer s("*%s*", name);
+        buff.append(s);
+    }
     else
         buff.append(name);
     return true;
