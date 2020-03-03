@@ -4,7 +4,7 @@
 <sect1 id="Using_SuperKeys">
   <title><emphasis role="bold">Utilizando Superchaves</emphasis></title>
 
-  <para>Um superarquivo cujos subarquivos são INDEXes (e nao DATASETs)
+  <para>Um superarquivo cujos subarquivos são INDEXes (e não DATASETs)
   corresponde a uma Superchave. Conforme descrito no tópico anterior,
   <emphasis>Como indexar em Superarquivos</emphasis> , há um problema com o
   uso de uma superchave para tentar indexar em um superarquivo. Assim sendo,
@@ -17,7 +17,7 @@
   compilado. Assim sendo, o problema se torna discutível.</para>
 
   <para>As superchaves são compiladas com chaves de conteúdo. E já que a
-  operação primária para uma chave de conteúdo é o JOIN de meia chave, esse
+  operação primária para uma chave de conteúdo é o HLAF-KEYED JOINS, esse
   também se torna o principal uso operacional da superchave.</para>
 
   <para>Ambos superarquivos e superchaves podem ser usados em operações no
@@ -191,9 +191,9 @@ OUTPUT(J3,ALL);
 
     <para>Uma superchave é simplesmente um superarquivo cujos subarquivos
     componentes são chaves de conteúdo. Assim sendo, compilar e manter uma
-    superchave constitui exatamente no mesmo processo já descrito no tópico
+    superchave constitui exatamente o mesmo processo já descrito no tópico
     <emphasis>Como criar e manter superarquivos</emphasis> . A única diferença
-    significa está na maneira pela qual você cria os sub-arquivos de
+    significa está na maneira pela qual você cria os subarquivos de
     componente, cujo processo já foi descrito no tópico <emphasis>Como usar
     chaves ECL (arquivos INDEX)</emphasis> .</para>
   </sect2>

@@ -741,13 +741,13 @@
                   <entry><emphasis role="bold">ECL Watch Graph
                   Control</emphasis></entry>
 
-                  <entry>Embora o controle de visualizador gráfico seja
+                  <entry>Embora o controle de visualizador grafo seja
                   incorporado ao ECL IDE, o ECL Watch exige que esse controle
-                  seja instalado para que possa exibir os gráficos
-                  corretamente. A versão instalada atualmente é identificada e
-                  o número de versão da nova versão é mostrado. Você só deve
-                  ajustar essa configuração se for orientado a fazer isso pelo
-                  suporte ao cliente.</entry>
+                  seja instalado para que possa exibir os grafos corretamente.
+                  A versão instalada atualmente é identificada e o número de
+                  versão da nova versão é mostrado. Você só deve ajustar essa
+                  configuração se for orientado a fazer isso pelo suporte ao
+                  cliente.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -908,9 +908,9 @@
           <title>Trabalhando com caixas de ferramentas</title>
 
           <para>As caixas de ferramentas podem ser ancoradas, fixadas,
-          desafixadas, agrupadas ou ocultadas. No gráfico mostrado acima,
-          todas as caixas de ferramentas são mostradas afixadas à direita (uma
-          opção pré-configurada na guia da Painel View).</para>
+          desafixadas, agrupadas ou ocultadas. No grafo mostrado acima, todas
+          as caixas de ferramentas são mostradas afixadas à direita (uma opção
+          pré-configurada na guia da Painel View).</para>
         </sect3>
 
         <sect3 id="CT_ECLIDE_GroupingDockingAutoHide">
@@ -1358,13 +1358,12 @@
                   <entry><emphasis role="bold">Open</emphasis></entry>
 
                   <entry>Oferece acesso aos seguintes submenus:
-                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window. CTRL-O
-<emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open. 
-                      Enter the fully qualified attribute name, then press the <emphasis
-                        role="bold">OK </emphasis>button.
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window.
+CTRL-O
+<emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open.
+Enter the fully qualified attribute name, then press the <emphasis role="bold">OK </emphasis>button.
 <emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
-                      Enter the Workunit ID (WUID), then press the <emphasis
-                        role="bold">OK</emphasis> button.</programlisting></entry>
+Enter the Workunit ID (WUID), then press the <emphasis role="bold">OK</emphasis> button.</programlisting></entry>
                 </row>
 
                 <row>
@@ -1388,9 +1387,9 @@
 
                   <entry>Oferece acesso aos seguintes submenus do menu Print:
                   <programlisting role="tab"><emphasis role="bold">Print <emphasis
-                          role="bold">Setup</emphasis>:</emphasis> opens a page setup dialog where you can set margins,
-                      paper size, and orientation, etc.
-<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL-P
+                          role="bold">Setup</emphasis>:</emphasis> abre uma caixa de diálogo de configuração da página onde você pode 
+definir margens, tamanho do papel, orientação etc.
+<emphasis role="bold">Print:</emphasis> imprime o conteúdo da janela ativa. CTRL-P
 </programlisting></entry>
                 </row>
 
@@ -1490,14 +1489,6 @@
                         <para><emphasis role="bold">Compile</emphasis> -
                         compila, mas não executa o ECL. Permite que a workunit
                         seja publicada para execução posterior.</para>
-                      </listitem>
-
-                      <listitem>
-                        <para><emphasis role="bold">Debug</emphasis> - envia o
-                        código ECL hThor e Roxie para o compilador e abre uma
-                        janela do depurador. Veja a seção <link
-                        linkend="ECL_Debugger">Depurador ECL</link> para obter
-                        mais informações.</para>
                       </listitem>
                     </itemizedlist></entry>
                 </row>
@@ -2191,7 +2182,7 @@
                 <row>
                   <entry><emphasis role="bold">Show Graph</emphasis></entry>
 
-                  <entry>Exibe o gráfico para a workunit selecionada</entry>
+                  <entry>Exibe o grafo para a workunit selecionada</entry>
                 </row>
 
                 <row>
@@ -3410,32 +3401,31 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Graph_Viewer" role="brk">
-        <title><emphasis>Visualizar gráfico </emphasis></title>
+        <title><emphasis>Visualizar grafos</emphasis></title>
 
-        <para>Um gráfico de execução de workunit é exibido na guia
-        Graph.</para>
+        <para>Um grafo de execução de workunit é exibido na guia Graph.</para>
 
         <para>Modifique a exibição da seguinte maneira:</para>
 
         <itemizedlist mark="bullet">
           <listitem>
             <para>Use os botões de navegação do painel para se mover por um
-            gráfico.</para>
+            grafo.</para>
           </listitem>
 
           <listitem>
             <para>Use as opções de Zoom do painel para ajustar o
-            tamanho/largura de exibição do gráfico.</para>
+            tamanho/largura de exibição do grafo.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
             <para>Use os botões Em execução do painel para acompanhar o
-            progresso de uma tarefa em execução, atualizando o gráfico
-            enquanto é executado. São fornecidas opções para que você possa
-            acompanhar as áreas ativas ou minimizar as inativas do gráfico de
-            acordo com a sua preferência.</para>
+            progresso de uma tarefa em execução, atualizando o grafo enquanto
+            é executado. São fornecidas opções para que você possa acompanhar
+            as áreas ativas ou minimizar as inativas do grafo de acordo com a
+            sua preferência.</para>
           </listitem>
         </itemizedlist>
 
@@ -3539,752 +3529,6 @@ ENDMACRO;
             para relatórios de erros ou para solucionar problemas.</para>
           </listitem>
         </itemizedlist>
-      </sect2>
-    </sect1>
-
-    <sect1 id="ECL_Debugger">
-      <title>ECL Debugger</title>
-
-      <sect2 id="ECL_Debugger_Intro">
-        <title><emphasis>Introdução</emphasis></title>
-
-        <para>O depurador ECL oferece acesso rápido e fácil a recursos que
-        mostram exatamente como a consulta ECL está funcionando. Ele é
-        integrado ao ECL IDE, oferecendo acesso imediato ao processo de
-        depuração na medida em que você desenvolve suas consultas. É uma
-        ferramenta de desenvolvimento útil que ajuda a:</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Aprender como a linguagem ECL funciona.</para>
-          </listitem>
-
-          <listitem>
-            <para>Desenvolver uma consulta para ver como isso funciona.</para>
-          </listitem>
-
-          <listitem>
-            <para>Verificar se sua consulta está se comportando como
-            esperado.</para>
-          </listitem>
-
-          <listitem>
-            <para>Identificar o motivo de sua consulta não estar funcionando
-            como esperado.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>Atualmente, o depurador mostra informações de depuração para
-        qualquer consulta executada em um cluster hThor ou Roxie.</para>
-
-        <para><informaltable colsep="0" frame="none" rowsep="0">
-            <tgroup cols="2">
-              <colspec colwidth="52.55pt"/>
-
-              <colspec colwidth="384.85pt"/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold">Observação</emphasis> :</entry>
-
-                  <entry>A capacidade de ver informações de depuração para
-                  consultas executadas em um cluster Thor faz parte do
-                  desenvolvimento planejado e contínuo dessa
-                  ferramenta.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable></para>
-      </sect2>
-
-      <sect2 id="Global_and_Active_Graphs">
-        <title><emphasis>Gráficos globais e ativos</emphasis></title>
-
-        <para>As duas janelas de gráficos são exibidas lado a lado no ECL
-        IDE.</para>
-
-        <para><graphic fileref="../../images/CT57.png" scalefit="1"/></para>
-
-        <para/>
-
-        <para>O Gráfico global mostra exatamente a execução solicitada ao
-        Roxie/hThor pelo compilador. Ele é usado principalmente para navegar
-        pelo gráfico e para definir breakpoints</para>
-
-        <para>A janela Ativa mostra o que está sendo de fato executado. O
-        gráfico na janela Ativa pode mudar de formato durante o processo de
-        depuração.</para>
-
-        <para>Esses gráficos mostram informações diferentes. O Gráfico global
-        pode não exibir partes do gráfico que não são executadas, como por
-        exemplo declarações IF, ou ao usar o comando Gráfico. A janela Ativa
-        pode mostrar seções ampliadas dos comandos, como Gráfico ou
-        Biblioteca.</para>
-      </sect2>
-
-      <sect2 id="Edges_and_Vertices">
-        <title><emphasis>Limites e Vértices</emphasis></title>
-
-        <para>Os gráficos são exibidos como uma série de limites e
-        vértices.</para>
-
-        <para>Um vértice é uma palavra-chave ou atividade ECL, por exemplo,
-        SORT ou JOIN. Vértices são representados nos gráficos contornados por
-        um retângulo. Quando um vértice é selecionado e possui uma definição
-        associada a ele, o ECL que fez com seja criado para destacar na janela
-        Informações de depuração.</para>
-
-        <para>Um limite é mostrada nos gráficos como uma linha que une dois
-        vértices e representa os dados que fluem entre eles. Quando um limite
-        é selecionado, as últimas N linhas de dados são exibidas na janela
-        Debug Information.</para>
-
-        <para>A janela Properties mostra os detalhes associados com limite ou
-        vértice atualmente selecionado, por exemplo a definição, ID, rótulo de
-        texto, nome etc.</para>
-      </sect2>
-
-      <sect2 id="Breakpoints">
-        <title><emphasis>Breakpoints</emphasis></title>
-
-        <para>Usando o recurso de breakpoint do Depurador ECL, o processo de
-        depuração pode ser pausado em qualquer ponto.</para>
-
-        <para>Breakpoints globais param o processo de depuração sempre que a
-        condição especificada é atendida. Breakpoints locais param o processo
-        apenas para essa ocorrência específica.</para>
-
-        <para>O processo de depuração pausa no ponto em que o breakpoint é
-        definido. Os Breakpoints (Pontos de interrupção) só podem ser
-        definidos em limites. No entanto, há diversas formas de usar os pontos
-        de interrupção:</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Um simples breakpoint não contém nenhuma condição
-            específica. O processo de depuração pausa ao atingir a borda onde
-            o breakpoint foi definido.</para>
-          </listitem>
-
-          <listitem>
-            <para>Um breakpoint que contém condições e um valor pausa o
-            processo de depuração quando essa condição é atendida.</para>
-          </listitem>
-
-          <listitem>
-            <para>Um breakpoint definido no código ECL na janela Debug
-            Information pausa o processo de depuração quando a primeira linha
-            de dados chega na borda do vértice selecionado.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>Há quatro modos de breakpoint:</para>
-
-        <informaltable colsep="1" frame="all" rowsep="1">
-          <tgroup cols="2">
-            <colspec colwidth="87.55pt"/>
-
-            <colspec/>
-
-            <tbody>
-              <row>
-                <entry><emphasis role="bold">Break</emphasis></entry>
-
-                <entry>Pausa o processo de depuração na borda
-                especificada.</entry>
-              </row>
-
-              <row>
-                <entry><emphasis role="bold">Skip</emphasis></entry>
-
-                <entry>Pula qualquer linha que atenda às condições
-                definidas.</entry>
-              </row>
-
-              <row>
-                <entry><emphasis role="bold">Limits</emphasis></entry>
-
-                <entry>Só permite o número especificado de linhas.</entry>
-              </row>
-
-              <row>
-                <entry><emphasis role="bold">Continue</emphasis></entry>
-
-                <entry>Desativa temporariamente um ponto de interrupção que
-                não é necessário no momento, mas que pode vir a ser
-                posteriormente.</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable>
-
-        <para>Usar os vários tipos da diferentes configurações da Condição
-        disponíveis significa que você pode personalizar o processo de
-        depuração para atender aos seus requisitos específicos. Por exemplo,
-        você pode querer pausar o processo de depuração quando um campo
-        específico contiver um valor para garantir que a consulta esteja se
-        comportando como esperado.</para>
-
-        <para>O uso de breakpoints ajuda a entender como sua consulta
-        funciona, permitindo que você se concentre nas áreas que não estão
-        funcionando como esperado.</para>
-
-        <para>Cada ponto de interrupção definido no gráfico é mostrado na
-        lista na janela Breakpoints, que exibe as configurações usadas para
-        criar cada um, incluindo, por exemplo, ID de borda, modo, condição
-        etc.</para>
-      </sect2>
-
-      <sect2 id="Starting_the_ECL_Debugger">
-        <title><emphasis>Iniciando o ECL Debugger</emphasis></title>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Faça Login no ECL IDE normalmente.</para>
-          </listitem>
-
-          <listitem>
-            <para>Abra ou crie sua consulta ECL em uma janela do Builder.
-            Certifique-se de que a fila e o cluster selecionados apontem para
-            um cluster hThor ou Roxie.</para>
-          </listitem>
-
-          <listitem>
-            <para>Pressione o botão More, situado na parte superior direita da
-            janela Builder. Pressione o botão <emphasis
-            role="bold">Debug</emphasis> .</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>O espaço de trabalho Debugger ECL exibe um gráfico na janela
-        Global, porém a janela Active fica vazia – uma vez que o processo de
-        depuração ainda não começou.</para>
-
-        <para/>
-
-        <para><graphic fileref="../../images/CT58.png" scale="90"
-        scalefit="1"/></para>
-      </sect2>
-
-      <sect2 id="Debugger_Menus">
-        <title><emphasis>Menus de Depuração (Debugger
-        Menus)</emphasis></title>
-
-        <para>As opções de menu Home and View são idênticas àquelas do menu do
-        ECL IDE .</para>
-
-        <sect3 id="CT_ECLIDE_DeBug_BasicMenu">
-          <title>Menu Basic</title>
-
-          <para><emphasis role="bold">O menu </emphasis><emphasis
-          role="bold">Basic</emphasis> contém os seguintes recursos:</para>
-
-          <para>As opçõe <emphasis role="bold">Process</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="85.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold">Detach</emphasis></entry>
-
-                  <entry>Desconecta-se da sessão de depuração atual e permite
-                  que a workunit seja executada até a conclusão.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Abort</emphasis></entry>
-
-                  <entry>Cancela a workunit atual, o que também faz com que a
-                  sessão de depuração seja cancelada.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Break</emphasis></entry>
-
-                  <entry>Pausa a workunit em execução.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Continue</emphasis></entry>
-
-                  <entry>Continua a execução da workunit.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções <emphasis role="bold">Graph</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="85.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Step</emphasis></emphasis></entry>
-
-                  <entry>Continua o processo de depuração até o próximo evento
-                  de gráfico. Isso é normalmente o início de um novo gráfico
-                  ativo ou o fim do gráfico ativo atual.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Step Start</emphasis></entry>
-
-                  <entry>Continua o processo de depuração até um novo gráfico
-                  estar prestes a começar.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Step End</emphasis></entry>
-
-                  <entry>Continua o processo de depuração até o gráfico atual
-                  ser concluído.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções <emphasis role="bold">Edge</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="85.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Step</emphasis></emphasis></entry>
-
-                  <entry>Continua o processo de depuração até uma nova linha
-                  de dados estar disponível em qualquer borda no gráfico
-                  ativo.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Next</emphasis></entry>
-
-                  <entry>Continua o processo de depuração até uma nova linha
-                  de dados chegar na borda ativa ou até o gráfico ativo atual
-                  ser concluído.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções de <emphasis role="bold">Breakpoint</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="85.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold">Add Global</emphasis></entry>
-
-                  <entry>Adiciona um breakpoint condicional global.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Add</emphasis></emphasis></entry>
-
-                  <entry>Adiciona um breakpoint condicional local.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Clear</emphasis></entry>
-
-                  <entry>Limpa todos os breakpoints da borda
-                  selecionada.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Clear All</emphasis></entry>
-
-                  <entry>Limpa todos os breakpoints</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções <emphasis role="bold">Find</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="85.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold">Find</emphasis></entry>
-
-                  <entry>Localiza um vértice com texto correspondente no
-                  gráfico que você está usando atualmente (global ou
-                  ativo).</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Next</emphasis></emphasis></entry>
-
-                  <entry>Localiza a próxima ocorrência no gráfico que você
-                  está usando atualmente.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Previous</emphasis></entry>
-
-                  <entry>Localiza a ocorrência anterior no gráfico que você
-                  está usando atualmente.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Goto</emphasis></entry>
-
-                  <entry>Localiza o subgrafo/vértice/borda que corresponda ao
-                  ID especificado e o centraliza.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções <emphasis role="bold">View</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
-
-              <colspec/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Zoom</emphasis></emphasis></entry>
-
-                  <entry>Redimensiona o gráfico de acordo com a sua
-                  seleção.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Recenter
-                  Active</emphasis></entry>
-
-                  <entry>Quando o gráfico é pausado, clicar nessa opção
-                  direciona você para a borda ativa no grafo.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Layout</emphasis></emphasis></entry>
-
-                  <entry>Realiza um novo layout no gráfico ativo. Isso pode
-                  ser especialmente útil quando o rótulo de texto tiver sido
-                  alterado. A barra de progresso superior mostra que os dados
-                  estão sendo enviados/recebidos do servidor. A barra de
-                  progresso inferior mostra quando o layout de gráfico está
-                  sendo calculado.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-        </sect3>
-
-        <sect3 id="CT_ECLIDE_DeBug_AdvancedMenu">
-          <title>Menu Advanced</title>
-
-          <para>O menu Advanced contém os seguintes recusos:</para>
-
-          <para>As opções <emphasis role="bold">Global Filter</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
-
-              <colspec colwidth="384.85pt"/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold"><emphasis role="bold">Running
-                  Only</emphasis></emphasis></entry>
-
-                  <entry>Mostra apenas itens que começaram a ser
-                  executados.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Search Results
-                  Only</emphasis></entry>
-
-                  <entry>Mostra apenas itens que foram encontrados usando a
-                  janela Search (Buscar).</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>As opções <emphasis role="bold">Active Filter</emphasis>
-          incluem:</para>
-
-          <informaltable colsep="1" frame="all" rowsep="1">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt"/>
-
-              <colspec colwidth="384.85pt"/>
-
-              <tbody>
-                <row>
-                  <entry><emphasis role="bold"><emphasis role="bold">Running
-                  Only</emphasis></emphasis></entry>
-
-                  <entry>Mostra apenas itens que começaram a ser
-                  executados.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">Search Results
-                  Only</emphasis></entry>
-
-                  <entry>Mostra apenas itens que foram encontrados usando a
-                  janela Search (Buscar).</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-        </sect3>
-      </sect2>
-
-      <sect2 id="Stepping_through_a_query">
-        <title><emphasis>Percorrendo uma Consulta</emphasis></title>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>No início do processo de depuração, pressione Edge/Step. O
-            gráfico continuará na próxima linha de dados disponível em
-            qualquer borda do gráfico ativo.</para>
-          </listitem>
-
-          <listitem>
-            <para>Continue pressionando Edge/Step enquanto acompanha o
-            depurador passar por cada linha de dados até chegar ao final do
-            gráfico.</para>
-          </listitem>
-
-          <listitem>
-            <para>Pressione Edge/Step novamente para ver um novo gráfico ser
-            iniciado.</para>
-          </listitem>
-
-          <listitem>
-            <para>Observe que o conteúdo da janela Debug Information mudam
-            enquanto o processo de depuração passa por cada limite.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique em cada limite ou vértice e veja os detalhes
-            relacionados na janela Properties.</para>
-          </listitem>
-
-          <listitem>
-            <para>Depois que o processo de depuração tiver sido concluído, os
-            resultados de sua consulta são exibidos.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>Navegar pelo gráfico usando ECL</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Clique em Graph/Step Start. O próximo gráfico ativo é
-            carregado.</para>
-          </listitem>
-
-          <listitem>
-            <para>Na janela Debug Information, selecione a guia
-            Builder.</para>
-          </listitem>
-
-          <listitem>
-            <para>Desça até a linha do ECL que define o que você deseja
-            localizar.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique com o botão esquerdo no círculo vermelho e selecione
-            o número do vértice a ser localizado.</para>
-          </listitem>
-
-          <listitem>
-            <para>Selecione a limite do vértice selecionado, clique com o
-            botão direito e use a opção Continue para. O processo de depuração
-            vai continuar até a primeira linha de dados chegar na limite
-            selecionada.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique em Edge/Next. O processo de depuração continua até
-            uma nova linha chegar no limite ativo.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis>Configurar breakpoints globais</emphasis></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Clique em Breakpoint(s)/Add Global.</para>
-          </listitem>
-
-          <listitem>
-            <para>Selecione o Mode necessário.</para>
-          </listitem>
-
-          <listitem>
-            <para>Defina as Condições (Conditions) a serem aplicadas.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique no botão OK</para>
-          </listitem>
-        </itemizedlist>
-
-        <para/>
-
-        <para><graphic fileref="../../images/CT59.png"/></para>
-      </sect2>
-
-      <sect2 id="Setting_Local_Breakpoints">
-        <title><emphasis>Configurar breakpoints locais</emphasis></title>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Selecione o limite (Edge) no gráfico onde deseja definir o
-            breakpoint.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique em Breakpoint(s)/ Add, ou clique com o botão direito
-            e selecione Add Breakpoint</para>
-          </listitem>
-
-          <listitem>
-            <para>Selecione o Mode necessário.</para>
-          </listitem>
-
-          <listitem>
-            <para>Defina as condições a serem aplicadas.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique no botão OK O breakpoint é mostrado no gráfico na
-            forma de um ponto vermelho.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><graphic fileref="../../images/CT60.png"/></para>
-
-        <para/>
-
-        <para><emphasis role="bold">Observação</emphasis> : Breakpoints
-        simples não exigem que nenhuma condição seja definida são rapidamente
-        adicionados selecionando uma limite e usando a opção do botão direito
-        Definir Breakpoint. Os Breakpoints (pontos de interrupção) definidos
-        desta maneira usam as configurações padrão, que são o modo de
-        configuração da Interrupção e a condição Sempre.</para>
-      </sect2>
-
-      <sect2 id="Setting_a_breakpoint_line_in_ECL">
-        <title><emphasis>Definir um breakpoint em uma linha de
-        ECL</emphasis></title>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Usando a janela Informações de depuração (Debug
-            Information), clique na aba Builder.</para>
-          </listitem>
-
-          <listitem>
-            <para>Desça em qualquer linha que comece com um círculo
-            vermelho.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique com o botão esquerdo no círculo vermelho e selecione
-            Set Breakpoint. Dois breakpoints são adicionados ao
-            gráfico.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis>Como remover breakpoints</emphasis></para>
-
-        <para>Para remover um único breakpoint:</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Selecione a limite na qual o breakpoint é mostrado e clique
-            em Breakpoints/Clear ou clique com o botão direito e selecione
-            Clear Breakpoint(s).</para>
-          </listitem>
-
-          <listitem>
-            <para>Também é possível remover breakpoints únicos clicando com o
-            botão direito no breakpoint listado na janela Breakpoints e
-            selecionando a opção Delete.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>Para remover todos os breakpoint no gráfico:</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Clique em Breakingpoint(s)/Clear all</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis>Usando a janela de busca</emphasis></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Insira os critérios de busca em Field e Value.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique no botão Search. As correspondências para sua busca
-            são localizadas e os IDs de borda são exibidos.</para>
-          </listitem>
-
-          <listitem>
-            <para>Clique nos IDs de borda para localizar cada correspondência
-            no gráfico.</para>
-          </listitem>
-
-          <listitem>
-            <para>Confira a janela Debug Information para ver o conteúdo do
-            dados que mostra seus critérios de busca destacados.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis role="bold">Observação</emphasis> : Apenas as 10
-        últimas linhas de dados que passaram por qualquer limite são
-        pesquisadas.</para>
       </sect2>
     </sect1>
   </chapter>

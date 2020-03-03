@@ -11,21 +11,20 @@
     </indexterm>[</emphasis><emphasis>n</emphasis><emphasis
   role="bold">]</emphasis></para>
 
-  <para>Um valor de ponto flutuante <emphasis>floating point</emphasis> IEEE
-  padrão de <indexterm>
+  <para>Um valor de ponto flutuante IEEE padrão de <indexterm>
       <primary>n</primary>
-    </indexterm> bytes. Os valores válidos para <emphasis>n</emphasis> são: 4
-  (valores para 7 dígitos importantes) ou 8 (valores para 15 dígitos
+    </indexterm> n bytes. Os valores válidos para <emphasis>n</emphasis> são:
+  4 (valores para 7 dígitos importantes) ou 8 (valores para 15 dígitos
   importantes). Se <emphasis>n</emphasis> for omitido, REAL será um valor de
   ponto flutuante de precisão dupla (8 bytes).</para>
 
   <sect2 id="Real_Value_Ranges">
-    <title>Intervalor de Valores REAL</title>
+    <title>Intervalo de Valores REAL</title>
 
-    <para><emphasis role="bold">Type</emphasis><emphasis role="bold">
-    </emphasis><emphasis role="bold">Dígitos Importantes Maior
-    Valor</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">Smallest Value</emphasis></para>
+    <para><emphasis role="bold">Type</emphasis><emphasis
+    role="bold"/><emphasis role="bold">Significant Digits Largest
+    Value</emphasis><emphasis role="bold"/><emphasis role="bold">Smallest
+    Value</emphasis></para>
 
     <programlisting><emphasis role="bold">Type</emphasis><emphasis role="bold">    </emphasis><emphasis
         role="bold">Significant Digits     Largest Value</emphasis><emphasis

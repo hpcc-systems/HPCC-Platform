@@ -178,9 +178,9 @@
       <title>Dados Originais</title>
 
       <para>Nesta situação, vamos receber um arquivo de dados estruturado que
-      contenha registros com nomes e endereços de pessoas. Também oferece
-      suporte para dados não estruturados, mas este exemplo é mais simples.
-      Este arquivo é documentado na tabela a seguir:</para>
+      contenha registros com nomes e endereços de pessoas. O HPCC Sytems
+      também oferece suporte para dados não estruturados, mas este exemplo é
+      mais simples. Este arquivo é documentado na tabela a seguir:</para>
 
       <para/>
 
@@ -252,7 +252,7 @@
               </row>
 
               <row>
-                <entry>Estado</entry>
+                <entry>State</entry>
 
                 <entry>String de 2 caracteres</entry>
 
@@ -423,9 +423,9 @@
             URL:</para>
 
             <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-            </emphasis><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
-            nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a
-            porta. A porta padrão é 8010)</emphasis></para>
+            </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o
+            endereço IP do seu ESP Server e pppp é a porta. A porta padrão é
+            8010)</emphasis></para>
           </listitem>
 
           <listitem>
@@ -932,7 +932,7 @@ OUTPUT(UpperedDataset,,'~tutorial::YN::TutorialPerson',OVERWRITE);
       </sect2>
 
       <sect2 id="Using_our_Data">
-        <title>Utilizando nosso Novos Dados</title>
+        <title>Utilizando nossos Novos Dados</title>
 
         <para/>
 
@@ -1031,7 +1031,7 @@ BUILDINDEX(TutorialYourName.IDX_PeopleByZIP,OVERWRITE);
       </sect2>
 
       <sect2 id="Query_the_Data">
-        <title>Build a Query</title>
+        <title>Construa a Consulta</title>
 
         <para>Agora que temos um arquivo de índice, vamos escrever uma
         consulta que o utilize.</para>

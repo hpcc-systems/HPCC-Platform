@@ -39,7 +39,7 @@
   </sect2>
 
   <sect2 id="Growing_Solutions">
-    <title>Soluções para o crescimento</title>
+    <title>Soluções crescentes</title>
 
     <para>Os blocos de construção de atributos básicos no ECL são os tipos de
     atributos Set, Boolean, Recordset e Value. Cada um desses pode ser
@@ -92,11 +92,10 @@ OUTPUT(ValRecsMyFile);
   </sect2>
 
   <sect2 id="Ugly_ECL_is_Possible_Too">
-    <title>Também é possível usar um "Feio" ECL</title>
+    <title>ECL "feio" também é possível</title>
 
-    <para>É claro que o determinado conjunto de ECL teria que ser programado
-    da seguinte forma (seguindo um processo de raciocínio mais
-    descendente):</para>
+    <para>É claro que o código ECL acima poderia ser programado da seguinte
+    forma (seguindo um processo de raciocínio mais descendente):</para>
 
     <programlisting>OUTPUT(MyFile(MyField IN [1,3,4,7]));</programlisting>
 

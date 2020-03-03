@@ -79,8 +79,8 @@
   EXPORTed).</para>
 
   <para>Uma INTERFACE é uma estrutura abstrata; uma instância concreta que
-  deve ser definida antes de ser usada em uma consulta. Uma estrutura MODULE
-  (MÓDULO) que herda a INTERFACE e define os valores para os
+  deve ser definida antes de poder ser usada em uma consulta. Uma estrutura
+  MODULE (MÓDULO) que herda a INTERFACE e define os valores para os
   <emphasis>membros</emphasis> cria a instância concreta para ser usada pela
   consulta.</para>
 

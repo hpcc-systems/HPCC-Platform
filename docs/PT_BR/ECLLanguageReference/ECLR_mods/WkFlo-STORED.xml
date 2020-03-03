@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="STORED_workflow_service">
-  <title>STORED - Workflow Service</title>
+  <title>STORED - Serviço de Fluxo de Trabalho</title>
 
   <para><emphasis>[</emphasis><emphasis>attribute </emphasis>:= <emphasis
   role="bold">]</emphasis><emphasis> expression </emphasis><emphasis

@@ -185,7 +185,7 @@ OldFloridaPersons := FloridaPersons(Person.Age &gt;= 65);</programlisting>
   </sect2>
 
   <sect2 id="Record_Set_Ordering_and_Indexing">
-    <title>Ordenação e Indexação do Record Set</title>
+    <title>Ordenação e Indexação do Recordset</title>
 
     <para>Todos os Datasets e Conjuntos de registro são organizados de forma
     implícita e podem ser indexados para acessar registros individuais dentro
@@ -193,9 +193,9 @@ OldFloridaPersons := FloridaPersons(Person.Age &gt;= 65);</programlisting>
     para acesso, e o primeiro elemento em qualquer conjunto é o número um
     (1).</para>
 
-    <para>Datasets (incluindo datasets secundários) e Conjuntos de registro
-    podem usar o mesmo método descrito acima para strings para acessar
-    registros contíguos individuais ou múltiplos.</para>
+    <para>Datasets (incluindo datasets filhos) e Conjuntos de registro podem
+    usar o mesmo método descrito acima para strings para acessar registros
+    contíguos individuais ou múltiplos.</para>
 
     <programlisting>MyRec1 := Person[1];     // first rec in dataset
 MyRec2 := Person[1..10]; // first ten recs in dataset

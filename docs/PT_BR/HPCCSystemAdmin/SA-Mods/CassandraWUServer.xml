@@ -339,7 +339,7 @@
           <emphasis role="bold">/etc/HPCCSystems/</emphasis> em <emphasis
           role="bold">cada</emphasis> nó.</para>
 
-          <para>É possível criar um script para forçar o arquivo XML para
+          <para>É possível criar um script para distribuir o arquivo XML para
           todos os nós. Um script de amostra é fornecido com o HPCC. Os
           comandos a seguir copiam os arquivos XML para todos os nós como
           exigido:</para>
@@ -365,12 +365,12 @@
     role="bold">[WUID=nnn </emphasis><emphasis role="bold">] [ DALISERVER=ip |
     CASSANDRASERVER=ip] [option=value]</emphasis></para>
 
-    <para>A wutool é um utilitário de linha de comando usado para manter seu
-    armazenamento das workunits. Ela pode ser encontrada em
+    <para>O wutool é um utilitário de linha de comando usado para manter seu
+    armazenamento das workunits. Ele pode ser encontrada em
     /opt/HPCCSystems/bin/ em qualquer servidor onde a plataforma tenha sido
     instalada. É possível usar esse utilitário para exportar suas Workunits de
-    um servidor Dali e depois importar para um data storage do Cassandra
-    Também é possível usá-la para importar workunits arquivadas em um servidor
+    um servidor Dali e depois importar para um data storage do Cassandra.
+    Também é possível usá-lo para importar workunits arquivadas em um servidor
     Sasha.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">

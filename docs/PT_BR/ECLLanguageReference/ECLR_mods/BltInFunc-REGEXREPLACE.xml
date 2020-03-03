@@ -62,8 +62,8 @@
       <primary>regex</primary>
     </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
   localizar correspondências, a fim de em seguida substituí-las com a string
-  de <emphasis>substituição.</emphasis> A <emphasis>regex</emphasis> uma
-  expressão Perl regular padrão<indexterm>
+  de <emphasis>substituição.</emphasis> A regex deve ser uma expressão regular
+  Perl padrão<indexterm>
       <primary>Perl regular expression</primary>
     </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
   Portanto, para texto de código único consulte os documentos Boost em

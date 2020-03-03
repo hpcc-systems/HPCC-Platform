@@ -1341,7 +1341,7 @@
           </tgroup>
         </informaltable>
 
-        <para>Use este comando para publicar o ligações baseadas em serviço
+        <para>Use este comando para publicar as ligações baseadas em serviço
         ESDL .</para>
 
         <para>Para vincular um serviço ESDL , forneça o nome do processo ESP

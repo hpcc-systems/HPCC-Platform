@@ -28,9 +28,9 @@
     </informaltable></para>
 
   <para>A função <emphasis role="bold">UNICODEORDER </emphasis> é utilizada
-  para indicar a ordem do <emphasis>Dataset</emphasis> não é importra. Isso
-  permitirá que o gerador de código aplique otimizações adicionais em futuras
-  versões.</para>
+  para indicar que a ordem do <emphasis>Dataset</emphasis> não é importra.
+  Isso permitirá que o gerador de código aplique otimizações adicionais em
+  futuras versões.</para>
 
   <para>Exemplo:</para>
 

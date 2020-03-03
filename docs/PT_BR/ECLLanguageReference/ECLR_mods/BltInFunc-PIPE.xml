@@ -181,13 +181,13 @@
   <para>A função <emphasis role="bold">PIPE </emphasis> permite que o código
   ECL inicie um programa de <emphasis>comando</emphasis> externo em cada nó,
   paralelizando efetivamente um programa de processamento não paralelo. O PIPE
-  tem dois forms:</para>
+  tem duas formas:</para>
 
-  <para>O form 1 não recebe entradas, executa o <emphasis>comando</emphasis> e
-  gera o resultado no formato <emphasis>recorddef </emphasis>. Esse é um pipe
-  de "entrada" (como a opção PIPE em uma definição DATASET).</para>
+  <para>A forma 1 não recebe entradas, executa o <emphasis>comando</emphasis>
+  e gera o resultado no formato <emphasis>recorddef </emphasis>. Esse é um
+  pipe de "entrada" (como a opção PIPE em uma definição DATASET).</para>
 
-  <para>O form 2 recebe a entrada <emphasis>recordset</emphasis>, executa o
+  <para>A forma 2 recebe a entrada <emphasis>recordset</emphasis>, executa o
   <emphasis>comando</emphasis> e gera o resultado no formato
   <emphasis>recorddef </emphasis>. Esse é um pipe de "passagem".</para>
 

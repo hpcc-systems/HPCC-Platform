@@ -61,8 +61,8 @@ MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
     <programlisting>My_First_Definition1 := 5; // valid name
 My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
 
-    <para>Você poderá atribuir a uma Definition o nome de um módulo criado
-    anteriormente no Repository do ECL se o atributo estiver definido com um
+    <para>Você poderá atribuir a uma Definição o nome de um módulo criado
+    anteriormente no Repositório do ECL se o atributo estiver definido com um
     <emphasis>ValueType</emphasis>.</para>
   </sect2>
 

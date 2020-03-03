@@ -127,7 +127,7 @@
         <para>A descrição WSDL está disponível automaticamente para qualquer
         consulta publicada.</para>
 
-        <para>A URL a seguir pode ser usado para recuperar a descrição WSDL de
+        <para>A URL a seguir pode ser usada para recuperar a descrição WSDL de
         uma consulta publicada:</para>
 
         <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
@@ -186,7 +186,7 @@
         </listitem>
 
         <listitem>
-          <para>Comece a desenvolver a aplicação que esgotará o serviço Web
+          <para>Comece a desenvolver a aplicação que consumirá o serviço Web
           importando o WSDL de:</para>
 
           <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
@@ -238,7 +238,7 @@
         </listitem>
 
         <listitem>
-          <para>Comece a desenvolver a aplicação que esgotará o serviço Web
+          <para>Comece a desenvolver a aplicação que consumirá o serviço Web
           usando as definições JSON disponíveis a partir do formulário no
           WsECL.</para>
         </listitem>
@@ -309,7 +309,7 @@ to
 /WsEcl/<emphasis role="bold">proxy</emphasis>/query/RoxieTargetName/QueryName</programlisting></para>
 
       <para>Acionamentos proxy WsECL parametrizados para o Roxie são
-      compatóveis com um subconjunto dos formatos de parâmetros suportados por
+      compatíveis com um subconjunto dos formatos de parâmetros suportados por
       acionamentos de modo não proxy.</para>
 
       <para><programlisting>/WsEcl/proxy/query/mytarget/myquery?param1=value</programlisting>Para
@@ -335,7 +335,7 @@ to
   &lt;/Regs&gt;
 &lt;/MyQuery&gt;</programlisting>
 
-      <para>O URL ou formulário HTTP definiria or seguintes
+      <para>O URL ou formulário HTTP definiria ou seguintes
       parâmetros:<programlisting>State=FL
 Regs.Reg.0.Name=SOUTH
 Regs.Reg.0.Codes.Code.0=PBI

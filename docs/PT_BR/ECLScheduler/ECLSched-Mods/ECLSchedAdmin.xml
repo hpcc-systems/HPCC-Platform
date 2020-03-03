@@ -25,7 +25,7 @@
       <title>Interface de Linha de Comando: scheduleadmin</title>
 
       <para>O <emphasis role="bold">scheduleadmin</emphasis> é a interface da
-      linha de comando do Agendador ECL. Por padrão, o scheduleadmin está
+      linha de comando do ECL Scheduler. Por padrão, o scheduleadmin está
       localizado no <emphasis role="bold">/opt/HPCCSystems/bin/ </emphasis> em
       seu HPCC System.</para>
 

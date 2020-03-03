@@ -2,9 +2,9 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Record_SetRecord_Set_Operators">
-  <title>Record Set<indexterm>
+  <title>Operadores de Recordset<indexterm>
       <primary>Record Set</primary>
-    </indexterm> Operators<indexterm>
+    </indexterm> <indexterm>
       <primary>Operadores Record Set</primary>
     </indexterm></title>
 
@@ -64,7 +64,7 @@ OUTPUT(ResultSet);
 </programlisting>
 
   <sect2 id="Prefix_Append_Operator">
-    <title>Prefixo anexo ao operador.</title>
+    <title>Operador Anexar Prefixo.</title>
 
     <para><emphasis role="bold">(+)
     (</emphasis><emphasis>ds_list</emphasis><emphasis role="bold">)
@@ -102,7 +102,7 @@ OUTPUT(ResultSet);
       </tgroup>
     </informaltable>
 
-    <para>O prefixo anexar operador <emphasis>(+)</emphasis> oferece mais
+    <para>O operador anexar prefixo <emphasis>(+)</emphasis> oferece mais
     flexibilidade do que o prefixo simples inserir operadores descrito acima.
     Ele permite que dicas e outras opções sejam associadas com o operador. Uma
     sintaxe semelhante será adicionada em uma mudança futura para outros

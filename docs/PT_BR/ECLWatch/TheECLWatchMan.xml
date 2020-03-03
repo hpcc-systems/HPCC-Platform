@@ -735,7 +735,7 @@
         </sect3>
 
         <sect3>
-          <title>Limpar</title>
+          <title>Clean</title>
 
           <para>Remover todas as workunits da fila de jobs. O estado das
           workunits removidas é definido como cancelado. Quaisquer workunits
@@ -995,11 +995,12 @@
       interceptação</para>
 
       <para>O agendamento ECL oferece uma maneira para automatizar processos
-      no código ECL ou para sequenciar os processos para eles funcionem em
-      sequência. Por exemplo, é possível gravar o código ECL que supervisiona
-      uma zona de entrada de arquivos para a chegada de um arquivo e, quando
-      ele chega, realiza a distribuição aos nós do Thor, processa, compila um
-      índice e depois o adiciona a um superarquivo.</para>
+      no código ECL ou para sequenciar os processos de maneira que eles
+      funcionem em sequência. Por exemplo, é possível gravar o código ECL que
+      supervisiona uma zona de entrada de arquivos para a chegada de um
+      arquivo e, quando ele chega, realiza a distribuição aos nós do Thor,
+      processa, compila um índice e depois o adiciona a um
+      superarquivo.</para>
 
       <para>O agendamento ECL é baseado em eventos. O agendador ECL monitora
       uma lista de agendamentos que contém workunit e eventos registrados e

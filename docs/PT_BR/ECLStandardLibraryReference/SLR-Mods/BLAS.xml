@@ -67,7 +67,7 @@
       </tgroup>
     </informaltable>
 
-    <para>Types para suporte a subprogramas de álgebra linear básica de
+    <para>Tipos para suporte a subprogramas de álgebra linear básica de
     blocos</para>
 
     <para/>
@@ -1219,7 +1219,7 @@ twos_vector := STD.BLAS.make_vector(4, 2); // a vector of [2, 2, 2, 2]
       </tgroup>
     </informaltable>
 
-    <para>A função <emphasis role="bold">trace</emphasis> calcula o trace da
+    <para>A função <emphasis role="bold">trace</emphasis> calcula o traço da
     matriz de entrada</para>
 
     <para>Exemplo:</para>

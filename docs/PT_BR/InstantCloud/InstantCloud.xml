@@ -150,7 +150,7 @@
     </informaltable>
 
     <sect1 id="InstaCloud_PreReqs">
-      <title>Pré-requisitos e Suposições</title>
+      <title>Pré-requisitos e Premissas</title>
 
       <para>Você vai precisar de:</para>
 
@@ -167,16 +167,6 @@
               <listitem>
                 <para><emphasis>PC (Computador) Windows ou </emphasis></para>
               </listitem>
-
-              <listitem>
-                <para><emphasis>Linux com o Eclipse IDE e o plugin ECL para
-                Eclipse (disponível em breve)</emphasis></para>
-              </listitem>
-
-              <listitem>
-                <para><emphasis>Mac<superscript/> com o Eclipse IDE e o plugin
-                ECL para Eclipse (disponível em breve)</emphasis></para>
-              </listitem>
             </itemizedlist></para>
         </listitem>
 
@@ -186,7 +176,7 @@
         </listitem>
       </itemizedlist>
 
-      <para>Opcionalmente, você poderia se beneficiar se tiver:</para>
+      <para>Opcionalmente é desejável ter:</para>
 
       <itemizedlist mark="bullet">
         <listitem>
@@ -349,8 +339,8 @@
         </listitem>
 
         <listitem>
-          <para>Inicia o m1.large nós solicitados usando AMI (ami-e01698d0)
-          fornecida.</para>
+          <para>Inicia o número de nós m1.large solicitados usando AMI
+          (ami-e01698d0) fornecida.</para>
         </listitem>
 
         <listitem>
@@ -540,7 +530,7 @@
             </listitem>
 
             <listitem>
-              <para>omo alternativa, acesse o Console de Gerenciamento do AWS
+              <para>Como alternativa, acesse o Console de Gerenciamento do AWS
               (AWS management console) para confirmar que suas instâncias
               foram encerradas de forma adequada.</para>
 
@@ -553,7 +543,7 @@
       </sect2>
 
       <sect2 id="InstaCloudOtherTasks" role="brk">
-        <title>Other Tarefas</title>
+        <title>Outras Tarefas</title>
 
         <para/>
 
@@ -854,8 +844,8 @@
 
               <para><programlisting>'Hello World';
 </programlisting>Na segunda listagem de programa, a palavra-chave OUTPUT é
-              ocultada. Isso ocorre possivelmente porque a linguagem é
-              declarativa e a ação OUTPUT é implícita.</para>
+              ocultada. Isso é possível porque a linguagem é declarativa e a
+              ação OUTPUT é implícita.</para>
             </listitem>
 
             <listitem>
@@ -1043,9 +1033,9 @@ OUTPUT(L);</programlisting></para>
         </footnote> esse arquivo para nosso cluster Thor, e em seguida validar
       os anagramas em comparação com esse arquivo para determinar quais
       palavras são válidas. A etapa de validação usa um JOIN da lista de
-      anagramas para o arquivo do dicionário. O uso de um índice e de uma
-      junção com chave seria mais eficiente, mas isso serve apenas como um
-      simples exemplo.</para>
+      anagramas para o arquivo do dicionário. O uso de um índice e de um JOIN
+      indexado seria mais eficiente, mas isso serve apenas como um simples
+      exemplo.</para>
 
       <sect2>
         <title>Fazer o download da Lista de Palavras</title>
@@ -1176,10 +1166,10 @@ OUTPUT(L);</programlisting></para>
 
         <para>Para usar o arquivo de dados em seu Thor do HPCC System, é
         preciso fazer o "spray” (distribuir) desse arquivo para todos os nós.
-        O <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> um
-        spray ou importação é a transferência de um arquivo de dados de um
-        local (como a zona de entrada de arquivos) para diversas partes do
-        arquivo ou nós em um cluster.</para>
+        O <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
+        transferência de um arquivo de dados de um local (como a zona de
+        entrada de arquivos) para diversas partes do arquivo ou nós em um
+        cluster.</para>
 
         <para>O arquivo distribuído passa a ter um <emphasis>nome de arquivo
         lógico</emphasis> como segue<emphasis
@@ -1381,9 +1371,9 @@ OUTPUT(ValidWords)
   </chapter>
 
   <chapter id="InstaCloud_DataHandling_Chap">
-    <title>Data Handling (Processamento dos Dados)</title>
+    <title>Manipulação dos Dados (Processamento dos Dados)</title>
 
-    <para>Esta seção explica o processamento de dados em uma configuração AWS.
+    <para>Esta seção explica o manuseio de dados em uma configuração AWS.
     Informações adicionais sobre o processamento de dados em uma plataforma
     HPCC Systems estão disponíveis no manual <emphasis>Data Handling
     (Processamento dos Dados)</emphasis> manual.</para>
@@ -1482,8 +1472,8 @@ OUTPUT(ValidWords)
 
         <para>Você pode fazer o despray (consolidar dados dos nós) de um
         arquivo do Thor para a zona de entrada de arquivos, e depois copiar
-        para um bucket do S3 para um armazenamento constante. Mais tarde, você
-        pode copiar os arquivos do bucket do S3 para a zona de entrada de
+        para um bucket do S3 para um armazenamento mais duradouro. Mais tarde,
+        você pode copiar os arquivos do bucket do S3 para a zona de entrada de
         arquivos e fazer o spray do arquivo para o cluster Thor. Informações
         adicionais sobre o processamento de dados em uma plataforma HPCC
         Systems estão disponíveis no manual <emphasis> Processamento de

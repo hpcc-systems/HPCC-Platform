@@ -27,7 +27,7 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">Today</emphasis> retornam a data atual
+  <para>A função <emphasis role="bold">Today</emphasis> retorna a data atual
   no fuso horário local.</para>
 
   <para>Exemplo:</para>

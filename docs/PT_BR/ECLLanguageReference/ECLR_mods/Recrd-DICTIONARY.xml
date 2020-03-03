@@ -75,9 +75,9 @@
     <para>A segunda forma do DICTIONARY é um tipo de valor com o parâmetro
     <emphasis>structure</emphasis> especificando a estrutura RECORD dos dados.
     Esse tipo de dados permite especificar um DICTIONARY como um dataset
-    secundário, de forma semelhante a como DATASET pode ser usado para definir
-    um dataset secundário. Isso também pode ser usado para passar um
-    DICTIONARY como parâmetro.</para>
+    filho, de forma semelhante a como DATASET pode ser usado para definir um
+    dataset filho. Isso também pode ser usado para passar um DICTIONARY como
+    parâmetro.</para>
 
     <para>Exemplo:</para>
 

@@ -41,13 +41,13 @@
       </tgroup>
     </informaltable></para>
 
-  <para>O serviço <emphasis role="bold">SUCCESS </emphasis>executa a
-  <emphasis>manipulação</emphasis> do atributo quanto a
-  <emphasis>expressão</emphasis> falha. O SUCCESS é executado em paralelo com
-  o retorno bem-sucedido do resultado. Esse serviço implicitamente faz com que
-  o <emphasis>atributo</emphasis> seja avaliado em um escopo global em vez de
-  escopo de função. Disponível apenas se os serviços de fluxo de trabalho
-  estiverem ativados (consulte #OPTION(workflow)).</para>
+  <para>O serviço <emphasis role="bold">SUCCESS </emphasis>executa a o
+  atributo handler quando a expressão é bem sucedida. O SUCCESS é executado em
+  paralelo com o retorno bem-sucedido do resultado. Esse serviço
+  implicitamente faz com que o <emphasis>atributo</emphasis> seja avaliado em
+  um escopo global em vez de escopo de função. Disponível apenas se os
+  serviços de fluxo de trabalho estiverem ativados (consulte
+  #OPTION(workflow)).</para>
 
   <para>Exemplo:</para>
 

@@ -33,17 +33,17 @@
           <entry><emphasis>foreigndali</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o endereço IP da
-          Dali estrangeiro. Se omitido, o <emphasis>filename</emphasis> será
-          interpretado como um nome de arquivo lógico estrangeiro e convertido
-          em um nome de arquivo lógico local.</entry>
+          Dali externo. Se omitido, o <emphasis>filename</emphasis> será
+          interpretado como um nome de arquivo lógico externo e convertido em
+          um nome de arquivo lógico local.</entry>
         </row>
 
         <row>
           <entry><emphasis>absolutepath</emphasis></entry>
 
           <entry>Opcional. Um TRUE/FALSE booleano para indicar se um til (~)
-          deve ser acrescentado ao início do nome do arquivo lógico
-          estrangeiro. Se omitido, o padrão é FALSE.</entry>
+          deve ser acrescentado ao início do nome do arquivo lógico externo.
+          Se omitido, o padrão é FALSE.</entry>
         </row>
 
         <row>
@@ -57,7 +57,7 @@
   </informaltable>
 
   <para>A função <emphasis role="bold">ForeignLogicalFileName </emphasis>
-  retornará um nome de arquivo lógico estrangeiro (se o parâmetro
+  retornará um nome de arquivo lógico externo (se o parâmetro
   <emphasis>foreigndali</emphasis> estiver presente) ou um nome de arquivo
   lógico local.</para>
 

@@ -33,7 +33,7 @@
   </sect1>
 
   <sect1 id="VizNDList">
-    <title>Métodos de Visualização Bidimensional</title>
+    <title>Métodos de Visualização Multidimensional</title>
 
     <para>Este MÓDULO contém uma seleção de visualizações de dados
     multidimensionais.</para>
@@ -56,7 +56,7 @@
   </sect1>
 
   <sect1 id="VizGeoList">
-    <title>Método de Visualização Geoespacial</title>
+    <title>Método de Visualização Geral</title>
 
     <para><link linkend="VizUSStates">Estados dos EUA</link></para>
 

@@ -7,7 +7,7 @@
   <para>A função GROUP oferece funcionalidades importantes ao processar
   datasets de tamanho significativo. O conceito básico é que a função GROUP
   dividirá o dataset em um número de subconjuntos menores, mas o dataset que
-  passou pela função GROUPed ainda será tratado como uma entidade única no seu
+  passou pela função GROUP ainda será tratado como uma entidade única no seu
   código ECL.</para>
 
   <para>As operações em um dataset GROUPed (AGRUPADOS) são realizadas

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PARSE_Pattern_Value_Types">
-  <title>PARSE Pattern Value Types</title>
+  <title>Tipo de Valores PARSE Pattern</title>
 
   <para><emphasis>Há três tipos de valores especificamente projetados e
   necessários para definir os atributos do padrão de

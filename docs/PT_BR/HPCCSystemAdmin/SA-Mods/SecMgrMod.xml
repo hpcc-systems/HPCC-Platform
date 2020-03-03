@@ -2,12 +2,12 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="security-manager-plugin-development">
-  <title role="nbrk">Desenvolvimento do Security Manager (Gerenciador de
-  segurança)</title>
+  <title role="nbrk">Desenvolvimento do Gerenciador de Segurança (Security
+  Manager)</title>
 
-  <para>O framework do Security Manager Plugin (Plugin de Gerenciador de
-  segurança) oferece um mecanismo de criação e implementação de Security
-  Manager Plugins customizados.</para>
+  <para>O framework do Plugin do Gerenciador de Segurança (Security Manager
+  Plugin) oferece um mecanismo de criação e implementação de Security Manager
+  Plugins customizados.</para>
 
   <sect1 id="how-to-create-a-security-manager-plugin">
     <title>Desenvolvimento do Plugin</title>
@@ -46,10 +46,10 @@
         </listitem>
       </itemizedlist></para>
 
-    <para><emphasis role="bold">Definição de Buildset</emphasis> O plugin se
-    declara um componente do Security Manager Plugin do HPCC , assim como
-    declara a localização dos arquivos do plugin e o esquema de definição de
-    configuração.</para>
+    <para><emphasis role="bold">Definição de Buildset</emphasis> O plugin
+    declara a si mesmo como um componente do Security Manager Plugin do HPCC ,
+    assim como declara a localização dos arquivos do plugin e o esquema de
+    definição de configuração.</para>
 
     <para><emphasis role="bold">EXEMPLO:</emphasis></para>
 
@@ -70,10 +70,10 @@
     <para><emphasis role="bold">Definição de configurações</emphasis> O plugin
     deve fornecer uma definição dos elementos da configuração e a estrutura
     que espera receber no momento em que é instanciado. O arquivo XSD é
-    utilizado pelo componente do Configuration Manager do HPCC e é apresentado
-    como um formulário GUI. A definição de configurações é definida como um
-    elemento do nome do componente (como declarado no buildset) seguido pelos
-    atributos e/ou elementos complexos.</para>
+    utilizado pelo componente do Gerenciador de Configurações do HPCC e é
+    apresentado como um formulário GUI. A definição de configurações é
+    definida como um elemento do nome do componente (como declarado no
+    buildset) seguido pelos atributos e/ou elementos complexos.</para>
 
     <para>Cada plugin deve declarar quatro atributos em sua definição de
     configurações, além de qualquer configuração customizada definida pelo
@@ -164,8 +164,8 @@
 
     <para><emphasis role="bold">genenvrules.conf</emphasis> – (opcional) Este
     arquivo permite que o plugin adicione a si mesmo na lista
-    "do_not(automatically)_generate". Embora seja um arquivo opcional, está se
-    tornando cada vez mais necessário.</para>
+    "do_not(automatically)_generate". Embora seja um arquivo opcional, ele é
+    frequentemente necessário.</para>
 
     <para><emphasis role="bold">EXEMPLO:</emphasis></para>
 
@@ -174,7 +174,7 @@
     <para><emphasis role="bold">Regras de Transformação de
     Configuração</emphasis> – (opcional) especificado como modelo xsl, este
     conjunto de regras pode ser aplicado às configurações XML. Consulte os
-    modelos XSL na árvore de origem do HPCC.</para>
+    modelos XSL na árvore de origem do HPCC Systems.</para>
 
     <sect2 id="concrete-example">
       <title>Exemplo Concreto</title>

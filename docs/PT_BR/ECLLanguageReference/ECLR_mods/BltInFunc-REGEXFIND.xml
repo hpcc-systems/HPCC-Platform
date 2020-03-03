@@ -64,8 +64,8 @@
   <emphasis>regex<indexterm>
       <primary>regex</primary>
     </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
-  localizar correspondências. A <emphasis>regex</emphasis> uma expressão Perl
-  regular padrão<indexterm>
+  localizar correspondências. A regex deve ser uma expressão regular Perl
+  padrão<indexterm>
       <primary>Perl regular expression</primary>
     </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
   Portanto, para texto de código único consulte os documentos Boost em

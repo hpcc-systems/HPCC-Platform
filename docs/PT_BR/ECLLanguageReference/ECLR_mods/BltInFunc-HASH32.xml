@@ -37,9 +37,9 @@
   de 32 bits derivado de todos os valores da
   <emphasis>expressionlist</emphasis>. Ela usa um algoritmo hashing que é mais
   rápido e menos provável do que o HASH para retornar os mesmos valores a
-  partir de dados diferentes. Os espaços atrás são aparados dos campos da
-  string (ou UNICODE) antes de o valor ser calculado (a conversão para DATA
-  impede isso).</para>
+  partir de dados diferentes. Espaços no final da string são removidos (ou
+  UNICODE) antes de o valor ser calculado (a conversão para DATA impede
+  isso).</para>
 
   <para>Exemplo:</para>
 

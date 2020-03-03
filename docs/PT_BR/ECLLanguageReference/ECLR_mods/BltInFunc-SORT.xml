@@ -256,9 +256,9 @@
         <primary>quicksort</primary>
       </indexterm> quicksort<indexterm>
         <primary>, insertionsort</primary>
-      </indexterm>insertionsort<indexterm>
+      </indexterm> insertionsort<indexterm>
         <primary>, e</primary>
-      </indexterm>heapsort<indexterm>
+      </indexterm> heapsort<indexterm>
         <primary>heapsort</primary>
       </indexterm>. Os três não estão disponíveis em todas as plataformas. A
     especificação de um algoritmo inválido para a plataforma visada gerará um

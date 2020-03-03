@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <title>Instalando &amp; Executando a Plataforma HPCC
-  Systems<superscript>®</superscript> Platform</title>
+  Systems<superscript>®</superscript></title>
 
   <bookinfo>
     <title>Instalando &amp; Executando o HPCC
@@ -138,7 +138,7 @@
 
           <para>No CentOS/Red Hat:</para>
 
-          <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>On
+          <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>No
           Ubuntu/Debian:</para>
 
           <programlisting> sudo dpkg -i &lt;deb filename&gt; </programlisting>
@@ -165,7 +165,7 @@
         </listitem>
 
         <listitem>
-          <para>Execute o <emphasis role="bold">ECL Watch</emphasis>. Saia do
+          <para>Execute o <emphasis role="bold">ECL Watch</emphasis>. Valide o
           seu sistema.</para>
 
           <para>Usando um navegador, vá para o <emphasis role="bold">ECL
@@ -624,19 +624,18 @@ gpgcheck=0</programlisting></para>
           usado para controlar a criação e execução de jobs ECL maiores que
           visam um sistema remoto. Para compilar jobs em um sistema remoto, o
           eclcc é usado para criar um arquivo do código ECL a ser compilado e
-          o ECL CLI é usado para enviá-lo a um cluster de destino, onde ser
-          feita a compilação pelo servidor do compilador remoto
-          (eclccserver).</para>
+          o ECL CLI é usado para enviá-lo a um cluster de destino, onde será a
+          compilação pelo servidor do compilador remoto (eclccserver).</para>
 
           <para>Para enviar um job usando o ECL CLI, verifique se a plataforma
           HPCC Systems foi inicializada e use a seguinte sintaxe:
           <programlisting>ecl run  hello.ecl --target=hthor --server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
 
-          <para>A Workunit<footnote>
+          <para>O resultado<footnote>
               <para>Uma Workunit é um registro de um trabalho enviado ao HPCC.
               Ela contém um identificador-- ID da workunit, o código ECL,
               resultados, e outras informações sobre o job</para>
-            </footnote> O resultado é retornado à linha de comando.</para>
+            </footnote> da workunit é retornado à linha de comando.</para>
 
           <para>Veja detalhes completos da workunit usando a interface do ECL
           Watch em seu HPCC acessando http://nnn.nnn.nnn.nnn:8010, onde
@@ -662,7 +661,7 @@ gpgcheck=0</programlisting></para>
         </sect3>
 
         <sect3 id="RunningABasicECLProgramFromtheIDE" role="brk">
-          <title>Executando o programa ECL do ECL IDE</title>
+          <title>Executando um programa ECL básico do ECL IDE</title>
 
           <para><orderedlist>
               <listitem>
@@ -833,7 +832,7 @@ gpgcheck=0</programlisting></para>
 
         <orderedlist>
           <listitem>
-            <para>Caso esteja em execução, para o HPCC System utilizando este
+            <para>Caso esteja em execução, pare o HPCC Systems utilizando este
             comando:</para>
 
             <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
@@ -1204,19 +1203,18 @@ gpgcheck=0</programlisting></para>
         </orderedlist>
 
         <sect3 id="Addl_SSH_KeyInfo">
-          <title>Information sobre SSH Key adicional</title>
+          <title>Informação adicionar sobre chave SSH</title>
 
           <para>No HPCC Systems com vários nós, os certificados e as chaves
-          SSH devem           corresponder em todos os nós para o sistema
-          funcionar corretamente. Se você usou           o script
+          SSH devem corresponder em todos os nós para o sistema funcionar
+          corretamente. Se você usou script
           <emphasis>install-cluster.sh</emphasis>, conforme descrito nas
-                    etapas acima, isso garantirá que tudo esteja corretamente
-                    sincronizado. No entanto, ainda é uma boa idéia verificar
-          se está tudo           sincronizado. Outra maneira de garantir isso
-          é usar o script           <emphasis>hpcc-push.sh</emphasis>
-          entregue. Por exemplo, os seguintes           comandos enviariam o
-          certificado, chave e chave pública para           todos os hosts
-          definidos no ambiente.</para>
+          etapas acima, isso garantirá que tudo esteja corretamente
+          sincronizado. No entanto, ainda é uma boa idéia verificar se está
+          tudo sincronizado. Outra maneira de garantir isso é usar o script
+          <emphasis>hpcc-push.sh</emphasis> entregue. Por exemplo, os
+          seguintes comandos enviariam o certificado, chave e chave pública
+          para todos os hosts definidos no ambiente.</para>
 
           <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
      -s /home/hpcc/certificate/public.key.pem -t /home/hpcc/certificate/public.key.pem 
@@ -1619,7 +1617,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -k hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
 </programlisting></para>
 
-        <para>(onde <emphasis> n.n.nnnn</emphasis> o número de
+        <para>(onde <emphasis> n.n.nnnn</emphasis> o número da
         compilação)</para>
 
         <para>Este exemplo instala os pacotes da plataforma do HPCC e força o
@@ -1628,7 +1626,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-n.n.nnnn<emphasis>n.n.nnnn</emphasis> 
 </programlisting></para>
 
-        <para>(onde <emphasis> n.n.nnnn</emphasis> o número de
+        <para>(onde <emphasis> n.n.nnnn</emphasis> o número da
         compilação)</para>
       </sect2>
 
@@ -2082,15 +2080,15 @@ sudo /etc/init.d/hpcc-init -c esp start
         <title>Serviços do sistema HPCC Systems</title>
 
         <para>O HPCC Systems está estendendo o suporte e o desenvolvimento
-        para mais         serviços systemd. Pretendemos continuar com o
-        suporte ao Cent OS 6 e         outros sistemas baseados no System V
-        através do hpcc-init. O serviço do sistema hpcc-init suportará as
-        opções "start", "stop" e "restart".</para>
+        para mais serviços systemd. Pretendemos continuar com o suporte ao
+        Cent OS 6 e outros sistemas baseados no System V através do hpcc-init.
+        O serviço do sistema hpcc-init suportará as opções "start", "stop" e
+        "restart".</para>
 
         <para>Os relatórios e registros do sistema HPCC Systems serão
-        diferentes         do tipo hpcc-init anterior. Os logs systemd não
-        possuem nenhum         saída para STDOUT/STDERROR, em vez disso,
-        registr-se em /var/log/syslog. Para visualizar a saída:</para>
+        diferentes do tipo hpcc-init anterior. Os logs systemd não possuem
+        nenhuma saída para STDOUT/STDERROR, em vez disso, são registrado em
+        /var/log/syslog. Para visualizar a saída:</para>
 
         <programlisting>journalctl -u &lt;service&gt; -f  </programlisting>
 
@@ -2190,8 +2188,8 @@ sudo /etc/init.d/hpcc-init -c esp start
       <title>Suporte a Linguagem Externa</title>
 
       <para>Esta seção abrange as etapas para adicionar o suporte à uma
-      linguagem externa na plataforma do HPCC . O HPCC oferece suporte à
-      várias linguagens de programação, porém algumas delas possuem
+      linguagem externa na plataforma do HPCC . O HPCC System oferece suporte
+      à várias linguagens de programação, porém algumas delas possuem
       dependências adicionais que precisam ser instaladas. O suporte à
       linguagem externa está incluído no pacote de instalação da plataforma,
       porém existem pacotes de instalação da plataforma do HPCC baseados em
@@ -2216,9 +2214,9 @@ sudo /etc/init.d/hpcc-init -c esp start
       <para><emphasis role="bold">Sistemas baseados em
       Debian:</emphasis></para>
 
-      <para>O download de plugins opcionais NOT (NÃO) é necessário para os
-      pacotes de instalação de sistemas baseados em Debian (Ubuntu), uma vez
-      que os plugins já estão incluídos em todos os pacotes de instalação
+      <para>O download de plugins opcionais não é necessário para os pacotes
+      de instalação de sistemas baseados em Debian (Ubuntu), uma vez que os
+      plugins já estão incluídos em todos os pacotes de instalação
       Debian.</para>
 
       <para>As linguagens externas atualmente suportadas incluem:</para>
@@ -2592,8 +2590,8 @@ split_words('Once upon a time');
             pode persistir entre os acionamentos incorporados do R em um mesmo
             ambiente.</para>
 
-            <para>Agora alguns códigos Python podem ser executados no ECLIDE
-            ou no ECL Playground.</para>
+            <para>Agora alguns códigos R podem ser executados no ECLIDE ou no
+            ECL Playground.</para>
 
             <para>Por exemplo:</para>
 

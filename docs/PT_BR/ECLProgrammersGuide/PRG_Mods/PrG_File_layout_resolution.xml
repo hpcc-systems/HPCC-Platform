@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="File_layout_resolution">
-  <title>Resolução deLlayout de arquivo no tempo de compilação</title>
+  <title>Resolução de Layout de arquivo no tempo de compilação</title>
 
   <para>Ao ler um arquivo em disco no ECL, o layout do arquivo é especificado
   no código ECL. Isso permite que o código seja compilado para acessar os

@@ -63,9 +63,7 @@
   </bookinfo>
 
   <chapter id="Logical_Files">
-    <title>
-      <emphasis>Arquivos lógicos</emphasis>
-    </title>
+    <title><emphasis>Arquivos lógicos</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareFiles.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -105,9 +103,7 @@
   </chapter>
 
   <chapter id="SuperFile_Management">
-    <title>
-      <emphasis>Superarquivo</emphasis>
-    </title>
+    <title><emphasis>Superarquivos</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CreateSuperFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -165,9 +161,7 @@
   </chapter>
 
   <chapter id="External_File_Support">
-    <title>
-      <emphasis>Arquivos Externo</emphasis>
-    </title>
+    <title><emphasis>Arquivos Externo</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExternalLogicalFileName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -186,9 +180,7 @@
   </chapter>
 
   <chapter id="File_Browsing_Support">
-    <title>
-      <emphasis>Navegação por Arquivos</emphasis>
-    </title>
+    <title><emphasis>Navegação por Arquivos</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SetColumnMapping.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -207,9 +199,7 @@
   </chapter>
 
   <chapter id="File_Movement">
-    <title>
-      <emphasis>Movimentação de Arquivos</emphasis>
-    </title>
+    <title><emphasis>Movimentação de Arquivos</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DfuPlusExec.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -243,9 +233,7 @@
   </chapter>
 
   <chapter id="String_Handling">
-    <title>
-      <emphasis>Manipulação de String</emphasis>
-    </title>
+    <title><emphasis>Manipulação de String</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CleanAccents.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -393,9 +381,7 @@
               xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
   <chapter id="Date_Handling">
-    <title>
-      <emphasis>Manipulação de Data e Hora</emphasis>
-    </title>
+    <title><emphasis>Manipulação de Data e Hora</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateDataTypes.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -477,9 +463,7 @@
   </chapter>
 
   <chapter id="Cluster_Handling">
-    <title>
-      <emphasis>Manipulação de Cluster</emphasis>
-    </title>
+    <title><emphasis>Manipulação de Cluster</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Node.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -501,9 +485,7 @@
   </chapter>
 
   <chapter id="Job_Handling">
-    <title>
-      <emphasis>Manipulação de Job</emphasis>
-    </title>
+    <title><emphasis>Manipulação de Job</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUID.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -528,9 +510,7 @@
   </chapter>
 
   <chapter id="File_Monitoring">
-    <title>
-      <emphasis>Monitorador de Arquivo</emphasis>
-    </title>
+    <title><emphasis>Monitoramento de Arquivo</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -540,9 +520,7 @@
   </chapter>
 
   <chapter id="Logging">
-    <title>
-      <emphasis>Logging</emphasis>
-    </title>
+    <title><emphasis>Logging</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -558,18 +536,14 @@
   </chapter>
 
   <chapter id="Auditing">
-    <title>
-      <emphasis>Auditoria</emphasis>
-    </title>
+    <title><emphasis>Auditoria</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Audit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 
   <chapter id="Utilities">
-    <title>
-      <emphasis>Utilitários</emphasis>
-    </title>
+    <title><emphasis>Utilitários</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetHostName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -585,9 +559,7 @@
   </chapter>
 
   <chapter id="Debugging">
-    <title>
-      <emphasis>Depuração</emphasis>
-    </title>
+    <title><emphasis>Depuração</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetParseTree.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -603,9 +575,7 @@
   </chapter>
 
   <chapter id="Email">
-    <title>
-      <emphasis>E-mail</emphasis>
-    </title>
+    <title><emphasis>E-mail</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SendEmail.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -618,9 +588,7 @@
   </chapter>
 
   <chapter id="Workunit_Services">
-    <title>
-      <emphasis>Serviços da Workunit</emphasis>
-    </title>
+    <title><emphasis>Serviços da Workunit</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitExists.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>

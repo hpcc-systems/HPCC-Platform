@@ -2,12 +2,12 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_Attributes_optional">
-  <title><emphasis role="bold">opcional</emphasis></title>
+  <title><emphasis role="bold">optional</emphasis></title>
 
   <para><indexterm>
       <primary>opcional</primary>
-    </indexterm>O atributo optional (opcional) permite especificar que um
-  campo é optional e oculto, ou que não depende da presença ou ausência de uma
+    </indexterm>O atributo optional permite especificar que um campo é
+  opcional e oculto, ou que não depende da presença ou ausência de uma
   decoração de URL</para>
 
   <para>Quando um campo possui um atributo optional , ele fica visível apenas

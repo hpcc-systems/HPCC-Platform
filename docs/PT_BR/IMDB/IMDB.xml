@@ -373,11 +373,10 @@ Blankline</programlisting></para>
         Refinaria de Dados (Thor)</emphasis></title>
 
         <para>Para usar o arquivo de dados em seu HPCC System, é preciso fazer
-        o "spray” (distribuir) desse arquivo para todos os nós. O
-        <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> um spray
-        ou importação é a transferência de um arquivo de dados de um local
-        (como a zona de entrada de arquivos) para diversas partes do arquivo
-        ou nós em um cluster.</para>
+        o "spray” (distribuir) desse arquivo para todos os nós. O spray ou
+        importação é a transferência de um arquivo de dados de um local (como
+        a zona de entrada de arquivos) para diversas partes do arquivo ou nós
+        em um cluster.</para>
 
         <para>O arquivo distribuído passa a ter um <emphasis>nome de arquivo
         lógico </emphasis> como segue<emphasis role="bold">:
@@ -833,9 +832,9 @@ export ActorsInMovies := IMDB_Names : persist('~temp::IMDB::ActorsInMovies');;
         </itemizedlist>
 
         <para>Esse código ECL conta o número de atores com <emphasis>"números
-        bacon (bacon number)”</emphasis> de 1 a 7, que estão nos 7 Níveis de
-        separação são os mais altos. Usaremos isso mais tarde para realizar
-        buscas através da criação de um índice.</para>
+        bacon (bacon number)”</emphasis> de 1 a 7, sendo os que estão no nível
+        7 aqueles com maior grau de separação. Usaremos isso mais tarde para
+        realizar buscas através da criação de um índice.</para>
 
         <para><programlisting>/* ******************************************************************************
 ATTRIBUTE PURPOSE: 

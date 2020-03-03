@@ -123,8 +123,8 @@
                 Biblioteca padrão ou o DFUPlus) cria uma DFU Workunit .
                 Durante o monitoramento, o estado da Workunit é
                 <emphasis>monitorado </emphasis>e ao acionar o evento, ele é
-                definido para <emphasis>finalizado</emphasis>. ocê pode
-                abortar o "monitoramento” da DFU Workunit cancelar o
+                definido para <emphasis>finalizado</emphasis>. Você pode
+                abortar uma WorkUnit DFU de monitoramento para parar o
                 monitoramento do ECL Watch.</para>
               </listitem>
             </varlistentry>
@@ -182,7 +182,7 @@
             </mediaobject>
           </figure></para>
 
-        <para>É possível classificar as workunit clicando no título da
+        <para>É possível classificar as workunits clicando no título da
         coluna.</para>
 
         <para>Para ver os detalhes da tarefa, clique no link ID da workunit
@@ -220,7 +220,7 @@
             <listitem>
               <para>Digite o EventName (Nome do evento):</para>
 
-              <para>O EventName é uma constante de strings, com distinção
+              <para>O EventName é uma constante de strings, sem distinção
               entre maiúsculas e minúsculas, que nomeia o evento para
               interceptação.</para>
 
@@ -230,7 +230,7 @@
             <listitem>
               <para>Insira o EventText:</para>
 
-              <para>O EventText é uma constante de strings, com distinção
+              <para>O EventText é uma constante de strings, sem distinção
               entre maiúsculas e minúsculas, que nomeia o tipo de evento
               específico para interceptação. Ele pode conter * e ? como
               elemento curinga.</para>

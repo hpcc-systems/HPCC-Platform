@@ -216,7 +216,7 @@
     <emphasis>transform</emphasis> deve ser um record set de mesmo formato que
     o registro LEFT.</para>
 
-    <para>Para o form dois, a função <emphasis>transform</emphasis> precisa
+    <para>Para a forma 2, a função <emphasis>transform</emphasis> precisa
     adotar pelo menos dois parâmetros: o registro LEFT de mesmo formato que a
     combinação de <emphasis>parentrecset</emphasis> e
     <emphasis>childrecset</emphasis> (a estrutura resultante do registro
@@ -227,7 +227,7 @@
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <para>Exemplo do form 1:</para>
+    <para>Exemplo da forma 1:</para>
 
     <programlisting>NormRec := RECORD
   STRING20  thename;
@@ -264,7 +264,7 @@ DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
 OUTPUT(DeNormedRecs);
 </programlisting>
 
-    <para>Exemplo do form 2:</para>
+    <para>Exemplo da forma 2:</para>
 
     <programlisting>NormRec := RECORD
   STRING20  thename;

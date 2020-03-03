@@ -320,7 +320,7 @@
     chamados de partes e podem ser usados para organizar através de vários
     agrupamentos, como função, arquivos, desenvolvedor e afins.</para>
 
-    <para>Com um arquivo packagmap de parte única como:</para>
+    <para>Com um arquivo packag map de parte única como:</para>
 
     <para><emphasis role="bold">master.pkg</emphasis></para>
 
@@ -342,7 +342,7 @@
     &lt;Base id="another_base"/&gt;
   &lt;/Package&gt;
 &lt;/RoxiePackages&gt;
-</programlisting><parameter>Para adicionar o packagmap no destino e ativá-lo,
+</programlisting><parameter>Para adicionar o packag map no destino e ativá-lo,
     use:</parameter></para>
 
     <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg --activate</programlisting></para>

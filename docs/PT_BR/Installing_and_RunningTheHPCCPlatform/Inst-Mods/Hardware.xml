@@ -87,7 +87,7 @@
         <itemizedlist spacing="compact">
           <listitem>
             <para>Número suficiente de portas para permitir que todos os nós
-            sejam conectados diretamente a ela;</para>
+            sejam conectados diretamente a ele;</para>
           </listitem>
 
           <listitem>
@@ -95,14 +95,14 @@
           </listitem>
 
           <listitem>
-            <para>Suporte à espionagem IGMP</para>
+            <para>Suporte à monitoração IGMP</para>
           </listitem>
         </itemizedlist>
 
         <para>Seu HPCC System supostamente apresentará um melhor desempenho
-        quando cada nó estiver conectado diretamente a uma única chave. Você
-        precisa fornecer uma porta para cada nó em uma única chave para
-        otimizar o desempenho do sistema. O tamanho da sua chave deve
+        quando cada nó estiver conectado diretamente a um único switch. Você
+        precisa fornecer uma porta para cada nó em um único switch para
+        otimizar o desempenho do sistema. O tamanho do seu switch deve
         corresponder ao tamanho do seu sistema. É importante assegurar que a
         chave utilizada tenha capacidade suficiente para que cada nó seja
         conectado à sua própria porta.</para>
@@ -138,10 +138,10 @@
             </listitem>
           </itemizedlist></para>
 
-        <para>Normalmente, as chaves de maior qualidade e produtividade também
-        oferecerão melhor desempenho. Em sistemas maiores, a melhor opção é
-        usar uma chave gerenciada de alta capacidade que possa ser configurada
-        e ajustada com base na eficiência do HPCC.</para>
+        <para>Normalmente, os swithcs de maior qualidade e produtividade
+        também oferecerão melhor desempenho. Em sistemas maiores, a melhor
+        opção é usar um switch gerenciado de alta capacidade que possa ser
+        configurada e ajustada com base na eficiência do HPCC Systems.</para>
       </sect2>
     </sect1>
 
@@ -152,7 +152,7 @@
       servidores. Cada nó do Roxie é capaz de receber solicitações e de
       retornar resultados. Consequentemente, um balanceador de carga distribui
       a carga de maneira eficiente para obter o melhor desempenho e evitar um
-      possível afunilamento.</para>
+      possível gargalo.</para>
 
       <sect2 id="LoadBalancerRequirements">
         <title>Requerimento do Balanceamento de Carga</title>
@@ -210,7 +210,7 @@
               <listitem>
                 <para>Capacidade de fornecer roteamento de triangulação/n-path
                 (tráfego de entrada através do balanceador de carga para o nó,
-                respostas enviadas através da chave).</para>
+                respostas enviadas através do switch).</para>
               </listitem>
 
               <listitem>
@@ -222,8 +222,8 @@
               </listitem>
 
               <listitem>
-                <para>Capacidade de empilhar ou fasear os balanceadores de
-                carga em vários níveis.</para>
+                <para>Capacidade de empilhar ou estruturar em camadas os
+                balanceadores de carga em vários níveis.</para>
               </listitem>
             </itemizedlist></para>
         </sect3>
@@ -355,7 +355,7 @@
         System estão prontamente disponíveis no Portal do HPCC.</para>
 
         <para><ulink
-        url="http://hpccsystems.com/permlink/requirements">http://hpccsystems.com/permlink/requirements</ulink></para>
+        url="http://hpccsystems.com/permlink/requirements">https://hpccsystems.com/training/documentation/system-requirements</ulink></para>
       </sect2>
 
       <sect2 id="configuration-manager">
@@ -363,15 +363,14 @@
 
         <para>Para instalar o HPCC em seu sistema, é preciso ter os pacotes de
         componentes obrigatórios instalados no sistema. As dependências
-        obrigatórias podem variar de acordo com a sua plataforma. As
-        dependências obrigatórias podem variar de acordo com a sua plataforma.
-        Em alguns casos, as dependências estão incluídas nos pacotes de
-        instalação. Em outras situações, a instalação pode não ser concluída
-        com sucesso, e o utilitário de gerenciamento do pacote solicitará os
-        pacotes obrigatórios. A instalação desses pacotes pode variar de
-        acordo com a sua plataforma. Para detalhes sobre comandos de
-        instalação específicos para obter e instalar esses pacotes, consulte
-        os comandos específicos do seu Sistema Operacional. <variablelist>
+        obrigatórias podem variar de acordo com a sua plataforma. Em alguns
+        casos, as dependências estão incluídas nos pacotes de instalação. Em
+        outras situações, a instalação pode não ser concluída com sucesso, e o
+        utilitário de gerenciamento do pacote solicitará os pacotes
+        obrigatórios. A instalação desses pacotes pode variar de acordo com a
+        sua plataforma. Para detalhes sobre comandos de instalação específicos
+        para obter e instalar esses pacotes, consulte os comandos específicos
+        do seu Sistema Operacional. <variablelist>
             <varlistentry>
               <term>Observação:</term>
 
@@ -395,8 +394,8 @@
 
         <para><itemizedlist spacing="compact">
             <listitem>
-              <para>Como raiz (ou sudo como mostrado abaixo), gere uma nova
-              chave usando este comando:</para>
+              <para>Como usuário root (ou sudo como mostrado abaixo), gere uma
+              nova chave usando este comando:</para>
 
               <para><programlisting>sudo /opt/HPCCSystems/sbin/keygen.sh</programlisting></para>
             </listitem>

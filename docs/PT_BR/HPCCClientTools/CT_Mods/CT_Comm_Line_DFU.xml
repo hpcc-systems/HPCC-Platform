@@ -439,11 +439,11 @@
 
                     <entry>Opcional. Um dos seguintes valores: <emphasis
                     role="bold">fixed csv delimited xml recfmv
-                    recfmb</emphasis> Se omitido, o padrão é:</entry>
+                    recfmb</emphasis> Se omitido, o padrão é fixo:</entry>
                   </row>
 
                   <row>
-                    <entry><programlisting role="tab">  <emphasis role="bold">fixed</emphasis> Opções de formato xml :</programlisting></entry>
+                    <entry><programlisting role="tab">  <emphasis role="bold">fixed</emphasis> Opções de formato fixo:</programlisting></entry>
                   </row>
 
                   <row>
@@ -453,7 +453,8 @@
                   </row>
 
                   <row>
-                    <entry><programlisting role="tab">  <emphasis role="bold">csv/delimited</emphasis> opções:</programlisting></entry>
+                    <entry><programlisting role="tab"><emphasis role="bold"/>Opções para formato <emphasis
+                          role="bold">csv/delimited</emphasis>:</programlisting></entry>
                   </row>
 
                   <row>
@@ -494,7 +495,8 @@
                   </row>
 
                   <row>
-                    <entry><programlisting role="tab"><emphasis role="bold">  xml</emphasis> Opções de formato:</programlisting></entry>
+                    <entry><programlisting role="tab"><emphasis role="bold">  </emphasis>Opções para formato <emphasis
+                          role="bold">XML</emphasis>:</programlisting></entry>
                   </row>
 
                   <row>
