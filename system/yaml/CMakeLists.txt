@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,25 +14,8 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (include)
-HPCC_ADD_SUBDIRECTORY (jhtree)
-HPCC_ADD_SUBDIRECTORY (yaml)
-HPCC_ADD_SUBDIRECTORY (jlib)
+project( yaml_include)
 
-if (NOT JLIB_ONLY)
-   HPCC_ADD_SUBDIRECTORY (hrpc)
-   HPCC_ADD_SUBDIRECTORY (tbb_sm)
-   HPCC_ADD_SUBDIRECTORY (mp)
-   HPCC_ADD_SUBDIRECTORY (security)
-   HPCC_ADD_SUBDIRECTORY (xmllib)
-   HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
-   
-   if (USE_AERON)
-       project (aeron_include)
-         if (NOT APPLE)
-           set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lrt")
-         endif()
-         remove_definitions(-fvisibility=hidden)
-         HPCC_ADD_SUBDIRECTORY (aeron)
-   endif()
-endif( )
+remove_definitions(-fvisibility=hidden)
+
+add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml)
