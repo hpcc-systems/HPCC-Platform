@@ -1218,14 +1218,152 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibMapping);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibMapping, "JlibMapping");
 
-
 class JlibIPTTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(JlibIPTTest);
         CPPUNIT_TEST(test);
+        CPPUNIT_TEST(testMarkup);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testMarkup()
+    {
+        static constexpr const char * xmlMarkup = R"!!(  <__object__ attr1="attrval1" attr2="attrval2">
+   <binmixed bin="1" xsi:type="SOAP-ENC:base64">
+    CwAAAA==   </binmixed>
+   <binsimple xsi:type="SOAP-ENC:base64">
+    CwAAAA==   </binsimple>
+   <element1>scalarvalue</element1>
+   <item a="1"
+         b="2"
+         c="3"
+         d="4"/>
+   <item a="2"/>
+   <item a="3"/>
+   <scalars>
+    <valX>x</valX>
+    <valX>x</valX>
+    <valY>y</valY>
+    <valY>y</valY>
+    <valZ>z</valZ>
+   </scalars>
+   <sub1 subattr1="sav1">
+    sub1val
+   </sub1>
+   <sub2 subattr2="sav2">
+    sub2val
+   </sub2>
+   <subX subattr3="sav3">
+    subXval
+   </subX>
+   cpptestval
+  </__object__>
+)!!";
+        static constexpr const char * yamlMarkup = R"!!(attr1: attrval1
+attr2: attrval2
+binmixed:
+  bin: 1
+  ^: !binary |-
+    CwAAAA==
+binsimple: !binary |-
+  CwAAAA==
+element1: !el scalarvalue
+item:
+- a: 1
+  b: 2
+  c: 3
+  d: 4
+- a: 2
+- a: 3
+scalars:
+  valX:
+  - x
+  - x
+  valY:
+  - y
+  - y
+  valZ: !el z
+sub1:
+  subattr1: sav1
+  ^: !el sub1val
+sub2:
+  subattr2: sav2
+  ^: !el sub2val
+subX:
+  subattr3: sav3
+  ^: !el subXval
+^: !el cpptestval
+)!!";
+
+        static constexpr const char * jsonMarkup = R"!!({
+   "@attr1": "attrval1",
+   "@attr2": "attrval2",
+   "binmixed": {
+    "@bin": "1",
+    "#valuebin": "CwAAAA=="
+   },
+   "binsimple": {
+    "#valuebin": "CwAAAA=="
+   },
+   "element1": "scalarvalue",
+   "item": [
+    {
+     "@a": "1",
+     "@b": "2",
+     "@c": "3",
+     "@d": "4"
+    },
+    {
+     "@a": "2"
+    },
+    {
+     "@a": "3"
+    }
+   ],
+   "scalars": {
+    "valX": [
+     "x",
+     "x"
+    ],
+    "valY": [
+     "y",
+     "y"
+    ],
+    "valZ": "z"
+   },
+   "sub1": {
+    "@subattr1": "sav1",
+    "#value": "sub1val"
+   },
+   "sub2": {
+    "@subattr2": "sav2",
+    "#value": "sub2val"
+   },
+   "subX": {
+    "@subattr3": "sav3",
+    "#value": "subXval"
+   },
+   "#value": "cpptestval"
+  })!!";
+
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(xmlMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> yaml = createPTreeFromYAMLString(yamlMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> json = createPTreeFromJSONString(jsonMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+        CPPUNIT_ASSERT(areMatchingPTrees(xml, yaml));
+        CPPUNIT_ASSERT(areMatchingPTrees(xml, json));
+
+        //if we want the final compares to be less fragile (test will have to be updated if formatting changes) we could reparse and compare trees again
+        StringBuffer ml;
+        toXML(xml, ml, 2, XML_Format|XML_SortTags);
+        CPPUNIT_ASSERT(streq(ml, xmlMarkup));
+
+        toYAML(yaml, ml.clear(), 2, YAML_SortTags);
+        CPPUNIT_ASSERT(streq(ml, yamlMarkup));
+
+        toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags);
+        CPPUNIT_ASSERT(streq(ml, jsonMarkup));
+    }
     void test()
     {
         Owned<IPropertyTree> testTree = createPTreeFromXMLString(

@@ -659,9 +659,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             {
                 DBGLOG("Arg: %s", argv[i]);
             }
-            StringBuffer jsonText;
-            regenerateConfig(jsonText, topology, "Roxie");
-            DBGLOG("Configuration: %s", jsonText.str());
+            StringBuffer yamlText;
+            regenerateConfig(yamlText, topology, "Roxie");
+            DBGLOG("Configuration: %s", yamlText.str());
         }
         saveTopology();
         const char *channels = topology->queryProp("@channels");
