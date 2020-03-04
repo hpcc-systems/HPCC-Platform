@@ -27,8 +27,8 @@ export CryptoLib := SERVICE : plugin('cryptolib')
   //Symmetric Encryption
       
   SET OF STRING SupportedSymmetricCipherAlgorithms() : c, pure, fold, entrypoint='clSupportedSymmetricCipherAlgorithms';
-  DATA  SymmetricEncrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clSymmetricEncrypt';
-  DATA SymmetricDecrypt( CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clSymmetricDecrypt';
+  DATA SymmetricEncrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clSymmetricEncrypt';
+  DATA SymmetricDecrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clSymmetricDecrypt';
 
   //Asymmetric Public Key Encryption
   
@@ -39,8 +39,14 @@ export CryptoLib := SERVICE : plugin('cryptolib')
   DATA    Decrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecrypt';
   DATA    Sign(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISign';
   BOOLEAN VerifySignature(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignature';
-  
-  //Accepts key data as memory buffer
+
+  //Accepts key data as Logical File Name
+  DATA    EncryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKIEncryptLFN';
+  DATA    DecryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, context, entrypoint='clPKIDecryptLFN';
+  DATA    SignLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKISignLFN';
+  BOOLEAN VerifySignatureLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, context, entrypoint='clPKIVerifySignatureLFN';
+
+   //Accepts key data as memory buffer
   DATA    EncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncryptBuff';
   DATA    DecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecryptBuff';
   DATA    SignBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISignBuff';

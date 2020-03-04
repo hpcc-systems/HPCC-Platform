@@ -144,6 +144,62 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
 END; // PublicKeyEncryption module
 
 
+/**
+ * Encryption module containing all asymmetric encryption/decryption/digital
+ * signing/signature verification functions
+ *
+ * @param   pkAlgorithm    Asymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
+ * @param   publicKeyLFN   LFN specification of PEM formatted public key file
+ * @param   privateKeyLFN  LFN specification of PEM formatted private key file
+ * @param   passphrase     Optional Passphrase to use for encryption/encryption/signing/verifying
+ */
+EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', VARSTRING privateKeyLFN = '', VARSTRING passphrase = '') := MODULE
+    /**
+     * Encrypt the given data, using the specified public key LFN,
+     * passphrase, and algorithm
+     *
+     * @param   inputData    Contents to Encrypt
+     * @return               Encrypted data
+     */
+    EXPORT DATA Encrypt(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.EncryptLFN( pkAlgorithm, publicKeyLFN, passphrase, inputData);
+    END;
+
+    /**
+     * Decrypt the given encrypted data, using the specified private key LFN,
+     * passphrase, and algorithm
+     *
+     * @param   encryptedData    Contents to Decrypt
+     * @return                   Decrypted data
+     */
+    EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.DecryptLFN( pkAlgorithm, privateKeyLFN, passphrase, encryptedData);
+    END;
+
+    /**
+     * Create a digital signature of the given data, using the
+     * specified private key LFN, passphrase and algorithm
+     *
+     * @param   inputData    Contents to sign
+     * @return               Computed Digital signature
+     */
+    EXPORT DATA Sign( DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.SignLFN( pkAlgorithm, privateKeyLFN, passphrase, inputData);
+    END;
+
+    /**
+     * Verify the given digital signature of the given data, using
+     * the specified public key LFN, passphrase and algorithm
+     *
+     * @param   signature      Signature to verify
+     * @param   signedData     Data used to create signature
+     * @return                 Boolean TRUE/FALSE
+     */
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.VerifySignatureLFN( pkAlgorithm, publicKeyLFN, passphrase, signature, signedData);
+    END;
+END; // PublicKeyEncryptionFromLFN module
+
 
 /**
   * Encryption module containing all asymmetric encryption/decryption/digital
