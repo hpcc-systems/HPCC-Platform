@@ -11720,6 +11720,8 @@ protected:
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
+            if (isCloud())
+                throw makeStringException(0, "Output clusters not supported in cloud environment");
             clusters.append(cluster);
             clusterIdx++;
         }
@@ -11730,7 +11732,13 @@ protected:
         }
         else
         {
-            if (roxieName.length())
+            if (isCloud())
+            {
+                StringBuffer nasGroupName;
+                queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
+                clusters.append(nasGroupName);
+            }
+            else if (roxieName.length())
                 clusters.append(roxieName.str());
             else
                 clusters.append(".");

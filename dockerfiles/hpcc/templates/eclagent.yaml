@@ -13,6 +13,9 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
+      {{- if $.Values.global.singleNode | default false }}
+{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") | indent 6 }}
+      {{- end }}
       serviceAccountName: hpcc
       containers:
       - name: {{ .name | quote }}

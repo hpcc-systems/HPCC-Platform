@@ -22,7 +22,8 @@ spec:
                 {{ include "hpcc.utils.configArg" $roxie }},
                 {{ include "hpcc.utils.daliArg" $ }},
                 "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
-                "--localSlave=true"
+                "--localSlave=true",
+                "--resolveLocally=false"
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}

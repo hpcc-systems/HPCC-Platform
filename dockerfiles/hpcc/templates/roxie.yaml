@@ -64,6 +64,9 @@ spec:
       labels:
         run: {{ $servername | quote }}
     spec:
+      {{- if $.Values.global.singleNode | default false }}
+{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") | indent 6 }}
+      {{- end }}
       containers:
       - name: {{ $servername | quote }}
         args: [
@@ -72,7 +75,8 @@ spec:
                 "--numChannels={{ $numChannels }}",
                 "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
-                "--localSlave=false"
+                "--localSlave=false", 
+                "--resolveLocally=false"
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}

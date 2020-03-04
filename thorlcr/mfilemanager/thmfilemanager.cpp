@@ -226,6 +226,13 @@ public:
     CFileManager()
     {
         replicateOutputs = globals->getPropBool("@replicateOutputs");
+
+        /* In nas/non-local storage mode, create a published named group for files to use
+         * that matches the width of the cluster.
+         * Also create a 1-way named group, that is used in special cases, e.g. BUILDINDEX,FEW
+         */
+        if (isCloud())
+            queryNamedGroupStore().ensureNasGroup(queryClusterWidth());
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {
@@ -374,6 +381,19 @@ public:
 
     IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0)
     {
+        if (isCloud())
+        {
+            StringBuffer nasGroupName;
+            // NB: normally size = queryClusterWidth(), but can be 1 (e.g. if BUILDINDEX,FEW)
+            queryNamedGroupStore().getNasGroupName(nasGroupName, groups.item(0).ordinality());
+            IGroup *nasGroup = queryNamedGroupStore().lookup(nasGroupName);
+            assertex(nasGroup);
+            groups.clear();
+            groupNames.kill();
+            groupNames.append(nasGroupName);
+            groups.append(*LINK(nasGroup));
+        }
+
         bool temporary = 0 != (helperFlags&TDXtemporary);
         bool jobReplicate = 0 != job.getWorkUnitValueInt("replicateOutputs", replicateOutputs);
         bool replicate = 0 != jobReplicate && !temporary && 0==(helperFlags&TDWnoreplicate);
@@ -722,6 +742,8 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
     }
     else
     {
+        if (isCloud())
+            throw makeStringException(0, "Output clusters not supported in cloud environment");
         const char *cluster = clusters.item(0);
         Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
         if (!group)
