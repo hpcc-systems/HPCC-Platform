@@ -747,7 +747,7 @@ void initSignals()
 
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
-EclCCServer:
+eclccserver:
   daliServers: dali
   enableEclccDali: true
   enableSysLog: true
@@ -782,7 +782,7 @@ int main(int argc, const char *argv[])
 
     try
     {
-        globals.setown(loadConfiguration(defaultYaml, argv, "EclCCServer", "ECLCCSERVER", "eclccserver.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", nullptr));
     }
     catch (IException * e)
     {

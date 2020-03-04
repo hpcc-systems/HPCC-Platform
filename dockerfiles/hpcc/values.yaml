@@ -42,11 +42,8 @@ dali:
 eclagent:
 - name: myeclagent
   replicas: 1
-  config: |
-    version: 1.0
-    EclAgent:
-      containerPerAgent: true
-      maxActive: 2
+  containerPerAgent: true
+  maxActive: 2
     
 eclccserver:
 - name: myeclccserver
@@ -56,25 +53,17 @@ esp:
 - name: myesp
   replicas: 1
 
-xroxie:
-  - name: roxie1
-    ports: [ 9876, 0 ]
-    localSlave: 1
-    configFile: "roxie.yaml"
-    
-  - name: roxie2
-    ports: 9876
-    numChannels: 2
-    serverReplicas: 1
-    topoReplicas: 2
-    topoport: 9004
-    config: |
-      version: 1.0
-      Roxie:
-        useAeron: true
+roxie:
+- name: myroxie
+  ports: [9876,0]
+  numChannels: 2
+  serverReplicas: 1
+  topoReplicas: 2
+  topoport: 9004
+  useAeron: true
 
 thor:
-  - name: thor1
-    masterport: 20000
-    numSlaves: 2
-    slaveport: 20100
+- name: thor1
+  masterport: 20000
+  numSlaves: 2
+  slaveport: 20100
