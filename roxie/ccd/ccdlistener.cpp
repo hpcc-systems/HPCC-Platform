@@ -22,6 +22,7 @@
 
 #include "wujobq.hpp"
 #include "thorplugin.hpp"
+#include "environment.hpp"
 
 #include "udptopo.hpp"
 

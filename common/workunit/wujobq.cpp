@@ -30,6 +30,7 @@
 #include "dasds.hpp"
 #include "dasess.hpp"
 
+#include "environment.hpp"
 #include "wujobq.hpp"
 
 #ifdef _MSC_VER

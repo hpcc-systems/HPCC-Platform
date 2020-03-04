@@ -245,6 +245,41 @@ class CIStringArray : public StringArray, public CInterface
 {
 };
 
+interface IScmIterator : extends IInterface
+{
+    virtual bool first() = 0;
+    virtual bool next() = 0;
+    virtual bool isValid() = 0;
+};
+
+interface IStringIterator : extends IScmIterator
+{
+    virtual IStringVal & str(IStringVal & str) = 0;
+};
+
+
+class jlib_decl CStringArrayIterator : implements CInterfaceOf<IStringIterator>
+{
+    unsigned idx = 0;
+    StringArray strings;
+public:
+    void append(const char *str) { strings.append(str); }
+    virtual bool first() { idx = 0; return strings.isItem(idx); }
+    virtual bool next() { idx ++; return strings.isItem(idx); }
+    virtual bool isValid() { return strings.isItem(idx); }
+    virtual IStringVal & str(IStringVal &s) { s.set(strings.item(idx)); return s; }
+};
+
+class jlib_decl CEmptyStringIterator : implements CInterfaceOf<IStringIterator>
+{
+public:
+    virtual bool first() { return false; }
+    virtual bool next() { return false; }
+    virtual bool isValid() { return false; }
+    virtual IStringVal & str(IStringVal &s) { s.clear(); return s; }
+};
+
+
 extern jlib_decl unsigned msTick();
 extern jlib_decl unsigned usTick();
 extern jlib_decl int write_pidfile(const char * instance);

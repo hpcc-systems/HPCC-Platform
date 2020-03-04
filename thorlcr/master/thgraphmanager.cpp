@@ -46,6 +46,7 @@
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
 #include "roxiehelper.hpp"
+#include "environment.hpp"
 
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {

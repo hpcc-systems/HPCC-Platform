@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "jutil.hpp"
 #include "eclagent.hpp"
+#include "environment.hpp"
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
 {

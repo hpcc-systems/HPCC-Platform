@@ -25,8 +25,10 @@
 #include <daclient.hpp>
 #include <dasess.hpp>
 #include <danqs.hpp>
-#include <workunit.hpp>
-#include <wujobq.hpp>
+
+#include "environment.hpp"
+#include "workunit.hpp"
+#include "wujobq.hpp"
 #include "eventqueue.hpp"
 
 static unsigned traceLevel;
