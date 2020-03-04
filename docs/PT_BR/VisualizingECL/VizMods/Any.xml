@@ -13,7 +13,7 @@
   <sect1 id="VizGrid">
     <title>Grade</title>
 
-    <para><emphasis role="bold">Visualizer.Any.Grade(<indexterm>
+    <para><emphasis role="bold">Visualizer.Any.Grid(<indexterm>
         <primary>Visualizer.Any.Grid</primary>
       </indexterm><indexterm>
         <primary>Any.Grid</primary>
@@ -85,8 +85,8 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">Grid </emphasis>o método de visualização
-    cria uma tabela simples ou grade a partir de quaisquer dados.</para>
+    <para>O método de visualização <emphasis role="bold">Grade</emphasis> cria
+    uma tabela simples ou grade a partir de quaisquer dados.</para>
 
     <para>Exemplo:</para>
 
@@ -109,7 +109,7 @@ viz_Grid;
   </sect1>
 
   <sect1 id="VizHandsonGrid">
-    <title>HandsonGrid</title>
+    <title>Grade Handson</title>
 
     <para><emphasis role="bold">Visualizer.Any.HandsonGrid(<indexterm>
         <primary>Visualizer.Any.HandsonGrid</primary>
@@ -183,8 +183,8 @@ viz_Grid;
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">HandsonGrid </emphasis>método de
-    visualização cria uma tabela ou grade a partir de quaisquer dados.</para>
+    <para>O método de visualização Grade Handsosn cria uma tabela ou grade a
+    partir de quaisquer dados.</para>
 
     <para>Exemplo:</para>
 

@@ -64,7 +64,7 @@
             <row>
               <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
 
-              <entry>Controla o acesso às workunit aplicando permissões aos
+              <entry>Controla o acesso às workunits aplicando permissões aos
               Escopos de tarefa</entry>
             </row>
 
@@ -99,7 +99,7 @@
 
     <para>A administração da segurança é controlada através da área <emphasis
     role="bold">Security</emphasis> do ECL Watch. Para acessar a área de
-    Security, clique no ícone<emphasis role="bold">Operations</emphasis> , e
+    Security, clique no ícone<emphasis role="bold"> Operations</emphasis> , e
     em seguida clique no link <emphasis role="bold">Security&lt;/emphasis
     &gt;</emphasis> a partir do submenu de navegação.</para>
 
@@ -148,8 +148,8 @@
 
               <entry><para><emphasis role="bold">OBSERVAÇÃO:</emphasis> É
               preciso ter cautela ao determinar qualquer configuração de
-              permissão para <emphasis role="bold">negar</emphasis> . A
-              permissão mais restrita sempre se aplica. </para></entry>
+              permissão para <emphasis role="bold">negar um direito</emphasis>
+              . A permissão mais restritiva sempre se aplica. </para></entry>
             </row>
           </tbody>
         </tgroup>
@@ -271,9 +271,9 @@
             <para>Insira o <emphasis role="bold">First Name</emphasis> e o
             <emphasis role="bold">Last Name</emphasis> do usuário.</para>
 
-            <para>Estas informações ajudam a identificar o usuário e é exibida
-            no campo <emphasis role="bold">Full Name</emphasis> na janela
-            principal <emphasis role="bold">User</emphasis> .</para>
+            <para>Estas informações ajudam a identificar o usuário e são
+            exibidas no campo <emphasis role="bold">Full Name</emphasis> na
+            janela principal <emphasis role="bold">User</emphasis> .</para>
           </listitem>
 
           <listitem>
@@ -329,10 +329,9 @@
           </listitem>
 
           <listitem>
-            <para>Selecione o(s) usuário(s) que deseja modificar. Selecione
-            o(s) usuário(s) que deseja modificar. Clique no link <emphasis
-            role="bold">Username</emphasis> para abrir a aba de detalhes do
-            usuário.</para>
+            <para>Selecione o(s) usuário(s) que deseja modificar. Clique no
+            link <emphasis role="bold">Username</emphasis> para abrir a aba de
+            detalhes do usuário.</para>
 
             <para>Para selecionar vários usuários, marque a caixa de seleção
             ao lado do User Name. Isso ativará os botões de ação para Users.
@@ -438,10 +437,9 @@
 
         <para>Para modificar as credenciais de usuário você precisa ter acesso
         de administrador. Você pode designar a conta do Administrador do HPCC
-        para         permissões limitadas apenas relacionadas aos elementos do
-        HPCC e não ao LDAP         direitos do administrador. Para promover um
-        usuário a um administrador do HPCC,         adicionar o usuário ao
-        adicione o usuário ao grupo <emphasis
+        para permissões limitadas apenas relacionadas aos elementos do HPCC e
+        não a direitos de administrador no LDAP.. Para promover um usuário a
+        um administrador do HPCC, adicione o usuário ao grupo <emphasis
         role="bold">Administrators</emphasis> .</para>
 
         <para>No submenu de navegação, clique no ícone <emphasis role="bold">
@@ -458,7 +456,7 @@
           </listitem>
 
           <listitem>
-            <para>Selecione o(s) usuário(s) que deseja mudar a função. Clique
+            <para>Selecione o(s) usuário(s) que deseja mudar de função. Clique
             no link <emphasis role="bold">Username</emphasis> para abrir a aba
             de detalhes do usuário.</para>
 
@@ -497,10 +495,10 @@
                   <listitem>
                     <para>O nome do grupo padrão Administrador pode variar. É
                     um valor configurável definido em <emphasis
-                    role="bold">adminGroupName</emphasis>. Por exemplo, ser
+                    role="bold">adminGroupName</emphasis>. Por exemplo, se
                     você configurar no ambiente o adminGroupName para
-                    "HPCCAdministrators", então o HPCCAdministrators será
-                    exibido na lista</para>
+                    "HPCCAdministrators", então a opção HPCCAdministrators
+                    será exibidoa na lista</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
@@ -672,9 +670,9 @@
       usuários individuais. Por exemplo, os usuários podem ter necessidades
       individuais de segurança que não sejam totalmente cobertas em nenhum
       grupo; ou poderá haver situações em que um usuário solicitará acesso
-      temporário a um recurso do HPCC. PAs permissões configuradas nesta área
-      do ECL Watch afetam apenas o usuário selecionado. A maioria das
-      permissões individuais configuradas aqui substitui as que foram
+      temporário a um recurso do HPCC Systems. As permissões configuradas
+      nesta área do ECL Watch afetam apenas o usuário selecionado. A maioria
+      das permissões individuais configuradas aqui substitui as que foram
       configuradas em qualquer grupo ao qual o usuário pertença, exceto em
       casos de negação explícita.</para>
 
@@ -769,7 +767,7 @@
                       role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela
                       ao determinar qualquer configuração de permissão para
                       <emphasis role="bold">negar</emphasis> um direito. A
-                      permissão mais restrita sempre se aplica.
+                      permissão mais restritiva sempre se aplica.
                       </para></entry>
                     </row>
                   </tbody>
@@ -786,7 +784,7 @@
     </sect3>
 
     <sect3 id="UsingSecurity_SettingUpModifyingGroupPermissions">
-      <title>onfigurando e modificando grupos de permissões</title>
+      <title>Configurando e modificando grupos de permissões</title>
 
       <para>A organização dos grupos garante que todos os usuários com as
       mesmas necessidades de permissão tenham as mesmas configurações de
@@ -872,7 +870,7 @@
               <para>Pressione o botão <emphasis role="bold">Add</emphasis>
               .</para>
 
-              <para>Isso abrirá uma nova aba e várias sub-abas para o
+              <para>Isso abrirá uma nova aba e várias subabas para o
               grupo</para>
 
               <para>A subaba <emphasis role="bold">Summary</emphasis> exibe o
@@ -887,9 +885,9 @@
               grupo.</para>
 
               <para>A aba <emphasis role="bold"> Available Groups
-              Permissios</emphasis> exibe todas as permissões disponíveis; a
-              seleção a partir da guia Permissões disponíveis aplica as
-              permissões à guia Permissão de grupo ativo.</para>
+              Permissions</emphasis> exibe todas as permissões disponíveis; a
+              seleção a partir da aba Permissions disponíveis aplica as
+              permissões à aba Permissão de grupo ativo.</para>
 
               <para>Você pode definir as permissões e adicionar membros a esse
               grupo nas respectivas sub-abas do grupo.</para>
@@ -1043,8 +1041,8 @@
       preciso criar grupos específicos com permissões mais limitadas.</para>
 
       <para>Você pode criar grupos apenas com os direitos de acesso que deseja
-      conceder. Essa abordagem oferece maior flexibilidade, já que uma única
-      ID de usuário pode estar associada a vários grupos.</para>
+      conceder. Essa abordagem oferece maior flexibilidade, já que um único ID
+      de usuário pode estar associada a vários grupos.</para>
 
       <para>Como prática recomendada, use <emphasis
       role="bold">Allow</emphasis> em vez de <emphasis
@@ -1139,7 +1137,7 @@
                       role="bold">OBSERVAÇÃO:</emphasis> É preciso ter cautela
                       ao determinar qualquer configuração de permissão para
                       <emphasis role="bold">negar</emphasis> um acesso. A
-                      permissão mais restrita sempre se aplica.
+                      permissão mais restritiva sempre se aplica.
                       </para></entry>
                     </row>
                   </tbody>
@@ -1295,7 +1293,7 @@
 
             <thead>
               <row>
-                <entry>Name</entry>
+                <entry>Nome</entry>
 
                 <entry>Descrição</entry>
 
@@ -1334,7 +1332,7 @@
                 <entry>Remover arquivos, Adicionar aos superarquivos e remover
                 dos superarquivos</entry>
 
-                <entry>Gravação</entry>
+                <entry>Escrita</entry>
               </row>
 
               <row>
@@ -1413,8 +1411,8 @@
               <row>
                 <entry/>
 
-                <entry>Publicar definição e ligação ESDL, configurar método de
-                ligação ESDL.</entry>
+                <entry>Publicar definição e conexão ESDL, configurar método de
+                conexão ESDL.</entry>
 
                 <entry>Gravação</entry>
               </row>
@@ -1422,7 +1420,7 @@
               <row>
                 <entry/>
 
-                <entry>Apagar definições ESDL, apagar ligações ESDL</entry>
+                <entry>Apagar definições ESDL, apagar conexões ESDL</entry>
 
                 <entry>Completo</entry>
               </row>
@@ -1712,7 +1710,7 @@
     arquivo de dados (ou escopos de arquivo). Isso é controlado pelo uso dos
     recursos de escopo de arquivos.</para>
 
-    <para>Um UO denominado <emphasis role="bold">Files</emphasis> é criado
+    <para>Uma OU denominada <emphasis role="bold">Files</emphasis> é criado
     automaticamente quando o servidor Dali é inicializado. Para proteger as
     pastas de dados, crie escopos de arquivo para essa pasta e aplique os
     direitos para cada escopo.</para>
@@ -1751,8 +1749,9 @@
     role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
     </emphasis></para>
 
-    <para>Além disso, logo abaixo poderia ter uma unidade denominada
-    collectionx que contém duas unidades: publicdata e securedata.</para>
+    <para>Todos os componentes e ferramentas HPCC respeitam a segurança de
+    acesso a arquivos definidos no LDAP. As seguintes exceções são
+    consideradas a nível de sistema ou para usuários administradores:</para>
 
     <itemizedlist>
       <listitem>
@@ -1922,8 +1921,10 @@
           entrada de arquivos</para>
 
           <para>Isso oferece uma maneira de permitir ou negar acesso ao escopo
-          de arquivo principal. Por padrão, apenas os administradores têm
-          acesso a esse escopo.</para>
+          de arquivo principal.</para>
+
+          <para>Por padrão, apenas os administradores têm acesso a esse
+          escopo.</para>
         </listitem>
 
         <listitem>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LOCAL">
@@ -13,9 +13,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="79.10pt" />
+      <colspec colwidth="79.10pt"/>
 
-      <colspec colwidth="309.70pt" />
+      <colspec colwidth="309.70pt"/>
 
       <tbody>
         <row>
@@ -33,13 +33,17 @@
     </tgroup>
   </informaltable>
 
-  <para>A função  <emphasis role="bold">LOCAL </emphasis> especifica que todas as operações subsequentes nos  <emphasis>dados</emphasis>  são executadas localmente em cada nó (semelhante ao uso da opção LOCAL em uma função). Ela é geralmente usada em uma operação ALLNODES . <emphasis role="bold">Essa função está disponível para uso apenas no <indexterm>
-      <primary>Roxie</primary>
-    </indexterm>.</emphasis></para>
+  <para>A função <emphasis role="bold">LOCAL </emphasis> especifica que todas
+  as operações subsequentes nos <emphasis>dados</emphasis> são executadas
+  localmente em cada nó (semelhante ao uso da opção LOCAL em uma função). Ela
+  é geralmente usada em uma operação ALLNODES . <emphasis role="bold">Essa
+  função está disponível para uso no cluster Roxie.</emphasis></para>
 
   <para>Exemplo:</para>
 
   <programlisting>ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
 
-  <para>Ver também: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="THISNODE">THISNODE</link>, <link linkend="NOLOCAL">NOLOCAL</link></para>
+  <para>Ver também: <link linkend="ALLNODES">ALLNODES</link>, <link
+  linkend="THISNODE">THISNODE</link>, <link
+  linkend="NOLOCAL">NOLOCAL</link></para>
 </sect1>

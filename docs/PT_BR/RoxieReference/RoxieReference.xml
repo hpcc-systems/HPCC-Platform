@@ -96,7 +96,7 @@
     </itemizedlist>
 
     <para>Se você imaginar todos os seus dados como um oceano, o Thor seria
-    usado para realizar operações em todas as águas.</para>
+    usado para realizar operações em todas no oceano como um todo.</para>
 
     <para>Uma consulta hThor pode ser usada para encontrar um único peixe
     nesse mar de dados.</para>
@@ -118,7 +118,7 @@
     <para>Normalmente, os resultados do Roxie são retornados para o
     solicitante em vez de serem gravados em um arquivo. No entanto, o Roxie
     pode gravar arquivos de dados, embora normalmente não seja habitual gravar
-    um arquivo quando uma consulta não é baseada em tarefas.</para>
+    um arquivo quando uma consulta não é baseada em workunits.</para>
 
     <sect1 id="Roxie_Overview">
       <title>Visão geral do Roxie</title>
@@ -179,12 +179,11 @@
       Roxie.</para>
 
       <para>Qualquer campo em um índice que não precise ser pesquisado pode
-      ser especificado como estando na "carga útil" – tais campos são
-      armazenados apenas nos nós de folha da árvore de índice, algo que pode
-      economizar espaço e desempenho nas consultas. Os campos na carga útil
-      podem simplesmente ser campos adicionais do dataset de base, mas também
-      podem conter o resultado de alguma computação preliminar (campos
-      computados).</para>
+      ser especificado como sendo payload – tais campos são armazenados apenas
+      nos nós de folha da árvore de índice, algo que pode economizar espaço e
+      desempenho nas consultas. Os campos payload podem simplesmente ser
+      campos adicionais do dataset de base, mas também podem conter o
+      resultado de alguma computação preliminar (campos computados).</para>
     </sect1>
 
     <sect1 id="Roxie_Superfiles">
@@ -194,8 +193,8 @@
       um único subarquivo.</para>
 
       <para>No entanto, seu superarquivo não pode conter mais de um subarquivo
-      quando o superarquivo for usado para uma operação de FETCH ou em um JOIN
-      de chave completa.</para>
+      quando o superarquivo for usado para uma operação de FETCH ou em um
+      full-keyed JOIN.</para>
 
       <para>Caso só exista um subarquivo, é possível gravar uma consulta que
       utilize superarquivos ou superchaves (ainda que contenham apenas um
@@ -736,7 +735,7 @@
                     </row>
 
                     <row>
-                      <entry>Preservar Estrutura do Super Arquivo</entry>
+                      <entry>Retain SuperFile Structure</entry>
 
                       <entry>Marque esta caixa para conservar a estrutura de
                       um superarquivo.</entry>
@@ -881,7 +880,7 @@
                     </row>
 
                     <row>
-                      <entry>Preservar Estrutura do Super Arquivo</entry>
+                      <entry>Retain SuperFile Structure</entry>
 
                       <entry>Marque esta caixa para conservar a estrutura de
                       um superarquivo.</entry>

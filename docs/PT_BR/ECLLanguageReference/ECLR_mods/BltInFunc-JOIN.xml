@@ -442,7 +442,7 @@
             <emphasis>joincondition</emphasis>, exceto caso KEYED seja usado
             na <emphasis>joincondition</emphasis> (caso no qual aspenas as
             expressões KEYED são usadas).Quando ATMOST é especificado (e o
-            JOIN não é de chave completa ou meia-chave), a
+            JOIN não é full-keyed ou half-keyed), a
             <emphasis>joincondition</emphasis> e a condition podem incluir
             comparações de campo da string que usam indexação de strings com
             um asterisco como o limite máximo, como neste exemplo: J1 :=
@@ -655,8 +655,8 @@
     A opção ALL não é prática se o <emphasis>rightrecset</emphasis> for maior
     que alguns poucos milhares de registros (devido ao número de comparações
     necessário). O tamanho do <emphasis>rightrecset</emphasis> é irrelevante
-    no caso de JOINs de "meia-chave" e de “chave completa" (consulte a
-    discussão sobre Join Chaveado).</para>
+    no caso de JOINs "half-keyed" e “full-keyed" (consulte a discussão sobre
+    Join Chaveado).</para>
 
     <para>Use o SMART quando o dataset do lado direito provavelmente for
     pequeno o bastante para caber na memória, mas sem garantias de tal.</para>
@@ -675,11 +675,11 @@
   </sect2>
 
   <sect2 id="Keyed_Joins">
-    <title>Join Chaveado<indexterm>
+    <title>JOINS KEYED<indexterm>
         <primary>Keyed JOIN</primary>
       </indexterm>s</title>
 
-    <para>Uma JOIN de chave completa usa a opção KEYED, e a
+    <para>Uma JOIN full-keyed usa a opção KEYED, e a
     <emphasis>joincondition</emphasis> precisa ser baseada nos campos
     <emphasis>index</emphasis>. Na verdade, a junção é feita entre o
     <emphasis>leftrecset</emphasis> e o <emphasis>index </emphasis> no
@@ -694,7 +694,7 @@
     contém campos de “payload", que frequentemente eliminam a necessidade de
     leitura do dataset de base. Se esse for o caso, o INDEX de “payload" não
     precisa do campo de ponteiro de registro (virtual(fileposition)) do
-    dataset declarado. Para uma JOIN de meia-chave, a
+    dataset declarado. Para uma JOIN de half-keyed, a
     <emphasis>joincondition</emphasis> pode usar apenas as palavras-chave
     KEYED e WILD que estão disponíveis para uso apenas nos filtros
     INDEX.</para>

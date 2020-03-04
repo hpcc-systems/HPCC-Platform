@@ -141,7 +141,7 @@
   primárias podem ser facilmente extraídas usando TABLE ou PROJECT.</para>
 
   <sect2 id="NORMALIZE_Form_1">
-    <title>NORMALIZE Form 1</title>
+    <title>Forma 1 do NORMALIZE</title>
 
     <para>O form 1 é processada por todos os registros no <emphasis>recordset
     </emphasis> , desempenhando a função <emphasis>transform</emphasis> e a
@@ -150,7 +150,7 @@
   </sect2>
 
   <sect2 id="TRANSFORM_Function_Requirements_for_Form_1">
-    <title>Requerimentos da Função TRANSFORM para Form 1</title>
+    <title>Requerimentos da Função TRANSFORM para a forma 1</title>
 
     <para>A função <emphasis>transform</emphasis> precisa adotar no mínimo
     dois parâmetros: um registro LEFT do mesmo formato que o
@@ -161,7 +161,7 @@
   </sect2>
 
   <sect2 id="NORMALIZE_Form_2">
-    <title>NORMALIZE Form 2</title>
+    <title>Forma 2 do NORMALIZE</title>
 
     <para>Form 2 processa todos os registros no <emphasis>recordset
     </emphasis> iterando a função <emphasis>transform</emphasis> em todos os
@@ -170,7 +170,7 @@
   </sect2>
 
   <sect2 id="TRANSFORM_Function_Requirements_for_Form_2">
-    <title>Requerimentos da Função TRANSFORM para Form 2</title>
+    <title>Requerimentos da Função TRANSFORM para a forma 2</title>
 
     <para>A função <emphasis>TRANSFORM</emphasis> deve adotar pelo menos um
     parâmetro: um registro RIGHT de mesmo formato que o

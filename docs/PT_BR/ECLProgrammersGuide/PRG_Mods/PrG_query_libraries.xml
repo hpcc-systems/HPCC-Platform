@@ -381,7 +381,7 @@ MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
     </sect3>
 
     <sect3 id="RoxieQuery_SuggStructure_UseModuleInheritance">
-      <title>Use a herança MODULE</title>
+      <title>Use estruturas herdadas de MÓDULOS</title>
 
       <para>Use uma estrutura MODULE (sem a opção LIBRARY) que implemente a
       INTERFACE da biblioteca, e um MODULE individual derivado do primeiro

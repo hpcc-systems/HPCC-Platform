@@ -8,9 +8,8 @@
   role="bold">C</emphasis>ontrol <emphasis role="bold">L</emphasis>anguage
   (ECL)<indexterm>
       <primary><emphasis role="bold">ECL</emphasis></primary>
-    </indexterm> a Enterprise Control Language (ECL)ECL foi concebida
-  especificamente para grandes projetos de dados que usam o LexisNexis High
-  Performance Computer Cluster (HPCC)<indexterm>
+    </indexterm> foi concebida especificamente para grandes projetos de dados
+  que usam o High Performance Computer Cluster (HPCC) da LexisNexis<indexterm>
       <primary><emphasis role="bold">HPCC</emphasis></primary>
     </indexterm>. A extrema escalabilidade da ECL decorre de uma concepção que
   permite reutilizar todas as consultas criadas em consultas subsequentes,

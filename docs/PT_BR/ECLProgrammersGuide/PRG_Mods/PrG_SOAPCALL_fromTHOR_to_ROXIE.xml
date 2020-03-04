@@ -15,8 +15,8 @@
   solicitação usando o SOAPCALL.</para>
 
   <sect2 id="One_Record_Input_Record_Set_Return">
-    <title>Uma Entrada de Registro, Retorno do Registros (One Record Input,
-    Record Set Return)</title>
+    <title>Um registro de entrada, um conjunto de registros de saída (One
+    Record Input, Record Set Return)</title>
 
     <para>Este código de exemplo (contido no arquivo Soapcall1.ECL) aciona o
     serviço previamente implementado no artigo <emphasis role="bold">Visão
@@ -51,8 +51,8 @@ OUTPUT(ManyRec1);</programlisting>
   </sect2>
 
   <sect2 id="Record_Set_Input_Record_Set_Return">
-    <title>Uma Entrada de Registro, Retorno do Registro (Record Set Input,
-    Record Set Return)</title>
+    <title>Um conjunto de registros de entrada, um conjunto de registros de
+    saída. (Record Set Input, Record Set Return)</title>
 
     <para>Este próximo código de exemplo (contido no arquivo Soapcall2.ECL)
     também aciona o mesmo serviço que o exemplo anterior (lembre-se, você

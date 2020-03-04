@@ -54,7 +54,7 @@
   </sect2>
 
   <sect2 id="Trailing_Field_Sorts">
-    <title>Organização de Campo de Rastreamento</title>
+    <title>Ordenação de campos à direita</title>
 
     <para>A função STEPPED oferece a capacidade de classificação pelos
     principais campos de componentes de chave à direita de modo muito mais

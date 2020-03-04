@@ -148,13 +148,13 @@
   <sect2 id="TRANSFORM_Function_Requirements">
     <title>Requerimentos da Função COMBINE TRANSFORM</title>
 
-    <para>Para o Form 1, a função transform deve adotar pelo menos dois
-    parâmetros: um registro LEFT que deve estar no mesmo formato que o
+    <para>Para a forma 1 do COMBINE, a função transform deve adotar pelo menos
+    dois parâmetros: um registro LEFT que deve estar no mesmo formato que o
     <emphasis>leftrecset</emphasis> e um RIGHT cujo formato deve ser o mesmo
     que <emphasis>rightrecset</emphasis>. O formato do conjunto de registros
     resultante deve ser diferente das entradas.</para>
 
-    <para>Para a form 2, a função transform deve adotar pelo menos três
+    <para>Para a forma 2, a função transform deve adotar pelo menos três
     parâmetros: um registro LEFT que deve estar no mesmo formato que o
     <emphasis>leftrecset</emphasis>, um um registro RIGHT que deve estar no
     mesmo formato que o <emphasis>rightrecset</emphasis> e um ROWS(RIGHT) cujo
@@ -164,16 +164,16 @@
   </sect2>
 
   <sect2 id="COMBINE_Form_1">
-    <title>COMBINE Form 1</title>
+    <title>Forma 1 do COMBINE</title>
 
-    <para>Form 1 do COMBINE gera seus resultados através da especificação de
-    cada registro do <emphasis>leftrecset</emphasis> (juntamente com o
+    <para>A forma 1 do COMBINE gera seus resultados através da especificação
+    de cada registro do <emphasis>leftrecset</emphasis> (juntamente com o
     registro na mesma posição ordinal dentro do
     <emphasis>rightrecset</emphasis> ) para o <emphasis>transform</emphasis> a
     fim de gerar um único registro de resultado. O agrupamento (se houver) no
     <emphasis>leftrecset</emphasis> é preservado. Ocorrerá um erro se
     <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> tiverem
-    um número diferente de registros.</para>
+    um número diferente de registros.2 d</para>
 
     <para>Exemplo:</para>
 
@@ -218,10 +218,10 @@ OUTPUT(combined2);
   </sect2>
 
   <sect2 id="COMBINE_Form_2">
-    <title>COMBINE Form 2</title>
+    <title>Forma do COMBINE</title>
 
-    <para>Form 2 do COMBINE gera seus resultados através da especificação de
-    cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma
+    <para>A forma 2 do COMBINE gera seus resultados através da especificação
+    de cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma
     posição ordinal dentro do <emphasis>rightrecset </emphasis> – juntamente
     com o primeiro registro no grupo) para o <emphasis>transform</emphasis> a
     fim de gerar um único registro de resultado. O agrupamento (se houver) no

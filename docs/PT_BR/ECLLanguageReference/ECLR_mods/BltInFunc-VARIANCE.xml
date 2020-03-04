@@ -134,8 +134,8 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A função <emphasis role="bold">VARIANCE </emphasis> retorna a variação
-  (população) de <emphasis>valuex</emphasis>.</para>
+  <para>A função <emphasis role="bold">VARIANCE </emphasis> retorna a
+  variância (população) de <emphasis>valuex</emphasis>.</para>
 
   <para>Exemplo:</para>
 

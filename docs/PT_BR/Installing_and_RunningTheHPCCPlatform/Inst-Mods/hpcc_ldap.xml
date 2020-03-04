@@ -6,14 +6,14 @@
 
   <para>Esta seção detalha as etapas para configurar a plataforma HPCC a usar
   autenticação. Atualmente existem algumas formas de usar a autenticação em
-  seu HPCC System: autenticação simples htpasswd, LDAP, ou outro método de
+  seu HPCC Systems: autenticação simples htpasswd, LDAP, ou outro método de
   segurança de plugin.</para>
 
   <para>O método de autenticação htpasswd constitui na autenticação simples da
-  senha Ele concede ou nega acesso a um usuário apenas com base na
+  senha. Ele concede ou nega acesso a um usuário apenas com base na
   autenticação de senhas criptografadas por MD5.</para>
 
-  <para>Autenticação LDAP oferece mais recursos e opções LDAP é capaz de
+  <para>Autenticação LDAP oferece mais recursos e opções. LDAP é capaz de
   autenticar usuários e de adicionar granularidade à autenticação. LDAP
   permite controlar acessos agrupados a recursos, funções e arquivos.</para>
 
@@ -33,13 +33,13 @@
           <entry><inlinegraphic fileref="../../images/caution.png"/></entry>
 
           <entry>Ao implementar qualquer forma de autenticação, recomendamos
-          ativar seu servidor ESP a usar HTTPS (SSL) e a configurar ALL
-          (TODAS) as ligações do serviço a usarem apenas HTTPS. Isso garante
-          que as credenciais sejam transmitidas pela rede usando a
-          criptografia SSL <emphasis role="bold">Veja Como configurar o ESP
-          Server para usar HTTPS (SSL)</emphasis> para obter mais informações.
-          <para>Não se deve tentar isso até que o ambiente a ser usado já
-          tenha sido implementado, configurado e certificado. </para></entry>
+          ativar seu servidor ESP a usar HTTPS (SSL) e a configurar TODAS as
+          conexões do serviço a usarem apenas HTTPS. Isso garante que as
+          credenciais sejam transmitidas pela rede usando a criptografia SSL
+          <emphasis role="bold">Veja Como configurar o ESP Server para usar
+          HTTPS (SSL)</emphasis> para obter mais informações. <para>Não se
+          deve tentar isso até que o ambiente a ser usado já tenha sido
+          implementado, configurado e certificado. </para></entry>
         </row>
       </tbody>
     </tgroup>
@@ -98,7 +98,7 @@
 
                 <listitem>
                   <para>O Configuration Manager <emphasis
-                  role="bold">nunca</emphasis> funciona no arquivo de
+                  role="bold">nunca</emphasis> atua no arquivo de
                   configurações ativo. Após terminar a edição, será necessário
                   copiar o arquivo environment.xml para o local ativo e
                   forçá-lo a todos os nós.</para>
@@ -205,7 +205,7 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Associe o Security Manager Plugin às ligações do ESP.
+          <para>Associe o Security Manager Plugin às conexões do ESP.
           <orderedlist numeration="loweralpha">
               <listitem>
                 <para>Clique no <emphasis role="bold">Esp</emphasis> de
@@ -213,9 +213,10 @@
               </listitem>
 
               <listitem>
-                <para>Selecione a <emphasis role="bold"> aba de </emphasis>
-                <emphasis role="bold">ligações do ESP</emphasis>
-                Service</para>
+                <para>Selecione a <emphasis role="bold"> aba
+                de</emphasis><emphasis role="bold">conexões do</emphasis>
+                <emphasis role="bold">ESP</emphasis> <emphasis
+                role="bold">Service</emphasis></para>
               </listitem>
 
               <listitem>
@@ -269,16 +270,16 @@
 
       <para>Usuários e senhas são mantidos no arquivo htpasswd. O arquivo
       htpasswd deve existir no nó do ESP onde a autenticação está habilitada.
-      HPCC apenas recognizes MD5 criptografado senha.</para>
+      HPCC apenas reconhece senhas criptografadas em MD5.</para>
 
-      <para>Os padrão localização é: <emphasis
+      <para>O local padrão é: <emphasis
       role="bold">/etc/HPCCSystems/.htpasswd</emphasis> no nó do ESP
       configurado para autenticação, porém pode também ser configurado no
       Gerenciador de segurança do Htpasswd como destacado acima (etapa
       9).</para>
 
       <para>Você pode usar o utilitário do htpasswd para criar um arquivo de
-      extensão .htpasswd para usuários administradores.</para>
+      extensão .htpasswd para administrar usuários.</para>
 
       <para>Pode ser que o utilitário do htpasswd já esteja instalado em seu
       sistema, uma vez que ele faz parte de alguns sistemas Linux. Verifique
@@ -356,9 +357,9 @@
       </orderedlist>
 
       <para><emphasis role="bold">Observação:</emphasis> O Configuration
-      Manager <emphasis role="bold">nunca</emphasis> funciona no arquivo de
+      Manager <emphasis role="bold">nunca</emphasis> atua no arquivo de
       configurações ativo. Após terminar a edição, será necessário copiar o
-      arquivo environment.xml para o local ativo e forçá-lo a todos os
+      arquivo environment.xml para o local ativo e distribuí-lo a todos os
       nós.</para>
     </sect3>
   </sect2>
@@ -449,7 +450,7 @@
   </sect2>
 
   <sect2 id="UsingLDAP_Adding_ldapServer_component">
-    <title>Adicionando Componente ldapServer</title>
+    <title>Adicionando o componente ldapServer</title>
 
     <para>Após o nó do LDAP Server ter sido adicionado às configurações de
     Hardware, configure a definição de Software do servidor LDAP.</para>
@@ -547,7 +548,8 @@
 
                     <listitem>
                       <para>O suporte para OpenLDAP foi descontinuado. Esta
-                      opção foi incluída apenas para fins de legado.</para>
+                      opção foi incluída apenas para necessidades
+                      legadas.</para>
                     </listitem>
                   </varlistentry>
                 </variablelist></para>
@@ -565,7 +567,7 @@
         em vigor até que o ESP e o Dali atualizem as permissões. Isso pode
         demorar a mesma quantidade de tempo do cacheTimeout. A definição disso
         para 0 significa sem cache, porém gera sobrecarga de desempenho. Por
-        isso, não deve ser usado na produção.</para>
+        isso, não deve ser usado em produção.</para>
       </listitem>
     </orderedlist>
 
@@ -824,8 +826,9 @@ Proceed?  y/n
       addScopes para criar um escopo hpccinternal::&lt;user&gt; para esses
       usuários existentes.</para>
 
-      <para>Usuários quais já tem este escopo defined são ignored e so it
-      podem ser usadas on both new e legacy ESP usuário contas safely.</para>
+      <para>Usuários que já pertençam a esse escopo são ignorados o que
+      permite o uso seguro dessa solução tanto em contas de usuários ESP novas
+      como pré-existentes.</para>
 
       <para>A ferramenta está localizada na pasta <emphasis
       role="bold">/opt/HPCCSystems/bin/</emphasis> e, para executá-la, é

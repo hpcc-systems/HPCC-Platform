@@ -401,11 +401,11 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A ação <emphasis role="bold">OUTPUT </emphasis> um resultado do record
-  set no supercomputador com base na forma e opções que você escolher. Se
-  nenhum <emphasis>arquivo</emphasis> for especificado para gravação, o
-  resultado é armazenado na workunit e retornado para o programa que o acionou
-  na forma de fluxo de dados.</para>
+  <para>A ação <emphasis role="bold">OUTPUT </emphasis>produz como resultado
+  um record set no supercomputador com base na forma e opções que você
+  escolher. Se nenhum <emphasis>arquivo</emphasis> for especificado para
+  gravação, o resultado é armazenado na workunit e retornado para o programa
+  que o acionou na forma de fluxo de dados.</para>
 
   <sect2 id="OUTPUT_Field_Names">
     <title>Nome dos Campos OUTPUT</title>
@@ -587,7 +587,7 @@ OUTPUT(People(Attr1=FALSE));
   </sect2>
 
   <sect2 id="OUTPUT_CSV_Files">
-    <title>Saída de arquivos CSV<indexterm>
+    <title>Output de arquivos CSV<indexterm>
         <primary>CSV Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - CSV Files</primary>
@@ -883,7 +883,7 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
   </sect2>
 
   <sect2 id="OUTPUT_XML_Files">
-    <title>Saída de Arquivos XML<indexterm>
+    <title>Output de Arquivos XML<indexterm>
         <primary>XML Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - XML Files</primary>
@@ -1114,7 +1114,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
   </sect2>
 
   <sect2 id="OUTPUT_JSON_Files">
-    <title>Saída de Arquivos Json<indexterm>
+    <title>Output de Arquivos Json<indexterm>
         <primary>JSON Files</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - JSON Files</primary>
@@ -1335,7 +1335,7 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
   </sect2>
 
   <sect2 id="OUTPUT_PIPE_Files">
-    <title>Saída de Arquivos PIPE<indexterm>
+    <title>Output de Arquivos PIPE<indexterm>
         <primary>OUTPUT Pipe Files</primary>
       </indexterm></title>
 
@@ -1415,7 +1415,7 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
   </sect2>
 
   <sect2 id="Named_OUTPUT">
-    <title>Saída Named<indexterm>
+    <title>Output Named<indexterm>
         <primary>NAMED OUTPUT</primary>
       </indexterm><indexterm>
         <primary>OUTPUT - NAMED Files</primary>
@@ -1474,7 +1474,7 @@ rptErrMsg(102, 'And again');
   </sect2>
 
   <sect2 id="OUTPUT_Scalar_Values">
-    <title>Saída Valores Scalar<indexterm>
+    <title>Output Valores Scalar<indexterm>
         <primary>OUTPUT Scalar Values</primary>
       </indexterm><indexterm>
         <primary>Scalar OUTPUT</primary>
@@ -1504,7 +1504,7 @@ OUTPUT('Fred') // scalar value output
   </sect2>
 
   <sect2 id="OUTPUT_Workunit_Files">
-    <title>Saída de Arquivos Workunit<indexterm>
+    <title>Output Arquivos de Workunit<indexterm>
         <primary>OUTPUT Workunit Files</primary>
       </indexterm><indexterm>
         <primary>Workunit OUTPUT</primary>

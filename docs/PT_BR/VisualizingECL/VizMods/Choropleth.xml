@@ -12,7 +12,7 @@
   <para/>
 
   <sect1 id="VizUSStates">
-    <title>USStates</title>
+    <title>Estados do EUA</title>
 
     <para><emphasis role="bold">Visualizer.Choropleth.USStates(<indexterm>
         <primary>Visualizer.Choropleth.USStates</primary>
@@ -86,8 +86,9 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">USStates </emphasis>o método de visualização
-    representa os dados em um mapa dos EUA.</para>
+    <para>O método de visualização <emphasis role="bold">Estados do
+    EUA</emphasis><emphasis role="bold"> </emphasis>o método de visualização
+    representa os dados em um mapa do EUA.</para>
 
     <para>Exemplo:</para>
 
@@ -105,7 +106,7 @@
   </sect1>
 
   <sect1 id="VizUSCounties">
-    <title>USCounties</title>
+    <title>Condados do EUA</title>
 
     <para><emphasis role="bold">Visualizer.Choropleth.USCounties(<indexterm>
         <primary>Visualizer.Choropleth.USCounties</primary>
@@ -179,8 +180,8 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">USCounties </emphasis>o método de
-    visualização representa os dados em um mapa dos condados dos EUA.</para>
+    <para>O método de visualização <emphasis role="bold">Condados do
+    EUA</emphasis> representa os dados em um mapa dos condados do EUA.</para>
 
     <para>Exemplo:</para>
 
@@ -286,7 +287,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">Euro </emphasis>O método de visualização
+    <para>O método de visualização <emphasis role="bold">Euro</emphasis>
     representa os dados em um mapa da Europa. Os <emphasis
     role="bold">métodos</emphasis> EuroIE <emphasis role="bold">e</emphasis>
     EuroGB são fornecidos como exemplos. Para criar outros métodos específicos
@@ -300,12 +301,14 @@ _euroIE := DATASET([    {'Carlow', '27431', '27181', '54612'},
                                     {'Dublin City', '257303', '270309', '527612'}, 
                                     {'Kilkenny', '47788', '47631', '95419'}, 
                                     {'Cork', '198658', '201144', '399802'}],
-                                    {STRING region, INTEGER4 males, INTEGER4 females, INTEGER4 total});
+                                    {STRING region, INTEGER4 males, INTEGER4 females, 
+                                    INTEGER4 total});
   data_euroIE := OUTPUT(_euroIE, NAMED('choro_euroIE'));
   data_euroIE;
   
-  viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', DATASET([{'County', 'region'}, 
-  {'Population', 'total'}], Visualizer.KeyValueDef),, DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
+  viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', 
+  DATASET([{'County', 'region'},{'Population', 'total'}], Visualizer.KeyValueDef),, 
+  DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
   viz_euroIE;</programlisting>
   </sect1>
 </chapter>

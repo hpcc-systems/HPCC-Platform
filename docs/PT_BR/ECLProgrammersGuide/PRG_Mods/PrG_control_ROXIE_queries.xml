@@ -11,16 +11,16 @@
   consultas Roxie.</para>
 
   <sect2 id="How_Graphs_Execute">
-    <title>Como os gráficos são executados</title>
+    <title>Como os grafos são executados</title>
 
     <para>Gravar consultas eficientes para o Roxie ou o Thor pode exigir a
     compreensão sobre como os diferentes clusters operam. Isso gera três
     perguntas:</para>
 
-    <para>Como o gráfico é executado: em um nó único ou em todos os nós em
+    <para>Como o grafo é executado: em um nó único ou em todos os nós em
     paralelo?</para>
 
-    <para>Como os datasets são acessados por cada nó executado o gráfico:
+    <para>Como os datasets são acessados por cada nó executando o grafo:
     apenas as partes que são locais ao nó ou todas as partes em todos os
     nós?</para>
 
@@ -40,7 +40,7 @@
             <row>
               <entry><emphasis role="bold">Thor</emphasis></entry>
 
-              <entry>Os gráficos são executados em múltiplos nós filhos em
+              <entry>Os grafos são executados em múltiplos nós filhos em
               paralelo.</entry>
             </row>
 
@@ -75,7 +75,7 @@
             <row>
               <entry><emphasis role="bold">hthor</emphasis></entry>
 
-              <entry>Os gráficos executados em um nó único do ECL Agent
+              <entry>Os grafos executados em um nó único do ECL Agent
               (servidor Roxie).</entry>
             </row>
 
@@ -97,7 +97,7 @@
             <row>
               <entry><emphasis role="bold">Roxie</emphasis></entry>
 
-              <entry>Os gráficos executados em um nó único (servidor
+              <entry>Os grafos executados em um nó único (servidor
               Roxie).</entry>
             </row>
 
@@ -123,13 +123,13 @@
   <sect2 id="ALLNODES_vs_THISNODE">
     <title>ALLNODES vs. THISNODE</title>
 
-    <para>No Roxie, os gráficos são executados em um nó único do servidor
-    Roxie, a menos que a função ALLNODES() seja usada. ALLNODES() faz com que
-    a parte da consulta incluída seja executada em todos os nós de agente em
-    paralelo. Os resultados são calculados de forma independente em cada nó e
-    depois são agregados, sem ordenação dos registros. Ela é geralmente usada
-    para realizar um processamento remoto complexo que exige apenas o acesso
-    ao índice local, reduzindo significativamente o tráfego de rede entre os
+    <para>No Roxie, os grafos são executados em um nó único do servidor Roxie,
+    a menos que a função ALLNODES() seja usada. ALLNODES() faz com que a parte
+    da consulta incluída seja executada em todos os nós de agente em paralelo.
+    Os resultados são calculados de forma independente em cada nó e depois são
+    agregados, sem ordenação dos registros. Ela é geralmente usada para
+    realizar um processamento remoto complexo que exige apenas o acesso ao
+    índice local, reduzindo significativamente o tráfego de rede entre os
     nós.</para>
 
     <para>Por padrão, tudo que estiver em ALLNODES() será executado em todos
@@ -154,7 +154,7 @@
     <title>LOCAL vs. NOLOCAL</title>
 
     <para>A opção LOCAL disponível em várias funções (como JOIN, SORT, etc.) e
-    as funções LOCAL() e NOLOCAL() controlam se os gráficos executados em um
+    as funções LOCAL() e NOLOCAL() controlam se os grafos executados em um
     determinado nó acessam todas as partes de um arquivo/índice ou apenas
     aquelas associadas ao nó específico (LOCAL). Geralmente, dentro do
     contexto ALLNODES(), busca-se apenas acessar as partes de índices locais a

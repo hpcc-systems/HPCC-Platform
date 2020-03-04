@@ -48,7 +48,7 @@
     acionado, que pode ser usado no serviço do fluxo de trabalho WHEN ou na
     ação NOTIFY .<indexterm>
         <primary>WHEN serviço de fluxo de trabalho</primary>
-      </indexterm> ou as ações WAIT e NOTIFY.</para>
+      </indexterm> ou nas ações WAIT e NOTIFY.</para>
 
     <para>Exemplo:</para>
 

@@ -14,7 +14,7 @@
   for especificada de maneira explícita na solicitação.</para>
 
   <para>O atributo <emphasis role="bold">default_client_version</emphasis> é
-  usado para solicitações de API no formato SOAP, se o client não especificar
+  usado para solicitações de API no formato SOAP, se o cliente não especificar
   a versão. O atributo <emphasis role="bold">version</emphasis> é usado para
   solicitações originadas de um navegador da Internet sem uma decoração de
   versão no URL.</para>

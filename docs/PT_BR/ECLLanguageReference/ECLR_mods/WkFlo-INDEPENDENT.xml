@@ -46,7 +46,7 @@
 
   <para>O serviço <emphasis role="bold">INDEPENDENT </emphasis> faz com que o
   <emphasis>atributo</emphasis> seja avaliado em um escopo global e força a
-  avaliação do <emphasis>atributo</emphasis> em um iten de fluxo de trabalho
+  avaliação do <emphasis>atributo</emphasis> em um item de fluxo de trabalho
   individual. O novo item de fluxo de trabalho é avaliado antes do primeiro
   item de fluxo de trabalho que usa esse <emphasis>atributo</emphasis>. É
   executado de forma independente dos outros itens do fluxo de trabalho, e sua

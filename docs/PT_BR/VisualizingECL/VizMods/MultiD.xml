@@ -13,12 +13,12 @@
   <sect1 id="VizMultiDArea">
     <title>Área</title>
 
-    <para><emphasis role="bold">Visualizer.MuiltD.Área(<indexterm>
-        <primary>Visualizer.MultiD.Área</primary>
+    <para><emphasis role="bold">Visualizer.MuiltD.Area(<indexterm>
+        <primary>Visualizer.MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary>MultiD.Área</primary>
+        <primary>MultiD.Area</primary>
       </indexterm><indexterm>
-        <primary>Área</primary>
+        <primary>Area</primary>
       </indexterm>(</emphasis> <emphasis>id</emphasis> , <emphasis
     role="bold">[</emphasis>.<emphasis>dataSource</emphasis><emphasis
     role="bold">], [</emphasis><emphasis>outputName</emphasis><emphasis
@@ -84,11 +84,10 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Área
-    exibe dados quantitativos na forma gráfica. A área entre o eixo e cada
-    linha é mostrada e pode ser destacada através de sombreamento ou uso de
-    cores. Isso é normalmente usado para comparar duas ou mais
-    quantidades.</para>
+    <para>O método de visualização<emphasis role="bold"> Área</emphasis> exibe
+    dados quantitativos na forma gráfica. A área entre o eixo e cada linha é
+    mostrada e pode ser destacada através de sombreamento ou uso de cores.
+    Isso é normalmente usado para comparar duas ou mais quantidades.</para>
 
     <para>Exemplo:</para>
 
@@ -101,7 +100,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -183,7 +183,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Barras
+    <para>O método de visualização <emphasis role="bold">Barras</emphasis>
     exibe um gráfico contendo barras horizontais retangulares onde cada
     comprimento representa o valor dos dados.</para>
 
@@ -198,7 +198,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -280,7 +281,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Colunas
+    <para>O método de visualização <emphasis role="bold">Colunas</emphasis>
     exibe um gráfico contendo barras verticais retangulares onde cada
     comprimento representa o valor dos dados.</para>
 
@@ -295,10 +296,11 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
-  
+
   viz_Column := Visualizer.MultiD.Column('column',, 'MultiD__test');
   viz_Column;</programlisting>
   </sect1>
@@ -377,7 +379,7 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Hexágono
+    <para>O método de visualização <emphasis role="bold">Hexágono</emphasis>
     exibe um gráfico com caixas hexagonais indicando duas ou mais variáveis
     contínuas entre si. A categorização hexagonal é útil para agregar valores
     de dados em uma exibição mais ampla. Por exemplo, em vez de mostrar
@@ -395,7 +397,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -477,9 +480,9 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold">método de visualização </emphasis> Linha
-    exibe um gráfico de linha que usa pontos conectados por linhas para
-    mostrar a mudança dos valores.</para>
+    <para>O método de visualização<emphasis role="bold"> </emphasis><emphasis
+    role="bold">Linha</emphasis> exibe um gráfico de linha que usa pontos
+    conectados por linhas para mostrar a mudança dos valores.</para>
 
     <para>Exemplo:</para>
 
@@ -492,7 +495,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -574,9 +578,9 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold"> método de visualização </emphasis>Scatter
-    (Dispersão) exibe um gráfico de dispersão usando os eixos horizontal e
-    vertical para representar os pontos dos dados.</para>
+    <para>O <emphasis role="bold"> </emphasis>método de visualização <emphasis
+    role="bold">Dispersão</emphasis> exibe um gráfico de dispersão usando os
+    eixos horizontal e vertical para representar os pontos dos dados.</para>
 
     <para>Exemplo:</para>
 
@@ -589,15 +593,17 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
+
   viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
   viz_scatter;</programlisting>
   </sect1>
 
   <sect1 id="VizMultiDStep">
-    <title>Step (Escada ou Degrau)</title>
+    <title>Escada</title>
 
     <para><emphasis role="bold">Visualizer.MuiltD.Step(<indexterm>
         <primary>Visualizer.MultiD.Step</primary>
@@ -670,9 +676,9 @@
       </tgroup>
     </informaltable>
 
-    <para>O <emphasis role="bold"> método de visualização </emphasis> Step
-    (Escada ou Degrau) mostra um gráfico de escada constituído por linhas em
-    intervalor ou “degraus” horizontais.</para>
+    <para>O <emphasis role="bold"> método de visualização </emphasis> Escada
+    mostra um gráfico de escada constituído por linhas em intervalo ou
+    “degraus” horizontais.</para>
 
     <para>Exemplo:</para>
 
@@ -685,9 +691,11 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, 
+                  INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
+
   viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
   viz_step;</programlisting>
   </sect1>

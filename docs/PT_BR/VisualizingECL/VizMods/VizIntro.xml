@@ -37,9 +37,9 @@
 
     <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
 
-    <para>Para usar o comando "ecl bundle install &amp;lt;git url&amp;gt;", é
-    preciso ter o git instalado e configurado em seu sistema. O Git precisa
-    estar acessível ao usuário (no caminho).</para>
+    <para>Para usar o comando "ecl bundle install &lt;git url&gt;;", é preciso
+    ter o git instalado e configurado em seu sistema. O Git precisa estar
+    acessível ao usuário (no variável path).</para>
 
     <para/>
   </sect1>
@@ -47,7 +47,7 @@
   <sect1 id="VizUsing">
     <title>Usando a biblioteca de Visualização</title>
 
-    <para>Uma vez instalado você Importa (IMPORT) a biblioteca e acionar
+    <para>Uma vez instalado você Importa (IMPORT) a biblioteca e chama
     qualquer método que seja adequado para a forma dos seus dados.</para>
 
     <para>Os seguintes passos devem ser seguidos para criar uma visualização
@@ -113,7 +113,7 @@ viz_bubble;
     vistas na guia <emphasis role="bold">Resources </emphasis> localizada na
     página Detalhes da Workunit.</para>
 
-    <para>Abra a workunit seleciona a aba <emphasis
+    <para>Abra a workunit selecione a aba <emphasis
     role="bold">Resources</emphasis> .</para>
 
     <para><graphic fileref="../../images/viz07.jpg"/></para>

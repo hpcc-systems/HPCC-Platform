@@ -345,21 +345,10 @@
       </sect2>
 
       <sect2 id="SysAdm_ClienInterfaces">
-        <title>Interfaces do Client</title>
+        <title>Interfaces Client</title>
 
         <para>As seguintes interfaces do client estão disponíveis para
         interação com a plataforma HPCC.</para>
-
-        <sect3 id="SysAdm_Eclipse">
-          <title>Eclipse</title>
-
-          <para>Com o plugin ECL para Eclipse, é possível usar o IDE Eclipse
-          para criar e executar consultas em seus dados em uma plataforma HPCC
-          usando Enterprise Control Language (ECL). O Eclipse é uma solução de
-          código público e multiplataforma que pode ser usada para servir como
-          interface com seus dados e workunits no HPCC. O pluginECL para
-          Eclipse também é open-source</para>
-        </sect3>
 
         <sect3 id="SysAdm_ECLIDE">
           <title>ECL IDE</title>
@@ -371,7 +360,7 @@
           <para>O ECL IDE oferece acesso a definições de ECL para desenvolver
           suas consultas. Essas definições são criadas ao programar uma
           expressão que define como certos cálculos ou derivações de conjunto
-          de registros devem ser feitos. Depois de definida, elas podem ser
+          de registros devem ser feitos. Depois de definidas, elas podem ser
           usadas nas próximas definições de ECL.</para>
         </sect3>
 
@@ -424,8 +413,8 @@
           <para>Ferramentas de linha de comando: <emphasis role="bold">ECL,
           DFU Plus</emphasis> e <emphasis role="bold">ECL Plus</emphasis>
           oferecem acesso de linha de comando às funcionalidades fornecidas
-          pelas páginas da Web do ECL Watch. Eles funcionam pela comunicação
-          com o serviço ESP correspondente através do SOAP.</para>
+          pelas páginas da Web do ECL Watch. Elas funcionam pela comunicação
+          com o serviço ESP correspondente via SOAP.</para>
 
           <para>Consulte o manual <emphasis>Ferramentas de cliente </emphasis>
           para obter mais detalhes.</para>
@@ -498,7 +487,7 @@
       <para>Nós escravos Thor exigem um equilíbrio adequado de CPU, memória
       RAM, rede e E/S de disco para operar da maneira mais eficiente. Um único
       nó escravo do Thor funciona de maneira ideal quando alocado em 4 núcleos
-      de CPU, 8GB de memória RAM, E/S de rede de 1Gb/segundo e
+      de CPU, 8GB de memória RAM, I/O de rede de 1Gb/segundo e
       leitura/gravação de disco sequencial de 200MB/segundo.</para>
 
       <para>A arquitetura de hardware pode oferecer valor superior dentro de
@@ -513,10 +502,10 @@
       aos requisitos recomendados.</para>
 
       <para>Por exemplo, em sua eficiência ideal, 1 servidor físico com 48
-      núcleos, 96GB de memória RAM, E/S de rede de 10Gb/segundo e sequencial
+      núcleos, 96GB de memória RAM, I/O de rede de 10Gb/segundo e sequencial
       de 2GB/segundo seria capaz de executar dez (10) escravos HPCC Thor . A
-      ordem para otimização do uso de recursos em um nó escravo Thor é E/S de
-      disco de 60%, rede de 30% e CPU de 10%. Qualquer aumento na E/S
+      ordem para otimização do uso de recursos em um nó escravo Thor é I/O de
+      disco de 60%, rede de 30% e CPU de 10%. Qualquer aumento na I/O
       sequencial terá o maior impacto sobre a velocidade, seguido por
       melhorias na rede e, depois, por melhorias na CPU.</para>
 
@@ -535,7 +524,7 @@
 
       <para>Para garantir operações eficientes, os processos Roxie do HPCC
       exigem um equilíbrio adequado, embora diferente (do Thor), de CPU,
-      memória RAM, rede e de E/S de disco. Um único nó HPCC Roxie funciona de
+      memória RAM, rede e de I/O de disco. Um único nó HPCC Roxie funciona de
       maneira ideal quando alocado a 6 ou mais núcleos de CPU, 24GB de memória
       RAM, backbone de rede de 1Gb/segundo e IOPS de leitura aleatória 4K de
       400/segundo. </para>
@@ -1159,14 +1148,14 @@
 
       <programlisting>/opt/HPCCSystems/environment.xml</programlisting>
 
-      <para>Esse é também onde o caminho de trabalho é definido.</para>
+      <para>Esse é também onde o diretório de trabalho é definido.</para>
 
       <programlisting>path=/opt/HPCCSystems</programlisting>
 
-      <para>O caminho de trabalho é usado por vários recursos da aplicação e
+      <para>O diretório de trabalho é usado por vários recursos da aplicação e
       sua modificação pode causar complicações desnecessárias. Por padrão, a
       aplicação é instalada aqui e define vários recursos para este
-      caminho.</para>
+      diretório.</para>
 
       <para>O envrionment.conf padrão:</para>
 
@@ -1278,7 +1267,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       </sect2>
 
       <sect2 id="SysAdm_OtherEnv.conf">
-        <title>Outros items do Environment.conf</title>
+        <title>Outros itens do Environment.conf</title>
 
         <para>Alguns outros itens usados ou indicados no
         environment.conf<variablelist>
@@ -1344,7 +1333,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
 
         <para>Quando o dafilesrv for ativado para TLS (porta 7600), ele ainda
         pode se conectar por uma conexão sem TLS (porta 7100) para permitir
-        que clientes de legado funcionem.</para>
+        que clientes legados funcionem.</para>
       </sect2>
     </sect1>
 
@@ -1482,7 +1471,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
         <title>Redimensionando o cluster</title>
 
         <para>No caso da adição ou remoção de nós de cluster Thor, mas
-        <emphasis> todos os nós anterior continuam no ambiente e
+        <emphasis> todos os nós originais continuam no ambiente e
         acessíveis</emphasis>, é necessário <emphasis role="bold">
         renomear</emphasis> o grupo associado ao cluster Thor (ou nome do
         cluster se não houver nome do grupo).</para>
@@ -1542,12 +1531,12 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
         termos ativo/passivo significam que há dois Dalis em execução: um
         primário, ou ativo, e outro passivo. Nesta situação, todas as ações
         são executadas no Dali ativo, mas duplicadas no passivo. Se o Dali
-        ativa falhar, é possível realizar o fail over para a passiva.<!--NOTE: Add steps for how to configure an Active/Passive Dali--></para>
+        ativo falhar, é possível realizar o fail over para a passivo.<!--NOTE: Add steps for how to configure an Active/Passive Dali--></para>
 
         <para>Outra boa prática sugerida é usar o cluster padrão com um quórum
         e um VIP de tomada de controle (um tipo de balanceador de carga). Se o
         Dali primário falhar, transfere-se o VIP e o diretório de dados para o
-        nó passivo e reinicia o serviço Dali.</para>
+        nó passivo e reinicia-se o serviço Dali.</para>
       </sect2>
 
       <sect2 id="SysAdm_BestPrac_DFUsvr">
@@ -1577,7 +1566,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
         <para>Para garantir a redundância, coloque os ESP Servers em um VIP.
         Para um design ativo/ativo, é necessário usar um balanceador de
         cargas. Para o ativo/passivo, é possível usar um precursor/contador
-        (pacemaker/heartbeat). Se você executar na configuração ativa/ativa, é
+        (pacemaker/heartbeat). Se você optar pela configuração ativa/ativa, é
         necessário manter uma única conexão de cliente com apenas um servidor
         durante a sessão do ECL Watch (porta 8010). Outros serviços, como o
         WsECL (porta 8002) não exigem uma conexão persistente com um único
@@ -1596,7 +1585,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
       <sect2 id="SysAdm_BestPrac_Sasha">
         <title>Sasha</title>
 
-        <para>Dali deve ser executado em uma configuração ativa/passiva. Os
+        <para>Sasha deve ser executado em uma configuração ativa/passiva. Os
         termos ativo/passivo significam que há dois Sashas configurados, um
         primário (ativo) e outro em espera.</para>
       </sect2>
@@ -1636,11 +1625,13 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
       <title>Alto Disponibilidade</title>
 
       <para>Se precisar de alta disponibilidade para seu HPCC System, há
-      algumas considerações adicionais que devem ser analisadas. Esta não é
-      uma lista completa e não visa fornecer instruções passo a passo para
-      configuração de recuperação de desastres. Em vez disso, a seção apenas
-      oferece algumas informações adicionais que devem ser levadas conta ao
-      incorporar o HPCC em seu plano de recuperação de desastres.</para>
+      algumas considerações adicionais que devem ser analisadas.</para>
+
+      <para>Esta não é uma lista completa e não visa fornecer instruções passo
+      a passo para configuração de recuperação de desastres. Em vez disso, a
+      seção apenas oferece algumas informações adicionais que devem ser
+      levadas conta ao incorporar o HPCC em seu plano de recuperação de
+      desastres.</para>
 
       <sect2 id="Thor_HA">
         <title>Thor</title>
@@ -1760,7 +1751,7 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
         simplesmente colocar os armazenamentos Dali nele e permitir que a
         replicação seja feita conforme projetado.</para>
 
-        <para>'Não há uma abordagem universal. Para garantir uma estratégia
+        <para>Não há uma abordagem universal. Para garantir uma estratégia
         efetiva de DR que não realize uma "sincronização excessiva" entre
         conexões WAN lentas, mas que ainda lhe ofereça um nível aceitável de
         redundância para suas necessidades de negócios, é necessário ter
@@ -2011,28 +2002,28 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
             </listitem>
 
             <listitem>
-              <para>Uma tabela hash (ou tabela de dispersão) baseada nos
-              campos de correspondência de tecla física é criada.</para>
+              <para>Uma tabela hash baseada nos campos de correspondência de
+              chave física é criada.</para>
             </listitem>
 
             <listitem>
               <para>Depois que todos os escravos estão prontos, o LHS é
-              transmitido e combinado em relação à tabela hash para produzir
-              os resultados unidos.</para>
+              transmitido e avaliado em relação à tabela hash para produzir os
+              resultados unidos.</para>
             </listitem>
           </itemizedlist>
 
           <para>Observação: A tabela de RHS completa e a tabela hash precisam
-          caber na memória; caso contrário, a união falhará através de um erro
+          caber na memória; caso contrário, o JOIN falhará através de um erro
           de falta de memória.</para>
 
           <para>SMART JOIN é uma evolução do LOOKUP JOIN. Se ele não puder
-          encaixar o RHS global na memória, ele fará o HASH PARTITION, o RHS e
-          o HASH DISTRIBUTE, o LHS e executará um LOCAL LOOKUP JOIN.</para>
+          encaixar o RHS global na memória, ele fará o HASH PARTITION, do RHS
+          e o HASH DISTRIBUTE, do LHS e executará um LOCAL LOOKUP JOIN.</para>
 
-          <para>Se ele não adaptar o conjunto de RHS local na memória em um
-          determinado nó, então irá reunir e classificar ambos os datasets
-          locais e realizar uma JOIN padrão.</para>
+          <para>Se não for possível alocar o conjunto de RHS local na memória
+          em um determinado nó, então irá reunir e classificar ambos os
+          datasets locais e realizar uma JOIN padrão.</para>
 
           <para>A principal vantagem da LOOKUP JOIN é a velocidade. Se o RHS
           couber na memória, ele pode realizar com rapidez uma operação de

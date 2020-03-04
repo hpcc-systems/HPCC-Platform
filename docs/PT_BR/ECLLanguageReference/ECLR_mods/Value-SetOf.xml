@@ -28,13 +28,13 @@
     </tgroup>
   </informaltable>
 
-  <para>O <emphasis role="bold">SET OF</emphasis> value type<indexterm>
+  <para>O tipo <emphasis role="bold">SET OF</emphasis> <indexterm>
       <primary><emphasis role="bold">SET OF</emphasis> value type</primary>
-    </indexterm> define atributos que são um conjunto de elementos de dados.
+    </indexterm>define atributos que são um conjunto de elementos de dados.
   Todos os elementos do conjunto devem ser do mesmo <emphasis>value
-  type</emphasis>. O DefaultValue poderá ser a palavra-chave ALL se o
-  ValueType for SET (consulte a palavra-chave SETSET) para indicar todos os
-  valores possíveis para esse tipo de conjunto, ou colchetes vazios<indexterm>
+  type</emphasis>. O valor padrão poderá ser a palavra-chave ALL se o tipo de
+  valor for SET (consulte a palavra-chave SET) para indicar todos os valores
+  possíveis para esse tipo de conjunto, ou colchetes vazios<indexterm>
       <primary>square brackets</primary>
     </indexterm> ([ ]) para indicar que não há nenhum valor possível para esse
   tipo de conjunto.</para>

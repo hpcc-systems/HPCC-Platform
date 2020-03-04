@@ -453,14 +453,14 @@ Yanrui Ma Richard Taylor Richard Chapman</programlisting>
         </sect3>
 
         <sect3 id="CT_CLI_WorkUnitDump">
-          <title>Despejo da Workunit</title>
+          <title>Dump da Workunit</title>
 
           <para>Um Dump de workunit é uma representação em XML de cada parte
           dos dados em uma workunit. Ele contém todas as informações que você
           poderia descobrir sobre a workunit ao usar o ECL Watch.</para>
 
           <para>O dump da workunit abaixo veio de uma simples consulta
-          COUNT(pessoa) no ambiente de treinamento:</para>
+          COUNT(person) no ambiente de treinamento:</para>
 
           <programlisting>&lt;W20110615-160604 agentPID="4162" agentSession="4296042782" cloneable="1" 
  clusterName="thor" codeVersion="138"  isClone="1" scope="hpccdemo" 

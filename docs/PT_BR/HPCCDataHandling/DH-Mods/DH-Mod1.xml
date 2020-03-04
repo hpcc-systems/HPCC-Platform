@@ -459,8 +459,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -636,7 +636,7 @@
 
                     <entry>Marque essa caixa para indicar que o caractere
                     delimitador pode ser incluído em campo em aspas. Caso não
-                    seja marcada, ela permitir um particionamento mais rápido
+                    seja marcada, ela permite um particionamento mais rápido
                     do arquivo (evitando uma varredura completa do
                     arquivo).</entry>
                   </row>
@@ -659,8 +659,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -810,8 +810,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -962,8 +962,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1103,8 +1103,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1244,8 +1244,8 @@
 
           <para>Uma aba <emphasis role="bold">DFU Workunit</emphasis> é
           exibida para cada job. É possível ver o andamento de cada operação
-          de spray na aba. Se uma workunit, as informações relacionadas à
-          causa da falha também são exibidas.</para>
+          de spray na aba. Se uma workunit falhar, as informações relacionadas
+          à causa da falha também são exibidas.</para>
         </listitem>
       </itemizedlist>
     </sect2>
@@ -1328,8 +1328,8 @@
           .</para>
 
           <para>Uma aba DFU Workunit é exibida para cada job. É possível ver o
-          andamento de cada operação de despray na guia. Se uma workunit, as
-          informações relacionadas à causa da falha também são
+          andamento de cada operação de despray na guia. Se uma workunit
+          falhar, as informações relacionadas à causa da falha também são
           exibidas.</para>
         </listitem>
       </itemizedlist>

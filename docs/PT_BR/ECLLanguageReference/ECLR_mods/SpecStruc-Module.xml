@@ -119,12 +119,12 @@
   RETURN.</para>
 
   <sect2 id="Attribute_Visibility_Rules">
-    <title>Visibilidade das definições<indexterm>
+    <title>As regras de visibilidade das definições<indexterm>
         <primary>Definition Visibility</primary>
-      </indexterm> As regras</title>
+      </indexterm></title>
 
-    <para>de escopo para os <emphasis>membros</emphasis> são iguais as que
-    foram descritas anteriormente na discussão <emphasis
+    <para>As regras de escopo para os <emphasis>membros</emphasis> são iguais
+    as que foram descritas anteriormente na discussão <emphasis
     role="bold">Visibilidade das definições</emphasis> :</para>
 
     <itemizedlist>
@@ -173,9 +173,9 @@ MyMod.InMod.Val2;</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
-    <title>Ações MODULE Side-Effect</title>
+    <title>Ações de efeitos-colaterais no MODULE</title>
 
-    <para>As ações de efeitos colaterais são permitidas MODULE apenas com o
+    <para>As ações de efeitos colaterais são permitidas no MODULE apenas com o
     uso da função WHEN, como neste exemplo:</para>
 
     <programlisting>//An Example with a side-effect action 
@@ -194,7 +194,7 @@ IF (doIt, OUTPUT(customerNames.File));
   </sect2>
 
   <sect2 id="Concrete_vs_Abstract_Modules">
-    <title>Módulos Concrete vs. Abstract (VIRTUAL)</title>
+    <title>Módulos concretos vs. abstratos (VIRTUAL)</title>
 
     <para>UM MÓDULO pode conter uma mistura de <emphasis>membros</emphasis>
     VIRTUAL e não-VIRTUAL. As regras são:</para>
@@ -222,7 +222,7 @@ IF (doIt, OUTPUT(customerNames.File));
     </itemizedlist>
 
     <para>Todos os <emphasis>membros</emphasis> EXPORTed e SHARED de um módulo
-    abstrato <emphasis>herdado</emphasis> pode ser substituído por um item de
+    abstrato <emphasis>herdado</emphasis> podem ser substituído por um item de
     redefinição na instância atual, seja essa instância atual abstrata ou
     concreta. As definições substituídas devem corresponder exatamente ao tipo
     e parâmetros dos <emphasis>membros </emphasis>

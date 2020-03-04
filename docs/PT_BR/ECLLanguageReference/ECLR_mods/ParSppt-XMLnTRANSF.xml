@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="XML_Parsing_RECORD_and_TRANSFORM_Functions">
-  <title>Funções RECORD e TRANSFORM e Análise XML</title>
+  <title>Funções RECORD e TRANSFORM e para Análise de XML</title>
 
   <para><emphasis>As seguintes funções são válidas para uso apenas em
   expressões de definição de campo dentro de uma estrutura RECORD <indexterm>

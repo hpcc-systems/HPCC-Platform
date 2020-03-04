@@ -25,11 +25,11 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A <emphasis role="bold">sting </emphasis># <emphasis>MANGLE</emphasis>
-  substitui caracteres não alfanuméricos por um caractere de sublinhado (_),
-  seguido pelo valor hexa do caractere que está sendo substituído. #MANGLE
-  substitui caracteres não alfanuméricos por um caractere de sublinhado (_),
-  seguido pelo valor hexa do caractere que está sendo substituído.</para>
+  <para>A declaração #MANGLE recebe uma string como parâmetro de entrada e
+  retorna um rótulo de identificador ECL válido contendo apenas letras,
+  números e caracter sublinhado (_). #MANGLE substitui caracteres não
+  alfanuméricos por um caractere de sublinhado (_), seguido pelo valor hexa do
+  caractere que está sendo substituído.</para>
 
   <para>Exemplo:</para>
 

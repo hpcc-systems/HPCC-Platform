@@ -327,8 +327,8 @@
       </sect3>
 
       <sect3 id="ConfigureOneorMoreSSLEnabledServiceBindings">
-        <title><emphasis role="bold">Configura um ou mais ligações de
-        SSL-Enabled Service.</emphasis></title>
+        <title><emphasis role="bold">Configurar uma ou mais conexões de
+        serviços com SSL ativado.</emphasis></title>
 
         <orderedlist numeration="arabic">
           <listitem>
@@ -385,10 +385,9 @@
         </orderedlist>
 
         <para>Para garantir a segurança, depois de confirmar o acesso ao seu
-                 serviço de maneira segura via https, você deve excluir a
-        conexão com o serviço faz uso de http. Em seguida, repita o processo
-        para          <emphasis role="bold">todas</emphasis> as outras
-        conexões.</para>
+        serviço de maneira segura via https, você deve excluir a conexão que
+        faz uso de http. Em seguida, repita o processo para <emphasis
+        role="bold">todas</emphasis> as outras conexões.</para>
       </sect3>
     </sect2>
 

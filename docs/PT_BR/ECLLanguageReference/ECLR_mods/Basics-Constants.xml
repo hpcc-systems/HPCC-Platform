@@ -126,11 +126,11 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
   </sect2>
 
   <sect2 id="Numeric">
-    <title>Numeric</title>
+    <title>Numéricas</title>
 
-    <para>Constantes Numeric com parte decimal são tratadas como valores REAL
-    (é permitido usar notação científica) e as sem parte decimal são tratadas
-    como INTEGER<indexterm>
+    <para>Constantes Numéricas com parte decimal são tratadas como valores
+    REAL (é permitido usar notação científica) e as sem parte decimal são
+    tratadas como INTEGER<indexterm>
         <primary>INTEGER</primary>
       </indexterm> (consulte <emphasis role="bold">Tipos de
     valores</emphasis>). As constantes inteiras podem ser valores decimais,

@@ -152,7 +152,7 @@
   <emphasis>index1</emphasis> com o <emphasis>index2</emphasis> e grava as
   diferenças no <emphasis>arquivo</emphasis> especificado. Se a comparação do
   <emphasis>index1</emphasis> com o <emphasis>index2</emphasis> não apresentar
-  exatamente a mesma estrutura, ocorrerá um erro. pós ter sido gerado, o
+  exatamente a mesma estrutura, ocorrerá um erro. Após ter sido gerado, o
   <emphasis>arquivo</emphasis> pode ser usado pela ação KEYPATCH <indexterm>
       <primary>KEYPATCH action</primary>
     </indexterm>.</para>

@@ -216,7 +216,7 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
   <sect2 id="TRANSFORM_Function_Requirements_Rollup">
     <title>Requerimentos da Função TRANSFORM - ROLLUP</title>
 
-    <para>Para as forms 1 e 2 de ROLLUP, a função
+    <para>Para as formas 1 e 2 de ROLLUP, a função
     <emphasis>transform</emphasis> deve adotar pelo menos dois parâmetros: um
     registro LEFT e um registro RIGHT , onde ambos devem estar no mesmo
     formato que o <emphasis>recordset</emphasis>. O formato do conjunto de
@@ -231,9 +231,9 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
   </sect2>
 
   <sect2 id="ROLLUP_Form_1">
-    <title>ROLLUP Form 1</title>
+    <title>Forma 1 do ROLLUP</title>
 
-    <para>A form 1 é processada através de todos os registros no
+    <para>A forma 1 é processada através de todos os registros no
     <emphasis>recordset </emphasis>, desempenhando a função
     <emphasis>transform</emphasis> apenas nos pares de registros adjacentes
     onde a <emphasis>condition</emphasis> de correspondência é atingida
@@ -262,9 +262,9 @@ XtabOut := ROLLUP(SortedTable,
   </sect2>
 
   <sect2 id="ROLLUP_Form_2">
-    <title>ROLLUP Form 2</title>
+    <title>Forma 2 do ROLLUP</title>
 
-    <para>A form 2 é processada através de todos os registros no
+    <para>A forma 2 é processada através de todos os registros no
     <emphasis>recordset </emphasis>, desempenhando a função
     <emphasis>transform</emphasis> apenas nos pares de registros adjacentes
     onde todas as expressões na <emphasis>fieldlist</emphasis> são
@@ -305,9 +305,9 @@ r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
   </sect2>
 
   <sect2 id="ROLLUP_Form_3">
-    <title>ROLLUP Form 3</title>
+    <title>Forma 3 do ROLLUP</title>
 
-    <para>A form 3 é uma forma especial de ROLLUP onde o segundo parâmetro
+    <para>A forma 3 é uma forma especial de ROLLUP onde o segundo parâmetro
     especificado para <emphasis>transform</emphasis> é um GROUP e o primeiro
     parâmetro é o primeiro registro nesse GROUP. Ela é processada através de
     todos os grupos no <emphasis>recordset</emphasis>, gerando um registro de

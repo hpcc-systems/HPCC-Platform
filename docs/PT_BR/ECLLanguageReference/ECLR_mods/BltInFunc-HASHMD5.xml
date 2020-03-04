@@ -37,8 +37,8 @@
   hash de 128 bits derivado de todos os valores da
   <emphasis>expressionlist</emphasis>, baseado no algoritmo MD5 desenvolvido
   pelo professor Ronald L. Rivest do MIT. Diferentemente de outras funções
-  hashing, os espaços atrás NOT são aparados antes de o valor ser
-  calculado.</para>
+  hashing, os espaços no final da string NÃO são removidos antes de o valor
+  ser calculado.</para>
 
   <para>Exemplo:</para>
 

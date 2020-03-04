@@ -59,11 +59,11 @@
 
     <para>O WsSQL é um serviço que fornece uma interface SQL para o HPCC
     System. Esse serviço da web aceita um subconjunto preparado e padrão de
-    consultas SQ. Isso fornece acesso à maioria dos dados do HPCC e consultas
+    consultas SQL. Isso fornece acesso à maioria dos dados do HPCC e consultas
     publicadas por HTTP ou HTTPS usando interfaces SOAP ou REST.</para>
 
     <para>O serviço WsSQL mapeia arquivos lógicos HPCC para tabelas RDBMS.
-    Consultas publicadas do HPCC são expostas como procedimentos armazenados
+    Consultas publicadas do HPCC são expostas como Stored Procedures
     RDBMS.</para>
 
     <para>O serviço WsSQL também fornece métodos convenientes para obter
@@ -134,17 +134,17 @@
 
             <para>O serviço WsSQL <emphasis role="bold">suporta apenas
             arquivos que contêm a definição de registro nos metadados do
-            arquivo lógico.</emphasis> Arquivos com spray não contêm esses
+            arquivo lógico.</emphasis> Arquivos sprayed não contêm esses
             metadados. Esses metadados existem em qualquer arquivo ou índice
             que é gravado no HPCC Distributed File System (DFS). Arquivos de
             dados sprayed normalmente passam por algum processamento e um
             OUTPUT dos dados transformados para o disco antes do uso,
             portanto, isso não deve interferir na utilidade do serviço. Você
             pode usar o método <emphasis>CreateTableAndLoad</emphasis> para
-            produzir um arquivo utilizável a partir de um arquivo pulverizado
-            ou em uma zona de entrada de arquivo. Consulte <link
-            linkend="CreateTableAndLoad">CreateTableAndLoad</link> for
-            details.</para>
+            produzir um arquivo utilizável a partir de um arquivo sprayed ou
+            em uma zona de entrada de arquivo. Consulte <link
+            linkend="CreateTableAndLoad">CreateTableAndLoad</link> para
+            detalhes.</para>
           </listitem>
         </itemizedlist></para>
     </sect1>
@@ -238,8 +238,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               Avançado.</para>
 
               <para>Se você estiver adicionando o WsSQL a um sistema
-              existente, abra um arquivo de ambiente que corresponda ao live
-              environment.xml. Está em destaque.</para>
+              existente, abra um arquivo de ambiente que corresponda ao
+              environment.xml atual. Está em destaque.</para>
             </listitem>
 
             <listitem>
@@ -336,8 +336,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
             pode usar o método <emphasis>CreateTableAndLoad</emphasis> para
             produzir um arquivo utilizável a partir de um arquivo pulverizado
             ou em uma zona de entrada de arquivo. Consulte <link
-            linkend="CreateTableAndLoad">CreateTableAndLoad</link> for
-            details.</para>
+            linkend="CreateTableAndLoad">CreateTableAndLoad</link> para
+            detalhes.</para>
           </listitem>
         </varlistentry>
       </variablelist></para>
@@ -347,7 +347,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Forneça sugestões SQL para que o serviço use um índice
+        <para>Forneça instruções SQL para que o serviço use um índice
         específico para sua consulta.</para>
 
         <para>Por exemplo:</para>
@@ -522,11 +522,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
         <para><emphasis role="bold">CreateTableAndLoad</emphasis></para>
 
         <para>Esse método lê um arquivo lógico ou um arquivo em uma zona de
-        aterrissagem e cria uma nova tabela e carrega os dados do arquivo de
-        origem criando uma tabela (arquivo lógico) que o WsSQL pode usar. Esta
-        função destina-se ao uso quando você tem um arquivo lógico sem
-        metadados ou para importar um novo arquivo para uma plataforma
-        HPCC.</para>
+        entrada e cria uma nova tabela e carrega os dados do arquivo de origem
+        criando uma tabela (arquivo lógico) que o WsSQL pode usar. Esta função
+        destina-se ao uso quando você tem um arquivo lógico sem metadados ou
+        para importar um novo arquivo para uma plataforma HPCC.</para>
       </listitem>
 
       <listitem>
@@ -996,7 +995,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">        Colunas</programlisting></entry>
+                  <entry><programlisting role="wsig">        Columns</programlisting></entry>
 
                   <entry>Colunas</entry>
                 </row>
@@ -1021,7 +1020,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">      Formato</programlisting></entry>
+                  <entry><programlisting role="wsig">      Format</programlisting></entry>
 
                   <entry>Formato da tabela (por exemplo, FLAT, KEYED,
                   etc)</entry>
@@ -1684,9 +1683,9 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
       <title>PrepareSQL</title>
 
       <para>Use este método para enviar uma solicitação free-hand SQL para uso
-      posteri como uma consulta parametrizada. Isso compila a consulta e
+      posterior como uma consulta parametrizada. Isso compila a consulta e
       retorna a <emphasis role="bold">Wuid</emphasis>. Esta <emphasis
-      role="bold">Wuid</emphasis> é usado posteriormente para executar a
+      role="bold">Wuid</emphasis> é usada posteriormente para executar a
       consulta com os parâmetros de entrada fornecidos usando o método
       <emphasis role="bold">ExecutePreparedSQL</emphasis> .</para>
 
@@ -2059,7 +2058,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">      Valor</programlisting></entry>
+                  <entry><programlisting role="wsig">      Value</programlisting></entry>
 
                   <entry>N</entry>
 
@@ -2436,7 +2435,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">          Valor</programlisting></entry>
+                  <entry><programlisting role="wsig">          Value</programlisting></entry>
 
                   <entry>N</entry>
 
@@ -2459,7 +2458,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
         apenas para campos de largura fixa (arquivos FLAT)</emphasis></para>
 
         <para>** <emphasis role="bold">Os detalhes do SprayedFileName ou do
-        LandingZone File devem ser fornecidos, nã ambos</emphasis></para>
+        LandingZone File devem ser fornecidos, não ambos</emphasis></para>
       </sect2>
 
       <sect2>
@@ -2496,7 +2495,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">  Sucesso</programlisting></entry>
+                  <entry><programlisting role="wsig">  Success</programlisting></entry>
 
                   <entry>Indicador booleano de sucesso [1 = sucesso]</entry>
                 </row>
@@ -2613,7 +2612,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">        Índice</programlisting></entry>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
 
                   <entry>Y</entry>
 
@@ -2675,7 +2674,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">        Índice</programlisting></entry>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
 
                   <entry>Índice adicionados à anotação</entry>
                 </row>
@@ -2806,7 +2805,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">        Índice</programlisting></entry>
+                  <entry><programlisting role="wsig">        Index</programlisting></entry>
 
                   <entry>Índice adicionados à anotação</entry>
                 </row>
@@ -2862,13 +2861,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">    Fonte</programlisting></entry>
+                  <entry><programlisting role="wsig">    Source</programlisting></entry>
 
                   <entry>Componente de origem</entry>
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">    Mensagem</programlisting></entry>
+                  <entry><programlisting role="wsig">    Menssage</programlisting></entry>
 
                   <entry>Mensagem de Erro</entry>
                 </row>
@@ -3029,8 +3028,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
           </tgroup>
         </informaltable></para>
 
-      <para>Chamada executa uma consulta ECL publicada como se fosse uma
-      stored procedure.</para>
+      <para>Call executa uma consulta ECL publicada como se fosse uma stored
+      procedure.</para>
 
       <para>Exemplo:</para>
 
@@ -3757,7 +3756,7 @@ INTO TABLE newCustomerFile4CSV
 
       <para>Essas funções agregadas são suportadas. Estas funcionam de uma
       maneira similar às suas contrapartes ECL Consulte a seção <emphasis
-      role="bold">Referência a Linguagem ECL</emphasis> for details.</para>
+      role="bold">Referência a Linguagem ECL</emphasis> para detalhes.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">

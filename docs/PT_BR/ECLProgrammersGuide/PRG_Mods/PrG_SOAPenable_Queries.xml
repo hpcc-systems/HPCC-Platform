@@ -2,12 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SOAP-enabling_Queries">
-  <title><emphasis role="bold">Consultas SOAP-enabling</emphasis></title>
+  <title><emphasis role="bold">Consultas habilitadas em
+  SOAP</emphasis></title>
 
   <para>As consultas destinadas ao uso no Roxie devem primeiramente ser
-  ativadas no SOAP. O código ECL necessário para se fazer isso é o serviço de
-  fluxo de trabalho STORED. As consultas Roxie devem estar contidas na
-  estrutura FUNCTION ou devem simplesmente ser executáveis.</para>
+  habilitadas para SOAP. O código ECL necessário para se fazer isso é o
+  serviço de fluxo de trabalho STORED. As consultas Roxie devem estar contidas
+  na estrutura FUNCTION ou devem simplesmente ser executáveis.</para>
 
   <sect2 id="The_ECL_Key_to_SOAP">
     <title>Chave ECL para SOAP</title>
@@ -32,7 +33,7 @@ STRING30 fname_value := '' : STORED('FirstName');
 </programlisting>
 
     <para>Por padrão, estes ficarão em branco e o serviço do fluxo de trabalho
-    STORED abre um espaço na tarefa para armazenar o valor. O Enterprise
+    STORED abre um espaço na workunit para armazenar o valor. O Enterprise
     Service Platform (ESP) lida com as tarefas da interface SOAP adicionando
     os valores adequados ao espaço de armazenamento criado pelo STORED. Diante
     disso, o código ECL precisa apenas usar as definições (neste caso Lname e

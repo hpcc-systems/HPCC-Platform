@@ -11,7 +11,7 @@
     </indexterm></emphasis></para>
 
   <para>A função <emphasis role="bold">FAILCODE </emphasis> retorna o último
-  código de falha para ser usada no serviço de fluxo de trabalho FAILURE
+  código de falha para ser usado no serviço de fluxo de trabalho FAILURE
   <indexterm>
       <primary>FAILURE workflow</primary>
     </indexterm> ou na estrutura TRANSFORM <indexterm>

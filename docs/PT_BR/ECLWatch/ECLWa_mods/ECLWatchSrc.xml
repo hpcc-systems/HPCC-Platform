@@ -825,7 +825,7 @@
         <sect3 id="ECLWatch_ECLWorkunitsQueriesTab">
           <title>Aba Queries</title>
 
-          <para>Consultas ECL só aparecerá nos detalhes de workunit se a
+          <para>Consultas ECL só aparecerão nos detalhes de workunit se a
           workunit for uma QUERY (CONSULTA ECL) publicada. Exibe quais
           consultas foram publicada dessa tarefa. Idêntico à aba de consultas:
           Suspend (Suspender), Unsuspend (Reativar), Activate (Ativar) ou
@@ -1420,10 +1420,9 @@
 
               <listitem>
                 <para>Verifique a caixa<emphasis role="bold"> Retain Superfile
-                Structure</emphasis> para a cópia reter a estrutura
-                                de um Superfile. Se você está copiando um
-                superfile que contém                 ÍNDICES, você deve
-                habilitar esta opção.</para>
+                Structure</emphasis> para a cópia reter a estrutura de um
+                Superfile. Se você está copiando um superfile que contém
+                ÍNDICES, você deve habilitar esta opção.</para>
               </listitem>
 
               <listitem>

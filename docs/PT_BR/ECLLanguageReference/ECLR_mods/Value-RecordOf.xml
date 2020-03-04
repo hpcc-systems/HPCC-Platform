@@ -42,7 +42,7 @@
   <para>A declaração <emphasis role="bold">RECORDOF </emphasis> especifica o
   uso de apenas o layout de registro do <emphasis>recordset </emphasis> em
   situações onde seria necessário herdar a estrutura dos campos, mas não seus
-  valores padrão, como declarações de DATASET secundário dentro de estruturas
+  valores padrão, como declarações de DATASET filho dentro de estruturas
   RECORD.</para>
 
   <para>Essa função permite que você mantenha as estruturas RECORD locais no

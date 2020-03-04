@@ -261,10 +261,10 @@
     </itemizedlist></para>
 
   <sect2 id="Keyed_Access_INDEX">
-    <title>Acesso chaveado INDEX</title>
+    <title>INDEX de acesso chaveado</title>
 
     <para>Essa forma define um arquivo de índice para permitir acesso ao
-    <emphasis>baserecset</emphasis>usando chaves. O índice é usado
+    <emphasis>baserecset</emphasis> usando chaves. O índice é usado
     principalmente pelas operações FETCH e JOIN (com a opção KEYED
     option).</para>
 
@@ -290,7 +290,7 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
   </sect2>
 
   <sect2 id="Payload_INDEX">
-    <title>Índices de Payload</title>
+    <title>INDEX Payload</title>
 
     <para>Essa forma define um arquivo de índice que contém campos adicionais
     de carga útil, além das chaves. A carga útil pode conter campos com o
@@ -321,7 +321,7 @@ BUILDINDEX(VehicleKey);</programlisting>
   </sect2>
 
   <sect2 id="Duplicate_INDEX">
-    <title>Duplicate INDEX</title>
+    <title>INDEX Duplicado</title>
 
     <para>Essa forma define um <emphasis>newindexfile </emphasis> idêntico ao
     <emphasis>index</emphasis> previamente definido.</para>

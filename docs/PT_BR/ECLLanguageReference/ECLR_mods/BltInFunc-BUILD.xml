@@ -145,10 +145,10 @@
   extensão .DLL na programação do Windows, ou da .SO no Linux.</para>
 
   <sect2 id="Index_BUILD_Options">
-    <title>Opções Index BUILD</title>
+    <title>Opções de BUILD de Index</title>
 
-    <para>As opções a seguir estão disponíveis em todas as três formas INDEX
-    de BUILD (apenas):</para>
+    <para>As opções a seguir estão disponíveis em todas as três formas BUILD
+    de INDEX (apenas):</para>
 
     <para><emphasis role="bold">[, CLUSTER<indexterm>
         <primary>CLUSTER</primary>
@@ -603,7 +603,7 @@
   </sect2>
 
   <sect2 id="BUILD_an_Access_Index">
-    <title>BUILD an Access Index</title>
+    <title>BUILD um Index de Acesso</title>
 
     <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
     :=<emphasis role="bold"> ]
@@ -631,7 +631,7 @@ BUILD(Vehicles,{lname,filepos},'vkey::lname');
   </sect2>
 
   <sect2 id="BUILD_a_Payload_Index">
-    <title>BUILD a Payload Index</title>
+    <title>BUILD um Index Payload</title>
 
     <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
     :=<emphasis role="bold"> ]
@@ -669,7 +669,7 @@ BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
   </sect2>
 
   <sect2 id="BUILD_from_an_INDEX_Definition">
-    <title>BUILD from an INDEX Definition</title>
+    <title>BUILD a partir de uma definição INDEX</title>
 
     <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
     :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
@@ -709,7 +709,7 @@ BUILD(i, ds);
   </sect2>
 
   <sect2 id="BUILD_a_Query_Library">
-    <title>BUILD a Query Library</title>
+    <title>BUILD uma Biblioteca de Consulta</title>
 
     <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
     </emphasis><emphasis role="bold">);</emphasis></para>

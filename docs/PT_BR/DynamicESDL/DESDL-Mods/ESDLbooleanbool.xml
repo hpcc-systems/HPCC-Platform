@@ -2,9 +2,9 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_boolean">
-  <title><emphasis role="bold">boolean <indexterm>
+  <title><emphasis role="bold">booleanbool</emphasis> <indexterm>
       <primary>boolean</primary>
-    </indexterm>bool</emphasis></title>
+    </indexterm></title>
 
   <para><indexterm>
       <primary>bool</primary>
