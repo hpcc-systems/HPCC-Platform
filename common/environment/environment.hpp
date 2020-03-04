@@ -289,6 +289,7 @@ extern ENVIRONMENT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environ
 extern ENVIRONMENT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
 extern ENVIRONMENT_API bool isProcessCluster(const char *remoteDali, const char *process);
 extern ENVIRONMENT_API bool isProcessCluster(const char *process);
+extern ENVIRONMENT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames);
 
 #endif // _ENVIRONMENT_INCL
 //end
