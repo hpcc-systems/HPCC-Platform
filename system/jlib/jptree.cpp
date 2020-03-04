@@ -7560,110 +7560,6 @@ IPropertyTree *createPTreeFromJSONFile(const char *filename, byte flags, PTreeRe
 
 static constexpr const char * currentVersion = "1.0";
 
-/*
- * Convert the keys with a json file to attributes and tags within the property tree
- * tags that start with a lower case letter are mapped to attributes (and must have a value)
- * the special tag "#text# is used to set the text of an element
- * otherwise the key creates an element, and is not expected to have a value
-*/
-static void mapJsonToXmlConfig(IPropertyTree & target, IPropertyTree & source)
-{
-    Owned<IAttributeIterator> aiter = source.getAttributes();
-    ForEach(*aiter)
-        target.addProp(aiter->queryName(), aiter->queryValue());
-
-    StringBuffer tempPath;
-    Owned<IPropertyTreeIterator> iter = source.getElements("*");
-    ForEach(*iter)
-    {
-        IPropertyTree & child = iter->query();
-        const char * tag = child.queryName();
-        const char * value = child.queryProp("");
-        if (islower(*tag))
-        {
-            // JPtree does not currently distinguish between "" and nullptr, so assume it was ""
-            if (!value)
-                value = "";  // throw makeStringExceptionV(99, "Expected a value associated with key '%s'", tag);
-            StringBuffer attrName;
-            attrName.append("@").append(tag);
-            target.setProp(attrName, value);
-        }
-        else if (strsame(tag, "#text"))
-            target.setProp("", value);
-        else if (*tag == '-')
-        {
-            StringBuffer attrName;
-            attrName.append("@").append(tag+1);
-            target.setProp(attrName, value);
-        }
-        else if (value)
-        {
-            throw makeStringExceptionV(99, "Did not expect a value for key '%s'", tag);
-            target.setProp(tag, value);
-            //Should possibly report an error
-        }
-        else
-        {
-            IPropertyTree * targetChild = target.addPropTree(tag);
-            mapJsonToXmlConfig(*targetChild, child);
-        }
-    }
-}
-
-IPropertyTree * mapJsonToXmlConfig(IPropertyTree * source)
-{
-    Owned<IPropertyTree> target = createPTree(source->queryName());
-    mapJsonToXmlConfig(*target, *source);
-    return target.getClear();
-}
-
-//----------------------------------------------------
-
-static void mapXmlConfigToJson(IPropertyTree & target, IPropertyTree & source)
-{
-    Owned<IAttributeIterator> aiter = source.getAttributes();
-    ForEach(*aiter)
-    {
-        const char * name = aiter->queryName();
-        if (islower(name[1]))
-            target.addProp(name + 1, aiter->queryValue());
-        else
-        {
-            //StringBuffer propName;
-            //  propName.append("-").append(name + 1);
-            target.setProp(name, aiter->queryValue());
-        }
-    }
-
-    StringBuffer tempPath;
-    Owned<IPropertyTreeIterator> iter = source.getElements("*");
-    ForEach(*iter)
-    {
-        IPropertyTree & child = iter->query();
-        const char * tag = child.queryName();
-        const char * value = child.queryProp("");
-        if (islower(*tag))
-        {
-            //MORE: Is this an error?
-            target.setProp(tag, value);
-        }
-        else
-        {
-            IPropertyTree * targetChild = target.addPropTree(tag);
-            mapXmlConfigToJson(*targetChild, child);
-            if (value)
-                targetChild->setProp("#text", value);
-        }
-    }
-}
-
-IPropertyTree * mapXmlConfigToJson(IPropertyTree * source)
-{
-    Owned<IPropertyTree> target = createPTree(source->queryName());
-    mapXmlConfigToJson(*target, *source);
-    return target.getClear();
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 /*
  * Use source to overwrite any changes in target
@@ -7731,11 +7627,6 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     Owned<IPropertyTree> configTree;
     if (strieq(ext, ".yaml"))
         configTree.setown(createPTreeFromYAMLFile(filename, 0, ptr_ignoreWhiteSpace, nullptr));
-    else if (strieq(ext, ".json"))
-    {
-        configTree.setown(createPTreeFromJSONFile(filename, 0, ptr_ignoreWhiteSpace, nullptr));
-        configTree.setown(mapJsonToXmlConfig(configTree));
-    }
     else
         throw makeStringExceptionV(99, "Unrecognised file extension %s", ext);
 
@@ -7914,8 +7805,6 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         componentDefault.set(defaultConfig->queryPropTree(componentTag));
         if (!componentDefault)
             throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
-        if (*defaultYaml=='{')
-            componentDefault.setown(mapJsonToXmlConfig(componentDefault));
     }
     else
         componentDefault.setown(createPTree(componentTag));
