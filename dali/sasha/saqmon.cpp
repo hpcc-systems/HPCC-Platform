@@ -11,6 +11,7 @@
 #include "saserver.hpp"
 #include "workunit.hpp"
 #include "wujobq.hpp"
+#include "environment.hpp"
 
 //#define TESTING
 
