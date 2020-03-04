@@ -1,28 +1,17 @@
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: datastorage-pv
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: {{ .Values.global.dataStorage.storageSize }}
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: {{ printf "%s/hpcc-data" $.Values.global.dataStorage.hostMountPath | quote }}
-    type: DirectoryOrCreate
----
+{{- if (not .Values.global.dataStorage.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: datastorage-pv-claim
+  name: {{ printf "%s-datastorage-pv-claim" (include "hpcc.utils.fullname" .) }}
+  labels:
+    app.kubernetes.io/name: {{ printf "%s-datastorage-pv-claim" (include "hpcc.utils.fullname" .) }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "hpcc.utils.chart" . }}
 spec:
-  storageClassName: manual
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: {{ .Values.global.dataStorage.storageSize }}
+{{- end }}

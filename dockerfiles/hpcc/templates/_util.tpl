@@ -1,3 +1,35 @@
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "hpcc.utils.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "hpcc.utils.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "hpcc.utils.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- /* Translate a port list to a comma-separated list */ -}}
 {{- define "hpcc.utils.portListToCommas" -}}
  {{- if hasPrefix "[]" (typeOf .) -}}
@@ -58,14 +90,12 @@ data:
 
 {{- /* Add standard volumes for a component */ -}}
 {{- define "hpcc.utils.addVolumes" -}}
-volumes:
-{{ include "hpcc.utils.addConfigVolume" . }}
 - name: dllserver-pv-storage
   persistentVolumeClaim:
-    claimName: dllserver-pv-claim
+    claimName: {{ .Values.global.dllserver.existingClaim | default (printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .)) }}
 - name: datastorage-pv
   persistentVolumeClaim:
-    claimName: datastorage-pv-claim
+    claimName: {{ .Values.global.dataStorage.existingClaim | default (printf "%s-datastorage-pv-claim" (include "hpcc.utils.fullname" .)) }}
 {{- end -}}
 
 {{- /* Add standard volume mounts for a component */ -}}
@@ -109,23 +139,3 @@ imagePullPolicy: {{ .me.image.pullPolicy | default .root.Values.global.image.pul
 imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent" }}
 {{- end -}}
 {{- end -}}
-
-{{- /* A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV */ -}}
-{{- define "hpcc.utils.changeMountPerms" -}}
-initContainers:
-# This is a bit of a hack, to ensure that the persistent storage mounted
-# is writable. This is not something we would want to do if using anything other than
-# local storage (which is only sensible on single-node systems).
-# NB: uid=999 and gid=1000 are the uid/gid of the hpcc user, built into platform-core
-{{- $permCmd := printf "chown -R 999:1000 %s" .volumePath }}
-- name: volume-mount-hack
-  image: busybox
-  command: [
-             "sh",
-             "-c",
-             "{{ $permCmd }}"
-           ]
-  volumeMounts:
-    - name: {{ .volumeName | quote}}
-      mountPath: {{ .volumePath | quote }}
-{{- end }}

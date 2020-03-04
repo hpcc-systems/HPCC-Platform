@@ -13,9 +13,6 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      {{- if $.Values.global.singleNode | default false }}
-{{ include "hpcc.utils.changeMountPerms" (dict "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") | indent 6 }}
-      {{- end }}
       serviceAccountName: hpcc
       containers:
       - name: {{ .name | quote }}
@@ -25,7 +22,9 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
-{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 ---
 {{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) }}
   jobspec.yaml: |
@@ -54,7 +53,9 @@ spec:
                         %args
                      ]
 {{ include "hpcc.utils.addVolumeMounts" . | indent 12 }}
-{{ include "hpcc.utils.addVolumes" . | indent 10 }}
+          volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 10 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
       
