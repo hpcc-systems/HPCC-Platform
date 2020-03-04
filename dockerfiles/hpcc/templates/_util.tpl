@@ -1,3 +1,35 @@
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "hpcc.utils.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "hpcc.utils.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "hpcc.utils.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- /* Translate a port list to a comma-separated list */ -}}
 {{- define "hpcc.utils.portListToCommas" -}}
  {{- if hasPrefix "[]" (typeOf .) -}}
@@ -58,14 +90,12 @@ data:
 
 {{- /* Add standard volumes for a component */ -}}
 {{- define "hpcc.utils.addVolumes" -}}
-volumes:
-{{ include "hpcc.utils.addConfigVolume" . }}
 - name: dllserver-pv-storage
   persistentVolumeClaim:
-    claimName: dllserver-pv-claim
+    claimName: {{ .Values.global.dllserver.existingClaim | default (printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .)) }}
 - name: datastorage-pv
   persistentVolumeClaim:
-    claimName: datastorage-pv-claim
+    claimName: {{ .Values.global.dataStorage.existingClaim | default (printf "%s-datastorage-pv-claim" (include "hpcc.utils.fullname" .)) }}
 {{- end -}}
 
 {{- /* Add standard volume mounts for a component */ -}}

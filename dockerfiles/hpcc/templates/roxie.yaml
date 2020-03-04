@@ -77,7 +77,9 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
-{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 ---
 
 {{ end -}}
@@ -112,7 +114,9 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" $roxie | indent 8 }}
-{{ include "hpcc.utils.addVolumes" $roxie | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 
 ---
 

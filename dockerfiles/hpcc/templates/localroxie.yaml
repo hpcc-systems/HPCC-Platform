@@ -27,7 +27,9 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
-{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 ---
 {{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" $roxie ) -}}
 ---

@@ -1,10 +1,17 @@
+{{- if (not .Values.global.dllserver.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: dllserver-pv-claim
+  name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .) }}
+  labels:
+    app.kubernetes.io/name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .) }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "hpcc.utils.chart" . }}
 spec:
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: {{ .Values.global.dllserver.storageSize }}
+{{- end }}

@@ -5,10 +5,25 @@ global:
   
   dllserver:
     storageSize: 3Gi
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    storageClass: ""
+    # existingClaim: ""
   
   dataStorage:
     storageSize: 1G
-    startDafilesrv: false # Temporary until non attached storage functionality added
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    storageClass: ""
+    # existingClaim: ""
 
   image:
     # This should probably say "latest" or "stable" in the example script, but set to a specific version in production systems

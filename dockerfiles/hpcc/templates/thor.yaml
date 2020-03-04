@@ -29,7 +29,9 @@ spec:
               ]
 {{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 8 }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
-{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,16 +59,9 @@ spec:
           ports:
             - containerPort: {{ $slavePort }}
 {{ include "hpcc.utils.addVolumeMounts" . | indent 10 }}
-        {{- if $thor.startDafilesrv | default false }}
-        - name: {{ printf "%s-dafilesrv" $slaveName | quote }}
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 10 }}
-          command: ["dafilesrv"]
-          ports:
-            - containerPort: 7100
-          volumeMounts:
-{{ include "hpcc.utils.addDataVolumeMount" . | indent 12 }}
-        {{- end }}
-{{ include "hpcc.utils.addVolumes" . | indent 6 }}
+      volumes:
+{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
 ---
 apiVersion: v1
 kind: Service
