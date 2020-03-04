@@ -42,7 +42,7 @@ if(WSSQL_SERVICE)
         ${CMAKE_CURRENT_SOURCE_DIR}/ws_sqlService.cpp
         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
         ${ESPSCM_GENERATED_DIR}/ws_sql_esp.cpp
-        ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
+        ${ESPSCM_GENERATED_DIR}/ws_workunits_struct_esp.cpp
         ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp
         ${HPCC_SOURCE_DIR}/esp/services/ws_ecl/ws_ecl_wuinfo.cpp
         ${HPCC_SOURCE_DIR}/esp/services/ws_workunits/ws_workunitsHelpers.cpp
