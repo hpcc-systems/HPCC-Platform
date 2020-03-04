@@ -1,6 +1,8 @@
 import { Store, ValueChangedMessage } from "@hpcc-js/comms";
 import { Dispatch, IObserverHandle } from "@hpcc-js/util";
 
+declare const dojoConfig;
+
 export interface IKeyValStore {
     set(key: string, value: string, broadcast?: boolean): Promise<void>;
     get(key: string, broadcast?: boolean): Promise<string | undefined>;
@@ -24,7 +26,7 @@ export function globalKeyValStore(): IKeyValStore {
  *      No push notifications outside of current tab
  **/
 export function userKeyValStore(): IKeyValStore {
-    const userName = globalThis.dojoConfig.username;
+    const userName = dojoConfig.username;
     if (!userName) {
         //  Fallback to local storage  ---
         return localKeyValStore();
