@@ -109,23 +109,3 @@ imagePullPolicy: {{ .me.image.pullPolicy | default .root.Values.global.image.pul
 imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent" }}
 {{- end -}}
 {{- end -}}
-
-{{- /* A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV */ -}}
-{{- define "hpcc.utils.changeMountPerms" -}}
-initContainers:
-# This is a bit of a hack, to ensure that the persistent storage mounted
-# is writable. This is not something we would want to do if using anything other than
-# local storage (which is only sensible on single-node systems).
-# NB: uid=999 and gid=1000 are the uid/gid of the hpcc user, built into platform-core
-{{- $permCmd := printf "chown -R 999:1000 %s" .volumePath }}
-- name: volume-mount-hack
-  image: busybox
-  command: [
-             "sh",
-             "-c",
-             "{{ $permCmd }}"
-           ]
-  volumeMounts:
-    - name: {{ .volumeName | quote}}
-      mountPath: {{ .volumePath | quote }}
-{{- end }}

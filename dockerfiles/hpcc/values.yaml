@@ -8,8 +8,6 @@ global:
   
   dataStorage:
     storageSize: 1G
-    # For singleMode only. Host mount point root for persistent storage.
-    hostMountPath: "/docker-host-mnt"
     startDafilesrv: false # Temporary until non attached storage functionality added
 
   image:
@@ -18,13 +16,6 @@ global:
     version: master-2020-02-10
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
     pullPolicy: IfNotPresent
-
-  # Remove or override this if you don't want the simplified assumptions (including
-  # persistent storage that is local to the node) used for single-node installations
-  
-  singleNode: true
-
-
 
 dali:
 - name: mydali
