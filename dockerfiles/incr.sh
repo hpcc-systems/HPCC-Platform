@@ -30,7 +30,11 @@ PREV=$1
 
 BUILD_TYPE=Debug
 BUILD_LABEL=${HEAD}-Debug
-GITHUB_USER=$(git remote get-url origin | sed s/.*:// | sed s+/.*++)
+GITHUB_USER=$(git remote get-url origin | sed -e "s+http.*com/++" -e "s+.*:++" -e "s+/.*++")
+
+if [[ -z "${GITHUB_USER}" ]]; then
+    echo Warning: GITHUB_USER blank - Is remote url in the form https://github.com/[user]/[repository] or git@github.com:[user]/[repository]?
+fi
 
 if [[ "$BUILD_LABEL" == "$PREV" ]] ; then
     echo Docker image hpccsystems/platform-core:${HEAD} already exists
