@@ -2,12 +2,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .) }}
+  name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .) }}
   labels:
-    app.kubernetes.io/name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.utils.fullname" .) }}
+    app.kubernetes.io/name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .) }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ include "hpcc.utils.chart" . }}
+    helm.sh/chart: {{ include "hpcc.chart" . }}
 spec:
   accessModes:
     - ReadWriteMany

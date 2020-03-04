@@ -17,16 +17,16 @@ spec:
       containers:
       - name: {{ .name | quote }}
         args: [ 
-                {{ include "hpcc.utils.configArg" . }},
-                {{ include "hpcc.utils.daliArg" $ }}
+                {{ include "hpcc.configArg" . }},
+                {{ include "hpcc.daliArg" $ }}
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
-{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) }}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "me" .) }}
   jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -38,7 +38,7 @@ spec:
         spec:
           containers:
           - name: %jobname
-            image: {{ include "hpcc.utils.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
+            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
             resources:
               requests:
                 #request-memory
@@ -48,14 +48,14 @@ spec:
                 #limit-cpu
             command: [
                         "eclagent",
-                        {{ include "hpcc.utils.configArg" . }},
-                        {{ include "hpcc.utils.daliArg" $ }},
+                        {{ include "hpcc.configArg" . }},
+                        {{ include "hpcc.daliArg" $ }},
                         %args
                      ]
-{{ include "hpcc.utils.addVolumeMounts" . | indent 12 }}
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
           volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 10 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 10 }}
+{{ include "hpcc.addConfigVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
       

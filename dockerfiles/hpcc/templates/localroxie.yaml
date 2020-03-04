@@ -19,19 +19,19 @@ spec:
       containers:
       - name: {{ $roxie.name | quote }}
         args: [
-                {{ include "hpcc.utils.configArg" $roxie }},
-                {{ include "hpcc.utils.daliArg" $ }},
-                "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
+                {{ include "hpcc.configArg" $roxie }},
+                {{ include "hpcc.daliArg" $ }},
+                "--serverPorts={{ template "hpcc.portListToCommas" $roxie.ports }}", 
                 "--localSlave=true",
                 "--resolveLocally=false"
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
-{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" $roxie ) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "me" $roxie ) -}}
 ---
 {{- end }}
 {{- end }}

@@ -16,16 +16,16 @@ spec:
       containers:
       - name: {{ .name | quote }}
         args: [
-                # {{ include "hpcc.utils.configArg" . }},
-                # {{ include "hpcc.utils.daliArg" $ }}
+                # {{ include "hpcc.configArg" . }},
+                # {{ include "hpcc.daliArg" $ }}
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "esp") | indent 8 }}
-{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "esp") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "me" .) -}}
 ---
 apiVersion: v1
 kind: Service
