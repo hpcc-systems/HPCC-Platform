@@ -231,5 +231,64 @@ extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, co
 
 extern ENVIRONMENT_API unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list);
 
+//------------------- Moved from workunit.hpp -------------
+
+// This enumeration is currently duplicated in workunit.hpp and environment.hpp.  They must stay in sync.
+#ifndef ENGINE_CLUSTER_TYPE
+#define ENGINE_CLUSTER_TYPE
+enum ClusterType { NoCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
+#endif
+
+interface IStringIterator;
+
+//! IClusterInfo
+interface IConstWUClusterInfo : extends IInterface
+{
+    virtual IStringVal & getName(IStringVal & str) const = 0;
+    virtual IStringVal & getScope(IStringVal & str) const = 0;
+    virtual IStringVal & getThorQueue(IStringVal & str) const = 0;
+    virtual unsigned getSize() const = 0;
+    virtual unsigned getNumberOfSlaveLogs() const = 0;
+    virtual ClusterType getPlatform() const = 0;
+    virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
+    virtual IStringVal & getAgentName(IStringVal & str) const = 0;
+    virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
+    virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
+    virtual const StringArray & getThorProcesses() const = 0;
+    virtual const StringArray & getPrimaryThorProcesses() const = 0;
+    virtual const SocketEndpointArray & getRoxieServers() const = 0;
+    virtual const char *getLdapUser() const = 0;
+    virtual const char *getLdapPassword() const = 0;
+    virtual unsigned getRoxieRedundancy() const = 0;
+    virtual unsigned getChannelsPerNode() const = 0;
+    virtual int getRoxieReplicateOffset() const = 0;
+    virtual const char *getAlias() const = 0;
+};
+
+extern ENVIRONMENT_API void getDFUServerQueueNames(StringArray &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
+extern ENVIRONMENT_API ClusterType getClusterTypeByClusterName(const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterGroupName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster);
+extern ENVIRONMENT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
+extern ENVIRONMENT_API bool validateTargetClusterName(const char *clustname);
+extern ENVIRONMENT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
+typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
+extern ENVIRONMENT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
+extern ENVIRONMENT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters);
+extern ENVIRONMENT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
+extern ENVIRONMENT_API bool isProcessCluster(const char *remoteDali, const char *process);
+extern ENVIRONMENT_API bool isProcessCluster(const char *process);
+
 #endif // _ENVIRONMENT_INCL
 //end

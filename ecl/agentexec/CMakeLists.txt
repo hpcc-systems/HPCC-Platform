@@ -33,6 +33,7 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../dali/remote 
+         ./../../common/environment
          ./../../common/workunit 
          ./../../system/mp 
          ./../../dali/base
@@ -48,5 +49,6 @@ target_link_libraries ( agentexec
          jlib 
          dalibase 
          eclrtl 
+         environment
          workunit
     )

@@ -1400,15 +1400,12 @@ class CSashaArchiverServer: public ISashaServer, public Thread
 
     bool stopped;
     Semaphore stopsem;
-    Owned<IConstEnvironment> env;
 public:
     IMPLEMENT_IINTERFACE;
 
     CSashaArchiverServer()
         : Thread("CSashaArchiverServer")
     {
-        Owned<IEnvironmentFactory> f = getEnvironmentFactory(true);
-        env.setown(f->openEnvironment());
         stopped = false;
     }
 
@@ -1438,7 +1435,6 @@ public:
     {
         if (!stopped&&archiver.ready()) {
             if (!conn.get()) {
-                env->clearCache();  // need to do for some archive operations
                 conn.setown(querySDS().connect("/", myProcessSession(), 0, 5*60*1000));  
             }
             archiver.run(conn);

@@ -71,13 +71,6 @@ class StringBuffer;
 
 typedef unsigned __int64 __uint64;
 
-interface IScmIterator : extends IInterface
-{
-    virtual bool first() = 0;
-    virtual bool next() = 0;
-    virtual bool isValid() = 0;
-};
-
 interface IQueueSwitcher : extends IInterface
 {
     virtual void * getQ(const char * qname, const char * wuid) = 0;
@@ -538,35 +531,15 @@ interface IConstWUExceptionIterator : extends IScmIterator
     virtual IConstWUException & query() = 0;
 };
 
+// This enumeration is currently duplicated in workunit.hpp and environment.hpp.  They must stay in sync.
+#ifndef ENGINE_CLUSTER_TYPE
+#define ENGINE_CLUSTER_TYPE
 enum ClusterType { NoCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
+#endif
 
 extern WORKUNIT_API ClusterType getClusterType(const char * platform, ClusterType dft = NoCluster);
 extern WORKUNIT_API const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive);
 inline bool isThorCluster(ClusterType type) { return (type == ThorLCRCluster); }
-
-//! IClusterInfo
-interface IConstWUClusterInfo : extends IInterface
-{
-    virtual IStringVal & getName(IStringVal & str) const = 0;
-    virtual IStringVal & getScope(IStringVal & str) const = 0;
-    virtual IStringVal & getThorQueue(IStringVal & str) const = 0;
-    virtual unsigned getSize() const = 0;
-    virtual unsigned getNumberOfSlaveLogs() const = 0;
-    virtual ClusterType getPlatform() const = 0;
-    virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
-    virtual IStringVal & getAgentName(IStringVal & str) const = 0;
-    virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
-    virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
-    virtual const StringArray & getThorProcesses() const = 0;
-    virtual const StringArray & getPrimaryThorProcesses() const = 0;
-    virtual const SocketEndpointArray & getRoxieServers() const = 0;
-    virtual const char *getLdapUser() const = 0;
-    virtual const char *getLdapPassword() const = 0;
-    virtual unsigned getRoxieRedundancy() const = 0;
-    virtual unsigned getChannelsPerNode() const = 0;
-    virtual int getRoxieReplicateOffset() const = 0;
-    virtual const char *getAlias() const = 0;
-};
 
 //! IWorkflowItem
 enum WFType
@@ -1158,11 +1131,6 @@ interface IConstWUScopeIterator : extends IScmIterator
 interface IWorkUnit;
 interface IUserDescriptor;
 
-interface IStringIterator : extends IScmIterator
-{
-    virtual IStringVal & str(IStringVal & str) = 0;
-};
-
 interface IConstWorkUnitInfo : extends IInterface
 {
     virtual const char *queryWuid() const = 0;
@@ -1552,30 +1520,6 @@ protected:
 
 typedef IWorkUnitFactory * (* WorkUnitFactoryFactory)(const IPropertyTree *);
 
-extern WORKUNIT_API void getDFUServerQueueNames(StringArray &ret, const char *process);
-extern WORKUNIT_API IStringVal &getEclCCServerQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API IStringVal &getEclServerQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API IStringVal &getEclSchedulerQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
-extern WORKUNIT_API ClusterType getClusterTypeByClusterName(const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterGroupName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster);
-extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
-extern WORKUNIT_API bool validateTargetClusterName(const char *clustname);
-extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
-typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
-extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
-extern WORKUNIT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters);
-extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
-extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process);
-extern WORKUNIT_API bool isProcessCluster(const char *process);
 extern WORKUNIT_API IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu);
 extern WORKUNIT_API WUGraphType getGraphTypeFromString(const char* type);
 
@@ -1584,7 +1528,6 @@ extern WORKUNIT_API void clientShutdownWorkUnit();
 extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IConstWorkUnit * wu);
 extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWorkUnit * wu);
 extern WORKUNIT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames);
-extern WORKUNIT_API unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames);
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
 extern WORKUNIT_API StringBuffer &formatGraphTimerScope(StringBuffer &str, unsigned wfid, const char *graphName, unsigned subGraphNum, unsigned __int64 subId);
 extern WORKUNIT_API bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & graphNum, unsigned &subGraphNum, unsigned &subId);

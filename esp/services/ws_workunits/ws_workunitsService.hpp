@@ -22,6 +22,8 @@
 #include "workunit.hpp"
 #include "ws_workunitsHelpers.hpp"
 #include "dasds.hpp"
+#include "environment.hpp"
+
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif

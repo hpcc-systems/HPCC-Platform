@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jlib.hpp"
 
+#include "environment.hpp"
 #include "wujobq.hpp"
 #include "nbcd.hpp"
 #include "rtlread_imp.hpp"

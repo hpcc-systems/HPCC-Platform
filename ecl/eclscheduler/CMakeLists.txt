@@ -34,8 +34,9 @@ set (    INCLUDES
     )
 
 include_directories ( 
-         ./../../common/remote 
          ./../../common/workunit 
+         ./../../common/environment
+         ./../../common/workunit
          ./../../system/include 
          ./../../system/mp 
          ./../../dali/base 
@@ -50,6 +51,7 @@ install ( TARGETS eclscheduler RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclscheduler 
          jlib
          schedulectrl
+         environment
          workunit
     )
 

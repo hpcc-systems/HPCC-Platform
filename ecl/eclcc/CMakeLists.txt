@@ -34,6 +34,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ./../../ecl/hqlcpp 
+         ./../../common/environment
          ./../../common/workunit 
          ./../../common/dllserver 
          ./../../common/deftype 
@@ -65,6 +66,7 @@ target_link_libraries ( eclcc
          deftype 
          dafsclient 
          dalibase 
+         environment
          workunit 
          thorhelper 
          hql

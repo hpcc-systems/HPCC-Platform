@@ -59,6 +59,8 @@
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
 
+#include "environment.hpp"
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
