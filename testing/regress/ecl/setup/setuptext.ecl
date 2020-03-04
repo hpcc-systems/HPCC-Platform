@@ -137,7 +137,7 @@ convertDocumentStreamToTokens(dataset(inputDocumentRecord) inFile) := FUNCTION
 
     pattern emptyLine := ws*;
 
-    doProcess2 := parse(splitFile, text, emptyLine, createMatchPara(left), whole);
+    doProcess2 := sorted(parse(splitFile, text, emptyLine, createMatchPara(left), whole), doc, dpos);
 
     RETURN merge(sorted(doProcess1, doc, dpos), doProcess2, sorted(doc, dpos));
 END;
@@ -170,10 +170,11 @@ processSentanceAndParagraphMarkers(dataset(parseRecord) extractedWords, set of s
         SELF.wip := IF(isOpen, 1, 0);
         SELF := [];
     END;
-    implicitStarts := sorted(normalize(singlePerDoc, count(spanTags), createSpanTag(LEFT.doc, 0, true, COUNTER)), doc, dpos, kind);
-    implicitEnds := normalize(singlePerDoc, count(spanTags), createSpanTag(LEFT.doc, LEFT.maxDocPos+1, false, count(spanTags)+1-COUNTER));
+    implicitStarts := sorted(normalize(singlePerDoc, count(spanTags), createSpanTag(LEFT.doc, 0, true, COUNTER)), doc, dpos, wordKindSortOrder(kind, wip, original));
+    implicitEnds := sorted(normalize(singlePerDoc, count(spanTags), createSpanTag(LEFT.doc, LEFT.maxDocPos+1, false, count(spanTags)+1-COUNTER)), doc, dpos, wordKindSortOrder(kind, wip, original));
 
     //Combine non tags, with end,begin for sentance,paragraph and implicit begin sentance, end sentance etc. for whole document
+    //Each dataset can only have one entry for each (doc,dpos), but they should be merged in wordKindSortOrder() order
     cleaned := MERGE(implicitStarts, markerOpen, withoutMarkers, markerClose, implicitEnds, sorted(doc, dpos, wordKindSortOrder(kind, wip, original)));
     RETURN cleaned;
 END;

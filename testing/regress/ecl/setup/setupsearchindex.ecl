@@ -18,6 +18,7 @@
 //class=textsearch
 
 #option ('checkAsserts',false);
+#onwarning (3164, ignore); // The merge of tokens has single entries from some of the dataset, and the merge criteria orders between the input datasets
 
 import $.SetupText;
 import $.Options;
