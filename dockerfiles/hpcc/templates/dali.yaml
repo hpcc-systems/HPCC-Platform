@@ -16,15 +16,15 @@ spec:
       containers:
       - name: {{ .name | quote }}
         args: [
-                # {{ include "hpcc.utils.configArg" . }} - dali does not support this yet
+                # {{ include "hpcc.configArg" . }} - dali does not support this yet
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}
         volumeMounts:
-{{ include "hpcc.utils.addConfigVolumeMount" . | indent 8 }}
+{{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
 ---
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" .) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "me" .) -}}
 ---
 apiVersion: v1
 kind: Service

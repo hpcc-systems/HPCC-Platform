@@ -21,11 +21,11 @@ spec:
       containers:
       - name: {{ $toponame | quote }}
         args: [ "--port={{ $topoport }}" ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
         volumeMounts:
-{{ include "hpcc.utils.addConfigVolumeMount" . | indent 8 }}
+{{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
 
 ---
 
@@ -44,7 +44,7 @@ spec:
 
 ---
 
-{{- include "hpcc.utils.generateConfigMap" (dict "root" $ "me" $roxie) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "me" $roxie) -}}
 
 ---
 
@@ -67,19 +67,19 @@ spec:
       containers:
       - name: {{ $servername | quote }}
         args: [
-                {{ include "hpcc.utils.configArg" . }},
-                {{ include "hpcc.utils.daliArg" $ }},
+                {{ include "hpcc.configArg" . }},
+                {{ include "hpcc.daliArg" $ }},
                 "--numChannels={{ $numChannels }}",
-                "--serverPorts={{ template "hpcc.utils.portListToCommas" $roxie.ports }}", 
+                "--serverPorts={{ template "hpcc.portListToCommas" $roxie.ports }}", 
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
                 "--localSlave=false", 
                 "--resolveLocally=false"
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
-{{ include "hpcc.utils.addVolumeMounts" . | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 
 {{ end -}}
@@ -104,19 +104,19 @@ spec:
       containers:
       - name: {{ $name | quote}}
         args: [ 
-                {{ include "hpcc.utils.configArg" $roxie }},
-                {{ include "hpcc.utils.daliArg" $ }},
+                {{ include "hpcc.configArg" $roxie }},
+                {{ include "hpcc.daliArg" $ }},
                 "--channels={{ $channel }}", 
-                "--serverPorts={{ if not $roxie.serverReplicas }}{{ template "hpcc.utils.portListToCommas" $roxie.ports }}{{ end }}",
+                "--serverPorts={{ if not $roxie.serverReplicas }}{{ template "hpcc.portListToCommas" $roxie.ports }}{{ end }}",
                 "--numChannels={{ $numChannels }}",
                 "--localSlave=false", 
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
               ]
-{{ include "hpcc.utils.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
-{{ include "hpcc.utils.addVolumeMounts" $roxie | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $roxie | indent 8 }}
       volumes:
-{{ include "hpcc.utils.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.utils.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
 
 ---
 
