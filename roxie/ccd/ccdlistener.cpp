@@ -1011,11 +1011,15 @@ public:
         {
             if (daliHelper->connected())
             {
+#ifdef _CONTAINERIZED
+                VStringBuffer queueNames("%s.agent", topology->queryProp("@name"));
+#else
                 SCMStringBuffer queueNames;
                 if (topology->hasProp("@queueNames")) // MORE - perhaps should be in the farmProcess(0) section
                     queueNames.set(topology->queryProp("@queueNames"));
                 else
                     getRoxieQueueNames(queueNames, topology->queryProp("@name"));
+#endif
                 if (queueNames.length())
                 {
                     if (traceLevel)

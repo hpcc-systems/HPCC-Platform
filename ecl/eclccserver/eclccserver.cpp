@@ -25,11 +25,13 @@
 #include "daclient.hpp"
 #include "dasess.hpp"
 #include "danqs.hpp"
-#include "dalienv.hpp"
 #include "workunit.hpp"
 #include "wujobq.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
+#ifndef _CONTAINERIZED
+#include "dalienv.hpp"
+#endif
 
 Owned<IPropertyTree> globals;
 
@@ -480,6 +482,12 @@ public:
         serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
         StringAttr clusterName(workunit->queryClusterName());
+#ifdef _CONTAINERIZED
+        VStringBuffer xpath("queues[@name='%s']", clusterName.str());
+        Owned<IPropertyTree> queueInfo = globals->getBranch(xpath);
+        assertex(queueInfo);
+        const char *platformName = queueInfo->queryProp("@type");
+#else
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
@@ -488,13 +496,15 @@ public:
             return;
         }
         ClusterType platform = clusterInfo->getPlatform();
+        const char *platformName = clusterTypeString(platform, true);
         clusterInfo.clear();
+#endif
         workunit->setState(WUStateCompiling);
         workunit->commit();
         bool ok = false;
         try
         {
-            ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
+            ok = compile(wuid, platformName, clusterName.str());
         }
         catch (IException * e)
         {
@@ -509,6 +519,8 @@ public:
             const char *newClusterName = workunit->queryClusterName();   // Workunit can change the cluster name via #workunit, so reload it
             if (strcmp(newClusterName, clusterName.str()) != 0)
             {
+#ifdef _CONTAINERIZED
+#else
                 clusterInfo.setown(getTargetClusterInfo(newClusterName));
                 if (!clusterInfo)
                 {
@@ -523,6 +535,7 @@ public:
                     return;
                 }
                 clusterInfo.clear();
+#endif
             }
             if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
             {
@@ -540,7 +553,7 @@ public:
                     if (dllBuff.length() > 0)
                     {
                         workunit.clear();
-                        if (!runWorkUnit(wuid, clusterName.str()))
+                        if (!runWorkUnit(wuid, newClusterName))
                         {
                             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                             workunit.setown(factory->updateWorkUnit(wuid));
@@ -613,7 +626,7 @@ static void removePrecompiledHeader()
 
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
-    StringAttr queueName;
+    StringAttr queueNames;
     unsigned poolSize;
     Owned<IThreadPool> pool;
 
@@ -626,13 +639,13 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
 public:
     IMPLEMENT_IINTERFACE;
     EclccServer(const char *_queueName, unsigned _poolSize)
-        : queueName(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
+        : queueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@cluster", globals->queryProp("@name"));
-        serverstatus.queryProperties()->setProp("@queue", queueName.get());
+        serverstatus.queryProperties()->setProp("@queue", queueNames.get());
         serverstatus.commitProperties();
     }
 
@@ -643,8 +656,8 @@ public:
 
     void run()
     {
-        DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueName.get());
-        queue.setown(createJobQueue(queueName.get()));
+        DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
+        queue.setown(createJobQueue(queueNames.get()));
         queue->connect(false);
         running = true;
         LocalIAbortHandler abortHandler(*this);
@@ -712,10 +725,12 @@ public:
 
 void openLogFile()
 {
+#ifndef _CONTAINERIZED
     StringBuffer logname;
     envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname);
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
     lf->beginLogging();
+#endif
 }
 
 //=========================================================================================
@@ -831,10 +846,22 @@ int main(int argc, const char *argv[])
             unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
             if (optMonitorInterval)
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
+#ifdef _CONTAINERIZED
+            StringBuffer queueNames;
+            Owned<IPTreeIterator> queues = globals->getElements("queues");
+            ForEach(*queues)
+            {
+                IPTree &queue = queues->query();
+                if (queueNames.length())
+                    queueNames.append(",");
+                queueNames.append(queue.queryProp("@name")).append(".eclserver");
+            }
+#else
             SCMStringBuffer queueNames;
             getEclCCServerQueueNames(queueNames, processName);
+#endif
             if (!queueNames.length())
-                throw MakeStringException(0, "No clusters found to listen on");
+                throw MakeStringException(0, "No queues found to listen on");
             // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
             // still accept the old name if the new one is not present.
             unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));

@@ -62,13 +62,13 @@ int main(int argc, const char *argv[])
     }
     catch (IException *E)
     {
-        EXCLOG(E, "Eclagent execution error");
+        EXCLOG(E, "hthor execution error");
         E->Release();
         ret = 2;
     }
     catch (...)
     {
-        IERRLOG("Eclagent execution error: Unexpected exception");
+        IERRLOG("hthor execution error: Unexpected exception");
         ret = 2;
     }
     releaseAtoms();

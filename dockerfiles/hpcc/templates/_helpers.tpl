@@ -61,7 +61,7 @@ metadata:
 data:
   global.yaml: |
     version: "1.0"
-    Global:
+    global:
       imageVersion: {{ .root.Values.global.image.version | quote }}
       singleNode: {{ .root.Values.global.singleNode }}
 {{ include "hpcc.generateComponentConfigMap" . | indent 2 -}}

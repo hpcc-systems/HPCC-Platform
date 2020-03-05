@@ -7937,9 +7937,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     }
 
     if (optGlobal)
-        globalConfiguration.setown(loadConfiguration(optGlobal, "Global"));
+        globalConfiguration.setown(loadConfiguration(optGlobal, "global"));
     if (!globalConfiguration)
-        globalConfiguration.setown(createPTree("Global"));
+        globalConfiguration.setown(createPTree("global"));
 
     componentConfiguration.set(config);
     return config.getClear();

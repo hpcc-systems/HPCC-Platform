@@ -53,7 +53,6 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 #include "anawu.hpp"
-#include "eclagent.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -3281,13 +3280,24 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
 
 void usage()
 {
-    printf("USAGE: eclagent --workunit=wuid options\n"
+    printf("USAGE: hthor --workunit=wuid options\n"
            "options include:\n"
            "       --daliServers=daliEp\n"
            "       --traceLevel=n\n"
            "       --resetWorkflow  (performs workflow reset on starting)\n"
            "       --noRetry        (immediately fails if workunit is in failed state)\n");
 }
+
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+hthor:
+    name: hthor
+    analyzeWorkunit: true
+    defaultMemoryLimitMB: 300
+    thorConnectTimeout: 600
+    traceLevel: 0
+)!!";
+
 
 extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * wuXML, bool standAloneExe)
 {
@@ -3316,16 +3326,16 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     {
         try
         {
-            agentTopology.setown(loadConfiguration(eclagentDefaultYaml, argv, "eclagent", "ECLAGENT", "agentexec.xml", nullptr));
+            agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", "agentexec.xml", nullptr));
         }
         catch (IException *E)
         {
-            agentTopology.setown(createPTree("AGENTEXEC"));
+            agentTopology.setown(createPTree("hthor"));
             E->Release();
         }
     }
     else
-        agentTopology.setown(createPTree("AGENTEXEC")); // MORE - this needs thought!
+        agentTopology.setown(createPTree("hthor")); // MORE - this needs thought!
 
     //Build log file specification
     StringBuffer logfilespec;
@@ -3472,7 +3482,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
             addMPConnectionMonitor(daliDownMonitor);
 
-            LOG(MCoperatorInfo, "ECLAGENT build %s", BUILD_TAG);
+            LOG(MCoperatorInfo, "hthor build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();
 
@@ -3489,7 +3499,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                Owned<IWorkUnit> daliWu = factory->createWorkUnit("eclagent", "eclagent");
+                Owned<IWorkUnit> daliWu = factory->createWorkUnit("hthor", "hthor");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true, true);
                 wuid.set(daliWu->queryWuid());
@@ -3625,7 +3635,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     }
     catch (IException * e)
     {
-        EXCLOG(e, "EclAgent");
+        EXCLOG(e, "hthor:");
         e->Release();
         retcode = 2;
     }
