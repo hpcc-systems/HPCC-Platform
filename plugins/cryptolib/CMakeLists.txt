@@ -46,6 +46,7 @@ HPCC_ADD_LIBRARY( cryptolib SHARED ${SRCS} )
 install ( TARGETS cryptolib DESTINATION plugins )
 target_link_libraries ( 
         cryptolib
+        dalibase
         jlib
         ${ZLIB_LIBRARIES}
     )
