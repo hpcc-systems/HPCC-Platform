@@ -113,9 +113,7 @@ volumeMounts:
 
 {{- /* Add config arg for a component */ -}}
 {{- define "hpcc.configArg" -}}
-{{- if or (hasKey . "configFile") (hasKey . "config") -}}
-"--config=/etc/config/{{ .name }}.yaml", {{ end -}}
-"--global=/etc/config/global.yaml"
+"--config=/etc/config/{{ .name }}.yaml", "--global=/etc/config/global.yaml"
 {{- end -}}
 
 {{- /* Add dali arg for a component */ -}}
