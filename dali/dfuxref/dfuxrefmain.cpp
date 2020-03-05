@@ -20,7 +20,6 @@
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jptree.hpp"
-#include "dalienv.hpp"
 #include "daclient.hpp"
 
 static bool AddCompleteOrphans = false;
@@ -77,7 +76,6 @@ int main(int argc, char* argv[])
     try
     {
         initClientProcess(group, DCR_XRef);
-        setPasswordsFromSDS();
         StringArray args, clusters;
         bool backupcheck = false;
         unsigned mode = PMtextoutput|PMcsvoutput|PMtreeoutput;
@@ -203,7 +201,6 @@ int main(int argc, char* argv[])
     }
 
     DBGLOG("Finished%s",cmdline.str());
-    closeEnvironment();
     closedownClientProcess();
 
     releaseAtoms();

@@ -29,7 +29,7 @@
 #include "dasds.hpp"
 #include "dautils.hpp"
 #include "danqs.hpp"
-#include "dalienv.hpp"
+#include "environment.hpp"
 #include "anawu.hpp"
 
 #ifdef _USE_CPPUNIT
@@ -392,7 +392,6 @@ int main(int argc, const char *argv[])
         {
             Owned<IGroup> serverGroup = createIGroup(daliServers.str(), DALI_SERVER_PORT);
             initClientProcess(serverGroup, DCR_Testing);
-            setPasswordsFromSDS();
         }
         else if (!serverSpecified)
         {

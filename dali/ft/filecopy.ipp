@@ -78,7 +78,6 @@ protected:
     bool transferAndSignal();
 
 protected:
-    CachedPasswordProvider      passwordProvider;
     FileSprayer &               sprayer;
     SocketEndpoint              ep;
     PartitionPointArray         partition;

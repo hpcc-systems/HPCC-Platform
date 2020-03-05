@@ -20,7 +20,6 @@
 
 #include "daftdir.hpp"
 #include "ftbase.ipp"
-#include "rmtpass.hpp"
 
 class DirectoryBuilder : public CInterface
 {
@@ -91,7 +90,6 @@ protected:
     bool commandAndSignal();
 
 protected:
-    CachedPasswordProvider      passwordProvider;
     IRunningSlaveObserver &     observer;
     const char *                directory;
     Owned<INode>                node;

@@ -30,9 +30,6 @@ interface IFile;
 class RemoteFilename;
 
 extern ENVIRONMENT_API EnvMachineOS queryOS(const IpAddress & ip);
-extern "C" ENVIRONMENT_API void __stdcall setPasswordsFromSDS();
-extern "C" ENVIRONMENT_API void __stdcall resetPasswordsFromSDS();
-extern "C" ENVIRONMENT_API void __stdcall clearPasswordsFromSDS();
 
 
 extern ENVIRONMENT_API bool canAccessFilesDirectly(const RemoteFilename & file);

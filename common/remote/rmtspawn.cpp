@@ -30,7 +30,6 @@
 
 #include "rmtspawn.hpp"
 #include "rmtssh.hpp"
-#include "rmtpass.hpp"
 
 
 
@@ -425,8 +424,6 @@ void CRemoteSlave::run(int argc, char * argv[])
         info.log();
         EnableSEHtoExceptionMapping();
 
-        CachedPasswordProvider passwordProvider;
-        setPasswordProvider(&passwordProvider);
         try
         {
             if (info.sendReply(version))
@@ -449,8 +446,6 @@ void CRemoteSlave::run(int argc, char * argv[])
                         msg.setEndian(__BIG_ENDIAN);
                         byte action;
                         msg.read(action);
-                        passwordProvider.clear();
-                        passwordProvider.deserialize(msg);
 
                         ok = processCommand(action, masterSocket, msg, results);
                     }
@@ -497,8 +492,6 @@ void CRemoteSlave::run(int argc, char * argv[])
             PrintExceptionLog(e, slaveName.get());
             e->Release();
         }
-
-        setPasswordProvider(NULL);
     }
     LOG(MCdebugProgress, unknownJob, "Stopping %s", slaveName.get());
 }

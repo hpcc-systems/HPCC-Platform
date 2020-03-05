@@ -31,7 +31,7 @@
 #include "dasess.hpp"
 #include "dasds.hpp"
 #include "daclient.hpp"
-#include "dalienv.hpp"
+#include "environment.hpp"
 #include "dllserver.hpp"
 #include "rmtfile.hpp"
 
@@ -332,7 +332,6 @@ int main(int argc, const char* argv[])
         unsigned short port = (stop||coalescer)?0:DEFAULT_SASHA_PORT;
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(),DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_SashaServer, port, NULL, NULL, MP_WAIT_FOREVER);
-        setPasswordsFromSDS(); 
         if (!stop&!coalescer) {
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();

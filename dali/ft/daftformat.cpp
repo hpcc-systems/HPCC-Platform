@@ -1881,7 +1881,6 @@ void CRemotePartitioner::callRemote()
             //Send message and wait for response...
             //MORE: they should probably all be sent on different threads....
             msg.append((byte)FTactionpartition);
-            passwordProvider.serialize(msg);
             srcFormat.serialize(msg);
             tgtFormat.serialize(msg);
             msg.append(whichInput);
@@ -1966,7 +1965,6 @@ void CRemotePartitioner::setSource(unsigned _whichInput, const RemoteFilename & 
 {
     whichInput = _whichInput;
     fullPath.set(_fullPath);
-    passwordProvider.addPasswordForFilename(fullPath);
     compressedInput = _compressedInput;
     decryptKey.set(_decryptKey);
 }

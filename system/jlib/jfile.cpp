@@ -1186,18 +1186,6 @@ unsigned CFile::getCRC()
 
 //---------------------------------------------------------------------------
 
-static Linked<IPasswordProvider> passwordProvider;
-
-MODULE_INIT(INIT_PRIORITY_JFILE)
-{
-    return true;
-}
-
-MODULE_EXIT()
-{
-    passwordProvider.clear();
-}
-
 #ifdef _WIN32
 static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &share)
 { // windows share parsing
@@ -4000,42 +3988,6 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
 }
 
 
-
-//---------------------------------------------------------------------------
-
-class FixedPasswordProvider : implements IPasswordProvider, public CInterface
-{
-public:
-    FixedPasswordProvider(const char * _username, const char * _password) { username.set(_username); password.set(_password); }
-    IMPLEMENT_IINTERFACE;
-
-    virtual bool getPassword(const IpAddress & ip, StringBuffer & _username, StringBuffer & _password)
-    {
-        _username.append(username.get());
-        _password.append(password.get());
-        return true;
-    }
-
-protected:
-    StringAttr      username;
-    StringAttr      password;
-};
-
-IPasswordProvider * queryPasswordProvider()
-{
-    return passwordProvider;
-}
-
-void setPasswordProvider(IPasswordProvider * provider)
-{
-    passwordProvider.set(provider);
-}
-
-void setDefaultUser(const char * username,const char *password)
-{
-    Owned<IPasswordProvider> provider = new FixedPasswordProvider(username, password);
-    setPasswordProvider(provider);
-}
 
 //---------------------------------------------------------------------------
 

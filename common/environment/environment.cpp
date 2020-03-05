@@ -1887,7 +1887,6 @@ void CLocalEnvironment::clearCache()
     keyGroupMap.clear();
     keyPairMap.clear();
     init();
-    resetPasswordsFromSDS();
 }
 
 IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * netaddress, const char *targetFilePath) const
@@ -2469,7 +2468,6 @@ extern ENVIRONMENT_API void closeEnvironment()
             pFactory = factory;
             factory = nullptr;
         }
-        clearPasswordsFromSDS();
         if (pFactory)
         {
             removeShutdownHook(*pFactory);

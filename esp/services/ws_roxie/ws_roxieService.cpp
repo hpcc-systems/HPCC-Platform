@@ -24,7 +24,6 @@
 
 #include "ws_roxieService.hpp"
 #include "jstring.hpp"
-#include "dalienv.hpp"
 #include "espxslt.hpp"
 
 void writeFile(const char * path, const char * txt)
@@ -74,7 +73,6 @@ void CRoxieEx::init(IPropertyTree *cfg, const char *process, const char *service
         }
         Owned<IGroup> serverGroup = createIGroup(daliServers_.str(), DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_EspServer);
-        setPasswordsFromSDS();
     }
 }
 

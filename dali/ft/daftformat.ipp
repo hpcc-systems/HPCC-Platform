@@ -22,7 +22,6 @@
 #include "ftbase.ipp"
 #include "daftmc.hpp"
 #include "daftformat.hpp"
-#include "rmtpass.hpp"
 #include "jptree.hpp"
 
 
@@ -724,7 +723,6 @@ protected:
     virtual bool isAborting() { UNIMPLEMENTED; };
 
 protected:
-    CachedPasswordProvider      passwordProvider;
     SocketEndpoint              ep;
     FileFormat                  srcFormat;
     FileFormat                  tgtFormat;
