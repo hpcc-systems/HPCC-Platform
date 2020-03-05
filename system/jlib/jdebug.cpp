@@ -2177,7 +2177,7 @@ class CExtendedStats  // Disk network and cpu stats
 
     size32_t getKLog(const char *&data)
     {
-#ifdef __linux__
+#if defined(__linux__) && !defined(_CONTAINERIZED)
         if (kbufmax)
         {
             data = nullptr;
