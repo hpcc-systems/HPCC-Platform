@@ -526,7 +526,7 @@ void readStaticTopology()
 
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
-Roxie:
+roxie:
   allFilesDynamic: true
   localSlave: true
   numChannels: 1
@@ -652,7 +652,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
-        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "Roxie", "ROXIE", topologyFile, nullptr);
+        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr);
         if (dumpArgs)
         {
             for (unsigned i=0; i<(unsigned)argc; i++)

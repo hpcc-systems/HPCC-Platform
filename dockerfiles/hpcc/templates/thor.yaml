@@ -78,5 +78,5 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "me" .) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" .) -}}
 {{- end }}

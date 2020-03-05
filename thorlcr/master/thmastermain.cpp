@@ -553,7 +553,7 @@ bool ControlHandler(ahType type)
 
 static constexpr const char * defaultYaml = R"!!(
 version: 1.0
-Thor:
+thor:
   daliServers: dali
   watchdogEnabled: true
   watchdogProgressEnabled: true
@@ -582,7 +582,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(defaultYaml, argv, "Thor", "THOR", "thor.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "thor", "THOR", "thor.xml", nullptr));
     }
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 

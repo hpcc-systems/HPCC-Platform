@@ -40,21 +40,25 @@ Create chart name and version as used by the chart label.
  {{- end -}}
 {{- end -}}
 
-{{- /* Generate local config info into config section */ -}}
-{{- /* Pass in a dictionary with root and me defined */ -}}
+{{/*
+Generate local config info into config section
+*/}}
+{{- /* Pass in a dictionary with root, component and me defined */ -}}
 {{- define "hpcc.generateComponentConfigMap" -}}
 {{- if hasKey .me "configFile" -}}
 {{- $filename := (printf "files/%s" .me.configFile) -}}
 {{- .me.name -}}.yaml: |
 {{ tpl (.root.Files.Get $filename) .root | indent 2 -}}
-{{- else if hasKey .me "config" -}}
+{{- else -}}
 {{- .me.name -}}.yaml: |
-{{ .me.config | indent 2 -}}
+  version: 1.0
+  {{ .component }}:
+{{ toYaml .me | indent 4 -}}
 {{- end -}}
 {{- end -}}
 
 {{- /* Generate a ConfigMap for a component */ -}}
-{{- /* Pass in a dictionary with root and me defined */ -}}
+{{- /* Pass in a dictionary with root, component and me defined */ -}}
 {{- define "hpcc.generateConfigMap" }}
 kind: ConfigMap 
 apiVersion: v1 
