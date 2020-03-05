@@ -139,3 +139,37 @@ imagePullPolicy: {{ .me.image.pullPolicy | default .root.Values.global.image.pul
 imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent" }}
 {{- end -}}
 {{- end -}}
+
+{{- /* A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV */ -}}
+{{- define "hpcc.changeHostMountPerms" -}}
+initContainers:
+# This is a bit of a hack, to ensure that the persistent storage mounted
+# is writable. This is not something we would want to do if using anything other than
+# hostPath storage (which is only sensible on single-node systems).
+# NB: uid=999 and gid=1000 are the uid/gid of the hpcc user, built into platform-core
+{{- $permCmd := printf "chown -R 999:1000 %s" .volumePath }}
+- name: volume-mount-hack
+  image: busybox
+  command: [
+             "sh",
+             "-c",
+             "{{ $permCmd }}"
+           ]
+  volumeMounts:
+    - name: {{ .volumeName | quote}}
+      mountPath: {{ .volumePath | quote }}
+{{- end }}
+
+{{- /* Check dllserver host mount point, using hpcc.changeHostMountPerms */ -}}
+{{- define "hpcc.checkDllServerHostMount" -}}
+{{- if .root.Values.global.hostStorage | default false }}
+{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dllserver-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") }}
+{{- end }}
+{{- end }}
+
+{{- /* Check datastorage host mount point, using hpcc.changeHostMountPerms */ -}}
+{{- define "hpcc.checkDataStorageHostMount" -}}
+{{- if .root.Values.global.hostStorage | default false }}
+{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
+{{- end }}
+{{- end }}

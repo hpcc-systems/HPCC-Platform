@@ -16,6 +16,7 @@ spec:
       labels:
         run: {{ $roxie.name | quote }}
     spec:
+      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $roxie.name | quote }}
         args: [
