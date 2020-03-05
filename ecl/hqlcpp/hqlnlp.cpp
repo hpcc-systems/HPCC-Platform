@@ -688,6 +688,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
 
     //This will become conditional on the flags....
     cycle_t startPrepareCycles = get_cycles_now();
+    NlpParseContext * prevParse = nlpParse;
     if (expr->hasAttribute(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options);
     else
@@ -759,7 +760,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     }
 
     ::Release(nlpParse);
-    nlpParse = NULL;
+    nlpParse = prevParse;
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     if (options.timeTransforms)
