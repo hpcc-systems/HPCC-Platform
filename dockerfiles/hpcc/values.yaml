@@ -31,6 +31,10 @@ global:
     version: master-2020-02-10
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
     pullPolicy: IfNotPresent
+  
+  # Set to true if using hostPath storageClass
+  # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
+  hostStorage: true
 
 dali:
 - name: mydali

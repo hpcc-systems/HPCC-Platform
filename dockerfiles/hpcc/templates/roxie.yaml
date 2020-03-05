@@ -64,6 +64,7 @@ spec:
       labels:
         run: {{ $servername | quote }}
     spec:
+      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $servername | quote }}
         args: [
@@ -101,6 +102,7 @@ spec:
       labels:
         run: {{ $name | quote}}
     spec:
+      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $name | quote}}
         args: [ 

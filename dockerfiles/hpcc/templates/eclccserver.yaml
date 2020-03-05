@@ -15,6 +15,7 @@ spec:
     spec:
       serviceAccountName: hpcc
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
+      {{- include "hpcc.checkDllServerHostMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         args: [
