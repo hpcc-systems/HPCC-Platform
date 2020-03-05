@@ -12950,6 +12950,19 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
+extern WORKUNIT_API double calculateThorCost(__int64 timeNs, unsigned clusterWidth)
+{
+    IPropertyTree *costs = queryCostsConfiguration();
+    if (costs)
+    {
+        double thor_master_rate = costs->getPropReal("thor/@master", 0.0);
+        double thor_slave_rate = costs->getPropReal("thor/@slave", 0.0);
+
+        double time_seconds = ((double)timeNs/1000000000);
+        return (time_seconds * thor_master_rate + time_seconds * thor_slave_rate * clusterWidth)*1E6;
+    }
+    return 0;
+}
 
 void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search)
 {

@@ -626,6 +626,7 @@ public:
     virtual int getPropInt(const char *xpath, int dft=0) const override;
     virtual void setPropInt(const char *xpath, int val) override;
     virtual void addPropInt(const char *xpath, int val) override;
+    virtual double getPropReal(const char *xpath, double dft) const override;
     virtual bool getPropBin(const char * xpath, MemoryBuffer &ret) const override;
     virtual void setPropBin(const char * xpath, size32_t size, const void *data) override;
     virtual void appendPropBin(const char *xpath, size32_t size, const void *data) override;

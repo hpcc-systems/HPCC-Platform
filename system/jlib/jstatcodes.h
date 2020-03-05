@@ -92,6 +92,7 @@ enum StatisticMeasure
     SMeasureBool,                       // A boolean
     SMeasureId,                         // An Id for an element
     SMeasureFilename,                   // A filename
+    SMeasureCost,                       // Used to measure cost
     SMeasureMax,
 };
 
@@ -231,6 +232,7 @@ enum StatisticKind
     StSizeOsDiskWrite,
     StTimeBlocked,
     StCycleBlockedCycles,
+    StCostExecute,
     StMax,
 
     //For any quantity there is potentially the following variants.

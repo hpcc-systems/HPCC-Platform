@@ -919,7 +919,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
-        
+        double cost = calculateThorCost(graphTimeNs, queryNodeClusterWidth());
+        if (cost)
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+
         removeJob(*job);
     }
     catch (IException *e)
