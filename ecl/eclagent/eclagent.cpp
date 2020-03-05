@@ -3472,10 +3472,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
             addMPConnectionMonitor(daliDownMonitor);
 
-            {
-                MTIME_SECTION(queryActiveTimer(), "Environment_Initialize");
-                setPasswordsFromSDS();
-            }
             LOG(MCoperatorInfo, "ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
             connectLogMsgManagerToDali();

@@ -666,8 +666,6 @@ int main( int argc, const char *argv[]  )
         if (globals->getPropBool("@MPChannelReconnect"))
             getMPServer()->setOpt(mpsopt_channelreopen, "true");
 
-        setPasswordsFromSDS();
-
         if (globals->getPropBool("@enableSysLog",true))
             UseSysLogForOperatorMessages();
 

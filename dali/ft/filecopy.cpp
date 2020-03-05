@@ -194,8 +194,6 @@ void FileTransferThread::addPartition(PartitionPoint & nextPartition, OutputProg
 {
     partition.append(OLINK(nextPartition));
     progress.append(OLINK(nextProgress));
-    passwordProvider.addPasswordForIp(nextPartition.inputName.queryIP());
-    passwordProvider.addPasswordForIp(nextPartition.outputName.queryIP());
 }
 
 unsigned __int64 FileTransferThread::getInputSize()
@@ -338,7 +336,6 @@ bool FileTransferThread::performTransfer()
 
         //Send message and wait for response...
         msg.append(action);
-        passwordProvider.serialize(msg);
         ep.serialize(msg);
         sprayer.srcFormat.serialize(msg);
         sprayer.tgtFormat.serialize(msg);

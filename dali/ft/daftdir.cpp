@@ -462,7 +462,6 @@ bool DirectoryThread::performCommand()
         //Send message and wait for response... 
         //MORE: they should probably all be sent on different threads....
         msg.append((byte)FTactiondirectory);
-        passwordProvider.serialize(msg);
         msg.append(directory);
         options->serialize(msg);
         node->serialize(msg);
@@ -799,10 +798,8 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
 
     SocketEndpoint sourceMachine(source->queryProp("machine/@ip"));
     RemoteFilename targetName;
-    CachedPasswordProvider passwordProvider;
     Owned<IException> error;
 
-    passwordProvider.addPasswordForIp(sourceMachine);
     targetName.setRemotePath(target);
     const IpAddress & targetIP = targetName.queryIP();
     if (!canSpawnChildProcess(targetIP))
@@ -825,7 +822,6 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
         //Send message and wait for response... 
         //MORE: they should probably all be sent on different threads....
         msg.append((byte)FTactionpcopy);
-        passwordProvider.serialize(msg);
         source->serialize(msg);
         targetName.serialize(msg);
         options->serialize(msg);

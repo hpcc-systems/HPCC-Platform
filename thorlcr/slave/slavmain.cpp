@@ -48,7 +48,7 @@
 #include "thgraphslave.hpp"
 #include "slave.ipp"
 #include "thcompressutil.hpp"
-#include "dalienv.hpp"
+#include "environment.hpp"
 #include "eclhelper_dyn.hpp"
 #include "rtlcommon.hpp"
 #include "../activities/keyedjoin/thkeyedjoincommon.hpp"
@@ -87,7 +87,6 @@ void enableThorSlaveAsDaliClient()
             Sleep(retry*2000);
         }
     }
-    setPasswordsFromSDS();
 #endif
 }
 

@@ -300,7 +300,6 @@ public:
 
     void stopping()
     {
-        clearPasswordsFromSDS();
         try
         {
             if (serverstatus)

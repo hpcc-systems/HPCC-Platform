@@ -32,7 +32,6 @@
 #include "dautils.hpp"
 #include "dadfs.hpp"
 #include "dasds.hpp"
-#include "dalienv.hpp"
 #include "mplog.hpp"
 
 #define FUSE_USE_VERSION 26
@@ -749,7 +748,6 @@ class CFuseDaliDFS: public CFuseBase
             setDaliServixSocketCaching(true);
             Owned<IGroup> serverGroup = createIGroup(daliServer,DALI_SERVER_PORT);
             initClientProcess(serverGroup, DCR_Dfu, 0, NULL, NULL, MP_WAIT_FOREVER);                // so that 
-            setPasswordsFromSDS(); 
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
         }

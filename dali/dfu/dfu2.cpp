@@ -27,7 +27,6 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "dasds.hpp"
-#include "dalienv.hpp"
 #include "jio.hpp"
 #include "daft.hpp"
 #include "daftcfg.hpp"
@@ -124,7 +123,6 @@ int main(int argc, const char *argv[])
             throwError(DFUERR_NoDaliServerList);
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(),DALI_SERVER_PORT);
         initClientProcess(serverGroup, 0, NULL, NULL, MP_WAIT_FOREVER, true);               // so that 
-        setPasswordsFromSDS(); 
             
         DFUcmd cmd = decodeDFUcommand(argv[1]);
         addAbortHandler(actionOnAbort);

@@ -31,7 +31,6 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "danqs.hpp"
-#include "dalienv.hpp"
 #include "rmtfile.hpp"
 #include "rmtsmtp.hpp"
 
@@ -50,11 +49,9 @@ struct DaliClient
 
         if (!initClientProcess(serverGroup,DCR_SwapNode))
             throw MakeStringException(0, "Could not initializing client process");
-        setPasswordsFromSDS();
     }
     ~DaliClient()
     {
-        clearPasswordsFromSDS();
         closedownClientProcess();
     }
     Owned<IGroup> serverGroup;

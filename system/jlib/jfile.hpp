@@ -223,14 +223,6 @@ interface IDiscretionaryLock: extends IInterface
 
 //-- Interfaces/functions used for managing passwords needed to access remote machines.
 
-class IpAddress;
-interface IPasswordProvider : public IInterface
-{
-    virtual bool getPassword(const IpAddress & ip, StringBuffer & username, StringBuffer & password) = 0;
-
-};
-
-
 #ifndef _WIN32
 #define _MAX_DRIVE      4
 #define _MAX_DIR        256
@@ -238,10 +230,6 @@ interface IPasswordProvider : public IInterface
 #define _MAX_EXT        256
 void jlib_decl _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
 #endif
-
-extern jlib_decl void setDefaultUser(const char * username,const char *password);
-extern jlib_decl IPasswordProvider * queryPasswordProvider();
-extern jlib_decl void setPasswordProvider(IPasswordProvider * provider);
 
 //-- Helper routines 
 

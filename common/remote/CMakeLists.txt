@@ -27,7 +27,6 @@ project( remote )
 HPCC_ADD_SUBDIRECTORY(hooks)
 
 set (    SRCS 
-         rmtpass.cpp 
          rmtspawn.cpp 
          rmtssh.cpp 
          rmtsmtp.cpp 
