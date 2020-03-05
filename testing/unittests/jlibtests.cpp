@@ -1223,9 +1223,59 @@ class JlibIPTTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(JlibIPTTest);
         CPPUNIT_TEST(test);
         CPPUNIT_TEST(testMarkup);
+        CPPUNIT_TEST(testRootArrayMarkup);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testRootArrayMarkup()
+    {
+        static constexpr const char * xmlMarkup = R"!!(<__array__>
+ <__item__ a="val1a" b="val2a"/>
+ <__item__ a="val1b" b="val2b"/>
+ <__item__ a="val1c" b="val2c"/>
+</__array__>
+)!!";
+
+        static constexpr const char * jsonMarkup = R"!!([
+ {
+  "@a": "val1a",
+  "@b": "val2a"
+ },
+ {
+  "@a": "val1b",
+  "@b": "val2b"
+ },
+ {
+  "@a": "val1c",
+  "@b": "val2c"
+ }
+])!!";
+
+        static constexpr const char * yamlMarkup = R"!!(- a: val1a
+  b: val2a
+- a: val1b
+  b: val2b
+- a: val1c
+  b: val2c
+)!!";
+
+        Owned<IPropertyTree> xml = createPTreeFromXMLString(xmlMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> yaml = createPTreeFromYAMLString(yamlMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> json = createPTreeFromJSONString(jsonMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+        CPPUNIT_ASSERT(areMatchingPTrees(xml, json));
+        CPPUNIT_ASSERT(areMatchingPTrees(xml, yaml));
+
+        StringBuffer ml;
+        toXML(xml, ml, 0, XML_Format|XML_SortTags);
+        CPPUNIT_ASSERT(streq(ml, xmlMarkup));
+
+        toYAML(xml, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, yamlMarkup));
+
+        toJSON(xml, ml.clear(), 0, JSON_Format|JSON_SortTags|JSON_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, jsonMarkup));
+    }
     void testMarkup()
     {
         static constexpr const char * xmlMarkup = R"!!(  <__object__ attr1="attrval1" attr2="attrval2">
@@ -1358,10 +1408,10 @@ subX:
         toXML(xml, ml, 2, XML_Format|XML_SortTags);
         CPPUNIT_ASSERT(streq(ml, xmlMarkup));
 
-        toYAML(yaml, ml.clear(), 2, YAML_SortTags);
+        toYAML(yaml, ml.clear(), 2, YAML_SortTags|YAML_HideRootArrayObject);
         CPPUNIT_ASSERT(streq(ml, yamlMarkup));
 
-        toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags);
+        toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags|JSON_HideRootArrayObject);
         CPPUNIT_ASSERT(streq(ml, jsonMarkup));
     }
     void test()

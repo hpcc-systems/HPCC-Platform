@@ -5367,18 +5367,18 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
 //////////////////////////
 /////////////////////////
 
-inline bool checkSanitizedHide(const char *val)
+inline bool isHiddenWhenSanitized(const char *val)
 {
     if (!val || !*val)
         return false;
     return !(streq(val, "0") || streq(val, "1") || strieq(val, "true") || strieq(val, "false") || strieq(val, "yes") || strieq(val, "no"));
 }
 
-inline bool checkSanitizeFlagsAndHide(const char *val, byte flags, bool attribute)
+inline bool isSanitizedAndHidden(const char *val, byte flags, bool attribute)
 {
     bool sanitize = (attribute) ? ((flags & YAML_SanitizeAttributeValues)!=0) : ((flags & YAML_Sanitize)!=0);
     if (sanitize)
-        return checkSanitizedHide(val);
+        return isHiddenWhenSanitized(val);
     return false;
 }
 
@@ -5425,7 +5425,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
                 const char *val = it->queryValue();
                 if (val)
                 {
-                    if (checkSanitizeFlagsAndHide(val, flags, true))
+                    if (isSanitizedAndHidden(val, flags, true))
                         writeCharsNToStream(out, '*', strlen(val));
                     else
                         encodeXML(val, out, ENCODE_NEWLINES, (unsigned)-1, true);
@@ -5488,7 +5488,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
             // NOTE - we don't output anything for binary.... is that ok?
             if (thislevel)
             {
-                if (checkSanitizedHide(thislevel))
+                if (isHiddenWhenSanitized(thislevel))
                     writeCharsNToStream(out, '*', strlen(thislevel));
                 else
                     writeStringToStream(out, thislevel);
@@ -5686,7 +5686,10 @@ static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32
         JBASE64_Encode(val, len, out, false);
     writeCharToStream(out, '"');
 }
-
+bool isRootArrayObjectHidden(bool root, const char *name, byte flags)
+{
+    return ((flags & JSON_HideRootArrayObject) && root && name && streq(name,"__array__"));
+}
 static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool &delimit, bool root=false, bool isArrayItem=false)
 {
     Owned<IAttributeIterator> it = tree->getAttributes(true);
@@ -5710,30 +5713,34 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
         writeCharsNToStream(out, ' ', indent);
     }
 
-    if (root || complex)
+    bool hiddenRootArrayObject = isRootArrayObjectHidden(root, name, flags);
+    if (!hiddenRootArrayObject)
     {
-        writeCharToStream(out, '{');
-        delimit = false;
-    }
-
-    if (hasAttributes)
-    {
-        ForEach(*it)
+        if (root || complex)
         {
-            const char *key = it->queryName();
-            if (!isBinary || stricmp(key, "@xsi:type")!=0)
+            writeCharToStream(out, '{');
+            delimit = false;
+        }
+
+        if (hasAttributes)
+        {
+            ForEach(*it)
             {
-                const char *val = it->queryValue();
-                if (val)
+                const char *key = it->queryName();
+                if (!isBinary || stricmp(key, "@xsi:type")!=0)
                 {
-                    writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
-                    if (flags & JSON_SanitizeAttributeValues)
-                        writeJSONValueToStream(out, val, delimit, checkSanitizedHide(val));
-                    else
+                    const char *val = it->queryValue();
+                    if (val)
                     {
-                        StringBuffer encoded;
-                        encodeJSON(encoded, val);
-                        writeJSONValueToStream(out, encoded.str(), delimit);
+                        writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
+                        if (flags & JSON_SanitizeAttributeValues)
+                            writeJSONValueToStream(out, val, delimit, isHiddenWhenSanitized(val));
+                        else
+                        {
+                            StringBuffer encoded;
+                            encodeJSON(encoded, val);
+                            writeJSONValueToStream(out, encoded.str(), delimit);
+                        }
                     }
                 }
             }
@@ -5742,30 +5749,33 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     MemoryBuffer thislevelbin;
     StringBuffer _thislevel;
     const char *thislevel = NULL; // to avoid uninitialized warning
-    bool isNull;
-    if (isBinary)
+    bool isNull = true;
+    if (!hiddenRootArrayObject)
     {
-        isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
-    }
-    else
-    {
-        if (tree->isCompressed(NULL))
+        if (isBinary)
         {
-            isNull = false; // can't be empty if compressed;
-            verifyex(tree->getProp(NULL, _thislevel));
-            thislevel = _thislevel.str();
+            isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
         }
         else
-            isNull = (NULL == (thislevel = tree->queryProp(NULL)));
+        {
+            if (tree->isCompressed(NULL))
+            {
+                isNull = false; // can't be empty if compressed;
+                verifyex(tree->getProp(NULL, _thislevel));
+                thislevel = _thislevel.str();
+            }
+            else
+                isNull = (NULL == (thislevel = tree->queryProp(NULL)));
+        }
+
+        if (isNull && !root && !complex)
+        {
+            writeJSONValueToStream(out, NULL, delimit);
+            return;
+        }
     }
 
-    if (isNull && !root && !complex)
-    {
-        writeJSONValueToStream(out, NULL, delimit);
-        return;
-    }
-
-    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
+    Owned<IPropertyTreeIterator> sub = tree->getElements(hiddenRootArrayObject ? "__item__" : "*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
     //note that detection of repeating elements relies on the fact that ptree elements
     //of the same name will be grouped together
     bool repeatingElement = false;
@@ -5774,14 +5784,24 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     {
         Linked<IPropertyTree> element = &sub->query();
         const char *name = element->queryName();
-        if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
+        sub->next();
+        if (!repeatingElement)
         {
-            if (flags & JSON_Format)
-                indent++;
-            writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
-            writeCharToStream(out, '[');
-            repeatingElement = true;
-            delimit = false;
+            if (hiddenRootArrayObject)
+            {
+                writeCharToStream(out, '[');
+                repeatingElement = true;
+                delimit = false;
+            }
+            else if (sub->isValid() && streq(name, sub->query().queryName()))
+            {
+                if (flags & JSON_Format)
+                    indent++;
+                writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+                writeCharToStream(out, '[');
+                repeatingElement = true;
+                delimit = false;
+            }
         }
 
         _toJSON(element, out, indent+1, flags, delimit, false, repeatingElement);
@@ -5801,7 +5821,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     }
 
 
-    if (!isNull)
+    if (!hiddenRootArrayObject && !isNull)
     {
         if (complex)
             writeJSONNameToStream(out, isBinary ? "#valuebin" : "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
@@ -5809,19 +5829,22 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
             writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit, flags & XML_Sanitize);
         else
         {
-            writeJSONValueToStream(out, thislevel, delimit, checkSanitizeFlagsAndHide(thislevel, flags, false));
+            writeJSONValueToStream(out, thislevel, delimit, isSanitizedAndHidden(thislevel, flags, false));
         }
     }
 
-    if (root || complex)
+    if (!hiddenRootArrayObject)
     {
-        if (flags & JSON_Format)
+        if (root || complex)
         {
-            writeCharToStream(out, '\n');
-            writeCharsNToStream(out, ' ', indent);
+            if (flags & JSON_Format)
+            {
+                writeCharToStream(out, '\n');
+                writeCharsNToStream(out, ' ', indent);
+            }
+            writeCharToStream(out, '}');
+            delimit = true;
         }
-        writeCharToStream(out, '}');
-        delimit = true;
     }
 }
 
@@ -5838,6 +5861,21 @@ void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte fla
     bool delimit = false;
     _toJSON(tree, out, indent, flags, delimit, true);
 }
+
+void printJSON(const IPropertyTree *tree, unsigned indent, byte flags)
+{
+    StringBuffer json;
+    toJSON(tree, json, indent, flags);
+    printf("%s", json.str());
+}
+
+void dbglogJSON(const IPropertyTree *tree, unsigned indent, unsigned flags)
+{
+    StringBuffer json;
+    toJSON(tree, json, indent, flags);
+    DBGLOG("%s", json.str());
+}
+
 
 static inline void skipWS(const char *&xpath)
 {
@@ -8017,7 +8055,6 @@ class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
 protected:
     Linked<IPTreeNotifyEvent> iEvent;
     yaml_parser_t parser;
-    StringAttr rootTag;
     PTreeReaderOptions readerOptions = ptr_none;
     bool noRoot = false;
 
@@ -8029,8 +8066,6 @@ public:
             throw makeStringException(99, "Filed to initialize libyaml parser");
         yaml_parser_set_input_string(&parser, (const unsigned char *)buf, bufLength);
         noRoot = 0 != ((unsigned)readerOptions & (unsigned)ptr_noRoot);
-        if (!noRoot)
-            rootTag.set("__object__"); //may support _array_ option later
     }
     ~CYAMLBufferReader()
     {
@@ -8198,18 +8233,18 @@ public:
                 //root content, the start of all mappings, should be only one at the root
                 if (content)
                     throw makeStringException(99, "YAML: Currently only support one content section (map) per stream");
-                loadMap(rootTag); //root map
+                loadMap(noRoot ? nullptr : "__object__"); //root map
                 content=true;
                 break;
             case YAML_SEQUENCE_START_EVENT:
                 //root content, sequence (array), should be only one at the root and can't mix with mappings
                 if (content)
                     throw makeStringException(99, "YAML: Currently only support one content section (sequence) per stream");
-                if (rootTag.length())
-                    iEvent->beginNode(rootTag, 0);
-                loadSequence("Row");
-                if (rootTag.length())
-                    iEvent->endNode(rootTag, 0, nullptr, false, parser.offset);
+                if (!noRoot)
+                    iEvent->beginNode("__array__", 0);
+                loadSequence("__item__");
+                if (!noRoot)
+                    iEvent->endNode("__array__", 0, nullptr, false, parser.offset);
                 content=true;
                 break;
             case YAML_STREAM_START_EVENT:
@@ -8426,46 +8461,55 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
     Owned<IAttributeIterator> it = tree->getAttributes(true);
     bool hasAttributes = it->first();
     bool complex = (hasAttributes || tree->hasChildren());
-    if (complex)
-        yaml.beginMap();
+    bool hiddenRootArrayObject = isRootArrayObjectHidden(root, name, flags);
 
-    if (hasAttributes)
+    if (!hiddenRootArrayObject)
     {
-        ForEach(*it)
+        if (complex)
+            yaml.beginMap();
+
+        if (hasAttributes)
         {
-            const char *key = it->queryName()+1;
-            const char *val = it->queryValue();
-            yaml.writeAttribute(key, val, checkSanitizeFlagsAndHide(val, flags, true));
+            ForEach(*it)
+            {
+                const char *key = it->queryName()+1;
+                const char *val = it->queryValue();
+                yaml.writeAttribute(key, val, isSanitizedAndHidden(val, flags, true));
+            }
         }
     }
     StringBuffer _content;
     const char *content = nullptr; // to avoid uninitialized warning
     bool isBinary = tree->isBinary(NULL);
-    bool isNull;
-    if (isBinary)
-    {
-        MemoryBuffer thislevelbin;
-        isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
-        if (!isNull)
-            JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), _content, true);
-        content = _content.str();
-    }
-    else if (tree->isCompressed(NULL))
-    {
-        isNull = false; // can't be empty if compressed;
-        verifyex(tree->getProp(NULL, _content));
-        content = _content.str();
-    }
-    else
-        isNull = (NULL == (content = tree->queryProp(NULL)));
+    bool isNull = true;
 
-    if (isNull && !root && !complex)
+    if (!hiddenRootArrayObject)
     {
-        yaml.writeValue("null", false, false, false);
-        return;
+        if (isBinary)
+        {
+            MemoryBuffer thislevelbin;
+            isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
+            if (!isNull)
+                JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), _content, true);
+            content = _content.str();
+        }
+        else if (tree->isCompressed(NULL))
+        {
+            isNull = false; // can't be empty if compressed;
+            verifyex(tree->getProp(NULL, _content));
+            content = _content.str();
+        }
+        else
+            isNull = (NULL == (content = tree->queryProp(NULL)));
+
+        if (isNull && !root && !complex)
+        {
+            yaml.writeValue("null", false, false, false);
+            return;
+        }
     }
 
-    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & YAML_SortTags) ? iptiter_sort : iptiter_null);
+    Owned<IPropertyTreeIterator> sub = tree->getElements(hiddenRootArrayObject ? "__item__" : "*", 0 != (flags & YAML_SortTags) ? iptiter_sort : iptiter_null);
     //note that detection of repeating elements relies on the fact that ptree elements
     //of the same name will be grouped together
     bool repeatingElement = false;
@@ -8474,10 +8518,19 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
     {
         Linked<IPropertyTree> element = &sub->query();
         const char *name = element->queryName();
-        if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
+        sub->next();
+        if (!repeatingElement)
         {
-            yaml.beginSequence(name);
-            repeatingElement = true;
+            if (hiddenRootArrayObject)
+            {
+                yaml.beginSequence(nullptr);
+                repeatingElement = true;
+            }
+            else if (sub->isValid() && streq(name, sub->query().queryName()))
+            {
+                yaml.beginSequence(name);
+                repeatingElement = true;
+            }
         }
 
         _toYAML(element, yaml, flags, false, repeatingElement);
@@ -8494,10 +8547,10 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
         if (complex)
             yaml.writeName("^");
         //repeating/array/sequence items are implicitly elements, no need for tag
-        yaml.writeValue(content, isArrayItem ? false : true, checkSanitizeFlagsAndHide(content, flags, false), isBinary);
+        yaml.writeValue(content, isArrayItem ? false : true, isSanitizedAndHidden(content, flags, false), isBinary);
     }
 
-    if (complex)
+    if (!hiddenRootArrayObject && complex)
         yaml.endMap();
 }
 

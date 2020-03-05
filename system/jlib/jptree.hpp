@@ -256,11 +256,14 @@ jlib_decl void dbglogXML(const IPropertyTree *tree, unsigned indent = 0, unsigne
 
 #define JSON_SortTags XML_SortTags
 #define JSON_Format   0x02
+#define JSON_HideRootArrayObject 0x04
 #define JSON_Sanitize XML_Sanitize
 #define JSON_SanitizeAttributeValues XML_SanitizeAttributeValues
 
-jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format);
-jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format);
+jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format|JSON_HideRootArrayObject);
+jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format|JSON_HideRootArrayObject);
+jlib_decl void printJSON(const IPropertyTree *tree, unsigned indent = 0, byte flags=JSON_Format|JSON_HideRootArrayObject);
+jlib_decl void dbglogJSON(const IPropertyTree *tree, unsigned indent = 0, byte flags=JSON_Format|JSON_HideRootArrayObject);
 
 jlib_decl const char *splitXPath(const char *xpath, StringBuffer &head); // returns tail, fills 'head' with leading xpath
 jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);
@@ -329,6 +332,7 @@ jlib_decl IPropertyTree *createPTreeFromYAMLString(const char *yaml, byte flags=
 jlib_decl IPropertyTree *createPTreeFromYAMLString(unsigned len, const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 
+#define YAML_HideRootArrayObject 0x04
 #define YAML_SortTags XML_SortTags
 #define YAML_Sanitize XML_Sanitize
 #define YAML_SanitizeAttributeValues XML_SanitizeAttributeValues
@@ -336,11 +340,11 @@ jlib_decl IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flag
 jlib_decl StringBuffer &toYAML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags);
 jlib_decl void toYAML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags);
 
-jlib_decl void saveYAML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
-jlib_decl void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=0);
-jlib_decl void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
-jlib_decl void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
-jlib_decl void printYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
-jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=0);
+jlib_decl void saveYAML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
+jlib_decl void saveYAML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=YAML_HideRootArrayObject);
+jlib_decl void saveYAML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
+jlib_decl void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
+jlib_decl void printYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
+jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
 
 #endif
