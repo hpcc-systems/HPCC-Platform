@@ -177,3 +177,16 @@ initContainers:
 {{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
 {{- end }}
 {{- end }}
+
+{{- /* Add security context */ -}}
+{{- /* Pass in a dictionary with root and me defined */ -}}
+{{- define "hpcc.addSecurityContext" -}}
+{{- if .root.Values.global.privileged -}}
+securityContext:
+  privileged: true
+  capabilities:
+    add:
+    - SYS_PTRACE
+{{- end -}}
+{{- end -}}
+

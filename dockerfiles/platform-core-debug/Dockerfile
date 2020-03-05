@@ -29,6 +29,9 @@ RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
 RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
+RUN apt-get install -y libcap2-bin
+RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
+
 USER hpcc
 
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
