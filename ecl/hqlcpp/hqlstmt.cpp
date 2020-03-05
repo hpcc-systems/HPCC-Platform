@@ -1215,6 +1215,8 @@ HqlStmt::HqlStmt(StmtKind _kind, HqlStmts * _container)
     incomplete = false;
     included = true;
     priority = 0;
+    optimize = false;
+    noOptimize = false;
 }
 
 void HqlStmt::addExpr(IHqlExpression * expr)
@@ -1246,6 +1248,16 @@ static bool isEmptyGroup(IHqlStmt * stmt)
     }
     return false;
 }
+
+StringBuffer & HqlStmt::appendTextPrefix(StringBuffer & out) const
+{
+    if (noOptimize)
+        out.append("NOOPTIMIZE ");
+    if (optimize)
+        out.append("OPTIMIZE ");
+    return out;
+}
+
 
 bool HqlStmt::hasChildren() const
 {
@@ -1299,6 +1311,12 @@ IHqlExpression * HqlStmt::queryExpr(unsigned index) const
     if (exprs.isItem(index))
         return &exprs.item(index);
     return NULL;
+}
+
+void HqlStmt::setForceOptimize(bool value)
+{
+    optimize = value;
+    noOptimize = !value;
 }
 
 
@@ -1371,13 +1389,13 @@ StringBuffer & HqlQuoteLiteralStmt::getTextExtra(StringBuffer & out) const
 
 StringBuffer & HqlQuoteCompoundStmt::getTextExtra(StringBuffer & out) const
 {
-    return out.append(text);
+    return appendTextPrefix(out).append(text);
 }
 
 
 StringBuffer & HqlQuoteLiteralCompoundStmt::getTextExtra(StringBuffer & out) const
 {
-    return out.append(text);
+    return appendTextPrefix(out).append(text);
 }
 
 

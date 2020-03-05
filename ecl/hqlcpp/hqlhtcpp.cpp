@@ -265,10 +265,28 @@ MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classc
 MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classctx, const char * text, unsigned _flags) : translator(_translator), ctx(classctx), flags(_flags)
 {
     stmt = ctx.addQuotedFunction(text, (flags & MFdynamicproto) != 0);
+    if (flags & MFoptimize)
+        stmt->setForceOptimize(true);
+    else if (flags & MFnooptimize)
+        stmt->setForceOptimize(false);
 }
 
 MemberFunction::~MemberFunction() noexcept(false)
 {
+    unsigned maxOptimizeSize = translator.queryOptions().maxOptimizeSize;
+    unsigned minNoOptimizeSize = translator.queryOptions().minNoOptimizeSize;
+    if (stmt && (maxOptimizeSize || minNoOptimizeSize))
+    {
+        //This estimate is before the peephole optimize is applied, so may be a large over estimate
+        unsigned estimatedSize = calcTotalChildren(stmt);
+        //If the function is smaller than the optimize threshold then force optimization on
+        if (maxOptimizeSize && (estimatedSize <= maxOptimizeSize))
+            stmt->setForceOptimize(true);
+        //If the function is larger than the no-optimize threshold then force optimization off
+        else if (minNoOptimizeSize && (estimatedSize >= minNoOptimizeSize))
+            stmt->setForceOptimize(false);
+    }
+
     //Do not process the aliases if we are aborting from an error
     if (!std::uncaught_exception())
         finish();
@@ -5529,7 +5547,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     IHqlStmt * classStmt = beginNestedClass(classctx, name, "ICompare");
 
     {
-        MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const override" OPTIMIZE_FUNCTION_ATTRIBUTE);
+        MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const override", MFoptimize);
         func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -5689,7 +5707,7 @@ void HqlCppTranslator::buildHashClass(BuildCtx & ctx, const char * name, IHqlExp
 
 static void buildCompareMemberFunction(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * sortList, const DatasetReference & dataset)
 {
-    MemberFunction func(translator, ctx, "virtual int docompare(const void * _left, const void * _right) const override" OPTIMIZE_FUNCTION_ATTRIBUTE);
+    MemberFunction func(translator, ctx, "virtual int docompare(const void * _left, const void * _right) const override", MFoptimize);
     func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -11943,7 +11961,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         IHqlStmt * classStmt = beginNestedClass(classctx, compareName.str(), "ICompare");
 
         {
-            MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const override" OPTIMIZE_FUNCTION_ATTRIBUTE);
+            MemberFunction func(*this, classctx, "virtual int docompare(const void * _left, const void * _right) const override", MFoptimize);
             func.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
             func.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
             func.ctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
@@ -18543,23 +18561,18 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 {
     //Generate a #define that can be used to optimize a particular function.
     BuildCtx optimizectx(*code, includeAtom);
-    if (options.optimizeCriticalFunctions)
+    switch (options.targetCompiler)
     {
-        switch (options.targetCompiler)
-        {
 #ifndef __APPLE__
-        case GccCppCompiler:
-            optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
-            break;
+    case GccCppCompiler:
+        optimizectx.addQuoted("#define NOOPTIMIZE __attribute__((optimize(0)))");
+        optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
+        break;
 #endif
-        default:
-            optimizectx.addQuoted("#define OPTIMIZE");
-            break;
-        }
-    }
-    else
-    {
+    default:
+        optimizectx.addQuoted("#define NOOPTIMIZE");
         optimizectx.addQuoted("#define OPTIMIZE");
+        break;
     }
 
 

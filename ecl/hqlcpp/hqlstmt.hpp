@@ -185,29 +185,30 @@ protected:
 };
 
 
-enum StmtKind { 
-             null_stmt,
-             assign_stmt, block_stmt, group_stmt, declare_stmt, 
-             expr_stmt,
-             return_stmt,
-             quote_stmt,
-             quote_compound_stmt,
-             quote_compoundopt_stmt,
-             filter_stmt,
-             goto_stmt, label_stmt,
-             switch_stmt, case_stmt, default_stmt,
-             loop_stmt, break_stmt,
-             pass_stmt, external_stmt,
-             indirect_stmt,
-             assigninc_stmt, assigndec_stmt,
-             alias_stmt,
-             line_stmt,
-             continue_stmt,
-             function_stmt,
-             assign_link_stmt,
-             try_stmt,
-             catch_stmt,
-             throw_stmt,
+enum StmtKind : byte
+{
+     null_stmt,
+     assign_stmt, block_stmt, group_stmt, declare_stmt,
+     expr_stmt,
+     return_stmt,
+     quote_stmt,
+     quote_compound_stmt,
+     quote_compoundopt_stmt,
+     filter_stmt,
+     goto_stmt, label_stmt,
+     switch_stmt, case_stmt, default_stmt,
+     loop_stmt, break_stmt,
+     pass_stmt, external_stmt,
+     indirect_stmt,
+     assigninc_stmt, assigndec_stmt,
+     alias_stmt,
+     line_stmt,
+     continue_stmt,
+     function_stmt,
+     assign_link_stmt,
+     try_stmt,
+     catch_stmt,
+     throw_stmt,
 };
 
 
@@ -223,6 +224,7 @@ public:
 
 //used when creating the statement graph
     virtual void            mergeScopeWithContainer() = 0;
+    virtual void            setForceOptimize(bool value) = 0;
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
     virtual void            finishedFramework() = 0;

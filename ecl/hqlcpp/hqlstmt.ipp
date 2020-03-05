@@ -30,36 +30,36 @@ class HqlStmt : public CSingleThreadSimpleInterfaceOf<IHqlStmt>
 public:
     HqlStmt(StmtKind _kind, HqlStmts * _container);
     
-    virtual StmtKind                getStmt() const;
-    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
-    virtual bool                    isIncluded() const;
-    virtual unsigned                numChildren() const;
-    virtual IHqlStmt *              queryChild(unsigned index) const;
-    virtual IHqlExpression *        queryExpr(unsigned index) const;
-    virtual HqlStmts *              queryContainer();
+    virtual StmtKind                getStmt() const override;
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const override;
+    virtual bool                    isIncluded() const override;
+    virtual unsigned                numChildren() const override;
+    virtual IHqlStmt *              queryChild(unsigned index) const override;
+    virtual IHqlExpression *        queryExpr(unsigned index) const override;
 
+            HqlStmts *              queryContainer();
             void                    addExpr(IHqlExpression * expr);
             void                    killExprs() { exprs.kill(); }
             bool                    isIncomplete()  { return incomplete; }
             unsigned                queryPriority() { return priority; }
-    virtual void                    mergeScopeWithContainer()       {}
-    virtual void                    setIncomplete(bool _incomplete) { incomplete = _incomplete; }
-    virtual void                    setIncluded(bool _included) { included = _included; }
+    virtual void                    mergeScopeWithContainer()  override {}
+    virtual void                    setIncomplete(bool _incomplete) override { incomplete = _incomplete; }
+    virtual void                    setIncluded(bool _included) override { included = _included; }
+    virtual void                    setForceOptimize(bool value) override;
             void                    setPriority(unsigned _prio) { priority = _prio; }
-    virtual void                    finishedFramework() { throwUnexpected(); }
+    virtual void                    finishedFramework() override { throwUnexpected(); }
 
 protected:
     bool hasChildren() const;
+    StringBuffer & appendTextPrefix(StringBuffer & out) const;
 
 protected:
     unsigned short                      priority;       //64bit: pack with link count in CInterface
-#ifdef _DEBUG
     StmtKind                            kind;
-#else
-    unsigned char                       kind;
-#endif
     bool                                incomplete:1;
     bool                                included:1;
+    bool                                optimize:1;     // Should really be in a derived class, but this avoids extra memory
+    bool                                noOptimize:1;   // Should really be in a derived class, but this avoids extra memory
     HqlStmts *                          container;
     HqlExprArray                        exprs;
 };

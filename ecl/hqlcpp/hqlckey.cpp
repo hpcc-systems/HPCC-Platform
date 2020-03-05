@@ -110,9 +110,9 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
     if (match)
     {
         StringBuffer proto;
-        proto.append("virtual bool ").append(name).append("(const void * _left, const void * _right) override" OPTIMIZE_FUNCTION_ATTRIBUTE);
+        proto.append("virtual bool ").append(name).append("(const void * _left, const void * _right) override");
 
-        MemberFunction matchFunc(*this, ctx, proto, MFdynamicproto);
+        MemberFunction matchFunc(*this, ctx, proto, MFdynamicproto|MFoptimize);
 
         matchFunc.ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         matchFunc.ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
