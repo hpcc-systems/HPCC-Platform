@@ -21,7 +21,7 @@
 
 HEAD=$(git rev-parse --short HEAD)
 
-helm install mycluster hpcc/ --set global.image.version=$HEAD-Debug
+helm install mycluster hpcc/ --set global.image.version=$HEAD-Debug --set global.privileged=true
 sleep 1
 kubectl get pods
 

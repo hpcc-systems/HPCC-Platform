@@ -28,6 +28,7 @@ spec:
                 --masterport={{ $masterPort }},
                 --numSlaves={{ $thor.numSlaves }}
               ]
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
@@ -57,6 +58,7 @@ spec:
                   --slaveport={{ $slavePort }},
                   --master={{ printf "%s:%v" $serviceName $masterPort }}
                 ]
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 10 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 10 }}
           ports:
             - containerPort: {{ $slavePort }}

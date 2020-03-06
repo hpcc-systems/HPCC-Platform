@@ -20,6 +20,7 @@ spec:
     spec:
       containers:
       - name: {{ $toponame | quote }}
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
@@ -74,6 +75,7 @@ spec:
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
                 "--resolveLocally=false"
               ]
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
@@ -111,6 +113,7 @@ spec:
                 "--numChannels={{ $numChannels }}",
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
               ]
+{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $roxie | indent 8 }}
       volumes:
