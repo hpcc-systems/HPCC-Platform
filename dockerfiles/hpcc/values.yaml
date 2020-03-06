@@ -28,7 +28,7 @@ global:
   image:
     # This should probably say "latest" or "stable" in the example script, but set to a specific version in production systems
     # We should also support overriding the version within a component
-    version: master-2020-02-10
+    version: master-2020-02-20b
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
     pullPolicy: IfNotPresent
   
@@ -40,6 +40,15 @@ global:
   # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
   hostStorage: true
 
+  #Logging :
+  #   Stderronly:
+  #      Enabled: true
+  #   Elasticstack:
+  #      Enabled: false
+
+Logging :      #stderr logging is default
+  ElasticStack:
+    Enabled: true
 
 dali:
 - name: mydali
