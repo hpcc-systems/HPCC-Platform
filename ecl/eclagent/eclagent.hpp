@@ -19,7 +19,7 @@
 
 static constexpr const char * eclagentDefaultYaml = R"!!(
 version: "1.0"
-EclAgent:
+eclagent:
     analyzeWorkunit: true
     defaultMemoryLimitMB: 300
     name: myeclagent

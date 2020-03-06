@@ -50,7 +50,7 @@
 #include "dalienv.hpp"
 #include "dasds.hpp"
 #include "dllserver.hpp"
-
+#include "workunit.hpp"
 #include "rmtfile.hpp"
 
 #include "portlist.h"
@@ -557,12 +557,17 @@ thor:
   daliServers: dali
   watchdogEnabled: true
   watchdogProgressEnabled: true
+  cost:
+    thor:
+      master: "0.000002"
+      slave: "0.00001"
 )!!";
 
 
 #include "thactivitymaster.hpp"
 int main( int argc, const char *argv[]  )
 {
+#ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
             if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -572,6 +577,7 @@ int main( int argc, const char *argv[]  )
             break;
         }
     }
+#endif
 #if defined(WIN32) && defined(_DEBUG)
     int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
     tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
@@ -771,9 +777,7 @@ int main( int argc, const char *argv[]  )
         if (overrideReplicateDirectory&&*overrideBaseDirectory)
             setBaseDirectory(overrideReplicateDirectory, true);
         StringBuffer tempDirStr;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
-            globals->setProp("@thorTempDirectory", tempDirStr.str());
-        else
+        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
         {
             tempDirStr.append(globals->queryProp("@thorTempDirectory"));
             if (0 == tempDirStr.length())
@@ -784,10 +788,12 @@ int main( int argc, const char *argv[]  )
                 tempDirStr.append("temp");
             }
         }
+        globals->setProp("@thorTempDirectory", tempDirStr);
         logDiskSpace(); // Log before temp space is cleared
         StringBuffer tempPrefix("thtmp");
         tempPrefix.append(getMasterPortBase()).append("_");
-        SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
+        SetTempDir(0, tempDirStr.str(), tempPrefix.str(), true);
+        DBGLOG("Temp directory: %s", queryTempDir());
 
         char thorPath[1024];
         if (!GetCurrentDirectory(1024, thorPath))
@@ -857,25 +863,38 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numSlaves = 0;
-        if (isContainerized())
-        {
-            if (!globals->hasProp("@numSlaves"))
-                throw makeStringException(0, "Number of slaves not defined (numSlaves)");
-            else
-            {
-                numSlaves = globals->getPropInt("@numSlaves", 0);
-                if (0 == numSlaves)
-                    throw makeStringException(0, "Number of slaves must be > 0 (numSlaves)");
-            }
-        }
+        StringBuffer cloudJobName;
+        const char *workunit = nullptr;
+        const char *graphName = nullptr;
+#ifdef _CONTAINERIZED
+        if (!globals->hasProp("@numSlaves"))
+            throw makeStringException(0, "Number of slaves not defined (numSlaves)");
         else
         {
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-            Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
-            numSlaves = queryNodeClusterWidth();
+            numSlaves = globals->getPropInt("@numSlaves", 0);
+            if (0 == numSlaves)
+                throw makeStringException(0, "Number of slaves must be > 0 (numSlaves)");
         }
+
+        workunit = globals->queryProp("@workunit");
+        graphName = globals->queryProp("@graphName");
+        if (isEmptyString(workunit))
+            throw makeStringException(0, "missing --workunit");
+        if (isEmptyString(graphName))
+            throw makeStringException(0, "missing --graphName");
+        cloudJobName.appendf("%s-%s", workunit, graphName);
+
+        StringBuffer myIp;
+        queryHostIP().getIpText(myIp);
+
+        launchK8sJob("thorslave", workunit, cloudJobName, { { "graphName", graphName}, { "master", myIp.str() } });
+#else
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+        numSlaves = queryNodeClusterWidth();
+#endif
 
         if (registry->connect(numSlaves))
         {
@@ -918,17 +937,27 @@ int main( int argc, const char *argv[]  )
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
-            thorMain(logHandler);
+            // NB: workunit/graphName only set in one-shot mode (if isCloud())
+            thorMain(logHandler, workunit, graphName);
             LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }
         else
             PROGLOG("Registration aborted");
+#ifdef _CONTAINERIZED
+        registry.clear();
+        deleteK8sJob("thorslave", cloudJobName);
+        setExitCode(0);
+#endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
     }
     catch (IException *e) 
     {
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         e->Release();
+#ifdef _CONTAINERIZED
+        setExitCode(0); // do we ever want to exit with non-zero in K8s world - which prevents job completing
+#endif
+        
     }
 
     // cleanup handler to be sure we end

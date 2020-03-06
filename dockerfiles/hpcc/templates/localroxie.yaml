@@ -33,7 +33,7 @@ spec:
 {{ include "hpcc.addConfigVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie ) -}}
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie ) }}
 ---
 {{- end }}
 {{- end }}

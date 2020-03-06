@@ -37,6 +37,9 @@
 #include "jprop.hpp"
 #include "wuattr.hpp"
 #include <vector>
+#include <list>
+#include <utility>
+#include <string>
 
 #define LEGACY_GLOBAL_SCOPE "workunit"
 #define GLOBAL_SCOPE ""
@@ -1685,7 +1688,10 @@ extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 #ifdef _CONTAINERIZED
-extern WORKUNIT_API void runK8sJob(const char *name, const char *wuid);
+extern WORKUNIT_API void deleteK8sJob(const char *componentName, const char *job);
+extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, const char *condition=nullptr);
+extern WORKUNIT_API void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
+extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, bool wait=true, const std::list<std::pair<std::string, std::string>> &extraParams={});
 #endif
 
 #endif

@@ -458,7 +458,7 @@ extern graph_decl IThorException *ThorWrapException(IException *e, const char *m
 extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e);
 
 extern graph_decl void GetTempName(StringBuffer &name, const char *prefix=NULL,bool altdisk=false);
-extern graph_decl void SetTempDir(const char *name, const char *tempPrefix, bool clear);
+extern graph_decl void SetTempDir(unsigned slaveNum, const char *name, const char *tempPrefix, bool clear);
 extern graph_decl void ClearDir(const char *dir);
 extern graph_decl void ClearTempDirs();
 extern graph_decl const char *queryTempDir(bool altdisk=false);  

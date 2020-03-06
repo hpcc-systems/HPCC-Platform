@@ -23,7 +23,7 @@ interface IException;
 CSDSServerStatus &queryServerStatus();
 CSDSServerStatus &openThorServerStatus();
 void closeThorServerStatus();
-void thorMain(ILogMsgHandler *logHandler);
+void thorMain(ILogMsgHandler *logHandler, const char *workunit, const char *graphName);
 
 enum ThorExitCodes { TEC_Clean, TEC_CtrlC, TEC_Idle, TEC_Watchdog, TEC_SlaveInit, TEC_Swap, TEC_DaliDown };
 
