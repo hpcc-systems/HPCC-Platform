@@ -1,6 +1,6 @@
 import { format as d3Format, Icon, Palette } from "@hpcc-js/common";
 import { BaseScope, ScopeEdge, ScopeGraph, ScopeSubgraph, ScopeVertex } from "@hpcc-js/comms";
-import { Edge, IGraphData, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
+import { Edge, IEdge, IGraphData, IGraphData2, IHierarchy, ISubgraph, IVertex, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
 import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex } from "@hpcc-js/util";
 import { decodeHtml } from "./Utility";
 
@@ -29,71 +29,69 @@ const ACTIVE_FILL = "#fed080";
 const FINISHED_STROKE = "darkgreen";
 const FINISHED_FILL = "lightgreen";
 
-function faCharFactory(kind): string {
-    switch (kind) {
-        case "2": return "\uf0c7";      //  Disk Write
-        case "3": return "\uf15d";      //  sort
-        case "5": return "\uf0b0";      //  Filter
-        case "6": return "\uf1e0";      //  Split
-        case "12": return "\uf039";     //  First N
-        case "15": return "\uf126";     //  Lightweight Join
-        case "17": return "\uf126";     //  Lookup Join
-        case "22": return "\uf1e6";     //  Pipe Output
-        case "23": return "\uf078";     //  Funnel
-        case "25": return "\uf0ce";     //  Inline Dataset
-        case "26": return "\uf074";     //  distribute
-        case "29": return "\uf005";     //  Store Internal Result
-        case "36": return "\uf128";     //  If
-        case "44": return "\uf0c7";     //  write csv
-        case "47": return "\uf0c7";     //  write
-        case "54": return "\uf013";     //  Workunit Read
-        case "56": return "\uf0c7";     //  Spill
-        case "59": return "\uf126";     //  Merge
-        case "61": return "\uf0c7";     //  write xml
-        case "82": return "\uf1c0";     //  Projected Disk Read Spill
-        case "88": return "\uf1c0";     //  Projected Disk Read Spill
-        case "92": return "\uf129";     //  Limted Index Read
-        case "93": return "\uf129";     //  Limted Index Read
-        case "99": return "\uf1c0";     //  CSV Read
-        case "105": return "\uf1c0";    //  CSV Read
+const faCharType = {
+    2: "\uf0c7",      //  Disk Write
+    3: "\uf15d",      //  sort
+    5: "\uf0b0",      //  Filter
+    6: "\uf1e0",      //  Split
+    12: "\uf039",     //  First N
+    15: "\uf126",     //  Lightweight Join
+    17: "\uf126",     //  Lookup Join
+    22: "\uf1e6",     //  Pipe Output
+    23: "\uf078",     //  Funnel
+    25: "\uf0ce",     //  Inline Dataset
+    26: "\uf074",     //  distribute
+    29: "\uf005",     //  Store Internal Result
+    36: "\uf128",     //  If
+    44: "\uf0c7",     //  write csv
+    47: "\uf0c7",     //  write
+    54: "\uf013",     //  Workunit Read
+    56: "\uf0c7",     //  Spill
+    59: "\uf126",     //  Merge
+    61: "\uf0c7",     //  write xml
+    82: "\uf1c0",     //  Projected Disk Read Spill
+    88: "\uf1c0",     //  Projected Disk Read Spill
+    92: "\uf129",     //  Limted Index Read
+    93: "\uf129",     //  Limted Index Read
+    99: "\uf1c0",     //  CSV Read
+    105: "\uf1c0",    //  CSV Read
 
-        case "7": return "\uf090";      //  Project
-        case "9": return "\uf0e2";      //  Local Iterate
-        case "16": return "\uf005";     //  Output Internal
-        case "19": return "\uf074";     //  Hash Distribute
-        case "21": return "\uf275";     //  Normalize
-        case "35": return "\uf0c7";     //  CSV Write
-        case "37": return "\uf0c7";     //  Index Write
-        case "71": return "\uf1c0";     //  Disk Read Spill
-        case "133": return "\uf0ce";    //  Inline Dataset
-        case "148": return "\uf0ce";    //  Inline Dataset
-        case "168": return "\uf275";    //  Local Denormalize
-    }
-    return "\uf063";
+    7: "\uf090",      //  Project
+    9: "\uf0e2",      //  Local Iterate
+    16: "\uf005",     //  Output Internal
+    19: "\uf074",     //  Hash Distribute
+    21: "\uf275",     //  Normalize
+    35: "\uf0c7",     //  CSV Write
+    37: "\uf0c7",     //  Index Write
+    71: "\uf1c0",     //  Disk Read Spill
+    133: "\uf0ce",    //  Inline Dataset
+    148: "\uf0ce",    //  Inline Dataset
+    168: "\uf275"    //  Local Denormalize
+};
+
+function faCharFactory(kind: number): string {
+    return faCharType[kind] || "\uf063";
 }
 
-export class WUScopeController {
-    private graphDB: ScopeGraph;
-    private subgraphsMap: { [id: string]: Subgraph } = {};
-    private rSubgraphsMap: { [id: string]: ScopeSubgraph } = {};
-    private verticesMap: { [id: string]: VertexType } = {};
-    private rVerticesMap: { [id: string]: ScopeVertex } = {};
-    private edgesMap: { [id: string]: Edge } = {};
-    private rEdgesMap: { [id: string]: ScopeEdge } = {};
-    private kindMap: { [id: string]: ScopeVertex[] } = {};
+export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphData> {
+    protected graphDB: ScopeGraph;
+    protected subgraphsMap: { [id: string]: ISubgraph } = {};
+    protected scopeSubgraphsMap: { [id: string]: ScopeSubgraph } = {};
+    protected verticesMap: { [id: string]: IVertex } = {};
+    protected scopeVerticesMap: { [id: string]: ScopeVertex } = {};
+    protected edgesMap: { [id: string]: IEdge } = {};
+    protected scopeEdgesMap: { [id: string]: ScopeEdge } = {};
+    protected kindMap: { [id: string]: ScopeVertex[] } = {};
 
     protected _disabled: { [kind: number]: boolean } = {};
 
-    constructor() {
-    }
-
     clear() {
         this.subgraphsMap = {};
-        this.rSubgraphsMap = {};
+        this.scopeSubgraphsMap = {};
         this.verticesMap = {};
-        this.rVerticesMap = {};
+        this.scopeVerticesMap = {};
         this.edgesMap = {};
-        this.rEdgesMap = {};
+        this.scopeEdgesMap = {};
     }
 
     set(masterGraph: ScopeGraph) {
@@ -114,7 +112,7 @@ export class WUScopeController {
         });
     }
 
-    _showSubgraphs = true;
+    protected _showSubgraphs = true;
     showSubgraphs(): boolean;
     showSubgraphs(_: boolean): this;
     showSubgraphs(_?: boolean): boolean | this {
@@ -123,7 +121,7 @@ export class WUScopeController {
         return this;
     }
 
-    _showIcon = true;
+    protected _showIcon = true;
     showIcon(): boolean;
     showIcon(_: boolean): this;
     showIcon(_?: boolean): boolean | this {
@@ -132,7 +130,7 @@ export class WUScopeController {
         return this;
     }
 
-    _vertexLabelTpl = "%Label%";
+    protected _vertexLabelTpl = "%Label%";
     vertexLabelTpl(): string;
     vertexLabelTpl(_: string): this;
     vertexLabelTpl(_?: string): string | this {
@@ -141,7 +139,7 @@ export class WUScopeController {
         return this;
     }
 
-    _edgeLabelTpl = "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%";
+    protected _edgeLabelTpl = "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%";
     edgeLabelTpl(): string;
     edgeLabelTpl(_: string): this;
     edgeLabelTpl(_?: string): string | this {
@@ -167,7 +165,7 @@ export class WUScopeController {
         return this;
     }
 
-    splitTerm(term: string): [string, string] {
+    protected splitTerm(term: string): [string, string] {
         const termParts = term.toLowerCase().split(":");
         return [
             termParts.length > 1 ? termParts[0].trim() : undefined,
@@ -202,6 +200,222 @@ export class WUScopeController {
         }
 
         return [...this.graphDB.subgraphs.filter(test), ...this.graphDB.vertices.filter(test), ...this.graphDB.edges.filter(test)].map(scopeItem => scopeItem._.Id);
+    }
+
+    abstract graphGui(graphDB: ScopeGraph): IGraphData;
+
+    formatNum(str): string {
+        if (isNaN(str)) {
+            return str;
+        }
+        return formatNum(str);
+    }
+
+    formatNums(obj) {
+        for (const key in obj) {
+            obj[key] = this.formatNum(obj[key]);
+        }
+        return obj;
+    }
+
+    formatLine(labelTpl, obj): string {
+        let retVal = "";
+        let lpos = labelTpl.indexOf("%");
+        let rpos = -1;
+        let replacementFound = lpos >= 0 ? false : true;  //  If a line has no symbols always include it, otherwise only include that line IF a replacement was found  ---
+        while (lpos >= 0) {
+            retVal += labelTpl.substring(rpos + 1, lpos);
+            rpos = labelTpl.indexOf("%", lpos + 1);
+            if (rpos < 0) {
+                console.log("Invalid Label Template");
+                break;
+            }
+            const key = labelTpl.substring(lpos + 1, rpos);
+            replacementFound = replacementFound || !!obj[labelTpl.substring(lpos + 1, rpos)];
+            retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
+            lpos = labelTpl.indexOf("%", rpos + 1);
+        }
+        retVal += labelTpl.substring(rpos + 1, labelTpl.length);
+        return replacementFound ? retVal : "";
+    }
+
+    format(labelTpl, obj) {
+        labelTpl = labelTpl.split("\\n").join("\n");
+        return labelTpl
+            .split("\n")
+            .map(line => this.formatLine(line, obj))
+            .filter(d => d.trim().length > 0)
+            .map(decodeHtml)
+            .join("\n")
+            ;
+    }
+
+    isSpill(edge: ScopeEdge): boolean {
+        const sourceKind = edge.source._.attr("Kind").RawValue;
+        const targetKind = edge.target._.attr("Kind").RawValue;
+        return sourceKind === "2" || targetKind === "71";
+    }
+
+    spansSubgraph(edge: ScopeEdge): boolean {
+        return edge.source.parent._.Id !== edge.target.parent._.Id;
+    }
+
+    filterLegend(graphDB: ScopeGraph) {
+        for (let i = graphDB.vertices.length - 1; i >= 0; --i) {
+            const vertex = graphDB.vertices[i];
+            const kind = vertex._.attr("Kind").RawValue;
+            if (this._disabled[kind]) {
+                vertex.remove(false, (source: BaseScope, target: BaseScope) => {
+                    return new BaseScope({
+                        ScopeName: vertex._.ScopeName + ":in",
+                        Id: source.Id + "->" + target.Id,
+                        ScopeType: "dummy-edge",
+                        Properties: {
+                            Property: [vertex._.attr("Label")]
+                        }
+                    });
+                });
+            }
+        }
+    }
+
+    abstract filterPartial(graphDB: ScopeGraph);
+
+    filterEmptySubgraphs(graphDB: ScopeGraph) {
+        while (true) {
+            const emptySubgraphs = graphDB.subgraphs.filter(subgraph => subgraph.subgraphs.length === 0 && subgraph.vertices.length === 0);
+            if (emptySubgraphs.length === 0) break;
+            emptySubgraphs.forEach(subgraph => subgraph.remove(true));
+        }
+    }
+
+    removeObsoleteSubgraphs(graphDB: ScopeGraph) {
+        for (const subgraph of [...graphDB.subgraphs]) {
+            if (subgraph.vertices.length === 0) {
+                subgraph.remove(false);
+            }
+        }
+    }
+
+    graphData(): IGraphData {
+        const graphDB = this.graphDB.clone();
+        this.filterLegend(graphDB);
+        this.filterPartial(graphDB);
+        this.filterEmptySubgraphs(graphDB);
+        this.removeObsoleteSubgraphs(graphDB);
+        return this.graphGui(graphDB);
+    }
+
+    calcLegend(): WUGraphLegendData[] {
+        const retVal: WUGraphLegendData[] = [];
+        for (const kind in this.kindMap) {
+            retVal.push({
+                kind: parseInt(kind),
+                faChar: faCharFactory(+kind),
+                label: this.kindMap[kind][0]._.attr("Label").RawValue.split("\n")[0],
+                count: this.kindMap[kind].length
+            });
+        }
+        return retVal;
+    }
+
+    formatStoreRow(item: ScopeEdge | ScopeSubgraph | ScopeVertex) {
+        const retVal = item._.rawAttrs();
+        retVal["Id"] = item._.Id;
+        for (const key in retVal) {
+            //  TODO Move into BaseScope  ---
+            retVal[key] = decodeHtml(retVal[key]);
+        }
+        retVal.__formatted = this.formatNums(item._.formattedAttrs());
+        return retVal;
+    }
+
+    edges(_: string[]): IEdge[] {
+        const retVal: IEdge[] = [];
+        for (const id of _) {
+            if (this.edgesMap[id]) {
+                retVal.push(this.edgesMap[id]);
+            }
+        }
+        return retVal;
+    }
+
+    subgraphStoreData() {
+        return this.graphDB.subgraphs.map(sg => {
+            return this.formatStoreRow(sg);
+        });
+    }
+
+    activityStoreData() {
+        return this.graphDB.vertices.map(v => {
+            return this.formatStoreRow(v);
+        });
+    }
+
+    edgeStoreData() {
+        return this.graphDB.edges.map(e => {
+            return this.formatStoreRow(e);
+        });
+    }
+
+    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term: string = "") {
+        const [findScope, findTerm] = this.splitTerm(term);
+
+        function highlightText(key: string, _text: any) {
+            if (!findTerm) return _text;
+            const text = "" + _text;
+            if (findScope && findScope !== key.toLowerCase()) return _text;
+            const found = text.toLowerCase().indexOf(findTerm.toLowerCase());
+            if (found >= 0) {
+                return text.substring(0, found) + "<span style='background:#fff2a8'>" + text.substring(found, found + findTerm.length) + "</span>" + text.substring(found + findTerm.length);
+            }
+            return _text;
+        }
+
+        let label = "";
+        const rows: string[] = [];
+        label = scope.Id;
+        rows.push(`<tr><td class="key">ID:</td><td class="value">${highlightText("ID", scope.Id)}</td></tr>`);
+        if (parentScope) {
+            rows.push(`<tr><td class="key">Parent ID:</td><td class="value">${highlightText("Parent ID", parentScope.Id)}</td></tr>`);
+        }
+        rows.push(`<tr><td class="key">Scope:</td><td class="value">${highlightText("Scope", scope.ScopeName)}</td></tr>`);
+        const attrs = this.formatNums(scope.formattedAttrs());
+        for (const key in attrs) {
+            if (key === "Label") {
+                label = attrs[key];
+            } else {
+                rows.push(`<tr><td class="key">${key}</td><td class="value">${highlightText(key, attrs[key])}</td></tr>`);
+            }
+        }
+
+        return `<div class="eclwatch_WUGraph_Tooltip" style="max-width:480px">
+            <h4 align="center">${highlightText("Label", label)}</h4>
+            <table>
+                ${rows.join("")}
+            </table>
+        </div>`;
+    }
+
+    abstract scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge | undefined;
+
+    calcGraphTooltip(id: string, findText?: string) {
+        const item = this.scopeItem(id);
+        if (item) {
+            const scope = item._;
+            const parentScope = item.parent._;
+            if (scope) {
+                return this.calcTooltip(scope, parentScope, findText);
+            }
+        }
+        return "";
+    }
+}
+
+export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexType, Edge, IGraphData> {
+
+    constructor() {
+        super();
     }
 
     collapsedOnce = false;
@@ -273,52 +487,6 @@ export class WUScopeController {
         return retVal;
     }
 
-    formatNum(str): string {
-        if (isNaN(str)) {
-            return str;
-        }
-        return formatNum(str);
-    }
-
-    formatNums(obj) {
-        for (const key in obj) {
-            obj[key] = this.formatNum(obj[key]);
-        }
-        return obj;
-    }
-
-    formatLine(labelTpl, obj): string {
-        let retVal = "";
-        let lpos = labelTpl.indexOf("%");
-        let rpos = -1;
-        let replacementFound = lpos >= 0 ? false : true;  //  If a line has no symbols always include it, otherwise only include that line IF a replacement was found  ---
-        while (lpos >= 0) {
-            retVal += labelTpl.substring(rpos + 1, lpos);
-            rpos = labelTpl.indexOf("%", lpos + 1);
-            if (rpos < 0) {
-                console.log("Invalid Label Template");
-                break;
-            }
-            const key = labelTpl.substring(lpos + 1, rpos);
-            replacementFound = replacementFound || !!obj[labelTpl.substring(lpos + 1, rpos)];
-            retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
-            lpos = labelTpl.indexOf("%", rpos + 1);
-        }
-        retVal += labelTpl.substring(rpos + 1, labelTpl.length);
-        return replacementFound ? retVal : "";
-    }
-
-    format(labelTpl, obj) {
-        labelTpl = labelTpl.split("\\n").join("\n");
-        return labelTpl
-            .split("\n")
-            .map(line => this.formatLine(line, obj))
-            .filter(d => d.trim().length > 0)
-            .map(decodeHtml)
-            .join("\n")
-            ;
-    }
-
     createSubgraph(subgraph: ScopeSubgraph): Subgraph {
         let sg = this.subgraphsMap[subgraph._.Id];
         if (!sg) {
@@ -329,8 +497,8 @@ export class WUScopeController {
                 })
                 ;
             this.subgraphsMap[subgraph._.Id] = sg;
-            this.rSubgraphsMap[sg.id()] = subgraph;
         }
+        this.scopeSubgraphsMap[sg.id()] = subgraph;
         return sg;
     }
 
@@ -386,8 +554,8 @@ export class WUScopeController {
                 v.annotationIcons(annotations);
             }
             this.verticesMap[vertex._.Id] = v;
-            this.rVerticesMap[v.id()] = vertex;
         }
+        this.scopeVerticesMap[v.id()] = vertex;
         if (v instanceof Vertex) {
             const label = this.format(this.vertexLabelTpl(), formattedAttrs);
             v
@@ -398,17 +566,9 @@ export class WUScopeController {
         return v;
     }
 
-    isSpill(edge: ScopeEdge): boolean {
-        const sourceKind = edge.source._.attr("Kind").RawValue;
-        const targetKind = edge.target._.attr("Kind").RawValue;
-        return sourceKind === "2" || targetKind === "71";
-    }
-
-    spansSubgraph(edge: ScopeEdge): boolean {
-        return edge.source.parent._.Id !== edge.target.parent._.Id;
-    }
-
     createEdge(edge: ScopeEdge): Edge | undefined {
+        const sourceV = this.verticesMap[edge.source._.Id];
+        const targetV = this.verticesMap[edge.target._.Id];
         const rawAttrs = edge._.rawAttrs();
         const formattedAttrs = this.formatNums(edge._.formattedAttrs());
         formattedAttrs["ID"] = edge._.Id;
@@ -416,8 +576,6 @@ export class WUScopeController {
         formattedAttrs["Scope"] = edge._.ScopeName;
         let e = this.edgesMap[edge._.Id];
         if (!e) {
-            const sourceV = this.verticesMap[edge.source._.Id];
-            const targetV = this.verticesMap[edge.target._.Id];
             if (sourceV && targetV) {
                 const isSpill = this.isSpill(edge);
                 const spansSubgraph = this.spansSubgraph(edge);
@@ -445,12 +603,14 @@ export class WUScopeController {
                     .strokeDasharray(strokeDasharray)
                     ;
                 this.edgesMap[edge._.Id] = e;
-                this.rEdgesMap[e.id()] = edge;
             }
         }
         if (e instanceof Edge) {
+            this.scopeEdgesMap[e.id()] = edge;
             const label = this.format(this.edgeLabelTpl(), formattedAttrs);
             e.text(label);
+            e.sourceVertex(sourceV);
+            e.targetVertex(targetV);
         }
         return e;
     }
@@ -510,25 +670,6 @@ export class WUScopeController {
             edges.push(e);
         }
         return e;
-    }
-
-    filterLegend(graphDB: ScopeGraph) {
-        for (let i = graphDB.vertices.length - 1; i >= 0; --i) {
-            const vertex = graphDB.vertices[i];
-            const kind = vertex._.attr("Kind").RawValue;
-            if (this._disabled[kind]) {
-                vertex.remove(false, (source: BaseScope, target: BaseScope) => {
-                    return new BaseScope({
-                        ScopeName: vertex._.ScopeName + ":in",
-                        Id: source.Id + "->" + target.Id,
-                        ScopeType: "dummy-edge",
-                        Properties: {
-                            Property: [vertex._.attr("Label")]
-                        }
-                    });
-                });
-            }
-        }
     }
 
     filterPartial(graphDB: ScopeGraph) {
@@ -605,59 +746,11 @@ export class WUScopeController {
         }
     }
 
-    filterEmptySubgraphs(graphDB: ScopeGraph) {
-        while (true) {
-            const emptySubgraphs = graphDB.subgraphs.filter(subgraph => subgraph.subgraphs.length === 0 && subgraph.vertices.length === 0);
-            if (emptySubgraphs.length === 0) break;
-            emptySubgraphs.forEach(subgraph => subgraph.remove(true));
-        }
-    }
-
-    removeObsoleteSubgraphs(graphDB: ScopeGraph) {
-        for (const subgraph of [...graphDB.subgraphs]) {
-            if (subgraph.vertices.length === 0) {
-                subgraph.remove(false);
-            }
-        }
-    }
-
-    graphData(): IGraphData {
-        const graphDB = this.graphDB.clone();
-        this.filterLegend(graphDB);
-        this.filterPartial(graphDB);
-        this.filterEmptySubgraphs(graphDB);
-        this.removeObsoleteSubgraphs(graphDB);
-        return this.graphGui(graphDB);
-    }
-
-    calcLegend(): WUGraphLegendData[] {
-        const retVal: WUGraphLegendData[] = [];
-        for (const kind in this.kindMap) {
-            retVal.push({
-                kind: parseInt(kind),
-                faChar: faCharFactory(kind),
-                label: this.kindMap[kind][0]._.attr("Label").RawValue.split("\n")[0],
-                count: this.kindMap[kind].length
-            });
-        }
-        return retVal;
-    }
-
-    subgraphs(_: string[]): Subgraph[] {
+    private subgraphs(_: string[]): Subgraph[] {
         const retVal: Subgraph[] = [];
         for (const id of _) {
             if (this.subgraphsMap[id]) {
                 retVal.push(this.subgraphsMap[id]);
-            }
-        }
-        return retVal;
-    }
-
-    rSubgraphs(_: Subgraph[]): ScopeSubgraph[] {
-        const retVal: ScopeSubgraph[] = [];
-        for (const sg of _) {
-            if (this.rSubgraphsMap[sg.id()]) {
-                retVal.push(this.rSubgraphsMap[sg.id()]);
             }
         }
         return retVal;
@@ -679,36 +772,6 @@ export class WUScopeController {
         return retVal;
     }
 
-    rVertices(_: VertexType[]): ScopeVertex[] {
-        const retVal: ScopeVertex[] = [];
-        for (const v of _) {
-            if (this.rVerticesMap[v.id()]) {
-                retVal.push(this.rVerticesMap[v.id()]);
-            }
-        }
-        return retVal;
-    }
-
-    edges(_: string[]): Edge[] {
-        const retVal: Edge[] = [];
-        for (const id of _) {
-            if (this.edgesMap[id]) {
-                retVal.push(this.edgesMap[id]);
-            }
-        }
-        return retVal;
-    }
-
-    rEdges(_: Edge[]): ScopeEdge[] {
-        const retVal: ScopeEdge[] = [];
-        for (const e of _) {
-            if (this.rEdgesMap[e.id()]) {
-                retVal.push(this.rEdgesMap[e.id()]);
-            }
-        }
-        return retVal;
-    }
-
     scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge | undefined {
         const widget = this.item(_);
         return widget ? this.rItem(widget) : undefined;
@@ -719,161 +782,26 @@ export class WUScopeController {
     }
 
     rItem(_: Subgraph | VertexType | Edge): ScopeSubgraph | ScopeVertex | ScopeEdge {
-        return this.rSubgraphsMap[_.id()] || this.rVerticesMap[_.id()] || this.rEdgesMap[_.id()];
+        return this.scopeSubgraphsMap[_.id()] || this.scopeVerticesMap[_.id()] || this.scopeEdgesMap[_.id()];
     }
 
     items(_: string[]): Array<Subgraph | VertexType | Edge> {
         return [...this.subgraphs(_), ...this.vertices(_), ...this.edges(_)];
     }
 
-    rItems(_: Array<Subgraph | VertexType | Edge>): Array<ScopeSubgraph | ScopeVertex | ScopeEdge> {
-        return [...this.rSubgraphs(_ as Subgraph[]), ...this.rVertices(_ as VertexType[]), ...this.rEdges(_ as Edge[])];
-    }
-
-    formatStoreRow(item: ScopeEdge | ScopeSubgraph | ScopeVertex) {
-        const retVal = item._.rawAttrs();
-        retVal["Id"] = item._.Id;
-        for (const key in retVal) {
-            //  TODO Move into BaseScope  ---
-            retVal[key] = decodeHtml(retVal[key]);
-        }
-        retVal.__formatted = this.formatNums(item._.formattedAttrs());
-        return retVal;
-    }
-
-    formatRow(item: ScopeEdge | ScopeSubgraph | ScopeVertex, columns, row) {
-        const attrs = this.formatNums(item._.formattedAttrs());
-        for (const key in attrs) {
-            const idx = columns.indexOf(key);
-            if (idx === -1) {
-                columns.push(key);
-                row.push(attrs[key]);
-            } else {
-                row[idx] = attrs[key];
-            }
-        }
-        for (let i = 0; i < 100; ++i) {
-            if (row[i] === undefined) {
-                row[i] = "";
-            }
-        }
-        return row;
-    }
-
-    subgraphStoreData() {
-        return this.graphDB.subgraphs.map(sg => {
-            return this.formatStoreRow(sg);
-        });
-    }
-
-    subgraphData(): { columns: string[], data: any[][] } {
-        const columns = ["Id", "Label"];
-        const data = this.graphDB.subgraphs.map(sg => {
-            const row = [sg._.Id];
-            return this.formatRow(sg, columns, row);
-        });
-        return { columns, data };
-    }
-
-    activityStoreData() {
-        return this.graphDB.vertices.map(v => {
-            return this.formatStoreRow(v);
-        });
-    }
-
-    activityData(): { columns: string[], data: any[][] } {
-        const columns = ["Id", "Kind", "Label"];
-        const data = this.graphDB.vertices.map(v => {
-            const row = [parseInt(v._.Id.split("a")[1])];
-            return this.formatRow(v, columns, row);
-        });
-        return { columns, data };
-    }
-
-    edgeStoreData() {
-        return this.graphDB.edges.map(e => {
-            return this.formatStoreRow(e);
-        });
-    }
-
-    edgeData(): { columns: string[], data: any[][] } {
-        const columns = ["Id", "Label"];
-        const data = this.graphDB.edges.map(e => {
-            const row = [e._.Id];
-            return this.formatRow(e, columns, row);
-        });
-        return { columns, data };
-    }
-
-    treeData() {
-        // TODO  ---
-        return this.subgraphData();
-    }
-
-    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term: string = "") {
-        const [findScope, findTerm] = this.splitTerm(term);
-
-        function highlightText(key: string, _text: any) {
-            if (!findTerm) return _text;
-            const text = "" + _text;
-            if (findScope && findScope !== key.toLowerCase()) return _text;
-            const found = text.toLowerCase().indexOf(findTerm.toLowerCase());
-            if (found >= 0) {
-                return text.substring(0, found) + "<span style='background:#fff2a8'>" + text.substring(found, found + findTerm.length) + "</span>" + text.substring(found + findTerm.length);
-            }
-            return _text;
-        }
-
-        let label = "";
-        const rows: string[] = [];
-        label = scope.Id;
-        rows.push(`<tr><td class="key">ID:</td><td class="value">${highlightText("ID", scope.Id)}</td></tr>`);
-        if (parentScope) {
-            rows.push(`<tr><td class="key">Parent ID:</td><td class="value">${highlightText("Parent ID", parentScope.Id)}</td></tr>`);
-        }
-        rows.push(`<tr><td class="key">Scope:</td><td class="value">${highlightText("Scope", scope.ScopeName)}</td></tr>`);
-        const attrs = this.formatNums(scope.formattedAttrs());
-        for (const key in attrs) {
-            if (key === "Label") {
-                label = attrs[key];
-            } else {
-                rows.push(`<tr><td class="key">${key}</td><td class="value">${highlightText(key, attrs[key])}</td></tr>`);
-            }
-        }
-
-        return `<div class="eclwatch_WUGraph_Tooltip" style="max-width:480px">
-            <h4 align="center">${highlightText("Label", label)}</h4>
-            <table>
-                ${rows.join("")}
-            </table>
-        </div>`;
-    }
-
-    calcGraphTooltip(id: string, findText?: string) {
-        const item = this.scopeItem(id);
-        if (item) {
-            const scope = item._;
-            const parentScope = item.parent._;
-            if (scope) {
-                return this.calcTooltip(scope, parentScope, findText);
-            }
-        }
-        return "";
-    }
-
     calcGraphTooltip2(item: VertexType | Edge) {
         let scope;
         let parentScope;
         if (item instanceof Subgraph) {
-            const subgraph = this.rSubgraphsMap[item.id()];
+            const subgraph = this.scopeSubgraphsMap[item.id()];
             scope = subgraph._;
             parentScope = subgraph.parent._;
         } else if (item instanceof Vertex || item instanceof Icon) {
-            const vertex = this.rVerticesMap[item.id()];
+            const vertex = this.scopeVerticesMap[item.id()];
             scope = vertex._;
             parentScope = vertex.parent._;
         } else if (item instanceof Edge) {
-            const edge = this.rEdgesMap[item.id()];
+            const edge = this.scopeEdgesMap[item.id()];
             scope = edge._;
             parentScope = edge.parent._;
         }
@@ -883,19 +811,308 @@ export class WUScopeController {
         return "";
     }
 
-    subgraph(id: string): Subgraph | undefined {
-        return this.subgraphsMap[id];
+    //  Events  ---
+    minClick(sg: Subgraph) {
+    }
+}
+
+export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphData2> {
+
+    constructor() {
+        super();
     }
 
-    vertex(id: string): VertexType | undefined {
-        return this.verticesMap[id];
+    private collapsedOnce = false;
+    graphGui(graphDB: ScopeGraph): IGraphData2 {
+        const retVal: IGraphData2 = {
+            subgraphs: [],
+            vertices: [],
+            edges: [],
+            hierarchy: []
+        };
+
+        graphDB.walk((item) => {
+            if (item instanceof UtilSubgraph) {
+                this.appendSubgraph(item, retVal.hierarchy, retVal.subgraphs);
+            } else if (item instanceof UtilVertex) {
+                this.appendVertex(item, retVal.hierarchy, retVal.vertices);
+            } else if (item instanceof UtilEdge) {
+                this.appendEdge(item, retVal.edges);
+            }
+        });
+
+        const sgColors: {
+            [key: string]: {
+                sg: ISubgraph;
+                total: number;
+                started: number;
+                finished: number;
+            }
+        } = {};
+        retVal.hierarchy.forEach(h => {
+            let sgColor = sgColors[h.parent.id];
+            if (!sgColor) {
+                sgColor = sgColors[h.parent.id] = {
+                    sg: h.parent,
+                    total: 0,
+                    started: 0,
+                    finished: 0
+                };
+            }
+            if (h.child && this.verticesMap[h.child.id]) {
+                sgColor.total++;
+                sgColor.started += (h.child as any).__started ? 1 : 0;
+                sgColor.finished += (h.child as any).__finished ? 1 : 0;
+            }
+        });
+        for (const key in sgColors) {
+            const sgColor = sgColors[key];
+            if (sgColor.total === sgColor.finished) {
+                sgColor.sg.stroke = FINISHED_STROKE;
+            } else if (sgColor.finished > 0) {
+                sgColor.sg.stroke = ACTIVE_STROKE;
+            } else {
+                sgColor.sg.stroke = UNKNOWN_STROKE;
+            }
+        }
+
+        if (!this.showSubgraphs()) {
+            retVal.subgraphs = [];
+        }
+
+        if (!this.collapsedOnce && retVal.vertices.length >= 100) {
+            this.collapsedOnce = true;
+            retVal.subgraphs.forEach(sg => {
+            });
+        }
+
+        return retVal;
     }
 
-    edge(id: string): Edge {
-        return this.edgesMap[id];
+    private createSubgraph(subgraph: ScopeSubgraph): ISubgraph {
+        let sg = this.subgraphsMap[subgraph._.Id];
+        if (!sg) {
+            sg = {
+                id: subgraph._.Id,
+                text: subgraph._.Id
+            };
+            this.subgraphsMap[subgraph._.Id] = sg;
+        }
+        this.scopeSubgraphsMap[sg.id] = subgraph;
+        return sg;
+    }
+
+    private createVertex(vertex: ScopeVertex): IVertex {
+        const rawAttrs = vertex._.rawAttrs();
+        const formattedAttrs = this.formatNums(vertex._.formattedAttrs());
+        formattedAttrs["ID"] = vertex._.Id;
+        formattedAttrs["Parent ID"] = vertex.parent && vertex.parent._.Id;
+        formattedAttrs["Scope"] = vertex._.ScopeName;
+        let v = this.verticesMap[vertex._.Id];
+        if (!v) {
+            v = {
+                icon: {
+                    imageChar: faCharFactory(rawAttrs["Kind"]),
+                    fill: "white",
+                    stroke: "lightgray",
+                    imageCharFill: "black",
+                    yOffset: -3,
+                    padding: 12
+                },
+                id: vertex._.Id,
+                text: "",
+                origData: rawAttrs,
+                textboxFill: UNKNOWN_FILL,
+                textboxStroke: UNKNOWN_STROKE,
+                textFill: Palette.textColor(UNKNOWN_FILL)
+            };
+            const annotations = [];
+            if (vertex._.hasAttr("Definition")) {
+                annotations.push({
+                    faChar: "\uf036",
+                    tooltip: "Definition",
+                    shape_colorFill: UNKNOWN_FILL,
+                    shape_colorStroke: UNKNOWN_FILL,
+                    image_colorFill: Palette.textColor(UNKNOWN_FILL)
+                });
+            }
+            if (vertex._.hasAttr("IsInternal")) {
+                annotations.push({
+                    faChar: "\uf085",
+                    tooltip: "IsInternal",
+                    shape_colorFill: "red",
+                    shape_colorStroke: "red",
+                    image_colorFill: Palette.textColor("red")
+                });
+            }
+            // v.annotationIcons(annotations);
+            this.verticesMap[vertex._.Id] = v;
+        }
+        this.scopeVerticesMap[v.id] = vertex;
+        const label = this.format(this.vertexLabelTpl(), formattedAttrs);
+        v.text = label;
+        return v;
+    }
+
+    private createEdge(edge: ScopeEdge): IEdge | undefined {
+        const sourceV = this.verticesMap[edge.source._.Id];
+        const targetV = this.verticesMap[edge.target._.Id];
+        const rawAttrs = edge._.rawAttrs();
+        const formattedAttrs = this.formatNums(edge._.formattedAttrs());
+        formattedAttrs["ID"] = edge._.Id;
+        formattedAttrs["Parent ID"] = edge.parent && edge.parent._.Id;
+        formattedAttrs["Scope"] = edge._.ScopeName;
+        let e = this.edgesMap[edge._.Id];
+        if (!e) {
+            if (sourceV && targetV) {
+                const isSpill = this.isSpill(edge);
+                const spansSubgraph = this.spansSubgraph(edge);
+
+                let strokeDasharray;
+                let weight = 100;
+                if (rawAttrs["IsDependency"]) {
+                    weight = 10;
+                    strokeDasharray = "1,2";
+                } else if (rawAttrs["_childGraph"]) {
+                    strokeDasharray = "5,5";
+                } else if (isSpill) {
+                    weight = 25;
+                    strokeDasharray = "5,5,10,5";
+                } else if (spansSubgraph) {
+                    weight = 5;
+                    strokeDasharray = "5,5";
+                }
+                e = {
+                    id: edge._.Id,
+                    source: sourceV,
+                    target: targetV,
+                    strokeDasharray,
+                    weight
+                };
+                this.edgesMap[edge._.Id] = e;
+            }
+        }
+        if (e) {
+            this.scopeEdgesMap[e.id] = edge;
+            const label = this.format(this.edgeLabelTpl(), formattedAttrs);
+            e.label = label;
+            e.source = sourceV;
+            e.target = targetV;
+        }
+        return e;
+    }
+
+    private appendSubgraph(subgraph: ScopeSubgraph, hierarchy: IHierarchy[], subgraphs: ISubgraph[]): ISubgraph {
+        const sg = this.createSubgraph(subgraph);
+        subgraphs.push(sg);
+        const parent = this.subgraphsMap[subgraph.parent._.Id];
+        if (parent) {
+            hierarchy.push({
+                id: parent.id + "=>" + sg.id,
+                parent,
+                child: sg
+            });
+        }
+        return sg;
+    }
+
+    private appendVertex(vertex: ScopeVertex, hierarchy: IHierarchy[], vertices: IVertex[]): IVertex {
+        const v = this.createVertex(vertex);
+        vertices.push(v);
+        const parent = this.subgraphsMap[vertex.parent._.Id];
+        if (parent) {
+            hierarchy.push({
+                id: parent.id + "=>" + v.id,
+                parent,
+                child: v
+            });
+        }
+        return v;
+    }
+
+    private appendEdge(edge: ScopeEdge, edges: IEdge[]): IEdge {
+        const e = this.createEdge(edge);
+        if (e) {
+            const attrs = edge._.rawAttrs();
+            const numSlaves = parseInt(attrs["NumSlaves"]);
+            const numStarts = parseInt(attrs["NumStarts"]);
+            const numStops = parseInt(attrs["NumStops"]);
+            if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
+                const started = numStarts > 0;
+                const finished = numStops === numSlaves;
+                const active = started && !finished;
+                const strokeColor = active ? ACTIVE_STROKE : finished ? FINISHED_STROKE : UNKNOWN_STROKE;
+                const lightColor = active ? ACTIVE_FILL : finished ? FINISHED_FILL : UNKNOWN_FILL;
+                e.stroke = strokeColor;
+
+                const vInOut = [e.source, e.target];
+                vInOut.forEach(v => {
+                    if (v) {
+                        (v as any)["__started"] = started;
+                        (v as any)["__finished"] = finished;
+                        (v as any)["__active"] = active;
+                        v.icon.stroke = strokeColor;
+                        v.icon.fill = strokeColor;
+                        v.icon.imageCharFill = Palette.textColor(strokeColor);
+                        v.icon.stroke = strokeColor;
+                        v.textboxFill = lightColor;
+                        v.textboxStroke = strokeColor;
+                        v.textFill = Palette.textColor(lightColor);
+                    }
+                });
+            }
+            edges.push(e);
+        }
+        return e;
+    }
+
+    filterPartial(graphDB: ScopeGraph) {
+    }
+
+    private subgraphs(_: string[]): ISubgraph[] {
+        const retVal: ISubgraph[] = [];
+        for (const id of _) {
+            if (this.subgraphsMap[id]) {
+                retVal.push(this.subgraphsMap[id]);
+            }
+        }
+        return retVal;
+    }
+
+    vertices(_: number | string[]): IVertex[] {
+        const retVal: IVertex[] = [];
+        if (typeof _ === "number") {
+            for (const v of this.kindMap[_]) {
+                retVal.push(this.verticesMap[v._.Id]);
+            }
+        } else {
+            for (const id of _) {
+                if (this.verticesMap[id]) {
+                    retVal.push(this.verticesMap[id]);
+                }
+            }
+        }
+        return retVal;
+    }
+
+    scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge | undefined {
+        const widget = this.item(_);
+        return widget ? this.rItem(widget.id) : undefined;
+    }
+
+    item(_: string): ISubgraph | IVertex | IEdge {
+        return this.subgraphsMap[_] || this.verticesMap[_] || this.edgesMap[_];
+    }
+
+    rItem(id: string): ScopeSubgraph | ScopeVertex | ScopeEdge {
+        return this.scopeSubgraphsMap[id] || this.scopeVerticesMap[id] || this.scopeEdgesMap[id];
+    }
+
+    items(_: string[]): Array<ISubgraph | IVertex | IEdge> {
+        return [...this.subgraphs(_), ...this.vertices(_), ...this.edges(_)];
     }
 
     //  Events  ---
-    minClick(sg: Subgraph) {
+    minClick(sg: ISubgraph) {
     }
 }

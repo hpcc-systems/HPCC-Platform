@@ -1699,6 +1699,13 @@ span.dijitReset.dijitInline.dijitIcon.fa {
     min-height: 16px;
 }
 
+span.dijitReset.dijitInline.dijitIcon.fa.disabled {
+    font-family: "FontAwesome";
+    color:darkgray;
+    min-width: 16px;
+    min-height: 16px;
+}
+
 .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+3),
 .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+4),
 .eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+4),

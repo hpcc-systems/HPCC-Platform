@@ -133,7 +133,8 @@ define([
             pathname: location.pathname,
             hash: hashNodes.length >= 2 ? hashNodes[1] : "",
             resourcePath: baseHost + "/esp/files/eclwatch",
-            basePath: baseHost + "/esp/files"
+            basePath: baseHost + "/esp/files",
+            fullPath: location.origin + "/esp/files"
         };
     }
 

@@ -18,8 +18,8 @@
                 <div id="${id}GraphToolbar" class="topPanel dijit dijitToolbar" role="toolbar">
                     <div data-dojo-attach-event="onClick:_onGraphRefresh" data-dojo-props="iconClass:'fa fa-refresh', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div data-dojo-attach-event="onClick:_onPartial" data-dojo-props="iconClass:'fa fa-window-restore', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.CollapseAll}</div>
-                    <div data-dojo-attach-event="onClick:_onMax" data-dojo-props="iconClass:'fa fa-window-maximize', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Restore}</div>
+                    <div id="${id}Partial" data-dojo-attach-event="onClick:_onPartial" data-dojo-props="iconClass:'fa fa-window-restore', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.CollapseAll}</div>
+                    <div id="${id}Max" data-dojo-attach-event="onClick:_onMax" data-dojo-props="iconClass:'fa fa-window-maximize', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Restore}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div data-dojo-attach-event="onClick:_onZoomToFit" data-dojo-props="iconClass:'fa fa-arrows-alt', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomAll}</div>
                     <div data-dojo-attach-event="onClick:_onZoomToWidth" data-dojo-props="iconClass:'fa fa-arrows-h', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomWidth}</div>
@@ -44,6 +44,13 @@
                                     <legend>${i18n.Edges}</legend>
                                     <div data-dojo-type="hpcc.TableContainer">
                                         <input title="${i18n.Label}:" name="elabel" value="%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%" style="width: 95%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>${i18n.Advanced}</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.LegacyGraphWidget}" name="LegacyGraph" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.LegacyGraphLayout}" name="LegacyLayout" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
