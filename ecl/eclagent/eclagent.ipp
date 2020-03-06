@@ -390,6 +390,7 @@ private:
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
+    double agentMachineCost = 0.0;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -692,6 +693,11 @@ public:
     {
         return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
+    virtual double queryAgentMachineCost() const
+    {
+        return agentMachineCost;
+    }
+
 };
 
 //---------------------------------------------------------------------------
