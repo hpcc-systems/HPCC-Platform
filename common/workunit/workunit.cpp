@@ -12958,8 +12958,7 @@ extern WORKUNIT_API double calculateThorCost(__int64 timeNs, unsigned clusterWid
         double thor_master_rate = costs->getPropReal("thor/@master", 0.0);
         double thor_slave_rate = costs->getPropReal("thor/@slave", 0.0);
 
-        double time_seconds = ((double)timeNs/1000000000);
-        return (time_seconds * thor_master_rate + time_seconds * thor_slave_rate * clusterWidth)*1E6;
+        return calcCost(thor_master_rate, timeNs) + calcCost(thor_slave_rate, timeNs) * clusterWidth;
     }
     return 0;
 }

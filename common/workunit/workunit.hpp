@@ -1684,6 +1684,8 @@ inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GL
 extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
+inline __int64 calcCost(double rate, __int64 timeNS) { return rate * timeNS / 1000000000 * 1e6; };
+
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API void runK8sJob(const char *name, const char *wuid);
 #endif

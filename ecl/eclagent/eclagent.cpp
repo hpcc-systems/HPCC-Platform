@@ -564,6 +564,8 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             w->setXmlParams(_queryXML);
         updateSuppliedXmlParams(w);
     }
+    IPropertyTree *costs = queryCostsConfiguration();
+    workflowMachineCost = costs ? costs->getPropReal("@workflowMachine", 0.0): 0.0;
 }
 
 EclAgent::~EclAgent()
@@ -2310,6 +2312,10 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     scope.append(WorkflowScopePrefix).append(wfid);
     updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
     updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
+
+    const __int64 cost = calcCost(agent.queryWorkflowMachineCost(), elapsedNs);
+    if (cost)
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 }
 
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
