@@ -29,9 +29,14 @@
 #include "daclient.hpp"
 #include "dasds.hpp"
 #include "dasess.hpp"
+#include "daqueue.hpp"
 
-#include "environment.hpp"
+#include "workunit.hpp"
 #include "wujobq.hpp"
+
+#ifndef _CONTAINERIZED
+#include "environment.hpp"
+#endif
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -2098,8 +2103,10 @@ IJobQueue *createJobQueue(const char *name)
 extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
 {
 #ifdef _CONTAINERIZED
-    VStringBuffer agentQueue("%s.agent", queueName);
+    StringBuffer agentQueue;
+    getClusterEclAgentQueueName(agentQueue, queueName);
 #else
+    //NB: In the non-container system the name of the roxie agent queue does not follow the convention for the containerized system
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(queueName);
     if (!clusterInfo.get())
         return false;
@@ -2108,6 +2115,7 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
     if (!agentQueue.length())
         return false;
 #endif
+
     Owned<IJobQueue> queue = createJobQueue(agentQueue.str());
     if (!queue.get()) 
         throw MakeStringException(-1, "Could not create workunit queue");

@@ -30,6 +30,7 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "dalienv.hpp"
+#include "daqueue.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -1023,6 +1024,54 @@ public:
 };
 
 //==========================================================================================
+
+extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, const unsigned long defaultSize)
+{
+    StringBuffer buf(sizeStr);
+    buf.trim();
+
+    if (buf.isEmpty())
+        return defaultSize;
+
+    const char* ptrStart = buf;
+    const char* ptrAfterDigit = ptrStart;
+    while (*ptrAfterDigit && isdigit(*ptrAfterDigit))
+        ptrAfterDigit++;
+
+    if (!*ptrAfterDigit)
+        return atol(buf);
+
+    const char* ptr = ptrAfterDigit;
+    while (*ptr && (ptr[0] == ' '))
+        ptr++;
+
+    char c = ptr[0];
+    buf.setLength(ptrAfterDigit - ptrStart);
+    unsigned __int64 size = atoll(buf);
+    switch (c)
+    {
+    case 'k':
+    case 'K':
+        size *= 1000;
+        break;
+    case 'm':
+    case 'M':
+        size *= 1000000;
+        break;
+    case 'g':
+    case 'G':
+        size *= 1000000000;
+        break;
+    case 't':
+    case 'T':
+        size *= 1000000000000;
+        break;
+    default:
+        break;
+    }
+    return size;
+}
+
 
 class CConstInstanceInfo : public CConstEnvBase, implements IConstInstanceInfo
 {
@@ -2481,53 +2530,6 @@ extern ENVIRONMENT_API void closeEnvironment()
     }
 }
 
-extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, const unsigned long defaultSize)
-{
-    StringBuffer buf(sizeStr);
-    buf.trim();
-
-    if (buf.isEmpty())
-        return defaultSize;
-
-    const char* ptrStart = buf;
-    const char* ptrAfterDigit = ptrStart;
-    while (*ptrAfterDigit && isdigit(*ptrAfterDigit))
-        ptrAfterDigit++;
-
-    if (!*ptrAfterDigit)
-        return atol(buf);
-
-    const char* ptr = ptrAfterDigit;
-    while (*ptr && (ptr[0] == ' '))
-        ptr++;
-
-    char c = ptr[0];
-    buf.setLength(ptrAfterDigit - ptrStart);
-    unsigned __int64 size = atoll(buf);
-    switch (c)
-    {
-    case 'k':
-    case 'K':
-        size *= 1000;
-        break;
-    case 'm':
-    case 'M':
-        size *= 1000000;
-        break;
-    case 'g':
-    case 'G':
-        size *= 1000000000;
-        break;
-    case 't':
-    case 'T':
-        size *= 1000000000000;
-        break;
-    default:
-        break;
-    }
-    return size;
-}
-
 unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list)
 {
     unsigned added = 0;
@@ -2706,6 +2708,14 @@ public:
             platform = HThorCluster;
         }
 
+#ifdef _CONTAINERIZED
+        if (agent || roxie)
+        {
+            agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
+            if (agent)
+                agentName.set(agent->queryProp("@name"));
+        }
+#else
         if (agent)
         {
             assertex(!roxie);
@@ -2714,6 +2724,8 @@ public:
         }
         else if (roxie)
             agentQueue.set(getClusterRoxieQueueName(queue.clear(), name));
+#endif
+
         // MORE - does this need to be conditional?
         serverQueue.set(getClusterEclCCServerQueueName(queue.clear(), name));
     }
@@ -2830,13 +2842,6 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
     return ret;
 }
 
-#define ROXIE_QUEUE_EXT ".roxie"
-#define THOR_QUEUE_EXT ".thor"
-#define ECLCCSERVER_QUEUE_EXT ".eclserver"
-#define ECLSERVER_QUEUE_EXT ECLCCSERVER_QUEUE_EXT
-#define ECLSCHEDULER_QUEUE_EXT ".eclscheduler"
-#define ECLAGENT_QUEUE_EXT ".agent"
-
 extern void getDFUServerQueueNames(StringArray &ret, const char *process)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -2885,11 +2890,6 @@ extern IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process)
 extern IStringVal &getThorQueueNames(IStringVal &ret, const char *process)
 {
     return getProcessQueueNames(ret, process, "ThorCluster", THOR_QUEUE_EXT);
-}
-
-extern StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster)
-{
-    return ret.append(cluster).append(THOR_QUEUE_EXT);
 }
 
 extern StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
@@ -2953,26 +2953,6 @@ extern ClusterType getClusterTypeByClusterName(const char *cluster)
         return HThorCluster;
 
     return NoCluster;
-}
-
-extern StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
-{
-    return ret.append(cluster).append(ROXIE_QUEUE_EXT);
-}
-
-extern StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster)
-{
-    return ret.append(cluster).append(ECLCCSERVER_QUEUE_EXT);
-}
-
-extern StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster)
-{
-    return ret.append(cluster).append(ECLSERVER_QUEUE_EXT);
-}
-
-extern StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster)
-{
-    return ret.append(cluster).append(ECLAGENT_QUEUE_EXT);
 }
 
 extern IStringIterator *getTargetClusters(const char *processType, const char *processName)

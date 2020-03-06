@@ -21,6 +21,8 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jutil.hpp"
+#include "daqueue.hpp"
+#include "workunit.hpp"
 #include "environment.hpp"
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
@@ -97,7 +99,7 @@ int CEclAgentExecutionServer::run()
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        queueNames.append(agentName).append(".agent");
+        getClusterEclAgentQueueName(queueNames, agentName);
 #else
         getAgentQueueNames(queueNames, agentName);
 #endif

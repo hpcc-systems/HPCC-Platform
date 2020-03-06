@@ -21,7 +21,6 @@
 
 #include "jsocket.hpp"
 #include "dasess.hpp"
-#include "workunit.hpp"
 
 interface IJobQueueItem: extends serializable
 {
@@ -47,6 +46,12 @@ interface IJobQueueItem: extends serializable
 };
 
 typedef IIteratorOf<IJobQueueItem> IJobQueueIterator;
+
+#ifdef WORKUNIT_EXPORTS
+    #define WORKUNIT_API DECL_EXPORT
+#else
+    #define WORKUNIT_API DECL_IMPORT
+#endif
 
 class WORKUNIT_API CJobQueueContents: public IArrayOf<IJobQueueItem>
 {  // used as a 'snapshot' of queue items

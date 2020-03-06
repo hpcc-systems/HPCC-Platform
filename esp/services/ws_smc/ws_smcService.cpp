@@ -25,8 +25,8 @@
 #include "ws_smcService.hpp"
 #include "wshelpers.hpp"
 
-#include "dalienv.hpp"
 #include "dasds.hpp"
+#include "daqueue.hpp"
 #include "WUWrapper.hpp"
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
