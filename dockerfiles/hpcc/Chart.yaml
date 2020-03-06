@@ -11,3 +11,25 @@ version: 0.1.0
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application.
 appVersion: 0.1.0
+
+#dependencies: # A list of the chart requirements (optional)
+#  - name: The name of the chart (nginx)
+#    version: The version of the chart ("1.2.3")
+#    repository: The repository URL ("https://example.com/charts") or alias ("@repo-name")
+#    condition: (optional) A yaml path that resolves to a boolean, used for enabling/disabling charts (e.g. subchart1.enabled )
+#    tags: # (optional)
+#      - Tags can be used to group charts for enabling/disabling together
+#    enabled: (optional) Enabled bool determines if chart should be loaded
+#    import-values: # (optional)
+#      - ImportValues holds the mapping of source values to parent key to be imported. Each item can be a string or pair of child/parent sublist items.
+#    alias: (optional) Alias usable alias to be used for the chart. Useful when you have to add the same chart multiple times
+ 
+dependencies:
+  - name: kibana
+    version: 7.6.1
+    repository: https://helm.elastic.co
+    condition: .root.Values.global.Logging.Elasticstack.Enabled
+    #enabled: (optional) Enabled bool determines if chart should be loaded
+    #import-values: # (optional)      - ImportValues holds the mapping of source values to parent key to be imported. Each item can be a string or pair of child/parent sublist items.
+    #alias: (optional) Alias usable alias to be used for the chart. Useful when you have to add the same chart multiple times 
+    
