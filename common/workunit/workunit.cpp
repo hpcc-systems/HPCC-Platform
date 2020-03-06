@@ -12863,7 +12863,7 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
 {
     StringBuffer fullPathName;
     makeAbsolutePath(name, fullPathName);
-    if (isCloud())
+    if (isContainerized())
     {
         const char *dllserver_root = getenv("HPCC_DLLSERVER_PATH");
         assertex(dllserver_root != nullptr);

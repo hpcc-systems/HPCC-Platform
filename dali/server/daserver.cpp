@@ -144,7 +144,7 @@ void usage(void)
  */
 static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
 {
-    if (isCloud())
+    if (isContainerized())
         return false;
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
     assertex(conn);

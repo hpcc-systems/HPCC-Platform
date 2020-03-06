@@ -8763,7 +8763,7 @@ public:
             throw;
         }
         // In nas/non-local storage mode, create a published named group for 1-way files to use
-        if (isCloud())
+        if (isContainerized())
             queryNamedGroupStore().ensureNasGroup(1);
         storeLoaded = true;
         manager->start();
