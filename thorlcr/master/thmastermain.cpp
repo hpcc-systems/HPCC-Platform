@@ -857,7 +857,7 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numSlaves = 0;
-        if (isCloud())
+        if (isContainerized())
         {
             if (!globals->hasProp("@numSlaves"))
                 throw makeStringException(0, "Number of slaves not defined (numSlaves)");

@@ -231,7 +231,7 @@ public:
          * that matches the width of the cluster.
          * Also create a 1-way named group, that is used in special cases, e.g. BUILDINDEX,FEW
          */
-        if (isCloud())
+        if (isContainerized())
             queryNamedGroupStore().ensureNasGroup(queryClusterWidth());
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
@@ -381,7 +381,7 @@ public:
 
     IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0)
     {
-        if (isCloud())
+        if (isContainerized())
         {
             StringBuffer nasGroupName;
             // NB: normally size = queryClusterWidth(), but can be 1 (e.g. if BUILDINDEX,FEW)
@@ -742,7 +742,7 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
     }
     else
     {
-        if (isCloud())
+        if (isContainerized())
             throw makeStringException(0, "Output clusters not supported in cloud environment");
         const char *cluster = clusters.item(0);
         Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);

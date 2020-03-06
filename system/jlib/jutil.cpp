@@ -1692,14 +1692,13 @@ void doStackProbe()
 #pragma GCC diagnostic pop
 #endif
 
-extern jlib_decl bool isCloud()
+extern jlib_decl bool isContainerized()
 {
-    static bool cloudy = []()
-        {
-            const char *env = getenv("HPCC_containerized");
-            return (env && atoi(env)==1);
-        }();
-    return cloudy;
+#ifdef _CONTAINERIZED
+    return true;
+#else
+    return false;
+#endif
 }
 
 #ifdef _WIN32

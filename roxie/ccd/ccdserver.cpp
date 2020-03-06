@@ -11720,7 +11720,7 @@ protected:
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
-            if (isCloud())
+            if (isContainerized())
                 throw makeStringException(0, "Output clusters not supported in cloud environment");
             clusters.append(cluster);
             clusterIdx++;
@@ -11732,7 +11732,7 @@ protected:
         }
         else
         {
-            if (isCloud())
+            if (isContainerized())
             {
                 StringBuffer nasGroupName;
                 queryNamedGroupStore().getNasGroupName(nasGroupName, 1);

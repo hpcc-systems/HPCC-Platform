@@ -352,7 +352,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
         OwnedRoxieString cluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
         if(!cluster)
             break;
-        if (isCloud())
+        if (isContainerized())
             throw makeStringException(0, "Output clusters not supported in cloud environment");
         if(!clusterHandler)
         {
@@ -654,7 +654,7 @@ void CHThorDiskWriteActivity::publish()
         // add cluster
         StringBuffer mygroupname;
         Owned<IGroup> mygrp;
-        if (isCloud())
+        if (isContainerized())
         {
             queryNamedGroupStore().getNasGroupName(mygroupname, 1);
             mygrp.setown(queryNamedGroupStore().lookup(mygroupname));
@@ -1222,7 +1222,7 @@ void CHThorIndexWriteActivity::execute()
         // add cluster
         StringBuffer mygroupname;
         Owned<IGroup> mygrp = NULL;
-        if (isCloud())
+        if (isContainerized())
         {
             queryNamedGroupStore().getNasGroupName(mygroupname, 1);
             mygrp.setown(queryNamedGroupStore().lookup(mygroupname));

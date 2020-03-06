@@ -39,11 +39,14 @@ include_directories (
          ./../../system/include 
          ./../../dali/base 
          ./../../system/jlib 
-         ./../../common/environment
          ./../../system/security/shared
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
+
+if (NOT CONTAINERIZED)
+  include_directories( ./../../common/environment )
+endif()
 
 IF (NOT WIN32)
   include_directories(${BINUTILS_INCLUDE_DIR})
@@ -61,8 +64,12 @@ target_link_libraries ( dllserver
          eclrtl 
          dafsclient
          dalibase 
-         environment 
     )
+
+if (NOT CONTAINERIZED)
+  target_link_libraries ( dllserver environment )
+endif()
+
 if (NOT WIN32)
   target_link_libraries ( dllserver ${BINUTILS_LIBRARIES})
 endif()
