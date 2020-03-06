@@ -360,12 +360,15 @@ private:
         IArrayOf<IEspQueryStats> &queryStatsList);
     void readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
         bool all, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList);
+
     void getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
         unsigned &count, __int64 &total, IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &mb,
         WUState &wuState, bool xsd=true);
     void getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
         IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &buf, bool xsd);
-    IDistributedFile *lookupLogicalName(IEspContext &context, const char *logicalName);
+    IDistributedFile *lookupLogicalName(IEspContext &contcontext, const char *logicalName);
+    void getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedByCluster, const char *querySet, const char *queryID, bool checkAllNodes);
+    void addSuspendedQueryIDs(MapStringTo<bool> &suspendedQueryIDs, IPropertyTree *queriesOnCluster, const char *target);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

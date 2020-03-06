@@ -1492,8 +1492,24 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getPriorityHigh(), (WUQuerySortField) (WUQSFpriorityHi | WUQSFnumeric));
     if (!req.getActivated_isNull())
         addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getActivated(), (WUQuerySortField) (WUQSFActivited | WUQSFnumeric));
-    if (!req.getSuspendedByUser_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getSuspendedByUser(), (WUQuerySortField) (WUQSFSuspendedByUser | WUQSFnumeric));
+
+    MapStringTo<bool> suspendedQueriesByCluster;
+    CWUQueryFilterSuspendedType suspendedType = req.getSuspendedFilter();
+    if (suspendedType != WUQueryFilterSuspendedType_Undefined)
+    {
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, suspendedType, (WUQuerySortField) (WUQSFSuspendedFilter | WUQSFnumeric));
+        if (suspendedType == CWUQueryFilterSuspendedType_SUSPDBYFirstNode)
+        {
+            getSuspendedQueriesByCluster(suspendedQueriesByCluster, req.getQuerySetName(), req.getQueryID(), false);
+        }
+        else if ((suspendedType == CWUQueryFilterSuspendedType_SUSPDBYAnyNode) || (suspendedType == CWUQueryFilterSuspendedType_NOTSUSPD)
+            || (suspendedType == CWUQueryFilterSuspendedType_SUSPD))
+        {
+            getSuspendedQueriesByCluster(suspendedQueriesByCluster, req.getQuerySetName(), req.getQueryID(), true);
+        }
+    }
+    else if (!req.getSuspendedByUser_isNull()) //For the client before version 1.78
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, CWUQueryFilterSuspendedType_SUSPDBYUSER, (WUQuerySortField) (WUQSFSuspendedFilter | WUQSFnumeric));
     filters[filterCount] = WUQSFterm;
 
     unsigned numberOfQueries = 0;
@@ -1527,7 +1543,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
 
     PROGLOG("WUListQueries: getQuerySetQueriesSorted");
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries, queriesUsingFileMap);
+    Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(),
+        pageStartFrom, pageSize, &cacheHint, &numberOfQueries, queriesUsingFileMap, &suspendedQueriesByCluster);
     resp.setCacheHint(cacheHint);
     PROGLOG("WUListQueries: getQuerySetQueriesSorted done");
 
@@ -1580,6 +1597,52 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     resp.setNumberOfQueries(numberOfQueries);
 
     return true;
+}
+
+void CWsWorkunitsEx::getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedQueries, const char *querySet, const char *queryID, bool checkAllNodes)
+{
+    StringArray queryIDs;
+    if (!isEmptyString(queryID))
+        queryIDs.append(queryID);
+
+    if (!isEmptyString(querySet))
+    {
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet, &queryIDs, checkAllNodes);
+        addSuspendedQueryIDs(suspendedQueries, queriesOnCluster, querySet);
+    }
+    else
+    {
+        Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", nullptr);
+        ForEach(*targets)
+        {
+            SCMStringBuffer target;
+            targets->str(target);
+
+            Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target.str(), target.str(), &queryIDs, checkAllNodes);
+            addSuspendedQueryIDs(suspendedQueries, queriesOnCluster, target.str());
+        }
+    }
+}
+
+void CWsWorkunitsEx::addSuspendedQueryIDs(MapStringTo<bool> &suspendedQueryIDs, IPropertyTree *queriesOnCluster, const char *querySet)
+{
+    if (!queriesOnCluster)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "getQueriesOnCluster() returns nullptr for target <%s>", querySet);
+
+    Owned<IPropertyTreeIterator> queries = queriesOnCluster->getElements("Endpoint/Queries/Query");
+    ForEach(*queries)
+    {
+        IPropertyTree &query = queries->query();
+        const char *id = query.queryProp("@id");
+        if (isEmptyString(id))
+            continue; //Should not happen
+
+        if (query.getPropInt("@suspended"))
+        {
+            VStringBuffer suspendedID("%s/%s", querySet, id);
+            suspendedQueryIDs.setValue(suspendedID, true);
+        }
+    }
 }
 
 bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp)

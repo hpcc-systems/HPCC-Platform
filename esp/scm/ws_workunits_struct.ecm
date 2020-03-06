@@ -99,6 +99,16 @@ ESPenum WUQuerySetFilterType : string
     STATUS("Status")
 };
 
+ESPenum WUQueryFilterSuspendedType : string
+{
+    ALL("All queries"),
+    NOTSUSPD("Not suspended"),
+    SUSPD("Suspended"),
+    SUSPDBYUSER("Suspended by user"),
+    SUSPDBYFirstNode("Suspended by first node"),
+    SUSPDBYAnyNode("Suspended by any node")
+};
+
 ESPenum QuerysetImportActivation : string
 {
     None("None"),
