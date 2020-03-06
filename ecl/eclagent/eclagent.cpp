@@ -565,7 +565,11 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         updateSuppliedXmlParams(w);
     }
     IPropertyTree *costs = queryCostsConfiguration();
-    workflowMachineCost = costs ? costs->getPropReal("@workflowMachine", 0.0): 0.0;
+    if (costs)
+    {
+        workflowMachineCost = costs->getPropReal("@workflowMachine", 0.0);
+        hthorMachineCost = costs->getPropReal("@hThor", 0.0);
+    }
 }
 
 EclAgent::~EclAgent()
@@ -1912,7 +1916,13 @@ void EclAgent::doProcess()
         WorkunitUpdate w = updateWorkUnit();
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
-        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
+        const __int64 elapsedNs = elapsedTimer.elapsedNs();
+        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedNs);
+
+        const __int64 cost = calcCost(hthorMachineCost, elapsedNs);
+        if (cost)
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+
         addTimings();
 
         switch (w->getState())

@@ -27,6 +27,7 @@ EclAgent:
     traceLevel: 0
     costs:
       workflowMachine: 0.0
+      hThor: 0.0
 )!!";
 
 #endif

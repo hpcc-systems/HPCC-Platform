@@ -391,6 +391,7 @@ private:
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
     double workflowMachineCost = 0.0;
+    double hthorMachineCost = 0.0;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
