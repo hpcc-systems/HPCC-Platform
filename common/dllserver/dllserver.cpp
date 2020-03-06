@@ -24,8 +24,11 @@
 #include "daclient.hpp"
 #include "dasds.hpp"
 #include "rmtclient.hpp"
-#include "dalienv.hpp"
 #include "thorplugin.hpp"
+
+#ifndef _CONTAINERIZED
+#include "dalienv.hpp"
+#endif
 
 #ifdef _WIN32
 #define DEFAULT_SERVER_ROOTDIR          "c:\\HPCCSystems\\hpcc-data\\temp\\dllserver"
@@ -744,25 +747,22 @@ IDllServer & queryDllServer()
     CriticalBlock b(dllServerCrit);
     if (!dllServer)
     {
-        if (isCloud())
+#ifdef _CONTAINERIZED
+        const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+        assertex(dllserver_root != nullptr);
+        dllServer = new SharedVolumeDllServer(dllserver_root);
+#else
+        const char* dllserver_root = getenv("DLLSERVER_ROOT");
+        StringBuffer dir;
+        if(dllserver_root == NULL)
         {
-            const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-            assertex(dllserver_root != nullptr);
-            dllServer = new SharedVolumeDllServer(dllserver_root);
+            if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
+                dllserver_root = dir.str();
+            else
+                dllserver_root = DEFAULT_SERVER_ROOTDIR;
         }
-        else
-        {
-            const char* dllserver_root = getenv("DLLSERVER_ROOT");
-            StringBuffer dir;
-            if(dllserver_root == NULL)
-            {
-                if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
-                    dllserver_root = dir.str();
-                else
-                    dllserver_root = DEFAULT_SERVER_ROOTDIR;
-            }
-            dllServer = new DllServer(dllserver_root);
-        }
+        dllServer = new DllServer(dllserver_root);
+#endif
     }
 
     return *dllServer;
