@@ -55,6 +55,10 @@
 #include "workunit.ipp"
 #include "digisign.hpp"
 
+#include <list>
+#include <string>
+#include <algorithm>
+
 using namespace cryptohelper;
 
 static int workUnitTraceLevel = 1;
@@ -5736,7 +5740,7 @@ public:
         return new CConstWUArrayIterator(results);
     }
 
-    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, std::list<WUState> expectedStates)
     {
         WUState ret = WUStateUnknown;
         StringBuffer wuRoot;
@@ -5745,6 +5749,9 @@ public:
         if (timeout == 0) //no need to subscribe
         {
             ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+            auto it = std::find(expectedStates.begin(), expectedStates.end(), ret);
+            if (it != expectedStates.end())
+                return ret;
             switch (ret)
             {
             case WUStateCompiled:
@@ -5756,9 +5763,6 @@ public:
             case WUStateFailed:
             case WUStateAborted:
                 return ret;
-            case WUStateWait:
-                if(returnOnWaitState)
-                    return ret;
             default:
                 break;
             }
@@ -5775,6 +5779,9 @@ public:
             for (;;)
             {
                 ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
+                auto it = std::find(expectedStates.begin(), expectedStates.end(), ret);
+                if (it != expectedStates.end())
+                    return ret;
                 switch (ret)
                 {
                 case WUStateCompiled:
@@ -5787,10 +5794,6 @@ public:
                 case WUStateAborted:
                     return ret;
                 case WUStateWait:
-                    if(returnOnWaitState)
-                    {
-                        return ret;
-                    }
                     break;
                 case WUStateCompiling:
                 case WUStateRunning:
@@ -6126,9 +6129,9 @@ public:
     {
         baseFactory->clearAborting(wuid);
     }
-    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, std::list<WUState> expectedStates)
     {
-        return baseFactory->waitForWorkUnit(wuid, timeout, compiled, returnOnWaitState);
+        return baseFactory->waitForWorkUnit(wuid, timeout, compiled, expectedStates);
     }
     virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original)
     {
@@ -11928,21 +11931,21 @@ void testWorkflow()
 
 //------------------------------------------------------------------------------------------
 
-extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, bool returnOnWaitState)
+extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, std::list<WUState> expectedStates)
 {
-    return factory->waitForWorkUnit(wuid, (unsigned) timeout, false, returnOnWaitState);
+    return factory->waitForWorkUnit(wuid, (unsigned) timeout, false, expectedStates);
 }
 
-extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, bool returnOnWaitState)
+extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, std::list<WUState> expectedStates)
 {
     if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
-        return waitForWorkUnitToComplete(wuid, timeout, returnOnWaitState);
+        return waitForWorkUnitToComplete(wuid, timeout, expectedStates);
     return WUStateUnknown;
 }
 
 extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
 {
-    switch(factory->waitForWorkUnit(wuid, (unsigned) timeout, true, true))
+    switch(factory->waitForWorkUnit(wuid, (unsigned) timeout, true, { WUStateWait }))
     {
     case WUStateCompiled:
     case WUStateCompleted:
@@ -13279,15 +13282,12 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
     }
 }
 
-void runK8sJob(const char *componentName, const char *wuid, const char *job, bool wait, const std::list<std::pair<std::string, std::string>> &extraParams)
+void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del, const std::list<std::pair<std::string, std::string>> &extraParams)
 {
     launchK8sJob(componentName, wuid, job, extraParams);
-    if (wait)
-    {
-        waitK8sJob(componentName, job);
-#ifndef _DEBUG
+    waitK8sJob(componentName, job);
+    if (del)
         deleteK8sJob(componentName, job);
-#endif
-    }
 }
+
 #endif

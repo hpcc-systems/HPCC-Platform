@@ -451,6 +451,8 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
 void CJobManager::run()
 {
+    LOG(MCdebugProgress, thorJob, "Listening for graph");
+
     setWuid(NULL);
     StringBuffer soPath;
     globals->getProp("@query_so_dir", soPath);
@@ -1107,10 +1109,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
-            LOG(MCdebugProgress, thorJob, "Listening for graph");
-
             if (wuid) // one-shot, quits after running
             {
+                PROGLOG("Executing: wuid=%s, graph=%s", wuid, graphName);
                 Owned<IWorkUnitFactory> factory;
                 Owned<IConstWorkUnit> workunit;
                 factory.setown(getWorkUnitFactory());
@@ -1118,9 +1119,9 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 SocketEndpoint dummyAgentEp;
                 jobManager->execute(workunit, wuid, graphName, dummyAgentEp);
                 IException *e = jobManager->queryExitException();
+                Owned<IWorkUnit> w = &workunit->lock();
                 if (e)
                 {
-                    Owned<IWorkUnit> w = &workunit->lock();
                     Owned<IWUException> we = w->createException();
                     we->setSeverity(SeverityInformation);
                     StringBuffer errStr;
@@ -1129,6 +1130,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                     we->setExceptionSource("thormasterexception");
                     we->setExceptionCode(e->errorCode());
                 }
+                w->setState(WUStateWait);
             }  
             else
                 jobManager->run();

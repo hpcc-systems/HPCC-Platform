@@ -38,6 +38,10 @@
 #include "commonext.hpp"
 #include "thorcommon.hpp"
 
+#include <list>
+#include <string>
+#include <algorithm>
+
 using roxiemem::OwnedRoxieString;
 
 //---------------------------------------------------------------------------
@@ -1506,17 +1510,51 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 
 void EclAgent::executeThorGraph(const char * graphName)
 {
+    unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", agentTopology->getPropInt("@thorConnectTimeout", 60));
 #ifdef _CONTAINERIZED
     // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
-    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-    {
-        Owned<IWorkUnit> w = updateWorkUnit();
-        w->setState(WUStateBlocked);
-    }
+    setBlocked();
     unlockWorkUnit();
-        
-    VStringBuffer job("%s-%s", wuid.str(), graphName);
-    runK8sJob("thormaster", wuid, job, true, { { "graphName", graphName} });
+
+    WUState state = WUStateUnknown;
+    if (agentTopology->hasProp("@queue"))
+    {
+        VStringBuffer queueName("%s.thor", agentTopology->queryProp("@queue"));
+        DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+        Owned<IJobQueue> queue = createJobQueue(queueName.str());
+        queue->connect(false);
+        VStringBuffer jobName("%s/%s", wuid.get(), graphName);
+        IJobQueueItem *item = createJobQueueItem(jobName);
+        queue->enqueue(item);
+
+        // NB: overall max runtime if guillotine set handled by abortmonitor
+        unsigned runningTimeLimit = queryWorkUnit()->getDebugValueInt("maxRunTime", 0);
+        runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
+
+        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
+        for (unsigned i=0; i<2; i++)
+        {
+            WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
+            DBGLOG("Got state: %s", getWorkunitStateStr(state));
+            if (WUStateWait == state) // already finished
+                break;
+            else if ((INFINITE != timelimit) && (WUStateUnknown == state))
+                throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
+            else
+            {
+                auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
+                if (it == expectedStates.end())
+                    throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
+            }
+            timelimit = runningTimeLimit;
+            expectedStates = { WUStateWait };
+        }
+    }
+    else
+    {        
+        VStringBuffer job("%s-%s", wuid.str(), graphName);
+        runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
+    }
 
     if (wuRead->getExceptionCount())
     {
@@ -1534,12 +1572,16 @@ void EclAgent::executeThorGraph(const char * graphName)
             }
         }
     }
+    else if (WUStateFailed == state)
+        throw makeStringException(0, "Workunit failed");
+
+    setRunning();
+    unlockWorkUnit();
 #else
     StringAttr wuid(wuRead->queryWuid());
     StringAttr owner(wuRead->queryUser());
     StringAttr cluster(wuRead->queryClusterName());
     int priority = wuRead->getPriorityValue();
-    unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", agentTopology->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
     if (!c)
         throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());

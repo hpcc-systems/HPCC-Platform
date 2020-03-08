@@ -146,7 +146,7 @@ bool QueryDataSource::loadBlock(__int64 startRow, offset_t startOffset)
 
     //Resubmit the query...
     submitWorkUnit(browseWuid, username, password);
-    WUState finalState = waitForWorkUnitToComplete(browseWuid, -1, true);
+    WUState finalState = waitForWorkUnitToComplete(browseWuid, -1, { WUStateWait } );
     if(!((finalState == WUStateCompleted) || (finalState == WUStateWait)))
         return false;
 
