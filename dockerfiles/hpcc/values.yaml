@@ -68,11 +68,10 @@ roxieX:
   useAeron: true
 
 thor:
-- name: thor
+- name: thorabc
   numSlaves: 2
   globalMemorySize: 4096
-  maxActive: 2
   eclagent:
-    queueNames: "thor.agent" # kludge to match environment - until esp services can pick up dynamically
-    replicas: 1
-    containerPerAgent: false
+    maxActive: 4
+  thoragent:
+    maxActive: 2

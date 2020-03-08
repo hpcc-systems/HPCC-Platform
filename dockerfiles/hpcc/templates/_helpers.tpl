@@ -64,7 +64,7 @@ data:
     global:
       imageVersion: {{ .root.Values.global.image.version | quote }}
       singleNode: {{ .root.Values.global.singleNode }}
-{{ include "hpcc.generateComponentConfigMap" . | indent 2 -}}
+{{ include "hpcc.generateComponentConfigMap" . | indent 2 }}
 {{- end -}}
 
 {{- /* Add a ConfigMap volume for a component */ -}}
@@ -173,12 +173,32 @@ initContainers:
 {{- /* Add security context */ -}}
 {{- /* Pass in a dictionary with root and me defined */ -}}
 {{- define "hpcc.addSecurityContext" -}}
-{{- if .root.Values.global.privileged -}}
+{{- if .root.Values.global.privileged }}
 securityContext:
   privileged: true
   capabilities:
     add:
     - SYS_PTRACE
-{{- end -}}
+{{- end }}
 {{- end -}}
 
+
+{{- /* Generate instance queue names */ -}}
+{{- define "hpcc.generateConfigMapQueues" -}}
+queues:
+{{- range $.Values.eclagent }}
+- name: {{ .name }}
+  type: {{ .type | default "hthor" }}
+  prefix: {{ .prefix | default "null" }}
+{{- end -}}
+{{- range $.Values.roxie }}
+- name: {{ .name }}
+  type: roxie 
+  prefix: {{ .prefix | default "null" }}
+{{- end -}}
+{{- range $.Values.thor }}
+- name: {{ .name }}
+  type: thor
+  prefix: {{ .prefix | default "null" }}
+{{- end }}
+{{- end }}

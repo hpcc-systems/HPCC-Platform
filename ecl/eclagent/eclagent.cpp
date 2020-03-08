@@ -3314,6 +3314,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         usage();
         return 2;
     }
+
     for (int i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
@@ -3337,6 +3338,12 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     else
         agentTopology.setown(createPTree("hthor")); // MORE - this needs thought!
 
+{
+    StringBuffer s;
+    toXML(agentTopology, s);
+    PROGLOG("agentTopo: %s", s.str());
+
+}
     //Build log file specification
     StringBuffer logfilespec;
     ILogMsgHandler * logMsgHandler = NULL;

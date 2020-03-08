@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: {{ $toponame | quote }}
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigVolumeMount" . | indent 8 }}

@@ -351,6 +351,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
+    config.setown(cfg->getPropTree("Config"));   
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
@@ -441,6 +442,26 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 void CWsWorkunitsEx::refreshValidClusters()
 {
     validClusters.kill();
+#ifdef _CONTAINERIZED
+    // discovered from generated cluster names
+ {
+     StringBuffer s;
+     toXML(config, s);
+     PROGLOG("config s = %s", s.str());
+ }
+    Owned<IPropertyTreeIterator> iter = config->getElements("queues");
+    ForEach(*iter)
+    {
+        IPropertyTree &queue = iter->query();
+        const char *qName = queue.queryProp("@name");
+        bool* found = validClusters.getValue(qName);
+        if (!found || !*found)
+        {
+            validClusters.setValue(qName, true);
+            PROGLOG("adding valid cluster: %s", qName);
+        }
+    }
+#else
     Owned<IStringIterator> it = getTargetClusters(NULL, NULL);
     ForEach(*it)
     {
@@ -450,6 +471,7 @@ void CWsWorkunitsEx::refreshValidClusters()
         if (!found || !*found)
             validClusters.setValue(val.str(), true);
     }
+#endif
 }
 
 bool CWsWorkunitsEx::isValidCluster(const char *cluster)
@@ -1191,7 +1213,10 @@ bool CWsWorkunitsEx::onWUWaitComplete(IEspContext &context, IEspWUWaitRequest &r
         WsWuHelpers::checkAndTrimWorkunit("WUWaitComplete", wuid);
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitComplete: %s", wuid.str());
-        resp.setStateID(secWaitForWorkUnitToComplete(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait(), req.getReturnOnWait()));
+        std::list<WUState> expectedStates;
+        if (req.getReturnOnWait())
+            expectedStates.push_back(WUStateWait);
+        resp.setStateID(secWaitForWorkUnitToComplete(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait(), expectedStates));
     }
     catch(IException* e)
     {
