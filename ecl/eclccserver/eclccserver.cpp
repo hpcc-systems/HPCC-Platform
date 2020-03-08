@@ -462,7 +462,7 @@ public:
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@containerPerCompile", false) && !globals->hasProp("@workunit"))
         {
-            runK8sJob("eclccserver", wuid, wuid);
+            runK8sJob("eclccserver", wuid, wuid, globals->getPropBool("@deleteJobs", true));
             return;
         }
 #endif

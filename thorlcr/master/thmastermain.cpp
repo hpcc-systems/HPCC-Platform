@@ -945,7 +945,8 @@ int main( int argc, const char *argv[]  )
             PROGLOG("Registration aborted");
 #ifdef _CONTAINERIZED
         registry.clear();
-        deleteK8sJob("thorslave", cloudJobName);
+        if (globals->getPropBool("@deleteJobs", true))
+            deleteK8sJob("thorslave", cloudJobName);
         setExitCode(0);
 #endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
