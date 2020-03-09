@@ -41,22 +41,25 @@ dali:
 - name: mydali
 
 eclagent:
-- name: myeclagent
-  queueNames: "hthor.agent" # kludge to match environment - until esp services can pick up dynamically
+- name: hthor
   replicas: 1
-  containerPerAgent: true
-  maxActive: 2
+  containerPerAgent: false
+- name: roxie
+  replicas: 1
+  containerPerAgent: false
+  type: roxie
     
 eclccserver:
 - name: myeclccserver
   replicas: 1
+  listen: [ thor1 ]
     
 esp:
 - name: myesp
   replicas: 1
 
-roxie:
-- name: myroxie
+roxieX:
+- name: roxie
   ports: [9876,0]
   numChannels: 2
   serverReplicas: 1
@@ -65,7 +68,7 @@ roxie:
   useAeron: true
 
 thor:
-- name: thor1
+- name: thor
   numSlaves: 2
   globalMemorySize: 4096
   maxActive: 2

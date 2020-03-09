@@ -83,6 +83,7 @@ build_image dali
 build_image esp
 build_image eclccserver
 build_image eclagent
+build_image hthor
 build_image toposerver
 build_image thormaster
 build_image thorslave

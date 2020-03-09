@@ -34,4 +34,4 @@ else
 fi
 
 export SENTINEL="eclagent.sentinel"
-nohup eclagent $* &
+nohup hthor $* &

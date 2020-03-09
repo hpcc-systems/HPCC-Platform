@@ -19,7 +19,6 @@ spec:
       containers:
       - name: {{ .name | quote }}
         args: [
-                "--containerPerCompile=1",
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
@@ -31,6 +30,22 @@ spec:
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclccserver" "me" .) }}
+      queues:
+{{- range $.Values.eclagent }}
+      - name: {{ .name }}
+        type: {{ .type | default "hthor" }}
+        prefix: {{ .prefix | default "null" }}
+{{- end -}}
+{{- range $.Values.roxie }}
+      - name: {{ .name }}
+        type: roxie 
+        prefix: {{ .prefix | default "null" }}
+{{- end -}}
+{{- range $.Values.thor }}
+      - name: {{ .name }}
+        type: thor
+        prefix: {{ .prefix | default "null" }}
+{{- end }}
   eclccserver-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job

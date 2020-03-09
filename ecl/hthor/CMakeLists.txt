@@ -15,16 +15,16 @@
 ################################################################################
 
 
-# Component: hthor
+# Component: hthorlib
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for hthor
+#    Cmake Input File for hthorlib
 #####################################################
 
 
-project( hthor )
+project( hthorlib )
 
 set (    SRCS
          hthor.cpp
@@ -75,9 +75,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
 
-HPCC_ADD_LIBRARY( hthor SHARED ${SRCS} ${INCLUDES} )
-install ( TARGETS hthor RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
-target_link_libraries ( hthor
+HPCC_ADD_LIBRARY( hthorlib SHARED ${SRCS} ${INCLUDES} )
+install ( TARGETS hthorlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
+target_link_libraries ( hthorlib
          jlib
          mp
          hrpc
@@ -97,7 +97,7 @@ target_link_libraries ( hthor
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries ( hthor
+    target_link_libraries ( hthorlib
     	securesocket
     )
 ENDIF()

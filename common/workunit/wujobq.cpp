@@ -2095,16 +2095,19 @@ IJobQueue *createJobQueue(const char *name)
     return new CJobQueue(name);
 }
 
-extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster)
+extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
 {
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+#ifdef _CONTAINERIZED
+    VStringBuffer agentQueue("%s.agent", queueName);
+#else
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(queueName);
     if (!clusterInfo.get())
         return false;
     SCMStringBuffer agentQueue;
     clusterInfo->getAgentQueue(agentQueue);
     if (!agentQueue.length())
         return false;
-
+#endif
     Owned<IJobQueue> queue = createJobQueue(agentQueue.str());
     if (!queue.get()) 
         throw MakeStringException(-1, "Could not create workunit queue");
