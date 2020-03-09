@@ -119,14 +119,9 @@ spec:
                     %args
                   ]
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
-            - name: wsl-pv
-              mountPath: "/var/lib/HPCCSystems/thor/logs"
           volumes:
 {{ include "hpcc.addConfigVolume" . | indent 10 }}
 {{ include "hpcc.addVolumes" $ | indent 10 }}
-          - name: wsl-pv
-            persistentVolumeClaim:
-              claimName: "wsl-pv-claim"
           restartPolicy: Never
       backoffLimit: 0
 ---
