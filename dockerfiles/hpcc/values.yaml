@@ -36,10 +36,6 @@ global:
   # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
   hostStorage: true
 
-  # Set to true if using hostPath storageClass
-  # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
-  hostStorage: true
-
 
 dali:
 - name: mydali
