@@ -61,6 +61,7 @@ docker image build -t hpccsystems/dali:${BUILD_LABEL} --build-arg BUILD_LABEL=${
 docker image build -t hpccsystems/esp:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} esp/  
 docker image build -t hpccsystems/eclccserver:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} eclccserver/  
 docker image build -t hpccsystems/eclagent:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} eclagent/  
+docker image build -t hpccsystems/hthor:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} hthor/  
 docker image build -t hpccsystems/toposerver:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} toposerver/  
 docker image build -t hpccsystems/thormaster:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} thormaster/
 docker image build -t hpccsystems/thorslave:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} thorslave/

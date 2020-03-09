@@ -21,7 +21,6 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jutil.hpp"
-#include "eclagent.hpp"
 #include "environment.hpp"
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
@@ -37,6 +36,7 @@ private:
 
     const char *agentName;
     const char *daliServers;
+    const char *apptype;
     Owned<IJobQueue> queue;
     Linked<IPropertyTree> config;
 #ifdef _CONTAINERIZED
@@ -60,6 +60,10 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
 
     daliServers = config->queryProp("@daliServers");
     assertex(daliServers);
+
+    apptype = config->queryProp("@type");
+    if (!apptype)
+        apptype = "hthor";
 #ifdef _CONTAINERIZED
     unsigned poolSize = config->getPropInt("@maxActive", 100);
     pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
@@ -81,7 +85,11 @@ CEclAgentExecutionServer::~CEclAgentExecutionServer()
 
 int CEclAgentExecutionServer::run()
 {
+#ifdef _CONTAINERIZED
+    StringBuffer queueNames;
+#else
     SCMStringBuffer queueNames;
+#endif
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
     try
@@ -89,11 +97,7 @@ int CEclAgentExecutionServer::run()
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        config->getProp("@queueNames", queueNames.s);
-        
-        // temporary
-        if (0 == queueNames.length())
-            getAgentQueueNames(queueNames, agentName);
+        queueNames.append(agentName).append(".agent");
 #else
         getAgentQueueNames(queueNames, agentName);
 #endif
@@ -183,7 +187,7 @@ int CEclAgentExecutionServer::run()
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
-    WaitThread(const char *_dali) : dali(_dali)
+    WaitThread(const char *_dali, const char *_apptype) : dali(_dali), apptype(_apptype)
     {
     }
     virtual void init(void *param) override
@@ -204,13 +208,13 @@ public:
         {
             if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
             {
-                runK8sJob("eclagent", wuid, wuid);
+                runK8sJob(apptype, wuid, wuid);
             }
             else
             {
-                VStringBuffer exec("eclagent --workunit=%s --daliServers=%s", wuid.str(), dali.str());
+                VStringBuffer exec("%s --workunit=%s --daliServers=%s", apptype.str(), wuid.str(), dali.str());
                 Owned<IPipeProcess> pipe = createPipeProcess();
-                if (!pipe->run("eclagent", exec.str(), ".", false, true, false, 0, false))
+                if (!pipe->run(apptype.str(), exec.str(), ".", false, true, false, 0, false))
                     throw makeStringExceptionV(0, "Failed to run %s", exec.str());
             }
         }
@@ -230,13 +234,14 @@ public:
 private:
     StringAttr wuid;
     StringAttr dali;
+    StringAttr apptype;
 };
 #endif
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
 #ifdef _CONTAINERIZED
-    return new WaitThread(daliServers);
+    return new WaitThread(daliServers, apptype);
 #else
     throwUnexpected();
 #endif
@@ -252,7 +257,7 @@ bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     StringBuffer command;
 
 #ifdef _WIN32
-    command.append(".\\eclagent.exe");
+    command.append(".\\hthor.exe");
 #else
     command.append("start_eclagent");
 #endif
@@ -294,6 +299,13 @@ bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 
 //---------------------------------------------------------------------------------
 
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+eclagent:
+    name: myeclagent
+    type: hthor
+)!!";
+
 int main(int argc, const char *argv[]) 
 { 
 #ifndef _CONTAINERIZED
@@ -312,7 +324,7 @@ int main(int argc, const char *argv[])
     Owned<IPropertyTree> config;
     try
     {
-        config.setown(loadConfiguration(eclagentDefaultYaml, argv, "eclagent", "ECLAGENT", "agentexec.xml", nullptr));
+        config.setown(loadConfiguration(defaultYaml, argv, "eclagent", "AGENTEXEC", "agentexec.xml", nullptr));
     }
     catch (IException *e) 
     {

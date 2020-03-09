@@ -1,4 +1,5 @@
 {{ range $.Values.eclagent -}}
+{{- $apptype := .type | default "hthor" -}} 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +30,8 @@ spec:
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclagent" "me" .) }}
+    {{ $apptype }}:
+{{ toYaml . | indent 6 }}
   eclagent-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -40,7 +43,7 @@ spec:
         spec:
           containers:
           - name: %jobname
-            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
+            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" $apptype) }}
             resources:
               requests:
                 #request-memory
@@ -49,7 +52,7 @@ spec:
                 #limit-memory
                 #limit-cpu
             command: [
-                        "eclagent",
+                        {{ $apptype | quote }},
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args

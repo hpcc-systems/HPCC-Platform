@@ -15,14 +15,14 @@
 ################################################################################
 
 
-# Component: eclagent
+# Component: hthor
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for eclagent
+#    Cmake Input File for hthor
 #####################################################
 
-project( eclagent )
+project( hthor )
 
 set ( SRCS
       eclagentmain.cpp
@@ -41,10 +41,10 @@ include_directories (
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE ( eclagent ${SRCS} )
-install ( TARGETS eclagent RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( eclagent
-      hthor
+HPCC_ADD_EXECUTABLE ( hthor ${SRCS} )
+install ( TARGETS hthor RUNTIME DESTINATION ${EXEC_DIR} )
+target_link_libraries ( hthor
+      hthorlib
       wuanalysis
       ${CPPUNIT_LIBRARIES}
     )

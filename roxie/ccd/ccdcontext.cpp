@@ -2299,11 +2299,16 @@ protected:
 
         int priority = workUnit->getPriorityValue();
         unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
+#ifdef _CONTAINERIZED
+        StringBuffer queueName;
+        queueName.append(cluster).append(".thor");
+#else
         Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
         if (!c)
             throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
         SCMStringBuffer queueName;
         c->getThorQueue(queueName);
+#endif
         Owned<IJobQueue> jq = createJobQueue(queueName.str());
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
         bool resubmit;
