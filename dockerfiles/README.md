@@ -118,15 +118,3 @@ When running under K8s, Roxie has 3 fundamental modes of operation:
   
      This mode is somewhat experimental at present!
   
-Thor under K8s on WSL
----------------------
-
-To expose host storage to containers running under WSL, it is necessary to do the following:
-1) Within WSL, bind an arbitary directory (e.g. "k8smountpoint") to a directory under /mnt/wsl:
-
-sudo mount --bind k8smountpoint /mnt/wsl/hostmount
-
-2) When starting helm, set global.hostMountPath to point to "/run/desktop/mnt/host/wsl/hostmount", e.g.:
-
-helm install mycluster hpcc/ --set global.image.version=<image-name>,global.hostMountPath=/run/desktop/mnt/host/wsl/hostmount
-
