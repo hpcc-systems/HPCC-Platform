@@ -37,6 +37,7 @@ spec:
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" .) }}
 {{- if $thor.eclagent }}
     eclagent:
+      name: {{ .name }}
 {{ toYaml $thor.eclagent | indent 6 }}
 {{- end }}
   eclagent-jobspec.yaml: |
