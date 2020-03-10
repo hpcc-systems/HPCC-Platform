@@ -1010,10 +1010,11 @@ IHqlExpression * HqlCppCaseInfo::createResultsExpr(IHqlExpression * matchVar, bo
     }
 
     unsigned firstMatchEntry = 0;
-    if (canIncludeDefault)
+    const bool useStaticArray = areConstant && canBuildStaticList(resultType);
+    if (useStaticArray)
     {
         //If all the values are constant, then can add the default as an extra 0th entry, because -1 will be the index for the default
-        if (areConstant && defaultValue->isConstant() && defaultValue->queryType() == values.item(0).queryType())
+        if (canIncludeDefault && defaultValue->isConstant() && defaultValue->queryType() == values.item(0).queryType())
         {
             firstMatchEntry = 1;
             values.add(*LINK(defaultValue), 0);
@@ -1024,7 +1025,7 @@ IHqlExpression * HqlCppCaseInfo::createResultsExpr(IHqlExpression * matchVar, bo
     // easy way to create a value list...
     ITypeInfo * storeType = getArrayElementType(retType);
     OwnedHqlExpr newlist = createValue(no_list, makeSetType(storeType), values);
-    if (areConstant && canBuildStaticList(resultType))
+    if (useStaticArray)
     {
         IHqlExpression * index = adjustValue(matchVar, 1+firstMatchEntry);
         return createValue(no_index, LINK(retType), LINK(newlist), index, createAttribute(noBoundCheckAtom));
