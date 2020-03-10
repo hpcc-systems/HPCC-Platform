@@ -25,16 +25,16 @@
 
 HEAD=$(git rev-parse --short HEAD)
 PREV=$1
-[[ -z ${PREV} ]] && PREV=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-build --format {{.Tag}} | head -n 1`)
+# Look for an image that matches a commit, exclude images based on dirty working tree.
+[[ -z ${PREV} ]] && PREV=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-build --format {{.Tag}} | egrep -ve '-dirty$' | head -n 1`)
+# If not found above, look for latest tagged
 [[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)-Debug
 
-BUILD_TYPE=Debug
-BUILD_LABEL=${HEAD}-Debug
-GITHUB_USER=$(git remote get-url origin | sed -e "s+http.*com/++" -e "s+.*:++" -e "s+/.*++")
+# If working tree is dirty, annotate build tag, so doesn't conflict with base commit
+[[ -n "$(git status -uno --porcelain)" ]] && DIRTY="-dirty"
 
-if [[ -z "${GITHUB_USER}" ]]; then
-    echo Warning: GITHUB_USER blank - Is remote url in the form https://github.com/[user]/[repository] or git@github.com:[user]/[repository]?
-fi
+BUILD_TYPE=Debug
+BUILD_LABEL=${HEAD}-Debug${DIRTY}
 
 if [[ "$BUILD_LABEL" == "$PREV" ]] ; then
     echo Docker image hpccsystems/platform-core:${HEAD} already exists
@@ -47,12 +47,17 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $DIR 2>&1 > /dev/null
 
-echo Building local incremental images based on ${PREV}
+echo Building local incremental images [BUILD_LABEL=${BUILD_LABEL}] based on ${PREV}
     
 if [[ -n "$FORCE" ]] ; then
   docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${HEAD}-Debug --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
 else
-  docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg COMMIT=${HEAD} --build-arg USER=${GITHUB_USER} platform-build-incremental/
+  PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug//")
+  git diff --binary ${PREV_COMMIT} > platform-build-incremental/hpcc.gitpatch
+  # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
+  PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
+  docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} platform-build-incremental/
+  rm platform-build-incremental/hpcc.gitpatch
 fi
 docker image build -t hpccsystems/platform-core:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} platform-core-debug/  
 
