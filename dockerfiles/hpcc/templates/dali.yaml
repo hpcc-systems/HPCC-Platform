@@ -14,6 +14,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
+      {{- include "hpcc.checkDaliStoreHostMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         args: [
@@ -23,8 +24,13 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
+        - name: dalistore-pv
+          mountPath: "/var/lib/HPCCSystems/dalistore"
       volumes:
 {{ include "hpcc.addConfigVolume" . | indent 6 }}
+      - name: dalistore-pv
+        persistentVolumeClaim:
+          claimName: {{ .storage.existingClaim | default (printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name) }}
 ---
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "dali" "me" .) }}
 ---
@@ -41,5 +47,29 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
+{{- if (not .storage.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
+  labels:
+    app.kubernetes.io/name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    helm.sh/chart: {{ include "hpcc.chart" $ }}
+spec:
+  accessModes:
+    - ReadWriteMany  # accessed from dali and sasha
+  resources:
+    requests:
+      storage: {{ .storage.storageSize }}
+{{- if .storage.storageClass }}
+{{- if (eq "-" .storage.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .storage.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

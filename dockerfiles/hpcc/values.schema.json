@@ -62,6 +62,9 @@
         "hostStorage": {
           "type": "boolean"
         },
+        "privileged": {
+          "type": "boolean"
+        },
         "dataStorage": {
           "$ref": "#/definitions/storage"
         },
@@ -106,7 +109,7 @@
     },
     "dali": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "storage" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -115,6 +118,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "storage": {
+          "$ref": "#/definitions/storage"
         }
       }
     },

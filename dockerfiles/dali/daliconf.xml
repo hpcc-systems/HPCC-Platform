@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DALI name="mydali">
+<DALI name="mydali" dataPath="/var/lib/HPCCSystems/dalistore">
+  <Directories/>
   <SDS store="dalisds.xml" caseInsensitive="0" recoverFromIncErrors="true" 
        environment="/etc/HPCCSystems/environment.xml">
   </SDS>
