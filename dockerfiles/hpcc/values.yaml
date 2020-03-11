@@ -52,14 +52,16 @@ eclagent:
 eclccserver:
 - name: myeclccserver
   replicas: 1
-  listen: [ thor1 ]
+## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues
+# listen: [ thor ]
     
 esp:
 - name: myesp
   replicas: 1
 
-roxieX:
+roxie:
 - name: roxie
+  disabled: false
   ports: [9876,0]
   numChannels: 2
   serverReplicas: 1
@@ -73,6 +75,5 @@ thor:
   globalMemorySize: 4096
   maxActive: 2
   eclagent:
-    queueNames: "thor.agent" # kludge to match environment - until esp services can pick up dynamically
     replicas: 1
     containerPerAgent: false

@@ -1,4 +1,5 @@
 {{ range $roxie := $.Values.roxie -}}
+{{- if not $roxie.disabled -}}
 {{- if not $roxie.localSlave -}}
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
@@ -120,6 +121,7 @@ spec:
 
 ---
 
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

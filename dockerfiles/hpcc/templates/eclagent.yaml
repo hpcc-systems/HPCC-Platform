@@ -1,4 +1,5 @@
 {{ range $.Values.eclagent -}}
+{{- if not .disabled -}}
 {{- $apptype := .type | default "hthor" -}} 
 apiVersion: apps/v1
 kind: Deployment
@@ -65,4 +66,5 @@ spec:
       backoffLimit: 0
       
 ---
+{{- end }}
 {{- end }}

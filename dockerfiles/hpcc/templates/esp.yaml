@@ -1,4 +1,5 @@
 {{ range $.Values.esp -}}
+{{- if not .disabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,4 +41,5 @@ spec:
   selector:
     run: {{ .name | quote }}
   type: LoadBalancer
+{{- end }}
 {{- end }}
