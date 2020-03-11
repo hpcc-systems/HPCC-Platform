@@ -79,6 +79,7 @@ using roxiemem::OwnedRoxieString;
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
 #define MAX_FILE_READ_FAIL_COUNT 3
+#define CHECK_COST_INTERVAL 120 // How frequently workunit cost is checked against cost limit (seconds)
 
 typedef IEclProcess* (* EclProcessFactory)();
 
@@ -565,7 +566,20 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         updateSuppliedXmlParams(w);
     }
     IPropertyTree *costs = queryCostsConfiguration();
-    agentMachineCost = costs ? costs->getPropReal("@agent", 0.0): 0.0;
+    if (costs)
+    {
+        agentMachineCost = money2cost_type(costs->getPropReal("@agent"));
+        if (agentMachineCost)
+        {
+            double softCostLimit = costs->getPropReal("@limit");
+            double guillotineCost = wu->getDebugValueReal("maxCost", softCostLimit);
+            double hardCostLimit = costs->getPropReal("@hardlimit");
+            if (hardCostLimit && ((guillotineCost == 0) || (guillotineCost > hardCostLimit)))
+                guillotineCost = hardCostLimit;
+            abortmonitor->setGuillotineCost(money2cost_type(guillotineCost));
+        }
+    }
+
 }
 
 EclAgent::~EclAgent()
@@ -1920,7 +1934,7 @@ void EclAgent::doProcess()
         const __int64 elapsedNs = elapsedTimer.elapsedNs();
         updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedNs);
 
-        const __int64 cost = calcCost(agentMachineCost, elapsedNs);
+        const cost_type cost = aggregateCost(w, nullptr, false);
         if (cost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 
@@ -2324,7 +2338,7 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
     updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
 
-    const __int64 cost = calcCost(agent.queryAgentMachineCost(), elapsedNs);
+    const cost_type cost = calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs)) + aggregateCost(wu, scope, true);
     if (cost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 }
@@ -3159,21 +3173,30 @@ void EclAgent::abortMonitor()
 {
     StringBuffer errorText;
     unsigned guillotineleft = 0;
-    for (;;) {
-        unsigned waittime = ABORT_CHECK_INTERVAL;   
-        if (abortmonitor->guillotinetimeout) {
-            if (guillotineleft==0) {
+    unsigned checkCostInterval = CHECK_COST_INTERVAL;
+    for (;;)
+    {
+        unsigned waittime = ABORT_CHECK_INTERVAL;
+        if (abortmonitor->guillotinetimeout)
+        {
+            if (guillotineleft==0)
+            {
                 guillotineleft = abortmonitor->guillotinetimeout;
                 DBGLOG("Guillotine set to %ds",guillotineleft);
             }
             if (guillotineleft<waittime)
                 waittime = guillotineleft;
         }
-        if (abortmonitor->sem.wait(waittime*1000) && abortmonitor->stopping) {
+        if ((abortmonitor->guillotineCost > 0) && (checkCostInterval < waittime))
+            waittime = checkCostInterval;
+        if (abortmonitor->sem.wait(waittime*1000) && abortmonitor->stopping)
+        {
             return;
         }
-        if (guillotineleft) {
-            if (abortmonitor->guillotinetimeout) {
+        if (guillotineleft)
+        {
+            if (abortmonitor->guillotinetimeout)
+            {
                 guillotineleft-=waittime;
                 if (guillotineleft==0) {
                     DBGLOG("Guillotine triggered");
@@ -3189,13 +3212,31 @@ void EclAgent::abortMonitor()
             if (queryWorkUnit()) // could be exiting
                 isAborting = queryWorkUnit()->aborting();
         }
-        if (isAborting) {
+        if (isAborting)
+        {
             DBGLOG("Abort detected");
             while (abortmonitor->sem.wait(ABORT_DEADMAN_INTERVAL*1000))
                 if (abortmonitor->stopping)
                     return; // stopped in time
             IERRLOG("EclAgent failed to abort within %ds - killing process",ABORT_DEADMAN_INTERVAL);
             break;
+        }
+        if (abortmonitor->guillotineCost)
+        {
+            if (checkCostInterval<=waittime)
+            {
+                cost_type totalCost = aggregateCost(queryWorkUnit());
+                if (totalCost > abortmonitor->guillotineCost)
+                {
+                    errorText.appendf("Workunit cost limit exceeded");
+                    break;
+                }
+                checkCostInterval=CHECK_COST_INTERVAL;
+            }
+            else
+            {
+                checkCostInterval-=waittime;
+            }
         }
     }
     fatalAbort(isAborting,errorText.str());

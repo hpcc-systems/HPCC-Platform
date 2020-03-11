@@ -27,6 +27,7 @@
 #include "jstatcodes.h"
 
 typedef unsigned __int64 stat_type;
+typedef unsigned __int64 cost_type; // Decimal currency amount multiplied by 10^6
 const unsigned __int64 MaxStatisticValue = (unsigned __int64)0-1U;
 const unsigned __int64 AnyStatisticValue = MaxStatisticValue; // Use the maximum value to also represent unknown, since it is unlikely to ever occur.
 
@@ -40,7 +41,8 @@ inline constexpr stat_type statSkewPercent(long double value) { return (stat_typ
 inline constexpr stat_type statSkewPercent(stat_type  value) { return (stat_type)(value * 100); }
 
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }
-
+inline cost_type money2cost_type(double money) { return money * 1E6; }
+inline double cost_type2money(cost_type cost) { return ((double) cost) / 1E6; }
 //---------------------------------------------------------------------------------------------------------------------
 
 //Represents a single level of a scope
@@ -758,6 +760,7 @@ extern jlib_decl int compareScopeName(const char * left, const char * right);
 extern jlib_decl unsigned queryScopeDepth(const char * text);
 extern jlib_decl const char * queryScopeTail(const char * scope);
 extern jlib_decl bool getParentScope(StringBuffer & parent, const char * scope);
+extern jlib_decl bool isParentScope(const char *parent, const char *scope);
 extern jlib_decl void describeScope(StringBuffer & description, const char * scope);
 
 //This interface is primarily here to reduce the dependency between the different components.
