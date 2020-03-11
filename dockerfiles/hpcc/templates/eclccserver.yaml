@@ -45,6 +45,7 @@ spec:
       - name: {{ .name }}
         type: thor
         prefix: {{ .prefix | default "null" }}
+        width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
 {{- end }}
   eclccserver-jobspec.yaml: |
     apiVersion: batch/v1

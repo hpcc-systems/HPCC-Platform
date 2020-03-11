@@ -33,7 +33,8 @@
 #include "dalienv.hpp"
 #endif
 
-Owned<IPropertyTree> globals;
+static Owned<IPropertyTree> globals;
+static const char * * globalArgv = nullptr;
 
 //------------------------------------------------------------------------------------------------------------------
 // We use a separate thread for reading eclcc's stderr output. This prevents the thread that is
@@ -307,6 +308,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
         StringBuffer eclccCmd(" -shared");
+        //Clone all the options that were passed to eclccserver (but not the filename) and also pass them to eclcc
+        for (const char * * pArg = globalArgv+1; *pArg; pArg++)
+            eclccCmd.append(' ').append(*pArg);
+
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
@@ -797,6 +802,7 @@ int main(int argc, const char *argv[])
 
     try
     {
+        globalArgv = argv;
         globals.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", nullptr));
     }
     catch (IException * e)

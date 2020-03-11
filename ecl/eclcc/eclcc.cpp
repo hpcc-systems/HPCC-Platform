@@ -59,7 +59,9 @@
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
 
+#ifndef CONTAINERIZED
 #include "environment.hpp"
+#endif
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
@@ -82,6 +84,7 @@
 
 //The following flag is used to speed up closedown by not freeing items
 static bool optReleaseAllMemory = false;
+static Owned<IPropertyTree> configuration;
 
 #if defined(_WIN32) && defined(_DEBUG)
 static HANDLE leakHandle;
@@ -337,6 +340,7 @@ protected:
     StringAttr optComponentName;
     StringAttr optDFS;
     StringAttr optCluster;
+    StringAttr optConfig;
     StringAttr optScope;
     StringAttr optUser;
     StringAttr optPassword;
@@ -494,12 +498,22 @@ static int doMain(int argc, const char *argv[])
     return 0;
 }
 
+
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+eclccserver:
+    name: eclccserver
+)!!";
+
+
 int main(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH(true);
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
+
+    configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
 
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
@@ -514,6 +528,7 @@ int main(int argc, const char *argv[])
         _exit(exitCode);
     }
 
+    configuration.clear();
     releaseAtoms();
     ClearTypeCache();   // Clear this cache before the file hooks are unloaded
     removeFileHooks();
@@ -2275,8 +2290,10 @@ bool EclCC::checkDaliConnected() const
 unsigned EclCC::lookupClusterSize() const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
+#ifndef CONTAINERIZED
     if (!optDFS || disconnectReported || !checkDaliConnected())
         return 0;
+#endif
     if (prevClusterSize != -1)
         return (unsigned) prevClusterSize;
     const char *cluster = clusters ? clusters.tos() : optCluster.str();
@@ -2284,8 +2301,17 @@ unsigned EclCC::lookupClusterSize() const
         prevClusterSize = 0;
     else
     {
+#ifdef CONTAINERIZED
+        VStringBuffer xpath("queues[@name=\"%s\"]", cluster);
+        IPropertyTree * queue = configuration->queryPropTree(xpath);
+        if (queue)
+            prevClusterSize = queue->getPropInt("@width", 1);
+        else
+            prevClusterSize = 0;
+#else
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
         prevClusterSize = clusterInfo ? clusterInfo->getSize() : 0;
+#endif
     }
     DBGLOG("Cluster %s has size %d", cluster, prevClusterSize);
     return prevClusterSize;
@@ -2488,6 +2514,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchOption(optCluster, "-cluster"))
+        {
+        }
+        else if (iter.matchOption(optConfig, "--config"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
@@ -2805,6 +2834,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (arg[0] == '-')
         {
+            //If --config has been specified, then ignore any unknown options beginning with -- since they will be added to the globals.
+            if ((arg[1] == '-') && optConfig)
+                continue;
             UERRLOG("Error: unrecognised option %s",arg);
             usage();
             return 1;
