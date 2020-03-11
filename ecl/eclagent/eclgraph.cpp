@@ -886,7 +886,17 @@ void EclSubGraph::updateProgress()
             if (startGraphTime)
                 parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StWhenStarted, nullptr, startGraphTime);
             if (elapsedGraphCycles)
-                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, cycle_to_nanosec(elapsedGraphCycles));
+            {
+                unsigned __int64 elapsedTime = cycle_to_nanosec(elapsedGraphCycles);
+                parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, elapsedTime);
+                const cost_type cost = calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedTime));
+                if (cost)
+                {
+                    StringBuffer scope;
+                    scope.append(WorkflowScopePrefix).append(agent->getWorkflowId()).append(":").append(subgraphid);
+                    lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+                }
+            }
         }
     }
 }
@@ -1236,6 +1246,14 @@ void EclGraph::execute(const byte * parentExtract)
 
             unsigned __int64 elapsedNs = milliToNano(elapsed);
             updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, agent->getWorkflowId());
+
+            const cost_type cost = calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedNs));
+            if (cost)
+            {
+                StringBuffer scope;
+                scope.append(WorkflowScopePrefix).append(agent->getWorkflowId()).append(":").append(queryGraphName());
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+            }
         }
 
         if (agent->queryRemoteWorkunit())
@@ -1756,7 +1774,12 @@ void EclAgent::executeThorGraph(const char * graphName)
                 throw deserializeException(reply);
             }
             case DAMP_THOR_REPLY_ABORT:
-                throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+            {
+                Owned<IException> e = deserializeException(reply);
+                StringBuffer msg;
+                e->errorMessage(msg);
+                throw new WorkflowException(e->errorCode(), msg.str(), 0, WorkflowException::ABORT, MSGAUD_user);
+            }
             default:
                 assertex(false);
         }

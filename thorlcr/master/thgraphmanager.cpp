@@ -838,8 +838,19 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     else if (e)
     {
         IThorException *te = QUERYINTERFACE(e, IThorException);
-        if (te && TE_WorkUnitAborting == te->errorCode())
-            replyMb.append((unsigned)DAMP_THOR_REPLY_ABORT);
+        if (te)
+        {
+            switch (te->errorCode())
+            {
+            case TE_CostExceeded:
+            case TE_WorkUnitAborting:
+                replyMb.append((unsigned)DAMP_THOR_REPLY_ABORT);
+                break;
+            default:
+                replyMb.append((unsigned)DAMP_THOR_REPLY_ERROR);
+                break;
+            }
+        }
         else
             replyMb.append((unsigned)DAMP_THOR_REPLY_ERROR);
         serializeException(e, replyMb);
@@ -956,7 +967,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         updateWorkunitStat(wu, SSTgraph, graphName, StTimeElapsed, graphTimeStr, graphTimeNs, wfid);
 
         addTimeStamp(wu, SSTgraph, graphName, StWhenFinished, wfid);
-        double cost = calculateThorCost(graphTimeNs, queryNodeClusterWidth());
+        double cost = calculateThorCost(nanoToMilli(graphTimeNs), queryNodeClusterWidth());
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 

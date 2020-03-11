@@ -162,7 +162,8 @@
 #define TE_RemoteReadFailure                    TE_Base + 139
 #define TE_MissingOptionalFile                  TE_Base + 140
 #define TE_UnsupportedSortOrder                 TE_Base + 141
-#define TE_Final                                TE_Base + 142       // keep this last
+#define TE_CostExceeded                         TE_Base + 142
+#define TE_Final                                TE_Base + 143       // keep this last
 #define ISTHOREXCEPTION(n) (n > TE_Base && n < TE_Final)
 
 #endif
