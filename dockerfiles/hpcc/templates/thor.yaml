@@ -1,4 +1,5 @@
 {{ range $thor := $.Values.thor -}}
+{{- if not $thor.disabled -}}
 {{- $masterPort := $thor.masterport | default 20000 -}}
 {{- $slavePort := $thor.slaveport | default 20100 -}}
 {{- $eclagentName := printf "%s-agent" .name }}
@@ -126,4 +127,5 @@ spec:
           restartPolicy: Never
       backoffLimit: 0
 ---
+{{- end }}
 {{- end }}

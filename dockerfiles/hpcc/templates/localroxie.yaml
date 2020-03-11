@@ -1,4 +1,5 @@
 {{ range $roxie := $.Values.roxie -}}
+{{- if not $roxie.disabled  -}}
 {{- if $roxie.localSlave -}}
 {{- $name := $roxie.name -}}
 
@@ -37,4 +38,4 @@ spec:
 ---
 {{- end }}
 {{- end }}
- 
+{{- end }}
