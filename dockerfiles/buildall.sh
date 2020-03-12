@@ -61,6 +61,14 @@ build_image() {
   local label=$2
   [[ -z ${label} ]] && label=$BUILD_LABEL
 
+  echo ! docker pull hpccsystems/${name}:${label}
+    echo docker image build -t hpccsystems/${name}:${label} \
+       --build-arg BASE_VER=${BASE_VER} \
+       --build-arg BUILD_TAG=${BUILD_TAG} \
+       --build-arg BUILD_LABEL=${BUILD_LABEL} \
+       --build-arg BUILD_USER=${BUILD_USER} \
+       --build-arg BUILD_TYPE=${BUILD_TYPE} \
+       ${name}/ 
   if ! docker pull hpccsystems/${name}:${label} ; then
     docker image build -t hpccsystems/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
@@ -75,7 +83,7 @@ build_image() {
   fi
 }
 
-build_image platform-build-base ${BASE_VER}
+#build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
 build_image roxie

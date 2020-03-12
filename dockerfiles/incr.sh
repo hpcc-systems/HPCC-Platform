@@ -53,7 +53,7 @@ if [[ -n "$FORCE" ]] ; then
   docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${HEAD}-Debug --build-arg BASE_VER=7.8 --build-arg BUILD_TYPE=Debug platform-build/
 else
   PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug//")
-  git diff --binary ${PREV_COMMIT} > platform-build-incremental/hpcc.gitpatch
+  git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
   # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
   PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
   docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} platform-build-incremental/

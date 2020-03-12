@@ -59,6 +59,9 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/b
 
 COPY --from=build /opt/HPCCSystems /opt/HPCCSystems
 
+# NB: added in platform-build, but need to re-add as this image is not
+# based on it. Only /opt/HPCCSystems is copied over.
+
 RUN groupadd -g 1000 hpcc
 RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
 RUN passwd -l hpcc 
