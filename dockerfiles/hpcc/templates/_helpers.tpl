@@ -170,6 +170,13 @@ initContainers:
 {{- end }}
 {{- end }}
 
+{{- /* Check dalistore host mount point, using hpcc.changeHostMountPerms */ -}}
+{{- define "hpcc.checkDaliStoreHostMount" -}}
+{{- if .root.Values.global.hostStorage | default false }}
+{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dalistore-pv" "volumePath" "/var/lib/HPCCSystems/dalistore") }}
+{{- end }}
+{{- end }}
+
 {{- /* Add security context */ -}}
 {{- /* Pass in a dictionary with root and me defined */ -}}
 {{- define "hpcc.addSecurityContext" -}}
