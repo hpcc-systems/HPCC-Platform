@@ -14,4 +14,11 @@ spec:
   resources:
     requests:
       storage: {{ .Values.global.dllserver.storageSize }}
+{{- if .Values.global.dllserver.storageClass }}
+{{- if (eq "-" .Values.global.dllserver.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.global.dllserver.storageClass }}"
+{{- end }}
+{{- end }}
 {{- end }}
