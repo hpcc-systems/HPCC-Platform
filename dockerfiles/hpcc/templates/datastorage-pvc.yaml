@@ -14,4 +14,11 @@ spec:
   resources:
     requests:
       storage: {{ .Values.global.dataStorage.storageSize }}
+{{- if .Values.global.dataStorage.storageClass }}
+{{- if (eq "-" .Values.global.dataStorage.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.global.dataStorage.storageClass }}"
+{{- end }}
+{{- end }}
 {{- end }}
