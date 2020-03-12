@@ -540,7 +540,6 @@ int FileSizeThread::run()
                     thisSize = io->size();
                 }
                 cur->size = thisSize;
-                thisFile->getTime(nullptr, &cur->modifiedTime, nullptr);
                 break;
             }
             if (copy==1)
@@ -1811,14 +1810,13 @@ void FileSprayer::afterGatherFileSizes()
 {
     if (!copyCompressed)
     {
-        StringBuffer dateStr, tailStr;
+        StringBuffer tailStr;
         ForEachItemIn(idx2, sources)
         {
             FilePartInfo & cur = sources.item(idx2);
 
-            LOG(MCdebugProgress, job, "%9u:%s (size: %llu bytes, last modified: %s)",
-                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size,
-                                       cur.modifiedTime.getString(dateStr.clear(), true).str()
+            LOG(MCdebugProgress, job, "%9u:%s (size: %llu bytes)",
+                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size
                                        );
             cur.offset = totalSize;
             totalSize += cur.size;
@@ -2552,6 +2550,9 @@ void FileSprayer::setSource(IDistributedFile * source)
 void FileSprayer::setSource(IFileDescriptor * source)
 {
     setSource(source, 0, 1);
+
+    //Now get the size of the files directly (to check they exist).  If they don't exist then switch to the backup instead.
+    gatherFileSizes(false);
 }
 
 
@@ -2583,8 +2584,8 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
                 FilePartInfo & next = * new FilePartInfo(rfn);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);
-                // don't set the following here - force to check disk
-                //next.size = multi.getSize(i);
+                // If size doesn't set here it will be forced to check the file size on disk (expensive)
+                next.size = multi.getSize(i);
                 sources.append(next);
             }
 
