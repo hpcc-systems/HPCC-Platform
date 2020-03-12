@@ -2894,7 +2894,9 @@ bool FileSprayer::disallowImplicitReplicate()
            nonempty(options,"@glue") ||
            nonempty(options,ANprefix) ||
            nonempty(options,ANencryptKey) ||
-           nonempty(options,ANdecryptKey);
+           nonempty(options,ANdecryptKey) ||
+           operation != dfu_replicate_distributed ||
+           operation != dfu_replicate;
 
 }
 
