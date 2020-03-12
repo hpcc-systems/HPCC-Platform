@@ -20,20 +20,11 @@
 ARG BUILD_LABEL
 FROM hpccsystems/platform-build:${BUILD_LABEL}
 
-RUN groupadd -g 1000 hpcc
-RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
-RUN passwd -l hpcc 
-
-RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
-RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
-RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
-RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
-
 RUN apt-get install -y libcap2-bin
 RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
-
-USER hpcc
 
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
+
+USER hpcc
