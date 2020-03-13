@@ -42,6 +42,10 @@
 
 #include "cassandraembed.hpp"
 
+#include <list>
+#include <string>
+#include <algorithm>
+
 #define EXPORT DECL_EXPORT
 
 namespace cassandraembed {
@@ -3703,7 +3707,7 @@ public:
     virtual bool isAborting(const char *wuid) const - done in the base class using dali
     virtual void clearAborting(const char *wuid) - done in the base class using dali
     */
-    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState)
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, std::list<WUState> expectedStates)
     {
         Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuid, SubscribeOptionState);
         LocalIAbortHandler abortHandler(*waiter);
@@ -3727,6 +3731,9 @@ public:
             StringBuffer stateStr;
             getCassString(stateStr, stateVal);
             WUState state = getWorkUnitState(stateStr);
+            auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
+            if (it != expectedStates.end())
+                return state;
             switch (state)
             {
             case WUStateCompiled:
@@ -3739,8 +3746,6 @@ public:
             case WUStateAborted:
                 return state;
             case WUStateWait:
-                if (returnOnWaitState)
-                    return state;
                 break;
             case WUStateCompiling:
             case WUStateRunning:

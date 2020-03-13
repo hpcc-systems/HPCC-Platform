@@ -86,8 +86,8 @@ thor:
 - name: thor
   numSlaves: 2
   globalMemorySize: 4096
-  maxActive: 2
   prefix: thor
   eclagent:
-    replicas: 1
-    containerPerAgent: false
+    maxActive: 4
+  thoragent:
+    maxActive: 2

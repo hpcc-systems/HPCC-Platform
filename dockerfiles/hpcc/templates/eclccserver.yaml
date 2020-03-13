@@ -23,7 +23,7 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclccserver") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
@@ -31,23 +31,7 @@ spec:
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclccserver" "me" .) }}
-      queues:
-{{- range $.Values.eclagent }}
-      - name: {{ .name }}
-        type: {{ .type | default "hthor" }}
-        prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.roxie }}
-      - name: {{ .name }}
-        type: roxie 
-        prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.thor }}
-      - name: {{ .name }}
-        type: thor
-        prefix: {{ .prefix | default "null" }}
-        width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
-{{- end }}
+{{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
   eclccserver-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job

@@ -2,46 +2,84 @@
 {{- if not $thor.disabled -}}
 {{- $masterPort := $thor.masterport | default 20000 -}}
 {{- $slavePort := $thor.slaveport | default 20100 -}}
-{{- $eclagentName := printf "%s-agent" .name }}
+{{- $hthorName := printf "%s-hthor" .name }}
+{{- $eclAgentName := printf "%s-agent" .name }}
+{{- $thorAgentName := printf "%s-thoragent" .name }}
 {{- $slaveName := printf "%s-slave" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
+{{- $thorScope := omit . "eclagent" "thoragent" "hthor" }}
+{{- $eclAgentDefaults := dict "name" $eclAgentName "replicas" 1 }}
+{{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
+{{- $thorAgentDefaults := dict "name" $thorAgentName "containerPerAgent" true "replicas" 1 }}
+{{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
+{{- $hthorDefaults := dict "name" $hthorName }}
+{{- $hthorScope := .hthor | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $eclagentName | quote }}
+  name: {{ $eclAgentName | quote }}
 spec:
-  replicas: {{ $thor.eclagent.replicas | default 1 }}
+  replicas: {{ $eclAgentScope.replicas }}
   selector:
     matchLabels:
-      run: {{ $eclagentName | quote }}
+      run: {{ $eclAgentName | quote }}
   template:
     metadata:
       labels:
-        run: {{ $eclagentName | quote }}
+        run: {{ $eclAgentName | quote }}
     spec:
       serviceAccountName: hpcc
       containers:
-      - name: {{ $eclagentName | quote }}
-        ports:
-          - containerPort: {{ $masterPort }}
+      - name: {{ $eclAgentName | quote }}
         args: [
-                {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.configArg" $eclAgentScope }},
+                {{ include "hpcc.daliArg" $ }},
+                {{ printf "\"--name=%s\"" .name }},
+                {{ printf "\"--processConfig=/etc/config/%s.yaml\"" $hthorName }}
               ]
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" .) }}
-{{- if $thor.eclagent }}
-    eclagent:
-      name: {{ .name }}
-{{ toYaml $thor.eclagent | indent 6 }}
-{{- end }}
-  eclagent-jobspec.yaml: |
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $thorAgentName | quote }}
+spec:
+  replicas: {{ $thorAgentScope.replicas }}
+  selector:
+    matchLabels:
+      run: {{ $thorAgentName | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ $thorAgentName | quote }}
+    spec:
+      serviceAccountName: hpcc
+      containers:
+      - name: {{ $thorAgentName | quote }}
+        args: [
+                {{ include "hpcc.configArg" $thorAgentScope }},
+                {{ include "hpcc.daliArg" $ }},
+                {{ printf "\"--name=%s\"" .name }},
+                {{ printf "\"--processConfig=/etc/config/%s.yaml\"" .name }}
+              ]
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
+{{ include "hpcc.addVolumeMounts" . | indent 8 }}
+      volumes:
+{{ include "hpcc.addConfigVolume" . | indent 6 }}
+{{ include "hpcc.addVolumes" $ | indent 6 }}
+---
+{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" $thorScope) }}
+{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "eclagent" "me" $eclAgentScope) | indent 2}}
+{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "eclagent" "me" $thorAgentScope) | indent 2}}
+      type: thor
+{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "hthor" "me" $hthorScope) | indent 2}}
+  hthor-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -54,6 +92,7 @@ spec:
           {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 10 }}
           containers:
           - name: %jobname
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
             image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
             resources:
               requests:
@@ -63,8 +102,8 @@ spec:
                 #limit-memory
                 #limit-cpu
             command: [
-                        "eclagent",
-                        {{ include "hpcc.configArg" . }},
+                        "hthor",
+                        {{ include "hpcc.configArg" $hthorScope }},
                         {{ include "hpcc.daliArg" $ }},
                         %args
                      ]
@@ -87,10 +126,10 @@ spec:
           {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 10 }}
           containers:
           - name: %jobname
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 12 }}
             args: [
-                    {{ include "hpcc.configArg" . }},
+                    {{ include "hpcc.configArg" $thorScope }},
                     {{ include "hpcc.daliArg" $ }},
                     %args
                   ]
@@ -113,10 +152,10 @@ spec:
           serviceAccountName: hpcc
           containers:
           - name: %jobname
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 12 }}
             args: [
-                    {{ include "hpcc.configArg" . }},
+                    {{ include "hpcc.configArg" $thorAgentScope }},
                     {{ include "hpcc.daliArg" $ }},
                     %args
                   ]
