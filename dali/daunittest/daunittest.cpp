@@ -100,10 +100,12 @@ int main( int argc, char **argv )
     int ret=1;
 
     try {
+//#ifdef _CONTAINERIZED logging to file prob ok here
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
         StringBuffer lf;
         openLogFile(lf, cmd.toLowerCase().append(".log").str());
+//#endif
         if (argc<2) {
             usage();
             return 1;

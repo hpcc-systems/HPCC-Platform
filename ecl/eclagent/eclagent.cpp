@@ -3343,19 +3343,26 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (!standAloneExe)
     {
         setStatisticsComponentName(SCThthor, agentTopology->queryProp("@name"), true);
-
+#ifndef _CONTAINERIZED
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
         lf->setCreateAliasFile(false);
         logMsgHandler = lf->beginLogging();
         PROGLOG("Logging to %s", lf->queryLogFileSpec());
         logfilespec.set(lf->queryLogFileSpec());
+#else
+        PROGLOG("ECLAgent NOT logging to local file!");
+#endif
     }
     else
     {
+//#ifndef _CONTAINERIZED
         StringBuffer exeName;
         splitFilename(argv[0], NULL, NULL, &exeName, NULL);
         openLogFile(logfilespec, exeName.append(".log"));
         PROGLOG("Logging to %s", logfilespec.str());
+//#else
+//        PROGLOG("ECLAgent NOT logging to local file!");
+//#endif
     }
 
 #ifdef _DEBUG

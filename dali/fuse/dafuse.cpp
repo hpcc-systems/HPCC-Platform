@@ -1035,6 +1035,7 @@ int main(int argc, char *_argv[])
     if (!parseParams(argc,argv,prop))
         return 1;
 
+#ifndef _CONTAINERIZED
     {
         StringBuffer logName;
         if (!prop->getProp("LOGFILE", logName))
@@ -1046,6 +1047,10 @@ int main(int argc, char *_argv[])
         ls->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
+#else
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail);
+        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+#endif
 
     StringBuffer daliServer;
     if (!prop->getProp("DALISERVER", daliServer)) {

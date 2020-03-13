@@ -631,6 +631,7 @@ int main(int argc, char *argv[])
 
     PROGLOG("roxiepipe starting, command line %s", cmdLine.str());
 
+#ifndef _CONTAINERIZED
     StringBuffer logDir;
     if (!logFile.length())
     {
@@ -654,6 +655,9 @@ int main(int argc, char *argv[])
         e->Release();
     }
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler()); // only want fprintf(stderr)
+#else
+    PROGLOG("Roxiepipe only logging to Stderr!");
+#endif
 
     if (!fatalError.length())
     {

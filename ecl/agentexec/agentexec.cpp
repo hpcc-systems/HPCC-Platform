@@ -48,11 +48,15 @@ private:
 
 CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : config(_config)
 {
+#ifndef _CONTAINERIZED
     //Build logfile from component properties settings
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclagent");
     lf->setCreateAliasFile(false);
     lf->beginLogging();
     PROGLOG("Logging to %s",lf->queryLogFileSpec());
+#else
+    PROGLOG("Agentexec not logging to local file!");
+#endif
 
     agentName = config->queryProp("@name");
     assertex(agentName);

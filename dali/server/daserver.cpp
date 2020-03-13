@@ -398,6 +398,7 @@ int main(int argc, char* argv[])
         if (confIFile->exists())
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 
+#ifndef _CONTAINERIZED
         ILogMsgHandler * fileMsgHandler;
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
@@ -405,7 +406,9 @@ int main(int argc, char* argv[])
             lf->setName("DaServer");//override default filename
             fileMsgHandler = lf->beginLogging();
         }
-
+#else
+        PROGLOG("Daserver NOT logging to local file!");
+#endif
         PROGLOG("Build %s", BUILD_TAG);
 
         if (serverConfig)
@@ -587,8 +590,9 @@ int main(int argc, char* argv[])
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IWhiteListHandler> whiteListHandler = createWhiteListHandler(populateWhiteListFromEnvironment, formatDaliRole);
         mpServer->installWhiteListCallback(whiteListHandler);
-
+#ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
+#endif
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();
 

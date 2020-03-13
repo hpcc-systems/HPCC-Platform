@@ -318,10 +318,12 @@ int main(int argc, const char *argv[])
         Owned<IPropertyTree> topology = loadConfiguration(defaultYaml, argv, "roxie", "ROXIE", nullptr, nullptr);
         traceLevel = topology->getPropInt("@traceLevel", 1);
         topoPort = topology->getPropInt("@topoport", TOPO_SERVER_PORT);
+#ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
         else
             removeLog();
+
         const char *logdir = topology->queryProp("@logdir");
         if (logdir && *logdir)
         {
@@ -331,6 +333,9 @@ int main(int argc, const char *argv[])
             queryLogMsgManager()->enterQueueingMode();
             queryLogMsgManager()->setQueueDroppingLimit(512, 32);
         }
+#else
+        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+#endif
         Owned<ISocket> socket = ISocket::create(topoPort);
         if (traceLevel)
             DBGLOG("Topology server starting");

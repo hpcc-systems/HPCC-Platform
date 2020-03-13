@@ -783,10 +783,16 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             removeLog();
         if (topology->hasProp("@logfile"))
         {
+#ifndef _CONTAINERIZED
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             logDirectory.set(lf->queryLogDir());
+#else
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail);
+        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+#endif
+
 #ifdef _DEBUG
             unsigned useLogQueue = topology->getPropBool("@useLogQueue", false);
 #else

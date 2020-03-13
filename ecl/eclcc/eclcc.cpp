@@ -634,6 +634,7 @@ void EclCC::loadOptions()
 
     if ((logVerbose || optLogfile) && !optNoLogFile)
     {
+#ifndef _CONTAINERIZED
         if (optLogfile.length())
         {
             StringBuffer lf;
@@ -641,6 +642,9 @@ void EclCC::loadOptions()
             if (logVerbose)
                 fprintf(stdout, "Logging to '%s'\n",lf.str());
         }
+#else
+        fprintf(stderr, "ECLCC Log to file option ignored in container mode\n");
+#endif
         if (optMonitorInterval)
             startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
     }

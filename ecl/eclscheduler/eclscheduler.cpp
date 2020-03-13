@@ -164,8 +164,10 @@ private:
 
 void openLogFile()
 {
+#ifndef _CONTAINERIZED
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "eclscheduler");
     lf->beginLogging();
+#endif
 }
 
 //=========================================================================================

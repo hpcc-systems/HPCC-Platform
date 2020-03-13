@@ -50,12 +50,18 @@ int main(int argc, char* argv[])
     setNodeCaching(true);
 
     {
+#ifndef _CONTAINERIZED
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("dfuxref");
         lf->setAppend(false);
         lf->setMaxDetail(TopDetail);
         lf->setMsgFields(MSGFIELD_STANDARD);
         lf->beginLogging();
+#else
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail);
+        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+#endif
     }
+
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
 
     StringBuffer cmdline;

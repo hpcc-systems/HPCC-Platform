@@ -285,11 +285,15 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
             procpt->getProp("@logDir", logdir);
     }
 
-
+#ifndef _CONTAINERIZED
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir.str(), "esp");
     lf->setName("esp_main");//override default filename
     lf->setAliasName("esp");
     lf->beginLogging();
+#else
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, 1000);
+            queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+#endif
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();

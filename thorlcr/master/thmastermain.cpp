@@ -636,16 +636,22 @@ int main( int argc, const char *argv[]  )
     ILogMsgHandler *logHandler;
     try
     {
+#ifndef _CONTAINERIZED
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
             lf->setName("thormaster");//override default filename
             lf->setCreateAliasFile(false);
             logHandler = lf->beginLogging();
             createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
+
+            LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
         }
-        LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
+#else
+        logHandler = queryStderrLogMsgHandler();
+        logUrl.set("stderr");
+        LOG(MCdebugProgress, thorJob, "Logging to Stderr!");
+#endif
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
-        globals->setProp("@logURL", logUrl.str());
 
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(), DALI_SERVER_PORT);
 
