@@ -14,27 +14,18 @@
 #    limitations under the License.
 ################################################################################
 
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION plugins COMPONENT Runtime)
-
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrcleanlib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscorelib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_canadacleanlib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cmslib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_datalib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_dmslib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_entityscorelib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fingerprintlib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_hktlib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_namelib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ofaclib.eclmod DESTINATION plugins COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ziplib.eclmod DESTINATION plugins COMPONENT Runtime)
-
-
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_date.eclmod DESTINATION plugins COMPONENT Runtime)
+if (USE_EEPROXIES)
+ set (proxies_out_dir "plugins/eeproxies")
+elseif (USE_ECLCCPROXIES)
+ set (proxies_out_dir "bin/eeproxies")
+else() # USE_EEPROXIES
+ set (proxies_out_dir "plugins")
+endif()
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION  ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 
 IF (USE_OPENSSL)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
