@@ -513,7 +513,7 @@ int main(int argc, const char *argv[])
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
 
-    configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
+    configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", nullptr));
 
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
