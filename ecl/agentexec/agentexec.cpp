@@ -99,7 +99,7 @@ int CEclAgentExecutionServer::run()
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        if (streq("agent", apptype))    
+        if (streq("hthor", apptype))
             getClusterEclAgentQueueName(queueNames, agentName);
         else if (streq("thor", apptype))
             getClusterThorQueueName(queueNames, agentName);
