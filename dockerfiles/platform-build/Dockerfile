@@ -32,7 +32,6 @@ RUN chown hpcc:hpcc /hpcc-dev
 USER hpcc
 
 ARG BUILD_USER=hpcc-systems
-RUN echo BUILD_USER is ${BUILD_USER}
 RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
     cd HPCC-Platform && \
     git submodule update --init --recursive

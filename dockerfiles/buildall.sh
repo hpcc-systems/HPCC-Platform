@@ -83,7 +83,7 @@ build_image() {
   fi
 }
 
-#build_image platform-build-base ${BASE_VER}
+build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
 build_image roxie
