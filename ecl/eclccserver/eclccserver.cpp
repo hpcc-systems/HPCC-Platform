@@ -29,6 +29,7 @@
 #include "wujobq.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
+#include "daqueue.hpp"
 #ifndef _CONTAINERIZED
 #include "dalienv.hpp"
 #endif
@@ -860,7 +861,7 @@ int main(int argc, const char *argv[])
                 IPTree &queue = queues->query();
                 if (queueNames.length())
                     queueNames.append(",");
-                queueNames.append(queue.queryProp("@name")).append(".eclserver");
+                getClusterEclCCServerQueueName(queueNames, queue.queryProp("@name"));
             }
 #else
             SCMStringBuffer queueNames;

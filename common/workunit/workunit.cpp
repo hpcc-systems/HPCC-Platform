@@ -48,7 +48,10 @@
 
 #include "wuerror.hpp"
 #include "wujobq.hpp"
+#ifndef _CONTAINERIZED
 #include "environment.hpp"
+#endif
+#include "daqueue.hpp"
 #include "workunit.ipp"
 #include "digisign.hpp"
 
@@ -7002,20 +7005,31 @@ const char *CLocalWorkUnit::queryActionDesc() const
     return p->queryProp("Action");
 }
 
-IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *propname, IStringVal &str) const
+bool CLocalWorkUnit::hasApplicationValue(const char *app, const char *propname) const
 {
-    CriticalBlock block(crit);
     StringBuffer prop("Application/");
     prop.append(app).append('/').append(propname);
+
+    CriticalBlock block(crit);
+    return p->hasProp(prop);
+}
+
+IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *propname, IStringVal &str) const
+{
+    StringBuffer prop("Application/");
+    prop.append(app).append('/').append(propname);
+
+    CriticalBlock block(crit);
     str.set(p->queryProp(prop.str())); 
     return str;
 }
 
 int CLocalWorkUnit::getApplicationValueInt(const char *app, const char *propname, int defVal) const
 {
-    CriticalBlock block(crit);
     StringBuffer prop("Application/");
     prop.append(app).append('/').append(propname);
+
+    CriticalBlock block(crit);
     return p->getPropInt(prop.str(), defVal); 
 }
 
@@ -7276,22 +7290,38 @@ wuTokenStates verifyWorkunitDAToken(const char * ctxUser, const char * daToken)
     return wuActive ? wuTokenValid : wuTokenWorkunitInactive;
 }
 
+bool CLocalWorkUnit::resolveFilePrefix(StringBuffer & prefix, const char * queue) const
+{
+    if (hasApplicationValue("prefix", queue))
+    {
+        getApplicationValue("prefix", queue, StringBufferAdaptor(prefix));
+        return true;
+    }
+
+#ifndef _CONTAINERIZED
+    Owned<IConstWUClusterInfo> ci = getTargetClusterInfo(queue);
+    if (ci)
+    {
+        ci->getScope(StringBufferAdaptor(prefix));
+        return true;
+    }
+#endif
+    return false;
+}
+
 IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
 {
+    StringBuffer prefix;
     CriticalBlock block(crit);
     if (p->hasProp("Debug/ForceScope"))
     {
-        StringBuffer prefix(p->queryProp("Debug/ForceScope"));
-        str.set(prefix.toLowerCase().str()); 
+        prefix.append(p->queryProp("Debug/ForceScope")).toLowerCase();
     }
     else
     {
-        Owned <IConstWUClusterInfo> ci = getTargetClusterInfo(p->queryProp("@clusterName"));
-        if (ci)
-            ci->getScope(str); 
-        else
-            str.clear();
+        resolveFilePrefix(prefix, p->queryProp("@clusterName"));
     }
+    str.set(prefix.str());
     return str;
 }
 
@@ -7536,6 +7566,12 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     {
         ensurePTree(p, "Application");
         p->setPropTree("Application/LibraryModule", pt);
+    }
+    pt = fromP->getBranch("Application/prefix");
+    if (pt)
+    {
+        ensurePTree(p, "Application");
+        p->setPropTree("Application/prefix", pt);
     }
 
     pt = fromP->queryBranch("Debug"); 
@@ -8839,7 +8875,7 @@ bool isFilenameResolved(StringBuffer& filename)
 bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & columnnames, const char * clusterName) const
 {
     bool scopeLoaded = false;
-    SCMStringBuffer defaultScope;
+    StringBuffer defaultScope;
 
     Owned<IConstWUFileUsageIterator> files = getFieldUsage();
 
@@ -8878,10 +8914,9 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
                 // loading a default scope from config is expensive, and should be only done once and be reused later.
                 if (!scopeLoaded)
                 {
-                    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
-                    if (!clusterInfo)
+                    //MORE: This should actually depend on the cluster that was active when the file was read!
+                    if (!resolveFilePrefix(defaultScope, clusterName))
                         throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName);
-                    clusterInfo->getScope(defaultScope);
                     scopeLoaded = true;
                 }
 
@@ -8969,24 +9004,20 @@ bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
     CriticalBlock block(crit);
     if (qs->isAuto()&&!getAllowAutoQueueSwitch())
         return false;
-    Owned<IConstWUClusterInfo> newci = getTargetClusterInfo(cluster);
-    if (!newci) 
-        return false;
-    StringBuffer currentcluster;
-    if (!p->getProp("@clusterName",currentcluster))
-        return false;
-    Owned<IConstWUClusterInfo> curci = getTargetClusterInfo(currentcluster.str());
-    if (!curci)
-        return false;
-    SCMStringBuffer curqname;
-    curci->getThorQueue(curqname);
+
+    const char * currentcluster = queryClusterName();
     const char *wuid = p->queryName();
+    StringBuffer curqname;
+    getClusterThorQueueName(curqname, currentcluster);
+
     void *qi = qs->getQ(curqname.str(),wuid);
     if (!qi)
         return false;
+
     setClusterName(cluster);
-    SCMStringBuffer newqname;
-    newci->getThorQueue(newqname);
+
+    StringBuffer newqname;
+    getClusterThorQueueName(newqname, cluster);
     qs->putQ(newqname.str(),wuid,qi);
     return true;
 }
@@ -11364,11 +11395,9 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
     workunit->commit();
     workunit.clear();
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
-    if (!clusterInfo) 
-        throw MakeStringException(WUERR_InvalidCluster, "Unknown cluster %s", clusterName.str());
-    SCMStringBuffer serverQueue;
-    clusterInfo->getServerQueue(serverQueue);
+
+    StringBuffer serverQueue;
+    getClusterEclCCServerQueueName(serverQueue, clusterName);
     assertex(serverQueue.length());
     Owned<IJobQueue> queue = createJobQueue(serverQueue.str());
     if (!queue.get()) 

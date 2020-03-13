@@ -31,6 +31,10 @@
               "type": "string",
               "description": "The name of the eclagent process"
             },
+            "prefix": {
+              "type": "string",
+              "description": "The (optional) file prefix to add to relative filenames"
+            },
             "required": [ "name" ] 
           }
         ]
@@ -187,6 +191,10 @@
           "type": "string",
           "description": "The name of the roxie process"
         },
+        "prefix": {
+          "type": "string",
+          "description": "The (optional) file prefix to add to relative filenames"
+        },
         "ports": {
           "type": "array",
           "description": "The ports to listen on",
@@ -205,6 +213,10 @@
         "name": {
           "type": "string",
           "description": "The name of the thor process"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "The (optional) file prefix to add to relative filenames"
         },
         "eclagent": {
           "$ref": "#/definitions/eclagent"

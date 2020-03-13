@@ -227,8 +227,6 @@ class StringBuffer;
 extern "C" ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update);
 extern "C" ENVIRONMENT_API void closeEnvironment();
 
-extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, const unsigned long defaultSize);
-
 extern ENVIRONMENT_API unsigned getAccessibleServiceURLList(const char *serviceType, std::vector<std::string> &list);
 
 //------------------- Moved from workunit.hpp -------------
@@ -274,12 +272,7 @@ extern ENVIRONMENT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const cha
 extern ENVIRONMENT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
 extern ENVIRONMENT_API ClusterType getClusterTypeByClusterName(const char *cluster);
 extern ENVIRONMENT_API StringBuffer &getClusterGroupName(StringBuffer &ret, const char *cluster);
-extern ENVIRONMENT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
 extern ENVIRONMENT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster);
-extern ENVIRONMENT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
-extern ENVIRONMENT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster);
-extern ENVIRONMENT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);
-extern ENVIRONMENT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster);
 extern ENVIRONMENT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
 extern ENVIRONMENT_API bool validateTargetClusterName(const char *clustname);
 extern ENVIRONMENT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);

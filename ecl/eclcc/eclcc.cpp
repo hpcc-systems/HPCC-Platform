@@ -1153,6 +1153,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     //The only exception would be a dll created for a one-time query.  (Currently handled by eclserver.)
     instance.wu->setCloneable(true);
 
+    recordQueueFilePrefixes(instance.wu, configuration);
     applyDebugOptions(instance.wu);
     applyApplicationOptions(instance.wu);
 

@@ -59,5 +59,6 @@ extern HQLCPP_API ClusterType queryClusterType(IConstWorkUnit * wu, ClusterType 
 extern HQLCPP_API IHqlExpression * extractExternalLibraries(HqlExprArray & libraries, IHqlExpression * query);
 extern HQLCPP_API unsigned getLibraryCRC(IHqlExpression * library);
 extern HQLCPP_API void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr);
+extern HQLCPP_API void recordQueueFilePrefixes(IWorkUnit * wu, IPropertyTree * configuration);
 
 #endif

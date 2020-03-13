@@ -43,7 +43,6 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../../common/environment
          ./../../common/workunit
          ./../../system/mp 
          ./../../dali/ft 
@@ -60,6 +59,10 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../rtl/nbcd
     )
+
+if (NOT CONTAINERIZED)
+    include_directories ( ./../../common/environment )
+endif()
 
 HPCC_ADD_LIBRARY( workunit SHARED ${SRCS} )
 set_target_properties(workunit PROPERTIES 
@@ -78,5 +81,8 @@ if(NOT PLUGIN)
         nbcd 
         eclrtl 
         deftype
-        environment)
+        )
+    if (NOT CONTAINERIZED)
+        target_link_libraries(workunit environment)
+    endif()
 endif()

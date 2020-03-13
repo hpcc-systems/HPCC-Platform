@@ -54,9 +54,11 @@ dali:
 eclagent:
 - name: hthor
   replicas: 1
+  prefix: hthor
   containerPerAgent: false
 - name: roxie
   replicas: 1
+  prefix: roxie
   containerPerAgent: false
   type: roxie
     
@@ -72,7 +74,7 @@ esp:
 
 roxie:
 - name: roxie-cluster
-  disabled: false
+  prefix: roxiecluster
   ports: [9876,0]
   numChannels: 2
   serverReplicas: 1
@@ -85,6 +87,7 @@ thor:
   numSlaves: 2
   globalMemorySize: 4096
   maxActive: 2
+  prefix: thor
   eclagent:
     replicas: 1
     containerPerAgent: false

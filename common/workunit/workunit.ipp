@@ -576,6 +576,8 @@ protected:
     void loadLibraries() const;
     void loadClusters() const;
     void checkAgentRunning(WUState & state);
+    bool hasApplicationValue(const char * application, const char * propname) const;
+    bool resolveFilePrefix(StringBuffer & prefix, const char * queue) const;
 
     // Implemented by derived classes
     virtual IPropertyTree *getGraphProgressTree() const { return NULL; };
