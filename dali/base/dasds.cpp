@@ -9027,7 +9027,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
         }
 
         // IPTreeNotifyEvent
-        virtual void beginNode(const char *tag, offset_t startOffset) { maker->beginNode(tag, startOffset); }
+        virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset) { maker->beginNode(tag, arrayitem, startOffset); }
         virtual void newAttribute(const char *name, const char *value) { maker->newAttribute(name, value); }
         virtual void beginNodeContent(const char *tag) { level++; }
         virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)

@@ -389,7 +389,7 @@ public:
         noPath = !pathNodes.length();
         reader.setown(createPullJSONStreamReader(stream, *this, ptr_noRoot));
     }
-    virtual void beginNode(const char *tag, offset_t startOffset)
+    virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset)
     {
         if (tangent)
         {

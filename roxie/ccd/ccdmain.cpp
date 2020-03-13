@@ -649,7 +649,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
-        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr);
+        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
         const char *channels = topology->queryProp("@channels");
         if (channels)
