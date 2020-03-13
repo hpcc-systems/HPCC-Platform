@@ -7837,6 +7837,16 @@ jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const
     return config;
 }
 
+#ifdef _DEBUG
+static void holdLoop()
+{
+    DBGLOG("Component paused for debugging purposes, attach and set held=false to release");
+    bool held = true;
+    while (held)
+        Sleep(5);
+}
+#endif
+
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
 {
     if (componentConfiguration)
@@ -7877,18 +7887,21 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
             printf("%s\n", defaultYaml);
             exit(0);
         }
-#ifdef _DEBUG
-        else if (strsame(cur, "--hold"))
-        {
-            bool held = true;
-            while (held)
-                Sleep(5);
-        }
-#endif
         else if (strsame(cur, "--outputconfig"))
         {
             outputConfig = true;
         }
+#ifdef _DEBUG
+        else
+        {
+            const char * matchHold = extractOption("--hold", cur);
+            if (matchHold)
+            {
+                if (strToBool(matchHold))
+                    holdLoop();
+            }
+        }
+#endif
     }
 
     Owned<IPropertyTree> delta;
@@ -7927,6 +7940,11 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     }
 
     loadArgsIntoConfiguration(config, argv);
+
+#ifdef _DEBUG
+    if (config->getPropBool("@hold"))
+        holdLoop();
+#endif
 
     if (outputConfig)
     {

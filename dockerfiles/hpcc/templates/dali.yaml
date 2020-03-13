@@ -18,7 +18,7 @@ spec:
       containers:
       - name: {{ .name | quote }}
         args: [
-                # {{ include "hpcc.configArg" . }} - dali does not support this yet
+                {{ include "hpcc.configArg" . }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}

@@ -348,42 +348,26 @@ static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
     return out.append(queryRoleName((DaliClientRole)role));
 }
 
+static constexpr const char * defaultYaml = R"!!(
+version: 1.0
+dali:
+  name: dali
+  dataPath: "/var/lib/HPCCSystems/dalistore"
+  sds:
+    environment: "/etc/HPCCSystems/environment.xml"
+)!!";
 
-int main(int argc, char* argv[])
+
+int main(int argc, const char* argv[])
 {
     rank_t myrank = 0;
-    char *server = nullptr;
+    const char *server = nullptr;
     int port = 0;
-    for (unsigned i=1;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-        }
-        else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
-            server = argv[++i];
-        else if (streq(argv[i],"--port") || streq(argv[i],"-p"))
-            port = atoi(argv[++i]);
-        else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
-            myrank = atoi(argv[++i]);
-#ifdef _DEBUG
-        else if (streq(argv[i],"--hold"))
-        {
-            bool held = true;
-            while (held)
-                Sleep(5);
-        }
-#endif
-        else {
-            usage();
-            return EXIT_FAILURE;
-        }
-    }
+
     InitModuleObjects();
     NoQuickEditSection x;
-    try {
-
+    try
+    {
         EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
         // Restrict stack sizes on 32-bit systems
@@ -391,12 +375,35 @@ int main(int argc, char* argv[])
 #endif
         setAllocHook(true);
 
+#ifdef _CONTAINERIZED
+        serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", "daliconf.xml", nullptr));
+#else
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 	
+        for (unsigned i=1;i<(unsigned)argc;i++) {
+            if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+                if (daemon(1,0) || write_pidfile(argv[++i])) {
+                    perror("Failed to daemonize");
+                    return EXIT_FAILURE;
+                }
+            }
+            else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
+                server = argv[++i];
+            else if (streq(argv[i],"--port") || streq(argv[i],"-p"))
+                port = atoi(argv[++i]);
+            else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
+                myrank = atoi(argv[++i]);
+            else {
+                usage();
+                return EXIT_FAILURE;
+            }
+        }
+
         OwnedIFile confIFile = createIFile(DALICONF);
         if (confIFile->exists())
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
+#endif
 
         ILogMsgHandler * fileMsgHandler;
         {
@@ -408,154 +415,163 @@ int main(int argc, char* argv[])
 
         PROGLOG("Build %s", BUILD_TAG);
 
-        if (serverConfig)
+        StringBuffer dataPath;
+        StringBuffer mirrorPath;
+#ifdef _CONTAINERIZED
+        serverConfig->getProp("@dataPath", dataPath);
+        /* NB: mirror settings are unlikely to be used in a container setup
+           If detected, set in to legacy location under SDS/ for backward compatibility */
+        serverConfig->getProp("@remoteBackupLocation", mirrorPath);
+        if (mirrorPath.length())
+            serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
+#else
+        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath)) 
+            serverConfig->setProp("@dataPath",dataPath.str());
+        else
+            serverConfig->getProp("@dataPath",dataPath);
+        if (dataPath.length())
         {
-            StringBuffer dataPath;
-            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath)) 
-                serverConfig->setProp("@dataPath",dataPath.str());
-            else
-                serverConfig->getProp("@dataPath",dataPath);
-            if (dataPath.length()) {
-                RemoteFilename rfn;
-                rfn.setRemotePath(dataPath);
-                if (!rfn.isLocal()) {
-                    OERRLOG("if a dataPath is specified, it must be on local machine");
-                    return 0;
-                }
-                addPathSepChar(dataPath);
-                serverConfig->setProp("@dataPath", dataPath.str());
-                if (dataPath.length())
-                    recursiveCreateDirectory(dataPath.str());
-            }
-
-            // JCSMORE remoteBackupLocation should not be a property of SDS section really.
-            StringBuffer mirrorPath;
-            if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
-                serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
-
-            if (mirrorPath.length())
+            RemoteFilename rfn;
+            rfn.setRemotePath(dataPath);
+            if (!rfn.isLocal())
             {
+                OERRLOG("if a dataPath is specified, it must be on local machine");
+                return 0;
+            }
+            addPathSepChar(dataPath);
+            serverConfig->setProp("@dataPath", dataPath.str());
+        }
+        // JCSMORE remoteBackupLocation should not be a property of SDS section really.
+        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
+            serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
+
+#endif            
+        if (dataPath.length())
+            recursiveCreateDirectory(dataPath.str());
+
+        if (mirrorPath.length())
+        {
+            try
+            {
+                addPathSepChar(mirrorPath);
                 try
                 {
-                    addPathSepChar(mirrorPath);
-                    try
-                    {
-                        StringBuffer backupURL;
-                        if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
-                        { // local machine path, convert to url
-                            const char *backupnode = serverConfig->queryProp("SDS/@backupComputer");
-                            RemoteFilename rfn;
-                            if (backupnode&&*backupnode) {
-                                SocketEndpoint ep(backupnode);
-                                rfn.setPath(ep,mirrorPath.str());
-                            }
-                            else {
-                                OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
-                                rfn.setLocalPath(mirrorPath.str());
-                            }
-                            rfn.getRemotePath(backupURL);
-                            mirrorPath.clear().append(backupURL);
+                    StringBuffer backupURL;
+                    if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
+                    { // local machine path, convert to url
+                        const char *backupnode = serverConfig->queryProp("SDS/@backupComputer");
+                        RemoteFilename rfn;
+                        if (backupnode&&*backupnode) {
+                            SocketEndpoint ep(backupnode);
+                            rfn.setPath(ep,mirrorPath.str());
                         }
-                        else
-                            backupURL.append(mirrorPath);
-                        recursiveCreateDirectory(backupURL.str());
-                        addPathSepChar(backupURL);
-                        serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
-                        PROGLOG("Backup URL = %s", backupURL.str());
+                        else {
+                            OWARNLOG("Local path used for backup url: %s", mirrorPath.str());
+                            rfn.setLocalPath(mirrorPath.str());
+                        }
+                        rfn.getRemotePath(backupURL);
+                        mirrorPath.clear().append(backupURL);
                     }
-                    catch (IException *e)
-                    {
-                        EXCLOG(e, "Failed to create remote backup directory, disabling backups", MSGCLS_warning);
-                        serverConfig->removeProp("SDS/@remoteBackupLocation");
-                        mirrorPath.clear();
-                        e->Release();
-                    }
-
-                    if (mirrorPath.length())
-                    {
-                        PROGLOG("Checking backup location: %s", mirrorPath.str());
-#if defined(__linux__)
-                        if (serverConfig->getPropBool("@useNFSBackupMount", false))
-                        {
-                            RemoteFilename rfn;
-                            if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
-                                rfn.setLocalPath(mirrorPath.str());
-                            else
-                                rfn.setRemotePath(mirrorPath.str());                
-                            
-                            if (!rfn.getPort() && !rfn.isLocal())
-                            {
-                                StringBuffer mountPoint;
-                                serverConfig->getProp("@mountPoint", mountPoint);
-                                if (!mountPoint.length())
-                                    mountPoint.append(DEFAULT_MOUNT_POINT);
-                                addPathSepChar(mountPoint);
-                                recursiveCreateDirectory(mountPoint.str());
-                                PROGLOG("Mounting url \"%s\" on mount point \"%s\"", mirrorPath.str(), mountPoint.str());
-                                bool ub = unmountDrive(mountPoint.str());
-                                if (!mountDrive(mountPoint.str(), rfn))
-                                {
-                                    if (!ub)
-                                        PROGLOG("Failed to remount mount point \"%s\", possibly in use?", mountPoint.str());
-                                    else
-                                        PROGLOG("Failed to mount \"%s\"", mountPoint.str());
-                                    return 0;
-                                }
-                                else
-                                    serverConfig->setProp("SDS/@remoteBackupLocation", mountPoint.str());
-                                mirrorPath.clear().append(mountPoint);
-                            }
-                        }
-#endif
-                        StringBuffer backupCheck(dataPath);
-                        backupCheck.append("bakchk.").append((unsigned)GetCurrentProcessId());
-                        OwnedIFile iFileDataDir = createIFile(backupCheck.str());
-                        OwnedIFileIO iFileIO = iFileDataDir->open(IFOcreate);
-                        iFileIO.clear();
-                        try
-                        {
-                            backupCheck.clear().append(mirrorPath).append("bakchk.").append((unsigned)GetCurrentProcessId());
-                            OwnedIFile iFileBackup = createIFile(backupCheck.str());
-                            if (iFileBackup->exists())
-                            {
-                                PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
-                                iFileDataDir->remove();
-                                return 0;
-                            }
-                        }
-                        catch (IException *)
-                        {
-                            try { iFileDataDir->remove(); } catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
-                            throw;
-                        }
-                        iFileDataDir->remove();
-
-                        StringBuffer dest(mirrorPath.str());
-                        dest.append(DALICONF);
-                        copyFile(dest.str(), DALICONF);
-                        StringBuffer covenPath(dataPath);
-                        OwnedIFile ifile = createIFile(covenPath.append(DALICOVEN).str());
-                        if (ifile->exists())
-                        {
-                            dest.clear().append(mirrorPath.str()).append(DALICOVEN);
-                            copyFile(dest.str(), covenPath.str());
-                        }
-                    }
-                    if (serverConfig->getPropBool("@daliServixCaching", true))
-                        setDaliServixSocketCaching(true);
+                    else
+                        backupURL.append(mirrorPath);
+                    recursiveCreateDirectory(backupURL.str());
+                    addPathSepChar(backupURL);
+                    serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
+                    PROGLOG("Backup URL = %s", backupURL.str());
                 }
                 catch (IException *e)
                 {
-                    StringBuffer s("Failure whilst preparing dali backup location: ");
-                    LOG(MCoperatorError, unknownJob, e, s.append(mirrorPath).append(". Backup disabled").str());
+                    EXCLOG(e, "Failed to create remote backup directory, disabling backups", MSGCLS_warning);
                     serverConfig->removeProp("SDS/@remoteBackupLocation");
+                    mirrorPath.clear();
                     e->Release();
                 }
+
+                if (mirrorPath.length())
+                {
+                    PROGLOG("Checking backup location: %s", mirrorPath.str());
+#if defined(__linux__)
+                    if (serverConfig->getPropBool("@useNFSBackupMount", false))
+                    {
+                        RemoteFilename rfn;
+                        if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
+                            rfn.setLocalPath(mirrorPath.str());
+                        else
+                            rfn.setRemotePath(mirrorPath.str());                
+                        
+                        if (!rfn.getPort() && !rfn.isLocal())
+                        {
+                            StringBuffer mountPoint;
+                            serverConfig->getProp("@mountPoint", mountPoint);
+                            if (!mountPoint.length())
+                                mountPoint.append(DEFAULT_MOUNT_POINT);
+                            addPathSepChar(mountPoint);
+                            recursiveCreateDirectory(mountPoint.str());
+                            PROGLOG("Mounting url \"%s\" on mount point \"%s\"", mirrorPath.str(), mountPoint.str());
+                            bool ub = unmountDrive(mountPoint.str());
+                            if (!mountDrive(mountPoint.str(), rfn))
+                            {
+                                if (!ub)
+                                    PROGLOG("Failed to remount mount point \"%s\", possibly in use?", mountPoint.str());
+                                else
+                                    PROGLOG("Failed to mount \"%s\"", mountPoint.str());
+                                return 0;
+                            }
+                            else
+                                serverConfig->setProp("SDS/@remoteBackupLocation", mountPoint.str());
+                            mirrorPath.clear().append(mountPoint);
+                        }
+                    }
+#endif
+                    StringBuffer backupCheck(dataPath);
+                    backupCheck.append("bakchk.").append((unsigned)GetCurrentProcessId());
+                    OwnedIFile iFileDataDir = createIFile(backupCheck.str());
+                    OwnedIFileIO iFileIO = iFileDataDir->open(IFOcreate);
+                    iFileIO.clear();
+                    try
+                    {
+                        backupCheck.clear().append(mirrorPath).append("bakchk.").append((unsigned)GetCurrentProcessId());
+                        OwnedIFile iFileBackup = createIFile(backupCheck.str());
+                        if (iFileBackup->exists())
+                        {
+                            PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
+                            iFileDataDir->remove();
+                            return 0;
+                        }
+                    }
+                    catch (IException *)
+                    {
+                        try { iFileDataDir->remove(); } catch (IException *e) { EXCLOG(e, NULL); e->Release(); }
+                        throw;
+                    }
+                    iFileDataDir->remove();
+
+#ifndef _CONTAINERIZED
+                    StringBuffer dest(mirrorPath.str());
+                    dest.append(DALICONF);
+                    copyFile(dest.str(), DALICONF);
+                    StringBuffer covenPath(dataPath);
+                    OwnedIFile ifile = createIFile(covenPath.append(DALICOVEN).str());
+                    if (ifile->exists())
+                    {
+                        dest.clear().append(mirrorPath.str()).append(DALICOVEN);
+                        copyFile(dest.str(), covenPath.str());
+                    }
+#endif
+                }
+                if (serverConfig->getPropBool("@daliServixCaching", true))
+                    setDaliServixSocketCaching(true);
+            }
+            catch (IException *e)
+            {
+                StringBuffer s("Failure whilst preparing dali backup location: ");
+                LOG(MCoperatorError, unknownJob, e, s.append(mirrorPath).append(". Backup disabled").str());
+                serverConfig->removeProp("SDS/@remoteBackupLocation");
+                e->Release();
             }
         }
-        else
-            serverConfig.setown(createPTree());
 
+#ifndef _CONTAINERIZED
         write_pidfile(serverConfig->queryProp("@name"));
         NamedMutex globalNamedMutex("DASERVER");
         if (!serverConfig->getPropBool("allowMultipleDalis"))
@@ -567,19 +583,21 @@ int main(int argc, char* argv[])
                 return 0;
             }
         }
-
+#endif
         SocketEndpoint ep;
         SocketEndpointArray epa;
-        if (!server) {
+        if (!server)
+        {
             ep.setLocalHost(DALI_SERVER_PORT);
             epa.append(ep);
         }
-        else {
-                if (!port)
-                    ep.set(server,DALI_SERVER_PORT);
-                else
-                    ep.set(server,port);
-                epa.append(ep);
+        else
+        {
+            if (!port)
+                ep.set(server,DALI_SERVER_PORT);
+            else
+                ep.set(server,port);
+            epa.append(ep);
         }
 
         unsigned short myport = epa.item(myrank).port;
@@ -619,15 +637,12 @@ int main(int argc, char* argv[])
         addAbortHandler(actionOnAbort);
         startPerformanceMonitor(serverConfig->getPropInt("Coven/@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
         StringBuffer absPath;
-        StringBuffer dataPath;
-        serverConfig->getProp("@dataPath",dataPath);
         makeAbsolutePath(dataPath.str(), absPath);
         setPerformanceMonitorPrimaryFileSystem(absPath.str());
-        if(serverConfig->hasProp("SDS/@remoteBackupLocation"))
+        if (mirrorPath.length())
         {
             absPath.clear();
-            serverConfig->getProp("SDS/@remoteBackupLocation",dataPath.clear());
-            makeAbsolutePath(dataPath.str(), absPath);
+            makeAbsolutePath(mirrorPath.str(), absPath);
             setPerformanceMonitorSecondaryFileSystem(absPath.str());
         }
 
@@ -673,7 +688,9 @@ int main(int argc, char* argv[])
 
         }
         if (ok) {
+#ifndef _CONTAINERIZED
             writeSentinelFile(sentinelFile);
+#endif
             covenMain();
             removeAbortHandler(actionOnAbort);
         }
