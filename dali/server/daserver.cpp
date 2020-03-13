@@ -355,6 +355,8 @@ dali:
   dataPath: "/var/lib/HPCCSystems/dalistore"
   sds:
     environment: "/etc/HPCCSystems/environment.xml"
+  logging:
+    detail: 100
 )!!";
 
 
@@ -405,6 +407,7 @@ int main(int argc, const char* argv[])
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 #endif
 
+#ifndef _CONTAINERIZED
         ILogMsgHandler * fileMsgHandler;
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
@@ -412,7 +415,9 @@ int main(int argc, const char* argv[])
             lf->setName("DaServer");//override default filename
             fileMsgHandler = lf->beginLogging();
         }
-
+#else
+        setupContainerizedLogMsgHandler();
+#endif
         PROGLOG("Build %s", BUILD_TAG);
 
         StringBuffer dataPath;
@@ -605,8 +610,11 @@ int main(int argc, const char* argv[])
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IWhiteListHandler> whiteListHandler = createWhiteListHandler(populateWhiteListFromEnvironment, formatDaliRole);
         mpServer->installWhiteListCallback(whiteListHandler);
-
+#ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
+#else
+        setupContainerizedLogMsgHandler();
+#endif
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();
 

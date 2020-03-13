@@ -788,12 +788,16 @@ int main(int argc,char **argv)
             return ret;
 #endif
     }
+#ifndef _CONTAINERIZED
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
         lf->setCreateAliasFile(false);
         lf->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
+#else
+    setupContainerizedLogMsgHandler();
+#endif
 
     write_pidfile(componentName.str());
     PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);

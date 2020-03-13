@@ -35,6 +35,13 @@
 #include "jptree.hpp"
 #include "jsocket.hpp"
 
+typedef enum
+{
+    LogMsgAttType_class          = 0x01,
+    LogMsgAttType_Audience       = 0x02,
+    LogMsgAttType_fields         = 0x04,
+} LogMsgAttType;
+
 /****************************************************************************************/
 /* LOG MESSAGE AUDIENCES:                                                               *
  * MSGAUD_operator - This should be used when the message may be normally monitored by, *
@@ -153,6 +160,20 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
         return("UNKNOWN  ");
     }
 }
+inline unsigned LogMsgAudFromAbbrev(char const * abbrev)
+{
+    if(strnicmp(abbrev, "OPR", 3)==0)
+        return MSGAUD_operator;
+    if(strnicmp(abbrev, "USR", 3)==0)
+        return MSGAUD_user;
+    if(strnicmp(abbrev, "PRO", 3)==0)
+        return MSGAUD_programmer;
+    if(strnicmp(abbrev, "ADT", 3)==0)
+        return MSGAUD_audit;
+    if(strnicmp(abbrev, "ALL", 3)==0)
+        return MSGAUD_all;
+    return 0;
+}
 
 inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
 {
@@ -192,6 +213,23 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
     default:
         return("UNKNOWN  ");
     }
+}
+
+inline unsigned LogMsgClassFromAbbrev(char const * abbrev)
+{
+    if(strnicmp(abbrev, "DIS", 3)==0)
+        return MSGCLS_disaster;
+    if(strnicmp(abbrev, "ERR", 3)==0)
+        return MSGCLS_error;
+    if(strnicmp(abbrev, "WRN", 3)==0)
+        return MSGCLS_warning;
+    if(strnicmp(abbrev, "INF", 3)==0)
+        return MSGCLS_information;
+    if(strnicmp(abbrev, "PRO", 3)==0)
+        return MSGCLS_progress;
+    if(strnicmp(abbrev, "ALL", 3)==0)
+        return MSGCLS_all;
+    return 0;
 }
 
 typedef unsigned LogMsgDetail;
@@ -347,39 +385,71 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
     return 0;
 }
 
-// This function parses strings such as "AUD+CLS+DET+COD" and "STD+MIT-PID", and is used for fields attribute in XML handler descriptions
-
-inline unsigned LogMsgFieldsFromAbbrevs(char const * abbrevs)
+inline unsigned processAbbrevsString(char const * abbrevs, LogMsgAttType type)
 {
-    unsigned fields = 0;
+    unsigned values = 0;
     bool negate = false;
     bool more = true;
     while(more)
     {
-        if(strlen(abbrevs)<3) break;
-        unsigned field = LogMsgFieldFromAbbrev(abbrevs);
-        if(field)
+        if(strlen(abbrevs) < 3)
+            break;
+        unsigned value = 0;
+        switch(type)
+        {
+            case LogMsgAttType_Audience:
+                value = LogMsgAudFromAbbrev(abbrevs);
+                break;
+            case LogMsgAttType_fields:
+                value = LogMsgFieldFromAbbrev(abbrevs);
+                break;
+            case LogMsgAttType_class:
+                value = LogMsgClassFromAbbrev(abbrevs);
+                break;
+            default:
+                throwUnexpected();
+        }
+
+        if(value)
         {
             if(negate)
-                fields &= ~field;
+                values &= ~value;
             else
-                fields |= field;
+                values |= value;
         }
         switch(abbrevs[3])
         {
-        case '+':
-            negate = false;
-            abbrevs += 4;
-            break;
-        case '-':
-            negate = true;
-            abbrevs += 4;
-            break;
-        default:
-            more = false;
+            case '+':
+                negate = false;
+                abbrevs += 4;
+                break;
+            case '-':
+                negate = true;
+                abbrevs += 4;
+                break;
+            default:
+                more = false;
         }
     }
-    return fields;
+    return values;
+}
+
+// This function parses strings such as "ADT+PRO+USR" and "ALL+ADT-PRO"
+inline unsigned logMsgAudsFromAbbrevs(const char * abbrevs)
+{
+    return processAbbrevsString(abbrevs, LogMsgAttType_Audience);
+}
+
+// This function parses strings such as "DIS+ERR+WRN+INF" and "ALL+PRO-INF"
+inline unsigned logMsgClassesFromAbbrevs(const char * abbrevs)
+{
+    return processAbbrevsString(abbrevs, LogMsgAttType_class);
+}
+
+// This function parses strings such as "AUD+CLS+DET+COD" and "STD+MIT-PID", and is used for fields attribute in XML handler descriptions
+inline unsigned logMsgFieldsFromAbbrevs(const char * abbrevs)
+{
+    return processAbbrevsString(abbrevs, LogMsgAttType_fields);
 }
 
 inline char const * msgPrefix(LogMsgClass msgClass)
@@ -756,6 +826,9 @@ extern jlib_decl const LogMsgJobInfo unknownJob;
 
 extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
+#ifdef _CONTAINERIZED
+extern jlib_decl void setupContainerizedLogMsgHandler();
+#endif
 extern jlib_decl LogMsgComponentReporter * queryLogMsgComponentReporter(unsigned compo);
 
 extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
