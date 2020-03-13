@@ -99,12 +99,10 @@ int CEclAgentExecutionServer::run()
         Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        if (streq("hthor", apptype))
-            getClusterEclAgentQueueName(queueNames, agentName);
-        else if (streq("thor", apptype))
+        if (streq("thor", apptype))
             getClusterThorQueueName(queueNames, agentName);
         else
-            throwUnexpected();
+            getClusterEclAgentQueueName(queueNames, agentName);
 #else
         getAgentQueueNames(queueNames, agentName);
 #endif
@@ -250,8 +248,11 @@ public:
             else
             {
                 VStringBuffer exec("%s --workunit=%s --daliServers=%s", processName.get(), wuid.str(), dali.str());
-                exec.append(" --config=");
-                queryComponentConfig().getProp("@processConfig", exec);
+                if (queryComponentConfig().hasProp("@processConfig"))
+                {
+                    exec.append(" --config=");
+                    queryComponentConfig().getProp("@processConfig", exec);
+                }
                 if (queryComponentConfig().getPropBool("@useThorQueue", true))
                     exec.append(" --queue=").append(queue);
                 if (isThorJob)
