@@ -1687,6 +1687,10 @@ inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GL
 extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
+#define HourToSeconds(n) ((n)/3600)
+#define NanoSecondsToSeconds(n) ((double)(n)/1000000000)
+inline __int64 calcCost(double ratePerHour, __int64 timeNS) { return HourToSeconds(ratePerHour) * NanoSecondsToSeconds(timeNS) * 1e6; }
+
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API void deleteK8sJob(const char *componentName, const char *job);
 extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, const char *condition=nullptr);
