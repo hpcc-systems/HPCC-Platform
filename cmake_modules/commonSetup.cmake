@@ -126,6 +126,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
   option(USE_DIGISIGN "Use digisign" ON)
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
+  option(USE_PROXIES  "Install default eclmod files" ON)
+  option(USE_EEPROXIES  "Install default eclmod files" OFF)
+  option(USE_ECLCCPROXIES  "Install default eclmod files" OFF)
+
 
      MACRO(SET_PLUGIN_PACKAGE plugin)
         string(TOLOWER "${plugin}" pname)
