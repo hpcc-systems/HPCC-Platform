@@ -173,10 +173,10 @@
         "replicas": {
           "type": "integer"
         },
-	"maxActive": {
-	  "type": "integer",
-	  "minimum": 1
-	},
+        "maxActive": {
+          "type": "integer",
+          "minimum": 1
+        },
         "containerPerAgent": {
           "type": "boolean",
           "description": "Should workunits execute in their own container, or as child processes"
@@ -225,7 +225,7 @@
 	"numSlaves": {
           "type": "integer",
           "description": "The number of slave pods",
-	  "minimum": 1
+          "minimum": 1
         },
         "eclagent": {
           "$ref": "#/definitions/eclagent"

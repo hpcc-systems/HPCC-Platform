@@ -40,6 +40,10 @@
 #include "roxiehelper.hpp"
 #include "enginecontext.hpp"
 
+#include <list>
+#include <string>
+#include <algorithm>
+
 using roxiemem::IRowManager;
 
 //=======================================================================================================================
@@ -2270,13 +2274,51 @@ protected:
         assertex(workUnit);
         StringAttr wuid(workUnit->queryWuid());
 
+        unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
+
 #ifdef _CONTAINERIZED
         // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
         setWUState(WUStateBlocked);
-            
-        VStringBuffer job("%s-%s", wuid.get(), graphName);
-        runK8sJob("thormaster", wuid, job, true, { { "graphName", graphName} });
 
+        WUState state = WUStateUnknown;
+        if (queryComponentConfig().hasProp("@queue"))
+        {
+            VStringBuffer queueName("%s.thor", queryComponentConfig().queryProp("@queue"));
+            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+            Owned<IJobQueue> queue = createJobQueue(queueName.str());
+            queue->connect(false);
+            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
+            IJobQueueItem *item = createJobQueueItem(jobName);
+            queue->enqueue(item);
+
+            unsigned runningTimeLimit = workUnit->getDebugValueInt("maxRunTime", 0);
+            runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
+
+            std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
+            for (unsigned i=0; i<2; i++)
+            {
+                WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
+                DBGLOG("Got state: %s", getWorkunitStateStr(state));
+                if (WUStateWait == state) // already finished
+                    break;
+                else if ((INFINITE != timelimit) && (WUStateUnknown == state))
+                    throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
+                else
+                {
+                    auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
+                    if (it == expectedStates.end())
+                        throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
+                }
+                timelimit = runningTimeLimit;
+                expectedStates = { WUStateWait };
+            }
+        }
+        else
+        {        
+            VStringBuffer job("%s-%s", wuid.str(), graphName);
+            runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
+        }        
+            
         if (workUnit->getExceptionCount())
         {
             Owned<IConstWUExceptionIterator> iter = &workUnit->getExceptions();
@@ -2293,12 +2335,16 @@ protected:
                 }
             }
         }
+        else if (WUStateFailed == state)
+            throw makeStringException(0, "Workunit failed");
+
+        setWUState(WUStateRunning);
+
 #else    
         StringAttr owner(workUnit->queryUser());
         StringAttr cluster(workUnit->queryClusterName());
 
         int priority = workUnit->getPriorityValue();
-        unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
 #ifdef _CONTAINERIZED
         StringBuffer queueName;
         queueName.append(cluster).append(".thor");
