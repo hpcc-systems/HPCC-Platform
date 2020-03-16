@@ -326,7 +326,6 @@ bool FileSystemFile::checkValid()
                     }
                     else
                     {
-                        DBGLOG("Plugin %s exports getECLPluginDefinition but does not export ECL - not loading", filename);
                         return false;
                     }
                 }
