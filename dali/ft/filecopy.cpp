@@ -1302,8 +1302,8 @@ void FileSprayer::checkFormats()
         srcFormat.set(tgtFormat);
 
         //If format omitted, and number of parts are the same then okay to omit the format
-        if (sources.ordinality() == targets.ordinality() && !disallowImplicitReplicate())
-            replicate = true;
+//        if (sources.ordinality() == targets.ordinality() && !disallowImplicitReplicate())
+//            replicate = true;
 
         bool noSplit = !allowSplit();
         if (!replicate && !noSplit)
@@ -2884,21 +2884,21 @@ void FileSprayer::setTarget(INode * target)
 
 inline bool nonempty(IPropertyTree *pt, const char *p) { const char *s = pt->queryProp(p); return s&&*s; }
 
-bool FileSprayer::disallowImplicitReplicate()
-{
-    return options->getPropBool(ANsplit) ||
-           options->getPropBool(ANnosplit) ||
-           querySplitPrefix() ||
-           nonempty(options,"@header") ||
-           nonempty(options,"@footer") ||
-           nonempty(options,"@glue") ||
-           nonempty(options,ANprefix) ||
-           nonempty(options,ANencryptKey) ||
-           nonempty(options,ANdecryptKey) ||
-           operation != dfu_replicate_distributed ||
-           operation != dfu_replicate;
-
-}
+//bool FileSprayer::disallowImplicitReplicate()
+//{
+//    return options->getPropBool(ANsplit) ||
+//           options->getPropBool(ANnosplit) ||
+//           querySplitPrefix() ||
+//           nonempty(options,"@header") ||
+//           nonempty(options,"@footer") ||
+//           nonempty(options,"@glue") ||
+//           nonempty(options,ANprefix) ||
+//           nonempty(options,ANencryptKey) ||
+//           nonempty(options,ANdecryptKey) ||
+//           operation != dfu_replicate_distributed ||
+//           operation != dfu_replicate;
+//
+//}
 
 void FileSprayer::spray()
 {
@@ -2932,14 +2932,14 @@ void FileSprayer::spray()
     progressTree->setPropBool(ANpull, usePullOperation());
 
     const char * splitPrefix = querySplitPrefix();
-    bool pretendreplicate = false;
-    if (!replicate && (sources.ordinality() == targets.ordinality()))
-    {
-        if (srcFormat.equals(tgtFormat) && !disallowImplicitReplicate()) {
-            pretendreplicate = true;
-            replicate = true;
-        }
-    }
+//    bool pretendreplicate = false;
+//    if (!replicate && (sources.ordinality() == targets.ordinality()))
+//    {
+//        if (srcFormat.equals(tgtFormat) && !disallowImplicitReplicate()) {
+//            pretendreplicate = true;
+//            replicate = true;
+//        }
+//    }
 
     if (compressOutput&&!replicate) {
         PROGLOG("Compress output forcing pull");
@@ -2949,8 +2949,9 @@ void FileSprayer::spray()
 
 
     gatherFileSizes(true);
-    if (!replicate||pretendreplicate)
-        analyseFileHeaders(!pretendreplicate); // if pretending replicate don't want to remove headers
+//    if (!replicate||pretendreplicate)
+//        analyseFileHeaders(!pretendreplicate); // if pretending replicate don't want to remove headers
+    analyseFileHeaders(!replicate);
     afterGatherFileSizes();
 
     if (compressOutput && !usePullOperation() && !replicate)
