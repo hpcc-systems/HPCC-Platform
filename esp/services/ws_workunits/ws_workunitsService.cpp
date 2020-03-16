@@ -444,11 +444,6 @@ void CWsWorkunitsEx::refreshValidClusters()
     validClusters.kill();
 #ifdef _CONTAINERIZED
     // discovered from generated cluster names
- {
-     StringBuffer s;
-     toXML(config, s);
-     PROGLOG("config s = %s", s.str());
- }
     Owned<IPropertyTreeIterator> iter = config->getElements("queues");
     ForEach(*iter)
     {
