@@ -24,6 +24,7 @@
 #include "jlzw.hpp"
 #include "jregexp.hpp"
 #include "jstring.hpp"
+#include "jutil.hpp"
 #include "yaml.h"
 
 #ifdef __APPLE__
@@ -31,7 +32,7 @@
 #define environ (*_NSGetEnviron())
 #endif
 
-#include <algorithm>
+#include <initializer_list>
 
 #define MAKE_LSTRING(name,src,length) \
     const char *name = (const char *) alloca((length)+1); \
@@ -7754,16 +7755,8 @@ static const char * extractOption(const char * option, const char * cur)
     return nullptr;
 }
 
-static bool ignoreOption(const char * name)
-{
-    return streq(name, "config") || streq(name, "outputconfig");
-}
-
 static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
 {
-    if (ignoreOption(option))
-        return;
-
     if (islower(*option))
     {
         StringBuffer path;
@@ -7777,20 +7770,25 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     }
 }
 
-static void applyCommandLineOption(IPropertyTree * config, const char * option)
+static void applyCommandLineOption(IPropertyTree * config, const char * option, std::initializer_list<const char *> ignoreOptions)
 {
     const char * eq = strchr(option, '=');
+    StringBuffer name;
+    const char *val = nullptr;
     if (eq)
     {
-        StringBuffer name;
         name.append(eq - option, option);
-        applyCommandLineOption(config, name, eq + 1);
+        option = name;
+        val = eq + 1;
     }
     else
     {
         //MORE: Support --x- and --x+?
-        applyCommandLineOption(config, option, "1");
+        val = "1";
     }
+    if (stdContains(ignoreOptions, option))
+        return;
+    applyCommandLineOption(config, option, val);
 }
 
 static Owned<IPropertyTree> componentConfiguration;
@@ -7819,13 +7817,13 @@ IPropertyTree & queryGlobalConfig()
     return *globalConfiguration;
 }
 
-jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv)
+jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions)
 {
     for (const char * * pArg = argv; *pArg; pArg++)
     {
         const char * cur = *pArg;
         if (startsWith(cur, "--"))
-            applyCommandLineOption(config, cur + 2);
+            applyCommandLineOption(config, cur + 2, ignoreOptions);
     }
     return config;
 }
@@ -7859,6 +7857,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     Linked<IPropertyTree> config(componentDefault);
     const char * optConfig = nullptr;
     bool outputConfig = false;
+#ifdef _DEBUG
+    bool held = false;
+#endif
     for (const char * * pArg = argv; *pArg; pArg++)
     {
         const char * cur = *pArg;
@@ -7883,11 +7884,14 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 #ifdef _DEBUG
         else
         {
-            const char * matchHold = extractOption("--hold", cur);
+            const char *matchHold = extractOption("--hold", cur);
             if (matchHold)
             {
                 if (strToBool(matchHold))
+                {
+                    held = true;
                     holdLoop();
+                }
             }
         }
 #endif
@@ -7927,15 +7931,16 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         applyEnvironmentConfig(*config, envPrefix, *cur);
     }
 
-    loadArgsIntoConfiguration(config, argv);
-
 #ifdef _DEBUG
-    if (config->getPropBool("@hold"))
+    // NB: don't re-hold, if CLI --hold already held.
+    if (!held && config->getPropBool("@hold"))
         holdLoop();
 #endif
 
     if (outputConfig)
     {
+        loadArgsIntoConfiguration(config, argv, { "config", "outputconfig" });
+
         Owned<IPropertyTree> recreated = createPTree();
         recreated->setProp("@version", currentVersion);
         recreated->addPropTree(componentTag, LINK(config));
@@ -7946,6 +7951,8 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         printf("%s\n", yamlText.str());
         exit(0);
     }
+    else
+        loadArgsIntoConfiguration(config, argv);
 
     if (!globalConfiguration)
         globalConfiguration.setown(createPTree("global"));

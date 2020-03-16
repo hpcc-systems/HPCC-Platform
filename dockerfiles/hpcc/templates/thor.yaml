@@ -32,10 +32,9 @@ spec:
       containers:
       - name: {{ $eclAgentName | quote }}
         args: [
-                {{ include "hpcc.configArg" $eclAgentScope }},
+                {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
-                {{ printf "\"--name=%s\"" .name }},
-                {{ printf "\"--processConfig=/etc/config/%s.yaml\"" $hthorName }}
+                {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
@@ -66,8 +65,7 @@ spec:
         args: [
                 {{ include "hpcc.configArg" $thorAgentScope }},
                 {{ include "hpcc.daliArg" $ }},
-                {{ printf "\"--name=%s\"" .name }},
-                {{ printf "\"--processConfig=/etc/config/%s.yaml\"" .name }}
+                {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
@@ -87,12 +85,9 @@ data:
     version: 1.0
     thor:
 {{ toYaml $thorScope | indent 6 }}
-    global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-
-  {{ $eclAgentScope.name }}.yaml: |
-    version: 1.0
-    eclagent:
+    hthor:
+{{ toYaml $hthorScope | indent 6 }}
+    eclagent: # main agent Q handler
 {{ toYaml $eclAgentScope | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
@@ -104,13 +99,7 @@ data:
       type: thor
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-
-  {{ $hthorScope.name }}.yaml: |
-    version: 1.0
-    hthor:
-{{ toYaml $hthorScope | indent 6 }}
-    global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+{{- if $eclAgentScope.containerPerAgent }}
 
   hthor-jobspec.yaml: |
     apiVersion: batch/v1
@@ -136,7 +125,7 @@ data:
                 #limit-cpu
             command: [
                         "hthor",
-                        {{ include "hpcc.configArg" $hthorScope }},
+                        {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args
                      ]
@@ -148,6 +137,9 @@ data:
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
+{{- end }}
+{{- if $thorAgentScope.containerPerAgent }}
+
   thormaster-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -164,7 +156,7 @@ data:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 12 }}
             args: [
-                    {{ include "hpcc.configArg" $thorScope }},
+                    {{ include "hpcc.configArg" . }},
                     {{ include "hpcc.daliArg" $ }},
                     %args
                   ]
@@ -176,6 +168,8 @@ data:
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
+{{- end }}
+
   thorslave-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -192,7 +186,7 @@ data:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 12 }}
             args: [
-                    {{ include "hpcc.configArg" $thorAgentScope }},
+                    {{ include "hpcc.configArg" . }},
                     {{ include "hpcc.daliArg" $ }},
                     %args
                   ]

@@ -24,6 +24,9 @@
 #include "jarray.hpp"
 #include "jbuff.hpp"
 
+#include <algorithm> 
+#include <iterator>
+
 #if defined (__APPLE__)
 #include <mach/mach_time.h>
 extern mach_timebase_info_data_t timebase_info;   // Calibration for nanosecond timer
@@ -555,6 +558,12 @@ protected:
     unsigned initialDelta;
     bool isQuantile;
 };
+
+template <typename Container, typename Value>
+inline bool stdContains(Container&& container, Value &&v)
+{
+    return container.end() != std::find(container.begin(), container.end(), std::forward<Value>(v));
+}
 
 #endif
 
