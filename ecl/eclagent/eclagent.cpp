@@ -3451,10 +3451,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers)
         {
-            SocketEndpoint daliEp(daliServers, DALI_SERVER_PORT);
             {
                 MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
-                Owned<IGroup> serverGroup = createIGroup(1, &daliEp);
+                Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3491,6 +3490,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                     }
                 }
             };
+            SocketEndpoint daliEp(daliServers, DALI_SERVER_PORT);
             daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
             addMPConnectionMonitor(daliDownMonitor);
 

@@ -71,7 +71,7 @@ void CRoxieEx::init(IPropertyTree *cfg, const char *process, const char *service
         {
             throw MakeStringException(-1, "Please specify daliServers in the config file");
         }
-        Owned<IGroup> serverGroup = createIGroup(daliServers_.str(), DALI_SERVER_PORT);
+        Owned<IGroup> serverGroup = createIGroupRetry(daliServers_.str(), DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_EspServer);
     }
 }
