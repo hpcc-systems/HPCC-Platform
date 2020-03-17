@@ -1470,6 +1470,12 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 
+    IPropertyTree *costs = queryCostsConfiguration();
+    const double machineCost = costs ? costs->getPropReal("@eclcc", 0.0): 0.0;
+    const __int64 cost = calcCost(machineCost, totalTimeNs);
+    if (cost)
+        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+
     if (systemFinishTime.getTotal())
     {
         CpuInfo systemElapsed = systemFinishTime - systemStartTime;
