@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
+
 namesRecord :=
             RECORD
-string20        surname{xpath('SURnamE')};
-string10        forename{xpath('fOrEnAmE')};
-integer2        age{xpath('_age_')} := 25;
+string20        surname;
+string10        forename;
+integer2        age := 25;
             END;
 
 namesTable := dataset([
@@ -28,10 +29,4 @@ namesTable := dataset([
         {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
-output(namesTable,,NOXPATH);
-
-output(namesTable,,'out.xml',XML,NOXPATH);
-
-output(namesTable,,'out.raw',NOXPATH);
-
-output(namesTable,,'out.csv',CSV,NOXPATH);
+output(namesTable,,xml);
