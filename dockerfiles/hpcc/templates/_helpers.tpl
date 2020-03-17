@@ -42,14 +42,14 @@ Translate a port list to a comma-separated list
  {{- end -}}
 {{- end -}}
 
-{{- /* Generate a ConfigMap for a component */ -}}
-{{- /* Pass in a dictionary with root, component and me defined */ -}}
-{{- define "hpcc.generateConfigMap" }}
-  global.yaml: |
-    version: "1.0"
-    global:
-      imageVersion: {{ .root.Values.global.image.version | quote }}
-      singleNode: {{ .root.Values.global.singleNode }}
+{{/*
+Generate global ConfigMap info
+
+Pass in root as .
+*/}}
+{{- define "hpcc.generateGlobalConfigMap" -}}
+imageVersion: {{ .Values.global.image.version | quote }}
+singleNode: {{ .Values.global.singleNode }}
 {{- end -}}
 
 {{- /* Add data volume mount for a component */ -}}
@@ -80,7 +80,7 @@ volumeMounts:
 
 {{- /* Add config arg for a component */ -}}
 {{- define "hpcc.configArg" -}}
-"--config=/etc/config/{{ .name }}.yaml", "--global=/etc/config/global.yaml"
+"--config=/etc/config/{{ .name }}.yaml"
 {{- end -}}
 
 {{- /* Add dali arg for a component */ -}}

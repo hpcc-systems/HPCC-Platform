@@ -37,13 +37,14 @@ apiVersion: v1
 metadata:
   name: {{ .name }}-configmap 
 data:
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclccserver" "me" .) }}
   {{ .name }}.yaml: |
     version: 1.0
     eclccserver:
 {{ toYaml . | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
   eclccserver-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job

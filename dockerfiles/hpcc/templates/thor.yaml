@@ -83,24 +83,35 @@ apiVersion: v1
 metadata:
   name: {{ $thorScope.name }}-configmap 
 data:
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" $thorScope) }}
   {{ $thorScope.name }}.yaml: |
     version: 1.0
     thor:
 {{ toYaml $thorScope | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+
   {{ $eclAgentScope.name }}.yaml: |
     version: 1.0
     eclagent:
 {{ toYaml $eclAgentScope | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+
   {{ $thorAgentScope.name }}.yaml: |
     version: 1.0
     eclagent:
 {{ toYaml $thorAgentScope | indent 6 }}
       type: thor
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+
   {{ $hthorScope.name }}.yaml: |
     version: 1.0
     hthor:
 {{ toYaml $hthorScope | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+
   hthor-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
