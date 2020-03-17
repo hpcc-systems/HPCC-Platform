@@ -84,7 +84,7 @@ for i in "" ${compArray[@]} ; do
         mkdir -p ${certPath}/${compName}
     fi
 
-    if [ "${regenerate}" = "1" ] || [ ! -e ${certPath}/${compName}/key.pem ] || [ ! -e ${certPath}/${compName}/certificate.pem ]; then
+    if [ "${regenerate}" = "1" ] || [ ! -e ${certPath}/${compName}/key.pem ] || [ ! -e ${certPath}/${compName}/certificate.pem ] || [ ! -e ${certPath}/${compName}/public.key.pem ]; then
         if [ "${compName}" != "" ]; then
              cn="${compName}.${domainname}"
         else
@@ -95,7 +95,8 @@ for i in "" ${compArray[@]} ; do
         rm -rf ${certPath}/${compName}/key.pem ${certPath}/${compName}/certificate.pem
         openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/${compName}/key.pem -out ${certPath}/${compName}/my.csr -subj "${compSubject}"
         chmod 400 ${certPath}/${compName}/key.pem
-        printf "PKI key installed for user %-32s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+        openssl rsa -in ${certPath}/${compName}/key.pem -pubout -out ${certPath}/${compName}/public.key.pem
+        printf "PKI keys installed for user %-32s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
         log_success_msg
         openssl x509 -req -days 365 -in ${certPath}/${compName}/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/${compName}/certificate.pem
         rm ${certPath}/${compName}/my.csr
