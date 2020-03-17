@@ -282,7 +282,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         RETURN DATASET([{displayedLayoutName + ' := RECORD'}], __LayoutItems)
             & PROJECT
                 (
-                    SORT(ds, position),
+                    DISTRIBUTE(SORT(ds, position), 0),
                     TRANSFORM
                         (
                             __LayoutItems,
@@ -389,7 +389,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         RETURN DATASET(['New' + recInfo.layoutName + ' Make_New' + recInfo.layoutName + '(Old' + recInfo.layoutName + ' r) := TRANSFORM'], __StringRec)
             & PROJECT
                 (
-                    recInfo.items,
+                    DISTRIBUTE(recInfo.items, 0),
                     TRANSFORM
                         (
                             __StringRec,
