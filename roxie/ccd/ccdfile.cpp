@@ -2929,6 +2929,10 @@ private:
         if (!group)
             throw MakeStringException(0, "Unknown cluster %s while writing file %s",
                     cluster, dFile->queryLogicalName());
+#ifdef _CONTAINERIZED // NB: really is-off-nodestorage
+        localCluster.setown(group.getClear());
+        localClusterName.set(cluster);
+#else
         rank_t r = group->rank();
         if (RANK_NULL != r)
         {
@@ -2955,6 +2959,7 @@ private:
             }
             remoteNodes.append(*group.getClear());
         }
+#endif
         allClusters.append(cluster);
     }
 };
