@@ -1911,7 +1911,13 @@ void EclAgent::doProcess()
         WorkunitUpdate w = updateWorkUnit();
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
-        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
+        const __int64 elapsedNs = elapsedTimer.elapsedNs();
+        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedNs);
+
+        const __int64 cost = calcCost(agentMachineCost, elapsedNs);
+        if (cost)
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+
         addTimings();
 
         switch (w->getState())
