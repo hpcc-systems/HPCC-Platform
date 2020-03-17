@@ -41,7 +41,9 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 apiVersion: apps/v1
@@ -71,14 +73,34 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ $thorScope.name }}-configmap 
+data:
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "thor" "me" $thorScope) }}
-{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "eclagent" "me" $eclAgentScope) | indent 2}}
-{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "eclagent" "me" $thorAgentScope) | indent 2}}
+  {{ $thorScope.name }}.yaml: |
+    version: 1.0
+    thor:
+{{ toYaml $thorScope | indent 6 }}
+  {{ $eclAgentScope.name }}.yaml: |
+    version: 1.0
+    eclagent:
+{{ toYaml $eclAgentScope | indent 6 }}
+  {{ $thorAgentScope.name }}.yaml: |
+    version: 1.0
+    eclagent:
+{{ toYaml $thorAgentScope | indent 6 }}
       type: thor
-{{ include "hpcc.generateComponentConfigMap" (dict "root" $ "component" "hthor" "me" $hthorScope) | indent 2}}
+  {{ $hthorScope.name }}.yaml: |
+    version: 1.0
+    hthor:
+{{ toYaml $hthorScope | indent 6 }}
   hthor-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -109,7 +131,9 @@ spec:
                      ]
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigVolume" . | indent 10 }}
+          - name: {{ .name }}-configmap-volume
+            configMap:
+              name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
@@ -135,7 +159,9 @@ spec:
                   ]
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigVolume" . | indent 10 }}
+          - name: {{ .name }}-configmap-volume
+            configMap:
+              name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
@@ -161,7 +187,9 @@ spec:
                   ]
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigVolume" . | indent 10 }}
+          - name: {{ .name }}-configmap-volume
+            configMap:
+              name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0

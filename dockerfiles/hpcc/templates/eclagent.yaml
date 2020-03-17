@@ -27,10 +27,21 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ .name }}-configmap 
+data:
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclagent" "me" .) }}
+  {{ .name }}.yaml: |
+    version: 1.0
+    eclagent:
+{{ toYaml . | indent 6 }}
     {{ $apptype }}:
 {{ toYaml . | indent 6 }}
   eclagent-jobspec.yaml: |
@@ -60,7 +71,9 @@ spec:
                      ]
 {{ include "hpcc.addVolumeMounts" . | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigVolume" . | indent 10 }}
+          - name: {{ .name }}-configmap-volume
+            configMap:
+              name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0

@@ -30,7 +30,9 @@ Create chart name and version as used by the chart label.
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- /* Translate a port list to a comma-separated list */ -}}
+{{/*
+Translate a port list to a comma-separated list
+*/}}
 {{- define "hpcc.portListToCommas" -}}
  {{- if hasPrefix "[]" (typeOf .) -}}
   {{- $local := dict "first" true -}}
@@ -40,44 +42,14 @@ Create chart name and version as used by the chart label.
  {{- end -}}
 {{- end -}}
 
-{{/*
-Generate local config info into config section
-*/}}
-{{- /* Pass in a dictionary with component and me defined */ -}}
-{{- define "hpcc.generateComponentConfigMap" -}}
-{{- .me.name -}}.yaml: |
-  version: 1.0
-  {{ .component }}:
-{{ toYaml .me | indent 4 }}
-{{- end -}}
-
 {{- /* Generate a ConfigMap for a component */ -}}
 {{- /* Pass in a dictionary with root, component and me defined */ -}}
-{{- define "hpcc.generateConfigMap" -}}
-kind: ConfigMap 
-apiVersion: v1 
-metadata:
-  name: {{ .me.name }}-configmap 
-data:
+{{- define "hpcc.generateConfigMap" }}
   global.yaml: |
     version: "1.0"
     global:
       imageVersion: {{ .root.Values.global.image.version | quote }}
       singleNode: {{ .root.Values.global.singleNode }}
-{{ include "hpcc.generateComponentConfigMap" . | indent 2 }}
-{{- end -}}
-
-{{- /* Add a ConfigMap volume for a component */ -}}
-{{- define "hpcc.addConfigVolume" -}}
-- name: {{ .name }}-configmap-volume
-  configMap:
-    name: {{ .name }}-configmap
-{{- end -}}
-
-{{- /* Add a ConfigMap volume mount for a component */ -}}
-{{- define "hpcc.addConfigVolumeMount" -}}
-- name: {{ .name }}-configmap-volume
-  mountPath: /etc/config
 {{- end -}}
 
 {{- /* Add data volume mount for a component */ -}}
@@ -99,7 +71,8 @@ data:
 {{- /* Add standard volume mounts for a component */ -}}
 {{- define "hpcc.addVolumeMounts" -}}
 volumeMounts:
-{{ include "hpcc.addConfigVolumeMount" . }}
+- name: {{ .name }}-configmap-volume
+  mountPath: /etc/config
 {{ include "hpcc.addDataVolumeMount" . }}
 - name: dllserver-pv-storage
   mountPath: "/var/lib/HPCCSystems/queries"
@@ -192,21 +165,20 @@ securityContext:
 
 {{- /* Generate instance queue names */ -}}
 {{- define "hpcc.generateConfigMapQueues" -}}
-queues:
-{{- range $.Values.eclagent }}
+{{- range $.Values.eclagent -}}
 - name: {{ .name }}
   type: {{ .type | default "hthor" }}
   prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.roxie }}
+{{ end -}}
+{{- range $.Values.roxie -}}
 - name: {{ .name }}
   type: roxie 
   prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.thor }}
+{{ end -}}
+{{- range $.Values.thor -}}
 - name: {{ .name }}
   type: thor
   prefix: {{ .prefix | default "null" }}
   width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
-{{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}

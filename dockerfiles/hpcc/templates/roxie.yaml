@@ -24,10 +24,12 @@ spec:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
+        - name: {{ .name }}-configmap-volume
+          mountPath: /etc/config
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
-
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 ---
 
 apiVersion: v1
@@ -44,7 +46,16 @@ spec:
   clusterIP: None # Headless service
 
 ---
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ $roxie.name }}-configmap 
+data:
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie) }}
+  {{ $roxie.name }}.yaml: |
+    version: 1.0
+    roxie:
+{{ toYaml $roxie | indent 6 }}
 ---
 
 {{ if $roxie.serverReplicas -}}
@@ -78,7 +89,9 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" $roxie | indent 6 }}
+      - name: {{ $roxie.name }}-configmap-volume
+        configMap:
+          name: {{ $roxie.name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
 
@@ -116,7 +129,9 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $roxie | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" $roxie | indent 6 }}
+      - name: {{ $roxie.name }}-configmap-volume
+        configMap:
+          name: {{ $roxie.name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 
 ---

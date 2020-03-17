@@ -24,10 +24,22 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "esp") | indent 8 }}
 {{ include "hpcc.addVolumeMounts" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 {{ include "hpcc.addVolumes" $ | indent 6 }}
 ---
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ .name }}-configmap 
+data:
 {{- include "hpcc.generateConfigMap" (dict "root" $ "component" "esp" "me" .) }}
+  {{ .name }}.yaml: |
+    version: 1.0
+    esp:
+{{ toYaml . | indent 6 }}
+      queues:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
 ---
 apiVersion: v1
