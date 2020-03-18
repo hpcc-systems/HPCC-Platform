@@ -306,6 +306,7 @@ protected:
     offset_t                totalSize;
     unsigned __int64        sizeToBeRead;
     bool                    replicate;
+    bool                    copySource;
     bool                    unknownSourceFormat;
     bool                    unknownTargetFormat;
     Owned<IException>       error;
