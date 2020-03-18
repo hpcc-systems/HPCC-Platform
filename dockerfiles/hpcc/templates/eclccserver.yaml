@@ -25,12 +25,14 @@ spec:
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclccserver") | indent 8 }}
-{{ include "hpcc.addVolumeMounts" . | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDllserverVolumeMount" . | indent 8 }}
       volumes:
-      - name: {{ .name }}-configmap-volume
-        configMap:
-          name: {{ .name }}-configmap
-{{ include "hpcc.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
@@ -70,12 +72,14 @@ data:
                         {{ include "hpcc.daliArg" $ }},
                         %args
                      ]
-{{ include "hpcc.addVolumeMounts" . | indent 12 }}
+            volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDllserverVolumeMount" . | indent 12 }}
           volumes:
-          - name: {{ .name }}-configmap-volume
-            configMap:
-              name: {{ .name }}-configmap
-{{ include "hpcc.addVolumes" $ | indent 10 }}
+{{ include "hpcc.addConfigMapVolume" . | indent 10 }}
+{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
       
