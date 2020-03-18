@@ -248,10 +248,10 @@ public:
             else
             {
                 VStringBuffer exec("%s --workunit=%s --daliServers=%s", processName.get(), wuid.str(), dali.str());
-                if (queryComponentConfig().hasProp("@processConfig"))
+                if (queryComponentConfig().hasProp("@config"))
                 {
                     exec.append(" --config=");
-                    queryComponentConfig().getProp("@processConfig", exec);
+                    queryComponentConfig().getProp("@config", exec);
                 }
                 if (queryComponentConfig().getPropBool("@useThorQueue", true))
                     exec.append(" --queue=").append(queue);
