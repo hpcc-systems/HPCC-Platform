@@ -37,13 +37,14 @@ apiVersion: v1
 metadata:
   name: {{ .name }}-configmap 
 data:
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclagent" "me" .) }}
   {{ .name }}.yaml: |
     version: 1.0
     eclagent:
 {{ toYaml . | indent 6 }}
     {{ $apptype }}:
 {{ toYaml . | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
   eclagent-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job

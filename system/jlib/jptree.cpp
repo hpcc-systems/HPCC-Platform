@@ -7662,7 +7662,7 @@ void mergeConfiguration(IPropertyTree & target, IPropertyTree & source)
  * If there is an extends tag in the root of the file then this file is applied as a delta to the base file
  * the configuration is the contents of the tag within the file that matches the component tag.
 */
-static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag)
+static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag, bool required)
 {
     if (!checkFileExists(filename))
         throw makeStringExceptionV(99, "Configuration file %s not found", filename);
@@ -7677,8 +7677,11 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     assert(configTree);
     IPropertyTree * config = configTree->queryPropTree(componentTag);
     if (!config)
-        throw makeStringExceptionV(99, "Section %s is missing from file %s", componentTag, filename);
-
+    {
+        if (required)
+            throw makeStringExceptionV(99, "Section %s is missing from file %s", componentTag, filename);
+        return nullptr;
+    }
     const char * base = configTree->queryProp("@extends");
     if (!base)
         return LINK(config);
@@ -7688,7 +7691,7 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     addNonEmptyPathSepChar(baseFilename);
     baseFilename.append(base);
 
-    Owned<IPropertyTree> baseTree = loadConfiguration(baseFilename, componentTag);
+    Owned<IPropertyTree> baseTree = loadConfiguration(baseFilename, componentTag, required);
     mergeConfiguration(*baseTree, *config);
     return LINK(baseTree);
 }
@@ -7753,7 +7756,7 @@ static const char * extractOption(const char * option, const char * cur)
 
 static bool ignoreOption(const char * name)
 {
-    return streq(name, "config") || streq(name, "global") || streq(name, "outputconfig");
+    return streq(name, "config") || streq(name, "outputconfig");
 }
 
 static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
@@ -7788,16 +7791,6 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option)
         //MORE: Support --x- and --x+?
         applyCommandLineOption(config, option, "1");
     }
-}
-
-jlib_decl StringBuffer & regenerateConfig(StringBuffer &yamlText, IPropertyTree * config, const char * componentTag)
-{
-    Owned<IPropertyTree> recreated = createPTree();
-    recreated->setProp("@version", currentVersion);
-    recreated->addPropTree(componentTag, LINK(config));
-
-    toYAML(recreated, yamlText, 0, YAML_SortTags);
-    return yamlText;
 }
 
 static Owned<IPropertyTree> componentConfiguration;
@@ -7865,17 +7858,13 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     Linked<IPropertyTree> config(componentDefault);
     const char * optConfig = nullptr;
-    const char * optGlobal = nullptr;
     bool outputConfig = false;
     for (const char * * pArg = argv; *pArg; pArg++)
     {
         const char * cur = *pArg;
         const char * matchConfig = extractOption("--config", cur);
-        const char * matchGlobal = extractOption("--global", cur);
         if (matchConfig)
             optConfig = matchConfig;
-        else if (matchGlobal)
-            optGlobal = matchGlobal;
         else if (strsame(cur, "--help"))
         {
             //MORE: displayHelp(config);
@@ -7910,16 +7899,15 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         if (streq(optConfig, "1"))
             throw makeStringExceptionV(99, "Name of configuration file omitted (use --config=<filename>)");
 
+        StringBuffer fullpath;
         if (!isAbsolutePath(optConfig))
         {
-            StringBuffer fullpath;
             appendCurrentDirectory(fullpath, false);
             addNonEmptyPathSepChar(fullpath);
-            fullpath.append(optConfig);
-            delta.setown(loadConfiguration(fullpath, componentTag));
         }
-        else
-            delta.setown(loadConfiguration(optConfig, componentTag));
+        fullpath.append(optConfig);
+        delta.setown(loadConfiguration(fullpath, componentTag, true));
+        globalConfiguration.setown(loadConfiguration(fullpath, "global", false));
     }
     else
     {
@@ -7948,14 +7936,17 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     if (outputConfig)
     {
+        Owned<IPropertyTree> recreated = createPTree();
+        recreated->setProp("@version", currentVersion);
+        recreated->addPropTree(componentTag, LINK(config));
+        if (globalConfiguration)
+            recreated->addPropTree("global", globalConfiguration.getLink());
         StringBuffer yamlText;
-        regenerateConfig(yamlText, config, componentTag);
+        toYAML(recreated, yamlText, 0, YAML_SortTags);
         printf("%s\n", yamlText.str());
         exit(0);
     }
 
-    if (optGlobal)
-        globalConfiguration.setown(loadConfiguration(optGlobal, "global"));
     if (!globalConfiguration)
         globalConfiguration.setown(createPTree("global"));
 
