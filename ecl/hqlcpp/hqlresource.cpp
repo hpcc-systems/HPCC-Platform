@@ -162,8 +162,11 @@ CResourceOptions::CResourceOptions(ClusterType _targetClusterType, unsigned _clu
 
     isChildQuery = false;
     filteredSpillThreshold = _translatorOptions.filteredReadSpillThreshold;
-    allowThroughSpill = (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster) && _translatorOptions.allowThroughSpill;
-    allowThroughResult = (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
+
+    //Disable all through spill operations - otherwise the final output can be removed (e.g. when a join is optimized),
+    //which also unfortunately removes the spill - causing a result to be read without having been written.
+    allowThroughSpill = false;//(targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster) && _translatorOptions.allowThroughSpill;
+    allowThroughResult = false;//(targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
     cloneFilteredIndex = (targetClusterType != RoxieCluster);
     spillSharedConditionals = (targetClusterType == RoxieCluster);
     shareDontExpand = (targetClusterType == RoxieCluster);
@@ -2213,7 +2216,7 @@ bool ResourceGraphLink::isRedundantLink()
 void ResourceGraphLink::trace(const char * name)
 {
 #ifdef TRACE_RESOURCING
-    IERRLOG("%s: %p source(%p,%p) sink(%p,%p) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
+    DBGLOG("%s: %p source(%p,%p) sink(%p,%p) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL,
              linkKind == SequenceLink ? "sequence" : "");
 #endif
 }
@@ -5812,6 +5815,11 @@ mergeAgain:
                             tryToMerge = !expandSourceInPlace;
                         else
                             tryToMerge = expandSourceInPlace;
+
+                        //HThor does not support splitters, and inline spills cause problems - so
+                        // if the source is used in more than one place the graphs cannot be merged
+                        if ((targetClusterType == HThorCluster) && (source->sinks.ordinality() > 1))
+                            tryToMerge = false;
 
                         if (tryToMerge)
                         {
