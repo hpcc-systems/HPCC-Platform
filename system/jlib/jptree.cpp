@@ -7671,7 +7671,19 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     const char * ext = pathExtension(filename);
     Owned<IPropertyTree> configTree;
     if (strieq(ext, ".yaml"))
-        configTree.setown(createPTreeFromYAMLFile(filename, 0, ptr_ignoreWhiteSpace, nullptr));
+    {
+        try
+        {
+            configTree.setown(createPTreeFromYAMLFile(filename, 0, ptr_ignoreWhiteSpace, nullptr));
+        }
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            E->errorMessage(msg);
+            ::Release(E);
+            throw makeStringExceptionV(99, "Error loading configuration file %s (invalid yaml): %s", filename, msg.str());
+        }
+    }
     else
         throw makeStringExceptionV(99, "Unrecognised file extension %s", ext);
 
