@@ -25,7 +25,7 @@ import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
 
@@ -106,7 +106,7 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 
 ClusterName := 'mythor';
 DestFile := prefix + 'spray_expire.txt';
-ESPportIP := 'http://127.0.0.1:8010/FileSpray';
+ESPportIP := FileServices.GetEspURL() + '/FileSpray';
 
 expireDaysOut1 := 9;
 expireDaysIn1 := NOTHOR(FileServices.GetLogicalFileAttribute(DestFile, 'expireDays'));
@@ -124,19 +124,36 @@ expireDaysOut4 := 13;
 expireDaysIn4 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res4:=if(expireDaysIn4 = intformat(expireDaysOut4,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut4,2,0)+','+expireDaysIn4+')');
 
+
+// DFUPlus tests
+
 expireDaysOut5 := 17;
 expireDaysIn5 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res5:=if(expireDaysIn5 = intformat(expireDaysOut5,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut5,2,0)+','+expireDaysIn5+')');
 
+expireDaysOut6 := 0;
+expireDaysIn6 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+res6:=if(expireDaysIn6 = intformat(expireDaysOut6,1,0), 'Pass', 'Fail ('+intformat(expireDaysOut6,2,0)+','+expireDaysIn6+')');
+
+expireDaysOut7 := -1;
+expireDaysIn7 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+res7:=if(expireDaysIn7 = '', 'Pass', 'Fail ('+intformat(expireDaysOut7,2,0)+','+expireDaysIn7+')');
+
+expireDaysOut8 := -1; // but omit expireDay parameter
+expireDaysIn8 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
+res8:=if(expireDaysIn8 = '', 'Pass', 'Fail ('+intformat(expireDaysOut8,2,0)+','+expireDaysIn8+')');
+
+
+
 CopyDestFile := prefix + 'copy_expire.txt';
-expireDaysOut6 := 19;
-expireDaysIn6 := FileServices.GetLogicalFileAttribute(CopyDestFile, 'expireDays');
-res6:=if(expireDaysIn6 = intformat(expireDaysOut6,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut6,2,0)+','+expireDaysIn6+')');
+expireDaysOut9 := 19;
+expireDaysIn9 := FileServices.GetLogicalFileAttribute(CopyDestFile, 'expireDays');
+res9:=if(expireDaysIn9 = intformat(expireDaysOut9,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut9,2,0)+','+expireDaysIn9+')');
 
 RemotePullDestFile := prefix + 'remote_pull_expire.txt';
-expireDaysOut7 := 23;
-expireDaysIn7 := FileServices.GetLogicalFileAttribute(RemotePullDestFile, 'expireDays');
-res7:=if(expireDaysIn7 = intformat(expireDaysOut7,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut7,2,0)+','+expireDaysIn7+')');
+expireDaysOut10 := 23;
+expireDaysIn10 := FileServices.GetLogicalFileAttribute(RemotePullDestFile, 'expireDays');
+res10:=if(expireDaysIn10 = intformat(expireDaysOut10,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut10,2,0)+','+expireDaysIn10+')');
 
 
 sequential (
@@ -218,8 +235,19 @@ sequential (
                             expireDays :=expireDaysOut4
                             );
     output(res4,NAMED('SprayXml')),
+
     FileServices.DfuPlusExec('action=spray srcip=. srcfile='+desprayOutFileName+'_CSV dstname='+DestFile+' jobname=spray_expire_csv server=. dstcluster=mythor format=csv overwrite=1 replicate=0 expireDays='+intformat(expireDaysOut5,2,0)),
     output(res5,NAMED('DFUPlus')),
+
+    FileServices.DfuPlusExec('action=spray srcip=. srcfile='+desprayOutFileName+'_CSV dstname='+DestFile+' jobname=spray_expire_csv server=. dstcluster=mythor format=csv overwrite=1 replicate=0 expireDays='+intformat(expireDaysOut6,2,0)),
+    output(res6,NAMED('DFUPlus2')),
+
+    FileServices.DfuPlusExec('action=spray srcip=. srcfile='+desprayOutFileName+'_CSV dstname='+DestFile+' jobname=spray_expire_csv server=. dstcluster=mythor format=csv overwrite=1 replicate=0 expireDays='+intformat(expireDaysOut7,2,0)),
+    output(res7,NAMED('DFUPlus3')),
+
+    FileServices.DfuPlusExec('action=spray srcip=. srcfile='+desprayOutFileName+'_CSV dstname='+DestFile+' jobname=spray_expire_csv server=. dstcluster=mythor format=csv overwrite=1 replicate=0'),
+    output(res8,NAMED('DFUPlus4')),
+
 
     FileServices.Copy(
                             sourceLogicalName := sprayPrepFileName+'_CSV',
@@ -229,9 +257,9 @@ sequential (
                             timeOut := -1,
                             espServerIpPort := ESPportIP,
                             ALLOWOVERWRITE := true,
-                            expireDays := expireDaysOut6
+                            expireDays := expireDaysOut9
                             );
-    output(res6,NAMED('Copy')),
+    output(res9,NAMED('Copy')),
 
     FileServices.RemotePull(
                              remoteEspFsURL := ESPportIP,
@@ -240,9 +268,9 @@ sequential (
                              destinationLogicalName := RemotePullDestFile,
                              TIMEOUT := -1,
                              ALLOWOVERWRITE := true,
-                             expireDays := expireDaysOut7
+                             expireDays := expireDaysOut10
                              );
-     output(res7,NAMED('RemotePull')),
+     output(res10, NAMED('RemotePull')),
 
     // Clean-up
     FileServices.DeleteExternalFile('.', desprayOutFileName+'_CSV'),
