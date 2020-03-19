@@ -473,6 +473,9 @@ export function resolve(hpccWidget, callback) {
         case "ECLPlaygroundWidget":
             require(["hpcc/ECLPlaygroundWidget"], doLoad);
             break;
+        case "ECLArchiveWidget":
+            require(["src/ECLArchiveWidget"], doLoad);
+            break;
         case "ECLSourceWidget":
             require(["hpcc/ECLSourceWidget"], doLoad);
             break;
