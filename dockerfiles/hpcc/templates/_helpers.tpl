@@ -214,14 +214,14 @@ Generate instance queue names
 - name: {{ .name }}
   type: {{ .type | default "hthor" }}
   prefix: {{ .prefix | default "null" }}
- {{ end -}}
+ {{- end }}
 {{ end -}}
 {{- range $.Values.roxie -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: roxie 
   prefix: {{ .prefix | default "null" }}
- {{ end -}}
+ {{- end }}
 {{ end -}}
 {{- range $.Values.thor -}}
  {{- if not .disabled -}}
@@ -229,6 +229,6 @@ Generate instance queue names
   type: thor
   prefix: {{ .prefix | default "null" }}
   width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
- {{ end -}}
+ {{- end }}
 {{- end -}}
 {{- end -}}
