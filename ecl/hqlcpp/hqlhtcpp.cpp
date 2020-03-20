@@ -8624,6 +8624,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySplit(BuildCtx & ctx, IHqlExpr
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
+    if (targetHThor())
+        throwUnexpectedX("SPLIT incorrectly generated for an hthor query");
 
     //IHqlExpression * numWays = expr->queryChild(1);
     OwnedHqlExpr numWaysCallback = createUnknown(no_callback, LINK(sizetType), countAtom, instance->createOutputCountCallback());
