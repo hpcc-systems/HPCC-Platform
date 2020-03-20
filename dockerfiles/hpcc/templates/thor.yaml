@@ -10,6 +10,7 @@
 {{- $thorScope := omit . "eclagent" "thoragent" "hthor" }}
 {{- $eclAgentDefaults := dict "name" $eclAgentName "replicas" 1 }}
 {{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
+{{- $agentAppType := $eclAgentScope.type | default "hthor" }}
 {{- $thorAgentDefaults := dict "name" $thorAgentName "containerPerAgent" true "replicas" 1 }}
 {{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
 {{- $hthorDefaults := dict "name" $hthorName }}
@@ -89,7 +90,7 @@ data:
     version: 1.0
     thor:
 {{ toYaml $thorScope | indent 6 }}
-    hthor:
+    {{ $agentAppType }}:
 {{ toYaml $hthorScope | indent 6 }}
     eclagent: # main agent Q handler
 {{ toYaml $eclAgentScope | indent 6 }}
@@ -105,7 +106,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 {{- if $eclAgentScope.containerPerAgent }}
 
-  hthor-jobspec.yaml: |
+  {{ $agentAppType }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -128,7 +129,7 @@ data:
                 #limit-memory
                 #limit-cpu
             command: [
-                        "hthor",
+                        {{ $agentAppType | quote }},
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args
