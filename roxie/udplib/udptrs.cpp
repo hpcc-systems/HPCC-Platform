@@ -158,7 +158,7 @@ public:
     void requestAcknowledged()
     {
         if (requestExpiryTime)
-            requestExpiryTime = msTick() + udpRequestToSendTimeout;
+            requestExpiryTime = msTick() + udpRequestToSendAckTimeout;
     }
 
     // MORE - consider where/if we need critsecs in here!

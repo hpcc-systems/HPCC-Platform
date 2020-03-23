@@ -393,7 +393,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (pendingRequests)
                 return sendNextOk();
             else
-                return 5000;
+                return udpRequestToSendTimeout;
         }
 
 
@@ -485,7 +485,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             adjustPriority(1);
         #endif
             UdpRequestToSendMsg msg;
-            unsigned timeout = 5000;  // Is this too long?
+            unsigned timeout = udpRequestToSendTimeout;  // Is this too long?
             while (running)
             {
                 try
@@ -520,7 +520,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         if (noteDone(sender) && pendingRequests)
                             timeout = sendNextOk();
                         else
-                            timeout = 5000;
+                            timeout = udpRequestToSendTimeout;
                         break;
 
                     case flowType::request_to_send_more:
