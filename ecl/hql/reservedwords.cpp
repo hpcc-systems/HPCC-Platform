@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 #include "jfile.hpp"
+#include "jstring.hpp"
 #include "reservedwords.hpp"
 
 struct Keywords
@@ -607,9 +608,11 @@ void printKeywordsToXml()
      {
          buffer.append("  <cat group=\"").append(keywordList[i].group).append("\">\n");
          unsigned int j = 0;
+         StringBuffer encodedStr;
          while(keywordList[i].keywords[j])
          {
-             buffer.append("    <keyword name=\"").append(keywordList[i].keywords[j]).append("\"/>\n");
+             encodedStr.clear();
+             buffer.append("    <keyword name=\"").append(encodeXML(keywordList[i].keywords[j], encodedStr)).append("\"/>\n");
              ++j;
          }
          buffer.append("  </cat>\n");
