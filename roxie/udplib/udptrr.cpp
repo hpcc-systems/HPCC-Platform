@@ -112,7 +112,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         ISocket *flowSocket = nullptr;
         UdpSenderEntry *nextSender = nullptr;  // Used to form list of all senders that have outstanding requests
         unsigned timeouts = 0;
-        unsigned numPackets = 0;
 
         // Set by sniffer, used by receive_flow. But races are unimportant
         unsigned timeStamp = 0;               // When it was marked busy (0 means not busy)
@@ -351,11 +350,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         unsigned okToSend(UdpSenderEntry *requester)
         {
             assert (!currentRequester);
-            // mck - see comment in free_slots(), use previous algo for now ...
-            // unsigned max_transfer = parent.free_slots();
             unsigned max_transfer = parent.input_queue->free_slots() * 0.80;
-            if (!max_transfer)
-                return udpRequestToSendAckTimeout;
             if (max_transfer > maxSlotsPerSender)
                 max_transfer = maxSlotsPerSender;
             unsigned timeout = ((max_transfer * DATA_PAYLOAD) / 100) + 10; // in ms assuming mtu package size with 100x margin on 100 Mbit network // MORE - hideous!
@@ -363,8 +358,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (timeout < udpRequestToSendAckTimeout)
                 timeout = udpRequestToSendAckTimeout;
             currentRequester = requester;
-            requester->numPackets = max_transfer;
-            // parent.inflight += max_transfer;
             requester->requestToSend(max_transfer, myNode.getNodeAddress());
             return timeout;
         }
@@ -485,61 +478,64 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             adjustPriority(1);
         #endif
             UdpRequestToSendMsg msg;
-            unsigned timeout = udpRequestToSendTimeout;  // Is this too long?
+            unsigned timeoutExpires = msTick() + udpRequestToSendTimeout;
             while (running)
             {
                 try
                 {
                     const unsigned l = sizeof(msg);
                     unsigned int res ;
-                    flow_socket->readtms(&msg, l, l, res, timeout);
-                    assert(res==l);
-                    if (udpTraceLevel > 5)
+                    unsigned now = msTick();
+                    if (now >= timeoutExpires)
                     {
-                        StringBuffer ipStr;
-                        DBGLOG("UdpReceiver: received %s msg from node=%s", flowType::name(msg.cmd), msg.sourceNode.getTraceText(ipStr).str());
-                    }
-                    UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode.getNodeAddress()];
-                    switch (msg.cmd)
-                    {
-                    case flowType::request_to_send:
                         if (currentRequester)
-                            enqueueRequest(sender);   // timeout does not change - there's still an active request
-                        else if (pendingRequests)
+                            timeoutExpires = now + timedOut(currentRequester);
+                        else
+                            timeoutExpires = now + udpRequestToSendTimeout;
+                    }
+                    else
+                    {
+                        flow_socket->readtms(&msg, l, l, res, timeoutExpires-now);
+                        now = msTick();
+                        assert(res==l);
+                        if (udpTraceLevel > 5)
                         {
-                            enqueueRequest(sender);
-                            timeout = sendNextOk();
+                            StringBuffer ipStr;
+                            DBGLOG("UdpReceiver: received %s msg from node=%s", flowType::name(msg.cmd), msg.sourceNode.getTraceText(ipStr).str());
                         }
-                        else
-                            timeout = okToSend(sender);
-                        break;
-
-                    case flowType::send_completed:
-                        // parent.inflight -= msg.packets;
-                        // DBGLOG("send_completed: inflight: %d msg packets: %u", (int)parent.inflight, msg.packets);
-                        if (noteDone(sender) && pendingRequests)
-                            timeout = sendNextOk();
-                        else
-                            timeout = udpRequestToSendTimeout;
-                        break;
-
-                    case flowType::request_to_send_more:
-                        // parent.inflight -= msg.packets;
-                        // DBGLOG("rts_more: inflight: %d msg packets: %u", (int)parent.inflight, msg.packets);
-                        if (noteDone(sender))
+                        UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode.getNodeAddress()];
+                        switch (msg.cmd)
                         {
-                            if (pendingRequests)
-                            {
-                                enqueueRequest(sender);
-                                timeout = sendNextOk();
-                            }
+                        case flowType::request_to_send:
+                            if (pendingRequests || currentRequester)
+                                enqueueRequest(sender);   // timeoutExpires does not change - there's still an active request
                             else
-                                timeout = okToSend(sender);
-                        }
-                        break;
+                                timeoutExpires = now + okToSend(sender);
+                            break;
 
-                    default:
-                        DBGLOG("UdpReceiver: received unrecognized flow control message cmd=%i", msg.cmd);
+                        case flowType::send_completed:
+                            if (noteDone(sender) && pendingRequests)
+                                timeoutExpires = now + sendNextOk();
+                            else
+                                timeoutExpires = now + udpRequestToSendTimeout;
+                            break;
+
+                        case flowType::request_to_send_more:
+                            if (noteDone(sender))
+                            {
+                                if (pendingRequests)
+                                {
+                                    enqueueRequest(sender);
+                                    timeoutExpires = now + sendNextOk();
+                                }
+                                else
+                                    timeoutExpires = now + okToSend(sender);
+                            }
+                            break;
+
+                        default:
+                            DBGLOG("UdpReceiver: received unrecognized flow control message cmd=%i", msg.cmd);
+                        }
                     }
                 }
                 catch (IException *e)
@@ -550,24 +546,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         // A timeout implies that there is an active permission to send, but nothing has happened.
                         // Could be a really busy (or crashed) slave, could be a lost packet
                         if (currentRequester)
-                        {
-                            // parent.inflight -= currentRequester->numPackets;
-                            // DBGLOG("timeout: inflight: %d req->numpkts: %u", (int)parent.inflight, currentRequester->numPackets);
-                            timeout = timedOut(currentRequester);
-                        }
+                            timeoutExpires = msTick() + timedOut(currentRequester);
                     }
                     else if (running)
                     {
                         StringBuffer s;
                         DBGLOG("UdpReceiver: failed %i %s", flow_port, e->errorMessage(s).str());
-                        // parent.inflight = 0;
                     }
                     e->Release();
                 }
                 catch (...)
                 {
                     DBGLOG("UdpReceiver: receive_receive_flow::run unknown exception");
-                    // parent.inflight = 0;
                 }
             }
             return 0;
@@ -629,8 +619,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     unsigned int res;
                     b = bufferManager->allocate();
                     receive_socket->read(b->data, sizeof(UdpPacketHeader), DATA_PAYLOAD, res, 5);
-                    // parent.inflight--;
-                    // MORE - reset it to zero if we fail to read data, or if avail_read returns 0.
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
                     assert(hdr.length == res && hdr.length > sizeof(hdr));
                     if (udpTraceLevel > 5) // don't want to interrupt this thread if we can help it
@@ -645,11 +633,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     ::Release(b);
                     b = NULL;
-                    if (udpTraceLevel > 1 && parent.inflight)
-                    {
-                        DBGLOG("resetting inflight to 0 (was %d)", parent.inflight.load(std::memory_order_relaxed));
-                    }
-                    parent.inflight = 0;
                     if (running && e->errorCode() != JSOCKERR_timeout_expired)
                     {
                         StringBuffer s;
@@ -706,37 +689,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     typedef std::map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
     SpinLock collatorsLock; // protects access to collators map
-    // inflight is my best guess at how many packets may be sitting in socket buffers somewhere.
-    // Incremented when I am notified about packets having been sent, decremented as they are read off the socket.
-    std::atomic<int> inflight = {0};
-
-    int free_slots()
-    {
-        // mck - skip for now, several attempts at keeping track of inflight do not seem accurate enough and cause
-        //       too few packets to be sent as time goes on.  TODO - look into decay of inflight by X pkts/s ...
-        int free = input_queue->free_slots();  // May block if collator thread is not removing from my queue fast enough
-        // Ignore inflight if negative (can happen because we read some inflight before we see the send_done)
-        int i = inflight.load(std::memory_order_relaxed);
-        if (i < 0)
-        {
-            if (i < -input_queue->capacity())
-            {
-                if (udpTraceLevel)
-                    DBGLOG("UdpReceiver: ERROR: inflight has more packets in queue but not counted (%d) than queue capacity (%d)", -i, input_queue->capacity());  // Should never happen
-                inflight = -input_queue->capacity();
-            }
-            i = 0;
-        }
-        else if (i >= free)
-        {
-            if (udpTraceLevel)
-                DBGLOG("UdpReceiver: ERROR: more packets in flight (%d) than slots free (%d)", i, free);  // Should never happen
-            inflight = i = free-1;
-        }
-        if (i && udpTraceLevel > 1)
-            DBGLOG("UdpReceiver: adjusting free_slots to allow for %d in flight", i);
-        return free - i;
-    }
 
     public:
     IMPLEMENT_IINTERFACE;
