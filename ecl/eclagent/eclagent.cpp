@@ -33,6 +33,7 @@
 #include "portlist.h"
 #include "dalienv.hpp"
 #include "daaudit.hpp"
+#include "workunit.hpp"
 
 #include "hqlplugins.hpp"
 #include "eclrtl_imp.hpp"
@@ -1900,6 +1901,11 @@ void EclAgent::doProcess()
             debugContext->checkBreakpoint(DebugStateFailed, NULL, NULL);
         logException((IException *) NULL);
     }
+
+#ifdef _CONTAINERIZED
+    // signal to any lingering Thor's that job is complete and they can quit before timeout.
+    executeGraphOnLingeringThor(*wuRead, nullptr);
+#endif
 
     DBGLOG("Process complete");
     // Add some timing stats

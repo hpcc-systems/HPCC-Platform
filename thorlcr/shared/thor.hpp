@@ -54,5 +54,17 @@ inline rowidx_t validRIDX(T X)
     #define CATCHALL DummyCatchAll
 #endif
 
+constexpr const char * thorDefaultConfigYaml = R"!!(
+version: 1.0
+thor:
+  daliServers: dali
+  watchdogEnabled: true
+  watchdogProgressEnabled: true
+  cost:
+    thor:
+      master: "0.000002"
+      slave: "0.00001"
+)!!";
+
 
 #endif

@@ -349,7 +349,11 @@ int main( int argc, const char *argv[]  )
             return 1;
         }
         cmdArgs = argv+1;
+#ifdef _CONTAINERIZED
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr));
+#else
         loadArgsIntoConfiguration(globals, cmdArgs);
+#endif
 
         const char *master = globals->queryProp("@master");
         if (!master)
@@ -379,11 +383,13 @@ int main( int argc, const char *argv[]  )
         // TBD: use new config/init system for generic handling of init settings vs command line overrides
         if (0 == slfEp.port) // assume default from config if not on command line
             slfEp.port = globals->getPropInt("@slaveport", THOR_BASESLAVE_PORT);
+
+        startMPServer(DCR_ThorSlave, slfEp.port, false);
+        if (0 == slfEp.port)
+            slfEp.port = queryMyNode()->endpoint().port;
         setMachinePortBase(slfEp.port);
 
         setSlaveAffinity(globals->getPropInt("@slaveprocessnum"));
-
-        startMPServer(DCR_ThorSlave, getFixedPort(TPORT_mp), false);
 
         if (globals->getPropBool("@MPChannelReconnect"))
             getMPServer()->setOpt(mpsopt_channelreopen, "true");
