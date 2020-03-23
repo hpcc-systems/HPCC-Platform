@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ECL Watch</title>
+    <script src="/esp/files/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+    <link rel="stylesheet" href="/esp/files/dist/font-awesome/css/font-awesome.min.css">
+    <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
+    <script type="text/javascript">
+        getAuthType();
+        function getAuthType() {
+            if (document.cookie.indexOf("ESPSessionState=true") > -1) {
+                checkCookie();
+            } else if (document.cookie.indexOf("ESPSessionState=false") > -1) {
+                window.location.href;
+            } else {
+                sendAuthRequest();
+            }
+
+            function checkCookie() {
+                document.cookie.indexOf("ESPAuthenticated=true") > -1 ? window.location.href : window.location.href = location.origin + "/esp/files/Login.html";
+            }
+
+            function sendAuthRequest() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onload = function () {
+                    var responseType = this.responseXML && this.responseXML.childNodes && this.responseXML.childNodes.length ? this.responseXML.childNodes[0].textContent : "None";
+                    if (this.readyState == 4 && this.status == 200) {
+                        switch (responseType) {
+                            case 'Mixed':
+                            case 'PerSessionOnly':
+                                document.cookie = ("ESPSessionState=true");
+                                break;
+                            case 'PerRequestOnly':
+                            case 'UserNameOnly':
+                            case 'None':
+                                document.cookie = ("ESPSessionState=false");
+                                break;
+                            default:
+                                document.cookie = ("ESPSessionState=false");
+                        }
+                    } else {
+                        alert('Authorization Request Error.');
+                    }
+                }
+                xhttp.open('GET', '/esp/getauthtype', true);
+                xhttp.send();
+            }
+        }
+    </script>
+</head>
+
+<body class="flat">
+    <div id="app"></div>
+    <script src="/esp/files/dist/index.eclwatch.js" charset="utf-8"></script>
+</body>
+
+</html>
