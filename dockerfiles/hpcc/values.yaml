@@ -36,6 +36,9 @@ global:
   # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
   hostStorage: true
 
+logging :      #stderr logging is default
+   elasticStack:
+     enabled: true
 
 dali:
 - name: mydali

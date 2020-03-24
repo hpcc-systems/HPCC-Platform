@@ -6,8 +6,28 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 0.1.0
+version: 0.2.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application.
 appVersion: 0.1.0
+
+dependencies:
+  - name: elasticsearch # Optional managed logging back-end store
+    version: 7.6.1
+    repository: file://./charts/elasticsearch # Use local customized chart due to a couple of issues in elastic's helm
+    #repository: https://helm.elastic.co
+    #condition: Values.global.Logging.Elasticstack.Enabled | #condition: .root.Values.global.Logging.Elasticstack.Enabled
+    #Neither of the above conditions acknowledged the global value
+    #repository: "@elastic"
+    condition: logging.elasticStack.enabled
+  - name: filebeat # Optional stderr log forwarder
+    version: 7.6.1
+    #repository: https://helm.elastic.co
+    repository: "@elastic"
+    condition: logging.elasticStack.enabled
+  - name: kibana # Optional managed logging front-end
+    version: 7.6.1
+    #repository: https://helm.elastic.co
+    repository: "@elastic"
+    condition: logging.elasticStack.enabled

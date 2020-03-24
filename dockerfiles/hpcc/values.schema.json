@@ -20,6 +20,22 @@
       "type": "array",
       "items": { "$ref": "#/definitions/esp" }
     },
+	"logging": {
+      "description": "optional -  managed logging directives",
+      "type": "object"
+    },
+	"kibana": {
+      "description": "added automatically if elasticStack logging enabled",
+      "type": "object"
+    },
+	"elasticsearch": {
+      "description": "added automatically if elasticStack logging enabled",
+      "type": "object"
+    },
+	"filebeat": {
+      "description": "added automatically if elasticStack logging enabled",
+      "type": "object"
+    },
     "eclagent": {
       "description": "eclagent process",
       "type": "array",
