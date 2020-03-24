@@ -8,9 +8,13 @@
 
 set -e
 
+#default _mvn_return_value should be 0 for found
+_mvn_return_value=0
+
 if ! `which mvn 1>/dev/null 2>&1` ; then
   echo "Maven dependency not located"
-  exit 2
+  echo "-- Using gnu utils instead"
+  _mvn_return_value=1
 fi
 
 # overwrite versionfile to pom.xml
@@ -26,8 +30,13 @@ fi
 # Major.Minor.Point- Sequence if gold, Maturity if rc
 function parse_cmake()
 {
-  HPCC_PROJECT=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
-  HPCC_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  if [ $_mvn_return_value -eq 0 ]; then
+    HPCC_PROJECT=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
+    HPCC_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+  else
+    HPCC_PROJECT=$(grep -m1 '<artifactId>' $VERSIONFILE | sed "s/^[ \t]*//" | awk 'BEGIN {FS="[<>]";} {print $3;}')
+    HPCC_VERSION=$(grep -m1 '<version>' $VERSIONFILE | sed "s/^[ \t]*//" | awk 'BEGIN {FS="[<>]";} {print $3;}')
+  fi
   HPCC_MAJOR=$(echo $HPCC_VERSION | awk 'BEGIN {FS="[.-]"}; {print $1};')
   HPCC_MINOR=$(echo $HPCC_VERSION | awk 'BEGIN {FS="[.-]"}; {print $2};')
   HPCC_POINT=$(echo $HPCC_VERSION | awk 'BEGIN {FS="[.-]"}; {print $3};')
@@ -85,13 +94,33 @@ function update_version_file()
       _new_maturity=
     fi
     local _v="${HPCC_MAJOR}.${_new_minor}.${_new_point}-${_new_sequence}${_new_maturity}"
-    local mvn_version_update_cmd="mvn versions:set -DnewVersion=$_v"
-    if [ -n "$VERBOSE" ] ; then
-      echo  "$mvn_version_update_cmd"
+    if [ $_mvn_return_value -eq 0 ]; then
+        local version_update_cmd="mvn versions:set -DnewVersion=$_v"
+    else
+        local version_update_cmd="sed --in-place=.old 's/${HPCC_VERSION}/${_v}/' pom.xml"
     fi
-    if [ -z "$DRYRUN" ] ; then 
-      eval "$mvn_version_update_cmd"
-      find . -name 'pom.xml' | xargs git add
+    if [ -n "$VERBOSE" ] ; then
+      echo  "$version_update_cmd"
+    fi
+    if [ -z "$DRYRUN" ] ; then
+        if [ $_mvn_return_value -eq 0 ]; then
+            eval "$version_update_cmd"
+            # find all modified pom.xml in directory tree
+            find . -name 'pom.xml' | xargs git add
+        else
+            #handle submodules since maven isn't being used to do it for us
+            local _submodules=($(sed 's/^[ \t]*//' pom.xml | awk 'BEGIN {FS="[<>]";} /<module>/ {print $3;}'))
+            if [ ${#_submodules[@]} -gt 0 ]; then
+                for _d in "${_submodules[@]}"; do
+                    pushd $_d > /dev/null
+                    eval "$version_update_cmd"
+                    git add pom.xml
+                    popd > /dev/null
+                done
+            fi
+            eval "$version_update_cmd"
+            git add pom.xml
+        fi
     else
       echo  "Update to $_v"
     fi
