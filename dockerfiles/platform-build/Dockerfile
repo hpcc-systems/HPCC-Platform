@@ -50,15 +50,18 @@ WORKDIR /hpcc-dev/build
 ARG BUILD_TYPE=RelWithDebInfo
 RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 
-RUN make -j$(nproc) jlib
-RUN make -j$(nproc) esp
-RUN make -j$(nproc) roxie
-RUN make -j$(nproc) ws_workunits ecl
-RUN make -j$(nproc)
+ARG BUILD_THREADS
+RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(nproc) > ~/build_threads ; fi
+RUN echo Building with $(cat ~/build_threads) threads
+RUN make -j$(cat ~/build_threads) jlib
+RUN make -j$(cat ~/build_threads) esp
+RUN make -j$(cat ~/build_threads) roxie
+RUN make -j$(cat ~/build_threads) ws_workunits ecl
+RUN make -j$(cat ~/build_threads)
 
 USER root
 
-RUN make -j$(nproc) install
+RUN make -j$(cat ~hpcc/build_threads) install
 RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
 RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
 RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
