@@ -2295,7 +2295,14 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
     thePassAllFilter = new PassAllLogMsgFilter();
     thePassLocalFilter = new PassLocalLogMsgFilter();
     thePassNoneFilter = new PassNoneLogMsgFilter();
-    theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
+    unsigned  msgFields = MSGFIELD_STANDARD;
+#ifdef _CONTAINERIZED
+    const char *logFields = queryEnvironmentConf().queryProp("logfields");
+    if (!isEmptyString(logFields))
+        msgFields = LogMsgFieldsFromAbbrevs(logFields);
+#endif
+
+    theStderrHandler = new HandleLogMsgHandlerTable(stderr, msgFields);
     theSysLogEventLogger = new CSysLogEventLogger;
     theManager = new CLogMsgManager();
     theManager->resetMonitors();

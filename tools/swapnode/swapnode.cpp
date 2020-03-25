@@ -182,14 +182,13 @@ int main(int argc, const char *argv[])
 
             DaliClient dclient(daliServer);
 
-//#ifndef _CONTAINERIZED
             StringBuffer logname;
             splitFilename(argv[0], NULL, NULL, &logname, NULL);
             addFileTimestamp(logname, true);
             logname.append(".log");
             StringBuffer lf;
             openLogFile(lf, logname.str(),0,false,true);
-//#endif
+
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
 
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);

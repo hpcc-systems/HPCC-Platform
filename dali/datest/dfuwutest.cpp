@@ -944,12 +944,11 @@ int main(int argc, char* argv[])
         CDfsLogicalFileName dlfn;
         dlfn.setValidate("foreign::10.173.28.12:7070::thor_data400::in::uccv2::20061115::nyc::party",true);
 
-//#ifndef _CONTAINERIZED logging to file prob ok here
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
         StringBuffer lf;
         openLogFile(lf, cmd.toLowerCase().append(".log").str());
-//#endif
+
         PROGLOG("DFUWUTEST Starting");
         SocketEndpoint ep;
         SocketEndpointArray epa;

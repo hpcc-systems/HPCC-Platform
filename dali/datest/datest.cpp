@@ -3358,12 +3358,10 @@ int main(int argc, char* argv[])
     EnableSEHtoExceptionMapping();
 
     try {
-//#ifndef _CONTAINERIZED logging to file in container world prob ok
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
         StringBuffer lf;
         openLogFile(lf, cmd.toLowerCase().append(".log").str());
-//#endif
 
 #if defined(TEST_MEMTHREADS)
         printf("start...\n");

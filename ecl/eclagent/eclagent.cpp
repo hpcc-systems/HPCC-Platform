@@ -3355,14 +3355,10 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     }
     else
     {
-//#ifndef _CONTAINERIZED
         StringBuffer exeName;
         splitFilename(argv[0], NULL, NULL, &exeName, NULL);
         openLogFile(logfilespec, exeName.append(".log"));
         PROGLOG("Logging to %s", logfilespec.str());
-//#else
-//        PROGLOG("ECLAgent NOT logging to local file!");
-//#endif
     }
 
 #ifdef _DEBUG
