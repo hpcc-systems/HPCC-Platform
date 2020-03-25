@@ -124,7 +124,7 @@ bool CEspServer::isSubscribedToDali()
 
 #ifdef ESP_SINGLE_PROCESS
 
-int start_init_main(int argc, char** argv, int (*init_main_func)(int,char**))
+int start_init_main(int argc, const char** argv, int (*init_main_func)(int,const char**))
 {
     return init_main_func(argc, argv);
 }
@@ -138,11 +138,11 @@ int start_init_main(int argc, char** argv, int (*init_main_func)(int,char**))
 #define SET_ESP_SIGNAL_HANDLER(sig, handler)
 #define RESET_ESP_SIGNAL_HANDLER(sig, handler)
 
-int start_init_main(int argc, char** argv, int (*init_main_func)(int, char**))
+int start_init_main(int argc, const char** argv, int (*init_main_func)(int, const char**))
 { 
     if(argc > 1 && !strcmp(argv[1], "work")) 
     { 
-        char** newargv = new char*[argc - 1]; 
+        const char** newargv = new const char*[argc - 1];
         newargv[0] = argv[0]; 
         for(int i = 2; i < argc; i++) 
         { 

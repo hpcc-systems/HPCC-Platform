@@ -492,7 +492,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs")
     SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs")
   endif()
-
   macro(HPCC_ADD_EXECUTABLE target)
     add_executable(${target} ${ARGN})
   endmacro(HPCC_ADD_EXECUTABLE target)

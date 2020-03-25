@@ -592,7 +592,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     deserialize(partition, msg);
     msg.read(numParallelSlaves);
     msg.read(updateFrequency);
-    msg.read(replicate);
+    msg.read(copySourceTimeStamp);
     msg.read(mirror);
     msg.read(isSafeMode);
 
@@ -612,7 +612,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         LOG(MCdebugProgress, unknownJob, "Process Push Command: %s", localFilename.str());
     }
     LOG(MCdebugProgress, unknownJob, "Num Parallel Slaves=%d Adjust=%d/%d", numParallelSlaves, adjust, updateFrequency);
-    LOG(MCdebugProgress, unknownJob, "replicate(%d) mirror(%d) safe(%d) incrc(%d) outcrc(%d)", replicate, mirror, isSafeMode, calcInputCRC, calcOutputCRC);
+    LOG(MCdebugProgress, unknownJob, "copySourceTimeStamp(%d) mirror(%d) safe(%d) incrc(%d) outcrc(%d)", copySourceTimeStamp, mirror, isSafeMode, calcInputCRC, calcOutputCRC);
 
     displayPartition(partition);
 
@@ -905,7 +905,7 @@ processedProgress:
                     if (fileUmask != -1)
                         output->setFilePermissions(~fileUmask&0666);
 
-                    if (mirror || replicate)
+                    if (mirror || copySourceTimeStamp)
                     {
                         OwnedIFile input = createIFile(curPartition.inputName);
                         CDateTime modifiedTime;

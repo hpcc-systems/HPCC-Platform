@@ -23,7 +23,6 @@
 #include <string>
 #include "XSDSchemaParser.hpp"
 #include "EnvironmentMgr.hpp"
-#include "XMLEnvironmentMgr.hpp"
 #include "ws_configmgrSession.hpp"
 
 
