@@ -231,7 +231,7 @@ protected:
     offset_t                totalLengthToRead;
     bool                    calcInputCRC;
     bool                    calcOutputCRC;
-    bool                    replicate;
+    bool                    copySourceTimeStamp;
     bool                    mirror;
     bool                    isSafeMode;
     unsigned                throttleNicSpeed;

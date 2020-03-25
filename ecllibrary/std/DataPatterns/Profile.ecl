@@ -53,42 +53,43 @@
  *      popular_patterns        The most common patterns of values; see below
  *      rare_patterns           The least common patterns of values; see below
  *      is_numeric              Boolean indicating if the original attribute
- *                              was a numeric scalar and therefore whether or
- *                              not the numeric_xxxx output fields will be
+ *                              was a numeric scalar or if the best_attribute_type
+ *                              value was a numeric scaler; if TRUE then the
+ *                              numeric_xxxx output fields will be
  *                              populated with actual values; if this value
  *                              is FALSE then all numeric_xxxx output values
  *                              should be ignored
  *      numeric_min             The smallest non-nil value found within the
- *                              attribute as a DECIMAL; the attribute must be
- *                              a numeric ECL datatype; non-numeric attributes
- *                              will return zero
+ *                              attribute as a DECIMAL; this value is valid only
+ *                              if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_max             The largest non-nil value found within the
- *                              attribute as a DECIMAL; the attribute must be
- *                              a numeric ECL datatype; non-numeric attributes
- *                              will return zero
+ *                              attribute as a DECIMAL;this value is valid only
+ *                              if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_mean            The mean (average) non-nil value found within
- *                              the attribute as a DECIMAL; the attribute must
- *                              be a numeric ECL datatype; non-numeric
- *                              attributes will return zero
+ *                              the attribute as a DECIMAL; this value is valid
+ *                              only if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_std_dev         The standard deviation of the non-nil values
- *                              in the attribute as a DECIMAL; the attribute
- *                              must be a numeric ECL datatype; non-numeric
- *                              attributes will return zero
+ *                              in the attribute as a DECIMAL; this value is valid
+ *                              only if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_lower_quartile  The value separating the first (bottom) and
  *                              second quarters of non-nil values within
- *                              the attribute as a DECIMAL; the attribute must
- *                              be a numeric ECL datatype; non-numeric
- *                              attributes will return zero
+ *                              the attribute as a DECIMAL; this value is valid only
+ *                              if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_median          The median non-nil value within the attribute
- *                              as a DECIMAL; the attribute must be a numeric
- *                              ECL datatype; non-numeric attributes will return
- *                              zero
+ *                              as a DECIMAL; this value is valid only
+ *                              if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
  *      numeric_upper_quartile  The value separating the third and fourth
  *                              (top) quarters of non-nil values within
- *                              the attribute as a DECIMAL; the attribute must
- *                              be a numeric ECL datatype; non-numeric
- *                              attributes will return zero
- *      numeric_correlations    A child dataset containing correlation values
+ *                              the attribute as a DECIMAL; this value is valid only
+ *                              if is_numeric is TRUE; if is_numeric is FALSE
+ *                              then zero will show here
+ *      correlations            A child dataset containing correlation values
  *                              comparing the current numeric attribute with all
  *                              other numeric attributes, listed in descending
  *                              correlation value order; the attribute must be
@@ -159,7 +160,7 @@
  *                              quartiles               numeric_lower_quartile
  *                                                      numeric_median
  *                                                      numeric_upper_quartile
- *                              correlations            numeric_correlations
+ *                              correlations            correlations
  *                          To omit the output associated with a single keyword,
  *                          set this argument to a comma-delimited string
  *                          containing all other keywords; note that the
@@ -399,7 +400,7 @@ EXPORT Profile(inFile,
         %NumericStat_t%                 numeric_lower_quartile;
         %NumericStat_t%                 numeric_median;
         %NumericStat_t%                 numeric_upper_quartile;
-        DATASET(CorrelationRec)         numeric_correlations {MAXCOUNT(%fieldCount%)};
+        DATASET(CorrelationRec)         correlations {MAXCOUNT(%fieldCount%)};
     END;
 
     // Define the record layout that will be returned to the caller; note
@@ -454,7 +455,7 @@ EXPORT Profile(inFile,
             %NumericStat_t%             numeric_upper_quartile;
         #END
         #IF(%FeatureEnabledCorrelations%())
-            DATASET(CorrelationRec)     numeric_correlations;
+            DATASET(CorrelationRec)     correlations;
         #END
     END;
 
@@ -887,6 +888,21 @@ EXPORT Profile(inFile,
                     )
             );
 
+        #UNIQUENAME(filledDataInfoNumeric);
+        LOCAL %filledDataInfoNumeric% := JOIN
+            (
+                %filledDataInfo%,
+                %attributeBestTypeInfo%,
+                LEFT.attribute = RIGHT.attribute,
+                TRANSFORM
+                    (
+                        RECORDOF(LEFT),
+                        SELF.is_number := LEFT.is_number OR (REGEXFIND('(integer)|(unsigned)|(decimal)|(real)', RIGHT.best_attribute_type) AND NOT REGEXFIND('set of ', RIGHT.best_attribute_type)),
+                        SELF := LEFT
+                    ),
+                LEFT OUTER, KEEP(1), SMART
+            ) : ONWARNING(4531, IGNORE);
+
         // Build a set of attributes for quartiles, unique values, and modes for
         // each processed attribute
         #SET(recLevel, 0);
@@ -915,7 +931,7 @@ EXPORT Profile(inFile,
                         #UNIQUENAME(uniqueNumericValueCounts)
                         %uniqueNumericValueCounts% := PROJECT
                             (
-                                %filledDataInfo%(attribute = %'namePrefix'% + %'@name'% AND is_number),
+                                %filledDataInfoNumeric%(attribute = %'namePrefix'% + %'@name'% AND is_number),
                                 TRANSFORM
                                     (
                                         {
@@ -992,7 +1008,7 @@ EXPORT Profile(inFile,
                         // each occurs in the data
                         LOCAL #EXPAND(%_MakeAttr%(%'namePrefix'% + %'@name'% + '_uniq_value_recs')) := TABLE
                             (
-                                %filledDataInfo%(attribute = %'namePrefix'% + %'@name'%),
+                                %filledDataInfoNumeric%(attribute = %'namePrefix'% + %'@name'%),
                                 {
                                     string_value,
                                     UNSIGNED4 rec_count := SUM(GROUP, value_count)
@@ -1149,7 +1165,7 @@ EXPORT Profile(inFile,
         #UNIQUENAME(dataPatternStats0);
         LOCAL %dataPatternStats0% := PROJECT
             (
-                %filledDataInfo%,
+                %filledDataInfoNumeric%,
                 TRANSFORM
                     (
                         RECORDOF(LEFT),
@@ -1191,7 +1207,7 @@ EXPORT Profile(inFile,
         #UNIQUENAME(dataLengthStats);
         LOCAL %dataLengthStats% := TABLE
             (
-                %filledDataInfo%,
+                %filledDataInfoNumeric%,
                 {
                     attribute,
                     UNSIGNED4   min_length := MIN(GROUP, data_length),
@@ -1403,12 +1419,27 @@ EXPORT Profile(inFile,
                 %final20%
             #END;
 
+        #UNIQUENAME(final35);
+        LOCAL %final35% := JOIN
+            (
+                %final30%,
+                %attributeBestTypeInfo%,
+                LEFT.attribute = RIGHT.attribute,
+                TRANSFORM
+                    (
+                        RECORDOF(LEFT),
+                        SELF.is_numeric := LEFT.is_numeric OR (REGEXFIND('(integer)|(unsigned)|(decimal)|(real)', RIGHT.best_attribute_type) AND NOT REGEXFIND('set of ', RIGHT.best_attribute_type)),
+                        SELF := LEFT
+                    ),
+                LEFT OUTER, KEEP(1), SMART
+            ) : ONWARNING(4531, IGNORE);
+
         #UNIQUENAME(final40);
         LOCAL %final40% :=
             #IF(%FeatureEnabledPatterns%())
                 DENORMALIZE
                     (
-                        %final30%,
+                        %final35%,
                         %topDataPatterns%,
                         LEFT.attribute = RIGHT.attribute,
                         GROUP,
@@ -1421,7 +1452,7 @@ EXPORT Profile(inFile,
                         LEFT OUTER, SMART
                     ) : ONWARNING(4531, IGNORE)
             #ELSE
-                %final30%
+                %final35%
             #END;
 
         #UNIQUENAME(final50);
@@ -1457,7 +1488,7 @@ EXPORT Profile(inFile,
                             TRANSFORM
                                 (
                                     RECORDOF(LEFT),
-                                    SELF.numeric_correlations := SORT
+                                    SELF.correlations := SORT
                                         (
                                             PROJECT
                                                 (
