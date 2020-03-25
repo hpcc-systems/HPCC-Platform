@@ -38,7 +38,7 @@ envfile="${CONFIG_DIR}/${ENV_XML_FILE}"
 
 OIFS=$IFS
 IFS=$'\n'
-compArray=($(${sbin_path}/configgen -env ${envfile} -listall | awk 'BEGIN { FS=",";} {print $2;}'))
+compArray=($(${sbin_path}/configgen -env ${envfile} -listall | awk 'BEGIN { FS=",";} {print $2;}' | sort | uniq))
 IFS=$OIFS
 
 if [ ${#compArray[@]} -eq 0 ]; then
@@ -73,7 +73,7 @@ fi
 for i in "" ${compArray[@]} ; do
     compName=""
     if [ "$i" != "" ]; then
-        compName=""${i#*_}
+        compName=""${i}
     fi
     if [ "${compName}" != "" ]; then
          compNamePrint=${compName}
@@ -123,5 +123,7 @@ else
     printf "ssh keys already installed for %-9s ..." "${USER_NAME}"
     log_success_msg
 fi
+
+chown -R ${USER_NAME}:${USER_NAME} ${homePath}
 
 exit 0
