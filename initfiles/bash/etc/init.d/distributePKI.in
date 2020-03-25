@@ -76,8 +76,8 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
   ## ensure certPath exists
   ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP mkdir -p $certPath > /dev/null 2>&1
 
-  ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP rm -f $certPath/key.pem $certPath/certificate.pem > /dev/null 2>&1
-  scp -i $homePath/.ssh/id_rsa $certPath/key.pem $certPath/certificate.pem $USER_NAME@\$IP:$certPath
+  ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP rm -f $certPath/public.key.pem $certPath/key.pem $certPath/certificate.pem > /dev/null 2>&1
+  scp -i $homePath/.ssh/id_rsa $certPath/public.key.pem $certPath/key.pem $certPath/certificate.pem $USER_NAME@\$IP:$certPath
 
   for i in \${complist[@]} ; do
       ## allow for overwrite
@@ -122,7 +122,8 @@ if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
   ## ensure certPath exists
   ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP mkdir -p $certPath > /dev/null 2>&1
 
-  ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP rm -f $certPath/key.pem $certPath/certificate.pem > /dev/null 2>&1
+  ssh -i $homePath/.ssh/id_rsa -o BatchMode=yes -o LogLevel=QUIET -o StrictHostKeyChecking=no $USER_NAME@\$IP rm -f $certPath/public.key.pem $certPath/key.pem $certPath/certificate.pem > /dev/null 2>&1
+  scp -i $homePath/.ssh/id_rsa $USER_NAME@$dali_ip:$certPath/public.key.pem $USER_NAME@\$IP:$certPath
   scp -i $homePath/.ssh/id_rsa $USER_NAME@$dali_ip:$certPath/key.pem $USER_NAME@\$IP:$certPath
   scp -i $homePath/.ssh/id_rsa $USER_NAME@$dali_ip:$certPath/certificate.pem $USER_NAME@\$IP:$certPath
 
