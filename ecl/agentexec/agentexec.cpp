@@ -96,7 +96,7 @@ int CEclAgentExecutionServer::run()
     removeSentinelFile(sentinelFile);
     try
     {
-        Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+        Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
         if (streq("thor", apptype))

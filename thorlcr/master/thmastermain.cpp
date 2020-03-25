@@ -647,7 +647,7 @@ int main( int argc, const char *argv[]  )
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
         globals->setProp("@logURL", logUrl.str());
 
-        Owned<IGroup> serverGroup = createIGroup(daliServer.str(), DALI_SERVER_PORT);
+        Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
         unsigned retry = 0;
         for (;;) {

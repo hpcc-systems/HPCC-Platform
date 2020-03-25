@@ -134,6 +134,8 @@ extern mp_decl IGroup *createIGroup(rank_t num,INode **);
 extern mp_decl IGroup *createIGroup(rank_t num,const SocketEndpoint *); 
 extern mp_decl IGroup *createIGroup(SocketEndpointArray &);
 extern mp_decl IGroup *createIGroup(const char *endpointlist,unsigned short defport=0); // takes socketendpointlist or result of toText
+constexpr unsigned defaultGroupResolveTimeout = 10*1000*60;
+extern mp_decl IGroup *createIGroupRetry(const char *endpointlist,unsigned short defport, unsigned timeout = defaultGroupResolveTimeout);
 extern mp_decl IGroup *deserializeIGroup(MemoryBuffer &src); 
 
 extern mp_decl INode *queryNullNode(); 

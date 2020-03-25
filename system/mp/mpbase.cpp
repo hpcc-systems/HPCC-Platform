@@ -19,6 +19,7 @@
 #include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
+#include "jtime.hpp"
 
 #include "mpbase.hpp"
 
@@ -705,6 +706,27 @@ IGroup *createIGroup(const char *endpointlist,unsigned short defport)
         return createIGroup(eparray);
     }
     return CGroup::fromText(endpointlist,defport);
+}
+
+IGroup *createIGroupRetry(const char *endpointlist,unsigned short defport, unsigned timeout)
+{
+    CTimeMon t(timeout);
+    while (!t.timedout())
+    {
+        try
+        {
+            return createIGroup(endpointlist, defport);
+        }
+        catch (IException *e)
+        {
+            VStringBuffer errMsg("Failed to resolve group for: %s", endpointlist);
+            EXCLOG(e, errMsg.str());
+            e->Release();
+        }
+        // on resolve failure, pause for a short time to avoid spinning too fast
+        Sleep(5);
+    }
+    throw makeStringExceptionV(0, "Timedout trying to resolve group: %s", endpointlist);
 }
 
 IGroup *deserializeIGroup(MemoryBuffer &src)
