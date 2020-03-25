@@ -37,7 +37,7 @@ public:
     virtual ~CXJXNotifyEvent() {}
 
     //IPTreeNotifyEvent
-    virtual void beginNode(const char *tag, offset_t startOffset) override;
+    virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset) override;
     virtual void newAttribute(const char *name, const char *value) override;
     virtual void beginNodeContent(const char *tag) override;
     virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset) override;
