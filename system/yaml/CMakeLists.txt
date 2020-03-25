@@ -18,4 +18,9 @@ project( yaml_include)
 
 remove_definitions(-fvisibility=hidden)
 
+if(WIN32)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+else()
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
 add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml)
