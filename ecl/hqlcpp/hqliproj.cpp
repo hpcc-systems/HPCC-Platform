@@ -2744,6 +2744,7 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
 void ImplicitProjectTransformer::getTransformedChildren(IHqlExpression * expr, HqlExprArray & children)
 {
     transformChildren(expr, children);
+    updateOrphanedSelectors(children, expr);
 }
 
 IHqlExpression * ImplicitProjectTransformer::createParentTransformed(IHqlExpression * expr)
@@ -2826,7 +2827,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 IHqlExpression * transform = &args.item(transformPos);
                 IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(transform, NULL);
                 args.replace(*newTransform, transformPos);
-                if (transform->getOperator() == no_newtransform)
+                if (newTransform->getOperator() == no_newtransform)
                     args.replace(*LINK(complexExtra->queryOutputRecord()), transformPos-1);
                 IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                 if (onFail)
@@ -3020,7 +3021,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 HqlExprArray args;
                 OwnedHqlExpr inputProject = complexExtra->createOutputProject(transformed->queryChild(0));
                 OwnedHqlExpr replacement = replaceChildDataset(transformed, inputProject, 0);
-                transformed.setown(updateSelectors(replacement, expr));
+                transformed.setown(updateSelectors(replacement, transformed));
                 logChange("Insert project before", expr, complexExtra->outputFields);
             }
             else
