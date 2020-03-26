@@ -74,6 +74,7 @@ target_link_libraries ( ws_machine
          dalibase 
          environment 
          workunit
+         SMCLib
     )
 
 IF (USE_OPENSSL)
