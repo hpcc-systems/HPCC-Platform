@@ -912,7 +912,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (udpRequestToSendTimeout == 0)
         {
             if (slaTimeout)
+            {
                 udpRequestToSendTimeout = (slaTimeout*3) / 4;
+                if (udpRequestToSendTimeout < 10)
+                    udpRequestToSendTimeout = 10;
+            }
             else
                 udpRequestToSendTimeout = 5000;
         }
