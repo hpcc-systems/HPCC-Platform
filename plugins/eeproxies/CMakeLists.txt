@@ -13,19 +13,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-if (USE_EEPROXIES)
-  set (proxies_out_dir "plugins/eeproxies")
-elseif (USE_ECLCCPROXIES)
-  set (proxies_out_dir "bin/eeproxies")
-else() # USE_EEPROXIES
-  set (proxies_out_dir "plugins")
-endif()
+set (proxies_out_dir "plugins")
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrcleanlib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscorelib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_canadacleanlib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cmslib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_datalib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_date.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_dmslib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_entityscorelib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fingerprintlib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)

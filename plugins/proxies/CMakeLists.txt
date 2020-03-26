@@ -13,14 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-if (USE_EEPROXIES)
- set (proxies_out_dir "plugins/eeproxies")
-elseif (USE_ECLCCPROXIES)
- set (proxies_out_dir "bin/eeproxies")
-else() # USE_EEPROXIES
- set (proxies_out_dir "plugins")
-endif()
+set (proxies_out_dir "plugins")
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION  ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
