@@ -1717,7 +1717,7 @@ class CXMLParse : implements IXMLParse, public CInterface
         CXPath &queryXPath() { return xpath; }
 
 // IPTreeMaker
-        virtual void beginNode(const char *tag, offset_t startOffset)
+        virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset)
         {
             if (lastMatchKeptNode && level == lastMatchKeptLevel)
             {
@@ -1785,7 +1785,7 @@ class CXMLParse : implements IXMLParse, public CInterface
             stack.append(*stackInfo);
             if (res)
             {
-                maker->beginNode(tag, startOffset);
+                maker->beginNode(tag, false, startOffset);
                 CPTreeWithOffsets *current = (CPTreeWithOffsets *)maker->queryCurrentNode();
                 current->startOffset = startOffset;
                 stackInfo->nodeMade = res;
@@ -2010,10 +2010,10 @@ class CXMLParse : implements IXMLParse, public CInterface
             return false;
         }
 
-        virtual void beginNode(const char *tag, offset_t startOffset)
+        virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset) override
         {
             if (!checkSkipRoot(tag))
-                CMakerBase::beginNode(tag, startOffset);
+                CMakerBase::beginNode(tag, arrayitem, startOffset);
         }
         virtual void newAttribute(const char *tag, const char *value)
         {

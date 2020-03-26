@@ -22,7 +22,7 @@
 
 namespace xpp
 {
-void CXJXNotifyEvent::beginNode(const char *tag, offset_t startOffset)
+void CXJXNotifyEvent::beginNode(const char *tag, bool arrayitem, offset_t startOffset)
 {
     m_eventType = 1;
     m_name.set(tag);

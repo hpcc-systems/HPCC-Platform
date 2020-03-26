@@ -1581,7 +1581,83 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
     }
 }
 
-IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
+bool PTree::isArray(const char *xpath) const
+{
+    if (!xpath || !*xpath) //item in an array child of parent? I don't think callers ever access array container directly
+        return (parent && parent->isArray(queryName()));
+    else if (isAttribute(xpath))
+        return false;
+    else
+    {
+        StringBuffer path;
+        const char *prop = splitXPath(xpath, path);
+        assertex(prop);
+        if (!isAttribute(prop))
+        {
+            if (path.length())
+            {
+                Owned<IPropertyTreeIterator> iter = getElements(path.str());
+                if (!iter->first())
+                    return false;
+                IPropertyTree &branch = iter->query();
+                if (iter->next())
+                    AMBIGUOUS_PATH("isArray", xpath);
+                return branch.isArray(prop);
+            }
+            else
+            {
+                IPropertyTree *child = children->query(xpath);
+                if (child)
+                {
+                    PTree *tree = static_cast<PTree *>(child);
+                    return (tree && tree->value && tree->value->isArray());
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void PTree::addPTreeArrayItem(IPropertyTree *existing, const char *xpath, PTree *val, aindex_t pos)
+{
+    IPropertyTree *iptval = static_cast<IPropertyTree *>(val);
+    PTree *tree = nullptr;
+    val->setParent(this);
+    if (existing)
+    {
+        dbgassertex(QUERYINTERFACE(existing, PTree));
+        tree = static_cast<PTree *>(existing);
+        if (tree->value && tree->value->isArray())
+        {
+            if ((aindex_t) -1 == pos)
+                tree->value->addElement(iptval);
+            else
+                tree->value->setElement(pos, iptval);
+            return;
+        }
+    }
+
+    IPTArrayValue *array = new CPTArray();
+    IPropertyTree *container = create(xpath, array);
+    if (existing)
+    {
+        array->addElement(LINK(existing));
+        assertex((aindex_t) -1 == pos || 0 == pos);
+        if ((aindex_t) -1 == pos)
+            array->addElement(iptval);
+        else
+            array->setElement(0, iptval);
+        tree->setParent(this);
+        children->replace(xpath, container);
+    }
+    else
+    {
+        array->addElement(iptval);
+        children->set(xpath, container);
+    }
+}
+
+IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val, bool alwaysUseArray)
 {
     if (!xpath || '\0' == *xpath)
         throw MakeIPTException(PTreeExcpt_InvalidTagName, "Invalid xpath for property tree insertion specified");
@@ -1609,26 +1685,16 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
                     IPropertyTree *child = children->query(xpath);
                     if (child)
                     {
-                        __val->setParent(this);
-                        dbgassertex(QUERYINTERFACE(child, PTree));
-                        PTree *tree = static_cast<PTree *>(child);
-                        if (tree->value && tree->value->isArray())
-                            tree->value->addElement(_val);
-                        else
-                        {
-                            IPTArrayValue *array = new CPTArray();
-                            array->addElement(LINK(child));
-                            array->addElement(_val);
-                            IPropertyTree *container = create(xpath, array);
-                            tree->setParent(this);
-                            children->replace(xpath, container);
-                        }
+                        addPTreeArrayItem(child, xpath, __val);
                         return _val;
                     }
                 }
                 else
                     createChildMap();
-                children->set(xpath, _val);
+                if (alwaysUseArray)
+                    addPTreeArrayItem(nullptr, xpath, __val);
+                else
+                    children->set(xpath, _val);
                 return _val;
             }
             if ('/' == *x || '[' == *x)
@@ -1655,38 +1721,30 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
             addingNewElement(*_val, pos);
             if (child)
             {
-                __val->setParent(this);
-                dbgassertex(QUERYINTERFACE(child, PTree));
-                PTree *tree = static_cast<PTree *>(child);
-                if (tree->value && tree->value->isArray())
-                {
-                    if ((aindex_t) -1 == pos)
-                        tree->value->addElement(_val);
-                    else
-                        tree->value->setElement(pos, _val);
-                }
-                else
-                {
-                    IPTArrayValue *array = new CPTArray();
-                    array->addElement(LINK(child));
-                    assertex((aindex_t) -1 == pos || 0 == pos);
-                    if ((aindex_t) -1 == pos)
-                        array->addElement(_val);
-                    else
-                        array->setElement(0, _val);
-                    IPropertyTree *container = create(path, array);
-                    tree->setParent(this);
-                    children->replace(path, container);         
-                }
+                addPTreeArrayItem(child, path, __val, pos);
             }
             else
             {
                 if (!checkChildren()) createChildMap();
+                if (alwaysUseArray)
+                    addPTreeArrayItem(nullptr, path, __val);
+                else
+                    children->set(path, _val);
                 children->set(path, _val);
             }
             return _val;
         }
     }
+}
+
+IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
+{
+    return addPropTree(xpath, val, false);
+}
+
+IPropertyTree *PTree::addPropTreeArrayItem(const char *xpath, IPropertyTree *val)
+{
+    return addPropTree(xpath, val, true);
 }
 
 bool PTree::removeTree(IPropertyTree *child)
@@ -4665,7 +4723,7 @@ restart:
             if ((colon = strchr(tagName.str(), ':')) != NULL)
                 tagName.remove(0, (size32_t)(colon - tagName.str() + 1));
         }
-        iEvent->beginNode(tagName.str(), startOffset);
+        iEvent->beginNode(tagName.str(), false, startOffset);
         skipWS();
         bool endTag = false;
         bool base64 = false;
@@ -4980,7 +5038,7 @@ public:
                 endOfRoot = false;
                 try
                 {
-                    iEvent->beginNode(stateInfo->wnsTag, startOffset);
+                    iEvent->beginNode(stateInfo->wnsTag, false, startOffset);
                 }
                 catch (IPTreeException *pe)
                 {
@@ -6728,7 +6786,7 @@ public:
             }
         }
 
-        iEvent->beginNode(name, startOffset);
+        iEvent->beginNode(name, false, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
     }
@@ -6743,7 +6801,7 @@ public:
             switch (nextChar)
             {
             case '[':
-                iEvent->beginNode(name, curOffset);
+                iEvent->beginNode(name, false, curOffset);
                 iEvent->beginNodeContent(name);
                 readArray(name);
                 iEvent->endNode(name, 0, "", false, curOffset);
@@ -6791,7 +6849,7 @@ public:
     {
         if ('@'==*name)
             name++;
-        iEvent->beginNode(name, curOffset);
+        iEvent->beginNode(name, false, curOffset);
         readNext();
         skipWS();
         bool attributesFinalized=false;
@@ -6840,7 +6898,7 @@ public:
                     readObject("__object__");
                     break;
                 case '[':  //treat unnamed arrays like we're in a noroot array
-                    iEvent->beginNode("__array__", curOffset);
+                    iEvent->beginNode("__array__", false, curOffset);
                     readArray("__item__");
                     iEvent->endNode("__array__", 0, "", false, curOffset);
                     break;
@@ -6870,7 +6928,7 @@ public:
                 readObject("__object__");
             else if ('[' == nextChar)
             {
-                iEvent->beginNode("__array__", curOffset);
+                iEvent->beginNode("__array__", false, curOffset);
                 readArray("__item__");
                 iEvent->endNode("__array__", 0, "", false, curOffset);
             }
@@ -7026,7 +7084,7 @@ public:
             return;
         try
         {
-            iEvent->beginNode(stateInfo->wnsTag, offset);
+            iEvent->beginNode(stateInfo->wnsTag, false, offset);
         }
         catch (IPTreeException *pe)
         {
@@ -7609,48 +7667,87 @@ static constexpr const char * currentVersion = "1.0";
 /*
  * Use source to overwrite any changes in target
  *   Attributes are replaced
- *   Elements with no name attribute are assumed to match a single element in the target.  They are added if not present.
- *   Elements with a name attribute are matched by name.  If there is a match and the source element has an attribute
- *     '__remove__' then that element is removed, otherwise it is merged.  If there is no match it is added.
+ *   Singleton elements are replaced.
+ *   Entire arrays of scalar elements are replaced.
+ *   Entire arrays of elements with no name attribute are replaced.
+ *   Elements with a name attribute are matched by name.  If there is a match it is merged.  If there is no match it is added.
 */
 
-void mergeConfiguration(IPropertyTree & target, IPropertyTree & source)
+static bool checkInSequence(IPropertyTree & child, StringAttr &seqname, bool &first, bool &endprior)
+{
+    first = false;
+    endprior = false;
+    if (seqname.length() && streq(seqname, child.queryName()))
+        return true;
+    endprior = !seqname.isEmpty();
+    if (child.isArray(nullptr))
+    {
+        first=true;
+        seqname.set(child.queryName());
+        return true;
+    }
+    seqname.clear();
+    return false;
+}
+
+inline bool isScalarItem(IPropertyTree &child)
+{
+    if (child.hasChildren())
+        return false;
+    return child.getAttributeCount()==0;
+}
+
+static IPropertyTree *ensureMergeConfigTarget(IPropertyTree &target, const char *tag, const char *nameAttribute, const char *name, bool sequence)
+{
+    StringBuffer tempPath;
+    const char * path = (sequence) ? nullptr : tag;
+    if (name && nameAttribute && *nameAttribute)
+    {
+        tempPath.append(tag).append("[").append(nameAttribute).append("=\'").append(name).append("']");
+        path = tempPath;
+    }
+
+    IPropertyTree * match = (path) ? target.queryPropTree(path) : nullptr;
+    if (!match)
+    {
+        if (sequence)
+            match = target.addPropTreeArrayItem(tag, createPTree(tag));
+        else
+            match = target.addPropTree(tag);
+    }
+    return match;
+}
+
+void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute)
 {
     Owned<IAttributeIterator> aiter = source.getAttributes();
     ForEach(*aiter)
         target.addProp(aiter->queryName(), aiter->queryValue());
 
-    StringBuffer tempPath;
+    StringAttr seqname;
     Owned<IPropertyTreeIterator> iter = source.getElements("*");
     ForEach(*iter)
     {
         IPropertyTree & child = iter->query();
         const char * tag = child.queryName();
         const char * name = child.queryProp("@name");
-        //Legacy support for old roxie configuration files that have repeated elements with no name tag
-        if (!name)
-            name = child.queryProp("@netAddress");
-        const char * path = tag;
-        if (name)
+        bool altname = false;
+
+        //Legacy support for old component configuration files that have repeated elements with no name tag but another unique id
+        if (!name && altNameAttribute && *altNameAttribute)
         {
-            tempPath.clear().append(path).append("[@name=\'").append(name).append("']");
-            path = tempPath;
+            name = child.queryProp(altNameAttribute);
+            altname = name!=nullptr;
         }
-        if (child.queryProp("@__remove__"))
-        {
-            target.removeProp(path);
-        }
-        else
-        {
-            IPropertyTree * match = target.queryPropTree(path);
-            if (!match)
-            {
-                match = target.addPropTree(tag);
-                if (name)
-                    match->setProp("@name", name);
-            }
-            mergeConfiguration(*match, child);
-        }
+
+        bool first = false;
+        bool endprior = false;
+        bool sequence = checkInSequence(child, seqname, first, endprior);
+        if (first && (!name || isScalarItem(child))) //arrays of unamed objects or scalars are replaced
+            target.removeProp(tag);
+
+        IPropertyTree * match = ensureMergeConfigTarget(target, tag, altname ? altNameAttribute : "@name", name, sequence);
+        mergeConfiguration(*match, child, altNameAttribute);
     }
 
     const char * sourceValue = source.queryProp("");
@@ -7663,7 +7760,7 @@ void mergeConfiguration(IPropertyTree & target, IPropertyTree & source)
  * If there is an extends tag in the root of the file then this file is applied as a delta to the base file
  * the configuration is the contents of the tag within the file that matches the component tag.
 */
-static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag, bool required)
+static IPropertyTree * loadConfiguration(const char * filename, const char * componentTag, bool required, const char *altNameAttribute)
 {
     if (!checkFileExists(filename))
         throw makeStringExceptionV(99, "Configuration file %s not found", filename);
@@ -7704,8 +7801,8 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     addNonEmptyPathSepChar(baseFilename);
     baseFilename.append(base);
 
-    Owned<IPropertyTree> baseTree = loadConfiguration(baseFilename, componentTag, required);
-    mergeConfiguration(*baseTree, *config);
+    Owned<IPropertyTree> baseTree = loadConfiguration(baseFilename, componentTag, required, altNameAttribute);
+    mergeConfiguration(*baseTree, *config, altNameAttribute);
     return LINK(baseTree);
 }
 
@@ -7850,7 +7947,7 @@ static void holdLoop()
 }
 #endif
 
-jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *))
+jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
 {
     if (componentConfiguration)
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
@@ -7922,8 +8019,8 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
             addNonEmptyPathSepChar(fullpath);
         }
         fullpath.append(optConfig);
-        delta.setown(loadConfiguration(fullpath, componentTag, true));
-        globalConfiguration.setown(loadConfiguration(fullpath, "global", false));
+        delta.setown(loadConfiguration(fullpath, componentTag, true, altNameAttribute));
+        globalConfiguration.setown(loadConfiguration(fullpath, "global", false, altNameAttribute));
     }
     else
     {
@@ -7935,7 +8032,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     }
 
     if (delta)
-        mergeConfiguration(*config, *delta);
+        mergeConfiguration(*config, *delta, altNameAttribute);
 
     const char * * environment = const_cast<const char * *>(environ);
     for (const char * * cur = environment; *cur; cur++)
@@ -8019,17 +8116,17 @@ public:
             switch (eventType)
             {
             case YAML_MAPPING_START_EVENT: //child map
-                loadMap(tagname);
+                loadMap(tagname, true);
                 break;
             case YAML_SEQUENCE_START_EVENT:
                 //todo
                 break;
             case YAML_SCALAR_EVENT:
-                iEvent->beginNode(tagname, parser.offset);
+                iEvent->beginNode(tagname, true, parser.offset);
                 iEvent->endNode(tagname, event.data.scalar.length, (const void *)event.data.scalar.value, false, parser.offset);
                 break;
             case YAML_ALIAS_EVENT: //reference to an anchor, ignore for now
-                iEvent->beginNode(tagname, parser.offset);
+                iEvent->beginNode(tagname, true, parser.offset);
                 iEvent->endNode(tagname, 0, nullptr, false, parser.offset);
                 break;
             case YAML_SEQUENCE_END_EVENT: //done
@@ -8048,12 +8145,12 @@ public:
             yaml_event_delete(&event);
         }
     }
-    virtual void loadMap(const char *tagname)
+    virtual void loadMap(const char *tagname, bool sequence)
     {
         bool binaryContent = false;
         StringBuffer content;
         if (tagname && *tagname)
-            iEvent->beginNode(tagname, parser.offset);
+            iEvent->beginNode(tagname, sequence, parser.offset);
 
         yaml_event_t event;
         yaml_event_type_t eventType = YAML_NO_EVENT;
@@ -8076,7 +8173,7 @@ public:
             switch (eventType)
             {
             case YAML_MAPPING_START_EVENT: //child map
-                loadMap(elname);
+                loadMap(elname, false);
                 break;
             case YAML_SEQUENCE_START_EVENT:
                 loadSequence(elname);
@@ -8097,7 +8194,7 @@ public:
                     {
                         StringBuffer decoded;
                         JBASE64_Decode((const char *) event.data.scalar.value, decoded);
-                        iEvent->beginNode(elname, parser.offset);
+                        iEvent->beginNode(elname, false, parser.offset);
                         iEvent->endNode(elname, decoded.length(), (const void *) decoded.str(), true, parser.offset);
                     }
                 }
@@ -8107,7 +8204,7 @@ public:
                         content.set((const char *) event.data.scalar.value);
                     else
                     {
-                        iEvent->beginNode(elname, parser.offset);
+                        iEvent->beginNode(elname, false, parser.offset);
                         iEvent->endNode(elname, event.data.scalar.length, (const void *) event.data.scalar.value, false, parser.offset);
                     }
                 }
@@ -8118,7 +8215,7 @@ public:
                 break;
             }
             case YAML_ALIAS_EVENT: //reference to an anchor, ignore for now
-                iEvent->beginNode(elname, parser.offset);
+                iEvent->beginNode(elname, false, parser.offset);
                 iEvent->endNode(elname, 0, nullptr, false, parser.offset);
                 break;
             case YAML_MAPPING_END_EVENT: //done
@@ -8156,7 +8253,7 @@ public:
                 //root content, the start of all mappings, should be only one at the root
                 if (content)
                     throw makeStringException(99, "YAML: Currently only support one content section (map) per stream");
-                loadMap(noRoot ? nullptr : "__object__"); //root map
+                loadMap(noRoot ? nullptr : "__object__", false); //root map
                 content=true;
                 break;
             case YAML_SEQUENCE_START_EVENT:
@@ -8164,7 +8261,7 @@ public:
                 if (content)
                     throw makeStringException(99, "YAML: Currently only support one content section (sequence) per stream");
                 if (!noRoot)
-                    iEvent->beginNode("__array__", 0);
+                    iEvent->beginNode("__array__", false, 0);
                 loadSequence("__item__");
                 if (!noRoot)
                     iEvent->endNode("__array__", 0, nullptr, false, parser.offset);
@@ -8340,7 +8437,7 @@ public:
         if (name)
             writeName(name);
 
-        checkInit(yaml_sequence_start_event_initialize(&event, nullptr, nullptr, 0, YAML_BLOCK_SEQUENCE_STYLE), "yaml_sequence_start_event_initialize");
+        checkInit(yaml_sequence_start_event_initialize(&event, nullptr, nullptr, 0, YAML_ANY_SEQUENCE_STYLE), "yaml_sequence_start_event_initialize");
         emit();
     }
     void endSequence()
@@ -8435,35 +8532,23 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
     Owned<IPropertyTreeIterator> sub = tree->getElements(hiddenRootArrayObject ? "__item__" : "*", 0 != (flags & YAML_SortTags) ? iptiter_sort : iptiter_null);
     //note that detection of repeating elements relies on the fact that ptree elements
     //of the same name will be grouped together
-    bool repeatingElement = false;
-    sub->first();
-    while(sub->isValid())
+    StringAttr seqname;
+    bool sequence = false;
+    ForEach(*sub)
     {
-        Linked<IPropertyTree> element = &sub->query();
-        const char *name = element->queryName();
-        sub->next();
-        if (!repeatingElement)
-        {
-            if (hiddenRootArrayObject)
-            {
-                yaml.beginSequence(nullptr);
-                repeatingElement = true;
-            }
-            else if (sub->isValid() && streq(name, sub->query().queryName()))
-            {
-                yaml.beginSequence(name);
-                repeatingElement = true;
-            }
-        }
-
-        _toYAML(element, yaml, flags, false, repeatingElement);
-
-        if (repeatingElement && (!sub->isValid() || !streq(name, sub->query().queryName())))
-        {
+        IPropertyTree &element = sub->query();
+        bool first = false;
+        bool endprior = false;
+        sequence = checkInSequence(element, seqname, first, endprior);
+        if (endprior)
             yaml.endSequence();
-            repeatingElement = false;
-        }
+        if (first)
+            yaml.beginSequence(hiddenRootArrayObject ? nullptr : element.queryName());
+
+        _toYAML(&element, yaml, flags, false, sequence);
     }
+    if (sequence)
+        yaml.endSequence();
 
     if (!isNull)
     {
