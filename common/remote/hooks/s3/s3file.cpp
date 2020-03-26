@@ -92,6 +92,8 @@ public:
     virtual offset_t size() override;
     virtual void close() override
     {
+        //This could set a flag here to check for reading after close(), but I don't think any file read code
+        //ever calls close, and it would be harmless (and would complicate the rest of the code).
     }
 
     // Write methods not implemented - this is a read-only file
@@ -149,7 +151,7 @@ public:
     virtual void setSize(offset_t size) override;
     virtual void flush() override;
 
-    unsigned __int64 getStatistic(StatisticKind kind) override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
 
 protected:
     Linked<S3File> file;
@@ -164,68 +166,68 @@ class S3File : implements CInterfaceOf<IFile>
     friend class S3FileWriteIO;
 public:
     S3File(const char *_s3FileName);
-    virtual bool exists()
+    virtual bool exists() override
     {
         ensureMetaData();
         return fileExists;
     }
-    virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime);
-    virtual fileBool isDirectory()
+    virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime) override;
+    virtual fileBool isDirectory() override
     {
         ensureMetaData();
         if (!fileExists)
             return notFound;
         return isDir ? foundYes : foundNo;
     }
-    virtual fileBool isFile()
+    virtual fileBool isFile() override
     {
         ensureMetaData();
         if (!fileExists)
             return notFound;
         return !isDir ? foundYes : foundNo;
     }
-    virtual fileBool isReadOnly()
+    virtual fileBool isReadOnly() override
     {
         ensureMetaData();
         if (!fileExists)
             return notFound;
         return foundYes;
     }
-    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
+    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone) override
     {
         if (mode == IFOcreate)
             return createFileWriteIO();
         assertex(mode==IFOread && fileExists);
         return createFileReadIO();
     }
-    virtual IFileAsyncIO * openAsync(IFOmode mode)
+    virtual IFileAsyncIO * openAsync(IFOmode mode) override
     {
         UNIMPLEMENTED;
     }
-    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone)
+    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone) override
     {
         if (mode == IFOcreate)
             return createFileWriteIO();
         assertex(mode==IFOread && fileExists);
         return createFileReadIO();
     }
-    virtual const char * queryFilename()
+    virtual const char * queryFilename() override
     {
         return fullName.str();
     }
-    virtual offset_t size()
+    virtual offset_t size() override
     {
         ensureMetaData();
         return fileSize;
     }
 
 // Directory functions
-    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs)
+    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
     {
         UNIMPLEMENTED;
         return createNullDirectoryIterator();
     }
-    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
+    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
         ensureMetaData();
         isdir = isDir;
@@ -235,18 +237,18 @@ public:
     }
 
     // Not going to be implemented - this IFile interface is too big..
-    virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) { UNIMPLEMENTED; }
-    virtual bool remove();
-    virtual void rename(const char *newTail) { UNIMPLEMENTED; }
-    virtual void move(const char *newName) { UNIMPLEMENTED; }
-    virtual void setReadOnly(bool ro) { UNIMPLEMENTED; }
-    virtual void setFilePermissions(unsigned fPerms) { UNIMPLEMENTED; }
-    virtual bool setCompression(bool set) { UNIMPLEMENTED; }
-    virtual offset_t compressedSize() { UNIMPLEMENTED; }
-    virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned short cflags) { UNIMPLEMENTED; }
-    virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
-    virtual bool createDirectory() { UNIMPLEMENTED; }
+    virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) override { UNIMPLEMENTED; }
+    virtual bool remove() override;
+    virtual void rename(const char *newTail) override { UNIMPLEMENTED; }
+    virtual void move(const char *newName) override { UNIMPLEMENTED; }
+    virtual void setReadOnly(bool ro) override { UNIMPLEMENTED; }
+    virtual void setFilePermissions(unsigned fPerms) override { UNIMPLEMENTED; }
+    virtual bool setCompression(bool set) override { UNIMPLEMENTED; }
+    virtual offset_t compressedSize() override { UNIMPLEMENTED; }
+    virtual unsigned getCRC() override { UNIMPLEMENTED; }
+    virtual void setCreateFlags(unsigned short cflags) override { UNIMPLEMENTED; }
+    virtual void setShareMode(IFSHmode shmode) override { UNIMPLEMENTED; }
+    virtual bool createDirectory() override { UNIMPLEMENTED; }
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,
@@ -254,10 +256,10 @@ public:
                                   bool includedirs=false,
                                   unsigned checkinterval=60*1000,
                                   unsigned timeout=(unsigned)-1,
-                                  Semaphore *abortsem=NULL)  { UNIMPLEMENTED; }
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) { UNIMPLEMENTED; }
-    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) { UNIMPLEMENTED; }
-    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)  { UNIMPLEMENTED; }
+                                  Semaphore *abortsem=NULL) override { UNIMPLEMENTED; }
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) override { UNIMPLEMENTED; }
+    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) override { UNIMPLEMENTED; }
+    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED; }
 
 protected:
     void readBlob(Aws::S3::Model::GetObjectOutcome & readResult, FileIOStats & stats, offset_t from = 0, offset_t length = unknownFileSize);
@@ -460,7 +462,11 @@ bool S3File::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime
 {
     ensureMetaData();
     if (createTime)
+    {
         createTime->clear();
+        //Creation date does not seem to be available, so use the last modified date instead.
+        createTime->set((time_t)(modifiedMsTime / 1000));
+    }
     if (modifiedTime)
     {
         modifiedTime->clear();
