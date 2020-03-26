@@ -31,18 +31,18 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
   else
     NEW_POINT=$((HPCC_POINT+1))
   fi
-  if [ "$GIT_BRANCH" != "candidate-$HPCC_MAJOR.$HPCC_MINOR.x" ]; then
-    echo "Current branch should be candidate-$HPCC_MAJOR.$HPCC_MINOR.x"
+  if [ "$GIT_BRANCH" != "candidate-$HPCC_MAJOR.$NEW_MINOR.x" ]; then
+    echo "Current branch should be candidate-$HPCC_MAJOR.$NEW_MINOR.x"
     exit 2
   fi
-  doit "git checkout -b candidate-$HPCC_MAJOR.$HPCC_MINOR.$NEW_POINT"
+  doit "git checkout -b candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT"
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
-  update_version_file closedown $((NEW_POINT+1)) 0
+  update_version_file closedown $((NEW_POINT+1)) 0 $NEW_MINOR
   doit "git add $VERSIONFILE"
-  doit "git commit -s -m \"Split off $HPCC_MAJOR.$HPCC_MINOR.$NEW_POINT\""
+  doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
   doit "git push $REMOTE"
-  GIT_BRANCH=candidate-$HPCC_MAJOR.$HPCC_MINOR.$NEW_POINT
+  GIT_BRANCH=candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
   NEW_SEQUENCE=1
@@ -62,6 +62,7 @@ fi
 update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR
 HPCC_MATURITY=rc
 HPCC_SEQUENCE=$NEW_SEQUENCE
+HPCC_MINOR=$NEW_MINOR
 HPCC_POINT=$NEW_POINT
 set_tag
 

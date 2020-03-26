@@ -5,12 +5,12 @@ on:
   push:
     tags:
     - 'master*'
-    - 'community-*'
-    - '!community-7.6.*'
-    - '!community-7.4.*'
-    - '!community-7.2.*'
-    - '!community-7.0.*'
-    - '!community-6.*'
+    - 'community_*'
+    - '!community_7.6.*'
+    - '!community_7.4.*'
+    - '!community_7.2.*'
+    - '!community_7.0.*'
+    - '!community_6.*'
 
 jobs:
   build:
