@@ -482,6 +482,9 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@MachineUsageCacheMinutes) != ''">
                 <MachineUsageCacheMinutes><xsl:value-of select="@MachineUsageCacheMinutes"/></MachineUsageCacheMinutes>
             </xsl:if>
+            <xsl:if test="string(@MachineUsageCacheAutoRebuildMinutes) != ''">
+                <MachineUsageCacheAutoRebuildMinutes><xsl:value-of select="@MachineUsageCacheAutoRebuildMinutes"/></MachineUsageCacheAutoRebuildMinutes>
+            </xsl:if>
         </EspService>
         
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">

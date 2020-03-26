@@ -1570,7 +1570,7 @@ IFileIO * CRemoteFile::open(IFOmode mode,IFEflags extraFlags)
 void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, CFflags copyFlags)
 {
     CRemoteFile *dstfile = QUERYINTERFACE(dest,CRemoteFile);
-    if (dstfile&&!dstfile->queryEp().isLocal()) {
+    if (dstfile&&(!dstfile->queryEp().isLocal() || (dstfile->queryEp().port!=DAFILESRV_PORT && dstfile->queryEp().port!=SECURE_DAFILESRV_PORT))) {
         StringBuffer tmpname;
         Owned<IFile> destf;
         RemoteFilename dest;
