@@ -1224,9 +1224,359 @@ class JlibIPTTest : public CppUnit::TestFixture
         CPPUNIT_TEST(test);
         CPPUNIT_TEST(testMarkup);
         CPPUNIT_TEST(testRootArrayMarkup);
+        CPPUNIT_TEST(testArrayMarkup);
+        CPPUNIT_TEST(testMergeConfig);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testArrayMarkup()
+    {
+            static constexpr const char * yamlFlowMarkup = R"!!({a: {
+      b: valb,
+      c: [valc],
+      d: [vald1,vald2],
+      e: [{x: valex1, y: valey1}],
+      f: {x: valfx1, y: valfy1},
+      g: [{x: valgx1, y: valgy1},{x: valgx2, y: valgy2}],
+      h: !el valh,
+      i: {
+        j: {
+          b: valb,
+          c: [valc],
+          d: [vald1,vald2],
+          e: [{x: valex1, y: valey1}],
+          f: {x: valfx1, y: valfy1},
+          g: [{x: valgx1, y: valgy1},{x: valgx2, y: valgy2}],
+          h: !el valh,
+        },
+        k: [{
+          b: valb,
+          c: [valc],
+          d: [vald1,vald2],
+          e: [{x: valex1, y: valey1}],
+          f: {x: valfx1, y: valfy1},
+          g: [{x: valgx1, y: valgy1},{x: valgx2, y: valgy2}],
+          h: !el valh,
+          }],
+        l: [{
+              b: valb,
+              c: [valc],
+              d: [vald1,vald2],
+              e: [{x: valex1, y: valey1}],
+              f: {x: valfx1, y: valfy1},
+              g: [{x: valgx1, y: valgy1},{x: valgx2, y: valgy2}],
+              h: !el valh,
+          },
+          {
+              b: valb,
+              c: [valc],
+              d: [vald1,vald2],
+              e: [{x: valex1, y: valey1}],
+              f: {x: valfx1, y: valfy1},
+              g: [{x: valgx1, y: valgy1},{x: valgx2, y: valgy2}],
+              h: !el valh,
+          }],
+      }
+    }
+    }
+    )!!";
+
+            static constexpr const char * yamlBlockMarkup = R"!!(a:
+  b: valb
+  c:
+  - valc
+  d:
+  - vald1
+  - vald2
+  e:
+  - x: valex1
+    y: valey1
+  f:
+    x: valfx1
+    y: valfy1
+  g:
+  - x: valgx1
+    y: valgy1
+  - x: valgx2
+    y: valgy2
+  h: !el valh
+  i:
+    j:
+      b: valb
+      c:
+      - valc
+      d:
+      - vald1
+      - vald2
+      e:
+      - x: valex1
+        y: valey1
+      f:
+        x: valfx1
+        y: valfy1
+      g:
+      - x: valgx1
+        y: valgy1
+      - x: valgx2
+        y: valgy2
+      h: !el valh
+    k:
+    - b: valb
+      c:
+      - valc
+      d:
+      - vald1
+      - vald2
+      e:
+      - x: valex1
+        y: valey1
+      f:
+        x: valfx1
+        y: valfy1
+      g:
+      - x: valgx1
+        y: valgy1
+      - x: valgx2
+        y: valgy2
+      h: !el valh
+    l:
+    - b: valb
+      c:
+      - valc
+      d:
+      - vald1
+      - vald2
+      e:
+      - x: valex1
+        y: valey1
+      f:
+        x: valfx1
+        y: valfy1
+      g:
+      - x: valgx1
+        y: valgy1
+      - x: valgx2
+        y: valgy2
+      h: !el valh
+    - b: valb
+      c:
+      - valc
+      d:
+      - vald1
+      - vald2
+      e:
+      - x: valex1
+        y: valey1
+      f:
+        x: valfx1
+        y: valfy1
+      g:
+      - x: valgx1
+        y: valgy1
+      - x: valgx2
+        y: valgy2
+      h: !el valh
+)!!";
+
+            StringBuffer ml;
+
+            Owned<IPropertyTree> yamlFlow = createPTreeFromYAMLString(yamlFlowMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            toYAML(yamlFlow, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+            CPPUNIT_ASSERT(streq(ml, yamlBlockMarkup));
+
+            Owned<IPropertyTree> yamlBlock = createPTreeFromYAMLString(yamlBlockMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            toYAML(yamlBlock, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+            CPPUNIT_ASSERT(streq(ml, yamlBlockMarkup));
+        }
+
+    void testMergeConfig()
+    {
+            static constexpr const char * yamlLeft = R"!!({a: {
+      b: gone,
+      bk: kept,
+      c: [gone],
+      ck: [kept],
+      d: [gone1,gone2],
+      dk: [kept1,kept2],
+      e: [{name: merged, x: gone, z: kept},{altname: merged, x: gone, z: kept},{name: kept, x: kept, y: kept}, {unnamed: kept, x: kept, y: kept}],
+      ek: [{name: kept, x: kept, y: kept}, {unnamed: kept, x: kept, y: kept}],
+      f: [{unnamed: gone, x: gone, y: gone}, {unnamed: gone2, x: gone2, y: gone2}],
+      kept: {x: kept, y: kept},
+      merged: {x: gone, z: kept}
+      }
+    }
+)!!";
+
+            static constexpr const char * yamlBlockLeft = R"!!(a:
+  b: gone
+  bk: kept
+  c:
+  - gone
+  ck:
+  - kept
+  d:
+  - gone1
+  - gone2
+  dk:
+  - kept1
+  - kept2
+  e:
+  - name: merged
+    x: gone
+    z: kept
+  - altname: merged
+    x: gone
+    z: kept
+  - name: kept
+    x: kept
+    y: kept
+  - unnamed: kept
+    x: kept
+    y: kept
+  ek:
+  - name: kept
+    x: kept
+    y: kept
+  - unnamed: kept
+    x: kept
+    y: kept
+  f:
+  - unnamed: gone
+    x: gone
+    y: gone
+  - unnamed: gone2
+    x: gone2
+    y: gone2
+  kept:
+    x: kept
+    y: kept
+  merged:
+    x: gone
+    z: kept
+)!!";
+
+            static constexpr const char * yamlRight = R"!!({a: {
+      b: updated,
+      c: [added],
+      d: [added1,added2],
+      e: [{name: merged, x: updated, y: added},{altname: merged, x: updated, y: added},{name: added, x: added, y: added}, {unnamed: added, x: added, y: added}],
+      f: [{unnamed: kept, x: kept, y: kept}, {unnamed: kept2, x: kept2, y: kept2}],
+      added: {x: added, y: added},
+      merged: {x: updated, y: added}
+      }
+    }
+)!!";
+
+            static constexpr const char * yamlBlockRight = R"!!(a:
+  b: updated
+  c:
+  - added
+  d:
+  - added1
+  - added2
+  e:
+  - name: merged
+    x: updated
+    y: added
+  - altname: merged
+    x: updated
+    y: added
+  - name: added
+    x: added
+    y: added
+  - unnamed: added
+    x: added
+    y: added
+  f:
+  - unnamed: kept
+    x: kept
+    y: kept
+  - unnamed: kept2
+    x: kept2
+    y: kept2
+  added:
+    x: added
+    y: added
+  merged:
+    x: updated
+    y: added
+)!!";
+
+            static constexpr const char * yamlMerged = R"!!(a:
+  b: updated
+  bk: kept
+  added:
+    x: added
+    y: added
+  c:
+  - added
+  ck:
+  - kept
+  d:
+  - added1
+  - added2
+  dk:
+  - kept1
+  - kept2
+  e:
+  - name: merged
+    x: updated
+    y: added
+    z: kept
+  - altname: merged
+    x: updated
+    y: added
+    z: kept
+  - name: kept
+    x: kept
+    y: kept
+  - unnamed: kept
+    x: kept
+    y: kept
+  - name: added
+    x: added
+    y: added
+  - unnamed: added
+    x: added
+    y: added
+  ek:
+  - name: kept
+    x: kept
+    y: kept
+  - unnamed: kept
+    x: kept
+    y: kept
+  f:
+  - unnamed: kept
+    x: kept
+    y: kept
+  - unnamed: kept2
+    x: kept2
+    y: kept2
+  kept:
+    x: kept
+    y: kept
+  merged:
+    x: updated
+    y: added
+    z: kept
+)!!";
+
+        StringBuffer ml;
+
+        Owned<IPropertyTree> treeLeft = createPTreeFromYAMLString(yamlLeft, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> treeRight = createPTreeFromYAMLString(yamlRight, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        mergeConfiguration(*treeLeft, *treeRight, "@altname");
+        toYAML(treeLeft, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, yamlMerged));
+
+        Owned<IPropertyTree> treeBlockLeft = createPTreeFromYAMLString(yamlBlockLeft, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> treeBlockRight = createPTreeFromYAMLString(yamlBlockRight, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        mergeConfiguration(*treeBlockLeft, *treeBlockRight, "@altname");
+        toYAML(treeBlockLeft, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, yamlMerged));
+    }
+
     void testRootArrayMarkup()
     {
         static constexpr const char * xmlMarkup = R"!!(<__array__>

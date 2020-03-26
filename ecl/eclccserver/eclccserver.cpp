@@ -835,7 +835,7 @@ int main(int argc, const char *argv[])
         UWARNLOG("No Dali server list specified - assuming local");
         daliServers = ".";
     }
-    Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+    Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
     try
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
