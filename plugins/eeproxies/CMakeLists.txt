@@ -13,6 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+if (PLATFORM or INCLUDE_EE_PLUGINS)
 set (proxies_out_dir "plugins")
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrcleanlib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscorelib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
@@ -27,3 +28,4 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_hktlib.eclmod DESTINATION ${prox
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_namelib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ofaclib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ziplib.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+endif()
