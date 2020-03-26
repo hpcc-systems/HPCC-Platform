@@ -75,10 +75,9 @@ class queue_t
 public: 
     void interrupt();
     void pushOwn(roxiemem::DataBuffer *buffer);
-    roxiemem::DataBuffer *pop();
-    bool empty() ;
+    roxiemem::DataBuffer *pop(bool block);
     bool dataQueued(const void *key, PKT_CMP_FUN pkCmpFn);
-    bool removeData(const void *key, PKT_CMP_FUN pkCmpFn);
+    unsigned removeData(const void *key, PKT_CMP_FUN pkCmpFn);
     int  free_slots(); //block if no free slots
     void set_queue_size(unsigned int queue_size); //must be called immediately after constructor if default constructor is used
     queue_t(unsigned int queue_size);
