@@ -427,7 +427,7 @@ class CSendManager : implements ISendManager, public CInterface
                     unsigned expireTime = dest.requestExpiryTime;
                     if (expireTime)
                     {
-                        if (expireTime < now)
+                        if (expireTime <= now)
                         {
                             dest.timeouts++;
                             {
