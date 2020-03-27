@@ -37,7 +37,11 @@ COPY hpcc.gitpatch .
 RUN if [ -s hpcc.gitpatch ]; then git apply --whitespace=nowarn hpcc.gitpatch; fi
 
 WORKDIR /hpcc-dev/build
-RUN make -j$(($(nproc)*3/2))
+ARG BUILD_THREADS
+RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(($(nproc)*3/2)) > ~/build_threads ; fi
+RUN echo Building with $(cat ~/build_threads) threads
+RUN make -j$(cat ~/build_threads)
 
 USER root
-RUN make -j$(($(nproc)*3/2)) install
+RUN make -j$(cat ~hpcc/build_threads) install
+

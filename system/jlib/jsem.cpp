@@ -80,6 +80,9 @@ bool Semaphore::wait(unsigned timeout)
     if (sem_trywait(&sem) == 0)
         return true;
 
+    if (timeout==0)
+        return false;
+
     timespec abs;
     getEndTime(abs, timeout);
     int ret = sem_timedwait(&sem, &abs);

@@ -127,6 +127,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(LOGGING_SERVICE "Configure use of logging service" ON)
   option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
   option(USE_DIGISIGN "Use digisign" ON)
+  option(INCLUDE_EE_PLUGINS "Install EE Plugins in Clienttool" OFF)
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)

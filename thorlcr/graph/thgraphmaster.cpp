@@ -1837,7 +1837,6 @@ bool CJobMaster::go()
         EXCLOG(e, NULL); 
         jobDoneException.setown(e);
     }
-    fatalHandler->clear();
     queryTempHandler()->clearTemps();
     slaveMsgHandler->stop();
     if (jobDoneException.get())
@@ -1976,6 +1975,11 @@ bool CJobMaster::fireException(IException *e)
         }
     }
     return true;
+}
+
+IFatalHandler *CJobMaster::clearFatalHandler()
+{
+    return fatalHandler.getClear();
 }
 
 // CJobMasterChannel

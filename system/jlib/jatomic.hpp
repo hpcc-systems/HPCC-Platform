@@ -58,7 +58,7 @@ public:
     RelaxedAtomic() noexcept = default;
     inline constexpr RelaxedAtomic(T _value) noexcept : BASE(_value) { }
     ~RelaxedAtomic() noexcept = default;
-    RelaxedAtomic(const RelaxedAtomic&) = delete;
+    RelaxedAtomic(const RelaxedAtomic& _value) { BASE::store(_value.load()); }
     RelaxedAtomic& operator=(const RelaxedAtomic&) = delete;
 
     inline operator T() const noexcept { return load(); }

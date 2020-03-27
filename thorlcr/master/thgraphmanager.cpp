@@ -925,6 +925,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     addJob(*job);
     bool allDone = false;
     Owned<IException> exception;
+    Owned<IFatalHandler> fatalHdlr;
     try
     {
         struct CounterBlock
@@ -972,8 +973,11 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         setWuid(nullptr);
         throw exception.getClear();
     }
+    fatalHdlr.setown(job->clearFatalHandler());
     job.clear();
     PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
+
+    fatalHdlr->clear();
 
     setWuid(NULL);
     return allDone;
