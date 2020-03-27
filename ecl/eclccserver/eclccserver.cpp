@@ -33,6 +33,8 @@
 #ifndef _CONTAINERIZED
 #include "dalienv.hpp"
 #endif
+#include <unordered_map>
+#include <string>
 
 static Owned<IPropertyTree> globals;
 static const char * * globalArgv = nullptr;
@@ -526,6 +528,7 @@ public:
             if (strcmp(newClusterName, clusterName.str()) != 0)
             {
 #ifdef _CONTAINERIZED
+                // MORE?
 #else
                 clusterInfo.setown(getTargetClusterInfo(newClusterName));
                 if (!clusterInfo)
@@ -817,7 +820,6 @@ int main(int argc, const char *argv[])
         OERRLOG("Failed to load configuration");
         return 1;
     }
-
     const char * processName = globals->queryProp("@name");
     setStatisticsComponentName(SCTeclcc, processName, true);
     if (globals->getPropBool("@enableSysLog",true))
@@ -854,14 +856,31 @@ int main(int argc, const char *argv[])
             if (optMonitorInterval)
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
 #ifdef _CONTAINERIZED
+            bool filtered = false;
+            std::unordered_map<std::string, bool> listenQueues;
+            Owned<IPTreeIterator> listening = globals->getElements("listen");
+            ForEach (*listening)
+            {
+                const char *lq = listening->query().queryProp(".");
+                if (lq)
+                {
+                    listenQueues[lq] = true;
+                    filtered = true;
+                }
+            }
+
             StringBuffer queueNames;
             Owned<IPTreeIterator> queues = globals->getElements("queues");
             ForEach(*queues)
             {
                 IPTree &queue = queues->query();
-                if (queueNames.length())
-                    queueNames.append(",");
-                getClusterEclCCServerQueueName(queueNames, queue.queryProp("@name"));
+                const char *qname = queue.queryProp("@name");
+                if (!filtered || listenQueues.count(qname))
+                {
+                    if (queueNames.length())
+                        queueNames.append(",");
+                    getClusterEclCCServerQueueName(queueNames, qname);
+                }
             }
 #else
             SCMStringBuffer queueNames;

@@ -45,6 +45,10 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+if [[ -n ${INPUT_BUILD_THREADS} ]] ; then
+  BUILD_THREADS=$INPUT_BUILD_THREADS
+fi
+
 if [[ -z ${BUILD_TAG} ]] ; then
   echo Current tag could not be located
   echo Perhaps you meant to run incr.sh ?
@@ -68,6 +72,7 @@ build_image() {
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
+       --build-arg BUILD_THREADS=${BUILD_THREADS} \
        ${name}/ 
     if [ "$PUSH" = "1" ] ; then
       docker push hpccsystems/${name}:${label}

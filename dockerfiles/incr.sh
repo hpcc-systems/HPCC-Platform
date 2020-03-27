@@ -35,13 +35,13 @@ PREV=$1
 
 BUILD_TYPE=Debug
 BUILD_LABEL=${HEAD}-Debug${DIRTY}
+BUILD_THREADS=$INPUT_BUILD_THREADS
 
 if [[ "$BUILD_LABEL" == "$PREV" ]] ; then
     echo Docker image hpccsystems/platform-core:${HEAD} already exists
     PREV=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | grep `docker images hpccsystems/platform-build --format {{.Tag}} | head -n 2 | tail -n 1`)
     [[ -z ${PREV} ]] && PREV=$(git describe --abbrev=0 --tags)-Debug
 fi
-
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -56,7 +56,7 @@ else
   git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
   # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
   PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
-  docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} platform-build-incremental/
+  docker image build -t hpccsystems/platform-build:${BUILD_LABEL} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS} platform-build-incremental/
   rm platform-build-incremental/hpcc.gitpatch
 fi
 docker image build -t hpccsystems/platform-core:${BUILD_LABEL} --build-arg BUILD_LABEL=${BUILD_LABEL} platform-core-debug/  
