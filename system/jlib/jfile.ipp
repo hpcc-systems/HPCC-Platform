@@ -117,12 +117,7 @@ protected:
     IFSHmode            sharemode;
     IFOmode             openmode;
     IFEflags            extraFlags;
-    RelaxedAtomic<cycle_t> ioReadCycles;
-    RelaxedAtomic<cycle_t> ioWriteCycles;
-    RelaxedAtomic<__uint64> ioReadBytes;
-    RelaxedAtomic<__uint64> ioWriteBytes;
-    RelaxedAtomic<__uint64> ioReads;
-    RelaxedAtomic<__uint64> ioWrites;
+    FileIOStats         stats;
     RelaxedAtomic<unsigned> unflushedReadBytes; // more: If this recorded flushedReadBytes it could have a slightly lower overhead
     RelaxedAtomic<unsigned> unflushedWriteBytes;
 private:

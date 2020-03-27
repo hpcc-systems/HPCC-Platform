@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,21 +15,36 @@
 ################################################################################
 
 
-# Component: remote/hooks
+# Component: s3file
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for remote/hooks
+#    Cmake Input File for amazon s3 direct reading hook
 #####################################################
 
-project( hooks )
+project( s3file )
+set(AWS_SDK_CPP_SOURCE_DIR ${HPCC_SOURCE_DIR}/system/aws/aws-sdk-cpp)
 
-IF (USE_GIT)
-  add_subdirectory(git)
-ENDIF()
-IF (USE_LIBARCHIVE)
-  add_subdirectory(libarchive)
-ENDIF()
-IF (USE_AWS)
-  add_subdirectory(s3)
-ENDIF()
+set (    SRCS
+         s3file.cpp
+         s3file.hpp
+    )
+
+include_directories (
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-core/include
+         ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-s3/include
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DS3FILE_EXPORTS )
+
+HPCC_ADD_LIBRARY( s3file SHARED ${SRCS}  )
+install ( TARGETS s3file DESTINATION filehooks )
+target_link_options(s3file  PUBLIC  "LINKER:-z,defs" )
+
+target_link_libraries ( s3file
+    jlib
+    aws-cpp-sdk-core
+    aws-cpp-sdk-s3
+)

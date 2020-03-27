@@ -1773,26 +1773,7 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
 
 unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 {
-    switch (kind)
-    {
-    case StCycleDiskReadIOCycles:
-        return ioReadCycles.load();
-    case StCycleDiskWriteIOCycles:
-        return ioWriteCycles.load();
-    case StTimeDiskReadIO:
-        return cycle_to_nanosec(ioReadCycles.load());
-    case StTimeDiskWriteIO:
-        return cycle_to_nanosec(ioWriteCycles.load());
-    case StSizeDiskRead:
-        return ioReadBytes.load();
-    case StSizeDiskWrite:
-        return ioWriteBytes.load();
-    case StNumDiskReads:
-        return ioReads.load();
-    case StNumDiskWrites:
-        return ioWrites.load();
-    }
-    return 0;
+    return stats.getStatistic(kind);
 }
 
 #ifdef _WIN32
@@ -1911,7 +1892,7 @@ void CFileIO::setSize(offset_t pos)
 
 // More errorno checking TBD
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), unflushedReadBytes(0), unflushedWriteBytes(0)
+    : unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1998,9 +1979,9 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 
     CCycleTimer timer;
     size32_t ret = checked_pread(file, data, len, pos);
-    ioReadCycles.fetch_add(timer.elapsedCycles());
-    ioReadBytes.fetch_add(ret);
-    ++ioReads;
+    stats.ioReadCycles.fetch_add(timer.elapsedCycles());
+    stats.ioReadBytes.fetch_add(ret);
+    ++stats.ioReads;
 
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {
@@ -2037,9 +2018,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
     CCycleTimer timer;
     size32_t ret = pwrite(file,data,len,pos);
-    ioWriteCycles.fetch_add(timer.elapsedCycles());
-    ioWriteBytes.fetch_add(ret);
-    ++ioWrites;
+    stats.ioWriteCycles.fetch_add(timer.elapsedCycles());
+    stats.ioWriteBytes.fetch_add(ret);
+    ++stats.ioWrites;
 
     if (ret==(size32_t)-1)
         throw makeErrnoException(errno, "CFileIO::write");
@@ -5113,9 +5094,41 @@ StringBuffer &makePathUniversal(const char *path, StringBuffer &out)
     return out;
 }
 
+//Treat a filename as absolute if:
+//  a) The filename begins with a path separator character   e.g. /home/hpcc/blah    \Users\hpcc\blah
+//  b) If there is a colon before the first path separator   e.g. c:\Users\hpcc\blah   s3://mycontainer/myblob
+//
+// Do not match:
+//  A) regress::myfile::x::y
+//  B) local/mydir
+//  C) mylocal
+bool isAbsolutePath(const char *path)
+{
+    if (!path||!*path)
+        return false;
+    if (isPathSepChar(path[0]))
+        return true;
+    const char * cur = path;
+    bool hadColon = false;
+    for (;;)
+    {
+        switch (*cur++)
+        {
+        case '/':
+        case '\\':
+            return hadColon;
+        case '\0':
+            return false;
+        case ':':
+            hadColon = true;
+            break;
+        }
+    }
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
-    if (isPathSepChar(relpath[0])&&(relpath[0]==relpath[1]))
+    if (isAbsolutePath(relpath))
     {
         if (mustExist)
         {
@@ -5125,6 +5138,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         }
         return out.append(relpath); // if remote then already should be absolute
     }
+
 #ifdef _WIN32
     char rPath[MAX_PATH];
     char *filepart;
@@ -5141,6 +5155,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     }
     out.append(rPath);
 #else
+
     StringBuffer expanded;
     //Expand ~ on the front of a filename - useful for paths not passed on the command line
     //Note, it does not support the ~user/ version of the syntax
@@ -6838,5 +6853,39 @@ IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirector
 
     Owned<IFile> dir = createIFile(dirName); 
     return getSortedDirectoryIterator(dir, mode, rev, mask, sub, includedirs);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+unsigned __int64 FileIOStats::getStatistic(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StCycleDiskReadIOCycles:
+        return ioReadCycles.load();
+    case StCycleDiskWriteIOCycles:
+        return ioWriteCycles.load();
+    case StTimeDiskReadIO:
+        return cycle_to_nanosec(ioReadCycles.load());
+    case StTimeDiskWriteIO:
+        return cycle_to_nanosec(ioWriteCycles.load());
+    case StSizeDiskRead:
+        return ioReadBytes.load();
+    case StSizeDiskWrite:
+        return ioWriteBytes.load();
+    case StNumDiskReads:
+        return ioReads.load();
+    case StNumDiskWrites:
+        return ioWrites.load();
+    }
+    return 0;
+}
+
+void FileIOStats::trace()
+{
+    if (ioReads)
+        printf("Reads: %u  Bytes: %u  TimeMs: %u\n", (unsigned)ioReads, (unsigned)ioReadBytes, (unsigned)cycle_to_millisec(ioReadCycles));
+    if (ioWrites)
+        printf("Writes: %u  Bytes: %u  TimeMs: %u\n", (unsigned)ioWrites, (unsigned)ioWriteBytes, (unsigned)cycle_to_millisec(ioWriteCycles));
 }
 

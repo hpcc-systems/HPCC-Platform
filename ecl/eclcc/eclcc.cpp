@@ -1666,17 +1666,23 @@ void EclCC::processFile(EclCompileInstance & instance)
 {
     clearTransformStats();
 
-    const char * curFilename = instance.inputFile->queryFilename();
+    Linked<IFile> inputFile = instance.inputFile;
+    const char * curFilename = inputFile->queryFilename();
     assertex(curFilename);
     bool inputFromStdIn = streq(curFilename, "stdin:");
+
+    //Ensure the filename is fully expanded, but do not recreate the IFile if it was already absolute
     StringBuffer expandedSourceName;
-    if (!inputFromStdIn && !optNoSourcePath)
+    if (!inputFromStdIn && !optNoSourcePath && !isAbsolutePath(curFilename))
+    {
         makeAbsolutePath(curFilename, expandedSourceName);
+        inputFile.setown(createIFile(expandedSourceName));
+    }
     else
         expandedSourceName.append(curFilename);
 
     Owned<ISourcePath> sourcePath = (optNoSourcePath||inputFromStdIn) ? NULL : createSourcePath(expandedSourceName);
-    Owned<IFileContents> queryText = createFileContentsFromFile(expandedSourceName, sourcePath, false, NULL);
+    Owned<IFileContents> queryText = createFileContents(inputFile, sourcePath, false, NULL);
 
     const char * queryTxt = queryText->getText();
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
