@@ -265,6 +265,8 @@ public:
     __int64 queryNodeDiskUsage(unsigned node);
     void setNodeDiskUsage(unsigned node, __int64 sz);
     bool queryCreatedFile(const char *file);
+
+    virtual IFatalHandler *clearFatalHandler();
 };
 
 class graphmaster_decl CJobMasterChannel : public CJobChannel

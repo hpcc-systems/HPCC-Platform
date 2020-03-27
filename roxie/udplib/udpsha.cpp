@@ -97,14 +97,6 @@ queue_t::~queue_t()
     delete [] elements; 
 }
 
-bool queue_t::empty() 
-{
-    c_region.enter();
-    bool res = (active_buffers == 0);
-    c_region.leave();
-    return res;
-}
-
 int queue_t::free_slots() 
 {
     int res=0;
@@ -148,9 +140,10 @@ void queue_t::pushOwn(DataBuffer *buf)
     data_avail.signal();
 }
 
-DataBuffer *queue_t::pop()
+DataBuffer *queue_t::pop(bool block)
 {
-    data_avail.wait();
+    if (!data_avail.wait(block ? INFINITE : 0))
+        return nullptr;
     DataBuffer *ret = NULL; 
     bool must_signal;
     {
@@ -171,30 +164,49 @@ DataBuffer *queue_t::pop()
 }
 
 
-bool queue_t::removeData(const void *key, PKT_CMP_FUN pkCmpFn)
+unsigned queue_t::removeData(const void *key, PKT_CMP_FUN pkCmpFn)
 {
-    bool ret = false;
-    CriticalBlock b(c_region);
-    if (active_buffers) 
+    unsigned removed = 0;
+    unsigned signalFree = 0;
+    unsigned signalFreeSlots = 0;
     {
-        unsigned ix = first;
-        for (;;)
+        CriticalBlock b(c_region);
+        if (active_buffers)
         {
-            if (elements[ix].data && 
-                ((key == NULL) || (pkCmpFn == NULL) || pkCmpFn((const void*) elements[ix].data, key)))
+            unsigned destix = first;
+            unsigned ix = first;
+            for (;;)
             {
-                ::Release(elements[ix].data);
-                elements[ix].data = NULL;  // safer than trying to remove it and close up queue - race conditions with code elsewhere
-                ret = true;
+                if (elements[ix].data && (!key || !pkCmpFn || pkCmpFn((const void*) elements[ix].data, key)))
+                {
+                    ::Release(elements[ix].data);
+                    signalFree++;
+                    active_buffers--;
+                    removed++;
+                }
+                else
+                    elements[destix++] = elements[ix];
+                ix++;
+                if (ix==element_count)
+                    ix = 0;
+                if (destix==element_count)
+                    destix = 0;
+                if (ix == last)
+                    break;
             }
-            ix++;
-            if (ix==element_count)
-                ix = 0;
-            if (ix == last)
-                break;
-        }           
+            if (signalFree && signal_free_sl)
+            {
+                signal_free_sl--;
+                signalFreeSlots++;
+            }
+            last = destix;
+        }
     }
-    return ret;
+    if (signalFree)
+        free_space.signal(signalFree);
+    if (signalFreeSlots)
+        free_sl.signal(signalFreeSlots);
+    return removed;
 }
 
 
