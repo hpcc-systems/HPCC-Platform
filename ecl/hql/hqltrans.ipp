@@ -484,6 +484,7 @@ protected:
             transformed.setown(doUpdateOrphanedSelectors(expr, transformed));
     }
     IHqlExpression * doUpdateOrphanedSelectors(IHqlExpression * expr, IHqlExpression * transformed);
+    bool updateOrphanedSelectors(HqlExprArray & args, IHqlExpression * expr);
 
     IHqlExpression * queryTransformed(IHqlExpression * expr);
 

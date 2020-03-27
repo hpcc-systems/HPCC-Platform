@@ -2030,29 +2030,42 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
     //Happens in constant folding when filters etc. are replaced with a very different child
     //Happens when also hoisting a non-table expression e.g, globalAutoHoist
 
-    IHqlExpression * newDs = transformed->queryChild(0);
-    if (!newDs || !newDs->isDataset())
-        return LINK(transformed);
-
+    // Check this before unwinding the arguments
     childDatasetType childType = getChildDatasetType(expr);
     if (!(childType & childdataset_hasdataset))
         return LINK(transformed);
 
-    LinkedHqlExpr updated = transformed;
+    HqlExprArray args;
+    unwindChildren(args, transformed);
+    if (updateOrphanedSelectors(args, expr))
+        return transformed->clone(args);
+    return LINK(transformed);
+}
+
+bool NewHqlTransformer::updateOrphanedSelectors(HqlExprArray & args, IHqlExpression * expr)
+{
+    //See the comments in doUpdateOrphanedSelectors() above
+    childDatasetType childType = getChildDatasetType(expr);
+    if (!(childType & childdataset_hasdataset))
+        return false;
+
+    IHqlExpression * newDs = &args.item(0);
+    if (!newDs || !newDs->isDataset())
+        return false;
+
     IHqlExpression * ds = expr->queryChild(0);
+    bool changed = false;
     for (;;)
     {
         if (newDs == ds)
-            return updated.getClear();
+            return changed;
 
         OwnedHqlExpr transformedSelector = transformSelector(ds->queryNormalizedSelector());
         IHqlExpression * newSelector = newDs->queryNormalizedSelector();
         if (transformedSelector != newSelector)
         {
-            HqlExprArray args;
-            args.append(*LINK(updated->queryChild(0)));
-            replaceSelectors(args, updated, 1, transformedSelector, newSelector);
-            updated.setown(updated->clone(args));
+            changed = true;
+            replaceSelectors(args, 1, transformedSelector, newSelector);
         }
 
         //In unusual situations we also need to map selectors for any parent datasets that are in scope
@@ -2077,8 +2090,7 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
             newDs = newDs->queryChild(0);
         }
     }
-
-    return updated.getClear();
+    return changed;
 }
 
 //---------------------------------------------------------------------------
