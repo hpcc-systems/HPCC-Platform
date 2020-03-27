@@ -769,7 +769,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     {
         while(running) 
         {
-            DataBuffer *dataBuff = input_queue->pop();
+            DataBuffer *dataBuff = input_queue->pop(true);
             collatePacket(dataBuff);
         }
     }
