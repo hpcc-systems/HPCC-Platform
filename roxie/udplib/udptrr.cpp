@@ -706,7 +706,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         }
         else if (i >= free)
         {
-            if (udpTraceLevel)
+            if ((i > free) && (udpTraceLevel))
                 DBGLOG("UdpReceiver: ERROR: more packets in flight (%d) than slots free (%d)", i, free);  // Should never happen
             inflight = i = free-1;
         }
