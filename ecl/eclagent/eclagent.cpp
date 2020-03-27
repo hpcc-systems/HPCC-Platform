@@ -563,6 +563,8 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             w->setXmlParams(_queryXML);
         updateSuppliedXmlParams(w);
     }
+    IPropertyTree *costs = queryCostsConfiguration();
+    agentMachineCost = costs ? costs->getPropReal("@agent", 0.0): 0.0;
 }
 
 EclAgent::~EclAgent()
@@ -1909,7 +1911,13 @@ void EclAgent::doProcess()
         WorkunitUpdate w = updateWorkUnit();
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
-        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedTimer.elapsedNs());
+        const __int64 elapsedNs = elapsedTimer.elapsedNs();
+        updateWorkunitStat(w, SSTglobal, NULL, StTimeElapsed, nullptr, elapsedNs);
+
+        const __int64 cost = calcCost(agentMachineCost, elapsedNs);
+        if (cost)
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+
         addTimings();
 
         switch (w->getState())
@@ -2309,6 +2317,10 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     scope.append(WorkflowScopePrefix).append(wfid);
     updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
     updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
+
+    const __int64 cost = calcCost(agent.queryAgentMachineCost(), elapsedNs);
+    if (cost)
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 }
 
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
@@ -3442,10 +3454,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers)
         {
-            SocketEndpoint daliEp(daliServers, DALI_SERVER_PORT);
             {
                 MTIME_SECTION(queryActiveTimer(), "SDS_Initialize");
-                Owned<IGroup> serverGroup = createIGroup(1, &daliEp);
+                Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
                 initClientProcess(serverGroup, DCR_EclAgent, 0, NULL, NULL, MP_WAIT_FOREVER);
             }
 #ifdef MONITOR_ECLAGENT_STATUS  
@@ -3482,6 +3493,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                     }
                 }
             };
+            SocketEndpoint daliEp(daliServers, DALI_SERVER_PORT);
             daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
             addMPConnectionMonitor(daliDownMonitor);
 

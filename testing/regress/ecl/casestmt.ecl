@@ -36,3 +36,18 @@ output(case(s, '1'=>d1, '2'=>d2, '3'=>d3, d4));
 case(i, 1=>o1, 2=>o2, 3=>o3, o4);
 output(case(i, 1=>d1, 2=>d2, 3=>d3, d4));
 
+UNSIGNED6 Score(STRING level) := CASE(level,
+     'medium2' => 91,
+     'medium'  => 90,
+     'high'    => 98,
+     55);
+
+string low := 'low' : stored('low');
+string medium := 'medium' : stored('medium');
+string high := 'high' : stored('high');
+string none := 'none' : stored('none');
+
+low;    Score(low);
+medium; Score(medium);
+high;   Score(high);
+none;   Score(none);

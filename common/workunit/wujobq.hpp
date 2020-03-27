@@ -21,7 +21,6 @@
 
 #include "jsocket.hpp"
 #include "dasess.hpp"
-#include "workunit.hpp"
 
 interface IJobQueueItem: extends serializable
 {
@@ -47,6 +46,12 @@ interface IJobQueueItem: extends serializable
 };
 
 typedef IIteratorOf<IJobQueueItem> IJobQueueIterator;
+
+#ifdef WORKUNIT_EXPORTS
+    #define WORKUNIT_API DECL_EXPORT
+#else
+    #define WORKUNIT_API DECL_IMPORT
+#endif
 
 class WORKUNIT_API CJobQueueContents: public IArrayOf<IJobQueueItem>
 {  // used as a 'snapshot' of queue items
@@ -149,7 +154,7 @@ extern WORKUNIT_API IJobQueueItem *deserializeJobQueueItem(MemoryBuffer &mb);
 
 extern WORKUNIT_API IJobQueue *createJobQueue(const char *name);
 
-extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *cluster);
+extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName);
 extern bool WORKUNIT_API runWorkUnit(const char *wuid);
 extern WORKUNIT_API StringBuffer & getQueuesContainingWorkUnit(const char *wuid, StringBuffer &queueList);
 extern WORKUNIT_API void removeWorkUnitFromAllQueues(const char *wuid);

@@ -4727,6 +4727,7 @@ public:
             case RFCtreecopy:
             case RFCtreecopytmp:
             case RFCremove:
+            case RFCcopysection:
                 slowCmdThrottler.addCommand(cmd, msg, client);
                 return;
             case RFCcloseIO:
@@ -4766,7 +4767,6 @@ public:
             // NB: The following commands are still bound by the the thread pool
             case RFCsetthrottle: // legacy version
             case RFCsetthrottle2:
-            case RFCcopysection: // slightly odd, but has it's own limit
             default:
             {
                 client->processCommand(cmd, msg, NULL);

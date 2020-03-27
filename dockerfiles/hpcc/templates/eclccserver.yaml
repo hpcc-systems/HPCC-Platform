@@ -1,4 +1,5 @@
 {{ range $.Values.eclccserver -}}
+{{- if not .disabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,30 +23,30 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclccserver") | indent 8 }}
-{{ include "hpcc.addVolumeMounts" . | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDllserverVolumeMount" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
-{{ include "hpcc.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "eclccserver" "me" .) }}
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ .name }}-configmap 
+data:
+  {{ .name }}.yaml: |
+    version: 1.0
+    eclccserver:
+{{ toYaml . | indent 6 }}
       queues:
-{{- range $.Values.eclagent }}
-      - name: {{ .name }}
-        type: {{ .type | default "hthor" }}
-        prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.roxie }}
-      - name: {{ .name }}
-        type: roxie 
-        prefix: {{ .prefix | default "null" }}
-{{- end -}}
-{{- range $.Values.thor }}
-      - name: {{ .name }}
-        type: thor
-        prefix: {{ .prefix | default "null" }}
-{{- end }}
+{{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
   eclccserver-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -71,12 +72,17 @@ spec:
                         {{ include "hpcc.daliArg" $ }},
                         %args
                      ]
-{{ include "hpcc.addVolumeMounts" . | indent 12 }}
+            volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDllserverVolumeMount" . | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigVolume" . | indent 10 }}
-{{ include "hpcc.addVolumes" $ | indent 10 }}
+{{ include "hpcc.addConfigMapVolume" . | indent 10 }}
+{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
       
 ---
+{{- end }}
 {{- end }}

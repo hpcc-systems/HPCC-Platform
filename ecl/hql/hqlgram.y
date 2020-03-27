@@ -2439,6 +2439,8 @@ actionStmt
                             {
                                 if (queryAttribute(extendAtom, options) && !queryAttribute(namedAtom, options))
                                     parser->reportError(ERR_EXTEND_NOT_VALID, $7, "EXTEND is only valid on NAMED outputs");
+                                if (queryAttribute(csvAtom, options) || queryAttribute(xmlAtom, options))
+                                    parser->reportWarning(CategoryIgnored, WRN_FORMAT_IGNORED, $7.pos, "Format options have no affect on non file OUTPUT");
                             }
                             else
                             {

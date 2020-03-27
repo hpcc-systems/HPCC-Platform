@@ -423,6 +423,7 @@ ESPrequest [nil_remove] GetComponentUsageRequest
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse 
 {
     ESParray<ESPstruct ComponentUsage> ComponentUsages;
+    [min_ver("1.17")] string UsageTime;
 };
 
 ESPrequest [nil_remove] GetTargetClusterUsageRequest
@@ -434,6 +435,7 @@ ESPrequest [nil_remove] GetTargetClusterUsageRequest
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResponse 
 {
     ESParray<ESPstruct TargetClusterUsage> TargetClusterUsages;
+    [min_ver("1.17")] string UsageTime;
 };
 
 ESPrequest [nil_remove] GetNodeGroupUsageRequest
@@ -445,10 +447,11 @@ ESPrequest [nil_remove] GetNodeGroupUsageRequest
 ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse 
 {
     ESParray<ESPstruct NodeGroupUsage> NodeGroupUsages;
+    [min_ver("1.17")] string UsageTime;
 };
 
 //-------- service ---------
-ESPservice [auth_feature("DEFERRED"), version("1.16")] ws_machine
+ESPservice [auth_feature("DEFERRED"), version("1.17")] ws_machine
 {
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);

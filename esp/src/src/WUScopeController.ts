@@ -95,7 +95,7 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
     }
 
     set(masterGraph: ScopeGraph) {
-        this.graphDB = masterGraph;
+        this.graphDB = masterGraph || new ScopeGraph();
         this.graphGui(this.graphDB);
 
         this.kindMap = {};

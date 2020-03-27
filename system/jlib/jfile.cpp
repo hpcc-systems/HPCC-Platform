@@ -1217,6 +1217,8 @@ static CriticalSection connectcrit;
 
 static bool connectToExternalDrive(const char * const filename)
 {
+#if 0
+    //The following code used the passwordProvider.  Retained in case similar code is needed in the future.
     CriticalBlock block(connectcrit);
     if (!passwordProvider)
         return false;
@@ -1229,7 +1231,6 @@ static bool connectToExternalDrive(const char * const filename)
         return false;
 
     // first see if connected
-
     char buf[255];
     buf[0] = 0;
     DWORD len = sizeof(buf);
@@ -1264,6 +1265,7 @@ static bool connectToExternalDrive(const char * const filename)
             return true;
         Sleep(retry*100);
     }
+#endif
     return false;
 }
 

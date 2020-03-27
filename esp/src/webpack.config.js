@@ -8,6 +8,14 @@ module.exports = function (env) {
     const isDev = env && env === "development";
     const isProduction = !isDev;
 
+    const entry = {
+        stub: "eclwatch/stub",
+        dojoLib: "lib/src/dojoLib"
+    };
+    if (!isProduction) {
+        entry.index = "lib/src/index";
+    }
+
     const plugins = [
         new DojoWebpackPlugin({
             loaderConfig: require("./eclwatch/dojoConfig"),
@@ -40,10 +48,7 @@ module.exports = function (env) {
 
     return {
         context: __dirname,
-        entry: {
-            stub: "eclwatch/stub",
-            dojoLib: "lib/src/dojoLib"
-        },
+        entry: entry,
         output: {
             filename: "[name].eclwatch.js",
             chunkFilename: "[name].eclwatch.js",

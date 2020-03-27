@@ -49,6 +49,7 @@ set (    INCLUDES
          dadiags.hpp
          dafdesc.hpp
          danqs.hpp
+         daqueue.hpp
          dasds.hpp
          dasess.hpp
          dasubs.hpp

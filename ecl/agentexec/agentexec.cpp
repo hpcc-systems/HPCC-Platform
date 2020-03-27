@@ -21,6 +21,8 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jutil.hpp"
+#include "daqueue.hpp"
+#include "workunit.hpp"
 #include "environment.hpp"
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
@@ -98,10 +100,13 @@ int CEclAgentExecutionServer::run()
     removeSentinelFile(sentinelFile);
     try
     {
-        Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+        Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
         initClientProcess(serverGroup, DCR_AgentExec);
 #ifdef _CONTAINERIZED
-        queueNames.append(agentName).append(".agent");
+        if (streq("thor", apptype))
+            getClusterThorQueueName(queueNames, agentName);
+        else
+            getClusterEclAgentQueueName(queueNames, agentName);
 #else
         getAgentQueueNames(queueNames, agentName);
 #endif
@@ -151,6 +156,7 @@ int CEclAgentExecutionServer::run()
                 catch(IException *e)
                 {
                     EXCLOG(e, "CEclAgentExecutionServer::run: ");
+                    e->Release();
                 }
                 catch(...)
                 {
@@ -191,7 +197,7 @@ int CEclAgentExecutionServer::run()
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
-    WaitThread(const char *_dali, const char *_apptype) : dali(_dali), apptype(_apptype)
+    WaitThread(const char *_dali, const char *_apptype, const char *_queue) : dali(_dali), apptype(_apptype), queue(_queue)
     {
     }
     virtual void init(void *param) override
@@ -208,29 +214,72 @@ public:
     }
     virtual void threadmain() override
     {
+        Owned<IException> exception;
         try
         {
+            StringAttr jobSpecName(apptype);
+            StringAttr processName(apptype);
+
+            /* NB: In the case of handling apptype='thor', the queued items is of the form <wuid>/<graphName>
+             */
+            StringAttr graphName;
+            bool isThorJob = streq("thor", apptype);
+            if (isThorJob)
+            {
+                StringArray sArray;
+                sArray.appendList(wuid.get(), "/");
+                assertex(2 == sArray.ordinality());
+                wuid.set(sArray.item(0));
+                graphName.set(sArray.item(1));
+
+                // JCSMORE - idealy apptype, image and executable name would all be same.
+                jobSpecName.set("thormaster");
+                processName.set("thormaster_lcr");
+            }
             if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
             {
-                runK8sJob(apptype, wuid, wuid);
+                std::list<std::pair<std::string, std::string>> params = { };
+                if (queryComponentConfig().getPropBool("@useThorQueue", true))
+                    params.push_back({ "queue", queue.get() });
+                StringBuffer jobName(wuid);
+                if (isThorJob)
+                {
+                    params.push_back({ "graphName", graphName.get() });
+                    jobName.append('-').append(graphName);
+                }
+                runK8sJob(jobSpecName, wuid, jobName, queryComponentConfig().getPropBool("@deleteJobs", true), params);
             }
             else
             {
-                VStringBuffer exec("%s --workunit=%s --daliServers=%s", apptype.str(), wuid.str(), dali.str());
+                VStringBuffer exec("%s --workunit=%s --daliServers=%s", processName.get(), wuid.str(), dali.str());
+                if (queryComponentConfig().hasProp("@config"))
+                {
+                    exec.append(" --config=");
+                    queryComponentConfig().getProp("@config", exec);
+                }
+                if (queryComponentConfig().getPropBool("@useThorQueue", true))
+                    exec.append(" --queue=").append(queue);
+                if (isThorJob)
+                    exec.appendf(" --graphName=%s", graphName.get());
                 Owned<IPipeProcess> pipe = createPipeProcess();
                 if (!pipe->run(apptype.str(), exec.str(), ".", false, true, false, 0, false))
                     throw makeStringExceptionV(0, "Failed to run %s", exec.str());
             }
         }
-        catch (IException *E)
+        catch (IException *e)
         {
-            EXCLOG(E);
-            E->Release();
+            exception.setown(e);
+        }
+        if (exception)
+        {
+            EXCLOG(exception);
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
             if (workunit)
             {
                 workunit->setState(WUStateFailed);
+                StringBuffer eStr;
+                addExceptionToWorkunit(workunit, SeverityError, "agentexec", exception->errorCode(), exception->errorMessage(eStr).str(), nullptr, 0, 0, 0);
                 workunit->commit();
             }
         }
@@ -239,13 +288,14 @@ private:
     StringAttr wuid;
     StringAttr dali;
     StringAttr apptype;
+    StringAttr queue;
 };
 #endif
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
 #ifdef _CONTAINERIZED
-    return new WaitThread(daliServers, apptype);
+    return new WaitThread(daliServers, apptype, agentName);
 #else
     throwUnexpected();
 #endif

@@ -29,11 +29,13 @@
 #include "wujobq.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
+#include "daqueue.hpp"
 #ifndef _CONTAINERIZED
 #include "dalienv.hpp"
 #endif
 
-Owned<IPropertyTree> globals;
+static Owned<IPropertyTree> globals;
+static const char * * globalArgv = nullptr;
 
 //------------------------------------------------------------------------------------------------------------------
 // We use a separate thread for reading eclcc's stderr output. This prevents the thread that is
@@ -307,6 +309,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
         StringBuffer eclccCmd(" -shared");
+        //Clone all the options that were passed to eclccserver (but not the filename) and also pass them to eclcc
+        for (const char * * pArg = globalArgv+1; *pArg; pArg++)
+            eclccCmd.append(' ').append(*pArg);
+
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
@@ -456,7 +462,7 @@ public:
 #ifdef _CONTAINERIZED
         if (globals->getPropBool("@containerPerCompile", false) && !globals->hasProp("@workunit"))
         {
-            runK8sJob("eclccserver", wuid, wuid);
+            runK8sJob("eclccserver", wuid, wuid, globals->getPropBool("@deleteJobs", true));
             return;
         }
 #endif
@@ -797,6 +803,7 @@ int main(int argc, const char *argv[])
 
     try
     {
+        globalArgv = argv;
         globals.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", nullptr));
     }
     catch (IException * e)
@@ -828,7 +835,7 @@ int main(int argc, const char *argv[])
         UWARNLOG("No Dali server list specified - assuming local");
         daliServers = ".";
     }
-    Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+    Owned<IGroup> serverGroup = createIGroupRetry(daliServers, DALI_SERVER_PORT);
     try
     {
         initClientProcess(serverGroup, DCR_EclCCServer);
@@ -854,7 +861,7 @@ int main(int argc, const char *argv[])
                 IPTree &queue = queues->query();
                 if (queueNames.length())
                     queueNames.append(",");
-                queueNames.append(queue.queryProp("@name")).append(".eclserver");
+                getClusterEclCCServerQueueName(queueNames, queue.queryProp("@name"));
             }
 #else
             SCMStringBuffer queueNames;

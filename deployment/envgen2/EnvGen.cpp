@@ -695,7 +695,7 @@ void CEnvGen::usage()
 {
   const char* version = "0.1";
   printf("\nHPCC Systems® environment generator. version %s. Usage:\n", version);
-  puts("   envgen -env_out <environment file> -ip <ip addr> [options]");
+  puts("   envgen2 -env-out <environment file> -ip <ip addr> [options]");
   puts("");
   puts("options: ");
   puts("   -env-in : Full path of the input environment file to update.");

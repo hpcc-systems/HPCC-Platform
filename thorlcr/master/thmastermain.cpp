@@ -653,7 +653,7 @@ int main( int argc, const char *argv[]  )
 #endif
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
 
-        Owned<IGroup> serverGroup = createIGroup(daliServer.str(), DALI_SERVER_PORT);
+        Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
         unsigned retry = 0;
         for (;;) {
@@ -951,7 +951,8 @@ int main( int argc, const char *argv[]  )
             PROGLOG("Registration aborted");
 #ifdef _CONTAINERIZED
         registry.clear();
-        deleteK8sJob("thorslave", cloudJobName);
+        if (globals->getPropBool("@deleteJobs", true))
+            deleteK8sJob("thorslave", cloudJobName);
         setExitCode(0);
 #endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");

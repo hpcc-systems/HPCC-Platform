@@ -574,7 +574,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     }
     init_signals();
 
-    bool dumpArgs = false;
     for (unsigned i=0; i<(unsigned)argc; i++)
     {
         if (stricmp(argv[i], "--help")==0 ||
@@ -589,8 +588,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             argv[i] = "--csv";
         else if (strsame(argv[i], "-raw"))
             argv[i] = "--raw";
-        else if (strsame(argv[i], "-v"))
-            dumpArgs = true;
     }
 
     #ifdef _USE_CPPUNIT
@@ -652,17 +649,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
-        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr);
-        if (dumpArgs)
-        {
-            for (unsigned i=0; i<(unsigned)argc; i++)
-            {
-                DBGLOG("Arg: %s", argv[i]);
-            }
-            StringBuffer yamlText;
-            regenerateConfig(yamlText, topology, "Roxie");
-            DBGLOG("Configuration: %s", yamlText.str());
-        }
+        topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
         const char *channels = topology->queryProp("@channels");
         if (channels)
@@ -931,7 +918,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (udpRequestToSendTimeout == 0)
         {
             if (slaTimeout)
+            {
                 udpRequestToSendTimeout = (slaTimeout*3) / 4;
+                if (udpRequestToSendTimeout < 10)
+                    udpRequestToSendTimeout = 10;
+            }
             else
                 udpRequestToSendTimeout = 5000;
         }

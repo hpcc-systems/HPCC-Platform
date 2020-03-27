@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "$ref": "#/definitions/global"
+    },
+    "dali": {
+      "description": "dali process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/dali" }
+    },
+    "eclccserver": {
+      "description": "eclccserver process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/eclccserver" }
+    },
+    "esp": {
+      "description": "esp process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/esp" }
+    },
+    "eclagent": {
+      "description": "eclagent process",
+      "type": "array",
+      "items": {
+        "allOf": [
+          { "$ref": "#/definitions/eclagent" },
+          { 
+            "name": {
+              "type": "string",
+              "description": "The name of the eclagent process"
+            },
+            "prefix": {
+              "type": "string",
+              "description": "The (optional) file prefix to add to relative filenames"
+            },
+            "required": [ "name" ] 
+          }
+        ]
+      }
+    },
+    "roxie": {
+      "description": "eclagent process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/roxie" }
+    },
+    "thor": {
+      "description": "thor process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/thor" }
+    }
+  },
+  "required": [
+    "dali"
+  ],
+  "title": "Values",
+  "type": "object",
+  "definitions": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "dllserver": {
+          "$ref": "#/definitions/storage"
+        },
+        "hostStorage": {
+          "type": "boolean"
+        },
+        "privileged": {
+          "type": "boolean"
+        },
+        "dataStorage": {
+          "$ref": "#/definitions/storage"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      },
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string",
+          "default": "hpccsystems"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["IfNotPresent", "Always", "Never"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "storageSize": {
+          "type": "string"
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "existingClaim": {
+          "type": "string"
+        }
+      },
+      "required": [ "storageSize" ],
+      "additionalProperties": false
+    },
+    "dali": {
+      "type": "object",
+      "required": [ "name", "storage" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the dali process"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        },
+        "storage": {
+          "$ref": "#/definitions/storage"
+        }
+      }
+    },
+    "eclccserver": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the eclccserver process"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "listen": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    },
+    "esp": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the esp process"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    },
+    "eclagent": {
+      "type": "object",
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "replicas": {
+          "type": "integer"
+        },
+        "maxActive": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "containerPerAgent": {
+          "type": "boolean",
+          "description": "Should workunits execute in their own container, or as child processes"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    },
+    "roxie": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the roxie process"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "The (optional) file prefix to add to relative filenames"
+        },
+        "ports": {
+          "type": "array",
+          "description": "The ports to listen on",
+          "items": { "type": "integer" }
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    },
+    "thor": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the thor process"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "The (optional) file prefix to add to relative filenames"
+        },
+	"numSlaves": {
+          "type": "integer",
+          "description": "The number of slave pods",
+          "minimum": 1
+        },
+        "eclagent": {
+          "$ref": "#/definitions/eclagent"
+        },
+        "thoragent": {
+          "$ref": "#/definitions/eclagent"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        }
+      }
+    }
+  }
+}

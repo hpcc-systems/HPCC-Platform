@@ -10,3 +10,27 @@
 <Dataset name='Result 10'>
  <Row><x>2</x></Row>
 </Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>low</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>55</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>medium</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>90</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>high</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>98</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>none</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>55</Result_18></Row>
+</Dataset>

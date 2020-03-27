@@ -59,6 +59,7 @@ define([
 
         destroy: function (args) {
             srcReact.unrender(this.recentFilterNode);
+            this.inherited(arguments);
         },
 
         //  Hitched actions  ---
@@ -121,7 +122,7 @@ define([
             });
             if (this.userName !== null) {
                 if (!Utility.isObjectEmpty(retVal)) {
-                    Recent.addToStack(this.params.ws_key, retVal, 5).then(function(val){
+                    Recent.addToStack(this.params.ws_key, retVal, 5).then(function (val) {
                         if (val) {
                             context.loadRecentFilters(retVal);
                         }

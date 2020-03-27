@@ -1,0 +1,46 @@
+name: Build Test ECL Watch
+
+on:
+  push:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+    paths:
+      - "esp/src/**/*"
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+    paths:
+      - "esp/src/**/*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+      - name: Install Dependencies
+        working-directory: ./esp/src
+        run: npm ci
+      - name: Build
+        working-directory: ./esp/src
+        run: npm run build
+      - name: Test
+        working-directory: ./esp/src
+        run: npm run test

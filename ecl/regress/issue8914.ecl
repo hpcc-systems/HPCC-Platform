@@ -28,7 +28,7 @@ namesTable := dataset([
         {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
-output(namesTable,,XML,NOXPATH);
+output(namesTable,,NOXPATH);
 
 output(namesTable,,'out.xml',XML,NOXPATH);
 

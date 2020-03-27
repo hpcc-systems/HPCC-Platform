@@ -868,3 +868,16 @@ void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
     wu->setHash(cacheCRC);
 }
 
+void recordQueueFilePrefixes(IWorkUnit * wu, IPropertyTree * configuration)
+{
+    Owned<IPropertyTreeIterator> iter = configuration->getElements("queues");
+    ForEach(*iter)
+    {
+        IPropertyTree & cur = iter->query();
+        const char * name = cur.queryProp("@name");
+        const char * prefix = cur.queryProp("@prefix");
+        if (!prefix)
+            prefix = "";
+        wu->setApplicationValue("prefix", name, prefix, true);
+    }
+}

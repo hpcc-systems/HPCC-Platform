@@ -30,7 +30,9 @@ Create chart name and version as used by the chart label.
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- /* Translate a port list to a comma-separated list */ -}}
+{{/*
+Translate a port list to a comma-separated list
+*/}}
 {{- define "hpcc.portListToCommas" -}}
  {{- if hasPrefix "[]" (typeOf .) -}}
   {{- $local := dict "first" true -}}
@@ -41,81 +43,82 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
-Generate local config info into config section
+Generate global ConfigMap info
+Pass in root as .
 */}}
-{{- /* Pass in a dictionary with component and me defined */ -}}
-{{- define "hpcc.generateComponentConfigMap" -}}
-{{- .me.name -}}.yaml: |
-  version: 1.0
-  {{ .component }}:
-{{ toYaml .me | indent 4 }}
+{{- define "hpcc.generateGlobalConfigMap" -}}
+imageVersion: {{ .Values.global.image.version | quote }}
+singleNode: {{ .Values.global.singleNode | default false }}
 {{- end -}}
 
-{{- /* Generate a ConfigMap for a component */ -}}
-{{- /* Pass in a dictionary with root, component and me defined */ -}}
-{{- define "hpcc.generateConfigMap" -}}
-kind: ConfigMap 
-apiVersion: v1 
-metadata:
-  name: {{ .me.name }}-configmap 
-data:
-  global.yaml: |
-    version: "1.0"
-    global:
-      imageVersion: {{ .root.Values.global.image.version | quote }}
-      singleNode: {{ .root.Values.global.singleNode }}
-{{ include "hpcc.generateComponentConfigMap" . | indent 2 -}}
+{{/*
+Add ConfigMap volume mount for a component
+*/}}
+{{- define "hpcc.addConfigMapVolumeMount" -}}
+- name: {{ .name }}-configmap-volume
+  mountPath: /etc/config
 {{- end -}}
 
-{{- /* Add a ConfigMap volume for a component */ -}}
-{{- define "hpcc.addConfigVolume" -}}
+{{/*
+Add ConfigMap volume for a component
+*/}}
+{{- define "hpcc.addConfigMapVolume" -}}
 - name: {{ .name }}-configmap-volume
   configMap:
     name: {{ .name }}-configmap
 {{- end -}}
 
-{{- /* Add a ConfigMap volume mount for a component */ -}}
-{{- define "hpcc.addConfigVolumeMount" -}}
-- name: {{ .name }}-configmap-volume
-  mountPath: /etc/config
-{{- end -}}
-
-{{- /* Add data volume mount for a component */ -}}
+{{/*
+Add data volume mount
+*/}}
 {{- define "hpcc.addDataVolumeMount" -}}
 - name: datastorage-pv
   mountPath: "/var/lib/HPCCSystems/hpcc-data"
 {{- end -}}
 
-{{- /* Add standard volumes for a component */ -}}
-{{- define "hpcc.addVolumes" -}}
-- name: dllserver-pv-storage
-  persistentVolumeClaim:
-    claimName: {{ .Values.global.dllserver.existingClaim | default (printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .)) }}
+{{/*
+Add data volume
+*/}}
+{{- define "hpcc.addDataVolume" -}}
 - name: datastorage-pv
   persistentVolumeClaim:
     claimName: {{ .Values.global.dataStorage.existingClaim | default (printf "%s-datastorage-pv-claim" (include "hpcc.fullname" .)) }}
 {{- end -}}
 
-{{- /* Add standard volume mounts for a component */ -}}
-{{- define "hpcc.addVolumeMounts" -}}
-volumeMounts:
-{{ include "hpcc.addConfigVolumeMount" . }}
-{{ include "hpcc.addDataVolumeMount" . }}
+{{/*
+Add dllserver volume mount
+*/}}
+{{- define "hpcc.addDllserverVolumeMount" -}}
 - name: dllserver-pv-storage
   mountPath: "/var/lib/HPCCSystems/queries"
 {{- end -}}
 
-{{- /* Add config arg for a component */ -}}
-{{- define "hpcc.configArg" -}}
-"--config=/etc/config/{{ .name }}.yaml", "--global=/etc/config/global.yaml"
+{{/*
+Add dllserver volume
+*/}}
+{{- define "hpcc.addDllserverVolume" -}}
+- name: dllserver-pv-storage
+  persistentVolumeClaim:
+    claimName: {{ .Values.global.dllserver.existingClaim | default (printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .)) }}
 {{- end -}}
 
-{{- /* Add dali arg for a component */ -}}
+{{/*
+Add config arg for a component
+*/}}
+{{- define "hpcc.configArg" -}}
+"--config=/etc/config/{{ .name }}.yaml"
+{{- end -}}
+
+{{/*
+Add dali arg for a component
+*/}}
 {{- define "hpcc.daliArg" -}}
 "--daliServers={{ (index .Values.dali 0).name }}"
 {{- end -}}
 
-{{- /* Get image name */ -}}
+{{/*
+Get image name
+*/}}
 {{- define "hpcc.imageName" -}}
 {{- /* Pass in a dictionary with root, me and imagename defined */ -}}
 {{- if .me.image -}}
@@ -125,8 +128,10 @@ volumeMounts:
 {{- end -}}
 {{- end -}}
 
-{{- /* Add image attributes for a component */ -}}
-{{- /* Pass in a dictionary with root, me and imagename defined */ -}}
+{{/*
+Add image attributes for a component 
+Pass in a dictionary with root, me and imagename defined
+*/}}
 {{- define "hpcc.addImageAttrs" -}}
 image: {{ include "hpcc.imageName" . | quote }}
 {{ if .me.image -}}
@@ -136,7 +141,9 @@ imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent
 {{- end -}}
 {{- end -}}
 
-{{- /* A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV */ -}}
+{{/*
+A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV
+*/}}
 {{- define "hpcc.changeHostMountPerms" -}}
 initContainers:
 # This is a bit of a hack, to ensure that the persistent storage mounted
@@ -156,29 +163,72 @@ initContainers:
       mountPath: {{ .volumePath | quote }}
 {{- end }}
 
-{{- /* Check dllserver host mount point, using hpcc.changeHostMountPerms */ -}}
+{{/*
+Check dllserver host mount point, using hpcc.changeHostMountPerms
+*/}}
 {{- define "hpcc.checkDllServerHostMount" -}}
 {{- if .root.Values.global.hostStorage | default false }}
 {{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dllserver-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") }}
 {{- end }}
 {{- end }}
 
-{{- /* Check datastorage host mount point, using hpcc.changeHostMountPerms */ -}}
+{{/*
+Check datastorage host mount point, using hpcc.changeHostMountPerms
+*/}}
 {{- define "hpcc.checkDataStorageHostMount" -}}
 {{- if .root.Values.global.hostStorage | default false }}
 {{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
 {{- end }}
 {{- end }}
 
-{{- /* Add security context */ -}}
-{{- /* Pass in a dictionary with root and me defined */ -}}
+{{/*
+Check dalistore host mount point, using hpcc.changeHostMountPerms
+*/}}
+{{- define "hpcc.checkDaliStoreHostMount" -}}
+{{- if .root.Values.global.hostStorage | default false }}
+{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dalistore-pv" "volumePath" "/var/lib/HPCCSystems/dalistore") }}
+{{- end }}
+{{- end }}
+
+{{/*
+Add security context
+Pass in a dictionary with root and me defined
+*/}}
 {{- define "hpcc.addSecurityContext" -}}
-{{- if .root.Values.global.privileged -}}
+{{- if .root.Values.global.privileged }}
 securityContext:
   privileged: true
   capabilities:
     add:
     - SYS_PTRACE
-{{- end -}}
+{{- end }}
 {{- end -}}
 
+
+{{/*
+Generate instance queue names
+*/}}
+{{- define "hpcc.generateConfigMapQueues" -}}
+{{- range $.Values.eclagent -}}
+ {{- if not .disabled -}}
+- name: {{ .name }}
+  type: {{ .type | default "hthor" }}
+  prefix: {{ .prefix | default "null" }}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.roxie -}}
+ {{- if not .disabled -}}
+- name: {{ .name }}
+  type: roxie 
+  prefix: {{ .prefix | default "null" }}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.thor -}}
+ {{- if not .disabled -}}
+- name: {{ .name }}
+  type: thor
+  prefix: {{ .prefix | default "null" }}
+  width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
+ {{- end }}
+{{- end -}}
+{{- end -}}

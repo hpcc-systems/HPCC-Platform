@@ -344,7 +344,7 @@ bool FileTransferThread::performTransfer()
         serialize(partition, msg);
         msg.append(sprayer.numParallelSlaves());
         msg.append(slaveUpdateFrequency);
-        msg.append(sprayer.replicate);
+        msg.append(sprayer.replicate); // NB: controls whether FtSlave copies source timestamp
         msg.append(sprayer.mirroring);
         msg.append(sprayer.isSafeMode);
 
@@ -540,7 +540,6 @@ int FileSizeThread::run()
                     thisSize = io->size();
                 }
                 cur->size = thisSize;
-                thisFile->getTime(nullptr, &cur->modifiedTime, nullptr);
                 break;
             }
             if (copy==1)
@@ -567,6 +566,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
 {
     totalSize = 0;
     replicate = false;
+    copySource = false;
     unknownSourceFormat = true;
     unknownTargetFormat = true;
     progressTree.set(_progress);
@@ -645,11 +645,10 @@ public:
             }
 
             renameDfuTempToFinal(targetFilename);
-            if (sprayer.replicate)
+            if (sprayer.replicate && !sprayer.mirroring)
             {
                 OwnedIFile file = createIFile(targetFilename);
-                if (!sprayer.mirroring)
-                    file->setTime(NULL, &cur.modifiedTime, NULL);
+                file->setTime(NULL, &cur.modifiedTime, NULL);
             }
             else if (cur.modifiedTime.isNull())
             {
@@ -808,6 +807,8 @@ void FileSprayer::assignPartitionFilenames()
         }
         cur.outputName.set(targets.item(cur.whichOutput).filename);
         setCanAccessDirectly(cur.outputName);
+
+        // NB: partition (cur) is serialized to ftslave and it's this modifiedTime is used if present
         if (replicate)
             cur.modifiedTime.set(targets.item(cur.whichOutput).modifiedTime);
     }
@@ -1301,10 +1302,10 @@ void FileSprayer::checkFormats()
 
         //If format omitted, and number of parts are the same then okay to omit the format
         if (sources.ordinality() == targets.ordinality() && !disallowImplicitReplicate())
-            replicate = true;
+            copySource = true;
 
         bool noSplit = !allowSplit();
-        if (!replicate && !noSplit)
+        if (!replicate && !copySource && !noSplit)
         {
             //copy to a single target => assume same format concatenated.
             if (targets.ordinality() != 1)
@@ -1811,14 +1812,13 @@ void FileSprayer::afterGatherFileSizes()
 {
     if (!copyCompressed)
     {
-        StringBuffer dateStr, tailStr;
+        StringBuffer tailStr;
         ForEachItemIn(idx2, sources)
         {
             FilePartInfo & cur = sources.item(idx2);
 
-            LOG(MCdebugProgress, job, "%9u:%s (size: %llu bytes, last modified: %s)",
-                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size,
-                                       cur.modifiedTime.getString(dateStr.clear(), true).str()
+            LOG(MCdebugProgress, job, "%9u:%s (size: %llu bytes)",
+                                       idx2, cur.filename.getTail(tailStr.clear()).str(), cur.size
                                        );
             cur.offset = totalSize;
             totalSize += cur.size;
@@ -2552,6 +2552,9 @@ void FileSprayer::setSource(IDistributedFile * source)
 void FileSprayer::setSource(IFileDescriptor * source)
 {
     setSource(source, 0, 1);
+
+    //Now get the size of the files directly (to check they exist).  If they don't exist then switch to the backup instead.
+    gatherFileSizes(false);
 }
 
 
@@ -2583,8 +2586,8 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
                 FilePartInfo & next = * new FilePartInfo(rfn);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);
-                // don't set the following here - force to check disk
-                //next.size = multi.getSize(i);
+                // If size doesn't set here it will be forced to check the file size on disk (expensive)
+                next.size = multi.getSize(i);
                 sources.append(next);
             }
 
@@ -2926,16 +2929,14 @@ void FileSprayer::spray()
     progressTree->setPropBool(ANpull, usePullOperation());
 
     const char * splitPrefix = querySplitPrefix();
-    bool pretendreplicate = false;
     if (!replicate && (sources.ordinality() == targets.ordinality()))
     {
-        if (srcFormat.equals(tgtFormat) && !disallowImplicitReplicate()) {
-            pretendreplicate = true;
-            replicate = true;
-        }
+        if (srcFormat.equals(tgtFormat) && !disallowImplicitReplicate())
+            copySource = true;
     }
 
-    if (compressOutput&&!replicate) {
+    if (compressOutput&&!replicate&&!copySource)
+    {
         PROGLOG("Compress output forcing pull");
         options->setPropBool(ANpull, true);
         allowRecovery = false;
@@ -2943,11 +2944,11 @@ void FileSprayer::spray()
 
 
     gatherFileSizes(true);
-    if (!replicate||pretendreplicate)
-        analyseFileHeaders(!pretendreplicate); // if pretending replicate don't want to remove headers
+    if (!replicate||copySource) // NB: When copySource=true, analyseFileHeaders mainly just sets srcFormat.type
+        analyseFileHeaders(!copySource); // if pretending replicate don't want to remove headers
     afterGatherFileSizes();
 
-    if (compressOutput && !usePullOperation() && !replicate)
+    if (compressOutput && !usePullOperation() && !replicate && !copySource)
         throwError(DFTERR_CannotPushAndCompress);
 
     if (restorePartition())
@@ -2957,7 +2958,7 @@ void FileSprayer::spray()
     else
     {
         LOG(MCdebugProgress, job, "Calculate partition information");
-        if (replicate)
+        if (replicate || copySource)
             calculateOne2OnePartition();
         else if (!allowSplit())
             calculateNoSplitPartition();
@@ -2972,7 +2973,7 @@ void FileSprayer::spray()
         savePartition();
     }
     assignPartitionFilenames();     // assign source filenames - used in insertHeaders..
-    if (!replicate)
+    if (!replicate && !copySource)
     {
         LOG(MCdebugProgress, job, "Insert headers");
         insertHeaders();
@@ -3118,7 +3119,6 @@ void FileSprayer::updateTargetProperties()
                                     failedParts.append("Output CRC failed to match expected: ");
                                 curSource.filename.getPath(failedParts);
                                 failedParts.appendf("(%x,%x)",partCRC.get(),curSource.crc);
-
                             }
                         }
                     }

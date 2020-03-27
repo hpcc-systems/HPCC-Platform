@@ -24,6 +24,8 @@
 #include "jiter.hpp"
 #include "jprop.hpp"
 
+#include <initializer_list>
+
 enum TextMarkupFormat
 {
     MarkupFmt_Unknown=0,
@@ -126,7 +128,10 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual bool IsShared() const = 0;
     virtual void localizeElements(const char *xpath, bool allTail=false) = 0;
     virtual unsigned getCount(const char *xpath) = 0;
-    
+    virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) = 0;
+    virtual bool isArray(const char *xpath=NULL) const = 0;
+    virtual unsigned getAttributeCount() const = 0;
+
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
     void addProp(const char *, int); // likewise
@@ -136,7 +141,7 @@ jlib_decl bool validateXMLTag(const char *name);
 
 interface IPTreeNotifyEvent : extends IInterface
 {
-    virtual void beginNode(const char *tag, offset_t startOffset) = 0;
+    virtual void beginNode(const char *tag, bool sequence, offset_t startOffset) = 0;
     virtual void newAttribute(const char *name, const char *value) = 0;
     virtual void beginNodeContent(const char *tag) = 0; // attributes parsed
     virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset) = 0;
@@ -293,9 +298,11 @@ inline static bool isValidXPathChr(char c)
     return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
 }
 
-jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv);
-jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *));
-jlib_decl StringBuffer & regenerateConfig(StringBuffer &jsonText, IPropertyTree * config, const char * componentTag);
+//export for unit test
+jlib_decl void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute=nullptr);
+
+jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions = {});
+jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
 jlib_decl IPropertyTree * queryCostsConfiguration();
 
 //The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().

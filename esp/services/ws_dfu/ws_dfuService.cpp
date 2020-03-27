@@ -1298,16 +1298,14 @@ DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, Strin
     const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
     bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
 {
-    StringArray parsed;
-    parsed.appendListUniq(fn, "@");
-    const char *lfn = parsed.item(0);
-    const char *group = NULL;
-    if (parsed.length() > 1)
-    {
-        group = parsed.item(1);
-        if (group && (!*group || strieq(group, "null"))) //null is used by new ECLWatch for a superfile
-            group = NULL;
-    }
+    CDfsLogicalFileName dfsLFN;
+    dfsLFN.set(fn);
+
+    const char *lfn = dfsLFN.get();
+    StringBuffer group;
+    dfsLFN.getCluster(group);
+    if (!group.isEmpty() && strieq(group.str(), "null")) //null is used by new ECLWatch for a superfile
+        group.setLength(0);
 
     bool isSuper = false;
     if (superFiles.contains(fn) || failedFiles.contains(fn))

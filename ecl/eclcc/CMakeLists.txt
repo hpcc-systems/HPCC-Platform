@@ -66,13 +66,16 @@ target_link_libraries ( eclcc
          deftype 
          dafsclient 
          dalibase 
-         environment
          workunit 
          thorhelper 
          hql
          hqlcpp
          dllserver
     )
+
+if (CONTAINERIZED)
+  target_link_libraries ( eclcc environment )
+endif()
 
 IF (USE_ZLIB)
     target_link_libraries ( eclcc

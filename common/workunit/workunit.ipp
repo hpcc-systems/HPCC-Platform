@@ -576,6 +576,8 @@ protected:
     void loadLibraries() const;
     void loadClusters() const;
     void checkAgentRunning(WUState & state);
+    bool hasApplicationValue(const char * application, const char * propname) const;
+    bool resolveFilePrefix(StringBuffer & prefix, const char * queue) const;
 
     // Implemented by derived classes
     virtual IPropertyTree *getGraphProgressTree() const { return NULL; };
@@ -645,7 +647,7 @@ public:
     virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset);
     virtual bool isAborting(const char *wuid) const;
     virtual void clearAborting(const char *wuid);
-    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, bool returnOnWaitState) = 0;
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled,  std::list<WUState> expectedStates) = 0;
 
     virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const
     {

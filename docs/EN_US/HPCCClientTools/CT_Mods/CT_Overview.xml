@@ -163,6 +163,9 @@
       the package, use:</para>
 
       <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+	  <para>After installing the package, run the following to update any dependencies:</para>
+
+        <programlisting>sudo apt-get install -f </programlisting>
 
       <para><emphasis role="bold">Mac OSX:</emphasis></para>
 

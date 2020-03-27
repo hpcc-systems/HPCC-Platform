@@ -1,4 +1,5 @@
 {{ range $roxie := $.Values.roxie -}}
+{{- if not $roxie.disabled -}}
 {{- if not $roxie.localSlave -}}
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
@@ -20,13 +21,15 @@ spec:
     spec:
       containers:
       - name: {{ $toponame | quote }}
-{{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigVolumeMount" . | indent 8 }}
+        - name: {{ .name }}-configmap-volume
+          mountPath: /etc/config
       volumes:
-{{ include "hpcc.addConfigVolume" . | indent 6 }}
-
+      - name: {{ .name }}-configmap-volume
+        configMap:
+          name: {{ .name }}-configmap
 ---
 
 apiVersion: v1
@@ -43,7 +46,17 @@ spec:
   clusterIP: None # Headless service
 
 ---
-{{- include "hpcc.generateConfigMap" (dict "root" $ "component" "roxie" "me" $roxie) }}
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: {{ $roxie.name }}-configmap 
+data:
+  {{ $roxie.name }}.yaml: |
+    version: 1.0
+    roxie:
+{{ toYaml $roxie | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
 
 {{ if $roxie.serverReplicas -}}
@@ -75,10 +88,14 @@ spec:
               ]
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
-{{ include "hpcc.addVolumeMounts" . | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDllserverVolumeMount" . | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" $roxie | indent 6 }}
-{{ include "hpcc.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
+{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
 ---
 
 {{ end -}}
@@ -113,13 +130,18 @@ spec:
               ]
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
-{{ include "hpcc.addVolumeMounts" $roxie | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $roxie | indent 8 }}
+{{ include "hpcc.addDllserverVolumeMount" $roxie | indent 8 }}
       volumes:
-{{ include "hpcc.addConfigVolume" $roxie | indent 6 }}
-{{ include "hpcc.addVolumes" $ | indent 6 }}
+{{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
+{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
 
 ---
 
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

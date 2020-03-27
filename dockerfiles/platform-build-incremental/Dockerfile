@@ -28,13 +28,16 @@ RUN apt-get install -y \
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
 
-ARG USER
+USER hpcc
 WORKDIR /hpcc-dev/HPCC-Platform
-RUN if ! git config remote.${USER}.url > /dev/null ; then git remote add ${USER} https://github.com/${USER}/HPCC-Platform.git ; fi
 
-ARG COMMIT
-
-RUN git fetch ${USER} && git checkout ${COMMIT} && git submodule update --init --recursive
+# NB: PATCH_MD5 ensures cache miss (and therefore rebuild) if MD5 is different
+ARG PATCH_MD5
+COPY hpcc.gitpatch .
+RUN if [ -s hpcc.gitpatch ]; then git apply --whitespace=nowarn hpcc.gitpatch; fi
 
 WORKDIR /hpcc-dev/build
+RUN make -j$(($(nproc)*3/2))
+
+USER root
 RUN make -j$(($(nproc)*3/2)) install

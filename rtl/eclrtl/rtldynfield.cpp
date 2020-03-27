@@ -1675,7 +1675,9 @@ private:
                             else if (info.subTrans->canTranslate())
                             {
                                 info.matchType = binarySource ? match_recurse : (match_recurse|match_dynamic);
-                                matchFlags |= info.subTrans->matchFlags;
+                                unsigned childFlags = info.subTrans->matchFlags;
+                                //Ignore differences in the keyed flag for child structures (it will be set later if this field is keyed)
+                                matchFlags |= (FieldMatchType)(childFlags & ~match_keychange);
                             }
                             else
                                 info.matchType = match_fail;

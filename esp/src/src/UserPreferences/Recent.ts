@@ -12,7 +12,7 @@ export function addToStack(key: string, data: any, expectedLength?: number) {
                 resolve(finalData = JSON.stringify([data]));
             } else {
                 const encodedData = JSON.parse(response);
-                if (encodedData.length >= expectedLength) {
+                if (encodedData?.length >= expectedLength) {
                     encodedData.pop();
                     encodedData.unshift(data);
                     ws_store.set(key, JSON.stringify(encodedData));

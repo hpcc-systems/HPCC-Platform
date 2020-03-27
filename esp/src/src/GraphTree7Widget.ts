@@ -3,6 +3,7 @@ import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
 import * as aspect from "dojo/aspect";
 import * as dom from "dojo/dom";
+import * as has from "dojo/has";
 import "dojo/i18n";
 // @ts-ignore
 import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
@@ -111,6 +112,9 @@ export class GraphTree7Widget {
     graphName = "";
     optionsDropDown = null;
     optionsForm = null;
+    OptionsFormLegacyGraph = null;
+    optionsFormLegacyLayout = null;
+
     _optionsDefault = null;
     subgraphsGrid = null;
     verticesGrid = null;
@@ -129,13 +133,27 @@ export class GraphTree7Widget {
     protected edgesStore = new GraphStore("Id");
     private persist = new Persist("GraphTree7Widget");
 
+    private isIE = has("ie") || has("trident");
+
     constructor() {
     }
 
     //  Options ---
 
+    optionsFormValues() {
+        const retVal = this.optionsForm.getValues();
+        if (this.isIE) {
+            retVal.LegacyGraph = ["on"];
+            retVal.LegacyLayout = ["on"];
+        }
+        if (retVal.LegacyGraph?.length) {
+            retVal.LegacyLayout = ["on"];
+        }
+        return retVal;
+    }
+
     _onOptionsApply() {
-        const optionsValues = this.optionsForm.getValues();
+        const optionsValues = this.optionsFormValues();
         this.persist.setObj("options", optionsValues);
         this.optionsDropDown.closeDropDown();
         this.initGraph();
@@ -199,7 +217,10 @@ export class GraphTree7Widget {
         });
         this.optionsDropDown = registry.byId(this.id + "OptionsDropDown");
         this.optionsForm = registry.byId(this.id + "OptionsForm");
-        this._optionsDefault = this.optionsForm.getValues();
+        this.OptionsFormLegacyGraph = registry.byId(this.id + "OptionsFormLegacyGraph");
+        this.OptionsFormLegacyGraph.on("click", () => this.refreshActionState());
+        this.optionsFormLegacyLayout = registry.byId(this.id + "OptionsFormLegacyLayout");
+        this._optionsDefault = this.optionsFormValues();
         const options = this.persist.getObj("options", this._optionsDefault);
         this.optionsForm.setValues(options);
     }
@@ -413,9 +434,9 @@ export class GraphTree7Widget {
     }
 
     initGraph() {
-        const options = this.optionsForm.getValues();
+        const options = this.optionsFormValues();
         const prevGraph = this._graph;
-        if (options.LegacyGraph.length) {
+        if (options.LegacyGraph?.length) {
             if (!(prevGraph instanceof DataGraph)) {
                 this._graph = new DataGraph();
                 this._graph.controller().minClick = (sg: Subgraph) => {
@@ -503,7 +524,7 @@ export class GraphTree7Widget {
             }
         }
         if (this._graph instanceof DataGraph2) {
-            this._graph.widget().layout(options.LegacyLayout.length ? "Hierarchy" : "DOT");
+            this._graph.widget().layout(options.LegacyLayout?.length ? "Hierarchy" : "DOT");
         }
     }
 
@@ -543,19 +564,19 @@ export class GraphTree7Widget {
     }
 
     initGraphController() {
-        const options = this.optionsForm.getValues();
+        const options = this.optionsFormValues();
         if (this._graph instanceof DataGraph) {
             this._graph.controller()
-                .showSubgraphs(options.subgraph.length)
-                .showIcon(options.vicon.length)
+                .showSubgraphs(options.subgraph?.length)
+                .showIcon(options.vicon?.length)
                 .vertexLabelTpl(options.vlabel)
                 .edgeLabelTpl(options.elabel)
                 .disabled(this._legend.disabled())
                 ;
         } else {
             this._graph.controller()
-                .showSubgraphs(options.subgraph.length)
-                .showIcon(options.vicon.length)
+                .showSubgraphs(options.subgraph?.length)
+                .showIcon(options.vicon?.length)
                 .vertexLabelTpl(options.vlabel)
                 .edgeLabelTpl(options.elabel)
                 .disabled(this._legend.disabled())
@@ -729,12 +750,15 @@ export class GraphTree7Widget {
     }
 
     refreshActionState() {
+        const options = this.optionsFormValues();
         const tab = this.widget.OverviewTabContainer.get("selectedChildWidget");
         this.setDisabled(this.id + "FindPrevious", this.foundIndex <= 0, "iconLeft", "iconLeftDisabled");
         this.setDisabled(this.id + "FindNext", this.foundIndex >= this.found.length - 1, "iconRight", "iconRightDisabled");
         this.setDisabled(this.id + "ActivityMetric", tab && tab.id !== this.id + "ActivitiesTreeMap");
         this.setDisabled(this.id + "Partial", this._graph instanceof DataGraph2, "fa fa-window-restore", "disabled fa fa-window-restore");
         this.setDisabled(this.id + "Max", this._graph instanceof DataGraph2, "fa fa-window-maximize", "disabled fa fa-window-maximize");
+        this.setDisabled(this.id + "OptionsFormLegacyGraph", this.isIE);
+        this.setDisabled(this.id + "OptionsFormLegacyLayout", this.isIE || options.LegacyGraph?.length);
     }
 }
 

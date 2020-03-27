@@ -20,8 +20,19 @@
 ARG BASE_VER=7.8
 FROM hpccsystems/platform-build-base:${BASE_VER}
 
+RUN groupadd -g 1000 hpcc
+RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
+RUN passwd -l hpcc 
+
+
 WORKDIR /hpcc-dev
+RUN chown hpcc:hpcc /hpcc-dev
+
+# Runs as hpcc to fetch sources and build, to aid debugging containers as user hpcc
+USER hpcc
+
 ARG BUILD_USER=hpcc-systems
+RUN echo BUILD_USER is ${BUILD_USER}
 RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
     cd HPCC-Platform && \
     git submodule update --init --recursive
@@ -42,6 +53,14 @@ RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DCMAKE_BUILD_TYPE=
 RUN make -j$(nproc) jlib
 RUN make -j$(nproc) esp
 RUN make -j$(nproc) roxie
-RUN make  ws_workunits  ecl
+RUN make -j$(nproc) ws_workunits ecl
 RUN make -j$(nproc)
+
+USER root
+
 RUN make -j$(nproc) install
+RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
+RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
+RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
+RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
+

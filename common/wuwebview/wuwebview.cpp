@@ -184,7 +184,7 @@ public:
             buffer.append("</").append(tag).append('>');
     }
 
-    virtual void beginNode(const char *tag, offset_t startOffset)
+    virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset)
     {
         bool *pIsResultTag = resultChildTags.getValue(tag);
         if (pIsResultTag && *pIsResultTag)
