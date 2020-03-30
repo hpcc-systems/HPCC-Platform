@@ -7615,7 +7615,7 @@ IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op)
 IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op, IHqlExpression *flags)
 {
     if (op != (__int64) no_httpcall || hasHttpMarkupFlag(flags))
-        return LINK(flags);
+        return flags;
     return createComma(createAttribute(jsonAtom), flags);
 }
 
