@@ -22,7 +22,7 @@ ESPenum SigningMethodType : string
 ESPrequest SignRequest
 {
     ESPenum SigningMethodType SigningMethod("gpg");
-    [cols(20)] string KeyIdentifier;
+    [cols(20)] string UserID;
     [password, cols(20)] string KeyPass;
     [cols(70), rows(20)] string Text;
 };
