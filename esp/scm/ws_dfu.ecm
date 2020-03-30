@@ -349,8 +349,8 @@ DFUArrayActionRequest
     ESParray<string> LogicalFiles;
     bool removeFromSuperfiles(false);
     bool removeRecursively(false);
-    [min_ver("1.55")] ESPenum DFUChangeProtection Protect;
-    [min_ver("1.55")] ESPenum DFUChangeRestriction Restrict;
+    [min_ver("1.55")] ESPenum DFUChangeProtection Protect(0);
+    [min_ver("1.55")] ESPenum DFUChangeRestriction Restrict(0);
 };
 
 ESPresponse
