@@ -542,7 +542,7 @@ MODULE_EXIT()
         if (cur.getOperator() == no_constant)
         {
             StringBuffer text;
-            toECL(&cur, text, false);
+            toECL(cur.queryBody(), text, false);
             printf("CONST:%" I64F "u:%s", querySeqId(&cur), text.str());
         }
     }
