@@ -143,7 +143,7 @@ extern jhtree_decl bool isIndexFile(IFile *file)
         if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
             return false;
         SwapBigEndian(hdr);
-        if (size % hdr.nodeSize == 0 && hdr.phyrec == size-1)
+        if (hdr.nodeSize && (size % hdr.nodeSize == 0) && (hdr.phyrec == size-1))
         {
             if (hdr.ktype & USE_TRAILING_HEADER)
             {
