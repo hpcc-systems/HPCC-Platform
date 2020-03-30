@@ -1781,7 +1781,7 @@ unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
 //-- Windows implementation -------------------------------------------------
 
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
-    : ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), unflushedReadBytes(0), unflushedWriteBytes(0)
+    : unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
@@ -1847,9 +1847,9 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
     setPos(pos);
     if (ReadFile(file,data,len,&numRead,NULL) == 0)
         throw makeOsException(GetLastError(),"CFileIO::read");
-    ioReadCycles.fetch_add(timer.elapsedCycles());
-    ioReadBytes.fetch_add(numRead);
-    ++ioReads;
+    stats.ioReadCycles.fetch_add(timer.elapsedCycles());
+    stats.ioReadBytes.fetch_add(numRead);
+    ++stats.ioReads;
     return (size32_t)numRead;
 }
 
@@ -1871,9 +1871,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         throw makeOsException(GetLastError(),"CFileIO::write");
     if (numWritten != len)
         throw makeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
-    ioWriteCycles.fetch_add(timer.elapsedCycles());
-    ioWriteBytes.fetch_add(numWritten);
-    ++ioWrites;
+    stats.ioWriteCycles.fetch_add(timer.elapsedCycles());
+    stats.ioWriteBytes.fetch_add(numWritten);
+    ++stats.ioWrites;
     return (size32_t)numWritten;
 }
 
