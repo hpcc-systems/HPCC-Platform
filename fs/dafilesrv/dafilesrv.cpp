@@ -796,8 +796,7 @@ int main(int argc,char **argv)
         lf->beginLogging();
     }
 #else
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail);
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+    setupContainerizedLogMsgHandler();
 #endif
 
     write_pidfile(componentName.str());

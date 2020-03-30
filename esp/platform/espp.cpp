@@ -291,8 +291,7 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
     lf->setAliasName("esp");
     lf->beginLogging();
 #else
-    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, 1000);
-            queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+    setupContainerizedLogMsgHandler();
 #endif
 
     if (procpt->getPropBool("@enableSysLog", false))

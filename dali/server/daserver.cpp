@@ -355,6 +355,8 @@ dali:
   dataPath: "/var/lib/HPCCSystems/dalistore"
   sds:
     environment: "/etc/HPCCSystems/environment.xml"
+  logging:
+    detail: 100
 )!!";
 
 
@@ -414,7 +416,7 @@ int main(int argc, const char* argv[])
             fileMsgHandler = lf->beginLogging();
         }
 #else
-        PROGLOG("Daserver NOT logging to local file!");
+        setupContainerizedLogMsgHandler();
 #endif
         PROGLOG("Build %s", BUILD_TAG);
 
@@ -610,6 +612,8 @@ int main(int argc, const char* argv[])
         mpServer->installWhiteListCallback(whiteListHandler);
 #ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
+#else
+        setupContainerizedLogMsgHandler();
 #endif
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();

@@ -622,7 +622,6 @@ int main(int argc, char * argv[] )
     strdup("Make sure leak checking is working");
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
 
-#ifndef _CONTAINERIZED
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("UDPTRANSPORT");
         lf->setCreateAliasFile(false);
@@ -632,7 +631,6 @@ int main(int argc, char * argv[] )
         lf->setMsgFields(MSGFIELD_STANDARD);
         lf->beginLogging();
     }
-#endif
 
     StringBuffer cmdline;
     int c;

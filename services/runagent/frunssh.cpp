@@ -56,7 +56,6 @@ int main( int argc, char *argv[] )
 #endif
 
     try  {
-#ifndef _CONTAINERIZED
         StringBuffer logname;
         splitFilename(argv[0], NULL, NULL, &logname, NULL);
 
@@ -64,11 +63,6 @@ int main( int argc, char *argv[] )
         lf->setCreateAliasFile(false);
         lf->setMsgFields(MSGFIELD_prefix);
         lf->beginLogging();
-#else
-        Owned<ILogMsgFilter> filter = queryLogMsgManager()->getMonitorFilter(queryStderrLogMsgHandler());
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
-#endif
 
         Owned<IFRunSSH> runssh = createFRunSSH();
         runssh->init(argc,argv);

@@ -324,7 +324,7 @@ int main(int argc, const char* argv[])
         lf->beginLogging();
     }
 #else
-        PROGLOG("Saserver NOT logging to local file!");
+    setupContainerizedLogMsgHandler();
 #endif
     DBGLOG("Build %s", BUILD_TAG);
 

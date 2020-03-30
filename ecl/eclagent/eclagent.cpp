@@ -3362,7 +3362,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         PROGLOG("Logging to %s", lf->queryLogFileSpec());
         logfilespec.set(lf->queryLogFileSpec());
 #else
-        PROGLOG("ECLAgent NOT logging to local file!");
+        setupContainerizedLogMsgHandler();
 #endif
     }
     else

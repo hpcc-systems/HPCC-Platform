@@ -276,6 +276,8 @@ static constexpr const char * defaultYaml = R"!!(
     topoport: 9004
     stdlog: true
     traceLevel: 1
+    logging:
+      fields: "TIM+MLT+TID+PFX"
 )!!";
 
 int main(int argc, const char *argv[])
@@ -323,7 +325,6 @@ int main(int argc, const char *argv[])
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
         else
             removeLog();
-
         const char *logdir = topology->queryProp("@logdir");
         if (logdir && *logdir)
         {
@@ -334,7 +335,7 @@ int main(int argc, const char *argv[])
             queryLogMsgManager()->setQueueDroppingLimit(512, 32);
         }
 #else
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+        setupContainerizedLogMsgHandler();
 #endif
         Owned<ISocket> socket = ISocket::create(topoPort);
         if (traceLevel)

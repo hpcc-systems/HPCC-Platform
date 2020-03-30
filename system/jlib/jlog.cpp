@@ -2204,7 +2204,7 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
         if(isdigit(fstr[0]))
             fields = atoi(fstr);
         else
-            fields = LogMsgFieldsFromAbbrevs(fstr);
+            fields = logMsgFieldsFromAbbrevs(fstr);
     }
     if(strcmp(type.str(), "stderr")==0)
         return getHandleLogMsgHandler(stderr, fields, tree->hasProp("@writeXML"));
@@ -2295,14 +2295,7 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
     thePassAllFilter = new PassAllLogMsgFilter();
     thePassLocalFilter = new PassLocalLogMsgFilter();
     thePassNoneFilter = new PassNoneLogMsgFilter();
-    unsigned  msgFields = MSGFIELD_STANDARD;
-#ifdef _CONTAINERIZED
-    const char *logFields = queryEnvironmentConf().queryProp("logfields");
-    if (!isEmptyString(logFields))
-        msgFields = LogMsgFieldsFromAbbrevs(logFields);
-#endif
-
-    theStderrHandler = new HandleLogMsgHandlerTable(stderr, msgFields);
+    theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
     theSysLogEventLogger = new CSysLogEventLogger;
     theManager = new CLogMsgManager();
     theManager->resetMonitors();
@@ -2330,6 +2323,75 @@ MODULE_EXIT()
     thePassLocalFilter = NULL;
     thePassAllFilter = NULL;
 }
+
+#ifdef _CONTAINERIZED
+
+static constexpr const char * logFielsdAtt = "@fields";
+static constexpr const char * logMsgDetailAtt = "@detail";
+static constexpr const char * logMsgAudiencesAtt = "@audiences";
+static constexpr const char * logMsgClassesAtt = "@classes";
+static constexpr const char * useLogQueueAtt = "@useLogQueue";
+static constexpr const char * logQueueLenAtt = "@queueLen";
+static constexpr const char * logQueueDropAtt = "@queueDrop";
+static constexpr const char * useSysLogpAtt ="@enableSysLog";
+
+#ifdef _DEBUG
+  static constexpr bool useQueueDefault = false;
+#else
+  static constexpr bool useQueueDefault = true;
+#endif
+
+static constexpr unsigned queueLenDefault = 512;
+static constexpr unsigned queueDropDefault = 32;
+static constexpr bool useSysLogDefault = false;
+
+void setupContainerizedLogMsgHandler()
+{
+    IPropertyTree * logConfig = queryComponentConfig().queryPropTree("logging");
+    if (logConfig)
+    {
+        if (logConfig->hasProp(logFielsdAtt))
+        {
+            //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+            const char *logFields = logConfig->queryProp(logFielsdAtt);
+            if (!isEmptyString(logFields))
+                theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
+        }
+
+        //Only recreate filter if at least one filter attribute configured
+        if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
+        {
+            LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
+
+            unsigned msgClasses = MSGCLS_all;
+            const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
+            if (!isEmptyString(logClasses))
+                msgClasses = logMsgClassesFromAbbrevs(logClasses);
+
+            unsigned msgAudiences = MSGAUD_all;
+            const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
+            if (!isEmptyString(logAudiences))
+                msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
+
+            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail);
+            theManager->changeMonitorFilter(theStderrHandler, filter);
+        }
+
+        bool useLogQueue = logConfig->getPropBool(useLogQueueAtt, useQueueDefault);
+        if (useLogQueue)
+        {
+            unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
+            unsigned queueDrop = logConfig->getPropInt(logQueueDropAtt, queueDropDefault);
+
+            queryLogMsgManager()->enterQueueingMode();
+            queryLogMsgManager()->setQueueDroppingLimit(queueLen, queueDrop);
+        }
+
+        if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
+            UseSysLogForOperatorMessages();
+    }
+}
+#endif
 
 ILogMsgManager * queryLogMsgManager()
 {
@@ -2807,7 +2869,7 @@ private:
         flushes = true;
         const char *logFields = queryEnvironmentConf().queryProp("logfields");
         if (!isEmptyString(logFields))
-            msgFields = LogMsgFieldsFromAbbrevs(logFields);
+            msgFields = logMsgFieldsFromAbbrevs(logFields);
         else
             msgFields = MSGFIELD_STANDARD;
         msgAudiences = MSGAUD_all;

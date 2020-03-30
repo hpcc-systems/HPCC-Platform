@@ -543,6 +543,8 @@ roxie:
     - name: workunit
       port: 0
       numThreads: 0
+  logging:
+      detail: 100
 )!!";
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
@@ -764,21 +766,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         directoryTree.clear();
 
         //Logging stuff
+#ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
         else
             removeLog();
         if (topology->hasProp("@logfile"))
         {
-#ifndef _CONTAINERIZED
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             logDirectory.set(lf->queryLogDir());
-#else
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail);
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-#endif
 
 #ifdef _DEBUG
             unsigned useLogQueue = topology->getPropBool("@useLogQueue", false);
@@ -795,6 +793,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (topology->getPropBool("@enableSysLog",true))
                 UseSysLogForOperatorMessages();
         }
+#else
+        setupContainerizedLogMsgHandler();
+#endif
 
         roxieMetrics.setown(createRoxieMetricsManager());
 

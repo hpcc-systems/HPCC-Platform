@@ -647,9 +647,9 @@ int main( int argc, const char *argv[]  )
             LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
         }
 #else
+        setupContainerizedLogMsgHandler();
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
-        LOG(MCdebugProgress, thorJob, "Logging to Stderr!");
 #endif
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
 

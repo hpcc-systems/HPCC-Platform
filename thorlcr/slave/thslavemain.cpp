@@ -277,7 +277,7 @@ void startSlaveLog()
 
     LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
 #else
-    LOG(MCdebugProgress, thorJob, "Thor Slave (%u) not logging to component file!", mySlaveNum);
+    setupContainerizedLogMsgHandler();
 #endif
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
 }

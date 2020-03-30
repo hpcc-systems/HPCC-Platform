@@ -149,15 +149,9 @@ int main(int argc, const char *argv[])
     if (!stop) {
         sentinelFile.setown(createSentinelTarget());
         removeSentinelFile(sentinelFile);
-        int maxdetail = 1000;
-#ifndef _CONTAINERIZED
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
-        lf->setMaxDetail(maxdetail);
+        lf->setMaxDetail(1000);
         fileMsgHandler = lf->beginLogging();
-#else
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, maxdetail);
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-#endif
     }
     StringBuffer ftslogdir;
     const char* name = globals->queryProp("@name");
