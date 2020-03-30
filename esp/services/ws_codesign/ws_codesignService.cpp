@@ -47,17 +47,18 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
 {
     resp.setRetCode(-1);
 
-    StringBuffer keyid(req.getKeyIdentifier());
-    keyid.trim();
+    StringBuffer userid(req.getUserID());
+    userid.trim();
     const char* text = req.getText();
-    if (keyid.length() == 0 || !text || !*text)
+    if (userid.length() == 0 || !text || !*text)
     {
-        resp.setErrMsg("Please provide both KeyIdentifier and Text");
+        resp.setErrMsg("Please provide both UserID and Text");
         return false;
     }
-    if (strstr(keyid.str(), "\""))
+
+    if (strstr(userid.str(), "\""))
     {
-        resp.setErrMsg("Invalid KeyIdentifier");
+        resp.setErrMsg("Invalid UserID");
         return false;
     }
 
@@ -71,11 +72,11 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
     output.clear();
     errmsg.clear();
     if (isGPGv1)
-        cmd.appendf("gpg --list-secret-keys \"%s\"", keyid.str());
+        cmd.appendf("gpg --list-secret-keys \"=%s\"", userid.str()); // = means exact match
     else
-        cmd.appendf("gpg --list-secret-keys --with-keygrip \"%s\"", keyid.str());
+        cmd.appendf("gpg --list-secret-keys --with-keygrip \"=%s\"", userid.str()); // = means exact match
     ret = runExternalCommand(output, errmsg, cmd.str(), nullptr);
-    if (ret != 0 || strstr(output.str(), keyid.str()) == nullptr)
+    if (ret != 0 || strstr(output.str(), userid.str()) == nullptr)
     {
         resp.setErrMsg("Key not found");
         return false;
@@ -94,7 +95,7 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
 
     output.clear();
     errmsg.clear();
-    cmd.clear().appendf("gpg --clearsign -u \"%s\" --yes --batch --passphrase-fd 0", keyid.str());
+    cmd.clear().appendf("gpg --clearsign -u \"%s\" --yes --batch --passphrase-fd 0", userid.str());
     if (!isGPGv1)
         cmd.append(" --pinentry-mode loopback");
     VStringBuffer input("%s\n", req.getKeyPass());
