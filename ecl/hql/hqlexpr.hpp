@@ -995,6 +995,7 @@ public:
     }
     ~HqlLookupContext();
 
+    void clearParentContainer() { container = nullptr; }
     void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
