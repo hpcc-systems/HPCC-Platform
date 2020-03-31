@@ -69,6 +69,8 @@ define([
         },
 
         _onFilterApply: function (event) {
+            var formData = this.toObject(event.currentTarget.form);
+            this.initRecentFilter(formData);
             this.filterDropDown.closeDropDown();
             this.emit("apply");
             this.refreshState();
@@ -105,13 +107,13 @@ define([
             return false;
         },
 
-        toObject: function () {
+        toObject: function (filter) {
             var context = this;
             if (this.filterDropDown.get("disabled")) {
                 return {};
             }
             var retVal = {};
-            arrayUtil.forEach(this.filterForm.getDescendants(), function (item, idx) {
+            arrayUtil.forEach(this.filterForm.getDescendants() || filter, function (item, idx) {
                 var name = item.get("name");
                 if (name) {
                     var value = item.get("value");
@@ -120,15 +122,6 @@ define([
                     }
                 }
             });
-            if (this.userName !== null) {
-                if (!Utility.isObjectEmpty(retVal)) {
-                    Recent.addToStack(this.params.ws_key, retVal, 5).then(function (val) {
-                        if (val) {
-                            context.loadRecentFilters(retVal);
-                        }
-                    });
-                }
-            }
             return retVal;
         },
 
@@ -150,11 +143,13 @@ define([
                 return;
 
             this.userName = dojoConfig.username;
+            var recentFilterLoaded = false;
             if (this.userName !== null) {
                 this.recentFilterNode = dom.byId(this.id + "RecentFilters");
 
-                if (params.widget) {
+                if (params.widget && !recentFilterLoaded) {
                     srcReact.render(srcReact.RecentFilters, { ws_key: params.ws_key, widget: params.widget, filter: {} }, this.recentFilterNode);
+                    recentFilterLoaded = true;
                 }
             }
         },
@@ -174,6 +169,17 @@ define([
 
         reset: function (disable) {
             this.filterForm.reset();
+        },
+
+        initRecentFilter: function (retVal) {
+            var context = this;
+            if (this.userName !== null) {
+                if (!Utility.isObjectEmpty(retVal)) {
+                    Recent.addToStack(this.params.ws_key, retVal, 5, true).then(function(val){
+                        context.loadRecentFilters(retVal);
+                    });
+                }
+            }
         },
 
         loadRecentFilters: function (retVal) {
