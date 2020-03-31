@@ -3253,6 +3253,8 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
     }
 
     HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx, inSignedModule);
+    // since the forward scope lives longer than this HqlGram clear the container to prevent access to invalid memory
+    parentCtx->clearParentContainer();
     saveContext(*parentCtx, true);
     Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
