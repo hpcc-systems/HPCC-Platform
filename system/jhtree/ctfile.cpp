@@ -106,7 +106,7 @@ extern bool isCompressedIndex(const char *filename)
         if (io->read(0, sizeof(hdr), &hdr) == sizeof(hdr))
         {
             SwapBigEndian(hdr);
-            if (hdr.nodesize && size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
+            if (hdr.nodeSize && size % hdr.nodeSize == 0 && hdr.phyrec == size-1 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
             {
                 if (hdr.ktype & USE_TRAILING_HEADER)
                 {
