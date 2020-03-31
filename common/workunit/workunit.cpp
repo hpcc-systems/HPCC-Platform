@@ -13192,6 +13192,60 @@ bool isValidMemoryValue(const char *memoryUnit)
 }
 
 #ifdef _CONTAINERIZED
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+{
+    // check if lingering thor instance is up.
+
+    /* If code was dependent on reading a workunit in parallel, the whole area of
+     * workunit locking and reading will need revisiting, because at the moment the 
+     * workunit reading code does not lock at all.
+     * 
+     */
+
+    /* NB: forcing a reload here to ensure Debug values are recent.
+     * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
+     * The area of persisting a non-locked connection to workunits should be resivisted..
+     */
+    workunit.forceReload();
+
+    Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
+    ForEach(*iter)
+    {
+        /* NB: Thor's set their running endpoint into Debug values of workunit
+         * Check to see if workunit has any Thor's available lingering instances.
+         */
+        SCMStringBuffer thorInstance;
+        iter->str(thorInstance);
+        SCMStringBuffer thorInstanceValue;
+        if (workunit.getDebugValueBool(thorInstance.s, false))
+        {
+            {
+                Owned<IWorkUnit> w = &workunit.lock();
+                w->setDebugValue(thorInstance.s, "0", true);
+            }
+            /* NB: there's a window where Thor could shutdown here.
+             * In that case, the sendRecv will fail and it will fall through to queueing.
+             */
+            const char *instanceName = strchr(thorInstance.str(), '_') + 1;
+
+            Owned<INode> masterNode = createINode(instanceName);
+            CMessageBuffer msg;
+            VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
+            msg.append(jobStr);
+            if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
+            {
+                bool ok;
+                msg.read(ok);
+                if (graphName) // if graphName==nullptr, then continue around to look at others
+                {
+                    if (ok)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
 
 static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, const char *process)
 {

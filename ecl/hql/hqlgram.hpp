@@ -388,6 +388,7 @@ public:
     {
     }
     bool hasAnyActiveParameters();
+    void clearParentContainer() { lookupCtx.clearParentContainer(); }
 public:
     CIArrayOf<ActiveScopeInfo> defineScopes;
     HqlScopeArray defaultScopes;

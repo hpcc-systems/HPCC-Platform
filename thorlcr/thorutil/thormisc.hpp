@@ -321,6 +321,7 @@ public:
 #define DEFAULT_THORSLAVEPORT 20100
 #define DEFAULT_SLAVEPORTINC 20
 #define DEFAULT_QUERYSO_LIMIT 10
+#define DEFAULT_LINGER_SECS 10
 
 class graph_decl CFifoFileCache : public CSimpleInterface
 {

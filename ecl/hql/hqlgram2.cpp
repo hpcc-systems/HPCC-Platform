@@ -3253,6 +3253,8 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
     }
 
     HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx, inSignedModule);
+    // since the forward scope lives longer than this HqlGram clear the container to prevent access to invalid memory
+    parentCtx->clearParentContainer();
     saveContext(*parentCtx, true);
     Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
@@ -7615,7 +7617,7 @@ IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op)
 IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op, IHqlExpression *flags)
 {
     if (op != (__int64) no_httpcall || hasHttpMarkupFlag(flags))
-        return LINK(flags);
+        return flags;
     return createComma(createAttribute(jsonAtom), flags);
 }
 

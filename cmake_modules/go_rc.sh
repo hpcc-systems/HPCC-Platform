@@ -30,6 +30,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
     fi
   else
     NEW_POINT=$((HPCC_POINT+1))
+    NEW_MINOR=$HPCC_MINOR
   fi
   if [ "$GIT_BRANCH" != "candidate-$HPCC_MAJOR.$NEW_MINOR.x" ]; then
     echo "Current branch should be candidate-$HPCC_MAJOR.$NEW_MINOR.x"
@@ -56,6 +57,7 @@ else
     exit 2
   fi
   NEW_POINT=$HPCC_POINT
+  NEW_MINOR=$HPCC_MINOR
   NEW_SEQUENCE=$((HPCC_SEQUENCE+1))
 fi
 
