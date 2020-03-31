@@ -292,7 +292,8 @@ public:
         catch (IException *e)
         {
             fireException(e);
-            barrier->cancel();
+            if (barrier) // no barrier if local join
+                barrier->cancel();
             asyncSecondaryStart.wait();
             stopOtherInput();
             throw;
@@ -302,7 +303,8 @@ public:
         {
             IException *e=secondaryStartException.getClear();
             fireException(e);
-            barrier->cancel();
+            if (barrier)
+                barrier->cancel();
             stopPartitionInput();
             throw e;
         }
