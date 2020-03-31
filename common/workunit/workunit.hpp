@@ -1692,6 +1692,7 @@ extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 inline __int64 calcCost(double ratePerHour, __int64 timeNS) { return HourToSeconds(ratePerHour) * NanoSecondsToSeconds(timeNS) * 1e6; }
 
 #ifdef _CONTAINERIZED
+extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName);
 extern WORKUNIT_API void deleteK8sJob(const char *componentName, const char *job);
 extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, const char *condition=nullptr);
 extern WORKUNIT_API void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});

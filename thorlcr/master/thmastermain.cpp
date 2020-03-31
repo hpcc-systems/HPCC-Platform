@@ -588,7 +588,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(defaultYaml, argv, "thor", "THOR", "thor.xml", nullptr));
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr));
     }
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
@@ -614,10 +614,6 @@ int main( int argc, const char *argv[]  )
 
     if (0 == thorEp.port)
         thorEp.port = globals->getPropInt("@masterport", THOR_BASE_PORT);
-
-     // both same
-    setMasterPortBase(thorEp.port);
-    setMachinePortBase(thorEp.port);
 
     // Remove sentinel asap
     Owned<IFile> sentinelFile = createSentinelTarget();
@@ -650,14 +646,22 @@ int main( int argc, const char *argv[]  )
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 
         unsigned retry = 0;
-        for (;;) {
-            try {
-                unsigned port = getFixedPort(TPORT_mp);
-                LOG(MCdebugProgress, thorJob, "calling initClientProcess Port %d", port);
-                initClientProcess(serverGroup, DCR_ThorMaster, port);
+        for (;;)
+        {
+            try
+            {
+                LOG(MCdebugProgress, thorJob, "calling initClientProcess %d", thorEp.port);
+                initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port);
+                if (0 == thorEp.port)
+                    thorEp.port = queryMyNode()->endpoint().port;
+                // both same
+                setMasterPortBase(thorEp.port);
+                setMachinePortBase(thorEp.port);
+
                 break;
             }
-            catch (IJSOCK_Exception *e) { 
+            catch (IJSOCK_Exception *e)
+            { 
                 if ((e->errorCode()!=JSOCKERR_port_in_use))
                     throw;
                 FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
@@ -884,10 +888,10 @@ int main( int argc, const char *argv[]  )
             throw makeStringException(0, "missing --graphName");
         cloudJobName.appendf("%s-%s", workunit, graphName);
 
-        StringBuffer myIp;
-        queryHostIP().getIpText(myIp);
+        StringBuffer myEp;
+        queryMyNode()->endpoint().getUrlStr(myEp);
 
-        launchK8sJob("thorslave", workunit, cloudJobName, { { "graphName", graphName}, { "master", myIp.str() } });
+        launchK8sJob("thorslave", workunit, cloudJobName, { { "graphName", graphName}, { "master", myEp.str() } });
 #else
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);

@@ -1519,13 +1519,17 @@ void EclAgent::executeThorGraph(const char * graphName)
     WUState state = WUStateUnknown;
     if (agentTopology->hasProp("@queue"))
     {
-        VStringBuffer queueName("%s.thor", agentTopology->queryProp("@queue"));
-        DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-        Owned<IJobQueue> queue = createJobQueue(queueName.str());
-        queue->connect(false);
-        VStringBuffer jobName("%s/%s", wuid.get(), graphName);
-        IJobQueueItem *item = createJobQueueItem(jobName);
-        queue->enqueue(item);
+        if (executeGraphOnLingeringThor(*queryWorkUnit(), graphName))
+            PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+        else
+        {
+            VStringBuffer queueName("%s.thor", agentTopology->queryProp("@queue"));
+            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+            Owned<IJobQueue> queue = createJobQueue(queueName.str());
+            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
+            IJobQueueItem *item = createJobQueueItem(jobName);
+            queue->enqueue(item);
+        }
 
         // NB: overall max runtime if guillotine set handled by abortmonitor
         unsigned runningTimeLimit = queryWorkUnit()->getDebugValueInt("maxRunTime", 0);
@@ -1572,8 +1576,13 @@ void EclAgent::executeThorGraph(const char * graphName)
             }
         }
     }
-    else if (WUStateFailed == state)
-        throw makeStringException(0, "Workunit failed");
+    else
+    {
+        WorkunitUpdate w = updateWorkUnit();
+        WUState state = w->getState();
+        if (WUStateFailed == state)
+            throw makeStringException(0, "Workunit failed");
+    }
 
     setRunning();
     unlockWorkUnit();
