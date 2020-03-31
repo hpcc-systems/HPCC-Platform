@@ -1,13 +1,10 @@
 {{ range $thor := $.Values.thor -}}
 {{- if not $thor.disabled -}}
-{{- $masterPort := $thor.masterport | default 20000 -}}
-{{- $slavePort := $thor.slaveport | default 20100 -}}
 {{- $hthorName := printf "%s-hthor" .name }}
 {{- $eclAgentName := printf "%s-agent" .name }}
 {{- $thorAgentName := printf "%s-thoragent" .name }}
 {{- $slaveName := printf "%s-slave" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
-{{- $thorScope := omit . "eclagent" "thoragent" "hthor" }}
 {{- $eclAgentDefaults := dict "name" $eclAgentName "replicas" 1 }}
 {{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
 {{- $agentAppType := $eclAgentScope.type | default "hthor" }}
@@ -15,6 +12,8 @@
 {{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
 {{- $hthorDefaults := dict "name" $hthorName }}
 {{- $hthorScope := .hthor | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
+{{- $thorScopeStd := omit . "eclagent" "thoragent" "hthor" }}
+{{- $thorScope := $thorAgentScope.containerPerAgent | ternary ($thorScopeStd) ($thorScopeStd | mergeOverwrite (dict "masterport" 0 "slaveport" 0)) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -102,9 +101,13 @@ data:
     eclagent:
 {{ toYaml $thorAgentScope | indent 6 }}
       type: thor
+{{- if not $thorAgentScope.containerPerAgent }}
+    thor:
+{{ toYaml $thorScope | indent 6 }}
+{{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-{{- if $eclAgentScope.containerPerAgent }}
+{{- if $thorAgentScope.containerPerAgent }}
 
   {{ $agentAppType }}-jobspec.yaml: |
     apiVersion: batch/v1

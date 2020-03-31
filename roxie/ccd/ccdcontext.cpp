@@ -2280,16 +2280,19 @@ protected:
         // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
         setWUState(WUStateBlocked);
 
-        WUState state = WUStateUnknown;
         if (queryComponentConfig().hasProp("@queue"))
         {
-            VStringBuffer queueName("%s.thor", queryComponentConfig().queryProp("@queue"));
-            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-            Owned<IJobQueue> queue = createJobQueue(queueName.str());
-            queue->connect(false);
-            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
-            IJobQueueItem *item = createJobQueueItem(jobName);
-            queue->enqueue(item);
+            if (executeGraphOnLingeringThor(*workUnit, graphName))
+                PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+            else
+            {
+                VStringBuffer queueName("%s.thor", queryComponentConfig().queryProp("@queue"));
+                DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+                Owned<IJobQueue> queue = createJobQueue(queueName.str());
+                VStringBuffer jobName("%s/%s", wuid.get(), graphName);
+                IJobQueueItem *item = createJobQueueItem(jobName);
+                queue->enqueue(item);
+            }
 
             unsigned runningTimeLimit = workUnit->getDebugValueInt("maxRunTime", 0);
             runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
@@ -2335,8 +2338,13 @@ protected:
                 }
             }
         }
-        else if (WUStateFailed == state)
-            throw makeStringException(0, "Workunit failed");
+        else
+        {
+            WorkunitUpdate w(&workUnit->lock());
+            WUState state = w->getState();
+            if (WUStateFailed == state)
+                throw makeStringException(0, "Workunit failed");
+        }
 
         setWUState(WUStateRunning);
 
@@ -3088,6 +3096,11 @@ public:
             debugContext->debugTerminate();
         if (workUnit)
         {
+#ifdef _CONTAINERIZED
+            // signal to any lingering Thor's that job is complete and they can quit before timeout.
+            executeGraphOnLingeringThor(*workUnit, nullptr);
+#endif
+
             if (options.failOnLeaks && !failed)
             {
                 cleanupGraphs();

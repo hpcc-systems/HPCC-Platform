@@ -1092,11 +1092,13 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
     {
         Owned<CDaliConnectionValidator> daliConnectValidator = new CDaliConnectionValidator(globals->getPropInt("@verifyDaliConnectionInterval", DEFAULT_VERIFYDALI_POLL));
         Owned<ILargeMemLimitNotify> notify;
-        if (multiThorMemoryThreshold) {
+        if (multiThorMemoryThreshold)
+        {
             StringBuffer ngname;
             if (!globals->getProp("@multiThorResourceGroup",ngname))
                 globals->getProp("@nodeGroup",ngname);
-            if (ngname.length()) {
+            if (ngname.length())
+            {
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
                 PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
@@ -1113,31 +1115,93 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
         Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try
         {
-            if (wuid) // one-shot, quits after running
+#ifndef _CONTAINERIZED
+            jobManager->run();
+#else
+            unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", DEFAULT_LINGER_SECS*1000);
+            StringBuffer instance("thorinstance_");
+            queryMyNode()->endpoint().getUrlStr(instance);
+            StringBuffer currentGraphName(graphName);
+
+            while (true)
             {
-                PROGLOG("Executing: wuid=%s, graph=%s", wuid, graphName);
-                Owned<IWorkUnitFactory> factory;
-                Owned<IConstWorkUnit> workunit;
-                factory.setown(getWorkUnitFactory());
-                workunit.setown(factory->openWorkUnit(wuid));
-                SocketEndpoint dummyAgentEp;
-                jobManager->execute(workunit, wuid, graphName, dummyAgentEp);
-                IException *e = jobManager->queryExitException();
-                Owned<IWorkUnit> w = &workunit->lock();
-                if (e)
+                PROGLOG("Executing: wuid=%s, graph=%s", wuid, currentGraphName.str());
+
                 {
-                    Owned<IWUException> we = w->createException();
-                    we->setSeverity(SeverityInformation);
-                    StringBuffer errStr;
-                    e->errorMessage(errStr);
-                    we->setExceptionMessage(errStr);
-                    we->setExceptionSource("thormasterexception");
-                    we->setExceptionCode(e->errorCode());
+                    Owned<IWorkUnitFactory> factory;
+                    Owned<IConstWorkUnit> workunit;
+                    factory.setown(getWorkUnitFactory());
+                    workunit.setown(factory->openWorkUnit(wuid));
+                    SocketEndpoint dummyAgentEp;
+                    jobManager->execute(workunit, wuid, currentGraphName, dummyAgentEp);
+                    IException *e = jobManager->queryExitException();
+                    Owned<IWorkUnit> w = &workunit->lock();
+                    if (e)
+                    {
+                        Owned<IWUException> we = w->createException();
+                        we->setSeverity(SeverityInformation);
+                        StringBuffer errStr;
+                        e->errorMessage(errStr);
+                        we->setExceptionMessage(errStr);
+                        we->setExceptionSource("thormasterexception");
+                        we->setExceptionCode(e->errorCode());
+
+                        w->setState(WUStateWait);
+                        break;
+                    }
+
+                    if (lingerPeriod)
+                        w->setDebugValue(instance, "1", true);
+
+                    w->setState(WUStateWait);
                 }
-                w->setState(WUStateWait);
-            }  
-            else
-                jobManager->run();
+                currentGraphName.clear();
+
+                if (lingerPeriod)
+                {
+                    CMessageBuffer msg;
+                    CTimeMon timer(lingerPeriod);
+                    bool handled = false;
+                    unsigned remaining;
+                    while (!timer.timedout(&remaining))
+                    {
+                        PROGLOG("Lingering time left: %.2f", ((float)remaining)/1000);
+                        if (!queryWorldCommunicator().recv(msg, NULL, MPTAG_THOR, nullptr, remaining))
+                            break;
+                        StringBuffer next;
+                        msg.read(next);
+
+                        // validate
+                        StringArray sArray;
+                        sArray.appendList(next, "/");
+                        if (2 == sArray.ordinality() && streq(sArray.item(0), wuid))
+                        {
+                            currentGraphName.set(sArray.item(1));
+                            // NB: agent could send empty graphName to terminate early before timeout
+                            msg.clear().append(true);
+                            if (queryWorldCommunicator().reply(msg, 60*1000)) // should be quick!
+                                handled = true;
+                            else
+                                currentGraphName.clear();
+                            break;
+                        }
+                        // reject/ignore duff message.
+                    }
+                    if (!handled) // i.e. if timedout of comms issue, clear lingering flag before exiting
+                    {
+                        // remove lingering instance from workunit
+                        Owned<IWorkUnitFactory> factory;
+                        Owned<IConstWorkUnit> workunit;
+                        factory.setown(getWorkUnitFactory());
+                        workunit.setown(factory->openWorkUnit(wuid));
+                        Owned<IWorkUnit> w = &workunit->lock();
+                        w->setDebugValue(instance, "0", true);
+                    }
+                }
+                if (0 == currentGraphName.length())
+                    break;
+            }
+#endif
         }
         catch (IException *e)
         {

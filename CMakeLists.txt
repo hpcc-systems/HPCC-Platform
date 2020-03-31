@@ -140,6 +140,8 @@ endif()
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
 if ( PLUGIN )
+    HPCC_ADD_SUBDIRECTORY (system/yaml)
+    HPCC_ADD_SUBDIRECTORY (system/aws "SQS")
     HPCC_ADD_SUBDIRECTORY (system/tbb_sm)
     HPCC_ADD_SUBDIRECTORY (roxie/roxiemem)
     HPCC_ADD_SUBDIRECTORY (rtl/nbcd)
