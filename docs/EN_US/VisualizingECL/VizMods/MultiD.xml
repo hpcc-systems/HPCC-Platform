@@ -99,7 +99,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -195,7 +196,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -291,7 +293,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -390,7 +393,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -486,7 +490,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   
@@ -582,7 +587,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   viz_scatter := Visualizer.MultiD.Scatter('scatter',, 'MultiD__test');
@@ -679,7 +685,8 @@
                   {'Bioligy', 66, 60, 85, 6},
                   {'Physics', 46, 20, 53, 7},
                   {'Math', 98, 30, 23, 13}],
-                  {STRING subject, INTEGER4 year1, INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
+                  {STRING subject, INTEGER4 year1, 
+                   INTEGER4 year2, INTEGER4 year3, INTEGER4 year4});
   data_exams := OUTPUT(ds, NAMED('MultiD__test'));
   data_exams;
   viz_step := Visualizer.MultiD.Step('step',, 'MultiD__test');
