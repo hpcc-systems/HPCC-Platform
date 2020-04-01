@@ -115,3 +115,70 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
 
     return true;
 }
+
+const char* skipn(const char* str, char c, int n)
+{
+    for (int i = 0; i < n && str && *str; i++)
+    {
+        str = strchr(str, c);
+        if (!str)
+            break;
+        str++;
+    }
+    return str;
+}
+
+bool Cws_codesignEx::onListUserIDs(IEspContext &context, IEspListUserIDsRequest &req, IEspListUserIDsResponse &resp)
+{
+    StringBuffer output, errmsg;
+
+    int ret = runExternalCommand(output, errmsg, "gpg --version", nullptr);
+    if (ret != 0)
+        throw MakeStringException(-1, "Error running gpg: %s", errmsg.str());
+    bool isGPGv1 = strstr(output.str(), "gpg (GnuPG) 1.");
+
+    const char* START = "\nuid:";
+    if (isGPGv1)
+        START = "\nsec:";
+    int startlen = strlen(START);
+    const int SKIP = 8;
+    output.clear().append("\n");
+    errmsg.clear();
+    ret = runExternalCommand(output, errmsg, "gpg --list-secret-keys --with-colon", nullptr);
+    if (ret != 0)
+        throw MakeStringException(-1, "Error running gpg: %s", errmsg.str());
+    const char* line = output.str();
+    StringArray uids;
+    while (line && *line)
+    {
+        line = strstr(line, START);
+        if (!line)
+            break;
+        line += startlen;
+        line = skipn(line, ':', SKIP);
+        if (!line || !*line)
+            break;
+        const char* uid_s = line;
+        while (*line != '\0' && *line != ':')
+            line++;
+        if (line > uid_s)
+        {
+            StringBuffer uid(line - uid_s, uid_s);
+            uid.trim();
+            if (uid.length() > 0)
+                uids.append(uid.str());
+        }
+    }
+    uids.sortAscii(false);
+    const char* current = "";
+    StringArray& respuserids = resp.getUserIDs();
+    for (int i = 0; i < uids.length(); i++)
+    {
+        if (strcmp(uids.item(i), current) != 0)
+        {
+            current = uids.item(i);
+            respuserids.append(current);
+        }
+    }
+    return true;
+}

@@ -34,9 +34,19 @@ ESPresponse [exceptions_inline] SignResponse
     string SignedText;
 };
 
+ESPrequest ListUserIDsRequest
+{
+};
+
+ESPresponse [exceptions_inline] ListUserIDsResponse
+{
+    ESParray<string> UserIDs;
+};
+
 ESPservice [auth_feature("CodeSignAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_codesign
 {
     ESPmethod [auth_feature("CodeSignAccess:FULL"), client_xslt("/esp/xslt/codesign.xslt")] Sign(SignRequest, SignResponse);
+    ESPmethod [auth_feature("CodeSignAccess:READ")] ListUserIDs(ListUserIDsRequest, ListUserIDsResponse);
 };
 
 SCMexportdef(ws_codesign);
