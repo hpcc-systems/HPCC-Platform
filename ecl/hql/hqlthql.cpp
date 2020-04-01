@@ -1627,7 +1627,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     IHqlExpression *formal = formals->queryChild(idx);
                     isHidden = formal && formal->hasAttribute(_hidden_Atom);
                 }
-                if (!isHidden)
+                if (!isHidden && (expandProcessed || !isInternalAttribute(kid)))
                 {
                     if (first)
                         first = false;

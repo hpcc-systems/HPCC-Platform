@@ -107,7 +107,8 @@ static node_operator expandLists(node_operator op, HqlExprArray & args, IHqlExpr
     case no_null:
         return op;
     }
-    args.append(*LINK(expr));
+    if (!expr->isAttribute())
+        args.append(*LINK(expr));
     return op;
 }
 
@@ -6675,6 +6676,56 @@ void EclResourcer::resourceRemoteGraph(IHqlExpression * expr, HqlExprArray & tra
 
 //---------------------------------------------------------------------------
 
+static IHqlExpression * appendUid(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_mapto:
+    case no_colon:
+    case no_setmeta:
+        return LINK(expr);
+    }
+    return replaceOwnedAttribute(expr, createUniqueId());
+}
+
+static IHqlExpression * ensureActivitiesAreUnique(IHqlExpression * expr)
+{
+    if (!expr->isAction())
+        return LINK(expr);
+
+    switch (expr->getOperator())
+    {
+    case no_if:
+    case no_case:
+    case no_map:
+    case no_actionlist:
+    case no_parallel:
+    case no_sequential:
+    case no_orderedactionlist:
+    case no_compound:
+    case no_comma:
+        break;
+    default:
+        return LINK(expr);
+    }
+
+    HqlExprArray args;
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        OwnedHqlExpr transformed = ensureActivitiesAreUnique(cur);
+        //Add a unique attribute to each activity - unless it has changed, in which case a (child) activity
+        //will have already have gained the unique id.  Prevents unnecessary ids on nested parallels etc.
+        if (transformed->isAction() && (transformed == cur))
+            args.append(*appendUid(transformed));
+        else
+            args.append(*transformed.getClear());
+    }
+    return expr->clone(args);
+}
+
+
+
 IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression * _expr, ClusterType targetClusterType, unsigned clusterSize, IHqlExpression * graphIdExpr)
 {
     CResourceOptions options(targetClusterType, clusterSize, translator.queryOptions(), translator.querySpillSequence());
@@ -6688,6 +6739,10 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
         expr.setown(hoister.transformRoot(expr));
         translator.traceExpression("AfterInvariant Child", expr);
     }
+
+    //Ensure that each action generates a unique activity.  If duplicate activities are shared it is impossible to know
+    //when an activity should be stopped - especially allowing it to be stopped early before the subgraph/graph completes.
+    expr.setown(ensureActivitiesAreUnique(expr));
 
     HqlExprArray transformed;
     {

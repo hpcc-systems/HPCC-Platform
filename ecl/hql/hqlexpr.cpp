@@ -360,6 +360,7 @@ static IHqlExpression * cachedNullRecord;
 static IHqlExpression * cachedNullRowRecord;
 static IHqlExpression * cachedOne;
 static IHqlExpression * cachedLocalAttribute;
+static IHqlExpression * cachedNullUidAttribute;
 static IHqlExpression * cachedContextAttribute;
 static IHqlExpression * constantTrue;
 static IHqlExpression * constantFalse;
@@ -447,6 +448,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedNullRowRecord = createRecord(nonEmptyAttr);
     cachedOne = createConstant(1);
     cachedLocalAttribute = createAttribute(localAtom);
+    cachedNullUidAttribute = createAttribute(_uid_Atom);
     cachedContextAttribute = createAttribute(contextAtom);
     constantTrue = createConstant(createBoolValue(true));
     constantFalse = createConstant(createBoolValue(false));
@@ -494,6 +496,7 @@ MODULE_EXIT()
     constantBlankString->Release();
     blank->Release();
     cachedContextAttribute->Release();
+    cachedNullUidAttribute->Release();
     cachedLocalAttribute->Release();
     cachedOne->Release();
     cachedActiveTableExpr->Release();
@@ -4570,6 +4573,21 @@ void CHqlRealExpression::updateFlagsAfterOperands()
 #ifdef VERIFY_EXPR_INTEGRITY
 switch (op)
     {
+    case no_sequential:
+    case no_orderedactionlist:
+        {
+            bool hadAttr = false;
+            ForEachChild(i, this)
+            {
+                IHqlExpression * cur = queryChild(i);
+                if (cur->isAttribute())
+                    hadAttr = true;
+                else if (cur->isAction() && hadAttr)
+                    throwUnexpected();
+
+            }
+            break;
+        }
     case no_select:
 #ifdef CHECK_RECORD_CONSISTENCY
         {
@@ -13355,7 +13373,10 @@ extern IHqlExpression * createCompound(const HqlExprArray & actions)
 
 extern IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions)
 {
-    switch (actions.ordinality())
+    unsigned numActions = actions.ordinality();
+    while (numActions && actions.item(numActions-1).isAttribute())
+        numActions--;
+    switch (numActions)
     {
     case 0:
         return createValue(no_null, makeVoidType());
@@ -13725,6 +13746,11 @@ extern HQL_API IHqlExpression * createConstantOne()
 extern HQL_API IHqlExpression * createLocalAttribute()
 {
     return LINK(cachedLocalAttribute);
+}
+
+extern HQL_API IHqlExpression * createNullUidAttribute()
+{
+    return LINK(cachedNullUidAttribute);
 }
 
 IHqlExpression * cloneOrLink(IHqlExpression * expr, HqlExprArray & children)

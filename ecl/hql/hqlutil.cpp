@@ -2294,9 +2294,19 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_compound:
     case no_addfiles:
     case no_map:
-        return expr->numChildren();
+        {
+            unsigned max = expr->numChildren();
+            while (max && expr->queryChild(max-1)->isAttribute())
+                max--;
+            return max;
+        }
     case no_case:
-        return expr->numChildren()-1;
+    {
+        unsigned max = expr->numChildren();
+        while (max > 1 && expr->queryChild(max-1)->isAttribute())
+            max--;
+        return max-1;
+    }
     case no_forcelocal:
         return 0;
     default:
