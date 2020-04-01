@@ -141,6 +141,10 @@
                         path="DfuAccess"
                         resource="DfuAccess"
                         service="ws_dfu"/>
+                    <AuthenticateFeature description="Access to  DFU restricted flag"
+                        path="DFURestrictedAccess"
+                        resource="DFURestrictedAccess"
+                        service="ws_dfu"/>
                     <AuthenticateFeature description="Access to DFU XRef"
                         path="DfuXrefAccess"
                         resource="DfuXrefAccess"

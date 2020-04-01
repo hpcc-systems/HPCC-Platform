@@ -53,6 +53,7 @@
           <AuthenticateFeature description="Access to thor queues" path="ThorQueueAccess" resource="ThorQueueAccess" service="ws_smc"/>
           <AuthenticateFeature description="Access to roxie control commands" path="RoxieControlAccess" resource="RoxieControlAccess" service="ws_smc"/>
           <AuthenticateFeature description="Access to DFU" path="DfuAccess" resource="DfuAccess" service="ws_dfu"/>
+          <AuthenticateFeature description="Access to DFU restricted flag" path="DFURestrictedAccess" resource="DFURestrictedAccess" service="ws_dfu"/>
           <AuthenticateFeature description="Access to DFU XRef" path="DfuXrefAccess" resource="DfuXrefAccess" service="ws_dfuxref"/>
           <AuthenticateFeature description="Access to machine information" path="MachineInfoAccess" resource="MachineInfoAccess" service="ws_machine"/>
           <AuthenticateFeature description="Access to SNMP metrics information" path="MetricsAccess" resource="MetricsAccess" service="ws_machine"/>
