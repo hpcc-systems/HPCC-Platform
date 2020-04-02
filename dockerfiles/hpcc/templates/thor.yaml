@@ -5,15 +5,15 @@
 {{- $thorAgentName := printf "%s-thoragent" .name }}
 {{- $slaveName := printf "%s-slave" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
-{{- $eclAgentDefaults := dict "name" $eclAgentName "replicas" 1 }}
+{{- $eclAgentDefaults := dict "name" $eclAgentName "useChildProcesses" true "replicas" 1 }}
 {{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
 {{- $agentAppType := $eclAgentScope.type | default "hthor" }}
-{{- $thorAgentDefaults := dict "name" $thorAgentName "containerPerAgent" true "replicas" 1 }}
+{{- $thorAgentDefaults := dict "name" $thorAgentName "useChildProcesses" false "replicas" 1 }}
 {{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
 {{- $hthorDefaults := dict "name" $hthorName }}
 {{- $hthorScope := .hthor | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
 {{- $thorScopeStd := omit . "eclagent" "thoragent" "hthor" }}
-{{- $thorScope := $thorAgentScope.containerPerAgent | ternary ($thorScopeStd) ($thorScopeStd | mergeOverwrite (dict "masterport" 0 "slaveport" 0)) }}
+{{- $thorScope := $thorAgentScope.useChildProcesses | ternary ($thorScopeStd | mergeOverwrite (dict "masterport" 0 "slaveport" 0)) ($thorScopeStd) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -101,13 +101,13 @@ data:
     eclagent:
 {{ toYaml $thorAgentScope | indent 6 }}
       type: thor
-{{- if not $thorAgentScope.containerPerAgent }}
+{{- if $thorAgentScope.useChildProceses }}
     thor:
 {{ toYaml $thorScope | indent 6 }}
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-{{- if $thorAgentScope.containerPerAgent }}
+{{- if not $eclAgentScope.useChildProcesses }}
 
   {{ $agentAppType }}-jobspec.yaml: |
     apiVersion: batch/v1
@@ -148,7 +148,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 {{- end }}
-{{- if $thorAgentScope.containerPerAgent }}
+{{- if not $thorAgentScope.useChildProcesses }}
 
   thormaster-jobspec.yaml: |
     apiVersion: batch/v1

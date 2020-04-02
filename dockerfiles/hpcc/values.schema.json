@@ -144,6 +144,10 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "useChildProcesses": {
+          "type": "boolean",
+          "description": "Launch each workunit compile as a child process rather than in its own container"
+        },
         "image": {
           "$ref": "#/definitions/image"
         }
@@ -175,11 +179,18 @@
         },
         "maxActive": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "description": "Maximum number of workunits that can be active simultaneously",
+          "default": 100
         },
-        "containerPerAgent": {
+        "useChildProcesses": {
           "type": "boolean",
-          "description": "Should workunits execute in their own container, or as child processes"
+          "description": "Launch each workunit as a child process rather than in its own container"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["hthor", "roxie"],
+          "description": "Use the hthor or roxie execution engine for eclagent queries"
         },
         "image": {
           "$ref": "#/definitions/image"

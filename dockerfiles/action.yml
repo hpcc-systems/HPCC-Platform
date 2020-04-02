@@ -16,6 +16,9 @@ inputs:
   buildtype:
     description: 'The build type - Debug, RelWithDebInfo, or Release'
     required: false
+  latest:
+    description: 'Set to 1 to also tag as latest when maturity is release'
+    required: false
 outputs:
   tag:
     description: 'Is the tag, which was pushed'
