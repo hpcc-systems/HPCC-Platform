@@ -4,9 +4,9 @@
 <sect1 id="User_Security_Maint">
   <title>User Security Maintenance</title>
 
-  <para>Configuring an HPCC Systems<superscript>®</superscript> platform to use Active Directory or LDAP-based
-  security allows you to set permissions to control access to Features, File
-  Scopes, and Workunit Scopes.</para>
+  <para>Configuring an HPCC Systems<superscript>®</superscript> platform to
+  use Active Directory or LDAP-based security allows you to set permissions to
+  control access to Features, File Scopes, and Workunit Scopes.</para>
 
   <sect2 id="User_Security_Intro">
     <title>Introduction</title>
@@ -24,9 +24,10 @@
     Dali server.</para>
 
     <para>Establish permissions by group or by user and define them by
-    association with a particular feature of the HPCC Systems platform. Permissions can
-    be defined for each unique combination of group and feature. Permissions
-    are separated into the following categories:<informaltable frame="all">
+    association with a particular feature of the HPCC Systems platform.
+    Permissions can be defined for each unique combination of group and
+    feature. Permissions are separated into the following
+    categories:<informaltable frame="all">
         <tgroup cols="2" colsep="1">
           <colspec colwidth="185pt" />
 
@@ -79,7 +80,7 @@
       </informaltable></para>
   </sect2>
 
-  <sect2 id="Sec_Adm_w_ECLWatch">
+  <sect2 id="Sec_Adm_w_ECLWatch" role="brk">
     <title>Security Administration using ECL Watch</title>
 
     <para>Administrator rights are needed to manage permissions. Once you have
@@ -123,8 +124,8 @@
 
       <listitem>
         <para><emphasis role="bold">Permissions</emphasis>. Shows the features
-        of the HPCC Systems where permissions may be set. Use this area to view
-        the permissions currently set for any area of HPCC Systems, or to
+        of the HPCC Systems where permissions may be set. Use this area to
+        view the permissions currently set for any area of HPCC Systems, or to
         add groups and users and set/modify their permission for a specific
         feature</para>
       </listitem>
@@ -412,10 +413,10 @@
         <title>To promote a user to an Administrator</title>
 
         <para>To modify a users credentials you must have Administrator level
-        access. You can designate the HPCC Systems Administrator account to have
-        limited permissions only relating to HPCC Systems elements and not LDAP
-        administrator's rights. To promote a user to an HPCC Systems Administrator,
-        add the user to the configured <emphasis
+        access. You can designate the HPCC Systems Administrator account to
+        have limited permissions only relating to HPCC Systems elements and
+        not LDAP administrator's rights. To promote a user to an HPCC Systems
+        Administrator, add the user to the configured <emphasis
         role="bold">Administrators</emphasis> group.</para>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
@@ -640,10 +641,11 @@
       <para>There may be occasions when you need to modify the permissions for
       individual users. For example, users may have individual security needs
       that are not completely covered in any group or, there may be occasions
-      when a user requires temporary access to an HPCC Systems feature. Permissions
-      set in this area of ECL Watch only affect the user you choose. Most
-      individual permissions you set here overwrite ones set in any group to
-      which the user belongs, except in the case of an explicit deny.</para>
+      when a user requires temporary access to an HPCC Systems feature.
+      Permissions set in this area of ECL Watch only affect the user you
+      choose. Most individual permissions you set here overwrite ones set in
+      any group to which the user belongs, except in the case of an explicit
+      deny.</para>
 
       <sect4>
         <title>To set permissions for an individual user:</title>
@@ -750,10 +752,10 @@
 
       <para>Setting up groups ensures that all users with the same permission
       needs have the same permission settings. You can give users the access
-      they require to the feature areas of HPCC Systems that they need. There is no
-      limit to the number of groups you can create. You can create as many
-      groups as you need to control access for all your users regardless of
-      their tasks.</para>
+      they require to the feature areas of HPCC Systems that they need. There
+      is no limit to the number of groups you can create. You can create as
+      many groups as you need to control access for all your users regardless
+      of their tasks.</para>
 
       <para>Use the <emphasis role="bold">Groups</emphasis> menu item
       to:<itemizedlist>
@@ -1152,9 +1154,10 @@
     <title>Feature resources</title>
 
     <para>There are several features for which you can set up access control
-    in HPCC Systems. Access to features of the HPCC Systems platform is controlled by via the
-    <emphasis role="bold">ESP Features for SMC</emphasis> category. <graphic
-    fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
+    in HPCC Systems. Access to features of the HPCC Systems platform is
+    controlled by via the <emphasis role="bold">ESP Features for
+    SMC</emphasis> category. <graphic fileref="../../images/Perm006.jpg"
+    vendor="eclwatchSS" /></para>
 
     <para>The available features are listed under the <emphasis
     role="bold">Permissions</emphasis> tab. You can view and gain access to
@@ -1685,9 +1688,9 @@
     role="bold">/var/lib/HPCCSystems/hpcc-data/thor/collectionx/securedata
     </emphasis></para>
 
-    <para>All HPCC Systems components and tools respect LDAP file access security. The
-    following exceptions are assumed to be system level or for administrative
-    users:</para>
+    <para>All HPCC Systems components and tools respect LDAP file access
+    security. The following exceptions are assumed to be system level or for
+    administrative users:</para>
 
     <itemizedlist>
       <listitem>

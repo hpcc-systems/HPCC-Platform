@@ -2755,7 +2755,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -2903,7 +2903,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -2998,7 +2998,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3102,7 +3102,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3206,7 +3206,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3312,7 +3312,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3420,7 +3420,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3606,7 +3606,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -3736,7 +3736,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
           <tgroup cols="2">
             <colspec align="left" colwidth="175.55pt" />
 
-            <colspec colwidth="384.85pt" />
+            <colspec />
 
             <tbody>
               <row>
@@ -3887,7 +3887,7 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
             <tgroup cols="2">
               <colspec align="left" colwidth="155.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4044,7 +4044,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4228,7 +4228,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4314,7 +4314,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4400,7 +4400,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4486,7 +4486,7 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4578,7 +4578,7 @@ ecl bundle depends mybundle --version=2</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4637,7 +4637,7 @@ ecl bundle info mybundle --version=2</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4699,7 +4699,7 @@ ecl bundle install mybundle --keepprior</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4783,7 +4783,7 @@ ecl bundle install mybundle --keepprior</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4850,7 +4850,7 @@ ecl bundle list myb*
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4903,7 +4903,7 @@ ecl bundle list myb*
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -4956,7 +4956,7 @@ ecl bundle list myb*
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -5051,7 +5051,7 @@ ecl abort -n MyJob</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -5150,7 +5150,7 @@ ecl status -n MyJob</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -5249,7 +5249,7 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -5349,7 +5349,7 @@ ecl getname -wu W201407*
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>
@@ -5453,7 +5453,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
-              <colspec colwidth="384.85pt" />
+              <colspec />
 
               <tbody>
                 <row>

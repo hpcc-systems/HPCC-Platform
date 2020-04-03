@@ -293,11 +293,14 @@ _euroIE := DATASET([    {'Carlow', '27431', '27181', '54612'},
                                     {'Dublin City', '257303', '270309', '527612'}, 
                                     {'Kilkenny', '47788', '47631', '95419'}, 
                                     {'Cork', '198658', '201144', '399802'}],
-                                    {STRING region, INTEGER4 males, INTEGER4 females, INTEGER4 total});
+                                    {STRING region, INTEGER4 males, INTEGER4 females, 
+                                     INTEGER4 total});
   data_euroIE := OUTPUT(_euroIE, NAMED('choro_euroIE'));
   data_euroIE;
   
-  viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', DATASET([{'County', 'region'}, {'Population', 'total'}], Visualizer.KeyValueDef),, DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
+  viz_euroIE := Visualizer.Choropleth.EuroIE('euroIE',, 'choro_euroIE', 
+                DATASET([{'County', 'region'}, {'Population', 'total'}], Visualizer.KeyValueDef),, 
+                DATASET([{'paletteID', 'Greens'}], Visualizer.KeyValueDef));
   viz_euroIE;</programlisting>
   </sect1>
 </chapter>
