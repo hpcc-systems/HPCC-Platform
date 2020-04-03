@@ -25,4 +25,5 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           buildtype: Debug
+          latest: 1   # This should only be set on the current minor branch
           

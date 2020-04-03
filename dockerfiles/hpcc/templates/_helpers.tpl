@@ -47,7 +47,7 @@ Generate global ConfigMap info
 Pass in root as .
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
-imageVersion: {{ .Values.global.image.version | quote }}
+imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
 {{- end -}}
 
