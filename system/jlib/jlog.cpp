@@ -2326,7 +2326,7 @@ MODULE_EXIT()
 
 #ifdef _CONTAINERIZED
 
-static constexpr const char * logFielsdAtt = "@fields";
+static constexpr const char * logFieldsAtt = "@fields";
 static constexpr const char * logMsgDetailAtt = "@detail";
 static constexpr const char * logMsgAudiencesAtt = "@audiences";
 static constexpr const char * logMsgClassesAtt = "@classes";
@@ -2350,10 +2350,10 @@ void setupContainerizedLogMsgHandler()
     IPropertyTree * logConfig = queryComponentConfig().queryPropTree("logging");
     if (logConfig)
     {
-        if (logConfig->hasProp(logFielsdAtt))
+        if (logConfig->hasProp(logFieldsAtt))
         {
             //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
-            const char *logFields = logConfig->queryProp(logFielsdAtt);
+            const char *logFields = logConfig->queryProp(logFieldsAtt);
             if (!isEmptyString(logFields))
                 theStderrHandler->setMessageFields(logMsgFieldsFromAbbrevs(logFields));
         }
