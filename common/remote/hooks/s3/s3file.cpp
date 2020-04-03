@@ -450,7 +450,7 @@ static Aws::S3::S3Client & getAwsClient()
 
 S3File::S3File(const char *_s3FileName) : fullName(_s3FileName)
 {
-    const char * filename = fullName + strlen(s3FilePrefix);
+    const char * filename = fullName.str() + strlen(s3FilePrefix);
     const char * slash = strchr(filename, '/');
     assertex(slash);
 
