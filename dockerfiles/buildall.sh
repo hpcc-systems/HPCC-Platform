@@ -64,7 +64,7 @@ pushd $DIR 2>&1 > /dev/null
 parse_cmake
 
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
-  LATEST = 1
+  LATEST=1
 fi
 
 build_image() {
