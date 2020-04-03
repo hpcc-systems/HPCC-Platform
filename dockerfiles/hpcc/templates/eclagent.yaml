@@ -47,7 +47,7 @@ data:
 {{ toYaml . | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-  eclagent-jobspec.yaml: |
+  {{ $apptype }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
