@@ -1319,9 +1319,20 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
     try
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpLogicalClusterQuery: Permission denied.");
-
         IArrayOf<IEspTpLogicalCluster> clusters;
         CConstWUClusterInfoArray wuClusters;
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
+        ForEach(*iter)
+        {
+            IPropertyTree &queue = iter->query();
+            Owned<IEspTpLogicalCluster> cluster = createTpLogicalCluster();
+            cluster->setName(queue.queryProp("@name"));
+            cluster->setType(queue.queryProp("@type"));
+            cluster->setLanguageVersion("3.0.0");
+            clusters.append(*cluster.getClear());
+        }
+#else
         getEnvironmentClusterInfo(wuClusters);
         ForEachItemIn(c, wuClusters)
         {
@@ -1335,6 +1346,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
             cluster->setLanguageVersion("3.0.0");
             clusters.append(*cluster.getClear());
         }
+#endif
         resp.setTpLogicalClusters(clusters);
     }
     catch(IException* e)

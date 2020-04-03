@@ -306,6 +306,7 @@ esp:
   daliServers: dali
 )!!";
 
+static Owned<IPropertyTree> espConfig;
 
 static void usage()
 {
@@ -410,15 +411,10 @@ int init_main(int argc, const char* argv[])
             throw MakeStringException(-1, "Failed to load config file %s", cfgfile);
 
 #ifdef _CONTAINERIZED
-        Owned<IPropertyTree> espConfig;
-        /* For now, whilst esp lives with needing/reading a copy of the whole /Environment as it's configuration
-         * continue to do so, but also read component configuration (esp.yaml), and carry it inside the envpt tree,
-         * that is passed through services.
-         * Each service that can pick up the component config from "Config"
-         */
         espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
+
+        // TBD: Some esp services read daliServers from it's legacy config file
         procpt->setProp("@daliServers", espConfig->queryProp("@daliServers"));
-        envpt->setPropTree("Config", espConfig.getClear());
 #endif
 
         const char* build_ver = BUILD_TAG;
