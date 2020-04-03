@@ -26,9 +26,8 @@ global:
     # existingClaim: ""
 
   image:
-    # This should probably say "latest" or "stable" in the example script, but set to a specific version in production systems
-    # We should also support overriding the version within a component
-    version: master-2020-02-10
+    ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
+    #version: latest
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
     pullPolicy: IfNotPresent
   
@@ -53,20 +52,30 @@ dali:
 
 eclagent:
 - name: hthor
+  ## replicas indicates how many eclagent pods should be started
   replicas: 1
+  ## maxActive controls how many workunits may be active at once (per replica)
+  maxActive: 100
+  ## prefix may be used to set a filename prefix applied to any relative filenames used by jobs submitted to this queue
   prefix: hthor
-  containerPerAgent: false
+  ## Set to false if you want to launch each workunit in its own container, true to run as child processes in eclagent pod
+  useChildProcesses: false
+  ## type may be 'hthor' (the default) or 'roxie', to specify that the roxie engine rather than the hthor engine should be used for eclagent workunit processing
+  type: hthor
+
 - name: roxie
   replicas: 1
   prefix: roxie
-  containerPerAgent: false
+  useChildProcesses: false
   type: roxie
     
 eclccserver:
 - name: myeclccserver
   replicas: 1
-## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues
-# listen: [ thor ]
+  ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
+  useChildProcesses: false
+  ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
+  listen: []
     
 esp:
 - name: myesp
@@ -74,11 +83,12 @@ esp:
 
 roxie:
 - name: roxie-cluster
+  disabled: true
   prefix: roxiecluster
-  ports: [9876,0]
+  ports: [9876]
   numChannels: 2
   serverReplicas: 1
-  topoReplicas: 2
+  topoReplicas: 1
   topoport: 9004
   useAeron: true
 

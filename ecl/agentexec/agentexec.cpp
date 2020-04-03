@@ -236,7 +236,7 @@ public:
                 jobSpecName.set("thormaster");
                 processName.set("thormaster_lcr");
             }
-            if (queryComponentConfig().getPropBool("@containerPerAgent", false))  // MORE - make this a per-workunit setting?
+            if (!queryComponentConfig().getPropBool("@useChildProcesses", false))
             {
                 std::list<std::pair<std::string, std::string>> params = { };
                 if (queryComponentConfig().getPropBool("@useThorQueue", true))

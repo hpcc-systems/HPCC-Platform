@@ -149,15 +149,15 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
     switch(audience)
     {
     case MSGAUD_operator:
-        return("Operator ");
+        return("OPR ");
     case MSGAUD_user:
-        return("User     ");
+        return("USR ");
     case MSGAUD_programmer:
-        return("Prog.    ");
+        return("PRG ");
     case MSGAUD_audit:
-        return("Audit    ");
+        return("AUD ");
     default:
-        return("UNKNOWN  ");
+        return("UNK ");
     }
 }
 inline unsigned LogMsgAudFromAbbrev(char const * abbrev)

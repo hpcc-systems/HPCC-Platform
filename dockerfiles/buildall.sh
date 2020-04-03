@@ -60,6 +60,13 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $DIR 2>&1 > /dev/null
 
+. ../cmake_modules/parse_cmake.sh
+parse_cmake
+
+if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
+  LATEST = 1
+fi
+
 build_image() {
   local name=$1
   local label=$2
@@ -74,8 +81,15 @@ build_image() {
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        ${name}/ 
-    if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${label}
+    if [ "$LATEST" = "1" ] ; then
+      docker tag hpccsystems/${name}:${label} hpccsystems/${name}:latest
+      if [ "$PUSH" = "1" ] ; then
+        docker push hpccsystems/${name}:${label} hpccsystems/${name}:latest
+      fi
+    else
+      if [ "$PUSH" = "1" ] ; then
+        docker push hpccsystems/${name}:${label}
+      fi
     fi
   fi
 }
