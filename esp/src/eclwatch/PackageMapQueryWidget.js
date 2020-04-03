@@ -136,7 +136,7 @@ define([
                         Process: this.addPackageProcessSelect.get('value'),
                         Target: this.addPackageTargetSelect.get('value'),
                         Activate: this.addProcessMapActivate.get('checked'),
-                        Overwrite: this.addProcessMapOverWrite.get('checked'),
+                        OverWrite: this.addProcessMapOverWrite.get('checked'),
                         DaliIp: this.addProcessMapDaliIp.get('value')
                     }
                 }).then(function (response) {
@@ -146,8 +146,8 @@ define([
                             context._onCancel();
                         }
                     } else {
-                        this._onCancel();
-                        this.showErrors(response.Exceptions.Exception[0].Message);
+                        context._onCancel();
+                        context.showErrors(response.Exceptions.Exception[0].Message);
                     }
                 });
             }
