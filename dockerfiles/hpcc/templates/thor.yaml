@@ -107,7 +107,7 @@ data:
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-{{- if $thorAgentScope.containerPerAgent }}
+{{- if $eclAgentScope.containerPerAgent }}
 
   {{ $agentAppType }}-jobspec.yaml: |
     apiVersion: batch/v1
