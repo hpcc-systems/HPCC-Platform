@@ -351,7 +351,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         OERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
-    config.setown(cfg->getPropTree("Config"));   
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
@@ -444,7 +443,7 @@ void CWsWorkunitsEx::refreshValidClusters()
     validClusters.kill();
 #ifdef _CONTAINERIZED
     // discovered from generated cluster names
-    Owned<IPropertyTreeIterator> iter = config->getElements("queues");
+    Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
     ForEach(*iter)
     {
         IPropertyTree &queue = iter->query();
