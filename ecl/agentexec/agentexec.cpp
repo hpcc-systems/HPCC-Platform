@@ -51,10 +51,14 @@ private:
 CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : config(_config)
 {
     //Build logfile from component properties settings
+#ifndef _CONTAINERIZED
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclagent");
     lf->setCreateAliasFile(false);
     lf->beginLogging();
     PROGLOG("Logging to %s",lf->queryLogFileSpec());
+#else
+    setupContainerizedLogMsgHandler();
+#endif
 
     agentName = config->queryProp("@name");
     assertex(agentName);
