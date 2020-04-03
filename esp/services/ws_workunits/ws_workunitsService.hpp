@@ -374,8 +374,6 @@ private:
     int maxRequestEntityLength;
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
-    Owned<IPropertyTree> config;
-
 
 public:
     QueryFilesInUse filesInUse;

@@ -10593,7 +10593,12 @@ __int64 CLocalWUResult::getResultInt() const
     if (s.length())
         s.read(result);
     else
-        result = p->getPropInt64("xmlValue");
+    {
+        // NOTE - we use this rather than getPropInt64 since it handles uint64 values up to MAX_UINT better (for our purposes)
+        const char *val = p->queryProp("xmlValue");
+        if (val)
+            result = rtlStrToInt8(strlen(val), val);
+    }
     return result;
 }
 

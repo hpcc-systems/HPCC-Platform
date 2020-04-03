@@ -543,6 +543,8 @@ roxie:
     - name: workunit
       port: 0
       numThreads: 0
+  logging:
+      detail: 100
 )!!";
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
@@ -764,6 +766,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         directoryTree.clear();
 
         //Logging stuff
+#ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
         else
@@ -774,6 +777,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             logDirectory.set(lf->queryLogDir());
+
 #ifdef _DEBUG
             unsigned useLogQueue = topology->getPropBool("@useLogQueue", false);
 #else
@@ -789,6 +793,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (topology->getPropBool("@enableSysLog",true))
                 UseSysLogForOperatorMessages();
         }
+#else
+        setupContainerizedLogMsgHandler();
+#endif
 
         roxieMetrics.setown(createRoxieMetricsManager());
 

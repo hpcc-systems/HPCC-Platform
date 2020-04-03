@@ -41,7 +41,6 @@ ADD_DEFINITIONS( -D_USRDLL -DS3FILE_EXPORTS )
 
 HPCC_ADD_LIBRARY( s3file SHARED ${SRCS}  )
 install ( TARGETS s3file DESTINATION filehooks )
-target_link_options(s3file  PUBLIC  "LINKER:-z,defs" )
 
 target_link_libraries ( s3file
     jlib

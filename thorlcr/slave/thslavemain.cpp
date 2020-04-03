@@ -266,6 +266,7 @@ public:
 
 void startSlaveLog()
 {
+#ifndef _CONTAINERIZED
     StringBuffer fileName("thorslave");
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
     StringBuffer slaveNumStr;
@@ -274,12 +275,11 @@ void startSlaveLog()
     lf->setName(fileName.str());//override default filename
     lf->beginLogging();
 
-    StringBuffer url;
-    createUNCFilename(lf->queryLogFileSpec(), url);
-
-    LOG(MCdebugProgress, thorJob, "Opened log file %s", url.str());
+    LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
+#else
+    setupContainerizedLogMsgHandler();
+#endif
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
-    globals->setProp("@logURL", url.str());
 }
 
 void setSlaveAffinity(unsigned processOnNode)

@@ -462,7 +462,7 @@ public:
     {
         DBGLOG("Compile request processing for workunit %s", wuid.get());
 #ifdef _CONTAINERIZED
-        if (globals->getPropBool("@containerPerCompile", false) && !globals->hasProp("@workunit"))
+        if (!globals->getPropBool("@useChildProcesses", false) && !globals->hasProp("@workunit"))
         {
             runK8sJob("eclccserver", wuid, wuid, globals->getPropBool("@deleteJobs", true));
             return;
@@ -776,7 +776,7 @@ eclccserver:
   enableEclccDali: true
   enableSysLog: true
   generatePrecompiledHeader: true
-  maxEclccProcesses: 4
+  useChildProcesses: false
   name: myeclccserver
   traceLevel: 1
 )!!";
@@ -888,9 +888,14 @@ int main(int argc, const char *argv[])
 #endif
             if (!queueNames.length())
                 throw MakeStringException(0, "No queues found to listen on");
+#ifdef _CONTAINERIZED
+            bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
+            unsigned maxThreads = globals->getPropInt("@maxActive", useChildProcesses ? 100 : 4);
+#else
             // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
             // still accept the old name if the new one is not present.
             unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
+#endif
             EclccServer server(queueNames.str(), maxThreads);
             // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
             // put in its own "scope" to force the flush

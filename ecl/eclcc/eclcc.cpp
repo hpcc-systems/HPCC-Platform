@@ -503,6 +503,9 @@ static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 eclccserver:
     name: eclccserver
+    logging:
+      audiences: "USR+ADT"
+      classes: "ERR"
 )!!";
 
 
@@ -515,9 +518,13 @@ int main(int argc, const char *argv[])
 
     configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
 
+#ifndef _CONTAINERIZED
     // Turn logging down (we turn it back up if -v option seen)
     Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+#else
+    setupContainerizedLogMsgHandler();
+#endif
     unsigned exitCode = doMain(argc, argv);
     stopPerformanceMonitor();
     if (!optReleaseAllMemory)

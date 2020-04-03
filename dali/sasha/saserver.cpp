@@ -311,6 +311,7 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
+#ifndef _CONTAINERIZED
     StringBuffer logname;
     StringBuffer logdir;
     if (!stop)
@@ -322,6 +323,9 @@ int main(int argc, const char* argv[])
         lf->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
+#else
+    setupContainerizedLogMsgHandler();
+#endif
     DBGLOG("Build %s", BUILD_TAG);
 
     bool enableSNMP = false;
