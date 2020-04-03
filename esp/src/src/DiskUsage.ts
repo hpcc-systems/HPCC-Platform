@@ -105,7 +105,7 @@ export class Summary extends FlexGrid {
                     const data: { [key: string]: CompontentT } = {};
                     _details.ComponentUsages.forEach(cu => {
                         cu.MachineUsages.forEach(mu => {
-                            mu.DiskUsages.forEach(du => {
+                            mu.DiskUsages.filter(du => !isNaN(du.InUse) || !isNaN(du.Total)).forEach(du => {
                                 if (data[du.Name] === undefined) {
                                     data[du.Name] = {
                                         rowCount: 0,
