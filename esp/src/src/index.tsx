@@ -4,7 +4,6 @@ import { MuiThemeProvider, createMuiTheme } from "@material-ui/core";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import deepOrange from "@material-ui/core/colors/deepOrange";
 import { Frame } from "./react/frame";
-import { globalKeyValStore } from "./KeyValStore";
 import { initSession } from "./Session";
 
 import "css!hpcc/css/ecl.css";
@@ -25,8 +24,6 @@ dojoConfig.urlInfo = {
     fullPath: location.origin + "/esp/files"
 };
 
-const store = globalKeyValStore();
-store.set("", "", false, "HPCCApps", "ECLWatch");
 initSession();
 
 const theme = createMuiTheme({

@@ -1,10 +1,11 @@
+import { detect } from "detect-browser";
 import { Store, ValueChangedMessage } from "@hpcc-js/comms";
 import { Dispatch, IObserverHandle } from "@hpcc-js/util";
 
 declare const dojoConfig;
 
 export interface IKeyValStore {
-    set(key: string, value: string, broadcast?: boolean, storename?: string, namespace?: string): Promise<void>;
+    set(key: string, value: string, broadcast?: boolean): Promise<void>;
     get(key: string, broadcast?: boolean): Promise<string | undefined>;
     getAll(broadcast?: boolean): Promise<{ [key: string]: string }>;
     delete(key: string, broadcast?: boolean): Promise<void>;
@@ -19,6 +20,41 @@ export interface IKeyValStore {
 export function globalKeyValStore(): IKeyValStore {
     return Store.attach({ baseUrl: "" }, "HPCCApps", "ECLWatch", false);
 }
+
+// Initialize Global Store  ---
+const store = globalKeyValStore();
+store.set("", "", false);
+
+// Grab some aprox metrics - ignoring obvious race condition
+const browser = detect();
+const majorVersion = browser.version.split(".")[0];
+const now = new Date(Date.now()).toISOString();
+store.get("browser-stats").then(statsStr => {
+    try {
+        const stats = JSON.parse(statsStr || "{}") || {};
+        if (!stats.since) stats.since = now;
+        if (browser.type === "browser") {
+            //  Browser Stats  ---
+            if (!stats[browser.name]) stats[browser.name] = {};
+            if (!stats[browser.name][majorVersion]) stats[browser.name][majorVersion] = {};
+            stats[browser.name][majorVersion].lastSeen = now;
+
+            if (!stats[browser.name][majorVersion].count) stats[browser.name][majorVersion].count = 0;
+            stats[browser.name][majorVersion].count++;
+
+            //  OS Stats  ---
+            if (!stats[browser.os]) stats[browser.os] = {};
+            stats[browser.os].lastSeen = now;
+
+            if (!stats[browser.os].count) stats[browser.os].count = 0;
+            stats[browser.os].count++;
+
+            store.set("browser-stats", JSON.stringify(stats), false);
+        }
+    } catch (e) {
+        console.warn("Failed to wrtie stats", e);
+    }
+});
 
 /**
  *  User Store

@@ -50,6 +50,7 @@
     "@material-ui/lab": "^4.0.0-alpha.42",
     "clipboard": "2.0.4",
     "codemirror": "5.50.2",
+    "detect-browser": "5.0.0",
     "dijit": "1.16.2",
     "dojo": "1.16.2",
     "dojo-themes": "1.14.1",
