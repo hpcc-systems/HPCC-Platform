@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SprayJSON">
+  <title>SprayJson</title>
+
+  <para><emphasis role="bold">STD.File.SprayJson<indexterm>
+      <primary>STD.File.SprayJson</primary>
+    </indexterm><indexterm>
+      <primary>File.SprayJson</primary>
+    </indexterm><indexterm>
+      <primary>SprayJson</primary>
+    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcepath , </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis> srcRowPath </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis> srcEncoding </emphasis> <emphasis role="bold">] </emphasis>
+  <emphasis>, </emphasis> <emphasis role="bold"> </emphasis>
+  <emphasis>destinationgroup, destinationlogicalname </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
+  <emphasis>espserverIPport</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis> </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>allowoverwrite</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>replicate</emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis> compress
+  </emphasis><emphasis role="bold">] </emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">]</emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+
+  <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
+  STD.File.fSprayJson<indexterm>
+      <primary>STD.File.fSprayJson</primary>
+    </indexterm><indexterm>
+      <primary>File.fSprayJson</primary>
+    </indexterm><indexterm>
+      <primary>fSprayJson</primary>
+    </indexterm>(</emphasis> <emphasis> sourceIP</emphasis> <emphasis
+  role="bold">, </emphasis> <emphasis>sourcepath, </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis> maxrecordsize </emphasis> <emphasis
+  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>srcRowPath</emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>, </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis> srcEncoding </emphasis> <emphasis role="bold">] </emphasis>
+  <emphasis>,destinationgroup,</emphasis> <emphasis> destinationlogicalname
+  </emphasis> , <emphasis role="bold">[</emphasis>
+  <emphasis>timeout</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>espserverIPport</emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis> </emphasis>, <emphasis role="bold"> [</emphasis>
+  <emphasis>maxConnections</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis> compress </emphasis> <emphasis role="bold">] </emphasis>,
+  <emphasis
+  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
+  role="bold">]</emphasis>, <emphasis
+  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
+  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
+  </emphasis><emphasis role="bold">[</emphasis>
+  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>sourceIP</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourcepath</emphasis></entry>
+
+          <entry>A null-terminated string containing the path and name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxrecordsize</emphasis></entry>
+
+          <entry>Optional. An integer containing the maximum size of the
+          records in the file. If omitted, the default is 8192.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourceRowPath</emphasis></entry>
+
+          <entry>The JSON path that is used to delimit records in the source
+          file. Required.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>srcEncoding</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the encoding
+          (utf8,utf8n,utf16be,utf16le,utf32be,utf32le). If omitted, the
+          default is 'utf8'</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationgroup</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the group to
+          distribute the file across.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationlogicalname</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          file to create.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>timeout</emphasis></entry>
+
+          <entry>Optional. An integer value indicating the timeout setting. If
+          omitted, the default is -1. If set to zero (0), execution control
+          returns immediately to the ECL workunit without waiting for the DFU
+          workunit to complete.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>espserverIPport</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the protocol,
+          IP, port, and directory, or the DNS equivalent, of the ESP server
+          program. This is usually the same IP and port as ECL Watch, with
+          "/FileSpray" appended. If omitted, the default is the value
+          contained in the lib_system.ws_fs_server attribute.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxConnections</emphasis></entry>
+
+          <entry>Optional. An integer specifying the maximum number of
+          connections. If omitted, the default is one (1).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowoverwrite</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          allow the new file to overwrite an existing file of the same name.
+          If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replicate</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          replicate the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>compress</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          compress the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>failIfNoSourceFile</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether a
+          missing file triggers a failure. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>expireDays</emphasis></entry>
+
+          <entry>Optional. Specifies the file is a temporary file to be
+          automatically deleted after the specified number of days since the
+          file was read. If omitted, the default is -1 (never expires). If set
+          to 0, the file is automatically deleted when it reaches the
+          threshold set in Sasha Server's <emphasis
+          role="bold">expiryDefault</emphasis> setting.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuServerQueue</emphasis></entry>
+
+          <entry>Name of target DFU Server queue. Default is '' (empty) for
+          the first DFU queue in the environment.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noSplit</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating to not
+          split a file part to multiple target parts. Default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>dfuwuid</emphasis></entry>
+
+          <entry>The attribute name to receive the null-terminated string
+          containing the DFU workunit ID (DFUWUID) generated for the
+          job.</entry>
+        </row>
+
+        <row>
+          <entry>username<emphasis> </emphasis></entry>
+
+          <entry>Optional. String containing a username to use for
+          authenticated access to the ESP process; an empty string value
+          indicates that no user authentication is required. If omitted, the
+          default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry>userPw:<emphasis> </emphasis></entry>
+
+          <entry>Optional. String containing the password to be used with the
+          user cited in the <emphasis>username</emphasis> argument; if
+          <emphasis>username</emphasis> is empty then this is ignored. If
+          omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>fSprayJson returns a null-terminated string containing the
+          DFU workunit ID (DFUWUID).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SprayJson </emphasis>function takes a
+  well-formed JSON file from a landing zone and distributes it across the
+  nodes of the destination cluster, producing a well-formed JSON file on each
+  node.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.SprayJson('10.150.50.14','/var/lib/HPCCSystems/mydropzone/colors.json',,
+      '/',,'mythor','examples::colors.json',-1,
+      'http://10.150.50.12:8010/FileSpray');</programlisting>
+</sect1>
