@@ -117,7 +117,7 @@ const char* findComponentTypeFromProcessType(const char* ProcessType)
     if (strieq(ProcessType, eqDali))
         return "dali";
     if (strieq(ProcessType, eqEclAgent))
-        return "eclAgent";
+        return "eclagent";
     if (strieq(ProcessType, eqDfu))
         return "dfuserver";
     if (strieq(ProcessType, eqEsp))
