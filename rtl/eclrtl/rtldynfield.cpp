@@ -903,6 +903,7 @@ extern ECLRTL_API bool dumpTypeInfo(MemoryBuffer &ret, const RtlTypeInfo *t)
     catch (IException *E)
     {
         EXCLOG(E);
+        E->Release();
         return false;
     }
 }
