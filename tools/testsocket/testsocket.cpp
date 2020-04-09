@@ -74,6 +74,10 @@ Semaphore finishedReading;
 FILE * trace;
 CriticalSection traceCrit;
 
+unsigned queryDelayMS = 0;
+unsigned totalQueryCnt = 0;
+double totalQueryMS = 0.0;
+
 //---------------------------------------------------------------------------
 
 void SplitIpPort(StringAttr & ip, unsigned & port, const char * address)
@@ -513,6 +517,10 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     Owned<ISecureSocketContext> secureContext;
     __int64 starttime, endtime;
     StringBuffer ipstr;
+    CTimeMon tm;
+    if (queryDelayMS)
+        tm.reset(queryDelayMS);
+
     try
     {
         if (strcmp(ip, ".")==0)
@@ -733,9 +741,12 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
                 fprintf(trace, "%s", result.str());
             }
 
+            double queryTimeMS = (double)(cycle_to_nanosec(endtime - starttime))/1000000;
+            totalQueryMS += queryTimeMS;
+            totalQueryCnt++;
             if (showTiming && rawOnly == false)
             {
-                fprintf(trace, "Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+                fprintf(trace, "Time taken = %.3f msecs\n", queryTimeMS);
                 fputs("----------------------------------------------------------------------------\n", trace);
             }
         }
@@ -745,6 +756,14 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     {
         socket->close();
     }
+
+    if (queryDelayMS)
+    {
+        unsigned remaining;
+        if (!tm.timedout(&remaining))
+            Sleep(remaining);
+    }
+
     return 0;
 }
 
@@ -758,7 +777,7 @@ public:
 
 protected:
     StringAttr      ip;
-    unsigned            port;
+    unsigned        port;
     StringAttr      base;
 };
 
@@ -799,6 +818,7 @@ void usage(int exitCode)
     printf("  -pr <text>add a prefix to the query\n");
     printf("  -q        quiet - don't echo query\n");
     printf("  -qname xx Use xx as queryname in place of the xml root element name\n");
+    printf("  -qd       delay (ms) to possibly wait between start of query and start of next query\n");
     printf("  -r <n>    repeat the query several times\n");
     printf("  -rl       roxie logfile mode\n");
     printf("  -rs       remote stream request\n");
@@ -950,6 +970,14 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-q") == 0)
         {
             echoSingle = false;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-qd") == 0)
+        {
+            ++arg;
+            if (arg>=argc)
+                usage(1);
+            queryDelayMS = atoi(argv[arg]);
             ++arg;
         }
         else if (stricmp(argv[arg], "-qname") == 0)
@@ -1173,7 +1201,12 @@ int main(int argc, char **argv)
         {
             if (trace != NULL)
             {
-                fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime)/1000000));
+                fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime))/1000000);
+                if (totalQueryCnt)
+                {
+                    double timePerQueryMS = totalQueryMS / totalQueryCnt;
+                    fprintf(trace, "Total Queries: %u Avg t/q = %.3f msecs\n", totalQueryCnt, timePerQueryMS);
+                }
                 fputs("----------------------------------------------------------------------------\n", trace);
             }
         }
