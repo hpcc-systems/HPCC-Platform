@@ -382,6 +382,7 @@ namespace KafkaPlugin
 
                     // Create the producer
                     producerPtr = RdKafka::Producer::create(globalConfig, errStr);
+                    delete globalConfig;
 
                     if (producerPtr)
                     {
@@ -393,6 +394,7 @@ namespace KafkaPlugin
 
                         // Create the topic
                         topicPtr.store(RdKafka::Topic::create(producerPtr, topic, topicConfPtr, errStr), std::memory_order_release);
+                        delete topicConfPtr;
 
                         if (topicPtr)
                         {
@@ -564,6 +566,7 @@ namespace KafkaPlugin
 
                     // Create the consumer
                     consumerPtr = RdKafka::Consumer::create(globalConfig, errStr);
+                    delete globalConfig;
 
                     if (consumerPtr)
                     {
@@ -588,6 +591,7 @@ namespace KafkaPlugin
 
                         // Create the topic
                         topicPtr.store(RdKafka::Topic::create(consumerPtr, topic, topicConfPtr, errStr), std::memory_order_release);
+                        delete topicConfPtr;
 
                         if (!topicPtr)
                         {
