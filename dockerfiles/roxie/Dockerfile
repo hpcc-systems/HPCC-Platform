@@ -18,7 +18,8 @@
 # Build container image for a single roxie process
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-core:${BUILD_LABEL}
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 
 USER hpcc
 RUN mkdir -p /var/lib/HPCCSystems/roxie
