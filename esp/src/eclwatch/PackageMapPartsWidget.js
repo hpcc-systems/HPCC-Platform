@@ -99,7 +99,7 @@ define([
                         }).then(function (response) {
                             if (lang.exists("AddPartToPackageMapResponse.status.Code", response)) {
                                 context.refreshGrid();
-                                context.addPartsDropDown.filterDropDown.set("label", context.i18n.Add);
+                                context.addPartsDropDown.filterDropDown.set("label", context.i18n.AddPart);
                             }
                         });
                     }
@@ -107,17 +107,17 @@ define([
                 dojo.destroy(this.addPartsDropDown.iconFilter);
                 this.addPartsDropDown.placeAt(this.openButton.domNode, "after");
                 this.addPartsDropDown.filterForm.set("style", "width:600px;");
-                this.addPartsDropDown.filterDropDown.set("label", context.i18n.Add);
-                this.addPartsPartName = this.createLabelAndElement(this.id + "PartName", this.i18n.PartName, "ValidationTextBox", this.i18n.PartName);
-                this.addPartsContent = this.createLabelAndElement(this.id + "Content", this.i18n.Content, "Textarea", this.i18n.Content);
-                this.addPartsDaliIp = this.createLabelAndElement(this.id + "DaliIp", this.i18n.DaliIP, "TextBox", this.i18n.DaliIP);
-                this.addPartsSourceProcess = this.createLabelAndElement(this.id + "SourceProcess", this.i18n.SourceProcess, "TextBox", this.i18n.SourceProcess);
-                this.addPartsDeletePrevious = this.createLabelAndElement(this.id + "DeletePrevious", this.i18n.DeletePrevious, "CheckBox", this.i18n.DeletePrevious);
-                this.addPartsAllowForeign = this.createLabelAndElement(this.id + "AllowForeignFiles", this.i18n.AllowForeignFiles, "CheckBox", this.i18n.AllowForeignFiles);
-                this.addPartsPreloadAllPackages = this.createLabelAndElement(this.id + "PreloadAllPackages", this.i18n.PreloadAllPackages, "CheckBox", this.i18n.PreloadAllPackages);
-                this.addPartsUpdateSuperFiles = this.createLabelAndElement(this.id + "UpdateSuperFiles", this.i18n.UpdateSuperFiles, "CheckBox", this.i18n.UpdateSuperFiles);
-                this.addPartsUpdateCloneFrom = this.createLabelAndElement(this.id + "UpdateCloneFrom", this.i18n.UpdateCloneFrom, "CheckBox", this.i18n.UpdateCloneFrom);
-                this.addPartsAppendCluster = this.createLabelAndElement(this.id + "AppendCluster", this.i18n.AppendCluster, "CheckBox", this.i18n.AppendCluster);
+                this.addPartsDropDown.filterDropDown.set("label", context.i18n.AddPart);
+                this.addPartsPartName = this.createLabelAndElement(this.id + "PartName", this.i18n.PartName, "ValidationTextBox", this.i18n.PartName, "PartName");
+                this.addPartsContent = this.createLabelAndElement(this.id + "Content", this.i18n.Content, "Textarea", this.i18n.Content, "Content");
+                this.addPartsDaliIp = this.createLabelAndElement(this.id + "DaliIp", this.i18n.DaliIP, "TextBox", this.i18n.DaliIP, "DaliIp");
+                this.addPartsSourceProcess = this.createLabelAndElement(this.id + "SourceProcess", this.i18n.SourceProcess, "TextBox", this.i18n.SourceProcess, "SourceProcess");
+                this.addPartsDeletePrevious = this.createLabelAndElement(this.id + "DeletePrevious", this.i18n.DeletePrevious, "CheckBox", this.i18n.DeletePrevious, "DeletePrevious");
+                this.addPartsAllowForeign = this.createLabelAndElement(this.id + "AllowForeignFiles", this.i18n.AllowForeignFiles, "CheckBox", this.i18n.AllowForeignFiles, "AllowForeignFiles");
+                this.addPartsPreloadAllPackages = this.createLabelAndElement(this.id + "PreloadAllPackages", this.i18n.PreloadAllPackages, "CheckBox", this.i18n.PreloadAllPackages, "PreloadAllPackages");
+                this.addPartsUpdateSuperFiles = this.createLabelAndElement(this.id + "UpdateSuperFiles", this.i18n.UpdateSuperFiles, "CheckBox", this.i18n.UpdateSuperFiles, "UpdateSuperFiles");
+                this.addPartsUpdateCloneFrom = this.createLabelAndElement(this.id + "UpdateCloneFrom", this.i18n.UpdateCloneFrom, "CheckBox", this.i18n.UpdateCloneFrom, "UpdateCloneFrom");
+                this.addPartsAppendCluster = this.createLabelAndElement(this.id + "AppendCluster", this.i18n.AppendCluster, "CheckBox", this.i18n.AppendCluster, "AppendCluster");
 
                 this.removeParts = new Button({
                     id: this.id + "RemoveParts",
@@ -215,14 +215,14 @@ define([
                 return this.addPartsDropDown.toObject();
             },
 
-            createLabelAndElement: function (id, label, element, placeholder, value) {
+            createLabelAndElement: function (id, label, element, placeholder, name) {
                 var context = this;
                 var control = null;
                 switch (element) {
                     case "CheckBox":
                         control = new CheckBox({
                             id: id,
-                            name: id,
+                            name: name,
                             checked: true,
                             title: label
                         });
@@ -230,28 +230,26 @@ define([
                     case "Textarea":
                         control = new Textarea({
                             id: id,
-                            name: id,
+                            name: name,
                             title: label,
-                            style: "height: 20%;width:40%;"
+                            style: "min-width:300px; max-width:40%; min-height:100px; height:100%; width:100%;"
                         });
                         break;
                     case "ValidationTextBox":
                         control = new ValidationTextBox({
                             id: id,
-                            name: id,
+                            name: name,
                             placeholder: placeholder,
-                            style: "width: 40%",
-                            value: value,
+                            style: "min-width:300px; max-width:40%; width:100%;",
                             required: true
                         });
                         break;
                     case "TextBox":
                         control = new TextBox({
                             id: id,
-                            name: id,
+                            name: name,
                             placeholder: placeholder,
-                            style: "width: 40%",
-                            value: value
+                            style: "min-width:300px; max-width:40%; width:100%;",
                         });
                         break;
                 }
