@@ -64,7 +64,7 @@ pushd $DIR 2>&1 > /dev/null
 parse_cmake
 
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
-  LATEST = 1
+  LATEST=1
 fi
 
 build_image() {
@@ -84,7 +84,8 @@ build_image() {
     if [ "$LATEST" = "1" ] ; then
       docker tag hpccsystems/${name}:${label} hpccsystems/${name}:latest
       if [ "$PUSH" = "1" ] ; then
-        docker push hpccsystems/${name}:${label} hpccsystems/${name}:latest
+        docker push hpccsystems/${name}:${label}
+        docker push hpccsystems/${name}:latest
       fi
     else
       if [ "$PUSH" = "1" ] ; then

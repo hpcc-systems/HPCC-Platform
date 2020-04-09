@@ -219,6 +219,7 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DeclareDecorator.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/DiskUsage.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dojoLib.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ECLArchiveWidget.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ESPActivity.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ESPBase.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ESPDFUWorkunit.ts
@@ -291,7 +292,7 @@ endif ()
 
 add_custom_command (
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/no.file
-    COMMAND npm run clean
+    COMMAND npm run --silent clean
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -301,8 +302,8 @@ add_custom_target( eclwatch_clean
 
 add_custom_command (
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
-    COMMAND npm ci && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/package.json
+    COMMAND npm ci --silent && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -312,8 +313,9 @@ add_custom_target( eclwatch_fetchdeps
 
 add_custom_command (
     OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/build/dist/stub.eclwatch.js
-    COMMAND npm run ${ECLWATCH_BUILD}
+    COMMAND npm run --silent ${ECLWATCH_BUILD}
     DEPENDS ${SRCS}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/lib/package-lock.json
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
