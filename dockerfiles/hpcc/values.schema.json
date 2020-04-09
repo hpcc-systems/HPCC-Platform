@@ -125,6 +125,9 @@
         },
         "storage": {
           "$ref": "#/definitions/storage"
+        },
+        "logging": {
+          "type": "object"
         }
       }
     },
@@ -150,6 +153,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "type": "object"
         }
       }
     },
@@ -167,6 +173,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "type": "object"
         }
       }
     },
@@ -194,6 +203,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "type": "object"
         }
       }
     },
@@ -217,6 +229,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "type": "object"
         }
       }
     },
@@ -246,6 +261,44 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "type": "object"
+        }
+      }
+    },
+	"logging": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "string",
+          "description": "List of fields to include in logging output. Comprised of 3 letter codes delimited by + or -"
+        },
+        "audiences": {
+          "type": "string",
+          "description": "List of target audiences to include in logging output. Comprised of 3 letter codes delimited by + or -"
+        },
+        "classes": {
+          "type": "string",
+          "description": "List of target logging classes to include in output. Comprised of 3 letter codes delimited by + or -"
+        },
+        "detail": {
+          "type": "integer",
+		  "description": "Log output verbosity"
+        },
+		"useLogQueue": {
+          "type": "boolean"
+        },
+		"queueLen": {
+          "type": "integer",
+		  "description": "Ignored if 'useLogQueue' is false"
+        },
+		"queueDrop": {
+          "type": "integer",
+		  "description": "Ignored if 'useLogQueue' is false"
+        },
+		"enableSysLog": {
+          "type": "boolean"
         }
       }
     }
