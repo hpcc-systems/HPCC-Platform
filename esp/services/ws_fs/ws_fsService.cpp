@@ -1892,7 +1892,18 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid DFU server queue name:'%s'", dfuQueue);
         }
         setDFUServerQueueReq(dfuQueue, wu);
-        setUserAuth(context, wu);
+
+//        // Handle username/psw parameters
+//        const char* srcUsername = req.getSrcUsername();
+//        if(!isEmptyString(srcUsername))
+//        {
+//            wu->setUser(srcUsername);
+//            const char* srcPasswd = req.getSrcPassword();
+//            wu->setPassword(srcPasswd);
+//        }
+//        else
+            setUserAuth(context, wu);
+
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
@@ -2072,7 +2083,18 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid DFU server queue name:'%s'", dfuQueue);
         }
         setDFUServerQueueReq(dfuQueue, wu);
-        setUserAuth(context, wu);
+
+//        // Handle username/psw parameters
+//        const char* srcUsername = req.getSrcUsername();
+//        if(!isEmptyString(srcUsername))
+//        {
+//            wu->setUser(srcUsername);
+//            const char* srcPasswd = req.getSrcPassword();
+//            wu->setPassword(srcPasswd);
+//        }
+//        else
+            setUserAuth(context, wu);
+
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
