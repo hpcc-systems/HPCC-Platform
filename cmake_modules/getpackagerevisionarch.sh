@@ -119,12 +119,13 @@ elif [ -e /etc/SuSE-release ]; then
 elif [ -e /etc/system-release ]; then
   if [ -x /bin/rpm ]; then
       OS_GROUP=$(grep -i "Linux" /etc/system-release | awk '{ print  $1}')
+      AMZN_VERSION=$(grep -i "Linux" /etc/system-release | awk '{ print  $4}')
       case "$OS_GROUP" in
         "Amazon" )
           if [ ${NOARCH} -eq 0 ]; then
-              OUTPUT="amzn1.${ARCH}"
+              OUTPUT="amzn${AMZN_VERSION}.${ARCH}"
           else
-              OUTPUT="amzn1"
+              OUTPUT="amzn${AMZN_VERSION}"
           fi
           ;;
 
