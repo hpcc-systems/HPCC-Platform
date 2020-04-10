@@ -201,17 +201,17 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
     switch(msgClass)
     {
     case MSGCLS_disaster:
-        return("Disaster ");
+        return("DIS ");
     case MSGCLS_error:
-        return("Error    ");
+        return("ERR ");
     case MSGCLS_warning:
-        return("Warning  ");
+        return("WRN ");
     case MSGCLS_information:
-        return("Inform.  ");
+        return("INF ");
     case MSGCLS_progress:
-        return("Progress ");
+        return("PRO ");
     default:
-        return("UNKNOWN  ");
+        return("UNK ");
     }
 }
 
