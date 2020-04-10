@@ -33,30 +33,31 @@ if(USE_AWS)
     add_dependencies(aws-cpp-sdk-sqs aws-sdk-cpp)
     add_dependencies(aws-cpp-sdk-s3 aws-sdk-cpp)
 
-    install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${AWS_DEP_LIBDIR}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3\")")
-    install(FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/aws-sdk-cpp/LICENSE.txt
-        DESTINATION "."
-        RENAME aws-sdk-cpp-LICENSE.txt)
-    install(CODE "file(RPATH_CHANGE
-        FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so\"
-        OLD_RPATH \"${AWS_DEP_LIBDIR}:\"
-        NEW_RPATH \"${LIB_PATH}\")")
-    install(CODE "file(RPATH_CHANGE
-        FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so\"
-        OLD_RPATH \"${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${AWS_DEP_LIBDIR}:\"
-        NEW_RPATH \"${LIB_PATH}\")")
-    install(PROGRAMS
-        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so
-        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so
-        ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so
-        ${AWS_DEP_LIBDIR}/libaws-c-common.so.1.0.0
-        ${AWS_DEP_LIBDIR}/libaws-c-common.so
-        ${AWS_DEP_LIBDIR}/libaws-c-common.so.0unstable
-        ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.1.0.0
-        ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so
-        ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.0unstable
-        ${AWS_DEP_LIBDIR}/libaws-checksums.so
-        DESTINATION lib)
-
+    if ( NOT PLUGIN )
+        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${AWS_DEP_LIBDIR}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs:${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3\")")
+        install(FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/aws-sdk-cpp/LICENSE.txt
+            DESTINATION lib
+            RENAME aws-sdk-cpp-LICENSE.txt)
+        install(CODE "file(RPATH_CHANGE
+            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so\"
+            OLD_RPATH \"${AWS_DEP_LIBDIR}:\"
+            NEW_RPATH \"${LIB_PATH}\")")
+        install(CODE "file(RPATH_CHANGE
+            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so\"
+            OLD_RPATH \"${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${AWS_DEP_LIBDIR}:\"
+            NEW_RPATH \"${LIB_PATH}\")")
+        install(PROGRAMS
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so
+            ${AWS_DEP_LIBDIR}/libaws-c-common.so.1.0.0
+            ${AWS_DEP_LIBDIR}/libaws-c-common.so
+            ${AWS_DEP_LIBDIR}/libaws-c-common.so.0unstable
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.1.0.0
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.0unstable
+            ${AWS_DEP_LIBDIR}/libaws-checksums.so
+            DESTINATION lib)
+    endif ( NOT PLUGIN )
 endif()
