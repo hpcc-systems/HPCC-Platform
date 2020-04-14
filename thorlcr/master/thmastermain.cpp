@@ -551,19 +551,6 @@ bool ControlHandler(ahType type)
 }
 
 
-static constexpr const char * defaultYaml = R"!!(
-version: 1.0
-thor:
-  daliServers: dali
-  watchdogEnabled: true
-  watchdogProgressEnabled: true
-  cost:
-    thor:
-      master: "0.000002"
-      slave: "0.00001"
-)!!";
-
-
 #include "thactivitymaster.hpp"
 int main( int argc, const char *argv[]  )
 {
