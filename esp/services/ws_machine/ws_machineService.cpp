@@ -2533,16 +2533,8 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
         Owned<IPropertyTree> logFolder = createDiskUsageReq(envDirectories, "log", type, name);
         if (logFolder)
             machineReq->addPropTree(logFolder->queryName(), LINK(logFolder));
-    
-        StringAttr componentType;
-        if (strieq(type, eqDali))
-            componentType.set("dali");
-        else if (strieq(type, eqEclAgent))
-            componentType.set("eclagent");
-        else
-            componentType.set("sasha");
-    
-        Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType.get(), name);
+
+        Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType, name);
         if (dataFolder)
             machineReq->addPropTree(dataFolder->queryName(), LINK(dataFolder));
     
@@ -2944,10 +2936,16 @@ IPropertyTree* Cws_machineEx::getTargetClusterUsageReq(IEspGetTargetClusterUsage
         if (roxie.length())
             readRoxieUsageReq(roxie.str(), constEnv, targetClusterTree);
 
-        SCMStringBuffer eclAgent;
+        SCMStringBuffer eclAgent, eclServer, eclScheduler;
         targetClusterInfo->getAgentName(eclAgent);
         if (eclAgent.length())
             readOtherComponentUsageReq(eclAgent.str(), eqEclAgent, constEnv, targetClusterTree);
+        targetClusterInfo->getECLServerName(eclServer);
+        if (eclServer.length())
+            readOtherComponentUsageReq(eclServer.str(), targetClusterInfo->isLegacyEclServer() ? eqEclServer : eqEclCCServer, constEnv, targetClusterTree);
+        targetClusterInfo->getECLSchedulerName(eclScheduler);
+        if (eclScheduler.length())
+            readOtherComponentUsageReq(eclScheduler.str(), eqEclScheduler, constEnv, targetClusterTree);
 
         usageReq->addPropTree(targetClusterTree->queryName(), LINK(targetClusterTree));
     }
