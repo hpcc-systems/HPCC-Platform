@@ -381,7 +381,10 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
                 setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, lastEscape);
                 lastEscape = false;
                 while (++curColumn < maxColumns)
+                {
+                    data[curColumn] = cur;
                     lengths[curColumn] = 0;
+                }
                 return (size32_t)(cur + matchLen - start);
             }
             lastGood = cur+matchLen;
