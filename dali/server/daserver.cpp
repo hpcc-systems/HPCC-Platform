@@ -406,6 +406,8 @@ int main(int argc, const char* argv[])
         if (confIFile->exists())
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 #endif
+        if (!serverConfig)
+            serverConfig.setown(createPTree());
 
 #ifndef _CONTAINERIZED
         ILogMsgHandler * fileMsgHandler;
