@@ -148,6 +148,8 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
         return false;
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
     assertex(conn);
+    if (!conn->queryRoot()->hasProp("Software/DaliServerProcess"))
+        return false;
 
     // only ever expecting 1 DaliServerProcess and 1 WhiteList
     const IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
