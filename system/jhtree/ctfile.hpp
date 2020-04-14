@@ -172,7 +172,10 @@ public:
         else
             return 0;
     }
-
+    void setPhyRec(offset_t pos)
+    {
+        hdr.phyrec = hdr.numrec = pos;
+    }
 };
 
 class jhtree_decl CNodeBase : public CWritableKeyNode
