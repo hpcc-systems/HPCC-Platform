@@ -125,6 +125,9 @@
         },
         "storage": {
           "$ref": "#/definitions/storage"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -150,6 +153,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -167,6 +173,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -194,6 +203,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -212,6 +224,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         },
         "services": {
           "description": "Roxie query services",
@@ -268,8 +283,29 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "audiences": {
+          "type": "string",
+          "description": "List of target audiences to include in logging output. Comprised of 3 letter codes delimited by + or -"
+        },
+        "classes": {
+          "type": "string",
+          "description": "List of target logging classes to include in output. Comprised of 3 letter codes delimited by + or -"
+        },
+        "detail": {
+          "type": "integer",
+          "description": "Log output verbosity"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
