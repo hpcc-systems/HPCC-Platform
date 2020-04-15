@@ -5053,10 +5053,16 @@ public:
         tgt += len;
         *(unsigned *) tgt = parentExtractSize;
         tgt += sizeof(unsigned);
-        memcpy(tgt, parentExtract, parentExtractSize);
-        tgt += parentExtractSize;
-        memcpy(tgt, cachedContext.toByteArray(), cachedContext.length());
-        tgt += cachedContext.length();
+        if (parentExtractSize)
+        {
+            memcpy(tgt, parentExtract, parentExtractSize);
+            tgt += parentExtractSize;
+        }
+        if (cachedContext.length())
+        {
+            memcpy(tgt, cachedContext.toByteArray(), cachedContext.length());
+            tgt += cachedContext.length();
+        }
     }
 };
 
