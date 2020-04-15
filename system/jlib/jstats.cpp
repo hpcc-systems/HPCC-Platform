@@ -1756,25 +1756,14 @@ public:
 
     CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
     {
-        //MORE: Implement hasChildren
-        return resolveSubScope(search, true, false);
-    }
+        //Once the CStatisicCollection is created it should not be replaced - so that returned pointers remain valid.
+        CStatisticCollection * match = children.find(&search);
+        if (match)
+            return match;
 
-    CStatisticCollection * resolveSubScope(const StatsScopeId & search, bool create, bool replace)
-    {
-        if (!replace)
-        {
-            CStatisticCollection * match = children.find(&search);
-            if (match)
-                return LINK(match);
-        }
-        if (create)
-        {
-            CStatisticCollection * ret = new CStatisticCollection(this, search);
-            children.add(*ret);
-            return LINK(ret);
-        }
-        return NULL;
+        CStatisticCollection * ret = new CStatisticCollection(this, search);
+        children.add(*ret);
+        return ret;
     }
 
     virtual void serialize(MemoryBuffer & out) const
@@ -1985,7 +1974,6 @@ public:
     }
     virtual void endScope() override
     {
-        scopes.tos().Release();
         scopes.pop();
     }
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) override

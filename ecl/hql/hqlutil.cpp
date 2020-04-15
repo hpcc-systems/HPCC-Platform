@@ -10288,6 +10288,18 @@ static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserialize
     return extractor.createSingleFieldFilter(deserializer);
 }
 
+static void cleanupFields(unsigned num, const RtlFieldInfo * * fieldsArray)
+{
+    for (unsigned i = 0; i < num; i++)
+    {
+        const RtlFieldInfo * child = fieldsArray[i];
+
+        if (!isVirtualInitializer(child->initializer))
+            free((void *)child->initializer);
+        delete child;
+    }
+    delete [] fieldsArray;
+}
 
 unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned &idx, const RtlFieldInfo * * fieldsArray, IHqlExpression *record, IHqlExpression *rowRecord)
 {
@@ -10322,10 +10334,18 @@ unsigned buildRtlRecordFields(IRtlFieldTypeDeserializer &deserializer, unsigned 
                 unsigned numFields = getFlatFieldCount(record);
                 info.fieldsArray = new const RtlFieldInfo * [numFields+1];
                 unsigned idx = 0;
-                info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
-                info.fieldsArray[idx] = nullptr;
-
-                info.filter = createIfBlockFilter(deserializer, rowRecord, field);
+                try
+                {
+                    info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
+                    info.fieldsArray[idx] = nullptr;
+                    info.filter = createIfBlockFilter(deserializer, rowRecord, field);
+                }
+                catch (...)
+                {
+                    //Clean up all the fields that have been added (idx is incremented by buildRtlRecordFields)
+                    cleanupFields(idx, info.fieldsArray);
+                    throw;
+                }
 
                 type = deserializer.addType(info, key);
             }
@@ -10458,7 +10478,15 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
             unsigned numFields = getFlatFieldCount(record);
             info.fieldsArray = new const RtlFieldInfo * [numFields+1];
             unsigned idx = 0;
-            info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
+            try
+            {
+                info.fieldType |= buildRtlRecordFields(deserializer, idx, info.fieldsArray, record, record);
+            }
+            catch (...)
+            {
+                cleanupFields(idx, info.fieldsArray);
+                throw;
+            }
             info.fieldsArray[idx] = nullptr;
             break;
         }
