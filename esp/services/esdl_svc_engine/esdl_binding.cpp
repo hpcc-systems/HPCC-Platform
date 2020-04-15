@@ -417,7 +417,7 @@ void EsdlServiceImpl::addServiceLevelRequestTransform(IPropertyTree *customReque
 
     try
     {
-        m_serviceLevelRequestTransform.setown(new CEsdlCustomTransform(*customRequestTransform));
+        m_serviceLevelRequestTransform.setown(createEsdlCustomTransform(*customRequestTransform, nullptr));
     }
     catch(IException* e)
     {
@@ -441,7 +441,7 @@ void EsdlServiceImpl::addMethodLevelRequestTransform(const char *method, IProper
 
     try
     {
-        Owned<CEsdlCustomTransform> crt = new CEsdlCustomTransform(*customRequestTransform);
+        Owned<IEsdlCustomTransform> crt = createEsdlCustomTransform(*customRequestTransform, nullptr);
         m_customRequestTransformMap.setValue(method, crt.get());
     }
     catch(IException* e)
@@ -467,7 +467,7 @@ static void ensureMergeOrderedEsdlTransform(Owned<IPropertyTree> &dest, IPropert
     if (!src)
         return;
     if (!dest)
-        dest.setown(createPTree(ipt_ordered));
+        dest.setown(createPTree(src->queryName(), ipt_ordered));
     //copy so we can make changes, like adding calculated targets
     Owned<IPropertyTree> copy = createPTreeFromIPT(src, ipt_ordered);
     const char *target = copy->queryProp("@target");
@@ -1114,7 +1114,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
         if (serviceCrt || methodCrt)
         {
             context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-            processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg.get(), tgtctx.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
+            processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
             context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
         }
 

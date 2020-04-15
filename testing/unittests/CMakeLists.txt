@@ -35,6 +35,7 @@ set (    SRCS
          jlibtests.cpp
          cryptotests.cpp
          hqltests.cpp
+         esdltests.cpp
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
          configmgr/ConfigMgrHPCCTests.cpp
@@ -53,8 +54,14 @@ include_directories (
          ./../../common/deftype
          ./../../system/security/cryptohelper
          ./../../configuration/configmgr/configmgrlib
+         ${HPCC_SOURCE_DIR}/system/xmllib
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
+         ${HPCC_SOURCE_DIR}/esp/bindings
+         ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/platform
+         ${HPCC_SOURCE_DIR}/esp/services/common
+         ${CMAKE_BINARY_DIR}/generated
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -72,6 +79,8 @@ target_link_libraries ( unittests
          libbase58
          thorhelper
          configmgr
+         esphttp
+         esdllib
          ${CPPUNIT_LIBRARIES}
     )
 
