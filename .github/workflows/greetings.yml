@@ -26,5 +26,5 @@ jobs:
         run: echo 'Hello Bela ! The time was ${{ steps.hello.outputs.time }}.'
       # This step prints an output (time) from the previous step's action.
       - name: Check CMake version
-        run: echo '${{ cmake --version }}.'
+        run: cmake --version
 
