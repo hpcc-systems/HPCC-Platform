@@ -258,6 +258,7 @@ public:
     virtual IStringIterator & getDebugValues(const char *prop) const;
     virtual int getDebugValueInt(const char * propname, int defVal) const;
     virtual __int64 getDebugValueInt64(const char * propname, __int64 defVal) const;
+    double getDebugValueReal(const char *propname, double defVal) const;
     virtual bool getDebugValueBool(const char * propname, bool defVal) const;
     virtual unsigned getExceptionCount() const;
     virtual IConstWUExceptionIterator & getExceptions() const;

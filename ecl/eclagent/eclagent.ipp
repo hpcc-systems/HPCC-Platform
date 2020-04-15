@@ -248,6 +248,10 @@ public:
     {
         ctx->addWuExceptionEx(text, code, severity, audience, source);
     }
+    virtual cost_type queryAgentMachineCost() const override
+    {
+        return ctx->queryAgentMachineCost();
+    };
 
 protected:
     IAgentContext * ctx;
@@ -390,7 +394,7 @@ private:
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
-    double agentMachineCost = 0.0;
+    cost_type agentMachineCost = 0;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -430,11 +434,13 @@ private:
     public:
         Semaphore sem;
         bool stopping;
-        unsigned guillotinetimeout;
-        cAbortMonitor(EclAgent &_parent) : Thread("EclAgent Abort Monitor"), parent(_parent) { guillotinetimeout=0; stopping=false; }
+        unsigned guillotinetimeout = 0;
+        cost_type guillotineCost = 0;
+        cAbortMonitor(EclAgent &_parent) : Thread("EclAgent Abort Monitor"), parent(_parent) { guillotinetimeout=0; guillotineCost=0; stopping=false; }
         int  run()  { parent.abortMonitor(); return 0; }
         void stop() { stopping = true; sem.signal(); join(1000*10); }
         void setGuillotineTimeout(unsigned secs) { guillotinetimeout = secs; sem.signal(); }
+        void setGuillotineCost(cost_type cost) { guillotineCost = cost; }
         bool fireException(IException *e)
         {
             StringBuffer text;
@@ -693,7 +699,7 @@ public:
     {
         return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
-    virtual double queryAgentMachineCost() const
+    virtual cost_type queryAgentMachineCost() const
     {
         return agentMachineCost;
     }

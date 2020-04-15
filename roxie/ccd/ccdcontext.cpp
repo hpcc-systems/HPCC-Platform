@@ -2518,7 +2518,12 @@ protected:
                     throw deserializeException(reply);
                 }
                 case DAMP_THOR_REPLY_ABORT:
-                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+                {
+                    Owned<IException> e = deserializeException(reply);
+                    StringBuffer msg;
+                    e->errorMessage(msg);
+                    throw new WorkflowException(e->errorCode(), msg.str(), 0, WorkflowException::ABORT, MSGAUD_user);
+                }
                 default:
                     throwUnexpected();
             }

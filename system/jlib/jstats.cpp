@@ -433,7 +433,7 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
     case SMeasureEnum:
         return out.append("Enum{").append(value).append("}"); // JCS->GH for now, should map to known enum text somehow
     case SMeasureCost:
-        return out.appendf("$ %.06f", (double) value / 1E6);
+        return out.appendf("$%.06f", cost_type2money(value) );
     default:
         return out.append(value).append('?');
     }
@@ -593,6 +593,20 @@ void describeScope(StringBuffer & description, const char * scope)
         description.append(": ");
         scope++;
     }
+}
+
+bool isParentScope(const char *parent, const char *scope)
+{
+    const char *p = parent;
+    const char *q = scope;
+    while(*p && (*p==*q))
+    {
+        ++p;
+        ++q;
+    }
+    if ((*p==0) && (*q==':' || *q==0))
+        return true;
+    return false;
 }
 
 const char * queryMeasurePrefix(StatisticMeasure measure)

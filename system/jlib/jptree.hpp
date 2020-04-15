@@ -94,7 +94,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void setPropInt64(const char *xpath, __int64 val) = 0;
     virtual void addPropInt64(const char *xpath, __int64 val) = 0;
 
-    virtual double getPropReal(const char *xpath, double dft) const = 0;
+    virtual double getPropReal(const char *xpath, double dft=0.0) const = 0;
 
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const = 0;
     virtual void setPropBin(const char *xpath, size32_t size, const void *data) = 0;
