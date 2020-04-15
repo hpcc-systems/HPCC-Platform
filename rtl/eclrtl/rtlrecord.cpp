@@ -149,8 +149,8 @@ private:
 class RtlCondFieldStrInfo : public RtlFieldStrInfo
 {
 public:
-    RtlCondFieldStrInfo(const RtlFieldInfo &from, const IfBlockInfo &_ifblock)
-    : RtlFieldStrInfo(from.name, from.xpath, from.type, from.flags | (RFTMinifblock|RFTMdynamic), (const char *) from.initializer),
+    RtlCondFieldStrInfo(const RtlFieldInfo &from, const IfBlockInfo &_ifblock, bool forcePayload)
+    : RtlFieldStrInfo(from.name, from.xpath, from.type, from.flags | (forcePayload ? RFTMinifblock|RFTMdynamic|RFTMispayloadfield : RFTMinifblock|RFTMdynamic), (const char *) from.initializer),
       origField(from),ifblock(_ifblock)
     {
     }
@@ -159,7 +159,7 @@ public:
     const IfBlockInfo &ifblock;
 };
 
-static unsigned expandNestedRows(unsigned idx, unsigned startIdx, StringBuffer &prefix, StringBuffer &xPathPrefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const char * *xpaths, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks)
+static unsigned expandNestedRows(unsigned idx, unsigned startIdx, StringBuffer &prefix, StringBuffer &xPathPrefix, const RtlFieldInfo * const * fields, const RtlFieldInfo * * target, const char * *names, const char * *xpaths, const IfBlockInfo *inIfBlock, ConstPointerArrayOf<IfBlockInfo> &ifblocks, bool forcePayload)
 {
     for (;*fields;fields++)
     {
@@ -188,7 +188,7 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, StringBuffer &
                     if (!isEmptyString(xpath))
                         xPathPrefix.append(xpath).append('/');
                 }
-                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, prefix, xPathPrefix, nested, target, names, xpaths, nestIfBlock, ifblocks);
+                idx = expandNestedRows(idx, isIfBlock ? startIdx : idx, prefix, xPathPrefix, nested, target, names, xpaths, nestIfBlock, ifblocks, forcePayload || (cur->flags & RFTMispayloadfield) != 0);
                 prefix.setLength(prevPrefixLength);
                 if (xpaths)
                     xPathPrefix.setLength(prevXPathPrefixLength);
@@ -215,7 +215,12 @@ static unsigned expandNestedRows(unsigned idx, unsigned startIdx, StringBuffer &
                     xpaths[idx] = nullptr;
             }
             if (inIfBlock && !(cur->flags & RFTMinifblock))
-                target[idx++] = new RtlCondFieldStrInfo(*cur, *inIfBlock);
+                target[idx++] = new RtlCondFieldStrInfo(*cur, *inIfBlock, forcePayload);
+            else if (forcePayload && !(cur->flags & RFTMispayloadfield))
+            {
+                dbgassertex((cur->flags & RFTMdynamic) == 0);
+                target[idx++] = new RtlFieldStrInfo(cur->name, cur->xpath, cur->type, cur->flags | (RFTMispayloadfield|RFTMdynamic), (const char * ) cur->initializer);
+            }
             else
             {
                 dbgassertex((cur->flags & RFTMdynamic) == 0);
@@ -272,7 +277,7 @@ RtlRecord::RtlRecord(const RtlFieldInfo * const *_fields, bool expandFields) : f
                 xpaths = new const char *[numFields];
             fields = allocated;
             StringBuffer prefix, xPathPrefix;
-            unsigned idx = expandNestedRows(0, 0, prefix, xPathPrefix, originalFields, allocated, names, xpaths, nullptr, _ifblocks);
+            unsigned idx = expandNestedRows(0, 0, prefix, xPathPrefix, originalFields, allocated, names, xpaths, nullptr, _ifblocks, false);
             ifblocks = _ifblocks.detach();
             assertex(idx == numFields);
             allocated[idx] = nullptr;
@@ -585,7 +590,7 @@ const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
 const RtlFieldInfo *RtlRecord::queryOriginalField(unsigned idx) const
 {
     const RtlFieldInfo *field = queryField(idx);
-    if (field->flags & RFTMdynamic)
+    if (field->flags & RFTMinifblock)
         return &static_cast<const RtlCondFieldStrInfo *>(field)->origField;
     else
         return field;
