@@ -324,7 +324,7 @@ gpgcheck=0</programlisting></para>
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
-          <para>After installing the package, you should run the following to
+          <para>After installing the package, run the following to
           update any dependencies.</para>
 
           <para><programlisting>sudo apt-get install -f </programlisting></para>
@@ -1891,11 +1891,11 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
       <programlisting>sudo yum remove hpccsystems-platform </programlisting>
 
-      <para>Alternatively you can still use.</para>
 
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
-      <programlisting>sudo dpkg -r hpccsystems-platform</programlisting>
+      <programlisting>sudo apt-get remove hpccsystems-platform</programlisting>
+
     </sect1>
 
     <sect1 id="Helper-Applications">
