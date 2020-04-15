@@ -2487,8 +2487,75 @@ protected:
     IArrayOf<StatisticAggregator> aggregators;
 };
 
+// Aggregate costs excluding all hThor costs
+// Note: the only reason that this class is required is that it is not possible to determine the creator
+//       of a scope when iterating with IConstWUScopeIterator.  (When this functionlity becomes available, 
+//       consider filtering within aggregateCost and eliminating this class.)
+class CostAggregatorExcludeHThor : public CInterfaceOf<IWuScopeVisitor>
+{
+public:
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value, IConstWUStatistic & extra) override
+    {
+        if (extra.getCreatorType() != SCThthor)
+            totalCost += value;
+    }
+    virtual void noteAttribute(WuAttr attr, const char * value) override { throwUnexpected(); }
+    virtual void noteHint(const char * kind, const char * value) override { throwUnexpected(); }
+    virtual void noteException(IConstWUException & exception) { throwUnexpected(); }
+    virtual cost_type getTotalCost() const { return totalCost; }
+protected:
+    cost_type totalCost = 0;
+};
 
-//To calculate aggregates, create a scope iterator, and an instance of a StatisticAggregator, and play the attributes through the interface
+// Aggregrate Thor or hThor costs
+cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool excludeHThor)
+{
+    // depth 1: workflow, depth 2: graph, depth 3: subgraph
+    WuScopeFilter filter;
+    if (scope && *scope) // All costs under specified scope (used to calculate all costs for a workflow)
+    {
+        filter.addScope(scope);
+        filter.setIncludeNesting(3);
+        filter.addOutputStatistic(StCostExecute);
+        filter.addRequiredStat(StCostExecute);
+    }
+    else
+        filter.addFilter("stat[CostExecute],depth[1..3],nested[0],where[CostExecute]");
+    filter.addSource("global");
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    // Note: use of CostAggregatorExcludeHThor will be a slower, so use only when necessary
+    if (excludeHThor)
+    {
+        CostAggregatorExcludeHThor aggregator;
+        for (it->first(); it->isValid(); )
+        {
+            it->playProperties(aggregator);
+            stat_type value;
+            if (it->getStat(StCostExecute, value))
+                it->nextSibling();
+            else
+                it->next();
+        }
+        return aggregator.getTotalCost();
+    }
+    else
+    {
+        cost_type totalCost = 0;
+        for (it->first(); it->isValid(); )
+        {
+            stat_type value = 0.0;
+            if (it->getStat(StCostExecute, value))
+            {
+                totalCost += value;
+                it->nextSibling();
+            }
+            else
+                it->next();
+        }
+        return totalCost;
+    }
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -3883,6 +3950,8 @@ public:
             { return c->getDebugValueInt(propname, defVal); }
     virtual __int64 getDebugValueInt64(const char * propname, __int64 defVal) const
             { return c->getDebugValueInt64(propname, defVal); }
+    virtual double getDebugValueReal(const char * propname, double defVal) const
+            { return c->getDebugValueReal(propname, defVal); }
     virtual bool getDebugValueBool(const char * propname, bool defVal) const
             { return c->getDebugValueBool(propname, defVal); }
     virtual IStringIterator & getDebugValues() const 
@@ -7742,7 +7811,17 @@ __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal)
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
-    return p->getPropInt64(prop.str(), defVal); 
+    return p->getPropInt64(prop.str(), defVal);
+}
+
+double CLocalWorkUnit::getDebugValueReal(const char *propname, double defVal) const
+{
+    StringBuffer lower;
+    lower.append(propname).toLowerCase();
+    CriticalBlock block(crit);
+    StringBuffer prop("Debug/");
+    prop.append(lower);
+    return p->getPropReal(prop.str(), defVal);
 }
 
 bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
@@ -12987,15 +13066,15 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
-extern WORKUNIT_API double calculateThorCost(__int64 timeNs, unsigned clusterWidth)
+extern WORKUNIT_API cost_type calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)
 {
     IPropertyTree *costs = queryCostsConfiguration();
     if (costs)
     {
-        double thor_master_rate = costs->getPropReal("thor/@master", 0.0);
-        double thor_slave_rate = costs->getPropReal("thor/@slave", 0.0);
+        cost_type thor_master_rate = money2cost_type(costs->getPropReal("thor/@master"));
+        cost_type thor_slave_rate = money2cost_type(costs->getPropReal("thor/@slave"));
 
-        return calcCost(thor_master_rate, timeNs) + calcCost(thor_slave_rate, timeNs) * clusterWidth;
+        return calcCost(thor_master_rate, ms) + calcCost(thor_slave_rate, ms) * clusterWidth;
     }
     return 0;
 }

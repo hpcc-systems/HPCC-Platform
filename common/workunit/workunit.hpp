@@ -1174,6 +1174,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringVal & getDebugValue(const char * propname, IStringVal & str) const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
     virtual __int64 getDebugValueInt64(const char * propname, __int64 defVal) const = 0;
+    virtual double getDebugValueReal(const char * propname,  double defVal) const = 0;
     virtual bool getDebugValueBool(const char * propname, bool defVal) const = 0;
     virtual IStringIterator & getDebugValues() const = 0;
     virtual IStringIterator & getDebugValues(const char * prop) const = 0;
@@ -1646,6 +1647,7 @@ extern WORKUNIT_API void updateWorkunitStat(IWorkUnit * wu, StatisticScopeType s
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *timer);
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
+extern WORKUNIT_API cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope=nullptr, bool excludehThor=false);
 
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
@@ -1658,7 +1660,7 @@ extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
 extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid=0);
-extern WORKUNIT_API double calculateThorCost(__int64 timeNs, unsigned clusterWidth);
+extern WORKUNIT_API cost_type calculateThorCost(unsigned __int64 ms, unsigned clusterWidth);
 
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
 
@@ -1687,9 +1689,7 @@ inline bool isGlobalScope(const char * scope) { return scope && (streq(scope, GL
 extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
-#define HourToSeconds(n) ((n)/3600)
-#define NanoSecondsToSeconds(n) ((double)(n)/1000000000)
-inline __int64 calcCost(double ratePerHour, __int64 timeNS) { return HourToSeconds(ratePerHour) * NanoSecondsToSeconds(timeNS) * 1e6; }
+inline cost_type calcCost(cost_type ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
 
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName);
