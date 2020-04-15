@@ -355,8 +355,6 @@ version: 1.0
 dali:
   name: dali
   dataPath: "/var/lib/HPCCSystems/dalistore"
-  sds:
-    environment: "/etc/HPCCSystems/environment.xml"
   logging:
     detail: 100
 )!!";
