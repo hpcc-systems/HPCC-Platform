@@ -131,7 +131,7 @@ start_slaves()
                     log "$slavename --master=$master:$masterport --slave=.:$slaveport --slavenum=$slavenum --logDir=$logpth/$hpcc_compname"
                     ./$slavename --master=$master:$masterport --slave=.:$slaveport --slavenum=$slavenum --slaveprocessnum=$slave --logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &
                 else
-                    cmd="valgrind ${valgrindOptions} --log-file=$logpth/$hpcc_compname/valgrind.thorslave.${slavenum}.log ./$slavename master=$master:$masterport slave=.:$slaveport slavenum=$slavenum slaveprocessnum=$slave logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &"
+                    cmd="valgrind ${valgrindOptions} --log-file=$logpth/$hpcc_compname/valgrind.thorslave.${slavenum}.log ./$slavename --master=$master:$masterport --slave=.:$slaveport --slavenum=$slavenum --slaveprocessnum=$slave --logDir=$logpth/$hpcc_compname 2>/dev/null 1>/dev/null &"
                     log "${cmd}"
                     eval ${cmd}
                 fi
