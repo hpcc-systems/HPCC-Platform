@@ -24,6 +24,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/platform
     ${HPCC_SOURCE_DIR}/system/include
     ${HPCC_SOURCE_DIR}/esp/esdllib
+    ${HPCC_SOURCE_DIR}/esp/services/common
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/security/shared
     ${HPCC_SOURCE_DIR}/rtl/eclrtl
@@ -38,10 +39,21 @@ set ( SRCS
     esdl_def.cpp
     esdl_def_helper.cpp
     esdl_transformer2.cpp
+    esdl_script.cpp
     params2xml.cpp
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/xpp/xpputils.cpp
     ${HPCC_SOURCE_DIR}/esp/services/common/wsexcept.cpp
 )
+
+if (USE_LIBXSLT)
+    list (APPEND SRCS
+        esdl_xpath_extensions_libxml.cpp
+    )
+else()
+    list (APPEND SRCS
+        esdl_xpath_extensions_unsupported.cpp
+    )
+endif()
 
 HPCC_ADD_LIBRARY( esdllib SHARED ${SRCS}
     ${HEADERS}
@@ -56,3 +68,12 @@ target_link_libraries ( esdllib
     xmllib
     thorhelper
 )
+
+IF (USE_LIBXSLT)
+    include_directories (
+         ${LIBXML2_INCLUDE_DIR}
+    )
+    target_link_libraries ( esdl_svc_engine
+        ${LIBXML2_LIBRARIES}
+    )
+ENDIF()
