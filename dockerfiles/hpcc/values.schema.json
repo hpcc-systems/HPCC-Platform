@@ -127,7 +127,7 @@
           "$ref": "#/definitions/storage"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -155,7 +155,7 @@
           "$ref": "#/definitions/image"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -175,7 +175,7 @@
           "$ref": "#/definitions/image"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -205,7 +205,7 @@
           "$ref": "#/definitions/image"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -231,7 +231,7 @@
           "$ref": "#/definitions/image"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
@@ -263,17 +263,13 @@
           "$ref": "#/definitions/image"
         },
         "logging": {
-          "type": "object"
+          "$ref": "#/definitions/logging"
         }
       }
     },
-	"logging": {
+    "logging": {
       "type": "object",
       "properties": {
-        "fields": {
-          "type": "string",
-          "description": "List of fields to include in logging output. Comprised of 3 letter codes delimited by + or -"
-        },
         "audiences": {
           "type": "string",
           "description": "List of target audiences to include in logging output. Comprised of 3 letter codes delimited by + or -"
@@ -284,23 +280,10 @@
         },
         "detail": {
           "type": "integer",
-		  "description": "Log output verbosity"
-        },
-		"useLogQueue": {
-          "type": "boolean"
-        },
-		"queueLen": {
-          "type": "integer",
-		  "description": "Ignored if 'useLogQueue' is false"
-        },
-		"queueDrop": {
-          "type": "integer",
-		  "description": "Ignored if 'useLogQueue' is false"
-        },
-		"enableSysLog": {
-          "type": "boolean"
+          "description": "Log output verbosity"
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }
