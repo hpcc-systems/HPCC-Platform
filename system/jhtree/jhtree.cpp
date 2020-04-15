@@ -2694,8 +2694,8 @@ public:
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
-            keyCursor = keyset->queryPart(i)->getCursor(filter, logExcessiveSeeks);
-            keyCursor->reset();
+            Owned<IKeyCursor> cursor = keyset->queryPart(i)->getCursor(filter, logExcessiveSeeks);
+            cursor->reset();
             for (;;)
             {
                 bool found;
@@ -2705,30 +2705,32 @@ public:
                 {
                     if (seek)
                     {
-                        if (keyCursor->skipTo(seek, seekOffset, seeklen))
+                        if (cursor->skipTo(seek, seekOffset, seeklen))
                             lskips++;
                         else
                             lnullSkips++;
                     }
-                    found = keyCursor->lookup(true, stats);
-                    if (!found || !seek || memcmp(keyCursor->queryKeyBuffer() + seekOffset, seek, seeklen) >= 0)
+                    found = cursor->lookup(true, stats);
+                    if (!found || !seek || memcmp(cursor->queryKeyBuffer() + seekOffset, seek, seeklen) >= 0)
                         break;
                 }
                 stats.noteSkips(lskips, lnullSkips);
                 if (found)
                 {
-                    IKeyCursor *mergeCursor = LINK(keyCursor);
+                    IKeyCursor *mergeCursor;
                     if (sortFromSeg)
-                        mergeCursor = keyCursor->fixSortSegs(sortFieldOffset);
+                        mergeCursor = cursor->fixSortSegs(sortFieldOffset);
+                    else
+                        mergeCursor = LINK(cursor);
+
                     keyNoArray.append(i);
                     cursorArray.append(*mergeCursor);
                     mergeHeapArray.append(activekeys++);
-                    if (!sortFromSeg || !keyCursor->nextRange(sortFromSeg))
+                    if (!sortFromSeg || !cursor->nextRange(sortFromSeg))
                         break;
                 }
                 else
                 {
-                    keyCursor->Release();
                     break;
                 }
             }
