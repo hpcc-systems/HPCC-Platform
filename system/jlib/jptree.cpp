@@ -7866,17 +7866,23 @@ static const char * extractOption(const char * option, const char * cur)
 
 static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
 {
-    if (islower(*option))
+    const char *tail;
+    while ((tail = strchr(option, '.')) != nullptr)
     {
-        StringBuffer path;
-        path.append('@').append(option);
-        config->setProp(path, value);
+        StringAttr elemName(option, tail-option);
+        if (!config->hasProp(elemName))
+            config = config->addPropTree(elemName);
+        else
+        {
+            config = config->queryPropTree(elemName);
+            if (!config)
+                throw makeStringExceptionV(99, "Cannot overriding scalar configuration element %s with structure", elemName.get());
+        }
+        option = tail+1;
     }
-    else
-    {
-        //MORE: Some magic syntax to select nested options and set them??
-        config->setProp(option, value);
-    }
+    StringBuffer path;
+    path.append('@').append(option);
+    config->setProp(path, value);
 }
 
 static void applyCommandLineOption(IPropertyTree * config, const char * option, std::initializer_list<const char *> ignoreOptions)
