@@ -166,7 +166,7 @@ define([
                         width: 10,
                         sortable: false,
                         renderCell: function (object, value, node, options) {
-                            if (object.Directory) {
+                            if (object.Directory && object.Type && object.Type !== "FTSlaveProcess") {
                                 domClass.add(node, "centerInCell");
                                 node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
                             }
