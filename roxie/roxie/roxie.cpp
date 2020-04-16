@@ -44,6 +44,29 @@ static void roxie_server_usage()
     printf("\n");
 }
 
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+roxie:
+  allFilesDynamic: true
+  localSlave: true
+  numChannels: 1
+  numServerThreads: 30
+  queueNames: roxie.roxie
+  serverPorts: "9876,0"
+  roxieMulticastEnabled: false
+  useAeron: false
+  RoxieFarmProcess:
+    - name: default
+      port: 9876
+      listenQueue: 200
+      numThreads: 0
+    - name: workunit
+      port: 0
+      numThreads: 0
+  logging:
+      detail: 100
+)!!";
+
 int main(int argc, const char *argv[])
 {
     for (unsigned i=0; i<(unsigned)argc; i++)
@@ -55,5 +78,5 @@ int main(int argc, const char *argv[])
             return EXIT_SUCCESS;
         }
     }
-    return start_query(argc, argv);
+    return roxie_main(argc, argv, defaultYaml);
 }

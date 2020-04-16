@@ -1353,7 +1353,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions)
     void *funcptr = loadExternalEntryPoint(expr, foldOptions, library.str(), entry.str(), hDll);
     if (!funcptr)
     {
-        UERRLOG("Failed to load function %s", entry.str());
+        DBGLOG("Failed to load function %s", entry.str());
         return NULL;
     }
     return doFoldExternalCall(expr, foldOptions, library.str(), entry.str(), funcptr);

@@ -148,6 +148,8 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
         return false;
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
     assertex(conn);
+    if (!conn->queryRoot()->hasProp("Software/DaliServerProcess"))
+        return false;
 
     // only ever expecting 1 DaliServerProcess and 1 WhiteList
     const IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
@@ -353,8 +355,6 @@ version: 1.0
 dali:
   name: dali
   dataPath: "/var/lib/HPCCSystems/dalistore"
-  sds:
-    environment: "/etc/HPCCSystems/environment.xml"
   logging:
     detail: 100
 )!!";
@@ -406,6 +406,8 @@ int main(int argc, const char* argv[])
         if (confIFile->exists())
             serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 #endif
+        if (!serverConfig)
+            serverConfig.setown(createPTree());
 
 #ifndef _CONTAINERIZED
         ILogMsgHandler * fileMsgHandler;

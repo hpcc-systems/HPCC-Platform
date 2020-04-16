@@ -117,7 +117,7 @@ const char* findComponentTypeFromProcessType(const char* ProcessType)
     if (strieq(ProcessType, eqDali))
         return "dali";
     if (strieq(ProcessType, eqEclAgent))
-        return "eclAgent";
+        return "eclagent";
     if (strieq(ProcessType, eqDfu))
         return "dfuserver";
     if (strieq(ProcessType, eqEsp))
@@ -1753,7 +1753,10 @@ void Cws_machineEx::setProcessInfo(IEspContext& context, CMachineInfoThreadParam
             description.append("Failed in getting Machine Information");
         else
             description = response;
-        pMachineInfo->setDescription(description.str());
+        if (version < 1.17)
+            pMachineInfo->setDescription(description.str());
+        else
+            pMachineInfo->setException(description.str());
     }
     else
     {
@@ -2533,16 +2536,8 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
         Owned<IPropertyTree> logFolder = createDiskUsageReq(envDirectories, "log", type, name);
         if (logFolder)
             machineReq->addPropTree(logFolder->queryName(), LINK(logFolder));
-    
-        StringAttr componentType;
-        if (strieq(type, eqDali))
-            componentType.set("dali");
-        else if (strieq(type, eqEclAgent))
-            componentType.set("eclagent");
-        else
-            componentType.set("sasha");
-    
-        Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType.get(), name);
+
+        Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType, name);
         if (dataFolder)
             machineReq->addPropTree(dataFolder->queryName(), LINK(dataFolder));
     
@@ -2758,6 +2753,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
 void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq,
     const IPropertyTree* uniqueUsages, IArrayOf<IEspComponentUsage>& componentUsages)
 {
+    double version = context.getClientVersion();
     Owned<IPropertyTreeIterator> components= usageReq->getElements("Component");
     ForEach(*components)
     {
@@ -2782,14 +2778,20 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
             IPropertyTree* uniqueMachineReqTree = uniqueUsages->queryPropTree(xpath);
             if (!uniqueMachineReqTree)
             {
-                machineUsage->setDescription("No data returns.");
+                if (version < 1.17)
+                    machineUsage->setDescription("No data returns.");
+                else
+                    machineUsage->setException("No data returns.");
                 machineUsages.append(*machineUsage.getClear());
                 continue;
             }
             const char* error = uniqueMachineReqTree->queryProp("@error");
             if (!isEmptyString(error))
             {
-                machineUsage->setDescription(error);
+                if (version < 1.17)
+                    machineUsage->setDescription(error);
+                else
+                    machineUsage->setException(error);
                 machineUsages.append(*machineUsage.getClear());
                 continue;
             }
@@ -2808,12 +2810,22 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
                 xpath.setf("Folder[@path='%s']", aDiskPath);
                 IPropertyTree* folderTree = uniqueMachineReqTree->queryPropTree(xpath);
                 if (!folderTree)
-                    diskUsage->setDescription("No data returns.");
+                {
+                    if (version < 1.17)
+                        diskUsage->setDescription("No data returns.");
+                    else
+                        diskUsage->setException("No data returns.");
+                }
                 else
                 {
                     const char* error = folderTree->queryProp("@error");
                     if (!isEmptyString(error))
-                        diskUsage->setDescription(error);
+                    {
+                        if (version < 1.17)
+                            diskUsage->setDescription(error);
+                        else
+                            diskUsage->setException(error);
+                    }
                     else
                     {
                         diskUsage->setAvailable(folderTree->getPropInt64("@available"));
@@ -2944,10 +2956,16 @@ IPropertyTree* Cws_machineEx::getTargetClusterUsageReq(IEspGetTargetClusterUsage
         if (roxie.length())
             readRoxieUsageReq(roxie.str(), constEnv, targetClusterTree);
 
-        SCMStringBuffer eclAgent;
+        SCMStringBuffer eclAgent, eclServer, eclScheduler;
         targetClusterInfo->getAgentName(eclAgent);
         if (eclAgent.length())
             readOtherComponentUsageReq(eclAgent.str(), eqEclAgent, constEnv, targetClusterTree);
+        targetClusterInfo->getECLServerName(eclServer);
+        if (eclServer.length())
+            readOtherComponentUsageReq(eclServer.str(), targetClusterInfo->isLegacyEclServer() ? eqEclServer : eqEclCCServer, constEnv, targetClusterTree);
+        targetClusterInfo->getECLSchedulerName(eclScheduler);
+        if (eclScheduler.length())
+            readOtherComponentUsageReq(eclScheduler.str(), eqEclScheduler, constEnv, targetClusterTree);
 
         usageReq->addPropTree(targetClusterTree->queryName(), LINK(targetClusterTree));
     }

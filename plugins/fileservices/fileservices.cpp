@@ -641,7 +641,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
         Owned<IClientGetDFUWorkunit> req = server.createGetDFUWorkunitRequest();
         req->setWuid(wuid);
-        Linked<IClientGetDFUWorkunitResponse> result = server.GetDFUWorkunit(req);
+        Owned<IClientGetDFUWorkunitResponse> result = server.GetDFUWorkunit(req);
 
         const IMultiException* excep = &result->getExceptions();
         if ((excep != NULL) && (excep->ordinality() > 0))

@@ -206,7 +206,10 @@ protected:
         {
             out->flush();
             if (keyHdr->getKeyType() & USE_TRAILING_HEADER)
+            {
+                keyHdr->setPhyRec(nextPos+keyHdr->getNodeSize()-1);
                 writeNode(keyHdr, out->tell());  // write a copy at end too, for use on systems that can't seek
+            }
             if (!(keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
             {
                 out->seek(0, IFSbegin);

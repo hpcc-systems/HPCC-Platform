@@ -195,7 +195,7 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_audience)
         out.append("aud=").append(LogMsgAudienceToVarString(category.queryAudience())).append(' ');
     if(fields & MSGFIELD_class)
-        out.append("cls=").append(LogMsgClassToVarString(category.queryClass())).append(' ');
+        out.append("cls=").append(LogMsgClassToFixString(category.queryClass())).append(' ');
     if(fields & MSGFIELD_detail)
         out.appendf("det=%d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
@@ -448,7 +448,7 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_audience)
         fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
-        fprintf(handle, "cls=%s", LogMsgClassToVarString(category.queryClass()));
+        fprintf(handle, "cls=%s", LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         fprintf(handle, "det=%d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
@@ -2390,6 +2390,8 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
             UseSysLogForOperatorMessages();
     }
+    else
+        removeLog();
 }
 #endif
 

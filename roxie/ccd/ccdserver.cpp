@@ -5053,10 +5053,16 @@ public:
         tgt += len;
         *(unsigned *) tgt = parentExtractSize;
         tgt += sizeof(unsigned);
-        memcpy(tgt, parentExtract, parentExtractSize);
-        tgt += parentExtractSize;
-        memcpy(tgt, cachedContext.toByteArray(), cachedContext.length());
-        tgt += cachedContext.length();
+        if (parentExtractSize)
+        {
+            memcpy(tgt, parentExtract, parentExtractSize);
+            tgt += parentExtractSize;
+        }
+        if (cachedContext.length())
+        {
+            memcpy(tgt, cachedContext.toByteArray(), cachedContext.length());
+            tgt += cachedContext.length();
+        }
     }
 };
 
@@ -12248,7 +12254,9 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         {
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
-            if(*nameBuff == '_' && !checkReservedMetadataName(name))
+            rtlFree(nameBuff);
+            rtlFree(valueBuff);
+            if(*name == '_' && !checkReservedMetadataName(name))
             {
                 OwnedRoxieString fname(helper.getFileName());
                 throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());

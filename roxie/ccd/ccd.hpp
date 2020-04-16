@@ -699,4 +699,6 @@ public:
         aborted = true;
     }
 };
+
+extern int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml);
 #endif
