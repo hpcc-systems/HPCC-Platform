@@ -2390,6 +2390,8 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
             UseSysLogForOperatorMessages();
     }
+    else
+        removeLog();
 }
 #endif
 

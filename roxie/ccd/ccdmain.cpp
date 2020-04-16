@@ -524,30 +524,7 @@ void readStaticTopology()
     createStaticTopology(allRoles, traceLevel);
 }
 
-static constexpr const char * defaultYaml = R"!!(
-version: "1.0"
-roxie:
-  allFilesDynamic: true
-  localSlave: true
-  numChannels: 1
-  numServerThreads: 30
-  queueNames: roxie.roxie
-  serverPorts: "9876,0"
-  roxieMulticastEnabled: false
-  useAeron: false
-  RoxieFarmProcess:
-    - name: default
-      port: 9876
-      listenQueue: 200
-      numThreads: 0
-    - name: workunit
-      port: 0
-      numThreads: 0
-  logging:
-      detail: 100
-)!!";
-
-int STARTQUERY_API start_query(int argc, const char *argv[])
+int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
 #ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
@@ -1410,4 +1387,29 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
 #endif
     return 0;
+}
+
+static constexpr const char * standaloneDefaultYaml = R"!!(
+version: "1.0"
+roxie:
+  allFilesDynamic: true
+  localSlave: true
+  numChannels: 1
+  numServerThreads: 30
+  queueNames: roxie.roxie
+  roxieMulticastEnabled: false
+  useAeron: false
+  RoxieFarmProcess:
+    - name: default
+      port: 9876
+      listenQueue: 200
+      numThreads: 0
+    - name: workunit
+      port: 0
+      numThreads: 0
+)!!";
+
+int STARTQUERY_API start_query(int argc, const char *argv[])
+{
+    return roxie_main(argc, argv, standaloneDefaultYaml);
 }
