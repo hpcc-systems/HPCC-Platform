@@ -2,13 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="GetLogicalFileAttribute">
-  
-
   <title>GetLogicalFileAttribute</title>
-
-  
-
-  
 
   <para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
       <primary>STD.File.GetLogicalFileAttribute</primary>
@@ -18,8 +12,6 @@
       <primary>GetLogicalFileAttribute</primary>
     </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
   <emphasis role="bold">)</emphasis></para>
-
-  
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -40,10 +32,10 @@
 
           <entry>A null-terminated string containing the name of the file
           attribute to return. Possible values are recordSize, recordCount,
-          size, clusterName, directory, owner, description, ECL,
-          partmask, numparts, name, modified, format, job, checkSum, kind,
-          csvSeparate, csvTerminate, csvEscape, headerLength, footerLength,
-          rowTag, workunit, accessed, expireDays, maxRecordSize, csvQuote,
+          size, clusterName, directory, owner, description, ECL, partmask,
+          numparts, name, modified, format, job, checkSum, kind, csvSeparate,
+          csvTerminate, csvEscape, headerLength, footerLength, rowTag,
+          workunit, accessed, expireDays, maxRecordSize, csvQuote,
           blockCompressed, compressedSize, fileCrc, formatCrc, or protected.
           The value is case-sensitive.</entry>
         </row>
@@ -51,59 +43,52 @@
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>GetLogicalFileAttribute
-          returns returns a VARSTRING
+          <entry>GetLogicalFileAttribute returns returns a VARSTRING
           (null-terminated) value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">GetLogicalFileAttribute
-  </emphasis>function returns the value of the <emphasis>attrname</emphasis>
-  for the specified <emphasis>logicalfilename</emphasis>.</para>
+  <para>The <emphasis role="bold">GetLogicalFileAttribute </emphasis>function
+  returns the value of the <emphasis>attrname</emphasis> for the specified
+  <emphasis>logicalfilename</emphasis>.</para>
 
   <para>Example:</para>
 
-  
-
   <programlisting format="linespecific">IMPORT STD;
-file := '~class::bmf::join::halfkeyed';
+file := '~ certification::full_test_distributed';
 
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordCount'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'owner'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'description'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'ECL'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'partmask'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'name'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'modified'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'protected'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'format'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'job'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'checkSum'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'kind'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvSeparate'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvTerminate'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvEscape'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'expireDays'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'));
-OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'));
-</programlisting>
-
-  
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'),NAMED('recordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordCount'),NAMED('recordCount'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'),NAMED('size'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'),NAMED('clusterName'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'),NAMED('directory'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'),NAMED('numparts'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'owner'),NAMED('owner'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'description'),NAMED('description'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'ECL'),NAMED('ECL'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'partmask'),NAMED('partmask'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'name'),NAMED('name'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'modified'),NAMED('modified'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'protected'),NAMED('protected'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'format'),NAMED('format'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'job'),NAMED('job'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'checkSum'),NAMED('checkSum'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'kind'),NAMED('kind'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvSeparate'),NAMED('csvSeparate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvTerminate'),NAMED('csvTerminate'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvEscape'),NAMED('csvEscape'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'headerLength'),NAMED('headerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'footerLength'),NAMED('footerLength'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'rowtag'),NAMED('rowtag'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'workunit'),NAMED('workunit'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'accessed'),NAMED('accessed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'expireDays'),NAMED('expireDays'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'maxRecordSize'),NAMED('maxRecordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'csvQuote'),NAMED('csvQuote'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'blockCompressed'),NAMED('blockCompressed'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'compressedSize'),NAMED('compressedSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'fileCrc'),NAMED('fileCrc'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'formatCrc'),NAMED('formatCrc'));</programlisting>
 </sect1>
