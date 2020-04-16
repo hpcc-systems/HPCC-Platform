@@ -1734,6 +1734,8 @@ bool CJobMaster::go()
                     Owned <IException> e = MakeThorException(code, "User signalled abort");
                     job.fireException(e);
                 }
+                else
+                    PROGLOG("CWorkunitPauseHandler [SubscribeOptionAbort] notifier called, workunit was not aborting");
             }
             if (flags & SubscribeOptionAction)
             {
