@@ -573,6 +573,8 @@ public:
     }
     void bindResults(MYSQL_RES *res)
     {
+        //This could be optimized to avoid reallocating the buffers if the result type is identical
+        cleanup();
         init(mysql_num_fields(res));
         for (int i = 0; i < columns; i++)
         {
@@ -601,15 +603,23 @@ public:
     }
     ~MySQLBindingArray()
     {
+        cleanup();
+    }
+    void cleanup()
+    {
         for (int i = 0; i < columns; i++)
-        {
             rtlFree(bindinfo[i].buffer);
-        }
         delete [] bindinfo;
         delete [] is_null;
         delete [] error;
         delete [] lengths;
+        columns = 0;
+        bindinfo = nullptr;
+        is_null= nullptr;
+        error= nullptr;
+        lengths= nullptr;
     }
+
     inline int numColumns() const
     {
         return columns;
