@@ -12254,7 +12254,9 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         {
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
-            if(*nameBuff == '_' && !checkReservedMetadataName(name))
+            rtlFree(nameBuff);
+            rtlFree(valueBuff);
+            if(*name == '_' && !checkReservedMetadataName(name))
             {
                 OwnedRoxieString fname(helper.getFileName());
                 throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());

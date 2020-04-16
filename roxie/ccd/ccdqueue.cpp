@@ -1282,6 +1282,8 @@ public:
         {
             if (E->errorCode()!=ROXIE_ABORT_ERROR)
                 throwRemoteException(E, activity, packet, false);
+            else
+                E->Release();
         }
         catch (...)
         {
