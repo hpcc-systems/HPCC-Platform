@@ -75,7 +75,8 @@ data:
   {{ $roxie.name }}.yaml: |
     version: 1.0
     roxie:
-{{ toYaml $roxie | indent 6 }}
+{{ toYaml ( omit $roxie "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $roxie) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
