@@ -144,6 +144,12 @@ class CWsDfuEx : public CWsDfu
     void clearFileProtections(IDistributedFile *df);
     bool changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
     bool changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
+    IDFAttributesIterator *getAllLogicalFilesInCluster(IEspContext &context, const char *cluster, bool &allMatchingFilesReceived);
+    void getQueryUsedFileNames(IEspContext &context, const char *cluster, const char *queryReq, BoolHash &fileNames, __int64 &count);
+    void getPackageMapUsedFileNames(IEspContext &context, const char *cluster, const char *packageMapReq, BoolHash &fileNames, __int64 &count);
+    void getFileNamesFromFilePTree(IPropertyTree *filePTree, const char *superFileXPath, const char *superFileNameAttr,
+        const char *subFileXPath, const char *subFileNameAttr, const char *fileXPath, const char *fileNameAttr, BoolHash &fileNames, __int64 &count);
+    void addUniqueFileName(const char *fileName, BoolHash &fileNames, __int64 &count);
     void addFileActionResult(const char* fileName, const char* nodeGroup, bool failed, const  char* msg,
         IArrayOf<IEspDFUActionInfo>& actionResults);
 public:
@@ -175,6 +181,7 @@ public:
     virtual bool onListHistory(IEspContext &context, IEspListHistoryRequest &req, IEspListHistoryResponse &resp);
     virtual bool onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req, IEspEraseHistoryResponse &resp);
 
+    virtual bool onDFURoxieUnusedFiles(IEspContext &context, IEspDFURoxieUnusedFilesRequest &req, IEspDFURoxieUnusedFilesResponse &resp);
     virtual bool onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest &req, IEspDFUFilePublishResponse &resp);
 
     virtual bool onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Request &req, IEspDFUFileAccessResponse &resp);

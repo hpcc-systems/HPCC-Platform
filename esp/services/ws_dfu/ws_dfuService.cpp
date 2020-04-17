@@ -45,6 +45,7 @@
 #include "fverror.hpp"
 #include "nbcd.hpp"
 #include "thorcommon.hpp"
+#include "roxiecontrol.hpp"
 
 #include "jstring.hpp"
 #include "exception_util.hpp"
@@ -83,6 +84,7 @@ static const char* FEATURE_URL="DfuAccess";
 #define     COUNTBY_DAY     "Day"
 
 #define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
+#define ROXIECONTROLQUERYTIMEOUT 5000 //5 second
 
 static const char *DFUFileIdSeparator = "|";
 static const char *DFUFileCreate_FileNamePostfix = ".wsdfucreate.tmp";
@@ -97,6 +99,17 @@ const unsigned MAX_KEY_ROWS = 20;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+static IUserDescriptor* createUserDescriptor(IEspContext& context)
+{
+    StringBuffer username;
+    context.getUserID(username);
+    if (username.isEmpty())
+        return nullptr;
+
+    Owned<IUserDescriptor> userDesc = createUserDescriptor();
+    userDesc->set(username.str(), context.queryPassword(), context.querySignature());
+    return userDesc.getClear();
+}
 
 CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
 {
@@ -6751,5 +6764,180 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
     return true;
 }
 
+bool CWsDfuEx::onDFURoxieUnusedFiles(IEspContext &context, IEspDFURoxieUnusedFilesRequest &req, IEspDFURoxieUnusedFilesResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFURoxieUnusedFiles: Permission denied.");
+
+        const char *cluster = req.getCluster();
+        if (isEmptyString(cluster))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Cluster not specified.");
+        if (!req.getUnusedByQuery() && !req.getUnusedByPackageMap())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Either UnusedByQuery or UnusedByPackageMap must be set to true.");
+
+        //Collect file names used by roxie queries/pm
+        BoolHash filesInUse;
+        __int64 queryFileCount = 0;
+        if (req.getUnusedByQuery())
+            getQueryUsedFileNames(context, cluster, nullptr, filesInUse, queryFileCount);
+
+        __int64 pmFileCount = 0;
+        if (req.getUnusedByPackageMap())
+            getPackageMapUsedFileNames(context, cluster, nullptr, filesInUse, pmFileCount);
+
+        //Collect information about logical files in dali for the given cluster.
+        bool allMatchingFilesReceived = true;
+        Owned<IDFAttributesIterator> it = getAllLogicalFilesInCluster(context, cluster, allMatchingFilesReceived);
+        if (!it)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR, "Failed to retrieve logical files for %s.", cluster);
+
+        if (!allMatchingFilesReceived)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsDfu::DFURoxieUnusedFiles not supported for %s: too many files.", cluster);
+
+        //Find out unused Roxie logical files
+        __int64 roxieFilesInDaliCount = 0;
+        double version = context.getClientVersion();
+        IArrayOf<IEspDFULogicalFile> logicalFiles;
+        ForEach(*it)
+        {
+            IPropertyTree &file = it->query();
+            const char* fileName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
+            if (isEmptyString(fileName))
+                continue;
+
+            bool *found = filesInUse.getValue(fileName);
+            if (found && *found)
+                roxieFilesInDaliCount++;
+            else
+                addToLogicalFileList(file, nullptr, version, logicalFiles);
+        }
+
+        resp.setDFULogicalFiles(logicalFiles);
+        resp.setUnusedFileCount(logicalFiles.length());
+        resp.setQueryFileCount(queryFileCount);
+        resp.setPMFileCount(pmFileCount);
+        resp.setRoxieFilesInDaliCount(roxieFilesInDaliCount);
+    }
+    catch(IException *e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+void CWsDfuEx::getQueryUsedFileNames(IEspContext &context, const char *cluster, const char *queryReq, BoolHash &fileNames, __int64 &count)
+{
+    SocketEndpointArray servers;
+    getRoxieProcessServers(cluster, servers);
+    if (!servers.length())
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Roxie Process server not found for %s.", cluster);
+
+    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), ROXIECONTROLQUERYTIMEOUT);
+    Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLQUERYTIMEOUT);
+    if (!controlXrefInfo)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "The control:getQueryXrefInfo failed for Roxie cluster %s.", cluster);
+
+    Owned<IPropertyTreeIterator> roxieQueriesItr = controlXrefInfo->getElements("Endpoint/Queries/Query");
+    ForEach(*roxieQueriesItr)
+    {
+        IPropertyTree &queryTree = roxieQueriesItr->query();
+        const char *id  = queryTree.queryProp("@id");
+        if (isEmptyString(id))
+            continue;
+        if (isEmptyString(queryReq) || WildMatch(id, queryReq, true))
+            getFileNamesFromFilePTree(&queryTree, "SuperFile", "@name", "File", "@name", "File", "@name", fileNames, count);
+    }
+}
+
+void CWsDfuEx::getFileNamesFromFilePTree(IPropertyTree *filePTree, const char *superFileXPath, const char *superFileNameAttr,
+    const char *subFileXPath, const char *subFileNameAttr, const char *fileXPath, const char *fileNameAttr, BoolHash &fileNames, __int64 &count)
+{
+    if (!filePTree)
+        return;
+
+    Owned<IPropertyTreeIterator> superFileItr = filePTree->getElements(superFileXPath);
+    ForEach(*superFileItr)
+    {
+        IPropertyTree &superFileTree = superFileItr->query();
+        addUniqueFileName(superFileTree.queryProp(superFileNameAttr), fileNames, count);
+
+        Owned<IPropertyTreeIterator> fileItr = superFileTree.getElements(subFileXPath);
+        ForEach(*fileItr)
+            addUniqueFileName(fileItr->query().queryProp(subFileNameAttr), fileNames, count);
+    }
+
+    Owned<IPropertyTreeIterator> fileItr1 = filePTree->getElements(fileXPath);
+    ForEach(*fileItr1)
+        addUniqueFileName(fileItr1->query().queryProp(fileNameAttr), fileNames, count);
+}
+
+void CWsDfuEx::addUniqueFileName(const char *fileName, BoolHash &fileNames, __int64 &count)
+{
+    bool *found = fileNames.getValue(fileName);
+    if (found && *found)
+        return;
+
+    fileNames.setValue(fileName, true);
+    count++;
+}
+
+void CWsDfuEx::getPackageMapUsedFileNames(IEspContext &context, const char *cluster, const char *packageMapReq,
+    BoolHash &fileNames, __int64 &count)
+{
+    Owned<IPropertyTree> packageSet = resolvePackageSetRegistry(cluster, true);
+    if (!packageSet)
+        throw MakeStringException(ECLWATCH_PACKAGEMAP_NOTRESOLVED, "Unable to retrieve package information for %s.", cluster);
+
+    Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", cluster);
+    ForEach(*targets)
+    {
+        SCMStringBuffer target;
+        VStringBuffer xpath("PackageMap[@querySet='%s']", targets->str(target).str());
+        Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements(xpath);
+        //Add files referenced in all active maps, for all targets configured for this process cluster
+        ForEach(*activeMaps)
+        {
+            IPropertyTree &activeMapTree = activeMaps->query();
+
+            const char *pmid  = activeMapTree.queryProp("@id");
+            if (isEmptyString(pmid))
+                continue;
+            if (!isEmptyString(packageMapReq) && !WildMatch(pmid, packageMapReq, true))
+                continue;
+            Owned<IPropertyTree> packageMap = getPackageMapById(pmid, true);
+            if (packageMap)
+                getFileNamesFromFilePTree(packageMap, "//SuperFile", "@id", "SubFile", "@value", "File", "@name", fileNames, count);
+        }
+    }
+}
+
+IDFAttributesIterator *CWsDfuEx::getAllLogicalFilesInCluster(IEspContext &context, const char *cluster, bool &allMatchingFilesReceived)
+{
+    StringBuffer filterBuf;
+    //The filterBuf is sent to dali to retrieve the logical files whose Cluster attribute contains this cluster.
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, cluster, ",", filterBuf);
+
+    DFUQResultField localFilters[2];
+    MemoryBuffer localFilterBuf;
+    unsigned short localFilterCount = 0;
+    //If a logical file is for 2 clusters, the data from dali may include the logical files for both clusters.
+    //The localFilterBuf is used to filter out the logical file which is not for this cluster.
+    addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, cluster, DFUQRFnodegroup);
+    localFilters[localFilterCount] = DFUQRFterm;
+
+    DFUQResultField sortOrder[2] = {DFUQRFname, DFUQRFterm};
+
+    __int64 cacheHint = 0;
+    unsigned totalFiles = 0, pageStart = 0, pageSize = ITERATE_FILTEREDFILES_LIMIT;
+    Owned<IUserDescriptor> userDesc = createUserDescriptor(context);
+
+    PROGLOG("getLogicalFilesSorted() called");
+    Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(userDesc, sortOrder, filterBuf.str(),
+        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
+    PROGLOG("getLogicalFilesSorted() done");
+
+    return it.getClear();
+}
 
 //////////////////////HPCC Browser//////////////////////////
