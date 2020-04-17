@@ -856,7 +856,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                         if (optTargetClusterType==RoxieCluster)
                             generator->addLibrary("ccd");
                         else
-                            generator->addLibrary("hthor");
+                            generator->addLibrary("hthorlib");
 
 
                         compileOk = generator->generateExe(compiler);

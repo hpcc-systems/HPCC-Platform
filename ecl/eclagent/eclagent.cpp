@@ -3368,11 +3368,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     int retcode = 0;
     addAbortHandler(ControlHandler);
     cmdLineArgs.setown(createProperties(true));
-    if (argc==1)
-    {
-        usage();
-        return 2;
-    }
     for (int i = 1; i < argc; i++)
     {
         const char *arg = argv[i];
@@ -3383,6 +3378,11 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     //get logfile location from agentexec.xml config file
     if (!standAloneExe)
     {
+        if (argc==1)
+        {
+            usage();
+            return 2;
+        }
         try
         {
             agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", "agentexec.xml", nullptr));
@@ -3394,7 +3394,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         }
     }
     else
-        agentTopology.setown(createPTree("hthor")); // MORE - this needs thought!
+        agentTopology.setown(loadConfiguration(defaultYaml, argv, "hthor", "ECLAGENT", nullptr, nullptr));
 
     //Build log file specification
     StringBuffer logfilespec;
