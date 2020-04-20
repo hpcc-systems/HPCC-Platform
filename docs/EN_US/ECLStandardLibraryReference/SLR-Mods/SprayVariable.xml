@@ -97,8 +97,8 @@
         <row>
           <entry><emphasis>sourceIP</emphasis></entry>
 
-          <entry>A null-terminated string containing the IP address of the
-          file.</entry>
+          <entry>A null-terminated string containing the IP address or
+          hostname of the Dropzone where the file is located.</entry>
         </row>
 
         <row>
