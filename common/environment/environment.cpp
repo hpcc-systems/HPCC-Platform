@@ -2623,7 +2623,7 @@ class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr agentName;
-    StringAttr eclServerName;
+    StringArray eclServerNames;
     bool legacyEclServer = false;
     StringAttr eclSchedulerName;
     StringAttr roxieProcess;
@@ -2644,7 +2644,7 @@ class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_alias, IPropertyTree *agent,
-        IPropertyTree *eclServer, bool _legacyEclServer, IPropertyTree *eclScheduler, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
+        IArrayOf<IPropertyTree> &eclServers, bool _legacyEclServer, IPropertyTree *eclScheduler, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
         : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), numberOfSlaveLogs(0), roxieReplicateOffset(1), legacyEclServer(_legacyEclServer)
     {
         StringBuffer queue;
@@ -2731,8 +2731,11 @@ public:
 #endif
         if (eclScheduler)
             eclSchedulerName.set(eclScheduler->queryProp("@name"));
-        if (eclServer)
-            eclServerName.set(eclServer->queryProp("@name"));
+        ForEachItemIn(j, eclServers)
+        {
+            const IPropertyTree &eclServer = eclServers.item(j);
+            eclServerNames.append(eclServer.queryProp("@name"));
+        }
 
         // MORE - does this need to be conditional?
         serverQueue.set(getClusterEclCCServerQueueName(queue.clear(), name));
@@ -2762,10 +2765,9 @@ public:
         str.set(agentName);
         return str;
     }
-    IStringVal & getECLServerName(IStringVal & str) const
+    const StringArray & getECLServerNames() const
     {
-        str.set(eclServerName);
-        return str;
+        return eclServerNames;
     }
     bool isLegacyEclServer() const
     {
@@ -3037,6 +3039,23 @@ extern bool isProcessCluster(const char *remoteDali, const char *process)
     return true;
 }
 
+static void getTargetClusterProcesses(const IPropertyTree *environment, const IPropertyTree *cluster, const char *clustName, const char *processType, IArrayOf<IPropertyTree> &processes)
+{
+    StringBuffer xpath;
+    Owned<IPropertyTreeIterator> processItr = cluster->getElements(processType);
+    ForEach(*processItr)
+    {
+        const char *processName = processItr->query().queryProp("@process");
+        if (isEmptyString(processName))
+            throw MakeStringException(-1, "Empty %s/@process for %s", processType, clustName);
+
+        xpath.setf("Software/%s[@name=\"%s\"]", processType, processName);
+        if (!environment->hasProp(xpath))
+            throw MakeStringException(-1, "%s %s not found", processType, processName);
+        processes.append(*environment->getPropTree(xpath.str()));
+    }
+}
+
 IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyTree *cluster)
 {
     const char *clustname = cluster->queryProp("@name");
@@ -3066,23 +3085,13 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
         eclScheduler = environment->queryPropTree(xpath);
     }
     bool isLegacyEclServer = false;
-    IPropertyTree *eclServer = nullptr;
-    const char *eclServerName = cluster->queryProp("EclServerProcess/@process");
-    if (!isEmptyString(eclServerName))
-    {
-        xpath.setf("Software/EclServerProcess[@name=\"%s\"]", eclServerName);
-        eclServer = environment->queryPropTree(xpath);
+    IArrayOf<IPropertyTree> eclServers;
+    getTargetClusterProcesses(environment, cluster, clustname, "EclServerProcess", eclServers);
+    if (eclServers.ordinality())
         isLegacyEclServer = true;
-    }
     else
-    {
-        const char *eclccServerName = cluster->queryProp("EclCCServerProcess/@process");
-        if (!isEmptyString(eclccServerName))
-        {
-            xpath.setf("Software/EclCCServerProcess[@name=\"%s\"]", eclccServerName);
-            eclServer = environment->queryPropTree(xpath);
-        }
-    }
+        getTargetClusterProcesses(environment, cluster, clustname, "EclCCServerProcess", eclServers);
+
     Owned<IPropertyTreeIterator> ti = cluster->getElements("ThorCluster");
     IArrayOf<IPropertyTree> thors;
     ForEach(*ti)
@@ -3096,7 +3105,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
         }
     }
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
-    return new CEnvironmentClusterInfo(clustname, prefix, cluster->queryProp("@alias"), agent, eclServer, isLegacyEclServer, eclScheduler, thors, queryRoxieProcessTree(environment, roxieName));
+    return new CEnvironmentClusterInfo(clustname, prefix, cluster->queryProp("@alias"), agent, eclServers, isLegacyEclServer, eclScheduler, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
 IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clustname)

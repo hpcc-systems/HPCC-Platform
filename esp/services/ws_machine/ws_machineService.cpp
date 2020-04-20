@@ -2956,16 +2956,16 @@ IPropertyTree* Cws_machineEx::getTargetClusterUsageReq(IEspGetTargetClusterUsage
         if (roxie.length())
             readRoxieUsageReq(roxie.str(), constEnv, targetClusterTree);
 
-        SCMStringBuffer eclAgent, eclServer, eclScheduler;
+        SCMStringBuffer eclAgent, eclScheduler;
         targetClusterInfo->getAgentName(eclAgent);
         if (eclAgent.length())
             readOtherComponentUsageReq(eclAgent.str(), eqEclAgent, constEnv, targetClusterTree);
-        targetClusterInfo->getECLServerName(eclServer);
-        if (eclServer.length())
-            readOtherComponentUsageReq(eclServer.str(), targetClusterInfo->isLegacyEclServer() ? eqEclServer : eqEclCCServer, constEnv, targetClusterTree);
         targetClusterInfo->getECLSchedulerName(eclScheduler);
         if (eclScheduler.length())
             readOtherComponentUsageReq(eclScheduler.str(), eqEclScheduler, constEnv, targetClusterTree);
+        const StringArray& eclServers = targetClusterInfo->getECLServerNames();
+        ForEachItemIn(j, eclServers)
+            readOtherComponentUsageReq(eclServers.item(j), targetClusterInfo->isLegacyEclServer() ? eqEclServer : eqEclCCServer, constEnv, targetClusterTree);
 
         usageReq->addPropTree(targetClusterTree->queryName(), LINK(targetClusterTree));
     }
