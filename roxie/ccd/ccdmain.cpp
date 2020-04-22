@@ -715,6 +715,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         traceLevel = topology->getPropInt("@traceLevel", runOnce ? 0 : 1);
         if (traceLevel > MAXTRACELEVEL)
             traceLevel = MAXTRACELEVEL;
+        if (traceLevel && topology->hasProp("logging/@disabled"))
+            topology->setPropBool("logging/@disabled", false);
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
@@ -1398,6 +1400,7 @@ roxie:
   numServerThreads: 30
   queueNames: roxie.roxie
   roxieMulticastEnabled: false
+  traceLevel: 0
   useAeron: false
   RoxieFarmProcess:
     - name: default
@@ -1407,6 +1410,8 @@ roxie:
     - name: workunit
       port: 0
       numThreads: 0
+  logging:
+    disabled: true
 )!!";
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
