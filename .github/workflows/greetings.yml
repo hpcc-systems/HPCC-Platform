@@ -39,9 +39,11 @@ jobs:
       # This step prints cpu info
       - name: Check CPU
         run: sudo cat /proc/cpuinfo
-
-      - name: Docker test
-        uses: myAction
+      #
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        uses: ./Mydockerfile
         with:
            who-to-greet: 'Bela the Great'
         id: hello2
