@@ -210,15 +210,37 @@
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
         },
-        "ports": {
-          "type": "array",
-          "description": "The ports to listen on",
-          "items": { "type": "integer" }
-        },
         "image": {
           "$ref": "#/definitions/image"
-        }
+        },
+        "services": {
+          "description": "Roxie query services",
+          "type": "array",
+          "items": { "$ref": "#/definitions/roxieservice" }
+        }    
       }
+    },
+    "roxieservice": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "numThreads": {
+          "type": "integer"
+        },
+        "listenQueue": {
+          "type": "integer"
+        },
+        "external": {
+          "type": "boolean"
+        }
+      },
+      "required": [ "name", "port" ],
+      "additionalProperties": false
     },
     "thor": {
       "type": "object",
