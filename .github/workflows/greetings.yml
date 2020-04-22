@@ -40,3 +40,5 @@ jobs:
       - name: Check CPU
         run: sudo cat /proc/cpuinfo
 
+      - name: Docker test
+	uses myAction
