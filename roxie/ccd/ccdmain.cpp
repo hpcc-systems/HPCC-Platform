@@ -1093,7 +1093,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
         topology->addPropBool("@linuxOS", true);
 #endif
+#ifdef _CONTAINERIZED
+        allQuerySetNames.append(roxieName);
+#else
         allQuerySetNames.appendListUniq(topology->queryProp("@querySets"), ",");
+#endif
         // Set multicast base addresses - must be done before generating slave channels
 
         if (roxieMulticastEnabled && !localSlave)
