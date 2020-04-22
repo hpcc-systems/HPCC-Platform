@@ -42,3 +42,6 @@ jobs:
 
       - name: Docker test
 	uses myAction
+        with
+           who-to-greet 'Bela the Great'
+        id: hello2
