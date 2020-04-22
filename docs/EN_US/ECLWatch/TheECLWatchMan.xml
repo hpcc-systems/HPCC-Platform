@@ -69,13 +69,13 @@
     <para>ECL Watch is a service that runs on the Enterprise Services Platform
     (ESP), a middleware component on the HPCC Systems platform.</para>
 
-    <para>ECL Watch provides an interface to the HPCC Systems platform and allows you to
-    view information and interrogate nodes to confirm all expected processes
-    are running. It is a plugin that is useful for Systems Administrators to
-    check processes, examine topology, and view logs. It is useful to ECL
-    Programmers to monitor the status of jobs and files, and other pertinent
-    information. This provides a simple view into the system and a means to
-    perform Workunit and data files maintenance.</para>
+    <para>ECL Watch provides an interface to the HPCC Systems platform and
+    allows you to view information and interrogate nodes to confirm all
+    expected processes are running. It is a plugin that is useful for Systems
+    Administrators to check processes, examine topology, and view logs. It is
+    useful to ECL Programmers to monitor the status of jobs and files, and
+    other pertinent information. This provides a simple view into the system
+    and a means to perform Workunit and data files maintenance.</para>
 
     <para>The ECL Watch interface is a browser based set of pages where you
     can access and interface with the HPCC Systems platform. To Run <emphasis
@@ -418,8 +418,20 @@
 
           <para>The <emphasis role="bold">Set Banner</emphasis> link allows
           you to set a custom banner message at the top of your browser window
-          when you open ECL Watch. You can use this feature to send messages
-          to users.</para>
+          when you open ECL Watch. Check the <emphasis
+          role="bold">Enable</emphasis> box to enable a banner. You can use
+          the banner to deliver a short message about the environment to
+          users. Customize the appearance of the message banner with the other
+          controls. Banner settings persist until the ESP Server
+          restarts.</para>
+
+          <para>The <emphasis role="bold">Set Toolbar</emphasis> link allows
+          you to customize the toolbar at the top of the ECL Watch page. Check
+          the <emphasis role="bold">Enable Environment Text </emphasis>box to
+          display the<emphasis role="bold"> Name of Environment</emphasis>
+          text at the top of the page and in the browser tab. Labeling browser
+          tabs is helpful when working with multiple environments. Toolbar
+          settings persist through restarts of the ESP Server.</para>
 
           <para>The <emphasis role="bold">Error/Warning(s)</emphasis> link
           displays a tab showing you Errors, Warnings, and Information
@@ -427,17 +439,19 @@
           bottom of the tab. A copy facility is also provided.</para>
 
           <para>The <emphasis role="bold">Release Notes</emphasis> link opens
-          a new browser tab to the HPCC Systems release notes page where you can find
-          more release specific information about the contents of each version
-          of HPCC.</para>
+          a new browser tab to the HPCC Systems release notes page where you
+          can find more release specific information about the contents of
+          each version of HPCC.</para>
 
           <para>The <emphasis role="bold">Documentation</emphasis> link opens
-          a new browser tab to the HPCC Systems documentation page, where you can view
-          and download the HPCC Systems platform documentation.</para>
+          a new browser tab to the HPCC Systems documentation page, where you
+          can view and download the HPCC Systems platform
+          documentation.</para>
 
           <para>The <emphasis role="bold">Downloads</emphasis> link opens a
-          new browser tab to the HPCC Systems downloads page, where you can find and
-          download the HPCC Systems platform, client tools, and plugins.</para>
+          new browser tab to the HPCC Systems downloads page, where you can
+          find and download the HPCC Systems platform, client tools, and
+          plugins.</para>
 
           <para>The <emphasis role="bold">Additional Resources</emphasis> link
           opens a submenu that provides links to areas on the HPCC Systems web
@@ -451,8 +465,8 @@
           system.</para>
 
           <para>The <emphasis role="bold">About</emphasis> link opens a dialog
-          to display information about the version of the HPCC Systems platform
-          installed on your server.</para>
+          to display information about the version of the HPCC Systems
+          platform installed on your server.</para>
         </sect3>
 
         <sect3 id="ECLWatch_AdvancedMenuLoggedInAs" role="nobrk">
@@ -509,8 +523,8 @@
           <sect4 id="ECLWatch_AdvancedMenuChangePassword" role="nobrk">
             <title>Change Password</title>
 
-            <para>If authentication is enabled on your HPCC Systems platform, you can
-            change your password, right from the User Details window.
+            <para>If authentication is enabled on your HPCC Systems platform,
+            you can change your password, right from the User Details window.
             <orderedlist>
                 <listitem>
                   <para>Click on your username link under the <emphasis
@@ -1077,14 +1091,14 @@
   <chapter id="ECLWatch_FilesChapter">
     <title>Files</title>
 
-    <para>This chapter contains sections dealing with HPCC Systems platform Files,
-    found on the <emphasis role="bold">Files</emphasis> link in ECL
+    <para>This chapter contains sections dealing with HPCC Systems platform
+    Files, found on the <emphasis role="bold">Files</emphasis> link in ECL
     Watch.</para>
 
-    <para>In an HPCC Systems platform, data files are partitioned across nodes. The
-    file parts, referenced using Logical Filenames, are stored in the
-    Distributed File Utility. This allows the collection of file parts to be
-    referenced as a single entity.</para>
+    <para>In an HPCC Systems platform, data files are partitioned across
+    nodes. The file parts, referenced using Logical Filenames, are stored in
+    the Distributed File Utility. This allows the collection of file parts to
+    be referenced as a single entity.</para>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="xpointer(//*[@id='ECLWatchLogicalFiles'])"
@@ -1853,9 +1867,9 @@
         <title>Installing Ganglia in ECL Watch</title>
 
         <para>In order to use Ganglia in ECL Watch, you need to have Ganglia
-        installed on your HPCC Systems platform. For details on installing Ganglia for
-        ECL Watch, refer to the <emphasis>HPCC Systems Monitoring and
-        Reporting</emphasis> manual.</para>
+        installed on your HPCC Systems platform. For details on installing
+        Ganglia for ECL Watch, refer to the <emphasis>HPCC Systems Monitoring
+        and Reporting</emphasis> manual.</para>
       </sect2>
     </sect1>
 
