@@ -2,6 +2,7 @@
 {{- if not $roxie.disabled  -}}
 {{- if $roxie.localSlave -}}
 {{- $name := $roxie.name -}}
+{{- $servername := printf "%s-server" $roxie.name -}}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -16,6 +17,7 @@ spec:
     metadata:
       labels:
         run: {{ $roxie.name | quote }}
+        roxie-server: {{ $servername | quote }}
     spec:
       {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
@@ -23,10 +25,21 @@ spec:
         args: [
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
-                "--serverPorts={{ template "hpcc.portListToCommas" $roxie.ports }}", 
+                "--server=true", 
                 "--localSlave=true",
                 "--resolveLocally=false"
               ]
+{{- $local := dict "first" true }}
+{{- range $service := $roxie.services }}
+{{- if ne (int $service.port)  0 }}
+{{- if $local.first }}
+{{- $_ := set $local "first" false }}
+        ports:
+{{- end }}
+        - name: {{ $service.name }}
+          containerPort: {{ $service.port }}
+{{- end }}
+{{- end }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
         volumeMounts:
@@ -37,6 +50,24 @@ spec:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $ | indent 6 }}
 {{ include "hpcc.addDllserverVolume" $ | indent 6 }}
+---
+{{- range $service := $roxie.services }}
+{{- if ne (int $service.port)  0 }}
+{{- $name := printf "%s-%s" $roxie.name $service.name }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name | quote }}
+spec:
+  ports:
+  - port: {{ $service.port }}
+    protocol: TCP
+    targetPort: {{ $service.port }}
+  selector:
+    roxie-server: {{ $servername | quote }}
+  type: {{ if $service.external -}} LoadBalancer {{- else -}} ClusterIP {{- end }}
+{{- end }}
+{{- end }}
 ---
 kind: ConfigMap 
 apiVersion: v1 

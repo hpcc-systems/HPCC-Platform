@@ -8046,12 +8046,6 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         applyEnvironmentConfig(*config, envPrefix, *cur);
     }
 
-#ifdef _DEBUG
-    // NB: don't re-hold, if CLI --hold already held.
-    if (!held && config->getPropBool("@hold"))
-        holdLoop();
-#endif
-
     if (outputConfig)
     {
         loadArgsIntoConfiguration(config, argv, { "config", "outputconfig" });
@@ -8068,6 +8062,12 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     }
     else
         loadArgsIntoConfiguration(config, argv);
+
+#ifdef _DEBUG
+    // NB: don't re-hold, if CLI --hold already held.
+    if (!held && config->getPropBool("@hold"))
+        holdLoop();
+#endif
 
     if (!globalConfiguration)
         globalConfiguration.setown(createPTree("global"));

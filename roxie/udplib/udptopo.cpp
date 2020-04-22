@@ -345,10 +345,12 @@ extern UDPLIB_API unsigned getNumSlaves(unsigned channel)
     return topology->querySlaves(channel).ordinality();
 }
 
+#ifndef _CONTAINERIZED
 extern UDPLIB_API void createStaticTopology(const std::vector<RoxieEndpointInfo> &allRoles, unsigned traceLevel)
 {
     topologyManager.setRoles(allRoles);
 }
+#endif
 
 static std::thread topoThread;
 static Semaphore abortTopo;

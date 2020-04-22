@@ -95,7 +95,9 @@ PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
 
 unsigned udpMulticastBufferSize = 262142;
+#ifndef _CONTAINERIZED
 bool roxieMulticastEnabled = true;
+#endif
 
 IPropertyTree *topology;
 MapStringTo<int> *preferredClusters;
@@ -410,9 +412,9 @@ public:
 };
 
 static std::vector<RoxieEndpointInfo> myRoles;
-static std::vector<unsigned> farmerPorts;
 static std::vector<std::pair<unsigned, unsigned>> slaveChannels;
 
+#ifndef _CONTAINERIZED
 void readStaticTopology()
 {
     // If dynamicServers not set, we read a list of all servers form the topology file, and deduce which ones are on which channel
@@ -523,6 +525,7 @@ void readStaticTopology()
     numChannels = calcNumChannels;
     createStaticTopology(allRoles, traceLevel);
 }
+#endif
 
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
@@ -654,16 +657,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         StringArray topoValues;
         if (topos)
             topoValues.appendList(topos, ",", true);
-        const char *serverPorts = topology->queryProp("@serverPorts");
-        if (serverPorts)
-        {
-            StringArray values;
-            values.appendList(serverPorts, ",", true);
-            ForEachItemIn(idx, values)
-            {
-                farmerPorts.push_back(atoi(values.item(idx)));
-            }
-        }
 
         if (topology->hasProp("PreferredCluster"))
         {
@@ -700,13 +693,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         if (standAloneDll || wuid)
         {
-            unsigned port = topology->getPropInt("@port", 0);
-            runOnce = port == 0;
-            if (port)
-            {
-                farmerPorts.clear();
-                farmerPorts.push_back(port);
-            }
+            IPropertyTree *services = topology->queryPropTree("services");
+            if (topology->getPropBool("@server", false) && services && services->hasChildren())
+                runOnce = false;
+            else
+                runOnce = true;
         }
 
         if (!topology->hasProp("@resolveLocally"))
@@ -914,8 +905,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
-        
+#ifndef _CONTAINERIZED
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to slaves
+#endif
         if (udpSnifferEnabled && !roxieMulticastEnabled)
         {
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
@@ -1093,13 +1085,39 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
         topology->addPropBool("@linuxOS", true);
 #endif
+        if (useAeron)
+            setAeronProperties(topology);
+
 #ifdef _CONTAINERIZED
         allQuerySetNames.append(roxieName);
 #else
         allQuerySetNames.appendListUniq(topology->queryProp("@querySets"), ",");
 #endif
-        // Set multicast base addresses - must be done before generating slave channels
 
+#ifdef _CONTAINERIZED
+        if (!numChannels)
+            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
+        IpAddress myIP(".");
+        myNode.setIp(myIP);
+        if (topology->getPropBool("@server", true))
+        {
+            Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./services");
+            ForEach(*roxieFarms)
+            {
+                IPropertyTree &roxieFarm = roxieFarms->query();
+                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
+                myRoles.push_back(me);
+            }
+        }
+        for (std::pair<unsigned, unsigned> channel: slaveChannels)
+        {
+            mySlaveEP.set(ccdMulticastPort, myIP);
+            RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieSlave, channel.first, mySlaveEP, channel.second };
+            myRoles.push_back(me);
+        }
+#else
+        // Set multicast base addresses - must be done before generating slave channels
         if (roxieMulticastEnabled && !localSlave)
         {
             if (topology->queryProp("@multicastBase"))
@@ -1111,34 +1129,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
         }
-        if (useAeron)
-            setAeronProperties(topology);
-
-        if (useDynamicServers)
-        {
-            if (!numChannels)
-                throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
-            IpAddress myIP(".");
-            myNode.setIp(myIP);
-            for (unsigned port: farmerPorts)
-            {
-                VStringBuffer xpath("RoxieFarmProcess[@port='%u']", port);
-                if (!topology->hasProp(xpath))
-                    topology->addPropTree("RoxieFarmProcess")->setPropInt("@port", port);
-                RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
-                myRoles.push_back(me);
-            }
-            for (std::pair<unsigned, unsigned> channel: slaveChannels)
-            {
-                mySlaveEP.set(ccdMulticastPort, myIP);
-                RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieSlave, channel.first, mySlaveEP, channel.second };
-                myRoles.push_back(me);
-            }
-        }
-        else
-        {
-            readStaticTopology();
-        }
+        readStaticTopology();
+#endif
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localSlave)
         {
@@ -1219,7 +1211,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         {
             try
             {
+#ifdef _CONTAINERIZED
+                Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./services");
+#else
                 Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./RoxieFarmProcess");
+#endif
                 ForEach(*roxieFarms)
                 {
                     IPropertyTree &roxieFarm = roxieFarms->query();
@@ -1228,11 +1224,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     if (!numThreads)
                         numThreads = numServerThreads;
                     unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
-                    if (useDynamicServers)
-                    {
-                        if (std::find(std::begin(farmerPorts), std::end(farmerPorts), port) == std::end(farmerPorts))
-                            continue;
-                    }
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress &ip = myNode.getNodeAddress();
@@ -1401,19 +1392,9 @@ roxie:
   allFilesDynamic: true
   localSlave: true
   numChannels: 1
-  numServerThreads: 30
   queueNames: roxie.roxie
-  roxieMulticastEnabled: false
   traceLevel: 0
-  useAeron: false
-  RoxieFarmProcess:
-    - name: default
-      port: 9876
-      listenQueue: 200
-      numThreads: 0
-    - name: workunit
-      port: 0
-      numThreads: 0
+  server: false
   logging:
     disabled: true
 )!!";

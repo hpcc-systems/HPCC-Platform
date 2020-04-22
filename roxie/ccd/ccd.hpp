@@ -297,7 +297,11 @@ extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
 extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
+#ifdef _CONTAINERIZED
+static constexpr bool roxieMulticastEnabled = false;
+#else
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
+#endif
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
