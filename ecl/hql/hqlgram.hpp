@@ -514,7 +514,7 @@ public:
     IHqlExpression * createListFromExpressionList(attribute & attr);
     IHqlExpression * createListIndex(attribute & list, attribute & which, IHqlExpression * attr);
     IHqlExpression * createNullPattern();
-    IHqlExpression * createLibraryInstance(const attribute & errpos, IHqlExpression * name, IHqlExpression * func, HqlExprArray & actuals);
+    IHqlExpression * createLibraryInstance(const attribute & errpos, IHqlExpression * name, IHqlExpression * func, HqlExprArray & actuals, IHqlExpression * attrs);
     IHqlExpression * createLocationAttr(const attribute & errpos);
     IHqlExpression * createSortExpr(node_operator op, attribute & dsAttr, const attribute & orderAttr, HqlExprArray & args);
     IHqlExpression * createIffDataset(IHqlExpression * record, IHqlExpression * value);
