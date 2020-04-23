@@ -5118,7 +5118,6 @@ protected:
                 subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(), udesc, false, false, false, transaction, defaultPrivilegedUser, timeout));
                 if (!subfile.get())
                     subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,timeout));
-                containsRestrictedSubfile = containsRestrictedSubfile || subfile->isRestrictedAccess();
                 // Some files are ok not to exist
                 if (!subfile.get())
                 {
@@ -5140,6 +5139,8 @@ protected:
                     else
                         ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
                 }
+                if (subfile.get())
+                    containsRestrictedSubfile = containsRestrictedSubfile || subfile->isRestrictedAccess();
                 subfiles.append(*subfile.getClear());
                 if (link)
                     linkSubFile(f);
