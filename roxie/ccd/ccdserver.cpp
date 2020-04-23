@@ -16657,6 +16657,13 @@ public:
         extra.set(_extra);
         extra.calcUnused();
         setNumOutputs(extra.outputs.ordinality());
+        // Try to resolve library now so that we can detect interface mismatches early. You could argue it should only be a warning - as it is the query
+        // will be suspended and will remain suspended even if a suitable library is later published
+        if (!extra.embedded && _graphNode.getPropBool("hint[@name='required']/@value", false))
+        {
+            StringContextLogger logctx;
+            Owned<IQueryFactory> libraryQuery = _queryFactory.lookupLibrary(extra.libraryName, extra.interfaceHash, logctx);
+        }
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieSlaveContext *_ctx, IProbeManager *_probeManager) const
