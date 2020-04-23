@@ -231,7 +231,7 @@ void CWriteMasterBase::publish()
                 if (0 != (diskHelperBase->getFlags() & TDXgrouped))
                     recordSize += 1;
             }
-            unsigned compMethod = COMPRESS_METHOD_LZW;
+            unsigned compMethod = COMPRESS_METHOD_LZ4;
             // rowdiff used if recordSize > 0, else fallback to compMethod
             if (getOptBool(THOROPT_COMP_FORCELZW, false))
             {
