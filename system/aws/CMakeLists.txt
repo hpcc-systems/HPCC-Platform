@@ -24,11 +24,11 @@ if(USE_AWS)
     add_library(aws-cpp-sdk-s3 SHARED IMPORTED GLOBAL)
 
     set_property(TARGET aws-cpp-sdk-core
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so)
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core${CMAKE_SHARED_LIBRARY_SUFFIX})
     set_property(TARGET aws-cpp-sdk-sqs
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so)
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs${CMAKE_SHARED_LIBRARY_SUFFIX})
     set_property(TARGET aws-cpp-sdk-s3
-        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so)
+        PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3${CMAKE_SHARED_LIBRARY_SUFFIX})
     add_dependencies(aws-cpp-sdk-core aws-sdk-cpp)
     add_dependencies(aws-cpp-sdk-sqs aws-sdk-cpp)
     add_dependencies(aws-cpp-sdk-s3 aws-sdk-cpp)
@@ -40,24 +40,28 @@ if(USE_AWS)
             DESTINATION lib
             RENAME aws-sdk-cpp-LICENSE.txt)
         install(CODE "file(RPATH_CHANGE
-            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so\"
+            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core${CMAKE_SHARED_LIBRARY_SUFFIX}\"
             OLD_RPATH \"${AWS_DEP_LIBDIR}:\"
             NEW_RPATH \"${LIB_PATH}\")")
         install(CODE "file(RPATH_CHANGE
-            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so\"
+            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs${CMAKE_SHARED_LIBRARY_SUFFIX}\"
+            OLD_RPATH \"${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${AWS_DEP_LIBDIR}:\"
+            NEW_RPATH \"${LIB_PATH}\")")
+        install(CODE "file(RPATH_CHANGE
+            FILE \"${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3${CMAKE_SHARED_LIBRARY_SUFFIX}\"
             OLD_RPATH \"${PROJECT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core:${AWS_DEP_LIBDIR}:\"
             NEW_RPATH \"${LIB_PATH}\")")
         install(PROGRAMS
-            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core.so
-            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs.so
-            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3.so
-            ${AWS_DEP_LIBDIR}/libaws-c-common.so.1.0.0
-            ${AWS_DEP_LIBDIR}/libaws-c-common.so
-            ${AWS_DEP_LIBDIR}/libaws-c-common.so.0unstable
-            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.1.0.0
-            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so
-            ${AWS_DEP_LIBDIR}/libaws-c-event-stream.so.0unstable
-            ${AWS_DEP_LIBDIR}/libaws-checksums.so
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${AWS_DEP_LIBDIR}/libaws-c-common${CMAKE_SHARED_LIBRARY_SUFFIX}.1.0.0
+            ${AWS_DEP_LIBDIR}/libaws-c-common${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${AWS_DEP_LIBDIR}/libaws-c-common${CMAKE_SHARED_LIBRARY_SUFFIX}.0unstable
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream${CMAKE_SHARED_LIBRARY_SUFFIX}.1.0.0
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${AWS_DEP_LIBDIR}/libaws-c-event-stream${CMAKE_SHARED_LIBRARY_SUFFIX}.0unstable
+            ${AWS_DEP_LIBDIR}/libaws-checksums${CMAKE_SHARED_LIBRARY_SUFFIX}
             DESTINATION lib)
     endif ( NOT PLUGIN )
 endif()
