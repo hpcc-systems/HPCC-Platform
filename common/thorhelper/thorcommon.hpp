@@ -110,10 +110,10 @@ inline void setCompFlag(const char *compStr, unsigned &flags)
     {
         if (0 == stricmp("FLZ", compStr))
             flags |= rw_fastlz;
-        else if (0 == stricmp("LZ4", compStr))
-            flags |= rw_lz4;
-        else // not specifically FLZ or LZ4 so set to LZW (or rowdif)
+        else if (0 == stricmp("LZW", compStr))
             flags |= rw_lzw;
+        else // not specifically FLZ or LZW so set to default LZ4
+            flags |= rw_lz4;
     }
     else // default is LZ4
         flags |= rw_lz4;
@@ -121,28 +121,24 @@ inline void setCompFlag(const char *compStr, unsigned &flags)
 
 inline unsigned getCompMethod(unsigned flags)
 {
-    unsigned compMethod = COMPRESS_METHOD_LZW;
+    unsigned compMethod = COMPRESS_METHOD_LZ4;
     if (TestRwFlag(flags, rw_lzw))
         compMethod = COMPRESS_METHOD_LZW;
     else if (TestRwFlag(flags, rw_fastlz))
         compMethod = COMPRESS_METHOD_FASTLZ;
-    else if (TestRwFlag(flags, rw_lz4))
-        compMethod = COMPRESS_METHOD_LZ4;
     return compMethod;
 }
 
 inline unsigned getCompMethod(const char *compStr)
 {
-    unsigned compMethod = COMPRESS_METHOD_LZW;
+    unsigned compMethod = COMPRESS_METHOD_LZ4;
     if (!isEmptyString(compStr))
     {
         if (0 == stricmp("FLZ", compStr))
             compMethod = COMPRESS_METHOD_FASTLZ;
-        else if (0 == stricmp("LZ4", compStr))
-            compMethod = COMPRESS_METHOD_LZ4;
+        else if (0 == stricmp("LZW", compStr))
+            compMethod = COMPRESS_METHOD_LZW;
     }
-    else // default is LZ4
-        compMethod = COMPRESS_METHOD_LZ4;
     return compMethod;
 }
 

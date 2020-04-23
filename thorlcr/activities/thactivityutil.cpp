@@ -736,7 +736,7 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     Owned<IFileIO> fileio;
     if (compress)
     {
-        unsigned compMethod = COMPRESS_METHOD_LZW;
+        unsigned compMethod = COMPRESS_METHOD_LZ4;
         // rowdif used if recordSize > 0, else fallback to compMethod
         if (!ecomp)
         {
