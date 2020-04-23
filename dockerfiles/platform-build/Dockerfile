@@ -17,7 +17,7 @@
 
 # Base container image that builds all HPCC platform components
 
-ARG BASE_VER=7.8
+ARG BASE_VER=7.10
 FROM hpccsystems/platform-build-base:${BASE_VER}
 
 RUN groupadd -g 1000 hpcc

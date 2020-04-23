@@ -21,7 +21,7 @@
 
 ARG BUILD_LABEL
 FROM hpccsystems/platform-build:${BUILD_LABEL} as build
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt clean && \
     apt autoclean && \
@@ -43,8 +43,8 @@ RUN apt-get install -y \
   
 RUN apt-get install -y \
   libnuma1 \
-  libboost-regex1.65.1 \
-  libpython3.6 \
+  libboost-regex1.71.0 \
+  libpython3.8 \
   libmemcached11 \
   libmemcachedutil2
 
