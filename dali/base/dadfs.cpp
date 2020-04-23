@@ -5136,16 +5136,23 @@ protected:
                             _transaction->ensureFile(subfile);
                         }
                     }
+                    else if (logicalName.isMulti())
+                    {
+                        /*
+                         * implicit superfiles, can't validate subfile presence at this point,
+                         * but will be caught if empty and not OPT later.
+                         */
+                        continue;
+                    }
                     else
                         ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
                 }
-                if (subfile.get())
-                    containsRestrictedSubfile = containsRestrictedSubfile || subfile->isRestrictedAccess();
+                containsRestrictedSubfile = containsRestrictedSubfile || subfile->isRestrictedAccess();
                 subfiles.append(*subfile.getClear());
                 if (link)
                     linkSubFile(f);
             }
-            // This is *only* due to foreign files
+            // This is can happen due to missing referenced foreign files, or missing files referenced via an implicit inline superfile definition
             if (subfiles.ordinality() != n)
             {
                 IWARNLOG("CDistributedSuperFile: SuperFile %s's number of sub-files updated to %d", logicalName.get(), subfiles.ordinality());
