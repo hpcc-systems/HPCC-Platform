@@ -3903,7 +3903,7 @@ public:
     virtual bool aborting() const
             { return c->aborting(); }
     virtual void forceReload()
-            { UNIMPLEMENTED; }
+            { }
     virtual WUAction getAction() const
             { return c->getAction(); }
     virtual const char *queryActionDesc() const

@@ -50,21 +50,14 @@ roxie:
   allFilesDynamic: true
   localSlave: true
   numChannels: 1
-  numServerThreads: 30
   queueNames: roxie.roxie
-  serverPorts: "9876,0"
-  roxieMulticastEnabled: false
-  useAeron: false
-  RoxieFarmProcess:
-    - name: default
+  services:
+    - name: query
       port: 9876
-      listenQueue: 200
-      numThreads: 0
     - name: workunit
       port: 0
-      numThreads: 0
   logging:
-      detail: 100
+    detail: 100
 )!!";
 
 int main(int argc, const char *argv[])

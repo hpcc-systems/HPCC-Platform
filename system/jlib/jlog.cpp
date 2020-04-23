@@ -2333,6 +2333,7 @@ static constexpr const char * logMsgClassesAtt = "@classes";
 static constexpr const char * useLogQueueAtt = "@useLogQueue";
 static constexpr const char * logQueueLenAtt = "@queueLen";
 static constexpr const char * logQueueDropAtt = "@queueDrop";
+static constexpr const char * logQueueDisabledAtt = "@disabled";
 static constexpr const char * useSysLogpAtt ="@enableSysLog";
 
 #ifdef _DEBUG
@@ -2350,6 +2351,11 @@ void setupContainerizedLogMsgHandler()
     IPropertyTree * logConfig = queryComponentConfig().queryPropTree("logging");
     if (logConfig)
     {
+        if (logConfig->getPropBool(logQueueDisabledAtt, false))
+        {
+            removeLog();
+            return;
+        }
         if (logConfig->hasProp(logFieldsAtt))
         {
             //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
@@ -2390,8 +2396,6 @@ void setupContainerizedLogMsgHandler()
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
             UseSysLogForOperatorMessages();
     }
-    else
-        removeLog();
 }
 #endif
 

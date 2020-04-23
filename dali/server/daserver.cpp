@@ -270,7 +270,7 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
                     Owned<IPropertyTreeIterator> slaveIter = component.getElements("ThorSlaveProcess");
                     ForEach(*slaveIter)
                     {
-                        const char *slaveCompName = component.queryProp("@computer");
+                        const char *slaveCompName = slaveIter->query().queryProp("@computer");
                         const char *ip = resolveComputer(slaveCompName, nullptr, ipSB.clear());
                         if (ip)
                             writer.add(ip, DCR_ThorSlave);

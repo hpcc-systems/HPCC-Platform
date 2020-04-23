@@ -1502,6 +1502,7 @@ private:
     Owned<CSocketDataProvider> dataProvider;
     PTreeReaderOptions options;
     unsigned remainingMS;
+    cycle_t startSoapCallCycles;
 
     inline void checkRoxieAbortMonitor(IRoxieAbortMonitor * roxieAbortMonitor)
     {
@@ -2025,10 +2026,15 @@ public:
             responsePath.append(master->service).append("ResponseArray/");
         }
         responsePath.append(master->service).append("Response");
+        remainingMS = 0;
+        startSoapCallCycles = get_cycles_now();
     }
 
     ~CWSCAsyncFor()
     {
+        cycle_t endCycles = get_cycles_now();
+        __int64 elapsedNs = cycle_to_nanosec(endCycles-startSoapCallCycles);
+        master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
     }
 
     IMPLEMENT_IINTERFACE;
@@ -2051,7 +2057,7 @@ public:
         while (!master->aborted)
         {
             Owned<ISocket> socket;
-            cycle_t startCycles, endCycles;
+            cycle_t startCycles;
             startCycles = get_cycles_now();
             for (;;)
             {
@@ -2148,9 +2154,8 @@ public:
                 {
                     throw MakeStringException(-1, "Zero length response in processQuery");
                 }
-                endCycles = get_cycles_now();
+                cycle_t endCycles = get_cycles_now();
                 __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
-                master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
                 checkTimeLimitExceeded(&remainingMS);
                 ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);

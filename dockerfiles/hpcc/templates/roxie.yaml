@@ -4,6 +4,7 @@
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
 {{- $topoport := $roxie.topoport | int | default 9004 -}}
+{{- $servername := printf "%s-server" $roxie.name -}}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -30,6 +31,26 @@ spec:
       - name: {{ .name }}-configmap-volume
         configMap:
           name: {{ .name }}-configmap
+---
+
+{{- range $service := $roxie.services }}
+{{- if ne (int $service.port)  0 }}
+{{- $name := printf "%s-%s" $roxie.name $service.name }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name | quote }}
+spec:
+  ports:
+  - port: {{ $service.port }}
+    protocol: TCP
+    targetPort: {{ $service.port }}
+  selector:
+    roxie-server: {{ $servername | quote }}
+  type: {{ if $service.external -}} LoadBalancer {{- else -}} ClusterIP {{- end }}
+{{- end }}
+{{- end }}
+
 ---
 
 apiVersion: v1
@@ -60,7 +81,6 @@ data:
 ---
 
 {{ if $roxie.serverReplicas -}}
-{{- $servername := printf "%s-server" $roxie.name -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -74,6 +94,7 @@ spec:
     metadata:
       labels:
         run: {{ $servername | quote }}
+        roxie-server: {{ $servername | quote }}
     spec:
       {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
@@ -82,10 +103,21 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
                 "--numChannels={{ $numChannels }}",
-                "--serverPorts={{ template "hpcc.portListToCommas" $roxie.ports }}", 
+                "--server=true", 
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
                 "--resolveLocally=false"
               ]
+{{- $local := dict "first" true }}
+{{- range $service := $roxie.services }}
+{{- if ne (int $service.port)  0 }}
+{{- if $local.first }}
+{{- $_ := set $local "first" false }}
+        ports:
+{{- end }}
+        - name: {{ $service.name }}
+          containerPort: {{ $service.port }}
+{{- end }}
+{{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
         volumeMounts:
@@ -108,7 +140,7 @@ kind: Deployment
 metadata:
   name: {{ $name | quote}}
 spec:
-  replicas: {{ $roxie.channelReplicas | default 2 }}
+  replicas: {{ $roxie.channelReplicas | default 1 }}
   selector:
     matchLabels:
       run: {{ $name | quote}}
@@ -116,6 +148,9 @@ spec:
     metadata:
       labels:
         run: {{ $name | quote}}
+{{- if not $roxie.serverReplicas }}        
+        roxie-server: {{ $servername | quote }}
+{{- end }}
     spec:
       {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
       containers:
@@ -124,10 +159,24 @@ spec:
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
                 "--channels={{ $channel }}", 
-                "--serverPorts={{ if not $roxie.serverReplicas }}{{ template "hpcc.portListToCommas" $roxie.ports }}{{ end }}",
+                "--server={{ not $roxie.serverReplicas }}",
                 "--numChannels={{ $numChannels }}",
                 "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
+                "--resolveLocally=false"
               ]
+{{- if not $roxie.serverReplicas }}
+{{- $local := dict "first" true }}
+{{- range $service := $roxie.services }}
+{{- if ne (int $service.port)  0 }}
+{{- if $local.first }}
+{{- $_ := set $local "first" false }}
+        ports:
+{{- end }}
+        - name: {{ $service.name }}
+          containerPort: {{ $service.port }}
+{{- end }}
+{{- end }}
+{{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
         volumeMounts:

@@ -83,14 +83,24 @@ esp:
 
 roxie:
 - name: roxie-cluster
-  disabled: true
+  disabled: false
   prefix: roxiecluster
-  ports: [9876]
+  services:
+  - name: query
+    port: 9876
+    listenQueue: 200
+    numThreads: 0
+    external: true
+  - name: on-demand
+    port: 0
   numChannels: 2
-  serverReplicas: 1
+  ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with slave nodes not acting as servers
+  serverReplicas: 0
   topoReplicas: 1
   topoport: 9004
-  useAeron: true
+  ## Set localSlave to true for a scalable cluster of "single-node" roxie servers
+  localSlave: false
+  useAeron: false
 
 thor:
 - name: thor

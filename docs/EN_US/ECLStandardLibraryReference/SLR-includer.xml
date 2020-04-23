@@ -227,6 +227,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayXML.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayJson.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WaitDfuWorkunit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>

@@ -726,12 +726,17 @@ public:
     void init(IEspContext &context, bool allowForeignFiles)
     {
         files.setown(createReferencedFileList(context.queryUserId(), context.queryPassword(), allowForeignFiles, false));
+#ifndef _CONTAINERIZED
         clusterInfo.setown(getTargetClusterInfo(target));
         StringBufferAdaptor sba(process);
         if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
             clusterInfo->getRoxieProcess(sba);
         if (!process.length())
             return;
+#else
+        StringBuffer process(target);
+#endif
+
         ps.setown(createPackageSet(process.str()));
         if (ps)
             pm = ps->queryActiveMap(target);
@@ -746,7 +751,9 @@ public:
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
         Owned<IDFUhelper> helper = createIDFUhelper();
+#ifndef _CONTAINERIZED
         files->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+#endif
     }
 
     void gatherFileErrors(IArrayOf<IConstLogicalFileError> &errors)
@@ -755,7 +762,9 @@ public:
     }
 
 private:
+#ifndef _CONTAINERIZED
     Owned <IConstWUClusterInfo> clusterInfo;
+#endif
     Owned<IHpccPackageSet> ps;
     const IHpccPackageMap *pm = nullptr;
     StringAttr target;

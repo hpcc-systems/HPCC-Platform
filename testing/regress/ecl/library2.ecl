@@ -33,7 +33,7 @@ end;
 
 empty := DATASET([], namesRecord);
 
-filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library('aaaLibrary2',FilterDatasetInterface(ds,empty,search,onlyOldies));
+filterDataset(dataset(namesRecord) ds, string search, boolean onlyOldies) := library('aaaLibrary2',FilterDatasetInterface(ds,empty,search,onlyOldies),hint(required(true)));
 
 namesTable := dataset([
         {'Halliday','Gavin',31},
