@@ -23,10 +23,10 @@
 
   <para>A packed decimal<indexterm>
       <primary>packed decimal</primary>
-    </indexterm> value of <emphasis>n</emphasis> total digits (to a maximum of
-  32). If the _<emphasis>y</emphasis> value is present, the
-  <emphasis>y</emphasis> defines the number of decimal places in the
-  value.</para>
+    </indexterm> value of <emphasis>n</emphasis> total digits. If the
+  _<emphasis>y</emphasis> value is present, the <emphasis>y</emphasis> defines
+  the number of decimal places in the value. There can be at most 32 leading
+  digits and 32 fractional digits. </para>
 
   <para>If the UNSIGNED keyword is omitted, the rightmost nibble holds the
   sign. Unsigned decimal declarations may be contracted to use the optional
