@@ -10670,7 +10670,7 @@ void HqlGram::checkNonGlobalModule(const attribute & errpos, IHqlExpression * sc
 }
 
 
-IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlExpression * name, IHqlExpression * func, HqlExprArray & actuals)
+IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlExpression * name, IHqlExpression * func, HqlExprArray & actuals, IHqlExpression * attrs)
 {
     if (!checkParameters(func, actuals, errpos))
         return createNullScope();
@@ -10740,6 +10740,9 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
 
     HqlExprArray realActuals;
     inputMapper.mapLogicalToReal(realActuals, actuals);
+    if (attrs)
+        attrs->unwindList(realActuals, no_comma);
+
     OwnedHqlExpr bound = bindParameters(errpos, newFunction, realActuals);
     if (!needToMapOutputs)
         return bound.getClear();

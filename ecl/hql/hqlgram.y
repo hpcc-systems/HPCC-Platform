@@ -3183,6 +3183,11 @@ commonAttribute
     | orderAttribute
     ;
 
+optHintAttribute
+    :                   { $$.setNullExpr(); }
+    | ',' hintAttribute { $$.inherit($2); }
+    ;
+
 hintAttribute
     : HINT '(' hintList ')'
                         {
@@ -7365,10 +7370,10 @@ abstractModule
                             OwnedHqlExpr func = $5.getExpr();
                             HqlExprArray actuals;
                             $8.unwindCommaList(actuals);
-                            $$.setExpr(parser->createLibraryInstance($1, name, func, actuals));
+                            $$.setExpr(parser->createLibraryInstance($1, name, func, actuals, nullptr));
                             $$.setPosition($1);
                         }
-    | LIBRARY '(' libraryName ',' scopeFunctionWithParameters ')'
+    | LIBRARY '(' libraryName ',' scopeFunctionWithParameters optHintAttribute ')'
                         {
                             OwnedHqlExpr value = $5.getExpr();
                             IHqlExpression * func;
@@ -7384,7 +7389,8 @@ abstractModule
                             //Need to create a library definition from referenced attribute, adding the name/internal attribute
                             //and then bind it to create the library instance.
                             OwnedHqlExpr name = $3.getExpr();
-                            $$.setExpr(parser->createLibraryInstance($1, name, func, actuals));
+                            OwnedHqlExpr attrs = $6.getExpr();
+                            $$.setExpr(parser->createLibraryInstance($1, name, func, actuals, attrs));
                             $$.setPosition($1);
                         }
     | startCompoundExpression beginInlineFunctionToken optDefinitions RETURN abstractModule ';' endInlineFunctionToken
