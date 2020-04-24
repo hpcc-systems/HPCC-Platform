@@ -51,11 +51,6 @@ roxie:
   localSlave: true
   numChannels: 1
   queueNames: roxie.roxie
-  services:
-    - name: query
-      port: 9876
-    - name: workunit
-      port: 0
   logging:
     detail: 100
 )!!";
