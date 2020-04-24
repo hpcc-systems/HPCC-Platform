@@ -608,7 +608,7 @@ class CSendManager : implements ISendManager, public CInterface
         ~send_data()
         {
             running = false;
-            UdpPermitToSendMsg dummy;
+            UdpPermitToSendMsg dummy = {};
             send_queue.push(dummy);
             join();
             if (sniffer_socket) 
