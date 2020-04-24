@@ -1608,6 +1608,16 @@ unsigned EclAgent::getNodes()//retrieve node count for current cluster
 {
     if (clusterWidth == -1)
     {
+#ifdef _CONTAINERIZED
+        /*
+         * NB: if running in hthor 1 is always correct
+         * If executing in thor then it will return the # of slaves,
+         * but if submitted to thor and running in this context,
+         * arguably the current # nodes is 1, as we don't know the # of thor slaves, which may vary.
+         */
+
+        clusterWidth = 1;
+#else        
         if (!isStandAloneExe)
         {
             const char * cluster = clusterNames.tos();
@@ -1619,6 +1629,7 @@ unsigned EclAgent::getNodes()//retrieve node count for current cluster
         }
         else
             clusterWidth = 1;
+#endif            
     }
     return clusterWidth;
 }
