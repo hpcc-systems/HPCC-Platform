@@ -516,17 +516,30 @@ int main(int argc, const char *argv[])
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
 
-    configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
+    unsigned exitCode = 0;
+    try
+    {
+        configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
 
 #ifndef _CONTAINERIZED
-    // Turn logging down (we turn it back up if -v option seen)
-    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
-    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+        // Turn logging down (we turn it back up if -v option seen)
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user| MSGAUD_operator, MSGCLS_error);
+        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
-    setupContainerizedLogMsgHandler();
+        setupContainerizedLogMsgHandler();
 #endif
-    unsigned exitCode = doMain(argc, argv);
-    stopPerformanceMonitor();
+        exitCode = doMain(argc, argv);
+        stopPerformanceMonitor();
+    }
+    catch (IException *E)
+    {
+        StringBuffer m("Error: ");
+        E->errorMessage(m);
+        fputs(m.newline().str(), stderr);
+        E->Release();
+        exitCode = 2;
+    }
+
     if (!optReleaseAllMemory)
     {
         //In release mode exit without calling all the clean up code.
