@@ -37,7 +37,7 @@ end;
 
 filterDatasetLibrary(dataset(namesRecord) ds, dataset(namesRecord) unused, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
     f := ds;
-    shared g := if (onlyOldies, f(age >= 65), f);
+    shared g := if (onlyOldies, f(age >= 65, not regexfind('boris', forename)), f);
     export matches := g(surname = search);
     export others := g(surname != search);
 end;
