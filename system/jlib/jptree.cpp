@@ -7767,7 +7767,7 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
 
     const char * ext = pathExtension(filename);
     Owned<IPropertyTree> configTree;
-    if (strieq(ext, ".yaml"))
+    if (!ext || strieq(ext, ".yaml"))
     {
         try
         {
@@ -7784,7 +7784,9 @@ static IPropertyTree * loadConfiguration(const char * filename, const char * com
     else
         throw makeStringExceptionV(99, "Unrecognised file extension %s", ext);
 
-    assert(configTree);
+    if (!configTree)
+        throw makeStringExceptionV(99, "Error loading configuration file %s", filename);
+
     IPropertyTree * config = configTree->queryPropTree(componentTag);
     if (!config)
     {
@@ -7866,6 +7868,10 @@ static const char * extractOption(const char * option, const char * cur)
 
 static void applyCommandLineOption(IPropertyTree * config, const char * option, const char * value)
 {
+    //Ignore -- with no following option.
+    if (isEmptyString(option))
+        return;
+
     const char *tail;
     while ((tail = strchr(option, '.')) != nullptr)
     {
@@ -7880,6 +7886,10 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
         }
         option = tail+1;
     }
+
+    if (!validateXMLTag(option))
+        throw makeStringExceptionV(99, "Invalid option name '%s'", option);
+
     StringBuffer path;
     path.append('@').append(option);
     config->setProp(path, value);
@@ -7983,9 +7993,12 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
             optConfig = matchConfig;
         else if (strsame(cur, "--help"))
         {
+#if 0
+            //Better not to include this until it has been implemented, since it breaks eclcc
             //MORE: displayHelp(config);
-            printf("%s <options>", argv[0]);
+            printf("%s <options>\n", argv[0]);
             exit(0);
+#endif
         }
         else if (strsame(cur, "--init"))
         {
@@ -8018,15 +8031,19 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         if (streq(optConfig, "1"))
             throw makeStringExceptionV(99, "Name of configuration file omitted (use --config=<filename>)");
 
-        StringBuffer fullpath;
-        if (!isAbsolutePath(optConfig))
+        //--config= with no filename can be used to ignore the legacy configuration file
+        if (!isEmptyString(optConfig))
         {
-            appendCurrentDirectory(fullpath, false);
-            addNonEmptyPathSepChar(fullpath);
+            StringBuffer fullpath;
+            if (!isAbsolutePath(optConfig))
+            {
+                appendCurrentDirectory(fullpath, false);
+                addNonEmptyPathSepChar(fullpath);
+            }
+            fullpath.append(optConfig);
+            delta.setown(loadConfiguration(fullpath, componentTag, true, altNameAttribute));
+            globalConfiguration.setown(loadConfiguration(fullpath, "global", false, altNameAttribute));
         }
-        fullpath.append(optConfig);
-        delta.setown(loadConfiguration(fullpath, componentTag, true, altNameAttribute));
-        globalConfiguration.setown(loadConfiguration(fullpath, "global", false, altNameAttribute));
     }
     else
     {
