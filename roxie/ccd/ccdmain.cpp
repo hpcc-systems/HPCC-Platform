@@ -693,9 +693,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         if (standAloneDll || wuid)
         {
-            IPropertyTree *services = topology->queryPropTree("services");
-            if (topology->getPropBool("@server", false) && services && services->hasChildren())
+            if (topology->getPropBool("@server", false))
+            {
+                if (!topology->getCount("services"))
+                {
+                    // Makes debugging easier...
+                    IPropertyTree *service = topology->addPropTree("services");
+                    service->setProp("@name", "query");
+                    service->setPropInt("@port", 9876);
+                }
                 runOnce = false;
+            }
             else
                 runOnce = true;
         }
