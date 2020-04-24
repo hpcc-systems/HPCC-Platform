@@ -12220,14 +12220,26 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
+            if (isContainerized())
+                throw makeStringException(0, "Output clusters not supported in cloud environment");
             clusters.append(cluster);
             clusterIdx++;
         }
 
-        if (roxieName.length())
-            clusters.append(roxieName.str());
-        else
-            clusters.append(".");
+        if (!clusters.length())
+        {
+            if (isContainerized())
+            {
+                StringBuffer nasGroupName;
+                queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
+                clusters.append(nasGroupName);
+            }
+            else if (roxieName.length())
+                clusters.append(roxieName.str());
+            else
+                clusters.append(".");
+        }
+
         OwnedRoxieString fname(helper.getFileName());
         writer.setown(ctx->createLFN(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
