@@ -75,6 +75,7 @@ build_image() {
   if ! docker pull hpccsystems/${name}:${label} ; then
     docker image build -t hpccsystems/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
+       --build-arg DOCKER_REPO=hpccsystems
        --build-arg BUILD_TAG=${BUILD_TAG} \
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \

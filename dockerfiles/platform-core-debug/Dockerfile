@@ -18,7 +18,8 @@
 # A version of the platform-core Dockerfile that keeps all the build artefacts in place, for use by developers wanting to debug the platform
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-build:${BUILD_LABEL}
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL}
 
 RUN apt-get install -y libcap2-bin
 RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
