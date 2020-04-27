@@ -42,7 +42,8 @@ data:
   {{ .name }}.yaml: |
     version: 1.0
     eclccserver:
-{{ toYaml . | indent 6 }}
+{{ toYaml (omit . "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
     global:

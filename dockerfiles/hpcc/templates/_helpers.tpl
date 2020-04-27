@@ -52,6 +52,19 @@ singleNode: {{ .Values.global.singleNode | default false }}
 {{- end -}}
 
 {{/*
+Generate local logging info, merged with global
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.generateLoggingConfig" -}}
+{{- $logging := deepCopy .me | mergeOverwrite .root.Values.global }}
+{{- if hasKey $logging "logging" }}
+logging:
+{{ toYaml $logging.logging | indent 2 }}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
 Add ConfigMap volume mount for a component
 */}}
 {{- define "hpcc.addConfigMapVolumeMount" -}}

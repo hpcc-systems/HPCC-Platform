@@ -88,22 +88,27 @@ data:
   {{ $thorScope.name }}.yaml: |
     version: 1.0
     thor:
-{{ toYaml $thorScope | indent 6 }}
+{{ toYaml (omit $thorScope "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
     {{ $agentAppType }}:
-{{ toYaml $hthorScope | indent 6 }}
+{{ toYaml (omit $hthorScope "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $hthorScope) | indent 6 }}
     eclagent: # main agent Q handler
-{{ toYaml $eclAgentScope | indent 6 }}
+{{ toYaml (omit $eclAgentScope "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $eclAgentScope) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 
   {{ $thorAgentScope.name }}.yaml: |
     version: 1.0
     eclagent:
-{{ toYaml $thorAgentScope | indent 6 }}
+{{ toYaml (omit $thorAgentScope "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorAgentScope) | indent 6 }}
       type: thor
 {{- if $thorAgentScope.useChildProceses }}
     thor:
-{{ toYaml $thorScope | indent 6 }}
+{{ toYaml (omit $thorScope "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}

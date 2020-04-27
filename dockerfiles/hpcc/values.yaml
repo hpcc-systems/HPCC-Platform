@@ -35,6 +35,9 @@ global:
   # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
   hostStorage: true
 
+  # logging sets the default logging information for all components. Can be overridden locally
+  logging:
+    detail: 100
 
 dali:
 - name: mydali
