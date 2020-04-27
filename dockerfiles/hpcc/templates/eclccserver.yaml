@@ -58,6 +58,7 @@ data:
         spec:
           containers:
           - name: %jobname
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
             image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclccserver") }}
             resources:
               requests:
