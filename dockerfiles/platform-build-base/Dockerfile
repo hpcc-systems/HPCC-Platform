@@ -17,7 +17,7 @@
 
 # Build container image containing all 3rd-party tools required to build HPCC platform
 
-FROM ubuntu:18.04 as build
+FROM ubuntu:20.04 as build
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt clean && \
     apt autoclean && \
@@ -84,7 +84,7 @@ RUN apt-get install -y \
 RUN curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 RUN apt-add-repository "deb https://deb.nodesource.com/node_10.x $(lsb_release -sc) main"
 RUN apt-get update
-RUN apt-get install nodejs
+RUN apt-get install -y nodejs
 
 RUN mkdir /home/temp
 WORKDIR /home/temp
@@ -97,5 +97,5 @@ WORKDIR /
 RUN rm -rf /home/temp
 RUN apt-get clean
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 COPY --from=build / /
