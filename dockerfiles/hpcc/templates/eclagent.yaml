@@ -42,9 +42,11 @@ data:
   {{ .name }}.yaml: |
     version: 1.0
     eclagent:
-{{ toYaml . | indent 6 }}
+{{ toYaml (omit . "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
     {{ $apptype }}:
-{{ toYaml . | indent 6 }}
+{{ toYaml (omit . "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
   {{ $apptype }}-jobspec.yaml: |
@@ -58,6 +60,7 @@ data:
         spec:
           containers:
           - name: %jobname
+{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
             image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" $apptype) }}
             resources:
               requests:

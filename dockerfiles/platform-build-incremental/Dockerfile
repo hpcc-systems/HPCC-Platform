@@ -20,7 +20,8 @@
 # See incr.sh for how this is used
 
 ARG PREV_LABEL
-FROM hpccsystems/platform-build:${PREV_LABEL}
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-build:${PREV_LABEL}
 
 RUN apt-get install -y \
     dnsutils \
