@@ -422,6 +422,11 @@ void readStaticTopology()
     std::vector<RoxieEndpointInfo> allRoles;
     IpAddressArray nodeTable;
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
+    if (!numNodes && localSlave)
+    {
+        topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
+        numNodes = 1;
+    }
     Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
 
     bool myNodeSet = false;
@@ -695,6 +700,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         {
             if (topology->getPropBool("@server", false))
             {
+#ifdef _CONTAINERIZED
                 if (!topology->getCount("services"))
                 {
                     // Makes debugging easier...
@@ -702,6 +708,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     service->setProp("@name", "query");
                     service->setPropInt("@port", 9876);
                 }
+#else
+                if (!topology->getCount("RoxieFarmProcess"))
+                {
+                    // Makes debugging easier...
+                    IPropertyTree *service = topology->addPropTree("RoxieFarmProcess");
+                    service->setPropInt("@port", 9876);
+                }
+#endif
                 runOnce = false;
             }
             else
@@ -1350,6 +1364,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     {
         StringBuffer x;
         IERRLOG("EXCEPTION: (%d): %s", E->errorCode(), E->errorMessage(x).str());
+        if (!queryLogMsgManager()->isActiveMonitor(queryStderrLogMsgHandler()))
+            fprintf(stderr, "EXCEPTION: (%d): %s\n", E->errorCode(), x.str());
         E->Release();
     }
 
