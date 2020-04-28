@@ -92,6 +92,9 @@ data:
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
     {{ $agentAppType }}:
 {{ toYaml (omit $hthorScope "logging") | indent 6 }}
+      platform:
+        type: "thor"
+        width: {{ $thor.numSlaves }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $hthorScope) | indent 6 }}
     eclagent: # main agent Q handler
 {{ toYaml (omit $eclAgentScope "logging") | indent 6 }}
