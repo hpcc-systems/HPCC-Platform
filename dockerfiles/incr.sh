@@ -62,8 +62,8 @@ if [[ -z "$FORCE" ]] ; then
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
     PREV=$(git describe --abbrev=0 --tags)-Debug
-    IMAGE_FOUND=$(docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | fgrep "$PREV" | head -n 1)
-    if [[ -z "$IMAGE_FOUND" ]] ; then
+    docker pull ${DOCKER_REPO}/platform-build:${PREV}
+    if [ $? -ne 0 ]; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
     fi
