@@ -633,6 +633,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
+        localSlave = topology->getPropBool("@localSlave", false);
         const char *channels = topology->queryProp("@channels");
         if (channels)
         {
@@ -653,6 +654,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 slaveChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
             }
         }
+#ifdef _CONTAINERIZED
+        else if (localSlave)
+            slaveChannels.push_back(std::pair<unsigned, unsigned>(1, 0));
+#endif
         const char *topos = topology->queryProp("@topologyServers");
         StringArray topoValues;
         if (topos)
@@ -837,9 +842,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             Owned<IPropertyTree> nas = envGetNASConfiguration(topology);
             envInstallNASHooks(nas);
         }
-        useDynamicServers = topology->getPropBool("@useDynamicServers", !useOldTopology);
         useAeron = topology->getPropBool("@useAeron", false);
-        localSlave = topology->getPropBool("@localSlave", false);
         numChannels = topology->getPropInt("@numChannels", 0);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
@@ -1154,10 +1157,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
-        if (useDynamicServers && topoValues.length())
-        {
-            startTopoThread(topoValues, myRoles, traceLevel);
-        }
+#ifdef _CONTAINERIZED
+        initializeTopology(topoValues, myRoles, traceLevel);
+#endif
         ROQ = createOutputQueueManager(snifferChannel, numSlaveThreads);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
