@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
     "global": {
       "$ref": "#/definitions/global"
@@ -77,6 +77,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+	},
+        "efs": {
+          "$ref": "#/definitions/efs"
         }
       },
       "additionalProperties": false
@@ -95,6 +98,16 @@
           "type": "string",
           "enum": ["IfNotPresent", "Always", "Never"]
         }
+      },
+      "additionalProperties": false
+    },
+    "efs": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+	  "default": false
+	}
       },
       "additionalProperties": false
     },

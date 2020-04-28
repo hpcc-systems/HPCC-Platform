@@ -1,0 +1,7 @@
+apiVersion: v2
+name: efs
+version: 0.1.0
+appVersion: 0.1.0
+description:
+#sources:
+#- https://github.com/hpcc-systems/HPCC-Platform/dockerfiels/hpcc/charts/efs

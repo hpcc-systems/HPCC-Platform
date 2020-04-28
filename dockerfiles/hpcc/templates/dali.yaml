@@ -66,6 +66,10 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
+{{- if $.Values.global.efs.enabled }}
+  annotations:
+    volume.beta.kubernetes.io/storage-class: {{ .storage.storageClass }}
+{{- end }}
   labels:
     app.kubernetes.io/name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
@@ -77,11 +81,13 @@ spec:
   resources:
     requests:
       storage: {{ .storage.storageSize }}
+{{- if not $.Values.global.efs.enabled }}
 {{- if .storage.storageClass }}
 {{- if (eq "-" .storage.storageClass) }}
   storageClassName: ""
 {{- else }}
   storageClassName: "{{ .storage.storageClass }}"
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

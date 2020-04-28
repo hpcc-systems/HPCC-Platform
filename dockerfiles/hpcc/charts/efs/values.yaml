@@ -1,0 +1,6 @@
+efs:
+  namespace: default
+  # Check the EFS region ensure it is configured for. For example, us-east-1
+  region: <EFS region>
+  id: <ID of EFS>
+  server: <EFS Server FQDN>
