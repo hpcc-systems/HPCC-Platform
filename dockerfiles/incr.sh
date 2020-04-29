@@ -72,7 +72,7 @@ if [[ -z "$FORCE" ]] ; then
   PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug.*$//")
   # create empty patch file
   echo -n > platform-build-incremental/hpcc.gitpatch
-  if [[ -n "$(git status -uno --porcelain)" ]] ; then
+  if [[ -n "$(git status -uno --porcelain)" || "${HEAD}" != "${PREV_COMMIT}" ]] ; then
     git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
     # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
     PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
