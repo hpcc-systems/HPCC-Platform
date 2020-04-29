@@ -3857,6 +3857,10 @@ public:
     }
     virtual char *getGroupName()
     {
+#ifdef _CONTAINERIZED
+        // in a containerized setup, the group is moving..
+        return strdup("unknown");
+#endif
         StringBuffer groupName;
         if (workUnit && clusterNames.length())
         {
@@ -3921,6 +3925,19 @@ public:
     }
     virtual char *getPlatform()
     {
+#ifdef _CONTAINERIZED
+        /* NB: platform specs. are defined if agent is running in the context of
+         * another engine, e.g. query has been submitted to Thor, but some code is
+        * executing outside of it.
+        * 
+        * If not defined then assumed to be executing in roxie context,
+        * where platform() defaults to "roxie".
+        */
+        StringBuffer type;
+        if (!topology->getProp("platform/@type", type))
+            type.set("roxie");
+        return type.detach();
+#else            
         if (clusterNames.length())
         {
             const char * cluster = clusterNames.tos();
@@ -3931,6 +3948,7 @@ public:
         }
         else
             return strdup("roxie");
+#endif
     }
     virtual char *getWuid()
     {
@@ -4053,6 +4071,16 @@ public:
         {
             if (clusterWidth == -1)
             {
+#ifdef _CONTAINERIZED
+                /* NB: platform specs. are defined if agent is running in the context of
+                 * another engine, e.g. query has been submitted to Thor, but some code is
+                 * executing outside of it.
+                 * 
+                 * If not defined then assumed to be executing in roxie context,
+                 * where getNodes() defaults to 'numChannels'.
+                 */
+                clusterWidth = topology->getPropInt("platform/@width", numChannels);
+#else            
                 const char * cluster = clusterNames.tos();
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 if (!clusterInfo)
@@ -4061,6 +4089,7 @@ public:
                     clusterWidth = numChannels;  // We assume it's the current roxie - that's ok so long as roxie's don't call other roxies.
                 else
                     clusterWidth = clusterInfo->getSize();
+#endif            
             }
             return clusterWidth;
         }

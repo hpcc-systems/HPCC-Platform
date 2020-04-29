@@ -62,8 +62,8 @@ if [[ -z "$FORCE" ]] ; then
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
     PREV=$(git describe --abbrev=0 --tags)-Debug
-    IMAGE_FOUND=$(docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | fgrep "$PREV" | head -n 1)
-    if [[ -z "$IMAGE_FOUND" ]] ; then
+    docker pull ${DOCKER_REPO}/platform-build:${PREV}
+    if [ $? -ne 0 ]; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
     fi
@@ -72,7 +72,7 @@ if [[ -z "$FORCE" ]] ; then
   PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug.*$//")
   # create empty patch file
   echo -n > platform-build-incremental/hpcc.gitpatch
-  if [[ -n "$(git status -uno --porcelain)" ]] ; then
+  if [[ -n "$(git status -uno --porcelain)" || "${HEAD}" != "${PREV_COMMIT}" ]] ; then
     git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
     # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
     PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
