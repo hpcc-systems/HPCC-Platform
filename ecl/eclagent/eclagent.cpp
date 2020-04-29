@@ -1558,11 +1558,25 @@ char *EclAgent::getPlatform()
 {
     if (!isStandAloneExe)
     {
+#ifdef _CONTAINERIZED
+        /* NB: platform specs. are defined if agent is running in the context of
+         * another engine, e.g. query has been submitted to Thor, but some code is
+        * executing outside of it.
+        * 
+        * If not defined then assumed to be executing in hthor context,
+        * where platform() defaults to "hthor".
+        */
+        StringBuffer type;
+        if (!agentTopology->getProp("platform/@type", type))
+            type.set("hthor"); // default
+        return type.detach();
+#else            
         const char * cluster = clusterNames.tos();
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
         if (!clusterInfo)
             throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
         return strdup(clusterTypeString(clusterInfo->getPlatform(), false));
+#endif
     }
     else
         return strdup("standalone");
@@ -1610,12 +1624,23 @@ unsigned EclAgent::getNodes()//retrieve node count for current cluster
     {
         if (!isStandAloneExe)
         {
+#ifdef _CONTAINERIZED
+            /* NB: platform specs. are defined if agent is running in the context of
+             * another engine, e.g. query has been submitted to Thor, but some code is
+             * executing outside of it.
+             * 
+             * If not defined then assumed to be executing in hthor context,
+             * where getNodes() defaults to 1.
+             */
+            clusterWidth = agentTopology->getPropInt("platform/@width", 1);
+#else            
             const char * cluster = clusterNames.tos();
             Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
             if (!clusterInfo) 
                 throw MakeStringException(-1, "Unknown cluster '%s'", cluster);
             clusterWidth = clusterInfo->getSize();
             assertex(clusterWidth != 0);
+#endif
         }
         else
             clusterWidth = 1;
@@ -2951,6 +2976,10 @@ char * EclAgent::getClusterName()
 
 char * EclAgent::getGroupName()
 {
+#ifdef _CONTAINERIZED
+    // in a containerized setup, the group is moving..
+    return strdup("unknown");
+#endif
     StringBuffer groupName;
     if (!isStandAloneExe)
     {
