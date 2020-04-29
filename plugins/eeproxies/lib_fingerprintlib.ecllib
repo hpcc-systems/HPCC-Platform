@@ -21,7 +21,7 @@ export KeyValueResultRecord := record
   string key{maxlength(4096)};
   string value{maxlength(1024)};
 end;
-export FingerprintLib := SERVICE : plugin('fingerprint'), time
+export FingerprintLib := SERVICE : plugin('fingerprintlib'), time
   string    getHtmlFingerprint(const string scr, const string tag_list, const string attr_exclude_list, boolean include_xml_text, boolean de_dup )  : c, pure, entrypoint='getHtmlFingerprint';
   string    getTagValueString (const string scr, const string tag_list, const string attr_exclude_list )  : c, pure, entrypoint='getTagValueString';
   dataset(KeyValueResultRecord) getTagValueDS(const string scr, const string tag_list, const string attr_exclude_list )  : c, pure, entrypoint='getTagValueDS';

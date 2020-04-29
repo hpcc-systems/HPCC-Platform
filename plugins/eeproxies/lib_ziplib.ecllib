@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for (EE only) zip library */
 
-export ZipLib := SERVICE:plugin('zip'),fold
+export ZipLib := SERVICE:plugin('ziplib'),fold
   string21 ZipToGeo21(const string zip) : c,pure,entrypoint='zlZipToGeo21', hole;
   string   ZipToCities(const string zip) : c,pure,entrypoint='zlZipToCities';
   string2  ZipToState2(const string zip) : c,pure,entrypoint='zlZipToState2', hole;

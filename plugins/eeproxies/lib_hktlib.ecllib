@@ -15,8 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-/* Proxy plugin definition for (EE only) dms library */
+/* Proxy plugin definition for (EE only) hkt library */
 
-export DMSLib := SERVICE : plugin('dms')
-  string30    getVehDesc(const string number) : c, pure, entrypoint='getVehDesc', hole;
+export HktLib := SERVICE : plugin('hktlib')
+  unsigned4 HKT_SB(const string inval) : c, pure, entrypoint='hktHKT_SB', hole;
+  unsigned4 HKT_SU(const string inval) : c, pure, entrypoint='hktHKT_SU', hole;
+  unsigned4 HKT_P(const string inval) : c, pure, entrypoint='hktHKT_P', hole;
+  string    HKT_C(const string scr)  : c, pure, entrypoint='hktHKT_C';
+  string    HKT_CV(const string scr)  : c, pure, entrypoint='hktHKT_CV';
 END;

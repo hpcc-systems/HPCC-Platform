@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for (EE only) cms library */
 
-export cmsLib := SERVICE : plugin('cms')
+export cmsLib := SERVICE : plugin('cmslib')
   varstring GetBuildInfo() : c, pure, entrypoint='cmsGetBuildInfo';
   string100 GetBuildInfo100() : c, pure, entrypoint='cmsGetBuildInfo100', hole;
   integer4 ReasonCodeRank(string s, integer4 n, integer4 flag) : c, pure, entrypoint='cmsReasonCodeRank', hole;

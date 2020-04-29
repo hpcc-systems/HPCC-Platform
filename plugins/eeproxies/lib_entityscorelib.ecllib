@@ -19,7 +19,7 @@
 
 export TextSearchDataRecord := record varunicode indexWord; varunicode searchContext; end;
 export TextSearchResultRecord := record integer4 score; varunicode matchContext; end;
-export EntityScoreLib := SERVICE : plugin('entityscore'), time
+export EntityScoreLib := SERVICE : plugin('entityscorelib'), time
   integer4 AddressCompare(unicode streetOrFull1, unicode city1, unicode state1, unicode pcode1, unicode country1, unicode streetOrFull2, unicode city2, unicode state2, unicode pcode2, unicode country2) : c, pure, entrypoint='ESL_AddressCompare';
   integer4 AddressIndexWordCompare(unicode word1, unicode word2) : c, pure, entrypoint='ESL_AddressIndexWordCompare';
   integer4 CountryCompare(unicode country1, unicode country2) : c, pure, entrypoint='ESL_CountryCompare';
