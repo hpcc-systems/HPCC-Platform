@@ -35,39 +35,6 @@
 interface ILoadedDllEntry;
 interface IConstWUGraphProgress;
 
-class graphmaster_decl CThorStats : public CInterface
-{
-protected:
-    CJobBase &ctx;
-    unsigned __int64 max, min, tot, avg;
-    unsigned maxSkew, minSkew, minNode, maxNode;
-    UInt64Array counts;
-    StatisticKind kind;
-
-public:
-    CThorStats(CJobBase &ctx, StatisticKind _kind);
-    void reset();
-    virtual void processInfo();
-
-    unsigned __int64 queryTotal() { return tot; }
-    unsigned __int64 queryAverage() { return avg; }
-    unsigned __int64 queryMin() { return min; }
-    unsigned __int64 queryMax() { return max; }
-    unsigned queryMinSkew() { return minSkew; }
-    unsigned queryMaxSkew() { return maxSkew; }
-    unsigned queryMaxNode() { return maxNode; }
-    unsigned queryMinNode() { return minNode; }
-
-    void extract(unsigned node, const CRuntimeStatisticCollection & stats);
-    void set(unsigned node, unsigned __int64 count);
-    void getTotalStat(IStatisticGatherer & stats);
-    void getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual);
-
-protected:
-    void processTotal();
-    void calculateSkew();
-    void tallyValue(unsigned __int64 value, unsigned node);
-};
 
 class graphmaster_decl CThorStatsCollection : public CInterface
 {
@@ -105,17 +72,6 @@ public:
     void set(unsigned node, unsigned __int64 value);
 };
 
-class graphmaster_decl ProgressInfo : public CThorStats
-{
-    unsigned startCount, stopCount;
-public:
-    ProgressInfo(CJobBase &ctx);
-
-    virtual void processInfo();
-    void getStats(IStatisticGatherer & stats);
-};
-typedef CIArrayOf<ProgressInfo> ProgressInfoArray;
-
 class CJobMaster;
 class CMasterGraphElement;
 class graphmaster_decl CMasterGraph : public CGraphBase
@@ -125,7 +81,8 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     Owned<IFatalHandler> fatalHandler;
     CriticalSection exceptCrit;
     bool sentGlobalInit = false;
-    Owned<CThorStats> statNumExecutions;
+    CThorStatsCollection graphStats;
+
 
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
@@ -280,7 +237,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
 
 protected:
     std::vector<OwnedMalloc<CThorEdgeCollection>> edgeStatsVector;
-    CThorStatsCollection actStats;
+    CThorStatsCollection statsCollection;
     IBitSet *notedWarnings;
 
     void addReadFile(IDistributedFile *file, bool temp=false);
@@ -289,11 +246,10 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
-    CMasterActivity(CGraphElementBase *container);
+    CMasterActivity(CGraphElementBase *container, const StatisticsMapping &actStatsMapping = basicActivityStatistics);
     ~CMasterActivity();
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
-    virtual void deserializeActivityStats(unsigned node, MemoryBuffer &mb);
     virtual void getActivityStats(IStatisticGatherer & stats);
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx);
     virtual void init();

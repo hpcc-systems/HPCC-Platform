@@ -49,7 +49,6 @@ class MSortSlaveActivity : public CSlaveActivity
     Owned<IBarrier> barrier;
     SocketEndpoint server;
     CriticalSection statsCs;
-    CRuntimeStatisticCollection spillStats;
 
     bool isUnstable()
     {
@@ -57,7 +56,7 @@ class MSortSlaveActivity : public CSlaveActivity
     }
 
 public:
-    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), spillStats(spillStatistics)
+    MSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container, sortActivityStatistics)
     {
         portbase = 0;
         totalrows = RCUNSET;
@@ -176,11 +175,13 @@ public:
     {
         ActPrintLog("MSortSlaveActivity::kill");
 
+        CRuntimeStatisticCollection spillStats(spillStatistics);
         {
             CriticalBlock block(statsCs);
             mergeStats(spillStats, sorter);
             sorter.clear();
         }
+        stats.merge(spillStats);
         if (portbase)
         {
             queryJobChannel().freePort(portbase, NUMSLAVEPORTS);
@@ -190,12 +191,15 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-
-        CriticalBlock block(statsCs);
-        CRuntimeStatisticCollection mergedStats(spillStats);
-        mergeStats(mergedStats, sorter);
-        mergedStats.serialize(mb);
+        {
+            CRuntimeStatisticCollection spillStats(spillStatistics);
+            {
+                CriticalBlock block(statsCs);
+                mergeStats(spillStats, sorter);
+            }
+            stats.merge(spillStats);
+        }
+        PARENT::serializeStats(mb);    
     }
     CATCH_NEXTROW()
     {

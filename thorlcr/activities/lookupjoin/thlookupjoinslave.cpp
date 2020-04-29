@@ -1312,7 +1312,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CInMemJoinBase(CGraphElementBase *_container) : CSlaveActivity(_container), HELPERBASE((HELPER *)queryHelper()), rhs(*this)
+    CInMemJoinBase(CGraphElementBase *_container, const StatisticsMapping &statsMapping = basicActivityStatistics)
+        : CSlaveActivity(_container, statsMapping), HELPERBASE((HELPER *)queryHelper()), rhs(*this)
     {
         gotRHS = false;
         rhsNext = NULL;
@@ -1719,6 +1720,7 @@ protected:
     using PARENT::queryInput;
     using PARENT::rhsRowLock;
     using PARENT::hasStarted;
+    using PARENT::stats;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -2614,7 +2616,7 @@ public:
         }
         return dedup;
     }
-    CLookupJoinActivityBase(CGraphElementBase *_container) : PARENT(_container)
+    CLookupJoinActivityBase(CGraphElementBase *_container) : PARENT(_container, lookupJoinActivityStatistics)
     {
         rhsCollated = rhsCompacted = false;
         broadcast2MpTag = broadcast3MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
@@ -2925,13 +2927,13 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
         if (isSmart())
         {
             if (isGlobal())
-                mb.append(aggregateFailoversToLocal); // NB: is going to be same for all slaves.
-            mb.append(aggregateFailoversToStandard);
+                stats.setStatistic(StNumSmartJoinDegradedToLocal, aggregateFailoversToLocal); // NB: is going to be same for all slaves.
+            stats.setStatistic(StNumSmartJoinSlavesDegradedToStd, aggregateFailoversToStandard);
         }
+        PARENT::serializeStats(mb);
     }
 };
 

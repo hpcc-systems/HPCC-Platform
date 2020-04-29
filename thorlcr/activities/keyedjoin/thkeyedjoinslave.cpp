@@ -770,8 +770,6 @@ public:
     }
 };
 
-enum AdditionStats { AS_Seeks, AS_Scans, AS_Accepted, AS_PostFiltered, AS_PreFiltered,  AS_DiskSeeks, AS_DiskAccepted, AS_DiskRejected };
-
 struct PartIO
 {
     PartIO() {}
@@ -1719,8 +1717,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             unsigned partNo = partCopy & partMask;
             unsigned copy = partCopy >> partBits;
 
-            ScopedAtomic<unsigned __int64> diskRejected(activity.statsArr[AS_DiskRejected]);
-            ScopedAtomic<unsigned __int64> diskSeeks(activity.statsArr[AS_DiskSeeks]);
+            unsigned __int64 diskAccepted = 0;
+            unsigned __int64 diskRejected = 0;
+            unsigned __int64 diskSeeks = 0;
+            auto onScopeExitFunc = [&]()
+            {
+                activity.stats.mergeStatistic(StNumDiskAccepted, diskAccepted);
+                activity.stats.mergeStatistic(StNumDiskRejected, diskRejected);
+                activity.stats.mergeStatistic(StNumDiskSeeks, diskSeeks);
+            };
+            COnScopeExit scoped(onScopeExitFunc);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
             {
                 OwnedConstThorRow row = processing.getClear(r);
@@ -1757,7 +1763,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     // If !preserverOrder, right rows added to single array in jg, so pass 0
                     joinGroup->addRightMatchCompletePending(activity.preserveOrder ? indexPartNo : 0, sequence, joinFieldsSz, fetchRow);
 
-                    if (++activity.statsArr[AS_DiskAccepted] > activity.rowLimit)
+                    if (++diskAccepted > activity.rowLimit)
                         helper->onLimitExceeded();
                 }
                 else
@@ -1872,7 +1878,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             CMessageBuffer msg;
             prepAndSend(msg, processing, selected, partNo, copy);
 
-            ScopedAtomic<unsigned __int64> diskSeeks(activity.statsArr[AS_DiskSeeks]);
+            unsigned __int64 diskSeeks = 0;
+            auto onScopeExitFunc = [&]()
+            {
+                activity.stats.mergeStatistic(StNumDiskSeeks, diskSeeks);
+            };
+            COnScopeExit scoped(onScopeExitFunc);
+
             unsigned numRows = processing.ordinality();
             // read back results and feed in to appropriate join groups.
 
@@ -1947,8 +1959,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     unsigned rejected = 0;
                     mb.read(accepted);
                     mb.read(rejected);
-                    activity.statsArr[AS_DiskAccepted] += accepted;
-                    activity.statsArr[AS_DiskRejected] += rejected;
+                    activity.stats.mergeStatistic(StNumDiskAccepted, accepted);
+                    activity.stats.mergeStatistic(StNumDiskRejected, rejected);
                 }
                 if (received == numRows)
                     break;
@@ -2079,8 +2091,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     bool onFailTransform = false;
     bool keyHasTlk = false;
     std::vector<mptag_t> tags;
-    std::vector<RelaxedAtomic<unsigned __int64>> statsArr; // (seeks, scans, accepted, prefiltered, postfiltered, diskSeeks, diskAccepted, diskRejected)
-    unsigned numStats = 0;
 
     enum HandlerType { ht_remotekeylookup, ht_localkeylookup, ht_localfetch, ht_remotefetch };
     CHandlerContainer keyLookupHandlers;
@@ -2503,6 +2513,13 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     {
         endOfInput = false;
         CJoinGroup *groupStart = nullptr;
+        unsigned __int64 preFiltered = 0;
+
+        auto onScopeExitFunc = [&]()
+        {
+            stats.mergeStatistic(StNumPreFiltered, preFiltered);
+        };
+        COnScopeExit scoped(onScopeExitFunc);
         do
         {
             if (queryAbortSoon())
@@ -2519,7 +2536,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             if (helper->leftCanMatch(lhsRow))
                 jg.setown(queueLookup(lhsRow)); // NB: will block if excessive amount queued
             else
-                statsArr[AS_PreFiltered]++;
+                preFiltered++;
             if (!jg && ((joinFlags & JFleftonly) || (joinFlags & JFleftouter)))
             {
                 size32_t maxSz;
@@ -2795,7 +2812,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container), readAheadThread(*this), statsArr(8)
+    CKeyedJoinSlave(CGraphElementBase *_container) : PARENT(_container, keyedJoinActivityStatistics), readAheadThread(*this)
     {
         helper = static_cast <IHThorKeyedJoinArg *> (queryHelper());
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
@@ -2866,7 +2883,6 @@ public:
             initialized = true;
             joinFlags = helper->getJoinFlags();
             needsDiskRead = helper->diskAccessRequired();
-            numStats = needsDiskRead ? 8 : 5;
             fixedRecordSize = helper->queryIndexRecordSize()->getFixedSize(); // 0 if variable and unused
             onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
@@ -2896,8 +2912,6 @@ public:
             tlkKeyManagers.kill();
             partitionKey = false;
         }
-        for (auto &a : statsArr)
-            a = 0;
         // decode data from master. NB: can be resent and differ if in global loop
         data.read(indexName);
         data.read(totalIndexParts);
@@ -3247,12 +3261,6 @@ public:
         initMetaInfo(info);
         info.canStall = true;
         info.unknownRowsOutput = true;
-    }
-    virtual void serializeStats(MemoryBuffer &mb) override
-    {
-        PARENT::serializeStats(mb);
-        for (unsigned s=0; s<numStats; s++)
-            mb.append(statsArr[s]);
     }
     // IJoinProcessor
     virtual void onComplete(CJoinGroup *joinGroup) override

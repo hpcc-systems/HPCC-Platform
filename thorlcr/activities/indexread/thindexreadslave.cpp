@@ -53,10 +53,6 @@ protected:
     rowcount_t remoteLimit = RCMAX;
     bool localKey = false;
     size32_t seekGEOffset = 0;
-    __int64 lastSeeks = 0, lastScans = 0;
-    UInt64Array _statsArr;
-    SpinLock statLock;  // MORE: Can this be avoided by passing in the delta?
-    unsigned __int64 *statsArr = nullptr;
     size32_t fixedDiskRecordSize = 0;
     rowcount_t progress = 0;
     bool eoi = false;
@@ -80,6 +76,24 @@ protected:
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
 
+    template<class StatProvider>
+    class CCaptureIndexStats
+    {
+        CRuntimeStatisticCollection &stats;
+        StatProvider &statProvider;
+        unsigned __int64 startSeeks = 0, startScans = 0;
+    public:
+        inline CCaptureIndexStats(CRuntimeStatisticCollection &_stats, StatProvider &_statProvider) : stats(_stats), statProvider(_statProvider)
+        {
+            startSeeks = statProvider.querySeeks();
+            startScans = statProvider.queryScans();
+        }
+        inline ~CCaptureIndexStats()
+        {
+            stats.mergeStatistic(StNumIndexSeeks, statProvider.querySeeks() - startSeeks);
+            stats.mergeStatistic(StNumIndexScans, statProvider.queryScans() - startScans);
+        }
+    };
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
     {
@@ -364,7 +378,6 @@ public:
             return;
         resetManager(manager);
         callback.prepareManager(manager);
-        resetLastStats();
         helper->createSegmentMonitors(manager);
         manager->finishSegmentMonitors();
         manager->reset();
@@ -394,10 +407,12 @@ public:
         const void *ret = nullptr;
         while (true)
         {
-            ret = currentInput->nextKey();
-            noteStats(currentInput->querySeeks(), currentInput->queryScans());
-            if (ret)
-                break;
+            {
+                CCaptureIndexStats<IIndexLookup> scoped(stats, *currentInput);
+                ret = currentInput->nextKey();
+                if (ret)
+                    break;
+            }
             configureNextInput();
             if (!currentInput)
                 break;
@@ -482,8 +497,8 @@ public:
             keyedLimitCount = getLocalCount(keyedLimit, true);
     }
 public:
-    CIndexReadSlaveBase(CGraphElementBase *container) 
-        : CSlaveActivity(container), callback(*this)
+    CIndexReadSlaveBase(CGraphElementBase *container)
+        : CSlaveActivity(container, indexReadActivityStatistics), callback(*this)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         limitTransformExtra = nullptr;
@@ -492,9 +507,6 @@ public:
         deserializer.set(queryRowDeserializer());
         serializer.set(queryRowSerializer());
         helper->setCallback(&callback);
-        _statsArr.append(0);
-        _statsArr.append(0);
-        statsArr = _statsArr.getArray();
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     rowcount_t getLocalCount(const rowcount_t keyedLimit, bool hard)
@@ -513,11 +525,11 @@ public:
                 break;
             if (keyManager)
                 prepareManager(keyManager);
+            CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
             if (hard) // checkCount checks hard key count only.
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
                 count += indexInput->getCount();
-            noteStats(indexInput->querySeeks(), indexInput->queryScans());
             bool limitHit = count > keyedLimit;
             if (keyManager)
                 resetManager(keyManager);
@@ -534,18 +546,6 @@ public:
             return count;
         sendPartialCount(*this, count);
         return getFinalCount(*this);
-    }
-    inline void resetLastStats()
-    {
-        lastSeeks = lastScans = 0;
-    }
-    inline void noteStats(unsigned seeks, unsigned scans)
-    {
-        SpinBlock b(statLock);
-        statsArr[AS_Seeks] += seeks-lastSeeks;
-        statsArr[AS_Scans] += scans-lastScans;
-        lastSeeks = seeks;
-        lastScans = scans;
     }
 
 // IThorSlaveActivity
@@ -570,7 +570,6 @@ public:
         if (parts)
             deserializePartFileDescriptors(data, partDescs);
         localKey = partDescs.ordinality() ? partDescs.item(0).queryOwner().queryProperties().getPropBool("@local", false) : false;
-        lastSeeks = lastScans = 0;
         localMerge = (localKey && partDescs.ordinality()>1) || seekGEOffset;
 
         if (parts)
@@ -684,12 +683,10 @@ public:
             currentManager = nullptr;
         }
     }
-    void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-        mb.append(progress);
-        ForEachItemIn(s, _statsArr)
-            mb.append(_statsArr.item(s));
+        stats.setStatistic(StNumRowsProcessed, progress);
+        PARENT::serializeStats(mb);
     }
 };
 
@@ -758,9 +755,9 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
             rawSeek = (byte *)temp;
         }
+        CCaptureIndexStats<IKeyManager> scoped(stats, *currentManager);
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
-        noteStats(currentManager->querySeeks(), currentManager->queryScans());
         const byte *row = currentManager->queryKeyBuffer();
 #ifdef _DEBUG
         if (memcmp(row + seekGEOffset, rawSeek, seekSize) < 0)
@@ -1067,13 +1064,14 @@ public:
                         break;
                     if (keyManager)
                         prepareManager(keyManager);
+
+                    CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
                     while (true)
                     {
                         const void *key = indexInput->nextKey();
                         if (!key)
                             break;
                         ++progress;
-                        noteStats(indexInput->querySeeks(), indexInput->queryScans());
                         helper->processRow(key, this);
                         callback.finishedRow();
                     }
@@ -1211,10 +1209,11 @@ public:
                             break;
                         if (keyManager)
                             prepareManager(keyManager);
+
+                        CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
                         while (true)
                         {
                             const void *key = indexInput->nextKey();
-                            noteStats(indexInput->querySeeks(), indexInput->queryScans());
                             if (!key)
                                 break;
                             if (incKeyedExceedsLimit())

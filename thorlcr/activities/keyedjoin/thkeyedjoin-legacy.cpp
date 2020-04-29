@@ -36,29 +36,11 @@ class CKeyedJoinMaster : public CMasterActivity
     bool localKey, remoteDataFiles;
     unsigned numTags;
     mptag_t tags[4];
-    ProgressInfoArray progressInfoArr;
-    UnsignedArray progressKinds;
-
 
 public:
-    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics)
     {
         helper = (IHThorKeyedJoinArg *) queryHelper();
-        //GH->JCS a bit wasteful creating this array each time.
-        progressKinds.append(StNumIndexSeeks);
-        progressKinds.append(StNumIndexScans);
-        progressKinds.append(StNumIndexAccepted);
-        progressKinds.append(StNumPostFiltered);
-        progressKinds.append(StNumPreFiltered);
-
-        if (helper->diskAccessRequired())
-        {
-            progressKinds.append(StNumDiskSeeks);
-            progressKinds.append(StNumDiskAccepted);
-            progressKinds.append(StNumDiskRejected);
-        }
-        ForEachItemIn(l, progressKinds)
-            progressInfoArr.append(*new ProgressInfo(queryJob()));
         localKey = false;
         numTags = 0;
         tags[0] = tags[1] = tags[2] = tags[3] = TAG_NULL;
@@ -315,28 +297,6 @@ public:
                 CSlavePartMapping::serializeNullMap(dst);
                 CSlavePartMapping::serializeNullOffsetMap(dst);
             }
-        }
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        ForEachItemIn(p, progressKinds)
-        {
-            unsigned __int64 st;
-            mb.read(st);
-            progressInfoArr.item(p).set(node, st);
-        }
-    }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
-    {
-        //This should be an activity stats
-        CMasterActivity::getEdgeStats(stats, idx);
-        assertex(0 == idx);
-        ForEachItemIn(p, progressInfoArr)
-        {
-            ProgressInfo &progress = progressInfoArr.item(p);
-            progress.processInfo();
-            stats.addStatistic((StatisticKind)progressKinds.item(p), progress.queryTotal());
         }
     }
 };

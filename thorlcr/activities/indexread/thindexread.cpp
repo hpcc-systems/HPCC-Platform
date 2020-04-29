@@ -35,9 +35,6 @@ protected:
     bool nofilter = false;
     bool localKey = false;
     bool partitionKey = false;
-    ProgressInfoArray progressInfoArr;
-    UnsignedArray progressKinds;
-    Owned<ProgressInfo> inputProgress;
     StringBuffer fileName;
 
     rowcount_t aggregateToLimit()
@@ -208,16 +205,11 @@ protected:
     }
 
 public:
-    CIndexReadBase(CMasterGraphElement *info) : CMasterActivity(info)
+    CIndexReadBase(CMasterGraphElement *info) : CMasterActivity(info, indexReadActivityStatistics)
     {
         indexBaseHelper = (IHThorIndexReadBaseArg *)queryHelper();
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
-        progressKinds.append(StNumIndexSeeks);
-        progressKinds.append(StNumIndexScans);
-        ForEachItemIn(l, progressKinds)
-            progressInfoArr.append(*new ProgressInfo(queryJob()));
-        inputProgress.setown(new ProgressInfo(queryJob()));
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     virtual void init() override
@@ -286,32 +278,6 @@ public:
             partNumbers.append(parts.item(p2).queryPartIndex());
         if (partNumbers.ordinality())
             fileDesc->serializeParts(dst, partNumbers);
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        rowcount_t progress;
-        mb.read(progress);
-        inputProgress->set(node, progress);
-        ForEachItemIn(p, progressKinds)
-        {
-            unsigned __int64 st;
-            mb.read(st);
-            progressInfoArr.item(p).set(node, st);
-        }
-    }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx) override
-    {
-        //This should be an activity stats
-        CMasterActivity::getEdgeStats(stats, idx);
-
-        stats.addStatistic(StNumIndexRowsRead, inputProgress->queryTotal());
-        ForEachItemIn(p, progressInfoArr)
-        {
-            ProgressInfo &progress = progressInfoArr.item(p);
-            progress.processInfo();
-            stats.addStatistic((StatisticKind)progressKinds.item(p), progress.queryTotal());
-        }
     }
     virtual void abort() override
     {

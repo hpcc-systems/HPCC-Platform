@@ -400,13 +400,32 @@ protected:
 class jlib_decl StatisticsMapping
 {
 public:
-    //Takes a list of StatisticKind
-    StatisticsMapping(const std::initializer_list<StatisticKind> &kinds);
-    //Takes an existing Mapping, and extends it with a list of StatisticKind
-    StatisticsMapping(const StatisticsMapping * from, const std::initializer_list<StatisticKind> &kinds);
-    //Accepts all StatisticKind values
-    StatisticsMapping();
-
+    //Takes a list of StatisticKind and a variable number of existing mappings and combines
+    template <typename... Mappings>
+    StatisticsMapping(const std::initializer_list<StatisticKind> &kinds, const Mappings &... mappings) : StatisticsMapping(&mappings...)
+    {
+        for (auto kind : kinds)
+        {
+            assert((kind != StKindNone) && (kind != StKindAll));
+            assert(!indexToKind.contains(kind));
+            indexToKind.append(kind);
+        }
+        createMappings();
+    }
+    StatisticsMapping(StatisticKind kind)
+    {
+        if (StKindAll == kind)
+        {
+            for (int i = StKindAll+1; i < StMax; i++)
+                indexToKind.append(i);
+        }
+        else
+        {
+            assert(kind != StKindNone);
+            indexToKind.append(kind);
+        }
+        createMappings();
+    }
     inline unsigned getIndex(StatisticKind kind) const
     {
         dbgassertex(kind >= StKindNone && kind < StMax);
@@ -416,11 +435,26 @@ public:
     inline unsigned numStatistics() const { return indexToKind.ordinality(); }
 
 protected:
+    StatisticsMapping() { }
+    template <typename Mapping>
+    StatisticsMapping(const Mapping *mapping)
+    {
+        ForEachItemIn(idx, mapping->indexToKind)
+            indexToKind.append(mapping->indexToKind.item(idx));
+    }
+    template <typename Mapping, typename... Mappings>
+    StatisticsMapping(const Mapping *mapping, const Mappings * ... mappings) : StatisticsMapping(mappings...)
+    {
+        ForEachItemIn(idx, mapping->indexToKind)
+            indexToKind.append(mapping->indexToKind.item(idx));
+    }
     void createMappings();
 
 protected:
     UnsignedArray kindToIndex;
     UnsignedArray indexToKind;
+private:
+    StatisticsMapping& operator=(const StatisticsMapping&) =delete;
 };
 
 extern const jlib_decl StatisticsMapping allStatistics;

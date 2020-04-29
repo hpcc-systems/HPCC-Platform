@@ -39,8 +39,6 @@ class JoinActivityMaster : public CMasterActivity
     unsigned selfJoinWarnLevel, lastMsgTime;
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
-    Owned<ProgressInfo> lhsProgress, rhsProgress;
-    CThorStatsCollection extraStats;
 
     bool nosortPrimary()
     {
@@ -78,11 +76,9 @@ class JoinActivityMaster : public CMasterActivity
         }
     } *climitedcmp;
 public:
-    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(spillStatistics)
+    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info, joinActivityStatistics)
     {
         ActPrintLog("JoinActivityMaster");
-        lhsProgress.setown(new ProgressInfo(queryJob()));
-        rhsProgress.setown(new ProgressInfo(queryJob()));
         helper = (IHThorJoinArg *)queryHelper();
         islocal = local;
         imaster = NULL;
@@ -98,11 +94,6 @@ public:
         container.queryJob().freeMPTag(mpTagRPC);
         container.queryJob().freeMPTag(barrierMpTag);
         delete climitedcmp;
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats)
-    {
-        CMasterActivity::getActivityStats(stats);
-        extraStats.getStats(stats);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -335,34 +326,7 @@ public:
         }
         ActPrintLog("process exit");
     }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        rowcount_t lhsProgressCount, rhsProgressCount;
-        mb.read(lhsProgressCount);
-        lhsProgress->set(node, lhsProgressCount);
-        if (TAKselfjoin != container.getKind() && TAKselfjoinlight != container.getKind())
-        {
-            mb.read(rhsProgressCount);
-            rhsProgress->set(node, rhsProgressCount);
-        }
 
-        extraStats.deserialize(node, mb);
-    }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
-    {
-        //This should be an activity stats
-        CMasterActivity::getEdgeStats(stats, idx);
-        assertex(0 == idx);
-
-        lhsProgress->processInfo();
-        stats.addStatistic(StNumLeftRows, lhsProgress->queryTotal());
-        if (TAKselfjoin != container.getKind() && TAKselfjoinlight != container.getKind())
-        {
-            rhsProgress->processInfo();
-            stats.addStatistic(StNumRightRows, rhsProgress->queryTotal());
-        }
-    }
 #define MSGTIME (5*60*1000)
     virtual bool fireException(IException *_e)
     {

@@ -362,9 +362,8 @@ void CSlaveMessageHandler::threadmain()
 
 //////////////////////
 
-static const StatisticsMapping activityStatsMapping({StTimeLocalExecute, StTimeBlocked});
-
-CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this), actStats(activityStatsMapping)
+CMasterActivity::CMasterActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
+    : CActivityBase(_container), threaded("CMasterActivity", this), statsCollection(statsMapping)
 {
     notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
@@ -516,7 +515,7 @@ void CMasterActivity::reset()
 void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
     CriticalBlock b(progressCrit); // don't think needed
-    deserializeActivityStats(node, mb);
+    statsCollection.deserialize(node, mb);
     rowcount_t count;
     for (auto &collection: edgeStatsVector)
     {
@@ -525,18 +524,9 @@ void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
     }
 }
 
-void CMasterActivity::deserializeActivityStats(unsigned node, MemoryBuffer &mb)
-{
-    unsigned __int64 localTimeNs, blockedTimeNs;
-    mb.read(localTimeNs);
-    mb.read(blockedTimeNs);
-    actStats.setStatistic(node, StTimeLocalExecute, localTimeNs);
-    actStats.setStatistic(node, StTimeBlocked, blockedTimeNs);
-}
-
 void CMasterActivity::getActivityStats(IStatisticGatherer & stats)
 {
-    actStats.getStats(stats);
+    statsCollection.getStats(stats);
 }
 
 void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
@@ -2159,7 +2149,7 @@ public:
 // CMasterGraph impl.
 //
 
-CMasterGraph::CMasterGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
+CMasterGraph::CMasterGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel), graphStats(graphStatistics)
 {
     jobM = (CJobMaster *)&jobChannel.queryJob();
     mpTag = queryJob().allocateMPTag();
@@ -2167,7 +2157,6 @@ CMasterGraph::CMasterGraph(CJobChannel &jobChannel) : CGraphBase(jobChannel)
     waitBarrierTag = queryJob().allocateMPTag();
     startBarrier = jobChannel.createBarrier(startBarrierTag);
     waitBarrier = jobChannel.createBarrier(waitBarrierTag);
-    statNumExecutions.setown(new CThorStats(queryJob(), StNumExecutions));
 }
 
 
@@ -2720,10 +2709,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
     CriticalBlock b(createdCrit);
 
-    unsigned numExecutions;
-    mb.read(numExecutions);
-    statNumExecutions->set(node, numExecutions);
-
+    graphStats.deserialize(node, mb);
     unsigned count;
     mb.read(count);
     if (count)
@@ -2790,7 +2776,7 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
 {
     // graph specific stats
 
-    statNumExecutions->getStats(stats, false);
+    graphStats.getStats(stats);
 
     Owned<IThorActivityIterator> iter;
     if (queryOwner() && !isGlobal())
@@ -2844,173 +2830,17 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IThorR
 
 ///////////////////////////////////////////////////
 
-static bool suppressStatisticIfZero(StatisticKind kind)
-{
-    switch (kind)
-    {
-    case StNumSpills:
-    case StSizeSpillFile:
-    case StTimeSpillElapsed:
-    case StNumDiskRetries:
-        return true;
-    default:
-        break;
-    }
-    return false;
-}
-
-
-///////////////////////////////////////////////////
-
-CThorStats::CThorStats(CJobBase &_ctx, StatisticKind _kind) : ctx(_ctx), kind(_kind)
-{
-    unsigned c = queryClusterWidth();
-    while (c--) counts.append(0);
-    reset();
-}
-
-void CThorStats::extract(unsigned node, const CRuntimeStatisticCollection & stats)
-{
-    set(node, stats.getStatisticValue(kind));
-}
-
-void CThorStats::set(unsigned node, unsigned __int64 count)
-{
-    counts.replace(count, node);
-}
-
-void CThorStats::reset()
-{
-    tot = max = avg = 0;
-    min = (unsigned __int64) -1;
-    minNode = maxNode = maxSkew = minSkew = 0;
-}
-
-void CThorStats::calculateSkew()
-{
-    unsigned count = counts.ordinality();
-    double _avg = (double)tot/count;
-    if (_avg)
-    {
-        if (max > ctx.querySlaves()) // i.e. if small count, suppress skew stats.
-        {
-            //MORE: Range protection on maxSkew?
-            maxSkew = (unsigned)(10000.0 * (((double)max-_avg)/_avg));
-            minSkew = (unsigned)(10000.0 * ((_avg-(double)min)/_avg));
-        }
-        avg = (unsigned __int64)_avg;
-    }
-}
-
-void CThorStats::tallyValue(unsigned __int64 thiscount, unsigned n)
-{
-    tot += thiscount;
-    if (thiscount > max)
-    {
-        max = thiscount;
-        maxNode = n;
-    }
-    if (thiscount < min)
-    {
-        min = thiscount;
-        minNode = n;
-    }
-}
-
-void CThorStats::processTotal()
-{
-    reset();
-    ForEachItemIn(n, counts)
-    {
-        unsigned __int64 thiscount = counts.item(n);
-        tallyValue(thiscount, n+1);
-    }
-}
-
-void CThorStats::processInfo()
-{
-    processTotal();
-    calculateSkew();
-}
-
-void CThorStats::getTotalStat(IStatisticGatherer & stats)
-{
-    processTotal();
-    stats.addStatistic(kind, tot);
-}
-
-void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)
-{
-    processInfo();
-    if ((0 == tot) && suppressStatisticIfZero(kind))
-        return;
-
-    //MORE: For most measures (not time stamps etc.) it would be sensible to output the total here....
-    if (!suppressMinMaxWhenEqual || (maxSkew != minSkew))
-    {
-        stats.addStatistic((StatisticKind)(kind|StMinX), min);
-        stats.addStatistic((StatisticKind)(kind|StMaxX), max);
-        stats.addStatistic((StatisticKind)(kind|StAvgX), avg);
-    }
-
-    if (maxSkew != minSkew)
-    {
-        stats.addStatistic((StatisticKind)(kind|StSkewMin), -(__int64)minSkew); // Save minimum as a negative value so consistent
-        stats.addStatistic((StatisticKind)(kind|StSkewMax), maxSkew);
-        stats.addStatistic((StatisticKind)(kind|StNodeMin), minNode);
-        stats.addStatistic((StatisticKind)(kind|StNodeMax), maxNode);
-    }
-}
-
-///////////////////////////////////////////////////
-
 const StatisticsMapping CThorEdgeCollection::edgeStatsMapping({StNumRowsProcessed, StNumStarts, StNumStops});
 
 void CThorEdgeCollection::set(unsigned node, unsigned __int64 value)
 {
     unsigned __int64 numRows = value & THORDATALINK_COUNT_MASK;
     byte stop = (value & THORDATALINK_STOPPED) ? 1 : 0;
-    byte start = (value & THORDATALINK_STARTED) ? 1 : 0;
+    byte start = stop || (value & THORDATALINK_STARTED) ? 1 : 0; // start implied if stopped, keeping previous semantics
     setStatistic(node, StNumRowsProcessed, numRows);
     setStatistic(node, StNumStops, stop);
     setStatistic(node, StNumStarts, start);
 }
-
-///////////////////////////////////////////////////
-
-ProgressInfo::ProgressInfo(CJobBase &ctx) : CThorStats(ctx, StNumRowsProcessed)
-{
-    startCount = stopCount = 0;
-}
-void ProgressInfo::processInfo() // reimplement as counts have special flags (i.e. stop/start)
-{
-    reset();
-    startCount = stopCount = 0;
-    ForEachItemIn(n, counts)
-    {
-        unsigned __int64 thiscount = counts.item(n);
-        if (thiscount & THORDATALINK_STOPPED)
-        {
-            startCount++;
-            stopCount++;
-        }
-        else if (thiscount & THORDATALINK_STARTED)
-            startCount++;
-        thiscount = thiscount & THORDATALINK_COUNT_MASK;
-        tallyValue(thiscount, n+1);
-    }
-    calculateSkew();
-}
-
-void ProgressInfo::getStats(IStatisticGatherer & stats)
-{
-    CThorStats::getStats(stats, true);
-    stats.addStatistic(kind, tot);
-    stats.addStatistic(StNumSlaves, counts.ordinality());
-    stats.addStatistic(StNumStarts, startCount);
-    stats.addStatistic(StNumStops, stopCount);
-}
-
 
 ///////////////////////////////////////////////////
 

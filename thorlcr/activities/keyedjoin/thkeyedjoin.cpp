@@ -28,7 +28,6 @@
 #include "thkeyedjoin.ipp"
 #include "jhtree.hpp"
 
-static const std::array<StatisticKind, 8> progressKinds{ StNumIndexSeeks, StNumIndexScans, StNumIndexAccepted, StNumPostFiltered, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected };
 
 class CKeyedJoinMaster : public CMasterActivity
 {
@@ -37,8 +36,6 @@ class CKeyedJoinMaster : public CMasterActivity
     MemoryBuffer initMb;
     unsigned numTags = 0;
     std::vector<mptag_t> tags;
-    ProgressInfoArray progressInfoArr;
-
     bool local = false;
     bool remoteKeyedLookup = false;
     bool remoteKeyedFetch = false;
@@ -250,14 +247,10 @@ class CKeyedJoinMaster : public CMasterActivity
 
 
 public:
-    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics)
     {
         helper = (IHThorKeyedJoinArg *) queryHelper();
-        unsigned numStats = helper->diskAccessRequired() ? 8 : 5; // see progressKinds array
-        for (unsigned s=0; s<numStats; s++)
-            progressInfoArr.append(*new ProgressInfo(queryJob()));
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
-
         // NB: force options are there to force all parts to be remote, even if local to slave (handled on slave)
         remoteKeyedLookup = getOptBool(THOROPT_REMOTE_KEYED_LOOKUP, true);
         if (getOptBool(THOROPT_FORCE_REMOTE_KEYED_LOOKUP))
@@ -514,28 +507,6 @@ public:
                 if (remoteKeyedFetch)
                     dataMap.serializePartMap(dst);
             }
-        }
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        ForEachItemIn(p, progressInfoArr)
-        {
-            unsigned __int64 st;
-            mb.read(st);
-            progressInfoArr.item(p).set(node, st);
-        }
-    }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
-    {
-        //This should be an activity stats
-        CMasterActivity::getEdgeStats(stats, idx);
-        assertex(0 == idx);
-        ForEachItemIn(p, progressInfoArr)
-        {
-            ProgressInfo &progress = progressInfoArr.item(p);
-            progress.processInfo();
-            stats.addStatistic(progressKinds[p], progress.queryTotal());
         }
     }
 };

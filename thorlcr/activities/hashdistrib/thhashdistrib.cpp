@@ -38,8 +38,8 @@ class HashDistributeMasterBase : public CMasterActivity
     mptag_t mptag;
     mptag_t mptag2; // for tag 2
 public:
-    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info) 
-        : CMasterActivity(info), mode(_mode) 
+    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info, const StatisticsMapping &actStatsMapping = basicActivityStatistics) 
+        : CMasterActivity(info, actStatsMapping), mode(_mode) 
     {
         mptag = TAG_NULL;
         mptag2 = TAG_NULL;
@@ -75,35 +75,12 @@ public:
     HashDistributeActivityMaster(DistributeMode mode, CMasterGraphElement *info) : HashDistributeMasterBase(mode, info) { }
 };
 
-class HashJoinDistributeActivityMaster : public HashDistributeActivityMaster
+class HashJoinDistributeActivityMaster : public HashDistributeMasterBase
 {
-    Owned<ProgressInfo> lhsProgress, rhsProgress;
-
 public:
-    HashJoinDistributeActivityMaster(DistributeMode mode, CMasterGraphElement *info) : HashDistributeActivityMaster(mode, info)
+    HashJoinDistributeActivityMaster(DistributeMode mode, CMasterGraphElement *info)
+        : HashDistributeMasterBase(mode, info, hashJoinActivityStatistics)
     {
-        lhsProgress.setown(new ProgressInfo(queryJob()));
-        rhsProgress.setown(new ProgressInfo(queryJob()));
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        HashDistributeActivityMaster::deserializeStats(node, mb);
-        rowcount_t lhsProgressCount, rhsProgressCount;
-        mb.read(lhsProgressCount);
-        mb.read(rhsProgressCount);
-        lhsProgress->set(node, lhsProgressCount);
-        rhsProgress->set(node, rhsProgressCount);
-    }
-    virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
-    {
-        //This should be an activity stats
-        HashDistributeActivityMaster::getEdgeStats(stats, idx);
-        assertex(0 == idx);
-        lhsProgress->processInfo();
-        rhsProgress->processInfo();
-
-        stats.addStatistic(StNumLeftRows, lhsProgress->queryTotal());
-        stats.addStatistic(StNumRightRows, rhsProgress->queryTotal());
     }
 };
 
@@ -163,7 +140,7 @@ class ReDistributeActivityMaster : public HashDistributeMasterBase
     mptag_t statstag;
 
 public:
-    ReDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_redistribute, info) 
+    ReDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_redistribute, info)
     { 
         statstag = container.queryJob().allocateMPTag();
     }
