@@ -446,6 +446,8 @@ int init_main(int argc, char* argv[])
         return -1;
     }
 
+    writeSentinelFile(sentinelFile);
+
     if (config && config->isValid())
     {
         PROGLOG("Configuring Esp Platform...");
@@ -475,8 +477,6 @@ int init_main(int argc, char* argv[])
             IERRLOG("ESP Unhandled General Exception.");
             return -1;
         }
-
-        writeSentinelFile(sentinelFile);
 
         result = work_main(*config, *server.get());
     }
