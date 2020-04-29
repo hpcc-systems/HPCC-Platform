@@ -42,7 +42,7 @@ protected:
     virtual void process() { }
 
 public:
-    ProcessSlaveActivity(CGraphElementBase *container);
+    ProcessSlaveActivity(CGraphElementBase *container, const StatisticsMapping &statsMapping = basicActivityStatistics);
     virtual void beforeDispose();
 
     virtual void startProcess(bool async=true);

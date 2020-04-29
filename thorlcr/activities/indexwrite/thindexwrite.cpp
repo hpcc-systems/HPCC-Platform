@@ -37,18 +37,14 @@ class IndexWriteActivityMaster : public CMasterActivity
     StringArray clusters;
     mptag_t mpTag2;
     bool refactor;
-    Owned<ProgressInfo> replicateProgress;
-    bool publishReplicatedDone;
     CDfsLogicalFileName dlfn;
     IHThorIndexWriteArg *helper;
     StringAttr fileName;
 
 public:
-    IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info, indexWriteActivityStatistics)
     {
         helper = (IHThorIndexWriteArg *)queryHelper();
-        replicateProgress.setown(new ProgressInfo(queryJob()));
-        publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
         recordsProcessed = 0;
         refactor = singlePartKey = isLocal = false;
         mpTag2 = TAG_NULL;
@@ -345,25 +341,11 @@ public:
         }
         duplicateKeyCount = 0;
     }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        unsigned repPerc;
-        mb.read(repPerc);
-        replicateProgress->set(node, repPerc);
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats)
+    virtual void getActivityStats(IStatisticGatherer & stats) override
     {
         CMasterActivity::getActivityStats(stats);
         stats.addStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
-        if (publishReplicatedDone)
-        {
-            replicateProgress->processInfo();
-            //GC->JCS An average of percentages doesn't give you a very accurate answer..
-            stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
-        }
     }
-
 };
 
 CActivityBase *createIndexWriteActivityMaster(CMasterGraphElement *container)

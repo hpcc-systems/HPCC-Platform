@@ -203,6 +203,8 @@ protected:
     CThorInputArray inputs;
     IPointerArrayOf<IThorDataLink> outputs;
     IPointerArrayOf<IEngineRowStream> outputStreams;
+    CRuntimeStatisticCollection stats;
+
     IThorDataLink *input = nullptr;
     bool inputStopped = false;
     unsigned inputSourceIdx = 0;
@@ -224,7 +226,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
 
-    CSlaveActivity(CGraphElementBase *container);
+    CSlaveActivity(CGraphElementBase *container, const StatisticsMapping &statsMapping = basicActivityStatistics);
     ~CSlaveActivity();
     void setRequireInitData(bool tf)
     {
@@ -254,7 +256,6 @@ public:
     void stopInput(unsigned index, const char *extra=NULL);
     void stopAllInputs();
     virtual void serializeStats(MemoryBuffer &mb);
-    virtual void serializeActivityStats(MemoryBuffer &mb) const;
     void debugRequest(unsigned edgeIdx, MemoryBuffer &msg);
     bool canStall() const;
     bool isFastThrough() const;
@@ -309,7 +310,7 @@ protected:
     void lateStart(bool any);
 
 public:
-    CSlaveLateStartActivity(CGraphElementBase *container) : CSlaveActivity(container)
+    CSlaveLateStartActivity(CGraphElementBase *container, const StatisticsMapping &statsMapping) : CSlaveActivity(container, statsMapping)
     {
     }
     virtual void start() override;
@@ -392,8 +393,8 @@ protected:
 protected:
     void onStartStrands();
 public:
-    CThorStrandedActivity(CGraphElementBase *container)
-        : CSlaveActivity(container), strandOptions(*container), active(0)
+    CThorStrandedActivity(CGraphElementBase *container, const StatisticsMapping &statsMapping = basicActivityStatistics)
+        : CSlaveActivity(container, statsMapping), strandOptions(*container), active(0)
     {
     }
 

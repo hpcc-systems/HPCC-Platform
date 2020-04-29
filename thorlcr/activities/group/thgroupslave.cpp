@@ -53,7 +53,7 @@ class GroupSlaveActivity : public CSlaveActivity
     }
 public:
     GroupSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container)
+        : CSlaveActivity(_container, groupActivityStatistics)
     {
         helper = static_cast <IHThorGroupArg *> (queryHelper());
         rolloverEnabled = false;
@@ -189,9 +189,9 @@ public:
     virtual bool isGrouped() const override{ return true; }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-        mb.append(numGroups);
-        mb.append(numGroupMax);
+        stats.setStatistic(StNumGroups, numGroups);
+        stats.setStatistic(StNumGroupMax, numGroupMax);
+        PARENT::serializeStats(mb);
     }
 };
 

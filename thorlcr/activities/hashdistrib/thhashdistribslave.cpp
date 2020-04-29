@@ -3861,7 +3861,7 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
 
 public:
     HashJoinSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container)
+        : CSlaveActivity(_container, hashJoinActivityStatistics)
     {
         lhsProgressCount = rhsProgressCount = 0;
         mptag = TAG_NULL;
@@ -4008,20 +4008,22 @@ public:
         info.canStall = true;
         info.unknownRowsOutput = true;
     }
-    void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-        CriticalBlock b(joinHelperCrit);
-        if (!joinhelper) // bit odd, but will leave as was for now.
         {
-            mb.append(lhsProgressCount);
-            mb.append(rhsProgressCount);
-        }
-        else
-        {
-            mb.append(joinhelper->getLhsProgress());
-            mb.append(joinhelper->getRhsProgress());
-        }
+            CriticalBlock b(joinHelperCrit);
+            if (!joinhelper) // bit odd, but will leave as was for now.
+            {
+                stats.setStatistic(StNumLeftRows, lhsProgressCount);
+                stats.setStatistic(StNumRightRows, rhsProgressCount);
+            }
+            else
+            {
+                stats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
+                stats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
+            }
+        }    
+        PARENT::serializeStats(mb);
     }
 };
 #ifdef _MSC_VER

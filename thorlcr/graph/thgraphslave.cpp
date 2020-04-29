@@ -126,7 +126,8 @@ bool CThorInput::isFastThrough() const
 }
 // 
 
-CSlaveActivity::CSlaveActivity(CGraphElementBase *_container) : CActivityBase(_container), CEdgeProgress(this)
+CSlaveActivity::CSlaveActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
+    : CActivityBase(_container), stats(statsMapping), CEdgeProgress(this)
 {
     data = NULL;
 }
@@ -550,16 +551,15 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     return localCycles-blockedCycles;
 }
 
-void CSlaveActivity::serializeActivityStats(MemoryBuffer &mb) const
-{
-    mb.append((unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
-    mb.append((unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
-}
-
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 {
-    CriticalBlock b(crit);
-    serializeActivityStats(mb);
+    CriticalBlock b(crit); // JCSMORE not sure what this is protecting..
+
+    // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
+    stats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+    stats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
+
+    stats.serialize(mb);
     ForEachItemIn(i, outputs)
     {
         IThorDataLink *output = queryOutput(i);
@@ -1229,7 +1229,11 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
     unsigned beginPos = mb.length();
     mb.append(queryGraphId());
-    mb.append(numExecuted);
+
+    CRuntimeStatisticCollection stats(graphStatistics);
+    stats.setStatistic(StNumExecutions, numExecuted);
+    stats.serialize(mb);
+
     unsigned cPos = mb.length();
     unsigned count = 0;
     mb.append(count);

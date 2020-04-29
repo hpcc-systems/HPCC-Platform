@@ -49,7 +49,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 // ProcessSlaveActivity
 
-ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), threaded("ProcessSlaveActivity", this)
+ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container, const StatisticsMapping &statsMapping)
+    : CSlaveActivity(container, statsMapping), threaded("ProcessSlaveActivity", this)
 {
 }
 

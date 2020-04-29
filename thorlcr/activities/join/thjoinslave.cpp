@@ -64,7 +64,6 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     Owned<IJoinHelper> joinhelper;
     rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
     CriticalSection joinHelperCrit;
-    CRuntimeStatisticCollection spillStats;
     IHThorJoinBaseArg *helper;
     IHThorJoinArg *helperjn;
     IHThorDenormalizeArg *helperdn;
@@ -136,7 +135,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
 public:
     JoinSlaveActivity(CGraphElementBase *_container, bool local)
-        : CSlaveActivity(_container), spillStats(spillStatistics)
+        : CSlaveActivity(_container, joinActivityStatistics)
     {
         islocal = local;
         switch (container.getKind())
@@ -458,7 +457,10 @@ public:
             leftStream.setown(iLoaderL->load(leftInputStream, abortSoon));
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
+
+            CRuntimeStatisticCollection spillStats(spillStatistics);
             mergeStats(spillStats, iLoaderL);
+            stats.merge(spillStats);
         }
         IEngineRowStream *rightInputStream = queryInputStream(1);
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
@@ -478,7 +480,10 @@ public:
         {
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
+
+            CRuntimeStatisticCollection spillStats(spillStatistics);
             mergeStats(spillStats, iLoaderR);
+            stats.merge(spillStats);
         }
     }
     bool doglobaljoin()
@@ -585,7 +590,9 @@ public:
             sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, primaryCompare, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
         else
             sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, nullptr, nullptr, nullptr, nullptr, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, nullptr);
+        CRuntimeStatisticCollection spillStats(spillStatistics);
         mergeStats(spillStats, sorter);
+        stats.merge(spillStats);
         //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
         stopOtherInput();
@@ -613,19 +620,24 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-        CriticalBlock b(joinHelperCrit);
-        if (!joinhelper)
         {
-            mb.append(lhsProgressCount);
-            mb.append(rhsProgressCount);
+            bool isSelfJoin = (TAKselfjoin == container.getKind() || TAKselfjoinlight != container.getKind());
+
+            CriticalBlock b(joinHelperCrit);
+            if (!joinhelper) // bit odd, but will leave as was for now.
+            {
+                stats.setStatistic(StNumLeftRows, lhsProgressCount);
+                if (!isSelfJoin)
+                    stats.setStatistic(StNumRightRows, rhsProgressCount);
+            }
+            else
+            {
+                stats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
+                if (!isSelfJoin)
+                    stats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
+            }
         }
-        else
-        {
-            mb.append(joinhelper->getLhsProgress());
-            mb.append(joinhelper->getRhsProgress());
-        }
-        spillStats.serialize(mb);
+        PARENT::serializeStats(mb);
     }
 };
 

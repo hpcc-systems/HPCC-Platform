@@ -78,7 +78,7 @@ protected:
         sendLoopingCount(0, 0);
     }
 public:
-    CLoopSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CLoopSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container, loopActivityStatistics)
     {
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
         loopIsInGlobalGraph = container.queryOwner().isGlobal();
@@ -115,15 +115,15 @@ public:
     {
         initMetaInfo(info);
     }
-    void processDone(MemoryBuffer &mb)
+    virtual void processDone(MemoryBuffer &mb) override
     {
         CSlaveActivity::processDone(mb);
         ((CSlaveGraph *)queryContainer().queryLoopGraph()->queryGraph())->serializeDone(mb);
     }
-    virtual void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-        mb.append(loopCounter);
+        stats.setStatistic(StNumIterations, loopCounter);
+        PARENT::serializeStats(mb);
     }
 };
 
