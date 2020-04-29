@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for (EE only) data library */
 
-export DataLib := SERVICE:plugin('data'),fold
+export DataLib := SERVICE:plugin('datalib'),fold
   string261 AddressClean(const string address1, const string address2)  : c, pure, entrypoint='dataAddressClean', hole;
   string120 CompanyClean(const string scr)  : c, pure, entrypoint='dataCompanyClean', hole;
   string    DeDouble(const string scr)  : c, pure, entrypoint='dataDeDouble';

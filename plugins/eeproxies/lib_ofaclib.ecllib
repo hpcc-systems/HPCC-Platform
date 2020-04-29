@@ -21,7 +21,7 @@ export OfacSearchResultRecord := record
   unsigned4 key;
   real8 score;
 end;
-export OfacLib := SERVICE : plugin('ofac')
+export OfacLib := SERVICE : plugin('ofaclib')
   boolean IsLoaded() : c, entrypoint='ofacIsLoaded';
   boolean Load(unsigned4 source, unsigned4 key, string givenName, string lastOrCompanyName, boolean isPerson, boolean last) : c, action,entrypoint='ofacLoad';
   Unload() : c, action, entrypoint='ofacUnload';
