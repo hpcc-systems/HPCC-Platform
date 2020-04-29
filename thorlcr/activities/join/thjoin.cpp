@@ -78,7 +78,7 @@ class JoinActivityMaster : public CMasterActivity
         }
     } *climitedcmp;
 public:
-    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(info->queryJob(), spillStatistics)
+    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(spillStatistics)
     {
         ActPrintLog("JoinActivityMaster");
         lhsProgress.setown(new ProgressInfo(queryJob()));
@@ -347,7 +347,7 @@ public:
             rhsProgress->set(node, rhsProgressCount);
         }
 
-        extraStats.deserializeMerge(node, mb);
+        extraStats.deserialize(node, mb);
     }
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {

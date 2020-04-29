@@ -362,20 +362,20 @@ void CSlaveMessageHandler::threadmain()
 
 //////////////////////
 
-CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this), timingInfo(_container->queryJob()),
-                                                                  blockedTime(queryJob(), StTimeBlocked)
+static const StatisticsMapping activityStatsMapping({StTimeLocalExecute, StTimeBlocked});
+
+CMasterActivity::CMasterActivity(CGraphElementBase *_container) : CActivityBase(_container), threaded("CMasterActivity", this), actStats(activityStatsMapping)
 {
     notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
     data = new MemoryBuffer[container.queryJob().querySlaves()];
     asyncStart = false;
     if (container.isSink())
-        progressInfo.append(*new ProgressInfo(queryJob()));
+        edgeStatsVector.push_back(new CThorEdgeCollection);
     else
     {
-        unsigned o=0;
-        for (; o<container.getOutputs(); o++)
-            progressInfo.append(*new ProgressInfo(queryJob()));
+        for (unsigned o=0; o<container.getOutputs(); o++)
+            edgeStatsVector.push_back(new CThorEdgeCollection);
     }
 }
 
@@ -518,10 +518,10 @@ void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
     CriticalBlock b(progressCrit); // don't think needed
     deserializeActivityStats(node, mb);
     rowcount_t count;
-    ForEachItemIn(p, progressInfo)
+    for (auto &collection: edgeStatsVector)
     {
         mb.read(count);
-        progressInfo.item(p).set(node, count);
+        collection->set(node, count);
     }
 }
 
@@ -530,21 +530,20 @@ void CMasterActivity::deserializeActivityStats(unsigned node, MemoryBuffer &mb)
     unsigned __int64 localTimeNs, blockedTimeNs;
     mb.read(localTimeNs);
     mb.read(blockedTimeNs);
-    timingInfo.set(node, localTimeNs);
-    blockedTime.set(node, blockedTimeNs);
+    actStats.setStatistic(node, StTimeLocalExecute, localTimeNs);
+    actStats.setStatistic(node, StTimeBlocked, blockedTimeNs);
 }
 
 void CMasterActivity::getActivityStats(IStatisticGatherer & stats)
 {
-    timingInfo.getStats(stats);
-    blockedTime.getStats(stats,false);
+    actStats.getStats(stats);
 }
 
 void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
 {
     CriticalBlock b(progressCrit);
-    if (progressInfo.isItem(idx))
-        progressInfo.item(idx).getStats(stats);
+    if (idx < edgeStatsVector.size())
+        edgeStatsVector[idx]->getStats(stats);
 }
 
 void CMasterActivity::done()
@@ -2965,8 +2964,16 @@ void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqu
 
 ///////////////////////////////////////////////////
 
-CTimingInfo::CTimingInfo(CJobBase &ctx) : CThorStats(ctx, StTimeLocalExecute)
+const StatisticsMapping CThorEdgeCollection::edgeStatsMapping({StNumRowsProcessed, StNumStarts, StNumStops});
+
+void CThorEdgeCollection::set(unsigned node, unsigned __int64 value)
 {
+    unsigned __int64 numRows = value & THORDATALINK_COUNT_MASK;
+    byte stop = (value & THORDATALINK_STOPPED) ? 1 : 0;
+    byte start = (value & THORDATALINK_STARTED) ? 1 : 0;
+    setStatistic(node, StNumRowsProcessed, numRows);
+    setStatistic(node, StNumStops, stop);
+    setStatistic(node, StNumStarts, start);
 }
 
 ///////////////////////////////////////////////////
