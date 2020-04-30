@@ -1137,7 +1137,7 @@ personRecord := RECORD
   UNSIGNED2 numChildren;
   DATASET(childPersonRecord) children;
 END;
-123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+
 personDataset := DATASET([{'Kevin','Hall',2,[{'Abby',2},{'Nat',2}]},
                           {'Jon','Simms',3,[{'Jen',18},{'Ali',16},{'Andy',13}]}],
                          personRecord);
