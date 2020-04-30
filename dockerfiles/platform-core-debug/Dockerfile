@@ -21,6 +21,13 @@ ARG BUILD_LABEL
 ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL}
 
+# Set the locale
+RUN apt-get install -y locales
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8     
+
 RUN apt-get install -y libcap2-bin
 RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
 

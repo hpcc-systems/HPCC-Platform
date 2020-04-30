@@ -15,9 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-/* Proxy plugin definition for (EE only) canadaclean library */
+/* Proxy plugin definition for (EE only) name library */
 
-export CanadaCleanLib := SERVICE : plugin('canadaclean'),time
-  string109 CanadaAddress109(const string addrline, const string lastline, const string mode = 'I', const string server = 'canadacleanlb.br.seisint.com', unsigned2 port = 11300) : c, pure, entrypoint='cclCanadaAddress109';
-  boolean SetTracing(boolean trace=true) : c,action,entrypoint='cclSetTracing';
+export NameLib := SERVICE:plugin('namelib'),fold
+  string    FirstNameToToken(const string20 name) : c, pure, entrypoint='nameFirstNameToToken';
+  string20  TokenToFirstName(const string token) : c, pure, entrypoint='nameTokenToFirstName';
+  unsigned4 TokenToLength(const string name) : c, pure, entrypoint='nameTokenToLength';
+END;
+export fnstring := TYPE
+  export unsigned1 physicallength(const string s) := NameLib.TokenToLength(s);
+  export string20 load(const string s) := NameLib.TokenToFirstName(s);
+  export string store(string20 s) := NameLib.FirstNameToToken(s);
 END;

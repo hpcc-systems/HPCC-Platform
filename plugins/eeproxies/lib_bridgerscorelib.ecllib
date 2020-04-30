@@ -22,7 +22,7 @@ export WLSearchResultRecord := record
   real8 score
 end;
 
-export BridgerScoreLib := SERVICE : plugin('bridgerscore'), time
+export BridgerScoreLib := SERVICE : plugin('bridgerscorelib'), time
   boolean IsLoaded() : c, entrypoint='wlIsLoaded';
   boolean Load(unsigned4 source, unsigned4 key, string givenName, string lastOrCompanyName, boolean isPerson, boolean last) : c, action,entrypoint='wlL    oad';
   Unload() : c, action, entrypoint='wlUnload';

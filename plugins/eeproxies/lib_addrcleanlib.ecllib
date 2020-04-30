@@ -17,7 +17,7 @@
 
 /* Proxy plugin definition for (EE only) addrclean library */
 
-export AddrCleanLib := SERVICE : plugin('addrclean'),time
+export AddrCleanLib := SERVICE : plugin('addrcleanlib'),time
   string182 CleanAddress182(const string addrline, const string lastline, const string server = '', unsigned2 port = 0) : c, pure, context, entrypoint='aclCleanAddress182Ctx';
   string183 CleanAddress183(const string addrline, const string lastline, const string server = '', unsigned2 port = 0) : c, pure, context, entrypoint='aclCleanAddress183Ctx';
   string73 CleanPerson73(const string name, const string server = '', unsigned2 port = 0) : c, pure, context, entrypoint='aclCleanPerson73Ctx';
