@@ -40,7 +40,6 @@ unsigned udpLocalWriteSocketSize = 1024000;
 unsigned udpSnifferReadThreadPriority = 3;
 unsigned udpSnifferSendThreadPriority = 3;
 
-bool useDynamicServers = true;
 unsigned multicastTTL = 1;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)

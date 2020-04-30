@@ -617,7 +617,6 @@ int main(int argc, char * argv[] )
     InitModuleObjects();
     if (argc < 2)
         usage();
-    useDynamicServers = false;
 
     strdup("Make sure leak checking is working");
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);

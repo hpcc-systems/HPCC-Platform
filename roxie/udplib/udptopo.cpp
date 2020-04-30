@@ -356,30 +356,33 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void startTopoThread(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
+extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
 {
     topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
-    topoThread = std::thread([traceLevel]()
+    if (topoValues.length())
     {
-        topologyManager.update();
-        unsigned waitTime = 1000;  // First time around we don't wait as long, so that system comes up faster
-        while (!abortTopo.wait(waitTime))
+        topoThread = std::thread([traceLevel]()
         {
-            if (topologyManager.update() && traceLevel)
+            topologyManager.update();
+            unsigned waitTime = 1000;  // First time around we don't wait as long, so that system comes up faster
+            while (!abortTopo.wait(waitTime))
             {
-                DBGLOG("Topology information updated:");
-                Owned<const ITopologyServer> c = getTopology();
-                const SocketEndpointArray &eps = c->querySlaves(0);
-                ForEachItemIn(idx, eps)
+                if (topologyManager.update() && traceLevel)
                 {
-                    StringBuffer s;
-                    DBGLOG("Slave %d: %s", idx, eps.item(idx).getIpText(s).str());
+                    DBGLOG("Topology information updated:");
+                    Owned<const ITopologyServer> c = getTopology();
+                    const SocketEndpointArray &eps = c->querySlaves(0);
+                    ForEachItemIn(idx, eps)
+                    {
+                        StringBuffer s;
+                        DBGLOG("Slave %d: %s", idx, eps.item(idx).getIpText(s).str());
+                    }
                 }
+                waitTime = topoUpdateInterval;
             }
-            waitTime = topoUpdateInterval;
-        }
-    });
+        });
+    }
 }
 
 extern UDPLIB_API void stopTopoThread()

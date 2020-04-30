@@ -38,8 +38,6 @@ typedef unsigned ruid_t;   // at 1000/sec recycle every 49 days
 typedef unsigned RecordLengthType;
 #define MAX_RECORD_LENGTH 0xffffffff
 
-extern UDPLIB_API bool useDynamicServers;
-
 class UDPLIB_API ServerIdentifier
 {
 private:
