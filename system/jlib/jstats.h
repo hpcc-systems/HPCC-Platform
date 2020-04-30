@@ -508,7 +508,7 @@ public:
     {
         queryStatistic(kind).addAtomic(value);
     }
-    virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value);
+    void mergeStatistic(StatisticKind kind, unsigned __int64 value);
     void setStatistic(StatisticKind kind, unsigned __int64 value)
     {
         queryStatistic(kind).set(value);
@@ -528,7 +528,7 @@ public:
     inline StatisticKind getKind(unsigned i) const { return mapping.getKind(i); }
     inline unsigned __int64 getValue(unsigned i) const { return values[i].get(); }
 
-    void merge(const CRuntimeStatisticCollection & other);
+    void merge(const CRuntimeStatisticCollection & other, unsigned node = 0);
     void updateDelta(CRuntimeStatisticCollection & target, const CRuntimeStatisticCollection & source);
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
@@ -542,6 +542,7 @@ public:
     // Print out collected stats to string as XML
     StringBuffer &toXML(StringBuffer &str) const;
     // Serialize/deserialize
+    virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
     virtual bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in);
     virtual void deserializeMerge(MemoryBuffer& in);
@@ -572,11 +573,12 @@ public:
     CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);
     ~CRuntimeSummaryStatisticCollection();
 
-    virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value) override;
     virtual void recordStatistics(IStatisticGatherer & target) const override;
     virtual bool serialize(MemoryBuffer & out) const override;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in) override;
     virtual void deserializeMerge(MemoryBuffer& in) override;
+
+    void mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
 
 protected:
     struct DerivedStats
@@ -617,7 +619,7 @@ public:
     bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
-    void merge(const CNestedRuntimeStatisticCollection & other);
+    void merge(const CNestedRuntimeStatisticCollection & other, unsigned node);
     void recordStatistics(IStatisticGatherer & target) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
@@ -638,7 +640,7 @@ public:
     bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
-    void merge(const CNestedRuntimeStatisticMap & other);
+    void merge(const CNestedRuntimeStatisticMap & other, unsigned node);
     void recordStatistics(IStatisticGatherer & target) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
