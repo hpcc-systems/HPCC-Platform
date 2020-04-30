@@ -2001,7 +2001,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
 
-        options->setExpireDays(req.getExpireDays());
+        if (!req.getExpireDays_isNull())
+            options->setExpireDays(req.getExpireDays());
 
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
@@ -2186,7 +2187,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
 
-        options->setExpireDays(req.getExpireDays());
+        if (!req.getExpireDays_isNull())
+            options->setExpireDays(req.getExpireDays());
 
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
