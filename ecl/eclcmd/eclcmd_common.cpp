@@ -453,7 +453,7 @@ public:
                 IEspNamedValue &item = cmd.debugValues.item(i);
                 const char *name = item.getName();
                 const char *value = item.getValue();
-                cmdLine.append(" '");
+                cmdLine.append(" \"");
 
                 if (name && 0==strncmp(name, "eclcc", 5))
                     name+=5;
@@ -462,7 +462,7 @@ public:
                 cmdLine.append(name);
                 if (value)
                     cmdLine.append('=').append(value);
-                cmdLine.append("'");
+                cmdLine.append("\"");
             }
         }
         if (cmd.definitions.length())

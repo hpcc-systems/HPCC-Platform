@@ -11277,7 +11277,7 @@ StatisticKind CLocalWUStatistic::getKind() const
 const char * CLocalWUStatistic::queryScope() const
 {
     const char * scope = p->queryProp("@scope");
-    if (scope && streq(scope, LEGACY_GLOBAL_SCOPE))
+    if (!scope || streq(scope, LEGACY_GLOBAL_SCOPE))
         scope = GLOBAL_SCOPE;
     return scope;
 }

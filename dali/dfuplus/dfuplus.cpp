@@ -895,6 +895,9 @@ int CDfuPlusHelper::copy()
     else if(globals->hasProp("noRecover"))
         req->setNorecover(globals->getPropBool("noRecover", false));
 
+    if(globals->hasProp("expireDays"))
+        req->setExpireDays(globals->getPropInt("expireDays"));
+
     Owned<IClientCopyResponse> result = sprayclient->Copy(req);
     const char* wuid = result->getResult();
     if(wuid == nullptr || *wuid == '\0')
