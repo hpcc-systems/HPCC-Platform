@@ -1166,7 +1166,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setDaliServixSocketCaching(true);  // enable daliservix caching
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
-        loadPlugins();
+        if (!standAloneDll && !wuid)
+            loadPlugins();
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
