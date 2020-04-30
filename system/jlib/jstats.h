@@ -589,6 +589,7 @@ protected:
         unsigned __int64 max = 0;
         unsigned __int64 min = 0;
         unsigned __int64 count = 0;
+        double sum = 0;
         double sumSquares = 0;
         unsigned minNode = 0;
         unsigned maxNode = 0;
