@@ -488,11 +488,27 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endif ()
   endif ()
 
+  # check for old glibc and add required libs ...
+  if (NOT APPLE AND NOT WIN32)
+    execute_process(
+        COMMAND /bin/bash -c "ldd --version | head -n 1 | awk '{print $NF}'"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GLIBC_VER
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    message(STATUS "GLIBC version: ${GLIBC_VER}")
+    if ("${GLIBC_VER}" VERSION_LESS "2.18")
+        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lrt")
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lrt")
+    endif()
+  endif()
+
   if (CMAKE_COMPILER_IS_GNUCXX)
     #Ensure that missing symbols are reported as errors at link time (default for osx/windows)
     SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs")
     SET (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,defs")
   endif()
+
   macro(HPCC_ADD_EXECUTABLE target)
     add_executable(${target} ${ARGN})
   endmacro(HPCC_ADD_EXECUTABLE target)

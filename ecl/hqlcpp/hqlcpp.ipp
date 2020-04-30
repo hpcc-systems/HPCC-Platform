@@ -831,6 +831,7 @@ struct HqlCppOptions
     bool                genericDiskReads;
     bool                generateActivityFormats;
     bool                generateDiskFormats;
+    bool                timeRegex;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

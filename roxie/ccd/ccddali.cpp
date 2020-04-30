@@ -606,6 +606,8 @@ public:
         if (!w)
             return NULL;
         w->setAgentSession(myProcessSession());
+        if(topology->getPropBool("@resetWorkflow", false))
+            w->resetWorkflow();
         if (source)
         {
             StringBuffer wuXML;

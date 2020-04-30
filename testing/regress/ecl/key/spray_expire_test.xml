@@ -23,6 +23,15 @@
 <Dataset name='DFUPlus'>
  <Row><DFUPlus>Pass</DFUPlus></Row>
 </Dataset>
+<Dataset name='DFUPlus2'>
+ <Row><DFUPlus2>Pass</DFUPlus2></Row>
+</Dataset>
+<Dataset name='DFUPlus3'>
+ <Row><DFUPlus3>Pass</DFUPlus3></Row>
+</Dataset>
+<Dataset name='DFUPlus4'>
+ <Row><DFUPlus4>Pass</DFUPlus4></Row>
+</Dataset>
 <Dataset name='Copy'>
  <Row><Copy>Pass</Copy></Row>
 </Dataset>

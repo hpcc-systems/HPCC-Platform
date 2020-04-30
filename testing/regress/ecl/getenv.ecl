@@ -18,6 +18,6 @@
 //nothor
 //nohthor
 
-// hthor and thor should probably suppoty getEnv too but not immediately clear how to test them
+// hthor and thor should probably support getEnv too but not immediately clear how to test them
 
-output(if(getenv('@description', 'DefaultVal')='DefaultVal', 'Failed', 'Passed'));
+output(if(getenv('@linuxOS', 'DefaultVal')='DefaultVal', 'Failed', 'Passed'));
