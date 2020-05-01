@@ -21,7 +21,7 @@ module.exports = function (env) {
             loaderConfig: require("./eclwatch/dojoConfig"),
             environment: { dojoRoot: "build/dist" },
             buildEnvironment: { dojoRoot: "node_modules" }, // used at build time
-            locales: ["en", "bs", "es", "hr", "hu", "pt-br", "sr", "zh"]
+            locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
         }),
 
         // Copy non-packed resources needed by the app to the release directory
