@@ -29,7 +29,7 @@
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
 
-CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskReadRemoteStatistics)
+CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskReadRemoteStatistics)
 {
     hash = NULL;
     inputProgress.setown(new ProgressInfo(queryJob()));
@@ -122,7 +122,7 @@ void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     mb.read(progress);
     inputProgress->set(node, progress);
 
-    diskStats.deserializeMerge(node, mb);
+    diskStats.deserialize(node, mb);
 }
 
 void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
@@ -324,7 +324,7 @@ void CWriteMasterBase::publish()
     }
 }
 
-CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(info->queryJob(), diskWriteRemoteStatistics)
+CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskWriteRemoteStatistics)
 {
     publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
     replicateProgress.setown(new ProgressInfo(queryJob()));
@@ -340,7 +340,7 @@ void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     mb.read(repPerc);
     replicateProgress->set(node, repPerc);
 
-    diskStats.deserializeMerge(node, mb);
+    diskStats.deserialize(node, mb);
 }
 
 void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)

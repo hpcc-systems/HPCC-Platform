@@ -36,13 +36,12 @@ class CSortBaseActivityMaster : public CMasterActivity
 {
     CThorStatsCollection extraStats;
 public:
-    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(info->queryJob(), spillStatistics) { }
+    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(spillStatistics) { }
 
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         CMasterActivity::deserializeStats(node, mb);
-
-        extraStats.deserializeMerge(node, mb);
+        extraStats.deserialize(node, mb);
     }
     virtual void getActivityStats(IStatisticGatherer & stats)
     {

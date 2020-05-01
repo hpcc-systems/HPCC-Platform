@@ -71,50 +71,38 @@ protected:
 
 class graphmaster_decl CThorStatsCollection : public CInterface
 {
+    std::vector<OwnedMalloc<CRuntimeStatisticCollection>> nodeStats;
+    const StatisticsMapping & mapping;
 public:
-    CThorStatsCollection(CJobBase &ctx, const StatisticsMapping & _mapping) : mapping(_mapping)
+    CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
     {
-        unsigned num = mapping.numStatistics();
-        stats = new Owned<CThorStats>[num];
-        for (unsigned i=0; i < num; i++)
-            stats[i].setown(new CThorStats(ctx, mapping.getKind(i)));
+        unsigned c = queryClusterWidth();
+        while (c--)
+            nodeStats.push_back(new CRuntimeStatisticCollection(mapping));
     }
-    ~CThorStatsCollection()
+    void deserialize(unsigned node, MemoryBuffer & mb)
     {
-        delete [] stats;
+        nodeStats[node]->deserialize(mb);
     }
-
-    void deserializeMerge(unsigned node, MemoryBuffer & mb)
+    void setStatistic(unsigned node, StatisticKind kind, unsigned __int64 value)
     {
-        CRuntimeStatisticCollection nodeStats(mapping);
-        nodeStats.deserialize(mb);
-        extract(node, nodeStats);
+        nodeStats[node]->setStatistic(kind, value);
     }
-
-    void extract(unsigned node, const CRuntimeStatisticCollection & source)
-    {
-        for (unsigned i=0; i < mapping.numStatistics(); i++)
-            stats[i]->extract(node, source);
-    }
-
     void getStats(IStatisticGatherer & result)
     {
-        for (unsigned i=0; i < mapping.numStatistics(); i++)
-        {
-            stats[i]->getStats(result, false);
-        }
+        CRuntimeSummaryStatisticCollection summary(mapping);
+        for (unsigned n=0; n < nodeStats.size(); n++) // NB: size is = queryClusterWidth()
+            summary.merge(*nodeStats[n], n);
+        summary.recordStatistics(result);
     }
-
-private:
-    Owned<CThorStats> * stats;
-    const StatisticsMapping & mapping;
 };
 
-class graphmaster_decl CTimingInfo : public CThorStats
+class graphmaster_decl CThorEdgeCollection : public CThorStatsCollection
 {
+    static const StatisticsMapping edgeStatsMapping;
 public:
-    CTimingInfo(CJobBase &ctx);
-    void getStats(IStatisticGatherer & stats) { CThorStats::getStats(stats, false); }
+    CThorEdgeCollection() : CThorStatsCollection(edgeStatsMapping) { }
+    void set(unsigned node, unsigned __int64 value);
 };
 
 class graphmaster_decl ProgressInfo : public CThorStats
@@ -291,9 +279,8 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     IArrayOf<IDistributedFile> readFiles;
 
 protected:
-    ProgressInfoArray progressInfo;
-    CTimingInfo timingInfo;
-    CThorStats blockedTime;
+    std::vector<OwnedMalloc<CThorEdgeCollection>> edgeStatsVector;
+    CThorStatsCollection actStats;
     IBitSet *notedWarnings;
 
     void addReadFile(IDistributedFile *file, bool temp=false);
