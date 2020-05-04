@@ -27,6 +27,7 @@
 #include "espprotocol.hpp"
 #include "espsecurecontext.hpp"
 #include "ldapsecurity.ipp"
+#include "dasds.hpp"
 
 class CEspContext : public CInterface, implements IEspContext
 {
@@ -1017,4 +1018,29 @@ const char* getBuildLevel()
 IEspServer* queryEspServer()
 {
     return dynamic_cast<IEspServer*>(getESPContainer());
+}
+
+IRemoteConnection* getSDSConnectionWithRetry(const char* xpath, unsigned mode, unsigned timeoutMs)
+{
+    CTimeMon timer(timeoutMs);
+    unsigned remaining;
+    while (!timer.timedout(&remaining))
+    {
+        try
+        {
+            unsigned connTimeoutMs = remaining > SESSION_SDS_LOCK_TIMEOUT ? SESSION_SDS_LOCK_TIMEOUT : remaining;
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), mode, connTimeoutMs);
+            if (!conn)
+                throw MakeStringException(-1, "getSDSConnectionWithRetry() : unabled to establish connection to : %s", xpath);
+            return conn.getClear();
+        }
+        catch (ISDSException* e)
+        {
+            if (SDSExcpt_LockTimeout != e->errorCode())
+                throw;
+            IERRLOG(e, "getSDSConnectionWithRetry()");
+            e->Release();
+        }
+    }
+    return nullptr;
 }
