@@ -319,29 +319,12 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
 
     if ((domainAuthType == AuthPerSessionOnly) || (domainAuthType == AuthTypeMixed))
     {
-        setSDSSession();
+        espSessionSDSPath.setf("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, processName.get());
+        sessionSDSPath.setf("%s/%s[@port=\"%d\"]/", espSessionSDSPath.str(), PathSessionApplication, m_port);
         checkSessionTimeoutSeconds = proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT);
     }
 
     setABoolHash(proc_cfg->queryProp("@urlAlias"), serverAlias);
-}
-
-void EspHttpBinding::setSDSSession()
-{
-    espSessionSDSPath.setf("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, processName.get());
-    Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(espSessionSDSPath, RTM_LOCK_WRITE, SDSSESSION_CONNECT_TIMEOUTMS);
-    if (!conn)
-        throw MakeStringException(-1, "Failed to connect SDS ESP Session.");
-
-    IPropertyTree* espSession = conn->queryRoot();
-    VStringBuffer appStr("%s[@port=\"%d\"]", PathSessionApplication, m_port);
-    IPropertyTree* appSessionTree = espSession->queryBranch(appStr.str());
-    if (!appSessionTree)
-    {
-        IPropertyTree* newAppSessionTree = espSession->addPropTree(PathSessionApplication);
-        newAppSessionTree->setPropInt("@port", m_port);
-    }
-    sessionSDSPath.setf("%s/%s/", espSessionSDSPath.str(), appStr.str());
 }
 
 static int compareLength(char const * const *l, char const * const *r) { return strlen(*l) - strlen(*r); }
