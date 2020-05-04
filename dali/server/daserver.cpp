@@ -445,8 +445,6 @@ int main(int argc, const char* argv[])
                 OERRLOG("if a dataPath is specified, it must be on local machine");
                 return 0;
             }
-            addPathSepChar(dataPath);
-            serverConfig->setProp("@dataPath", dataPath.str());
         }
         // JCSMORE remoteBackupLocation should not be a property of SDS section really.
         if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
@@ -454,7 +452,11 @@ int main(int argc, const char* argv[])
 
 #endif            
         if (dataPath.length())
+        {
+            addPathSepChar(dataPath); // ensures trailing path separator
+            serverConfig->setProp("@dataPath", dataPath.str());
             recursiveCreateDirectory(dataPath.str());
+        }
 
         if (mirrorPath.length())
         {
