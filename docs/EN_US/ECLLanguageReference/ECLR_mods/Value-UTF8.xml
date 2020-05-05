@@ -4,7 +4,7 @@
 <sect1 id="UTF8">
   <title>UTF8</title>
 
-  <para><emphasis role="bold">Utf8<indexterm>
+  <para><emphasis role="bold">UTF8<indexterm>
       <primary>UTF8</primary>
     </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
   role="bold">]<indexterm>
@@ -25,9 +25,9 @@
 
   <para>Example:</para>
 
-  <programlisting>utf8 FirstName := U'Noël';
+  <programlisting>UTF8 FirstName := U8'Noël';
         // utf-8-encoded string
-UTF8_de MyUnicodeString := U'abcd\353';
+UTF8_de MyUnicodeString := U8'abcd\353';
         // becomes 'abcdë' with a German locale
 </programlisting>
 </sect1>

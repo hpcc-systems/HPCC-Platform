@@ -2645,7 +2645,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             slave = partToSlaveMap[partNo];
             if (NotFound == slave) // part not local to cluster, part is handled locally/directly.
-                slave = handlerCounts.size()-1; // last one reserved for out of cluster part handling.
+            {
+                // Last one reserved for out of cluster part handling.
+                // And if off cluster, make sure hType is a local handler (will only be remote due to force options)
+                slave = handlerCounts.size()-1;
+                if (ht_remotekeylookup == hType)
+                    hType = ht_localkeylookup;
+                else if (ht_remotefetch == hType)
+                    hType = ht_localfetch;
+            }
             else
             {
                 if (unknownCopyNum == copy)// this means that this is a part for a remote slave, and copy is unknown

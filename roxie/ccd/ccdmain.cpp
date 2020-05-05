@@ -93,6 +93,7 @@ RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::Payload;
 bool mergeSlaveStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
+bool oneShotRoxie = false;
 
 unsigned udpMulticastBufferSize = 262142;
 #ifndef _CONTAINERIZED
@@ -703,6 +704,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         if (standAloneDll || wuid)
         {
+            oneShotRoxie = true;
             if (topology->getPropBool("@server", false))
             {
 #ifdef _CONTAINERIZED
@@ -1166,7 +1168,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setDaliServixSocketCaching(true);  // enable daliservix caching
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
-        if (!standAloneDll && !wuid)
+        if (!oneShotRoxie)
             loadPlugins();
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
