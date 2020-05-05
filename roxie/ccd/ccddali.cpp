@@ -242,17 +242,20 @@ private:
 
     static void initCache()
     {
-        IPropertyTree *tree = createPTree("Roxie", ipt_lowmem);
-        tree->addPropTree("QuerySets");
-        tree->addPropTree("PackageSets");
-        tree->addPropTree("PackageMaps");
-        tree->addPropTree("Files");
-        cache.setown(tree);
+        if (!oneShotRoxie)
+        {
+            IPropertyTree *tree = createPTree("Roxie", ipt_lowmem);
+            tree->addPropTree("QuerySets");
+            tree->addPropTree("PackageSets");
+            tree->addPropTree("PackageMaps");
+            tree->addPropTree("Files");
+            cache.setown(tree);
+        }
     }
 
     static void loadCache()
     {
-        if (!cache)
+        if (!cache && !oneShotRoxie)
         {
             StringBuffer cacheFileName(queryDirectory);
             cacheFileName.append(roxieStateName);
@@ -272,12 +275,15 @@ private:
 
     static void writeCache(const char *foundLoc, const char *newLoc, IPropertyTree *val)
     {
-        CriticalBlock b(cacheCrit);
-        if (!cache)
-            initCache();
-        cache->removeProp(foundLoc);
-        if (val)
-            cache->addPropTree(newLoc, LINK(val));
+        if (!oneShotRoxie)
+        {
+            CriticalBlock b(cacheCrit);
+            if (!cache)
+                initCache();
+            cache->removeProp(foundLoc);
+            if (val)
+                cache->addPropTree(newLoc, LINK(val));
+        }
     }
 
     IPropertyTree *loadDaliTree(const char *path, const char *id)
@@ -307,6 +313,8 @@ private:
                 daliHelper->disconnect();
             }
         }
+        if (oneShotRoxie)
+            throw makeStringException(-1, "Error - dali not connected");
         DBGLOG("LoadDaliTree(%s) - not connected - read from cache", xpath.str());
         localTree.setown(readCache(xpath));
         return localTree.getClear();
@@ -578,7 +586,7 @@ public:
 
     virtual void commitCache()
     {
-        if (isConnected && cache)
+        if (isConnected && cache && !oneShotRoxie)
         {
             CriticalBlock b(cacheCrit);
             if (!recursiveCreateDirectory(queryDirectory))
