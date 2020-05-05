@@ -329,7 +329,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
 void EspHttpBinding::setSDSSession()
 {
     espSessionSDSPath.setf("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, processName.get());
-    Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.str(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(espSessionSDSPath, RTM_LOCK_WRITE, SDSSESSION_CONNECT_TIMEOUTMS);
     if (!conn)
         throw MakeStringException(-1, "Failed to connect SDS ESP Session.");
 

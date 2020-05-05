@@ -125,7 +125,7 @@ int CSessionCleaner::run()
         {
             if (!m_isDetached)
             {
-                Owned<IRemoteConnection> conn = querySDS().connect(espSessionSDSPath.get(), myProcessSession(), RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+                Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(espSessionSDSPath.get(), RTM_LOCK_WRITE, SDSSESSION_CONNECT_TIMEOUTMS);
                 if (!conn)
                     throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
 
@@ -221,7 +221,7 @@ void CEspConfig::ensureSDSSessionDomains()
     //Ensure SDS Session tree if there is session auth or there is no AuthDomain setting (ex. old environment.xml)
     if (hasSessionAuth || !hasAuthDomainSettings)
     {
-        Owned<IRemoteConnection> conn = querySDS().connect(PathSessionRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SESSION_SDS_LOCK_TIMEOUT);
+        Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(PathSessionRoot, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDSSESSION_CONNECT_TIMEOUTMS);
         if (!conn)
             throw MakeStringException(-1, "Failed to connect to %s.", PathSessionRoot);
 
