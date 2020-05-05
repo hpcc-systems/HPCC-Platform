@@ -18,9 +18,13 @@ project( yaml_include)
 
 remove_definitions(-fvisibility=hidden)
 
-if(WIN32)
+if(WIN32 OR APPLE)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml)
+    add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml EXCLUDE_FROM_ALL)
+    if ( NOT PLUGIN )
+        install(PROGRAMS ${LIBRARY_OUTPUT_PATH}/libyaml${CMAKE_SHARED_LIBRARY_SUFFIX} DESTINATION lib)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE RENAME libyaml-LICENSE.txt DESTINATION lib)
+    endif ( NOT PLUGIN )
 else()
     set(LIBYAML_OUTPUT_DIR ${CMAKE_BINARY_DIR})
 
