@@ -569,7 +569,8 @@ private:
         }
 
         //relative paths need something to be relative to
-        xmlXPathSetContextNode(node, m_xpathContext);
+        if (node)
+            m_xpathContext->node = node;
         xmlXPathRegisterVariableLookup(m_xpathContext, variableLookupFunc, this);
         return true;
     }
