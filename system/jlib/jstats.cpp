@@ -900,6 +900,20 @@ static const StatisticMeta statsMetaData[StMax] = {
     { STAT(Cost, Execute, SMeasureCost) },
 };
 
+//Is a 0 value likely, and useful to be reported if it does happen to be zero?
+bool includeStatisticIfZero(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StNumRowsProcessed:
+    case StNumIterations:
+    case StNumIndexSeeks:
+    case StNumDuplicateKeys:
+        return true;
+    }
+    return false;
+}
+
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -955,6 +969,11 @@ unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsi
         return cycle_to_nanosec(value);
     if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
         return nanosec_to_cycle(value);
+    if ((from == SMeasureTimestampUs) && (to == SMeasureTimeNs))
+        return value * 1000;
+    if ((from == SMeasureTimeNs) && (to == SMeasureTimestampUs))
+        return value / 1000;
+
 #ifdef _DEBUG
     throwUnexpected();
 #else
@@ -964,6 +983,15 @@ unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsi
 
 unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned __int64 value)
 {
+    if (from == to)
+        return value;
+    return convertMeasure(queryMeasure(from), queryMeasure(to), value);
+}
+
+static unsigned __int64 convertSumMeasure(StatisticKind from, StatisticKind to, double value)
+{
+    if (from == to)
+        return value;
     return convertMeasure(queryMeasure(from), queryMeasure(to), value);
 }
 
@@ -972,6 +1000,8 @@ static double convertSquareMeasure(StatisticMeasure from, StatisticMeasure to, d
 {
     if (from == to)
         return value;
+
+    //Coded to a avoid overflow of unsigned __int64 in cycle_to_nanosec etc.
     const unsigned __int64 largeValue = 1000000000;
     double scale;
     if ((from == SMeasureCycle) && (to == SMeasureTimeNs))
@@ -2266,13 +2296,12 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
 {
     ForEachItem(i)
     {
+        StatisticKind kind = getKind(i);
         unsigned __int64 value = values[i].get();
-        if (value)
+        if (value || includeStatisticIfZero(kind))
         {
-            StatisticKind kind = getKind(i);
             StatisticKind serialKind= querySerializedKind(kind);
-            if (kind != serialKind)
-                value = convertMeasure(kind, serialKind, value);
+            value = convertMeasure(kind, serialKind, value);
 
             StatsMergeAction mergeAction = queryMergeMode(serialKind);
             target.updateStatistic(serialKind, value, mergeAction);
@@ -2440,6 +2469,7 @@ void CRuntimeSummaryStatisticCollection::DerivedStats::mergeStatistic(unsigned _
         }
     }
     count++;
+    sum += value;
     double dvalue = (double)value;
     sumSquares += dvalue * dvalue;
 }
@@ -2466,57 +2496,155 @@ void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsi
     derived[index].mergeStatistic(value, node);
 }
 
-static bool isSignificantSkew(StatisticKind kind, unsigned __int64 range, unsigned __int64 count)
+static bool skewHasMeaning(StatisticKind kind)
 {
-    //MORE: Could get more sophisticated!
-    return range > 1;
+    //Check that skew makes any sense for the type of measurement
+    switch (queryMeasure(kind))
+    {
+    case SMeasureTimeNs:
+    case SMeasureCount:
+    case SMeasureSize:
+        return true;
+    default:
+        return false;
+    }
 }
+
+static bool isSignificantRange(StatisticKind kind, unsigned __int64 range, unsigned __int64 mean)
+{
+    //Ignore tiny differences (often occur with counts of single rows on 1 slave node)
+    unsigned insignificantDiff = 1;
+    switch (queryMeasure(kind))
+    {
+    case SMeasureTimestampUs:
+        insignificantDiff = 1000;       // Ignore 1ms timestamp difference between nodes
+        break;
+    case SMeasureTimeNs:
+        insignificantDiff = 1000;       // Ignore 1us timing difference between nodes
+        break;
+    case SMeasureSize:
+        insignificantDiff = 1024;
+        break;
+    }
+    if (range <= insignificantDiff)
+        return false;
+
+    if (queryMergeMode(kind) == StatsMergeSum)
+    {
+        //if the range is < 0.01% of the mean, then it is unlikely to be interesting
+        if (range * 10000 < mean)
+            return false;
+    }
+
+    return true;
+}
+
+static bool isWorthReportingMergedValue(StatisticKind kind)
+{
+    switch (queryMergeMode(kind))
+    {
+    //Does the merged value have a meaning?
+    case StatsMergeSum:
+    case StatsMergeMin:
+    case StatsMergeMax:
+        break;
+    default:
+        return false;
+    }
+
+    switch (queryMeasure(kind))
+    {
+    case SMeasureTimeNs:
+        //Not generally worth reporting the total time across all slaves
+        return false;
+    }
+
+    return true;
+}
+
 
 void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target) const
 {
-    CRuntimeStatisticCollection::recordStatistics(target);
     for (unsigned i = 0; i < ordinality(); i++)
     {
         DerivedStats & cur = derived[i];
+        StatisticKind kind = getKind(i);
+        StatisticKind serialKind = querySerializedKind(kind);
         if (cur.count)
         {
-            StatisticKind kind = getKind(i);
-            StatisticKind serialKind= querySerializedKind(kind);
+            //Thor should always publish the average value for a stat, and the merged value if it makes sense.
+            //So that it is easy to analyse graphs independent of the number of slave nodes it is executed on.
+
+            unsigned __int64 mergedValue = convertMeasure(kind, serialKind, values[i].get());
+            if (isWorthReportingMergedValue(serialKind))
+            {
+                if (mergedValue || includeStatisticIfZero(serialKind))
+                    target.addStatistic(serialKind, mergedValue);
+            }
 
             unsigned __int64 minValue = convertMeasure(kind, serialKind, cur.min);
             unsigned __int64 maxValue = convertMeasure(kind, serialKind, cur.max);
             if (minValue != maxValue)
             {
-                double sum = (double)convertMeasure(kind, serialKind, values[i].get());
-                //Sum of squares needs to be translated twice
-                double sumSquares = convertSquareMeasure(kind, serialKind, cur.sumSquares);
+                //Avoid rounding errors summing values as doubles - if they were also summed as integers.  Probably overkill!
+                //There may still be noticeable rounding errors with timestamps...  revisit if it is an issue with any measurement
+                double sum = (queryMergeMode(kind) == StatsMergeSum) ? (double)mergedValue : convertSumMeasure(kind, serialKind, cur.sum);
                 double mean = (double)(sum / cur.count);
-                double variance = (sumSquares - sum * mean) / cur.count;
-                double stdDev = sqrt(variance);
-                double maxSkew = (10000.0 * ((maxValue-mean)/mean));
-                double minSkew = (10000.0 * ((mean-minValue)/mean));
                 unsigned __int64 range = maxValue - minValue;
 
-                //MORE: Add some level of control over which derived stats are reported for a given kind(/scope?)
+                target.addStatistic((StatisticKind)(serialKind|StAvgX), (unsigned __int64)mean);
                 target.addStatistic((StatisticKind)(serialKind|StMinX), minValue);
                 target.addStatistic((StatisticKind)(serialKind|StMaxX), maxValue);
-                target.addStatistic((StatisticKind)(serialKind|StAvgX), (unsigned __int64)mean);
-                target.addStatistic((StatisticKind)(serialKind|StDeltaX), range);
-                target.addStatistic((StatisticKind)(serialKind|StStdDevX), (unsigned __int64)stdDev);
 
-                //If min and max nodes are the same then all nodes have the same values, so no benefit in reporting skews.
-                if ((cur.minNode != cur.maxNode) && isSignificantSkew(serialKind, range, cur.count))
+                //Exclude delta and std dev if a single node was the only one that provided a value
+                if ((minValue != 0) || (maxValue != mergedValue))
                 {
-                    target.addStatistic((StatisticKind)(serialKind|StSkewMin), (unsigned __int64)minSkew);
-                    target.addStatistic((StatisticKind)(serialKind|StSkewMax), (unsigned __int64)maxSkew);
+                    //The delta/std dev may have a different unit from the original values e.g., timestamps->times, so needs scaling
+                    unsigned __int64 scaledRange = convertMeasure(serialKind, serialKind|StDeltaX, range);
+                    target.addStatistic(serialKind|StDeltaX, scaledRange);
+
+                    if (skewHasMeaning(serialKind))
+                    {
+                        //Sum of squares needs to be translated twice
+                        double sumSquares = convertSquareMeasure(kind, serialKind, cur.sumSquares);
+                        double variance = (sumSquares - sum * mean) / cur.count;
+                        double stdDev = sqrt(variance);
+                        unsigned __int64 scaledStdDev = convertMeasure(serialKind, serialKind|StStdDevX, stdDev);
+                        target.addStatistic(serialKind|StStdDevX, scaledStdDev);
+                    }
+                }
+
+                //First test is redundant - but protects against minValue != maxValue test above changing.
+                if ((cur.minNode != cur.maxNode) && isSignificantRange(serialKind, range, mean))
+                {
                     target.addStatistic((StatisticKind)(serialKind|StNodeMin), cur.minNode);
                     target.addStatistic((StatisticKind)(serialKind|StNodeMax), cur.maxNode);
+
+                    if (skewHasMeaning(serialKind))
+                    {
+                        double maxSkew = (10000.0 * ((maxValue-mean)/mean));
+                        double minSkew = (10000.0 * ((mean-minValue)/mean));
+                        target.addStatistic((StatisticKind)(serialKind|StSkewMin), (unsigned __int64)minSkew);
+                        target.addStatistic((StatisticKind)(serialKind|StSkewMax), (unsigned __int64)maxSkew);
+                    }
                 }
             }
-            else if (cur.count != 1)
-                target.addStatistic((StatisticKind)(serialKind|StAvgX), minValue);
+            else
+            {
+                if (minValue || includeStatisticIfZero(serialKind))
+                    target.addStatistic((StatisticKind)(serialKind|StAvgX), minValue);
+            }
+        }
+        else
+        {
+            //No results received from any of the slave yet... so do not report any stats
         }
     }
+
+    reportIgnoredStats();
+    CNestedRuntimeStatisticMap *qn = queryNested();
+    if (qn)
+        qn->recordStatistics(target);
 }
 
 bool CRuntimeSummaryStatisticCollection::serialize(MemoryBuffer & out) const
