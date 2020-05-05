@@ -20,26 +20,21 @@ remove_definitions(-fvisibility=hidden)
 
 if(WIN32)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml)
 else()
-    set(LIBYAML_OUTPUT_DIR ${CMAKE_BINARY_DIR})
-
-    include(ExternalProject)
-    ExternalProject_Add(
-        libyaml
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libyaml
-        BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/libyaml
-        CMAKE_ARGS -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${LIBYAML_OUTPUT_DIR}
-        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} LDFLAGS=-Wl,-rpath-link,${LIB_PATH} yaml
-        INSTALL_COMMAND "")
-
-    add_library(yaml SHARED IMPORTED GLOBAL)
-    set_property(TARGET yaml PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libyaml/libyaml${CMAKE_SHARED_LIBRARY_SUFFIX})
-    add_dependencies(yaml libyaml)
-
-    if ( NOT PLUGIN )
-        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${CMAKE_CURRENT_BINARY_DIR}/libyaml:${PROJECT_BINARY_DIR}\")")
-        install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libyaml/libyaml${CMAKE_SHARED_LIBRARY_SUFFIX} DESTINATION lib)
-        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE RENAME libyaml-LICENSE.txt DESTINATION lib)
-    endif ( NOT PLUGIN )
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
+
+add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/system/libyaml EXCLUDE_FROM_ALL)
+
+if(NOT PLUGIN)
+    if(WIN32)
+        install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/yaml${CMAKE_SHARED_LIBRARY_SUFFIX}
+            DESTINATION lib)
+    else()
+        install(PROGRAMS ${LIBRARY_OUTPUT_PATH}/libyaml${CMAKE_SHARED_LIBRARY_SUFFIX}
+            DESTINATION lib)
+    endif()
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE
+        RENAME libyaml-LICENSE.txt
+        DESTINATION lib)
+endif(NOT PLUGIN)
