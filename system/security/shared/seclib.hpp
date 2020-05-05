@@ -78,6 +78,42 @@ inline const char * getSecAccessFlagName(SecAccessFlags flag)
     }
 }
 
+inline SecAccessFlags getSecAccessFlagValue(const char *s)
+{
+    if (isEmptyString(s))
+        return SecAccess_None;
+    switch (tolower(*s))
+    {
+    case 'u':
+        if (strieq("unavailable", s))
+            return SecAccess_Unavailable;
+        break;
+    case 'n':
+        if (strieq("none", s))
+            return SecAccess_None;
+        break;
+    case 'a':
+        if (strieq("access", s))
+            return SecAccess_Access;
+        break;
+    case 'r':
+        if (strieq("read", s))
+            return SecAccess_Read;
+        break;
+    case 'w':
+        if (strieq("write", s))
+            return SecAccess_Write;
+        break;
+    case 'f':
+        if (strieq("full", s))
+            return SecAccess_Full;
+        break;
+    default:
+        break;
+    }
+    return SecAccess_Unknown;
+}
+
 
 enum SecResourceType : int
 {

@@ -17,7 +17,7 @@
 #ifndef _EsdlBinding_HPP__
 #define _EsdlBinding_HPP__
 
-#include "esdl_svc_custom.hpp"
+#include "esdl_script.hpp"
 #include "esdl_def.hpp"
 #include "esdl_transformer.hpp"
 #include "esdl_def_helper.hpp"
@@ -80,7 +80,7 @@ private:
     Owned<ILoggingManager> m_oLoggingManager;
     bool m_bGenerateLocalTrxId;
     MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
-    Owned<CEsdlCustomTransform> m_serviceLevelRequestTransform;
+    Owned<IEsdlCustomTransform> m_serviceLevelRequestTransform;
     bool m_serviceLevelCrtFail = false;
     using MethodAccessMap = MapStringTo<SecAccessFlags>;
     using MethodAccessMaps = MapStringTo<Owned<MethodAccessMap> >;
