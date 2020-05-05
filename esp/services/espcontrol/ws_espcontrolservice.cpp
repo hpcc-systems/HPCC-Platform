@@ -237,7 +237,7 @@ bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingS
     return true;
 }
 
-IRemoteConnection* CWSESPControlEx::querySDSConnection(const char* xpath, unsigned mode, unsigned timeout)
+IRemoteConnection* CWSESPControlEx::getSDSConnection(const char* xpath, unsigned mode, unsigned timeout)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), mode, timeout);
     if (!globalLock)
@@ -245,10 +245,10 @@ IRemoteConnection* CWSESPControlEx::querySDSConnection(const char* xpath, unsign
     return globalLock.getClear();
 }
 
-IRemoteConnection* CWSESPControlEx::querySDSConnectionForESPSession(unsigned mode, unsigned timeout)
+IRemoteConnection* CWSESPControlEx::getSDSConnectionForESPSession(unsigned mode, unsigned timeout)
 {
     VStringBuffer xpath("/%s/%s[@name='%s']", PathSessionRoot, PathSessionProcess, espProcess.get());
-    return querySDSConnection(xpath.str(), mode, timeout);
+    return getSDSConnection(xpath.str(), mode, timeout);
 }
 
 bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryRequest& req, IEspSessionQueryResponse& resp)
@@ -268,7 +268,7 @@ bool CWSESPControlEx::onSessionQuery(IEspContext& context, IEspSessionQueryReque
         setSessionXPath(false, nullptr, req.getUserID(), req.getFromIP(), xpath);
 
         IArrayOf<IEspSession> sessions;
-        Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+        Owned<IRemoteConnection> globalLock = getSDSConnectionForESPSession(RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
         ForEach(*iter)
         {
@@ -318,7 +318,7 @@ bool CWSESPControlEx::onSessionInfo(IEspContext& context, IEspSessionInfoRequest
             PathSessionApplication, port, PathSessionSession, PropSessionExternalID, id.str());
         try
         {
-            globalLock.setown(querySDSConnection(xpath.str(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT));
+            globalLock.setown(getSDSConnection(xpath.str(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT));
         }
         catch(IException* e)
         {
@@ -403,7 +403,7 @@ bool CWSESPControlEx::onSetSessionTimeout(IEspContext& context, IEspSetSessionTi
             StringBuffer searchPath;
             setSessionXPath(allSessions, id.str(), userID.str(), fromIP.str(), searchPath);
 
-            Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+            Owned<IRemoteConnection> globalLock = getSDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
             Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
             ForEach(*iter)
             {
@@ -447,7 +447,7 @@ void CWSESPControlEx::cleanSessions(bool allSessions, const char* _id, const cha
     StringBuffer searchPath;
     setSessionXPath(allSessions, _id, _userID, _fromIP, searchPath);
 
-    Owned<IRemoteConnection> globalLock = querySDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = getSDSConnectionForESPSession(RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT);
     Owned<IPropertyTreeIterator> iter = globalLock->queryRoot()->getElements("*");
     ForEach(*iter)
     {
