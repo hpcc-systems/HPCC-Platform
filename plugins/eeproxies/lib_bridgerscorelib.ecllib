@@ -24,7 +24,7 @@ end;
 
 export BridgerScoreLib := SERVICE : plugin('bridgerscorelib'), time
   boolean IsLoaded() : c, entrypoint='wlIsLoaded';
-  boolean Load(unsigned4 source, unsigned4 key, string givenName, string lastOrCompanyName, boolean isPerson, boolean last) : c, action,entrypoint='wlL    oad';
+  boolean Load(unsigned4 source, unsigned4 key, string givenName, string lastOrCompanyName, boolean isPerson, boolean last) : c, action,entrypoint='wlLoad';
   Unload() : c, action, entrypoint='wlUnload';
   boolean tokenScore(string candidateWord, string tokenWord, unsigned4 score) : c, pure, entrypoint='wlTokenScore';
   dataset(WLSearchResultRecord) Search(string name, real8 threshold, string1 searchType, unsigned4 source) : c, entrypoint='wlSearch';
