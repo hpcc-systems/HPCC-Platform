@@ -172,6 +172,7 @@ ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logica
 
 bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn)
 {
+#ifndef _CONTAINERIZED
     if (!agent.queryWorkUnit()->getDebugValueBool("forceRemoteDisabled", false))
     {
         if (!rfn.isLocal())
@@ -181,6 +182,7 @@ bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn
         if (agent.queryWorkUnit()->getDebugValueBool("forceRemoteRead", testForceRemote(localPath)))
             return true;
     }
+#endif
     return false;
 }
 

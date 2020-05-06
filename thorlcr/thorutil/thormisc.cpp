@@ -1489,6 +1489,7 @@ const ITranslator *getLayoutTranslation(const char *fname, IPartDescriptor &part
 
 bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &rfn)
 {
+#ifndef _CONTAINERIZED
     if (!activity.getOptBool(THOROPT_FORCE_REMOTE_DISABLED))
     {
         if (!rfn.isLocal())
@@ -1498,6 +1499,7 @@ bool isRemoteReadCandidate(const CActivityBase &activity, const RemoteFilename &
         if (activity.getOptBool(THOROPT_FORCE_REMOTE_READ, testForceRemote(localPath)))
             return true;
     }
+#endif
     return false;
 }
 
