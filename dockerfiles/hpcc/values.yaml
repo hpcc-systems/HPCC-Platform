@@ -39,6 +39,11 @@ global:
   logging:
     detail: 100
 
+  # Specify a defauleEsp to control which EclWatch service is returned from Std.File.GetEspURL, and other uses
+  # If not specified, the first esp component present is assumed.
+  # Can also be overridden locally in individual components
+  ## defaultEsp: myesp
+
 dali:
 - name: mydali
   storage:

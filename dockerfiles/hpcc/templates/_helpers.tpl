@@ -49,6 +49,7 @@ Pass in root as .
 {{- define "hpcc.generateGlobalConfigMap" -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
+defaultEsp: {{ .Values.global.defaultEsp | default (index .Values.esp 0).name }}
 {{- end -}}
 
 {{/*
