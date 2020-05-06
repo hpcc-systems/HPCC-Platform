@@ -27,7 +27,6 @@ bool CInfoCache::isCachedInfoValid(unsigned timeOutSeconds)
 
 void CInfoCacheReaderThread::threadmain()
 {
-#ifndef _CONTAINERIZED
     PROGLOG("CInfoCacheReaderThread %s started.", name.get());
     unsigned int autoRebuildMillSeconds = 1000*autoRebuildSeconds;
     while (!stopping)
@@ -73,5 +72,4 @@ void CInfoCacheReaderThread::threadmain()
             waiting.compare_exchange_strong(expected, false);
         }
     }
-#endif
 }
