@@ -33,7 +33,7 @@ extern "C"
 
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_configmgr")==0)
+   if (strieq(type, "ws_configmgr"))
    {
       Cws_configMgrEx* service = new Cws_configMgrEx;
       service->init(cfg, process, name);
@@ -44,7 +44,10 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "ws_configMgrSoapBinding")==0)
+    //binding names ending in _http are being added so the names can be made more consistent and can therefore be automatically generated
+    //  the name also better reflects that these bindings are for all HTTP based protocols, not just SOAP
+    //  both "SoapBinding" and "_http" names instantiate the same objects.
+   if (strieq(type, "ws_configMgrSoapBinding")||strieq(type, "ws_configMgr_http"))
    {
         return new Cws_configMgrSoapBindingEx(cfg, name, process);
    }

@@ -1,0 +1,4 @@
+application:
+  name: eclqueries
+  services:
+   - ws_ecl

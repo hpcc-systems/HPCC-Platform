@@ -440,6 +440,8 @@ inline bool checkRedirect(IEspContext &ctx)
 
 inline bool skipXslt(IEspContext &context)
 {
+    if (queryComponentConfig().getPropBool("@api_only"))
+        return true;
     return (context.getResponseFormat()!=ESPSerializationANY);  //for now
 }
 

@@ -36,13 +36,13 @@ extern "C"
 // Change the function names when we stick with dynamic loading.
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-   if (strcmp(type, "WsDfu")==0)
+   if (strieq(type, "WsDfu"))
    {
       CWsDfuEx* service = new CWsDfuEx;
         service->init(cfg, process, name);
       return service;
    }
-   else if (strcmp(type, "WsDfuXRef")==0)
+   else if (strieq(type, "WsDfuXRef"))
    {
         CWsDfuXRefEx* service = new CWsDfuXRefEx;
         service->init(cfg, process, name);
@@ -61,9 +61,12 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 #else
     http_soap_log_level log_level_ = hsl_none;
 #endif
-    if (strcmp(type, "ws_dfuSoapBinding")==0)
+    //binding names ending in _http are being added so the names can be made more consistent and can therefore be automatically generated
+    //  the name also better reflects that these bindings are for all HTTP based protocols, not just SOAP
+    //  both "SoapBinding" and "_http" names instantiate the same objects.
+    if (strieq(type, "ws_dfuSoapBinding")||strieq(type, "wsdfu_http"))
         return new CWsDfuSoapBindingEx(cfg, name, process, log_level_);
-    else if (strcmp(type, "ws_dfuxrefSoapBinding")==0)
+    else if (strieq(type, "ws_dfuxrefSoapBinding")||strieq(type, "wsdfuxref_http"))
         return new CWsDFUXRefSoapBindingEx(cfg, name, process, log_level_);
 
    return NULL;

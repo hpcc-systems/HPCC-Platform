@@ -1,0 +1,174 @@
+eclwatch:
+   WsSMC:
+      ActivityInfoCacheSeconds: 10
+      ActivityInfoCacheAutoRebuildSeconds: 120
+   WsWorkunits:
+      ViewTimeout: 1000
+      LayoutProgram: dot/dot -Tsvg -Gordering=out
+      EclServer: ''
+      EclServerQueue: ''
+      StyleSheets:
+        xslt:
+        - name: atts
+          ^: "/esp/xslt/atts.xslt"
+        - name: dot_update
+          ^: "/esp/xslt/dot_update.xslt"
+        - name: dot
+          ^: "/esp/xslt/dot.xslt"
+        - name: graphStats
+          ^: "/esp/xslt/graphStats.xslt"
+        - name: graphupdate_gvc
+          ^: "/esp/xslt/graphupdate_gvc.xslt"
+   WsTopology:
+      warnIfCpuLoadOver: 95
+      warnIfFreeMemoryUnder: 5
+      warnIfFreeStorageUnder: 5
+      AllowNewRoxieOnDemandQuery: false
+      SystemUseRewrite: false
+   WsDfu:
+      DisableUppercaseTranslation: false
+      ViewTimeout: 1000
+      EclServer: ''
+      EclServerQueue: ''
+      StyleSheets:
+        xslt:
+        - name: def_file
+          ^: "./smc_xslt/def_file.xslt"
+   WsDfuXRef:
+      ViewTimeout: 1000
+      LayoutProgram: dot/dot -Tsvg -Gordering=out
+      StyleSheets:
+        xslt:
+        - name: def_file
+          ^: "./smc_xslt/def_file.xslt"
+   FileSpray:
+      QueueLabel: dfuserver_queue
+      MonitorQueueLabel: dfuserver_monitor_queue
+   ws_elk:
+      ELKIntegration:
+         Kibana: ''
+         ElasticSearch: ''
+         LogStash: ''
+         ELKIntegration: ''
+   ws_store:
+      StoreProvider:
+         lib: dalistorelib
+      Stores:
+         Store:
+         -  name: HPCCApps
+            description: Generic KeyVal store for HPCC Applications
+            default: true
+   ws_machine:
+      excludePartitions: "/dev*,/sys*,/proc*,/run*,/boot"
+      monitorDaliFileServer: false
+      UseDefaultSSHUserID: false
+      UseDefaultPIDFileName: true
+      ProcessFilters:
+        Platform:
+        - name: Windows
+          ProcessFilter:
+          - name: any
+            Process:
+              name: dafilesrv
+          - name: AttrServerProcess
+            Process:
+              name: attrserver
+          - name: DaliProcess
+            Process:
+              name: daserver
+          - name: DfuServerProcess
+            multipleInstances: true
+            Process:
+              name: dfuserver
+          - name: EclCCServerProcess
+            multipleInstances: true
+            Process:
+              name: eclccserver
+          - name: EclServerProcess
+            multipleInstances: true
+            Process:
+              name: eclserver
+          - name: EspProcess
+            multipleInstances: true
+            Process:
+              - name: esp
+              - name: dafilesrv
+                remove: true
+          - name: FTSlaveProcess
+            Process:
+              name: ftslave
+          - name: RoxieServerProcess
+            Process:
+              name: roxie
+          - name: RoxieSlaveProcess
+            Process:
+              name: roxie
+          - name: SchedulerProcess
+            Process:
+              name: scheduler
+          - name: ThorMasterProcess
+            Process:
+              name: thormaster
+          - name: ThorSlaveProcess
+            Process:
+              name: thorslave
+          - name: SashaServerProcess
+            Process:
+              name: saserver
+        - name: Linux
+          ProcessFilter:
+          - name: any
+            Process:
+              name: dafilesrv
+          - name: AttrServerProcess
+            Process:
+              name: attrserver
+          - name: DaliProcess
+            Process:
+              name: daserver
+          - name: DfuServerProcess
+            multipleInstances: true
+            Process:
+              name: dfuserver
+          - name: EclCCServerProcess
+            multipleInstances: true
+            Process:
+              name: eclccserver
+          - name: EclServerProcess
+            multipleInstances: true
+            Process:
+              name: eclserver
+          - name: EspProcess
+            multipleInstances: true
+            Process:
+            - name: esp
+            - name: dafilesrv
+              remove: true
+          - name: FTSlaveProcess
+            Process:
+              name: ftslave
+          - name: RoxieServerProcess
+            Process:
+              name: roxie
+          - name: RoxieSlaveProcess
+            Process:
+              name: roxie
+          - name: SchedulerProcess
+            Process:
+              name: scheduler
+          - name: ThorMasterProcess
+            Process:
+              name: thormaster
+          - name: ThorSlaveProcess
+            Process:
+              name: thorslave
+          - name: SashaServerProcess
+            Process:
+              name: saserver
+          - name: GenesisServerProcess
+            multipleInstances: true
+            Process:
+            - name: mysql
+            - name: httpd
+            - name: atftpd
+            - name: dhcpd

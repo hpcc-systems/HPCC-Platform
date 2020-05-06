@@ -40,6 +40,12 @@ public:
 
     void getNavigationData(IEspContext &context, IPropertyTree& data)
     {
+        if (queryComponentConfig().getPropBool("@api_only"))
+        {
+            CHttpSoapBinding::getNavigationData(context, data);
+            return;
+        }
+
         Owned<Cws_configEx> pSvc = dynamic_cast<Cws_configEx*>(getService());
         if (pSvc)
             pSvc->getNavigationData(&data);

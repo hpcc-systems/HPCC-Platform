@@ -37,6 +37,11 @@ public:
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
 #ifdef _USE_OPENLDAP
+        if (queryComponentConfig().getPropBool("@api_only"))
+        {
+            CHttpSoapBinding::getNavigationData(context, data);
+            return;
+        }
         bool isFF = false;
         StringBuffer browserUserAgent;
         context.getUseragent(browserUserAgent);

@@ -287,10 +287,14 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
     }
 
 #ifndef _CONTAINERIZED
-    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir.str(), "esp");
-    lf->setName("esp_main");//override default filename
-    lf->setAliasName("esp");
-    lf->beginLogging();
+    //logDir="-" is the default in application mode and logs to stderr, not to a file
+    if (logdir.length() && !streq(logdir, "-"))
+    {
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir.str(), "esp");
+        lf->setName("esp_main");//override default filename
+        lf->setAliasName("esp");
+        lf->beginLogging();
+    }
 #else
     setupContainerizedLogMsgHandler();
 #endif
@@ -311,10 +315,29 @@ static Owned<IPropertyTree> espConfig;
 
 static void usage()
 {
-    puts("ESP - Enterprise Service Platform server. (C) 2001-2011, HPCC Systems®.");
+    puts("ESP - Enterprise Service Platform server. (C) 2001-2020, HPCC Systems®.");
     puts("Usage:");
+    puts("To start ESP in application mode");
+    puts("  esp --application=<appname> [options]");
+    puts("Example Application names:");
+    puts("  eclwatch - front end ECL user interface and services");
+    puts("  eclservices - back end ECL system services");
+    puts("  eclqueries - front end interface for calling published ECL queries");
+    puts("");
+    puts("Application Mode Options:");
+    puts("  -?/-h: show this help page");
+    puts("  --daliServers=<address>: set DALI address (defaults to dali)");
+    puts("  --tls=<on/off>: enable using TLS secure communication (defaults to on)");
+    puts("  --auth=<ldap/none>: select authorization protocol (defaults to ldap)");
+    puts("  --ldapAddress=<address>: set LDAP server address");
+    puts("  --config=<file.yaml>: specify a YAML config file, use to override default config values");
+    puts("  --logDir=<file>: specify a file to write trace file information to, default is stderr");
+    puts("  --netAddress=<address>: the address to bind to on a multi-homed nodes");
+    puts("  --instance=<name>: the instance name to use for this process");
+    puts("");
+    puts("To start ESP legacy configuration mode (xml config file)");
     puts("  esp [options]");
-    puts("Options:");
+    puts("Legacy Config Options:");
     puts("  -?/-h: show this help page");
     puts("  --daemon|-d <instanceName>: run daemon as instance");
     puts("  interactive: start in interactive mode (pop up error dialog when exception occurs)");
@@ -322,6 +345,9 @@ static void usage()
     puts("  process=<name>: specify the process name in the config [default: the 1st process]");
     exit(1);
 }
+
+IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[]);
+
 
 int init_main(int argc, const char* argv[])
 {
@@ -378,21 +404,38 @@ int init_main(int argc, const char* argv[])
 
     Owned<CEspConfig> config;
     Owned<CEspServer> server;
+
+    //save off generated config to register with container.  Legacy can always reference the config file, application based ESP needs generated config saved off
+    Owned<IPropertyTree> appConfig;
+
     try
     {
         const char* cfgfile = NULL;
         const char* procname = NULL;
+        const char *application = nullptr;
         if(inputs.get())
         {
             if(inputs->hasProp("config"))
                 cfgfile = inputs->queryProp("config");
             if(inputs->hasProp("process"))
                 procname = inputs->queryProp("process");
+            if(inputs->hasProp("--application"))
+                application = inputs->queryProp("--application");
         }
         if(!cfgfile || !*cfgfile)
             cfgfile = "esp.xml";
 
-        Owned<IPropertyTree> envpt= createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive);
+        Owned<IPropertyTree> envpt;
+        if (application)
+        {
+            appConfig.setown(buildApplicationLegacyConfig(application, argv));
+            envpt.set(appConfig);
+        }
+        else
+        {
+            envpt.setown(createPTreeFromXMLFile(cfgfile, ipt_caseInsensitive));
+            espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
+        }
         Owned<IPropertyTree> procpt = NULL;
         if (envpt)
         {
@@ -412,10 +455,8 @@ int init_main(int argc, const char* argv[])
             throw MakeStringException(-1, "Failed to load config file %s", cfgfile);
 
 #ifdef _CONTAINERIZED
-        espConfig.setown(loadConfiguration(defaultYaml, argv, "esp", "ESP", nullptr, nullptr));
-
         // TBD: Some esp services read daliServers from it's legacy config file
-        procpt->setProp("@daliServers", espConfig->queryProp("@daliServers"));
+        procpt->setProp("@daliServers", queryComponentConfig().queryProp("@daliServers"));
 #endif
 
         const char* build_ver = BUILD_TAG;
@@ -478,6 +519,7 @@ int init_main(int argc, const char* argv[])
             CEspServer *srv = new CEspServer(config);
             if(SEHMappingEnabled)
                 srv->setSavedSEHHandler(SEHMappingEnabled);
+            srv->setApplicationConfig(appConfig);
             server.setown(srv);
             abortHandler.setServer(srv);
             setEspContainer(server.get());

@@ -1,0 +1,153 @@
+ldap:
+   root_access:
+      resource: SmcAccess
+      required: Read
+      description: Base access to EclWatch
+   resource_map:
+      WsSMC:
+         Feature:
+         -  path: SmcAccess
+            resource: SmcAccess
+            description: Base access to ESP services
+         -  path: ThorQueueAccess
+            resource: ThorQueueAccess
+            description: Access to thor queues
+         -  path: ConfigAccess"
+            resource: ConfigAccess
+            description: Access to super computer environment
+         -  path: DfuAccess
+            resource: DfuAccess
+            description: Access to DFU
+         -  path: DfuXrefAccess
+            resource: DfuXrefAccess
+            description: Access to DFU XRef
+         -  path: LnAccessAccess
+            resource: LnAccessAccess
+            description: Access to ln access
+         -  path: LnAccountAccess
+            resource: LnAccountAccess
+            description: Access to ln account
+         -  path: LnRoxieQueryAccess
+            resource: LnRoxieQueryAccess
+            description: Access to ln roxie queries
+         -  path: MachineInfoAccess
+            resource: MachineInfoAccess
+            description: Access to machine information
+         -  path: MetricsAccess
+            resource: MetricsAccess
+            description: Access to SNMP metrics information
+         -  path: ExecuteAccess
+            resource: ExecuteAccess
+            description: Access to remote execution
+         -  path: DfuWorkunitsAccess
+            resource: DfuWorkunitsAccess
+            description: Access to DFU workunits
+         -  path: DfuExceptionsAccess
+            resource: DfuExceptions
+            description: Access to DFU exceptions
+         -  path: FileSprayAccess
+            resource: FileSprayAccess
+            description: Access to spraying files
+         -  path: FileDesprayAccess
+            resource: FileDesprayAccess
+            description: Access to despraying of files
+         -  path: FileDkcAccess
+            resource: FileDkcAccess
+            description: Access to dkcing of key files
+         -  path: FileIOAccess
+            resource: FileIOAccess
+            description: Access to files in dropzone
+         -  path: FileUploadAccess
+            resource: FileUploadAccess
+            description: Access to upload files to LZ
+         -  path: WsEclAccess
+            resource: WsEclAccess
+            description: Access to WS ECL service
+         -  path: RoxieQueryAccess
+            resource: RoxieQueryAccess
+            description: Access to Roxie queries and files
+         -  path: ClusterTopologyAccess
+            resource: ClusterTopologyAccess
+            description: Access to cluster topology
+         -  path: OwnWorkunitsAccess
+            resource: OwnWorkunitsAccess
+            description: Access to own workunits
+         -  path: OthersWorkunitsAccess
+            resource: OthersWorkunitsAccess
+            description: Access to others' workunits
+         -  path: EclDirectAccess
+            resource: EclDirectAccess
+            description: Access to ECL direct service
+      WsWorkunits:
+         Feature:
+         -  path: OwnWorkunitsAccess
+            resource: OwnWorkunitsAccess
+            description: Access to own workunits
+         -  path: OthersWorkunitsAccess
+            resource: OthersWorkunitsAccess
+            description: Access to others' workunits
+      WsTopology:
+         Feature:
+         -  path: ClusterTopologyAccess
+            resource: ClusterTopologyAccess
+            description: Access to cluster topology
+         -  path: MachineInfoAccess
+            resource: MachineInfoAccess
+            description: Access to machine information
+      WsDfu:
+         Feature:
+         -  path: DfuAccess
+            resource: DfuAccess
+            description: Access to DFU
+      WsDfuXRef:
+         Feature:
+         -  path: DfuXrefAccess
+            resource: DfuXrefAccess
+            description: Access to DFU XRef
+      FileSpray:
+         Feature:
+         -  path: DfuWorkunitsAccess
+            resource: DfuWorkunitsAccess
+            description: Access to DFU workunits
+         -  path: DfuExceptionsAccess
+            resource: DfuExceptions
+            description: Access to DFU exceptions
+         -  path: FileSprayAccess
+            resource: FileSprayAccess
+            description: Access to spraying files
+         -  path: FileDesprayAccess
+            resource: FileDesprayAccess
+            description: Access to despraying of files
+         -  path: FileDkcAccess
+            resource: FileDkcAccess
+            description: Access to dkcing of key files
+         -  path: FileUploadAccess
+            resource: FileUploadAccess
+            description: Access to upload files to LZ
+      WsFileIO:
+         Feature:
+         -  path: FileIOAccess
+            resource: FileIOAccess
+            description: Access to files in dropzone
+      ws_machine:
+         Feature:
+         -  path: MachineInfoAccess
+            resource: MachineInfoAccess
+            description: Access to machine information
+         -  path: MetricsAccess
+            resource: MetricsAccess
+            description: Access to SNMP metrics information
+         -  path: ExecuteAccess
+            resource: ExecuteAccess
+            description: Access to remote execution
+      ws_config:
+         Feature:
+         -  path: ConfigAccess
+            resource: ConfigAccess
+            description: Access to super computer environment
+      WsPackageProcess: []
+      ws_account: []
+      ws_access: []
+      ws_esdlconfig: []
+      ws_elk: []
+      ws_store: []
