@@ -39,6 +39,7 @@
 
 #include <map>
 #include <stack>
+#include <string>
 #include <memory>
 
 static inline char *skipWS(char *s)
