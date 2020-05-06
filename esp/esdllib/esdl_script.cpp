@@ -677,7 +677,7 @@ public:
             attpath.append(':').append(prefix);
         const char *uri = tree.queryProp(attpath.str());
         if (!uri || !streq(uri, "urn:hpcc:esdl:script"))
-            throw MakeStringException(ESDL_SCRIPT_Error, "Undeclared script xmlns prefix %s", prefix);
+            throw MakeStringException(ESDL_SCRIPT_Error, "Undeclared script xmlns prefix %s", isEmptyString(prefix) ? "<default>" : prefix);
     }
     CEsdlCustomTransform(IPropertyTree &tree, const char *ns_prefix) : m_prefix(ns_prefix)
     {
