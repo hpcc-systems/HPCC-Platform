@@ -2151,7 +2151,8 @@ void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction merg
         value = otherValue;
         break;
     case StatsMergeSum:
-        addAtomic(otherValue);
+        if (otherValue)
+            addAtomic(otherValue);
         break;
     case StatsMergeMin:
         value.store_min(otherValue);
@@ -2251,6 +2252,11 @@ void CRuntimeStatisticCollection::updateDelta(CRuntimeStatisticCollection & targ
 void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
 {
     queryStatistic(kind).merge(value, queryMergeMode(kind));
+}
+
+void CRuntimeStatisticCollection::sumStatistic(StatisticKind kind, unsigned __int64 value)
+{
+    queryStatistic(kind).sum(value);
 }
 
 void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node)

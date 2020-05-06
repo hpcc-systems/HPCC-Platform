@@ -460,6 +460,7 @@ public:
     }
     inline void clear() { set(0); }
     void merge(unsigned __int64 otherValue, StatsMergeAction mergeAction);
+    void sum(unsigned __int64 otherValue) { if (otherValue) addAtomic(otherValue); }
     inline void set(unsigned __int64 _value) { value = _value; }
 
 protected:
@@ -509,6 +510,7 @@ public:
         queryStatistic(kind).addAtomic(value);
     }
     void mergeStatistic(StatisticKind kind, unsigned __int64 value);
+    void sumStatistic(StatisticKind kind, unsigned __int64 value);      // Special more efficient version of mergeStatistic useful in time critical sections
     void setStatistic(StatisticKind kind, unsigned __int64 value)
     {
         queryStatistic(kind).set(value);
