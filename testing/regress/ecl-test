@@ -27,8 +27,8 @@ import glob
 
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
-from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
 from hpcc.util.util import getRealIPAddress, checkClusters, checkHpccStatus
+from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
 from hpcc.util.util import getEclRunArgs, isSudoer
 from hpcc.util.expandcheck import ExpandCheck
 from hpcc.common.error import Error
@@ -406,11 +406,21 @@ class RegressMain:
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
             # process file exclusion
+            excludeItems = []
+            # is it defined in config
+            try:
+                excludeItems = self.config.FileExclusion
+                pass
+            except:
+                pass
+                
+            # is it added as parameter
             if self.args.excludeFile[0] != 'none':
-                excludeFiles = []
-                excludeItems = self.args.excludeFile[0].split(',')
+                argIitems = self.args.excludeFile[0].split(',')
+                excludeItems.extend(argIitems)
+                
+            if excludeItems != []:
                 excludeFiles = self.processEclList(excludeItems)
-
                 self.args.excludeFileSet = set(excludeFiles)
                 pass
             else:

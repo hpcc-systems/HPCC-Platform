@@ -905,12 +905,28 @@ Important!
 
 
 For default engine paramters:
-
 |    "engineParams":[
 |            "failOnLeaks"
 |        ]
 
 The Regression Suite processes the engineParams definition(s) sequentially and adds them with '-f' prefix to the 'ecl run ...' command.
+
+We can store file names (with wildcards) to exclude them from suite like the --excludeFile filespec[,filespec,...] cli parameter. It can be useful when we need to exclude a large amount of files without changing them (like adding a kind of //calss<whatever> line into them)
+
+|   "FileExclusion" : [
+|
+|       ]
+
+Example: The
+
+|   "FileExclusion" : [
+|           "*expire*
+|       ]
+
+has the same effect as 
+
+|     ./ecl-test query -t thor --ef "*expire*" spray*
+command
 
 
 10. Authentication:

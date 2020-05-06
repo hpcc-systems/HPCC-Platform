@@ -59,6 +59,9 @@
         ],
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress"
-        }
+        },
+        "FileExclusion":[
+            "*_blahblah.ecl"
+        ]
     }
 }

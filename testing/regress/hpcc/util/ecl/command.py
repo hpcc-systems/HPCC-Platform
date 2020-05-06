@@ -165,7 +165,12 @@ class ECLcmd(Shell):
                     eclfile.diff=eclfile.getBaseEcl()+'\n\t'+res['state']+'\n'
                     logging.error("%3d. %s in queryWuid(%s)",  eclfile.getTaskId(),  res['state'],  eclfile.getJobname())
 
-            eclfile.addResults(data, wuid)
+            try:
+                eclfile.addResults(data, wuid)
+            except:
+                logging.critical("Exception in eclfile.addResults()")
+                logging.critical(traceback.format_exc())
+                
             if cmd == 'publish':
                 if state == 'compiled':
                     test = True
