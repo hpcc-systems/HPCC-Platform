@@ -2800,6 +2800,23 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
 
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW)
 {
+#ifdef _CONTAINERIZED
+    const char *defaultEsp = queryComponentConfig().queryProp("@defaultEsp");
+    if (!defaultEsp)
+        defaultEsp = queryGlobalConfig().queryProp("@defaultEsp");
+    if (defaultEsp)
+    {
+        StringBuffer credentials;
+        if (username && username[0] && userPW && userPW[0])
+            credentials.setf("%s:%s@", username, userPW);
+        else if (username && username[0])
+            credentials.setf("%s@", username);
+
+        // MORE - do we want to make such things as port and protocol configurable?
+        VStringBuffer espURL("http://%s%s:8010", credentials.str(), defaultEsp);
+        return espURL.detach();
+    }
+#else
     Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
     Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
 
@@ -2858,6 +2875,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
             }
         }
     }
+#endif
     return strdup("");
 }
 
