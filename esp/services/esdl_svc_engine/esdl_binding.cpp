@@ -2838,7 +2838,7 @@ int EsdlBindingImpl::getJsonTestForm(IEspContext &context, CHttpRequest* request
     jsonmsg.append("\n}");
 
     StringBuffer params;
-    const char* excludes[] = {"soap_builder_",NULL};
+    const char* excludes[] = {"json_builder_",NULL};
     getEspUrlParams(context,params,excludes);
 
     StringBuffer header("Content-Type: application/json");
@@ -2864,7 +2864,10 @@ int EsdlBindingImpl::getJsonTestForm(IEspContext &context, CHttpRequest* request
     ISecUser* user = context.queryUser();
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
-    xform->setStringParameter("destination", methname);
+
+    StringBuffer destination;
+    destination.appendf("%s?%s", methname, params.str());
+    xform->setStringParameter("destination", destination.str());
 
     StringBuffer page;
     xform->transform(page);
