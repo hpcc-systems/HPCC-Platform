@@ -11,5 +11,7 @@ export function svgRender<P>(C: React.FunctionComponent<P>, props: Readonly<P>, 
 }
 
 export function unrender(parent: Element | Document | ShadowRoot | DocumentFragment) {
-    ReactDOM.unmountComponentAtNode(parent);
+    if (parent) {
+        ReactDOM.unmountComponentAtNode(parent);
+    }
 }
