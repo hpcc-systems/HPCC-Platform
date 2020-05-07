@@ -41,7 +41,7 @@ WORKDIR /hpcc-dev/HPCC-Platform
 
 # NB: PATCH_MD5 ensures cache miss (and therefore rebuild) if MD5 is different
 ARG PATCH_MD5
-COPY hpcc.gitpatch .
+COPY --chown=hpcc:hpcc hpcc.gitpatch .
 RUN if [ -s hpcc.gitpatch ]; then git apply --whitespace=nowarn hpcc.gitpatch; fi
 
 WORKDIR /hpcc-dev/build
