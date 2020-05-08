@@ -152,8 +152,8 @@ define([
                 var data = args[1];
                 var columns = {
                     __hpcc_id: { label: "##", width: 45 },
-                    Name: {
-                        label: context.i18n.Name,
+                    Scope: {
+                        label: context.i18n.Scope,
                         sortable: true,
                         width: 120,
                         formatter: function (cell, row) {
