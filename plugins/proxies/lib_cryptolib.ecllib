@@ -19,36 +19,72 @@
 
 export CryptoLib := SERVICE : plugin('cryptolib')
 
-  //Hashing
-  
+  //----------------------------------
+  // Hashing
+  //----------------------------------
   SET OF STRING SupportedHashAlgorithms() : c, pure, fold, entrypoint='clSupportedHashAlgorithms';
   DATA   Hash(CONST VARSTRING algorithm, CONST DATA inputData) : c, pure, entrypoint='clHash';
 
-  //Symmetric Encryption
-      
+  //----------------------------------
+  // Symmetric Encryption
+  //----------------------------------
   SET OF STRING SupportedSymmetricCipherAlgorithms() : c, pure, fold, entrypoint='clSupportedSymmetricCipherAlgorithms';
-  DATA SymmetricEncrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clSymmetricEncrypt';
+  
+  //Module SymmetricEncryption
+  DATA SymmetricEncrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA inputData)     : c, pure, entrypoint='clSymmetricEncrypt';
   DATA SymmetricDecrypt(CONST VARSTRING algorithm, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clSymmetricDecrypt';
 
-  //Asymmetric Public Key Encryption
-  
+  //Module SymmEncryption
+  DATA SymEncrypt(CONST VARSTRING algorithm, CONST DATA passphrase, CONST DATA inputData)    : c, pure, entrypoint='clSymmEncrypt';
+  DATA SymDecrypt(CONST VARSTRING algorithm, CONST DATA passphrase, CONST DATA encryptedData): c, pure, entrypoint='clSymmDecrypt';
+
+
+  //----------------------------------
+  // Asymmetric Public Key Encryption
+  //----------------------------------
   SET OF STRING SupportedPublicKeyAlgorithms() : c, pure, fold, entrypoint='clSupportedPublicKeyAlgorithms';
 
   //Accepts key data as file specification
+
+  //Module PublicKeyEncryption
   DATA    Encrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncrypt';
   DATA    Decrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecrypt';
   DATA    Sign(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISign';
   BOOLEAN VerifySignature(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignature';
 
+  //Module PKEncryption
+  DATA    PKEncrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST DATA passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncrypt2';
+  DATA    PKDecrypt(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST DATA passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecrypt2';
+  DATA    PKSign(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyFile, CONST DATA passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISign2';
+  BOOLEAN PKVerifySignature(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyFile, CONST DATA passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignature2';
+
   //Accepts key data as Logical File Name
+
+  //Module PublicKeyEncryptionFromLFN
   DATA    EncryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKIEncryptLFN';
   DATA    DecryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, context, entrypoint='clPKIDecryptLFN';
   DATA    SignLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKISignLFN';
   BOOLEAN VerifySignatureLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, context, entrypoint='clPKIVerifySignatureLFN';
 
-   //Accepts key data as memory buffer
+  //Module PKEncryptionFromLFN
+  DATA    PKEncryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST DATA passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKIEncryptLFN2';
+  DATA    PKDecryptLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST DATA passphrase, CONST DATA encryptedData) : c, pure, context, entrypoint='clPKIDecryptLFN2';
+  DATA    PKSignLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING privatekeyLFN, CONST DATA passphrase, CONST DATA inputData) : c, pure, context, entrypoint='clPKISignLFN2';
+  BOOLEAN PKVerifySignatureLFN(CONST VARSTRING pkAlgorithm, CONST VARSTRING publickeyLFN, CONST DATA passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, context, entrypoint='clPKIVerifySignatureLFN2';
+
+
+  //Accepts key data as memory buffer
+
+  //Module PublicKeyEncryptionFromBuffer
   DATA    EncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncryptBuff';
   DATA    DecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecryptBuff';
   DATA    SignBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST VARSTRING passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISignBuff';
   BOOLEAN VerifySignatureBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST VARSTRING passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignatureBuff';
+
+  //Module PKEncryptionFromBuffer
+  DATA    PKEncryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST DATA passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKIEncryptBuff2';
+  DATA    PKDecryptBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST DATA passphrase, CONST DATA encryptedData) : c, pure, entrypoint='clPKIDecryptBuff2';
+  DATA    PKSignBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING privateKeyBuff, CONST DATA passphrase, CONST DATA inputData) : c, pure, entrypoint='clPKISignBuff2';
+  BOOLEAN PKVerifySignatureBuff(CONST VARSTRING pkAlgorithm, CONST VARSTRING publicKeyBuff, CONST DATA passphrase, CONST DATA signature, CONST DATA signedData) : c, pure, entrypoint='clPKIVerifySignatureBuff2';
+
  END;

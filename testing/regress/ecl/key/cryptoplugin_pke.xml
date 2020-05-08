@@ -5,7 +5,7 @@
  <Row><Result_2><Item>RSA</Item></Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><Result_3>true</Result_3></Row>
+ <Row><Result_3>Testing PKE PublicKeyEncryptionFromBuffer Digital Signatures</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
  <Row><Result_4>true</Result_4></Row>
@@ -17,22 +17,22 @@
  <Row><Result_6>true</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>The quick brown fox jumps over the lazy dog</Result_7></Row>
+ <Row><Result_7>true</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
- <Row><Result_8>The quick brown fox jumps over the lazy dog</Result_8></Row>
+ <Row><Result_8>Testing PKE PublicKeyEncryptionFromBuffer Encrypt/Decrypt</Result_8></Row>
 </Dataset>
 <Dataset name='Result 9'>
  <Row><Result_9>The quick brown fox jumps over the lazy dog</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>The quick brown fox jumps over the lazy dog</Result_10></Row>
+ <Row><Result_10>true</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
  <Row><Result_11>The quick brown fox jumps over the lazy dog</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>true</Result_12></Row>
+ <Row><Result_12>Testing PKE PKEncryptionFromBuffer Digital Signatures</Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
  <Row><Result_13>true</Result_13></Row>
@@ -47,23 +47,14 @@
  <Row><Result_16>true</Result_16></Row>
 </Dataset>
 <Dataset name='Result 17'>
- <Row><Result_17>true</Result_17></Row>
+ <Row><Result_17>Testing PKE PKEncryptionFromBuffer Encrypt/Decrypt</Result_17></Row>
 </Dataset>
 <Dataset name='Result 18'>
  <Row><Result_18>The quick brown fox jumps over the lazy dog</Result_18></Row>
 </Dataset>
 <Dataset name='Result 19'>
- <Row><Result_19>The quick brown fox jumps over the lazy dog</Result_19></Row>
+ <Row><Result_19>true</Result_19></Row>
 </Dataset>
 <Dataset name='Result 20'>
  <Row><Result_20>The quick brown fox jumps over the lazy dog</Result_20></Row>
-</Dataset>
-<Dataset name='Result 21'>
- <Row><Result_21>The quick brown fox jumps over the lazy dog</Result_21></Row>
-</Dataset>
-<Dataset name='Result 22'>
- <Row><Result_22>The quick brown fox jumps over the lazy dog</Result_22></Row>
-</Dataset>
-<Dataset name='Result 23'>
- <Row><Result_23>The quick brown fox jumps over the lazy dog</Result_23></Row>
 </Dataset>

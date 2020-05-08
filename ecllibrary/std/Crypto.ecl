@@ -58,7 +58,7 @@ END; // Hashing module
  * Encryption module containing all symmetric encryption/decryption functions
  *
  * @param   algorithm      Symmetric algorithm to use, as returned by SupportedSymmetricCipherAlgorithms()
- * @param   passphrase     Passphrase to use for encryption/encryption
+ * @param   passphrase     Passphrase string to use for encryption/encryption
  */
 EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
     /**
@@ -84,17 +84,43 @@ EXPORT SymmetricEncryption(VARSTRING algorithm, VARSTRING passphrase) := MODULE
     END;
 END; // SymmetricEncryption module
 
-
-
+/**
+ * Encryption module containing symmetric encryption/decryption functions
+ *
+ * @param   algorithm      Symmetric algorithm to use, as returned by SupportedSymmetricCipherAlgorithms()
+ * @param   passphrase     Passphrase buffer to use for encryption/encryption
+ */
+EXPORT SymmEncryption(VARSTRING algorithm, DATA passphraseBuff) := MODULE
+    /**
+     * Encrypt the given data, using the specified passphrase and symmetric cipher
+     * algorithm that was returned by SupportedSymmetricCipherAlgorithms()
+     *
+     * @param   inputData  Contents to encrypt
+     * @return             Encrypted cipher
+     */
+    EXPORT DATA Encrypt(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.SymEncrypt( algorithm, passphraseBuff, inputData );
+    END;
+    /**
+     * Decrypt the given cipher, using the specified passphrase and symmetric cipher
+     * algorithm that was returned by SupportedSymmetricCipherAlgorithms()
+     *
+     * @param   encryptedData  Contents to decrypt
+     * @return                 Decrypted data
+     */
+    EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.SymDecrypt( algorithm, passphraseBuff, encryptedData );
+    END;
+END; // SymmEncryption module
 
 /**
- * Encryption module containing all asymmetric encryption/decryption/digital
+ * Encryption module containing asymmetric encryption/decryption/digital
  * signing/signature verification functions
  *
  * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
  * @param   publicKeyFile  File specification of PEM formatted public key file
  * @param   privateKeyFile File specification of PEM formatted private key file
- * @param   passphrase     Passphrase to use for encryption/encryption/signing/verifying
+ * @param   passphrase     Passphrase string to use for encryption/encryption/signing/verifying
  */
 EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRING privateKeyFile = '', VARSTRING passphrase = '') := MODULE
     /**
@@ -143,15 +169,70 @@ EXPORT PublicKeyEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', 
     END;
 END; // PublicKeyEncryption module
 
+/**
+ * Encryption module containing asymmetric encryption/decryption/digital
+ * signing/signature verification functions
+ *
+ * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
+ * @param   publicKeyFile  File specification of PEM formatted public key file
+ * @param   privateKeyFile File specification of PEM formatted private key file
+ * @param   passphrase     Passphrase buffer to use for encryption/encryption/signing/verifying
+ */
+EXPORT PKEncryption(VARSTRING pkAlgorithm, VARSTRING publicKeyFile = '', VARSTRING privateKeyFile = '', DATA passphraseBuff) := MODULE
+    /**
+     * Encrypt the given data, using the specified public key file,
+     * passphrase, and algorithm
+     *
+     * @param   inputData    Contents to Encrypt
+     * @return               Encrypted data
+     */
+    EXPORT DATA Encrypt(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKEncrypt( pkAlgorithm, publicKeyFile, passphraseBuff, inputData);
+    END;
+
+    /**
+     * Decrypt the given encrypted data, using the specified private key file,
+     * passphrase, and algorithm
+     *
+     * @param   encryptedData    Contents to Decrypt
+     * @return                   Decrypted data
+     */
+    EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKDecrypt( pkAlgorithm, privateKeyFile, passphraseBuff, encryptedData);
+    END;
+
+    /**
+     * Create a digital signature of the given data, using the
+     * specified private key file, passphrase and algorithm
+     *
+     * @param   inputData    Contents to sign
+     * @return               Computed Digital signature
+     */
+    EXPORT DATA Sign( DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKSign( pkAlgorithm, privateKeyFile, passphraseBuff, inputData);
+    END;
+
+    /**
+     * Verify the given digital signature of the given data, using
+     * the specified public key file, passphrase and algorithm
+     *
+     * @param   signature      Signature to verify
+     * @param   signedData     Data used to create signature
+     * @return                 Boolean TRUE/FALSE
+     */
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKVerifySignature( pkAlgorithm, publicKeyFile, passphraseBuff, signature, signedData);
+    END;
+END; // PKEncryption module
 
 /**
- * Encryption module containing all asymmetric encryption/decryption/digital
+ * Encryption module containing asymmetric encryption/decryption/digital
  * signing/signature verification functions
  *
  * @param   pkAlgorithm    Asymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
  * @param   publicKeyLFN   LFN specification of PEM formatted public key file
  * @param   privateKeyLFN  LFN specification of PEM formatted private key file
- * @param   passphrase     Optional Passphrase to use for encryption/encryption/signing/verifying
+ * @param   passphrase     Optional Passphrase string to use for encryption/encryption/signing/verifying
  */
 EXPORT PublicKeyEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', VARSTRING privateKeyLFN = '', VARSTRING passphrase = '') := MODULE
     /**
@@ -202,13 +283,69 @@ END; // PublicKeyEncryptionFromLFN module
 
 
 /**
+ * Encryption module containing asymmetric encryption/decryption/digital
+ * signing/signature verification functions
+ *
+ * @param   pkAlgorithm    Asymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
+ * @param   publicKeyLFN   LFN specification of PEM formatted public key file
+ * @param   privateKeyLFN  LFN specification of PEM formatted private key file
+ * @param   passphrase     Optional Passphrase buffer to use for encryption/encryption/signing/verifying
+ */
+EXPORT PKEncryptionFromLFN(VARSTRING pkAlgorithm, VARSTRING publicKeyLFN = '', VARSTRING privateKeyLFN = '', DATA passphraseBuff) := MODULE
+    /**
+     * Encrypt the given data, using the specified public key LFN,
+     * passphrase, and algorithm
+     *
+     * @param   inputData    Contents to Encrypt
+     * @return               Encrypted data
+     */
+    EXPORT DATA Encrypt(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKEncryptLFN( pkAlgorithm, publicKeyLFN, passphraseBuff, inputData);
+    END;
+
+    /**
+     * Decrypt the given encrypted data, using the specified private key LFN,
+     * passphrase, and algorithm
+     *
+     * @param   encryptedData    Contents to Decrypt
+     * @return                   Decrypted data
+     */
+    EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKDecryptLFN( pkAlgorithm, privateKeyLFN, passphraseBuff, encryptedData);
+    END;
+
+    /**
+     * Create a digital signature of the given data, using the
+     * specified private key LFN, passphrase and algorithm
+     *
+     * @param   inputData    Contents to sign
+     * @return               Computed Digital signature
+     */
+    EXPORT DATA Sign( DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKSignLFN( pkAlgorithm, privateKeyLFN, passphraseBuff, inputData);
+    END;
+
+    /**
+     * Verify the given digital signature of the given data, using
+     * the specified public key LFN, passphrase and algorithm
+     *
+     * @param   signature      Signature to verify
+     * @param   signedData     Data used to create signature
+     * @return                 Boolean TRUE/FALSE
+     */
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKVerifySignatureLFN( pkAlgorithm, publicKeyLFN, passphraseBuff, signature, signedData);
+    END;
+END; // PKEncryptionFromLFN module
+
+/**
   * Encryption module containing all asymmetric encryption/decryption/digital
   * signing/signature verification functions
   *
   * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
   * @param   publicKeyBuff  PEM formatted Public key buffer
   * @param   privateKeyBuff PEM formatted Private key buffer
-  * @param   passphrase     Passphrase to use for encryption/encryption/signing/verifying
+  * @param   passphrase     Passphrase string to use for encryption/encryption/signing/verifying
   */
 EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '', VARSTRING privateKeyBuff = '', VARSTRING passphrase = '') := MODULE
     /**
@@ -256,7 +393,63 @@ EXPORT PublicKeyEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyB
         RETURN lib_cryptolib.CryptoLib.VerifySignatureBuff( pkAlgorithm, publicKeyBuff, passphrase, signature, signedData);
     END;
     
-END; // PublicKeyEncryption module
+END; // PublicKeyEncryptionFromBuffer module
 
+/**
+  * Encryption module containing asymmetric encryption/decryption/digital
+  * signing/signature verification functions
+  *
+  * @param   pkAlgorithm    ASymmetric algorithm to use, as returned by SupportedPublicKeyAlgorithms()
+  * @param   publicKeyBuff  PEM formatted Public key buffer
+  * @param   privateKeyBuff PEM formatted Private key buffer
+  * @param   passphrase     Passphrase buffer to use for encryption/encryption/signing/verifying
+  */
+
+EXPORT PKEncryptionFromBuffer(VARSTRING pkAlgorithm, VARSTRING publicKeyBuff = '', VARSTRING privateKeyBuff = '', DATA passphraseBuff) := MODULE
+    /**
+      * Encrypt the given data, using the specified public key, passphrase,
+      * and algorithm
+      *
+      * @param   inputData    Contents to Encrypt
+      * @return               Encrypted data
+      */
+    EXPORT DATA Encrypt(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKEncryptBuff( pkAlgorithm, publicKeyBuff, passphraseBuff, inputData);
+    END;
+
+    /**
+      * Decrypt the given data, using the specified private key, passphrase,
+      * and algorithm
+      *
+      * @param   encryptedData  Contents to Decrypt
+      * @return                 Decrypted data
+      */
+    EXPORT DATA Decrypt(DATA encryptedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKDecryptBuff(pkAlgorithm, privateKeyBuff, passphraseBuff, encryptedData);
+    END;
+
+    /**
+      * Create a digital signature of the given data, using the specified private key,
+      * passphrase, and algorithm
+      *
+      * @param   inputData    Contents to sign
+      * @return               Computed digital signature
+      */
+    EXPORT DATA Sign(DATA inputData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKSignBuff( pkAlgorithm, privateKeyBuff, passphraseBuff, inputData);
+    END;
+
+    /**
+      * Verify the given digital signature of the given data, using the specified public key,
+      * passphrase, and algorithm
+      *
+      * @param   signature      Signature to verify
+      * @param   signedData     Data used to create signature
+      * @return                 Booolean TRUE if signature is valid, otherwise FALSE
+      */
+    EXPORT BOOLEAN VerifySignature(DATA signature, DATA signedData) := FUNCTION
+        RETURN lib_cryptolib.CryptoLib.PKVerifySignatureBuff( pkAlgorithm, publicKeyBuff, passphraseBuff, signature, signedData);
+    END;
+END; //PKEncryptionFromBuffer module
 
 END; // Crypto module
