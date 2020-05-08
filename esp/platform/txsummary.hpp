@@ -30,8 +30,6 @@
 class CTxSummary : extends CInterface
 {
 public:
-    IMPLEMENT_IINTERFACE;
-    
     // Construct an instance with the given creation time. A non-zero value
     // allows the summary to be in sync with its owning object. A value of
     // zero causes the summary to base its elapsed time calculations on its

@@ -832,7 +832,7 @@ class CFastLZStream : public CFcmpStream
 
 
 public:
-    CFastLZStream() { compType = FLZSTRMCOMPRESSEDFILEFLAG; }
+    CFastLZStream() : CFcmpStream(FLZSTRMCOMPRESSEDFILEFLAG) { }
 
     virtual ~CFastLZStream() { flush(); }
 

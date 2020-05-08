@@ -430,7 +430,7 @@ class CHThorProcessActivity : public CHThorSimpleActivityBase
     IHThorProcessArg &helper;
     OwnedConstRoxieRow curRight;
     OwnedConstRoxieRow initialRight;
-    unsigned __int64 counter;
+    unsigned __int64 counter = 0;
     Owned<IEngineRowAllocator> rightRowAllocator;
 
 public:
@@ -948,11 +948,11 @@ public:
 class CHThorFirstNActivity : public CHThorSimpleActivityBase
 {
     IHThorFirstNArg &helper;
-    __int64 doneThisGroup;
-    __uint64 limit;  // You would think int was enough for most practical cases...
-    __uint64 skip;
-    bool finished;
-    bool grouped;
+    __int64 doneThisGroup = 0;
+    __uint64 limit = 0;  // You would think int was enough for most practical cases...
+    __uint64 skip = 0;
+    bool finished = false;
+    bool grouped = false;
 public:
     CHThorFirstNActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &_arg, ThorActivityKind _kind);
 
@@ -966,9 +966,9 @@ public:
 class CHThorChooseSetsActivity : public CHThorSimpleActivityBase
 {
     IHThorChooseSetsArg &helper;
-    unsigned numSets;
-    unsigned * setCounts;
-    bool finished;
+    unsigned numSets = 0;
+    unsigned * setCounts = nullptr;
+    bool finished = false;
 public:
     CHThorChooseSetsActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsArg &_arg, ThorActivityKind _kind);
     ~CHThorChooseSetsActivity();
@@ -983,12 +983,12 @@ class CHThorChooseSetsExActivity : public CHThorSimpleActivityBase
 {
 protected:
     IHThorChooseSetsExArg &helper;
-    unsigned numSets;
-    unsigned * setCounts;
-    count_t * limits;
-    bool finished;
+    unsigned numSets = 0;
+    unsigned * setCounts = nullptr;
+    count_t * limits = nullptr;
+    bool finished = false;
     OwnedRowArray gathered;
-    aindex_t curIndex;
+    aindex_t curIndex = 0;
     virtual bool includeRow(const void * row) = 0;
     virtual void calculateSelection() = 0;
 public:
@@ -1032,8 +1032,8 @@ class CHThorGroupActivity : public CHThorSteppableActivityBase
 {
     IHThorGroupArg &helper;
     OwnedConstRoxieRow next; 
-    bool endPending;
-    bool firstDone;
+    bool endPending = false;
+    bool firstDone = false;
 public:
     CHThorGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &_arg, ThorActivityKind _kind);
 
@@ -1107,7 +1107,7 @@ protected:
     IHThorSortArg &helper;
     bool gotSorted;
     Owned<ISorter> sorter;
-    bool sorterIsConst;
+    bool sorterIsConst = false;
     Owned<IDiskMerger> diskMerger;
     Owned<IRowStream> diskReader;
 };
@@ -1456,29 +1456,29 @@ private:
     };
 
     IHThorHashJoinArg & helper;
-    IHThorInput * input1;
-    bool leftOuterJoin;
-    bool exclude;
-    bool many;
-    bool dedupRHS;
-    unsigned keepLimit;
-    unsigned atmostLimit;
-    unsigned limitLimit;
-    unsigned joinCounter;
-    bool limitFail;
-    bool limitOnFail;
-    bool hasGroupLimit;
-    bool isSmartJoin;
-    unsigned keepCount;
+    IHThorInput * input1 = nullptr;
+    bool leftOuterJoin = false;
+    bool exclude = false;
+    bool many = true;
+    bool dedupRHS = false;
+    unsigned keepLimit = 0;
+    unsigned atmostLimit = 0;
+    unsigned limitLimit = 0;
+    unsigned joinCounter = 0;
+    bool limitFail = false;
+    bool limitOnFail = false;
+    bool hasGroupLimit = false;
+    bool isSmartJoin = false;
+    unsigned keepCount = 0;
     OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
     Owned<LookupTable> table;
-    bool eog;
-    bool matchedGroup;
+    bool eog = false;
+    bool matchedGroup = false;
     OwnedConstRoxieRow left;
-    bool gotMatch;
+    bool gotMatch = false;
     ConstPointerArray rightGroup;
-    aindex_t rightGroupIndex;
+    aindex_t rightGroupIndex = 0;
     Owned<IException> failingLimit;
 
     ConstPointerArray filteredRight;
@@ -1855,8 +1855,8 @@ protected:
 class CHThorCombineGroupActivity : public CHThorSimpleActivityBase
 {
     IHThorCombineGroupArg &helper;
-    unsigned __int64 numProcessedLastGroup;
-    IHThorInput *input1;
+    unsigned __int64 numProcessedLastGroup = 0;
+    IHThorInput *input1 = nullptr;
 public:
     CHThorCombineGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineGroupArg &_arg, ThorActivityKind _kind);
 
@@ -1914,9 +1914,9 @@ class CHThorDiskReadActivity;
 class CHThorWorkunitReadActivity : public CHThorSimpleActivityBase
 {
     IHThorWorkunitReadArg &helper;
-    bool grouped;
-    bool eogPending;
-    bool first;
+    bool grouped = false;
+    bool eogPending = false;
+    bool first = true;
 
     // for case where the workunit result was written to disk, so that the activity must dynamically change into a disk read
     Owned<IHThorDiskReadArg> diskreadHelper;

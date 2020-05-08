@@ -36,7 +36,7 @@ class CLogRequestInFile : public CSimpleInterface
 {
     StringAttr fileName;
     offset_t pos;
-    unsigned size;
+    unsigned size = 0;
     StringAttr GUID;
     StringAttr option;
 public:

@@ -14697,7 +14697,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayDistribute(BuildCtx & ctx,
     {
         UNIMPLEMENTED_X("DISTRIBUTE(NWAY)");
         // Come back to this when DISTRIBUTE(ds, bool) is being implemented
-        doBuildBoolFunction(instance->startctx, "include", cond);
+        //doBuildBoolFunction(instance->startctx, "include", cond);
     }
 
     StringBuffer flags;

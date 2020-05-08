@@ -473,7 +473,7 @@ class CDaliNamedQueueServer: public IDaliServer, public Thread, implements IConn
     bool stopped;
     CIArrayOf<CNamedQueueSubscriptionStub> stubs; // kept in priority order
     CheckedCriticalSection subsect;
-    int fn;
+    int fn = 0;
 public:
     IMPLEMENT_IINTERFACE;
 

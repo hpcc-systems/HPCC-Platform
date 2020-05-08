@@ -33,7 +33,7 @@ private:
     StringAttr m_commentURL;
     StringAttr m_domain;
     StringAttr m_ports;
-    int        m_maxage;
+    int        m_maxage = 0;
     StringAttr m_path;
     bool       m_secure;
     bool       m_httponly;
