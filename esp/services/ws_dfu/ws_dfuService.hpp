@@ -25,6 +25,7 @@
 #include "dadfs.hpp"
 #include "environment.hpp"
 #include <atomic>
+#include "ws_dfuHelpers.hpp"
 
 class CThorNodeGroup: public CInterface
 {
@@ -185,16 +186,11 @@ public:
     virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
 
 private:
-    const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
-    bool addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name);
-    void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf);
-    void appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf);
     void setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf);
     void setFileTypeFilter(const char* fileType, StringBuffer& filterBuf);
     void setFileNameFilter(const char* fname, const char* prefix, StringBuffer &buff);
     void setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf);
     void setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUQResultField* sortOrder);
-    bool addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
     void setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart,
         unsigned pageSize, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname,

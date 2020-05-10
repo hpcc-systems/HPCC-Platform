@@ -15,7 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-#include "xslprocessor.hpp" 
+#include "xslprocessor.hpp"
+
+EspInclude(ws_dfu_common);
+
 //  ===========================================================================
 ESPrequest 
 [
@@ -209,19 +212,18 @@ ESPrequest DFUXRefUnusedFilesRequest
 {
     string ProcessCluster;
     bool CheckPackageMaps;
+    [min_ver("1.01")] bool GetFileDetails(false);
 };
 
 ESPresponse [exceptions_inline] DFUXRefUnusedFilesResponse
 {
     unsigned UnusedFileCount;
     ESParray<string, File> UnusedFiles;
+    [min_ver("1.01")] ESParray<ESPStruct DFULogicalFile> UnusedFilesWithDetails;
 };
 
-
-
-
 //  ===========================================================================
-ESPservice [auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
+ESPservice [version("1.01"), default_client_version("1.01"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
 {
     ///ESPmethod [resp_xsl_default("./smc_xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);

@@ -16,6 +16,9 @@
 ############################################################################## */
 
 #include "xslprocessor.hpp"
+
+EspInclude(ws_dfu_common);
+
 //  ===========================================================================
 
 ESPenum DFUArrayActions : string
@@ -92,41 +95,6 @@ ESPStruct DFUFileBloom
     ESParray<string> FieldNames;
     int64 Limit;
     string Probability;
-};
-
-ESPStruct DFULogicalFile
-{
-    string Prefix;
-    [depr_ver("1.26")] string ClusterName;
-    [min_ver("1.26")] string NodeGroup;
-    string Directory;
-    string Description;
-    string Parts;
-    string Name;
-    string Owner;
-    string Totalsize;
-    string RecordCount;
-    string Modified;
-    string LongSize;
-    string LongRecordCount;
-    bool   isSuperfile;
-    [depr_ver("1.22")] bool   isZipfile;
-    bool   isDirectory(false);
-    bool   Replicate(false);
-    [min_ver("1.01")] int64 IntSize;
-    [min_ver("1.01")] int64 IntRecordCount;
-    [min_ver("1.02")] bool FromRoxieCluster;
-    [min_ver("1.03")] bool BrowseData;
-    [min_ver("1.14"), depr_ver("1.24")] bool IsKeyFile;
-    [min_ver("1.22")] bool IsCompressed;
-    [min_ver("1.24")] string ContentType;
-    [min_ver("1.22")] int64 CompressedFileSize;
-    [min_ver("1.30")] string SuperOwners;
-    [min_ver("1.30")] bool Persistent(false);
-    [min_ver("1.34")] bool IsProtected(false);
-    [min_ver("1.41")] string KeyType;
-    [min_ver("1.52")] int NumOfSubfiles;
-    [min_ver("1.55")] string Accessed;
 };
 
 ESPStruct DFUPart

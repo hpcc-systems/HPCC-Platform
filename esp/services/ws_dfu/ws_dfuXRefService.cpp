@@ -611,6 +611,55 @@ void findUnusedFilesInDFS(StringArray &unusedFiles, const char *process, const M
     }
 }
 
+IDFAttributesIterator *CWsDfuXRefEx::getAllLogicalFilesInCluster(IEspContext &context, const char *cluster, bool &allMatchingFilesReceived)
+{
+    StringBuffer filterBuf;
+    //The filterBuf is sent to dali to retrieve the logical files whose @group attribute contains this cluster.
+    WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, cluster, ",", filterBuf);
+
+    DFUQResultField localFilters[2];
+    MemoryBuffer localFilterBuf;
+    unsigned short localFilterCount = 0;
+    //If a logical file is for >1 clusters, the localFilterBuf is used to pick up the logical file which is for this cluster.
+    WsDFUHelpers::addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, cluster, DFUQRFnodegroup);
+    localFilters[localFilterCount] = DFUQRFterm;
+
+    DFUQResultField sortOrder[2] = {DFUQRFname, DFUQRFterm};
+
+    __int64 cacheHint = 0; //No paging is needed.
+    unsigned totalFiles = 0, pageStart = 0, pageSize = ITERATE_FILTEREDFILES_LIMIT;
+    Owned<IUserDescriptor> userDesc = getUserDescriptor(context);
+
+    PROGLOG("getLogicalFilesSorted() called");
+    Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(userDesc, sortOrder, filterBuf,
+        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles, &allMatchingFilesReceived);
+    PROGLOG("getLogicalFilesSorted() done");
+
+    return it.getClear();
+}
+
+void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const char *process, const MapStringTo<bool> &usedFileMap, IArrayOf<IEspDFULogicalFile> &unusedFiles)
+{
+    //Collect information about logical files in dali for the given cluster.
+    bool allMatchingFilesReceived = true;
+    Owned<IDFAttributesIterator> it = getAllLogicalFilesInCluster(context, process, allMatchingFilesReceived);
+    if (!it)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR, "Failed to retrieve logical files for %s.", process);
+
+    if (!allMatchingFilesReceived)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsDfu::DFURoxieUnusedFiles not supported for %s: too many files.", process);
+
+    //Find out unused Roxie logical files
+    double version = context.getClientVersion();
+    ForEach(*it)
+    {
+        IPropertyTree &file = it->query();
+        const char *fileName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
+        if (!isEmptyString(fileName) && !usedFileMap.getValue(fileName))
+            WsDFUHelpers::addToLogicalFileList(file, nullptr, version, unusedFiles);
+    }
+}
+
 bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
 {
     const char *process = req.getProcessCluster();
@@ -630,12 +679,23 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     Owned<IPropertyTreeIterator> roxieFiles = controlXrefInfo->getElements("//File");
     ForEach(*roxieFiles)
         addLfnToUsedFileMap(usedFileMap, roxieFiles->query().queryProp("@name"));
+
     if (req.getCheckPackageMaps())
         addUsedFilesFromPackageMaps(usedFileMap, process);
-    StringArray unusedFiles;
-    findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
-    resp.setUnusedFileCount(unusedFiles.length());
-    resp.setUnusedFiles(unusedFiles);
+    if (!req.getGetFileDetails())
+    {
+        StringArray unusedFiles;
+        findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
+        resp.setUnusedFileCount(unusedFiles.length());
+        resp.setUnusedFiles(unusedFiles);
+    }
+    else
+    {
+        IArrayOf<IEspDFULogicalFile> unusedLFs;
+        findUnusedFilesWithDetailsInDFS(context, process, usedFileMap, unusedLFs);
+        resp.setUnusedFileCount(unusedLFs.length());
+        resp.setUnusedFilesWithDetails(unusedLFs);
+    }
     return true;
 }
 
