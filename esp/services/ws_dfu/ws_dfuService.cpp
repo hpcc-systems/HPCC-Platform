@@ -2214,7 +2214,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     if (version >= 1.28)
     {
         StringBuffer buf;
-        FileDetails.setPrefix(getPrefixFromLogicalName(lname, buf));
+        FileDetails.setPrefix(WsDFUHelpers::getPrefixFromLogicalName(lname, buf));
         if (cluster && *cluster)
             FileDetails.setNodeGroup(cluster);
         else if (clusters.length() == 1)
@@ -2709,7 +2709,7 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get LogicalFile information from file system.");
 
         ForEach(*it)
-            addToLogicalFileList(it->query(), NULL, version, logicalFiles);
+            WsDFUHelpers::addToLogicalFileList(it->query(), NULL, version, logicalFiles);
         numFiles = totalFiles;
     }
 
@@ -3519,30 +3519,6 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
     return;
 }
 
-bool CWsDfuEx::addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name)
-{
-    if (!value || !*value)
-        return false;
-    filters[count++] = name;
-    buff.append(value);
-    return true;
-}
-
-void CWsDfuEx::appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf)
-{
-    if (!name || !*name || !value || !*value)
-        return;
-    filterBuf.append(type).append(DFUQFilterSeparator).append(name).append(DFUQFilterSeparator).append(value).append(DFUQFilterSeparator);
-}
-
-void CWsDfuEx::appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf)
-{
-    if (!name || !*name || !value || !*value)
-        return;
-    filterBuf.append(type).append(DFUQFilterSeparator).append(name).append(DFUQFilterSeparator).append(value).append(DFUQFilterSeparator);
-    filterBuf.append(valueHigh).append(DFUQFilterSeparator);
-}
-
 void CWsDfuEx::setFileTypeFilter(const char* fileType, StringBuffer& filterBuf)
 {
     DFUQFileTypeFilter fileTypeFilter = DFUQFFTall;
@@ -3562,7 +3538,7 @@ void CWsDfuEx::setFileTypeFilter(const char* fileType, StringBuffer& filterBuf)
         fileTypeFilter = DFUQFFTall;
     filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(fileTypeFilter).append(DFUQFilterSeparator);
     if (notInSuperfile)
-        appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFsuperowner), DFUQFThasProp, "0", filterBuf);
+        WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFsuperowner), DFUQFThasProp, "0", filterBuf);
 }
 
 void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBuffer &filterBuf)
@@ -3593,9 +3569,9 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
 {
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
     setFileTypeFilter(req.getFileType(), filterBuf);
-    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
-    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
-    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
+    WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
+    WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
+    WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
     if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
         filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
@@ -3678,158 +3654,6 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
     if (descending)
         sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQRFreverse);
     return;
-}
-
-const char* CWsDfuEx::getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix)
-{
-    if (!logicalName || !*logicalName)
-        return NULL;
-
-    const char *c=strstr(logicalName, "::");
-    if (c)
-        prefix.append(c-logicalName, logicalName);
-    else
-        prefix.append(logicalName);
-    return prefix.str();
-}
-
-bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
-{
-    const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
-    if (!logicalName || !*logicalName)
-        return false;
-
-    try
-    {
-        Owned<IEspDFULogicalFile> lFile = createDFULogicalFile("","");
-        lFile->setName(logicalName);
-        lFile->setOwner(file.queryProp(getDFUQResultFieldName(DFUQRFowner)));
-
-        StringBuffer buf(file.queryProp(getDFUQResultFieldName(DFUQRFtimemodified)));
-        lFile->setModified(buf.replace('T', ' ').str());
-        lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
-        lFile->setDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)));
-
-        if (!nodeGroup || !*nodeGroup)
-                nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
-        if (nodeGroup && *nodeGroup)
-        {
-            if (version < 1.26)
-                lFile->setClusterName(nodeGroup);
-            else
-                lFile->setNodeGroup(nodeGroup);
-        }
-
-        int numSubFiles = file.hasProp(getDFUQResultFieldName(DFUQRFnumsubfiles));
-        if(numSubFiles)
-        {
-            lFile->setIsSuperfile(true);
-            if (version >= 1.52)
-            {
-                numSubFiles = file.getPropInt(getDFUQResultFieldName(DFUQRFnumsubfiles));
-                lFile->setNumOfSubfiles(numSubFiles);
-            }
-        }
-        else
-        {
-            lFile->setIsSuperfile(false);
-            lFile->setDirectory(file.queryProp(getDFUQResultFieldName(DFUQRFdirectory)));
-            lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
-        }
-        lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
-
-        if (version >= 1.30)
-        {
-            bool persistent = file.getPropBool(getDFUQResultFieldName(DFUQRFpersistent), false);
-            if (persistent)
-                lFile->setPersistent(true);
-            if (file.hasProp(getDFUQResultFieldName(DFUQRFsuperowners)))
-                lFile->setSuperOwners(file.queryProp(getDFUQResultFieldName(DFUQRFsuperowners)));
-            if (file.hasProp(getDFUQResultFieldName(DFUQRFprotect)))
-                lFile->setIsProtected(true);
-        }
-
-        __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
-        if (size > 0)
-        {
-            lFile->setIntSize(size);
-            lFile->setTotalsize((buf.clear()<<comma(size)).str());
-        }
-
-        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount),0);
-        if (!records)
-            records = file.getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount),0);
-        if (!records)
-        {
-            __int64 recordSize=file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize),0);
-            if(recordSize > 0)
-                records = size/recordSize;
-        }
-        if (records > 0)
-        {
-            lFile->setIntRecordCount(records);
-            lFile->setRecordCount((buf.clear()<<comma(records)).str());
-        }
-
-        bool isKeyFile = false;
-        if (version > 1.13)
-        {
-            const char * kind = file.queryProp(getDFUQResultFieldName(DFUQRFkind));
-            if (kind && *kind)
-            {
-                if (strieq(kind, "key"))
-                    isKeyFile = true;
-                if (version >= 1.24)
-                    lFile->setContentType(kind);
-                else
-                    lFile->setIsKeyFile(isKeyFile);
-            }
-        }
-
-        if (isKeyFile && (version >= 1.41))
-        {
-            if (isFilePartitionKey(file))
-                lFile->setKeyType("Partitioned");
-            else if (isFileLocalKey(file))
-                lFile->setKeyType("Local");
-            else
-                lFile->setKeyType("Distributed");
-        }
-
-        bool isFileCompressed = file.getPropBool(getDFUQResultFieldName(DFUQRFiscompressed));
-        if (isFileCompressed)
-        {
-            if (version >= 1.22)
-            {
-                if (file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
-                    lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize)));
-                else if (isKeyFile)
-                    lFile->setCompressedFileSize(size);
-            }
-        }
-        if (version < 1.22)
-            lFile->setIsZipfile(isFileCompressed);
-        else
-            lFile->setIsCompressed(isFileCompressed);
-
-        if (version >= 1.55)
-        {
-            StringBuffer accessed(file.queryProp(getDFUQResultFieldName(DFUQRFaccessed)));
-            if (!accessed.isEmpty())
-                lFile->setAccessed(accessed.replace('T', ' '));
-        }
-
-        logicalFiles.append(*lFile.getClear());
-    }
-    catch(IException* e)
-    {
-        VStringBuffer msg("Failed to retrieve data for logical file %s: ", logicalName);
-        int code = e->errorCode();
-        e->errorMessage(msg);
-        e->Release();
-        throw MakeStringException(code, "%s", msg.str());
-    }
-    return true;
 }
 
 void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart, unsigned pageSize,
@@ -3952,7 +3776,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     unsigned short localFilterCount = 0;
     DFUQResultField localFilters[8];
     MemoryBuffer localFilterBuf;
-    addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getNodeGroup(), DFUQRFnodegroup);
+    WsDFUHelpers::addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getNodeGroup(), DFUQRFnodegroup);
     localFilters[localFilterCount] = DFUQRFterm;
 
     StringBuffer sortBy;
@@ -3996,7 +3820,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
-        addToLogicalFileList(it->query(), NULL, version, logicalFiles);
+        WsDFUHelpers::addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
     if (!allMatchingFilesReceived)
     {
