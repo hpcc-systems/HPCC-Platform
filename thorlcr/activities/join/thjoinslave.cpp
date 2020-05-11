@@ -458,9 +458,7 @@ public:
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
 
-            CRuntimeStatisticCollection spillStats(spillStatistics);
-            mergeStats(spillStats, iLoaderL);
-            stats.merge(spillStats);
+            mergeStats(stats, iLoaderL, spillStatistics);
         }
         IEngineRowStream *rightInputStream = queryInputStream(1);
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
@@ -481,9 +479,7 @@ public:
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
 
-            CRuntimeStatisticCollection spillStats(spillStatistics);
-            mergeStats(spillStats, iLoaderR);
-            stats.merge(spillStats);
+            mergeStats(stats, iLoaderR, spillStatistics);
         }
     }
     bool doglobaljoin()
@@ -590,9 +586,8 @@ public:
             sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, primarySecondaryCompare, primarySecondaryUpperCompare, primaryKeySerializer, primaryCompare, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, primaryRowIf); // primaryKeySerializer *is* correct
         else
             sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, nullptr, nullptr, nullptr, nullptr, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, nullptr);
-        CRuntimeStatisticCollection spillStats(spillStatistics);
-        mergeStats(spillStats, sorter);
-        stats.merge(spillStats);
+
+        mergeStats(stats, sorter, spillStatistics);
         //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
         stopOtherInput();

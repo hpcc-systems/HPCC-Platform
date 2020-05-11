@@ -367,7 +367,7 @@ void CDiskWriteSlaveActivityBase::open()
     Owned<IFileIO> partOutputIO = createMultipleWrite(this, *partDesc, diskRowMinSz, twFlags, compress, ecomp, this, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(outputCs);
         outputIO.setown(partOutputIO.getClear());
     }
 
@@ -432,15 +432,12 @@ void CDiskWriteSlaveActivityBase::close()
         }
 
         Owned<IFileIO> tmpFileIO;
-        CRuntimeStatisticCollection activeStats(diskReadRemoteStatistics);
         {
-            CriticalBlock block(statsCs);
-            mergeStats(activeStats, outputIO);
-
+            CriticalBlock block(outputCs);
             // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
             tmpFileIO.setown(outputIO.getClear());
         }
-        stats.merge(activeStats);
+        mergeStats(stats, tmpFileIO, diskReadRemoteStatistics);
 
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {
@@ -514,12 +511,10 @@ void CDiskWriteSlaveActivityBase::abort()
 
 void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
-    CRuntimeStatisticCollection activeStats(diskWriteRemoteStatistics);
     {
-        CriticalBlock block(statsCs);
-        mergeStats(activeStats, outputIO);
+        CriticalBlock block(outputCs);
+        mergeStats(stats, outputIO, diskWriteRemoteStatistics);
     }
-    stats.merge(activeStats);
     stats.setStatistic(StPerReplicated, replicateDone);
     PARENT::serializeStats(mb);
 }
