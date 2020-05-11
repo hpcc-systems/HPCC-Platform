@@ -149,6 +149,7 @@ const static WuAttrInfo attrInfo[] = {
     ATTRX(CriticalSection, SMeasureText),
     CHILD(DiskFormat, SMeasureText, "diskFormat"),
     CHILD(RecordFormat, SMeasureText, "recordFormat"),
+    CHILD(ServiceName, SMeasureText, "serviceName"),
     { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone }
 };
 

@@ -134,6 +134,7 @@ enum WuAttr : unsigned
     WaCriticalSection,
     WaDiskFormat,
     WaRecordFormat,
+    WaServiceName,
     WaMax
 };
 inline WuAttr & operator++(WuAttr & x) { assert(x<WaMax); x = (WuAttr)(x+1); return x; }
