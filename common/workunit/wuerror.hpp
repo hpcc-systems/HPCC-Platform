@@ -53,4 +53,5 @@
 #define WUERR_WorkunitVersionMismatch           5028
 #define WUERR_InvalidFieldUsage                 5029
 #define WUERR_InvalidUserInput                  5030
+#define WUERR_CannotImportWorkunit              5031
 #endif
