@@ -761,6 +761,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 unsigned rowCount = getRowCount();
                 unsigned rowNum = 0;
                 unsigned rowStart = 0;
+                unsigned __int64 startSeeks = kmc->queryKeyManager()->querySeeks();
+                unsigned __int64 startScans = kmc->queryKeyManager()->queryScans();
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = getRowClear(rowNum++);
@@ -770,6 +772,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     if (last || (replyMb.length() >= DEFAULT_KEYLOOKUP_MAXREPLYSZ))
                     {
                         countMarker.write(rowNum-rowStart);
+                        replyMb.append(kmc->queryKeyManager()->querySeeks()-startSeeks);
+                        replyMb.append(kmc->queryKeyManager()->queryScans()-startScans);
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());
