@@ -65,7 +65,7 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         }
         loggingAgent->init(agentName, agentType, &loggingAgentTree, service);
         loggingAgent->initVariants(&loggingAgentTree);
-        IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, loggingAgent);
+        IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, nullptr, loggingAgent);
         if(!logThread)
             throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
         loggingAgentThreads.push_back(logThread);

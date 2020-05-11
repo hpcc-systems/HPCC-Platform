@@ -25,10 +25,12 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_logging_transid.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_logging_agent_basic.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wslogging.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/decoupled_logging.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/logging_agent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogserviceespagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsstore.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_decoupledlogging.xsl
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
 ENDFOREACH ( iFILES )
