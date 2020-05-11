@@ -1049,75 +1049,10 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
                                          bool isproxy,
                                          StringBuffer& soapmsg)
 {
-    soapmsg.append(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
-
-    if(isroxie)
-    {
-        const char *tgtQueryName = tgtcfg->queryProp("@queryname");
-        if (!isEmptyString(tgtQueryName))
-        {
-            soapmsg.append("<soap:Body><").append(tgtQueryName).append(">");
-            soapmsg.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
-
-            if (tgtctx)
-                toXML(tgtctx.get(), soapmsg);
-
-            soapmsg.append(req.str());
-            soapmsg.append("</").append(tgtQueryName).append("></soap:Body>");
-
-            auto cfgGateways = tgtcfg->queryBranch("Gateways");
-            if (cfgGateways)
-            {
-                auto baseXpath = cfgGateways->queryProp("@legacyTransformTarget");
-                if (!isEmptyString(baseXpath))
-                {
-                    Owned<IPTree> gws = createPTree("gateways", 0);
-                    Owned<IPTree> soapTree = createPTreeFromXMLString(soapmsg.append("</soap:Envelope>"), ipt_ordered);
-                    StringBuffer xpath(baseXpath);
-                    StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
-
-                    if (rowName.isEmpty())
-                        rowName.append("row");
-                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, rowName);
-                    xpath.replaceString("{$query}", tgtQueryName);
-                    xpath.replaceString("{$method}", mthdef.queryMethodName());
-                    xpath.replaceString("{$service}", srvdef.queryName());
-                    xpath.replaceString("{$request}", mthdef.queryRequestType());
-                    mergePTree(ensurePTree(soapTree, xpath), gws);
-                    toXML(soapTree, soapmsg.clear());
-                    soapmsg.setLength(strstr(soapmsg, "</soap:Envelope>") - soapmsg.str());
-                    soapmsg.trim();
-                }
-            }
-        }
-        else
-            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
-                        "EsdlServiceImpl::handleFinalRequest() target query name missing");
-    }
-    else
-    {
-        StringBuffer headers;
-        processHeaders(context, srvdef, mthdef, ns, req,headers);
-        if (headers.length() > 0 )
-            soapmsg.append("<soap:Header>").append(headers).append("</soap:Header>");
-
-        processRequest(context, srvdef, mthdef, ns, req);
-        soapmsg.append("<soap:Body>").append(req).append("</soap:Body>");
-    }
-    soapmsg.append("</soap:Envelope>");
-
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (!isEmptyString(tgtUrl))
     {
-        if (serviceCrt || methodCrt)
-        {
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-            processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg.get(), tgtctx.get(), srvdef, mthdef, soapmsg, m_oEspBindingCfg.get());
-            context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
-        }
-
+        prepareFinalRequest(context, serviceCrt, methodCrt, tgtcfg, tgtctx, srvdef, mthdef, isroxie, ns, req, soapmsg);
         sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
     }
     else
@@ -1397,6 +1332,124 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
     ESPLOG(LogMax,"Response file: %s", respfile);
     if (respfile)
         resp.loadFile(respfile);
+}
+
+/*
+    Builds up the request string into the 'reqStr' buffer in a format 
+    suitable for submission to back-end service.
+ */
+
+void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
+                                        IEsdlCustomTransform *serviceCrt,
+                                        IEsdlCustomTransform *methodCrt,
+                                        Owned<IPropertyTree> &tgtcfg,
+                                        Owned<IPropertyTree> &tgtctx,
+                                        IEsdlDefService &srvdef,
+                                        IEsdlDefMethod &mthdef,
+                                        bool isroxie,
+                                        const char* ns,
+                                        StringBuffer &reqcontent,
+                                        StringBuffer &reqProcessed)
+{
+    const char *mthName = mthdef.queryName();
+    
+    reqProcessed.append(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
+
+    if(isroxie)
+    {
+        const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
+        if (!isEmptyString(tgtQueryName))
+        {   
+            reqProcessed.append("<soap:Body><").append(tgtQueryName).append(">");
+            reqProcessed.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
+
+            if (tgtctx)
+                toXML(tgtctx.get(), reqProcessed);
+
+            reqProcessed.append(reqcontent.str());
+            reqProcessed.append("</").append(tgtQueryName).append("></soap:Body>");
+
+            // Transform gateways
+            auto cfgGateways = tgtcfg->queryBranch("Gateways");
+            if (cfgGateways)
+            {
+                auto baseXpath = cfgGateways->queryProp("@legacyTransformTarget");
+                if (!isEmptyString(baseXpath))
+                {
+                    Owned<IPTree> gws = createPTree("gateways", 0);
+                    // Temporarily add the closing </soap:Envelope> tag so we have valid
+                    // XML to transform the gateways
+                    Owned<IPTree> soapTree = createPTreeFromXMLString(reqProcessed.append("</soap:Envelope>"), ipt_ordered);
+                    StringBuffer xpath(baseXpath);
+                    StringBuffer rowName(cfgGateways->queryProp("@legacyRowName"));
+
+                    if (rowName.isEmpty())
+                        rowName.append("row");
+                    EsdlBindingImpl::transformGatewaysConfig(tgtcfg, gws, rowName);
+                    xpath.replaceString("{$query}", tgtQueryName);
+                    xpath.replaceString("{$method}", mthName);
+                    xpath.replaceString("{$service}", srvdef.queryName());
+                    xpath.replaceString("{$request}", mthdef.queryRequestType());
+                    mergePTree(ensurePTree(soapTree, xpath), gws);
+                    toXML(soapTree, reqProcessed.clear());
+                    // Remove the </soap:Envelope> tag so it can be unconditionally added
+                    // when the gateways don't require processing
+                    reqProcessed.setLength(strstr(reqProcessed, "</soap:Envelope>") - reqProcessed.str());
+                    reqProcessed.trim();
+                }
+            }
+        } 
+        else
+        {
+            // Use WsException here because both callers throw this type of exception
+            throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP",
+                        "EsdlServiceImpl::processFinalRequest() target query name missing");
+        }
+    }
+    else
+    {
+        StringBuffer headers;
+        processHeaders(context, srvdef, mthdef, ns, reqcontent, headers);
+        if (headers.length() > 0 )
+            reqProcessed.append("<soap:Header>").append(headers).append("</soap:Header>");
+
+        processRequest(context, srvdef, mthdef, ns, reqcontent);
+        reqProcessed.append("<soap:Body>").append(reqcontent).append("</soap:Body>");
+    }
+
+    reqProcessed.append("</soap:Envelope>");
+
+    // Process Custom Request Transforms
+
+    // If the CRTs are nullptr, we could have been called from a context without 
+    // access to them, so pull them from ourself. When they are passed in the
+    // error checking has already been completed.
+
+    if (!serviceCrt)
+    {
+        if (m_serviceLevelCrtFail)
+            throw MakeStringException(-1, "%s::%s disabled due to service-level Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
+
+        serviceCrt = m_serviceLevelRequestTransform;
+    }
+
+    if (!methodCrt)
+    {
+        StringAttr *crtErrorMessage = m_methodCRTransformErrors.getValue(mthName);
+        if (crtErrorMessage && !crtErrorMessage->isEmpty())
+            throw MakeStringException(-1, "%s::%s disabled due to method-level Custom Transform errors: %s. Review transform template in configuration.", srvdef.queryName(), mthName, crtErrorMessage->str());
+
+        methodCrt = m_customRequestTransformMap.getValue(mthName);
+    }
+
+    if (serviceCrt || methodCrt)
+    {
+        context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
+        processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg, tgtctx, srvdef, mthdef, reqProcessed, m_oEspBindingCfg.get());
+        context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
+    }
 }
 
 EsdlServiceImpl::~EsdlServiceImpl()
@@ -2772,7 +2825,11 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
         EspHttpBinding::escapeSingleQuote(tmp,escaped.clear());
         xform->setStringParameter("methodDesc", escaped);
 
-        xform->setParameter("includeRoxieTest", "1");
+        // By default, even if the config property is missing, include the Roxie Test button
+        if (m_esdlBndCfg->getPropBool("@includeRoxieTest", true)==false)
+            xform->setParameter("includeRoxieTest", "0");
+        else
+            xform->setParameter("includeRoxieTest", "1");
         xform->setParameter("includeJsonTest", "1");
         xform->setParameter("includeJsonReqSample", "1");
 
@@ -2964,11 +3021,13 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
     {
         JsonHelpers::appendJSONException(jsonresp.set("{"), iwse);
         jsonresp.append('}');
+        iwse->Release();
     }
     catch (IException *e)
     {
         JsonHelpers::appendJSONException(jsonresp.set("{"), e);
         jsonresp.append("\n}");
+        e->Release();
     }
     catch (...)
     {
@@ -3246,6 +3305,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
     context->setTransactionID("ROXIETEST-NOTRXID");
     IEsdlDefService *defsrv = m_esdl->queryService(queryServiceType());
     IEsdlDefMethod *defmth;
+
     if(defsrv)
         defmth = defsrv->queryMethodByName(method);
     else
@@ -3282,16 +3342,8 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
-                    roxiemsg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
-                    roxiemsg.append("<soap:Body><").append(tgtQueryName).append(">");
-
-                    roxiemsg.appendf("<_TransactionId>%s</_TransactionId>", context->queryTransactionID());
-                    if (tgtctx)
-                        toXML(tgtctx.get(), roxiemsg);
-
-                    roxiemsg.append(reqcontent.str());
-                    roxiemsg.append("</").append(tgtQueryName).append("></soap:Body>");
-                    roxiemsg.append("</soap:Envelope>");
+                    
+                    m_pESDLService->prepareFinalRequest(*context, nullptr, nullptr, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
                 }
                 else
                 {
