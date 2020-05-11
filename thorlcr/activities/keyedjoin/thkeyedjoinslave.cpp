@@ -1256,6 +1256,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         void processRows(CThorExpandingRowArray &processing, unsigned partNo, IKeyManager *keyManager)
         {
+            unsigned __int64 startSeeks = keyManager->querySeeks();
+            unsigned __int64 startScans = keyManager->queryScans();
+            auto onScopeExitFunc = [&]()
+            {
+                activity.stats.sumStatistic(StNumIndexSeeks, keyManager->querySeeks()-startSeeks);
+                activity.stats.sumStatistic(StNumIndexScans, keyManager->queryScans()-startScans);
+            };
+            COnScopeExit scoped(onScopeExitFunc);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
             {
                 OwnedConstThorRow row = processing.getClear(r);
@@ -1668,6 +1676,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     }
                     joinGroup->decPending(); // Every queued lookup row triggered an inc., this is the corresponding dec.
                 }
+                unsigned __int64 seeks, scans;
+                mb.read(seeks).read(scans);
+                activity.stats.sumStatistic(StNumIndexSeeks, seeks);
+                activity.stats.sumStatistic(StNumIndexScans, scans);
                 if (received == numRows)
                     break;
             }
