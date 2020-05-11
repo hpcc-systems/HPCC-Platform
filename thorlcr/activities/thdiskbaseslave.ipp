@@ -40,7 +40,7 @@ protected:
     const char *kindStr;
     CRuntimeStatisticCollection fileStats;
     CDiskReadSlaveActivityBase &activity;
-    CriticalSection statsCs;
+    CriticalSection inputCs; // Prevent input from being changed while mergeStats() or other functions are executing
 
     bool eoi;
 public:
@@ -126,7 +126,7 @@ protected:
     unsigned usageCount;
     CDfsLogicalFileName dlfn;
     StringBuffer tempExternalName;
-    CriticalSection statsCs;
+    CriticalSection outputCs;  // Ensure outputIO remains valid for the duration of mergeStats()
 
     void open();
     void removeFiles();

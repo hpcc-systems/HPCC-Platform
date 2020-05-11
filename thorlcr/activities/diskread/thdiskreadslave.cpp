@@ -187,13 +187,13 @@ public:
     }
     virtual void gatherStats(CRuntimeStatisticCollection & merged)
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(inputCs); // Ensure iFileIO remains valid for the duration of mergeStats()
         CDiskPartHandlerBase::gatherStats(merged);
         mergeStats(merged, in);
     }
     virtual unsigned __int64 queryProgress() override
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(inputCs);
         if (in)
             return in->queryProgress();
         else
@@ -250,7 +250,7 @@ void CDiskRecordPartHandler::open()
     // free last part and note progress
     Owned<IExtRowStream> partStream;
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(inputCs);
         partStream.swap(in);
     }
     if (partStream)
@@ -396,7 +396,7 @@ void CDiskRecordPartHandler::open()
     }
 
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(inputCs);
         in.setown(partStream.getClear());
     }
 }
@@ -405,7 +405,7 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
 {
     Owned<IExtRowStream> partStream;
     {
-        CriticalBlock block(statsCs);
+        CriticalBlock block(inputCs);
         partStream.setown(in.getClear());
     }
     if (partStream)

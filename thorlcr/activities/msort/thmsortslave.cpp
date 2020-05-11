@@ -175,13 +175,11 @@ public:
     {
         ActPrintLog("MSortSlaveActivity::kill");
 
-        CRuntimeStatisticCollection spillStats(spillStatistics);
         {
             CriticalBlock block(statsCs);
-            mergeStats(spillStats, sorter);
+            mergeStats(stats, sorter, spillStatistics);
             sorter.clear();
         }
-        stats.merge(spillStats);
         if (portbase)
         {
             queryJobChannel().freePort(portbase, NUMSLAVEPORTS);
@@ -192,12 +190,8 @@ public:
     virtual void serializeStats(MemoryBuffer &mb) override
     {
         {
-            CRuntimeStatisticCollection spillStats(spillStatistics);
-            {
-                CriticalBlock block(statsCs);
-                mergeStats(spillStats, sorter);
-            }
-            stats.merge(spillStats);
+            CriticalBlock block(statsCs);
+            mergeStats(stats, sorter, spillStatistics);
         }
         PARENT::serializeStats(mb);    
     }

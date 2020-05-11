@@ -703,20 +703,27 @@ protected:
 //Some template helper classes for merging statistics from external sources.
 
 template <class INTERFACE>
-void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source)
+void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatisticsMapping & mapping)
 {
     if (!source)
         return;
 
-    ForEachItemIn(iStat, stats)
+    unsigned max = mapping.numStatistics();
+    for (unsigned i=0; i < max; i++)
     {
-        StatisticKind kind = stats.getKind(iStat);
+        StatisticKind kind = mapping.getKind(i);
         stats.mergeStatistic(kind, source->getStatistic(kind));
     }
 }
 
 template <class INTERFACE>
-void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source) { mergeStats(stats, source.get()); }
+void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, const StatisticsMapping & mapping) { mergeStats(stats, source.get(), mapping); }
+
+template <class INTERFACE>
+void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source)       { mergeStats(stats, source, stats.queryMapping()); }
+
+template <class INTERFACE>
+void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source) { mergeStats(stats, source.get(), stats.queryMapping()); }
 
 template <class INTERFACE>
 void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticKind kind)
