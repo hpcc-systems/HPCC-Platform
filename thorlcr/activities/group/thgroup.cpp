@@ -21,35 +21,9 @@
 
 class CGroupBaseActivityMaster : public CMasterActivity
 {
-    Owned<CThorStats> statNumGroups;
-    Owned<CThorStats> statNumGroupMax;
 public:
-    CGroupBaseActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    CGroupBaseActivityMaster(CMasterGraphElement *info) : CMasterActivity(info, groupActivityStatistics)
     {
-        statNumGroups.setown(new CThorStats(queryJob(), StNumGroups));
-        statNumGroupMax.setown(new CThorStats(queryJob(), StNumGroupMax));
-    }
-    virtual void init()
-    {
-        CMasterActivity::init();
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-
-        rowcount_t numGroups;
-        mb.read(numGroups);
-        statNumGroups->set(node, numGroups);
-
-        rowcount_t numGroupMax;
-        mb.read(numGroupMax);
-        statNumGroupMax->set(node, numGroupMax);
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats)
-    {
-        CMasterActivity::getActivityStats(stats);
-        statNumGroups->getStats(stats, false);
-        statNumGroupMax->getStats(stats, false);
     }
 };
 

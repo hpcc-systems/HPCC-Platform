@@ -1645,7 +1645,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CKeyedJoinSlave(CGraphElementBase *_container) : CSlaveActivity(_container)
+    CKeyedJoinSlave(CGraphElementBase *_container) : CSlaveActivity(_container, keyedJoinActivityStatistics)
     {
 #ifdef TRACE_JOINGROUPS
         groupsPendsNoted = fetchReadBack = groupPendsEnded = doneGroupsDeQueued = wroteToFetchPipe = groupsComplete = 0;
@@ -2418,11 +2418,18 @@ public:
         info.unknownRowsOutput = true;
     }
 
-    void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
+        constexpr StatisticKind mapping[] = { StNumIndexSeeks, StNumIndexScans, StNumIndexAccepted, StNumPostFiltered, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected };
         ForEachItemIn(s, _statsArr)
-            mb.append(_statsArr.item(s));
+        {
+            unsigned __int64 v = _statsArr.item(s);
+            if (0 == v)
+                continue;
+            stats.setStatistic(mapping[s], v);
+        }
+
+        CSlaveActivity::serializeStats(mb);
     }
 
 friend class CKeyedFetchHandler;

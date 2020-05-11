@@ -34,7 +34,6 @@ protected:
     CGraphBase *loopGraph = nullptr;
     unsigned emptyIterations = 0;
     unsigned maxEmptyLoopIterations = 1000;
-    Owned<CThorStats> loopCounterProgress;
     bool syncIterations = false;
     bool loopIsInGlobalGraph = false;
     mptag_t syncMpTag = TAG_NULL;
@@ -89,9 +88,8 @@ protected:
         return final;
     }
 public:
-    CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
+    CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info, loopActivityStatistics)
     {
-        loopCounterProgress.setown(new CThorStats(queryJob(), StNumIterations));
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
         loopIsInGlobalGraph = container.queryOwner().isGlobal();
         loopGraph = nullptr;
@@ -143,18 +141,6 @@ public:
         CMasterActivity::abort();
         if (loopIsInGlobalGraph)
             cancelReceiveMsg(RANK_ALL, syncMpTag);
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        unsigned loopCounter;
-        mb.read(loopCounter);
-        loopCounterProgress->set(node, loopCounter);
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats) override
-    {
-        CMasterActivity::getActivityStats(stats);
-        loopCounterProgress->getStats(stats, false);
     }
 };
 

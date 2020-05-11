@@ -126,7 +126,6 @@ protected:
     unsigned usageCount;
     CDfsLogicalFileName dlfn;
     StringBuffer tempExternalName;
-    CRuntimeStatisticCollection fileStats;
     CriticalSection statsCs;
 
     void open();

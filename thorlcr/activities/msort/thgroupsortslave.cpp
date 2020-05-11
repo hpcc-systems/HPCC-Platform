@@ -40,11 +40,10 @@ class CLocalSortSlaveActivity : public CSlaveActivity
     Owned<IRowStream> out;
     bool unstable, eoi;
     CriticalSection statsCs;
-    CRuntimeStatisticCollection spillStats;
 
 public:
     CLocalSortSlaveActivity(CGraphElementBase *_container)
-        : CSlaveActivity(_container), spillStats(spillStatistics)
+        : CSlaveActivity(_container, sortActivityStatistics)
     {
         helper = (IHThorSortArg *)queryHelper();
         iCompare = helper->queryCompare();
@@ -66,14 +65,15 @@ public:
         if (0 == iLoader->numRows())
             eoi = true;
     }
-    void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CSlaveActivity::serializeStats(mb);
-
-        CriticalBlock block(statsCs);
-        CRuntimeStatisticCollection mergedStats(spillStats);
-        mergeStats(mergedStats, iLoader);
-        mergedStats.serialize(mb);
+        CRuntimeStatisticCollection spillStats(spillStatistics);
+        {
+            CriticalBlock block(statsCs);
+            mergeStats(spillStats, iLoader);
+        }
+        stats.merge(spillStats);
+        PARENT::serializeStats(mb);
     }
 
     virtual void stop()
@@ -81,8 +81,12 @@ public:
         out.clear();
         if (hasStarted())
         {
-            CriticalBlock block(statsCs);
-            mergeStats(spillStats, iLoader);
+            CRuntimeStatisticCollection spillStats(spillStatistics);
+            {
+                CriticalBlock block(statsCs);
+                mergeStats(spillStats, iLoader);
+            }
+            stats.merge(spillStats);
             iLoader.clear();
         }
         PARENT::stop();

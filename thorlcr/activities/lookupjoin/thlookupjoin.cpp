@@ -26,7 +26,6 @@ class CLookupJoinActivityMaster : public CMasterActivity
 {
     mptag_t broadcast2MpTag, broadcast3MpTag, lhsDistributeTag, rhsDistributeTag;
     unsigned failoversToLocal = 0;
-    Owned<CThorStats> localFailoverToStd;
     bool isGlobal = false;
 
     bool isAll() const
@@ -43,7 +42,7 @@ class CLookupJoinActivityMaster : public CMasterActivity
         return false;
     }
 public:
-    CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
+    CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, lookupJoinActivityStatistics)
     {
         isGlobal = !container.queryLocal() && (queryJob().querySlaves()>1);
         if (isGlobal)
@@ -57,7 +56,6 @@ public:
                 rhsDistributeTag = container.queryJob().allocateMPTag();
             }
         }
-        localFailoverToStd.setown(new CThorStats(queryJob(), StNumSmartJoinSlavesDegradedToStd));
     }
     ~CLookupJoinActivityMaster()
     {
@@ -81,34 +79,6 @@ public:
             serializeMPtag(dst, broadcast3MpTag);
             serializeMPtag(dst, lhsDistributeTag);
             serializeMPtag(dst, rhsDistributeTag);
-        }
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
-    {
-        CMasterActivity::deserializeStats(node, mb);
-
-        if (isSmartJoin(*this))
-        {
-            if (isGlobal)
-            {
-                unsigned _failoversToLocal;
-                mb.read(_failoversToLocal);
-                dbgassertex(0 == failoversToLocal || (_failoversToLocal == failoversToLocal)); // i.e. sanity check, all slaves must have agreed.
-                failoversToLocal = _failoversToLocal;
-            }
-            unsigned failoversToStd;
-            mb.read(failoversToStd);
-            localFailoverToStd->set(node, failoversToStd);
-        }
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats) override
-    {
-        CMasterActivity::getActivityStats(stats);
-        if (isSmartJoin(*this))
-        {
-            if (isGlobal)
-                stats.addStatistic(StNumSmartJoinDegradedToLocal, failoversToLocal);
-            localFailoverToStd->getTotalStat(stats);
         }
     }
 };

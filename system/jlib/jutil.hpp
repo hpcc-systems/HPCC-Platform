@@ -26,6 +26,7 @@
 
 #include <algorithm> 
 #include <iterator>
+#include <functional>
 
 #if defined (__APPLE__)
 #include <mach/mach_time.h>
@@ -564,6 +565,18 @@ inline bool stdContains(Container&& container, Value &&v)
 {
     return container.end() != std::find(container.begin(), container.end(), std::forward<Value>(v));
 }
+
+
+class jlib_decl COnScopeExit
+{
+    const std::function<void()> exitFunc;
+public:
+    inline COnScopeExit(const std::function<void()> &_exitFunc) : exitFunc(_exitFunc) { }
+    inline ~COnScopeExit()
+    {
+        exitFunc();
+    }
+};
 
 #endif
 

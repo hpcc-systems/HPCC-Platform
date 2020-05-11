@@ -116,6 +116,25 @@ enum RegistryCode:unsigned { rc_register, rc_deregister };
 #define destroyThorRow(ptr)         free(ptr)
 #define reallocThorRow(ptr, size)   realloc(ptr, size)
 
+
+//statistics gathered by the different activities
+extern graph_decl const StatisticsMapping spillStatistics;
+extern graph_decl const StatisticsMapping basicActivityStatistics;
+extern graph_decl const StatisticsMapping groupActivityStatistics;
+extern graph_decl const StatisticsMapping hashJoinActivityStatistics;
+extern graph_decl const StatisticsMapping indexReadActivityStatistics;
+extern graph_decl const StatisticsMapping indexWriteActivityStatistics;
+extern graph_decl const StatisticsMapping joinActivityStatistics;
+extern graph_decl const StatisticsMapping keyedJoinActivityStatistics;
+extern graph_decl const StatisticsMapping lookupJoinActivityStatistics;
+extern graph_decl const StatisticsMapping loopActivityStatistics;
+extern graph_decl const StatisticsMapping diskReadActivityStatistics;
+extern graph_decl const StatisticsMapping diskWriteActivityStatistics;
+extern graph_decl const StatisticsMapping sortActivityStatistics;
+
+extern graph_decl const StatisticsMapping graphStatistics;
+
+
 class BooleanOnOff
 {
     bool &tf;
@@ -524,9 +543,6 @@ extern graph_decl void logDiskSpace();
 
 class CJobBase;
 extern graph_decl IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int minLevel, IPerfMonHook *chain=NULL); // for passing to jdebug startPerformanceMonitor
-
-//statistics gathered by the different activities
-extern const graph_decl StatisticsMapping spillStatistics;
 
 extern graph_decl bool isOOMException(IException *e);
 extern graph_decl IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IException *e, const char *msg, rowcount_t numRows, IOutputMetaData *meta, const void *row);

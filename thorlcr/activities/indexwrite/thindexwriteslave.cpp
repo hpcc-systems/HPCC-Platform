@@ -75,7 +75,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
-    IndexWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    IndexWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container, indexWriteActivityStatistics)
     {
         helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
         init();
@@ -639,7 +639,7 @@ public:
             fireException(e);
         }
     }
-    virtual void onInputFinished(rowcount_t finalcount)
+    virtual void onInputFinished(rowcount_t finalcount) override
     {
         if (!sizeSignalled)
         {
@@ -647,14 +647,14 @@ public:
             ActPrintLog("finished input %" RCPF "d", finalcount);
         }
     }
-    virtual void serializeStats(MemoryBuffer &mb)
+    virtual void serializeStats(MemoryBuffer &mb) override
     {
+        stats.setStatistic(StPerReplicated, replicateDone);
         PARENT::serializeStats(mb);
-        mb.append(replicateDone);
     }
 
 // ICopyFileProgress
-    CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize)
+    virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize) override
     {
         replicateDone = sizeDone ? ((unsigned)(sizeDone*100/totalSize)) : 0;
         return abortSoon?CFPstop:CFPcontinue;

@@ -1189,36 +1189,6 @@ static int compareUnsigned(unsigned const * left, unsigned const * right)
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
 
-StatisticsMapping::StatisticsMapping(const std::initializer_list<StatisticKind> &kinds)
-{
-    for (auto kind : kinds)
-    {
-        assert(kind != StKindNone);
-        assert(!indexToKind.contains(kind));
-        indexToKind.append(kind);
-    }
-    createMappings();
-}
-
-StatisticsMapping::StatisticsMapping(const StatisticsMapping * from, const std::initializer_list<StatisticKind> &kinds)
-{
-    ForEachItemIn(idx, from->indexToKind)
-        indexToKind.append(from->indexToKind.item(idx));
-    for (auto kind : kinds)
-    {
-        assert(kind != StKindNone);
-        assert(!indexToKind.contains(kind));
-        indexToKind.append(kind);
-    }
-    createMappings();
-}
-
-StatisticsMapping::StatisticsMapping()
-{
-    for (int i = StKindAll+1; i < StMax; i++)
-        indexToKind.append(i);
-    createMappings();
-}
 
 void StatisticsMapping::createMappings()
 {
@@ -1236,7 +1206,7 @@ void StatisticsMapping::createMappings()
     }
 }
 
-const StatisticsMapping allStatistics;
+const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
 const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
@@ -3690,3 +3660,5 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     return true;
 }
 #endif
+
+

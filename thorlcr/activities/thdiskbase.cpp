@@ -29,10 +29,11 @@
 #include "eclhelper.hpp" // tmp for IHThorArg interface
 #include "thdiskbase.ipp"
 
-CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskReadRemoteStatistics)
+
+CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) :
+    CMasterActivity(info, diskReadActivityStatistics)
 {
     hash = NULL;
-    inputProgress.setown(new ProgressInfo(queryJob()));
 }
 
 void CDiskReadMasterBase::init()
@@ -113,30 +114,6 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
         mapping->serializeMap(slave, dst);
     else
         CSlavePartMapping::serializeNullMap(dst);
-}
-
-void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
-{
-    CMasterActivity::deserializeStats(node, mb);
-    rowcount_t progress;
-    mb.read(progress);
-    inputProgress->set(node, progress);
-
-    diskStats.deserialize(node, mb);
-}
-
-void CDiskReadMasterBase::getActivityStats(IStatisticGatherer & stats)
-{
-    CMasterActivity::getActivityStats(stats);
-    diskStats.getStats(stats);
-}
-
-void CDiskReadMasterBase::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
-{
-    //This should be an activity stats
-    CMasterActivity::getEdgeStats(stats, idx);
-    inputProgress->processInfo();
-    stats.addStatistic(StNumDiskRowsRead, inputProgress->queryTotal());
 }
 
 /////////////////
@@ -324,34 +301,11 @@ void CWriteMasterBase::publish()
     }
 }
 
-CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(info), diskStats(diskWriteRemoteStatistics)
+CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info)
+     : CMasterActivity(info, diskWriteActivityStatistics)
 {
-    publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
-    replicateProgress.setown(new ProgressInfo(queryJob()));
-
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
     targetOffset = 0;
-}
-
-void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
-{
-    CMasterActivity::deserializeStats(node, mb);
-    unsigned repPerc;
-    mb.read(repPerc);
-    replicateProgress->set(node, repPerc);
-
-    diskStats.deserialize(node, mb);
-}
-
-void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
-{
-    CMasterActivity::getActivityStats(stats);
-    if (publishReplicatedDone)
-    {
-        replicateProgress->processInfo();
-        stats.addStatistic(StPerReplicated, replicateProgress->queryAverage() * 10000);
-    }
-    diskStats.getStats(stats);
 }
 
 void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtract)

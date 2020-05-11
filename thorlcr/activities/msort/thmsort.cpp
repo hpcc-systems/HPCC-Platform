@@ -34,20 +34,8 @@
 
 class CSortBaseActivityMaster : public CMasterActivity
 {
-    CThorStatsCollection extraStats;
 public:
-    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info), extraStats(spillStatistics) { }
-
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        extraStats.deserialize(node, mb);
-    }
-    virtual void getActivityStats(IStatisticGatherer & stats)
-    {
-        CMasterActivity::getActivityStats(stats);
-        extraStats.getStats(stats);
-    }
+    CSortBaseActivityMaster(CMasterGraphElement * info) : CMasterActivity(info, sortActivityStatistics) { }
 };
 
 class CGroupSortActivityMaster : public CSortBaseActivityMaster

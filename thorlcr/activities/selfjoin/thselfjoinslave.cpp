@@ -49,7 +49,6 @@ private:
     CriticalSection joinHelperCrit;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
-    CRuntimeStatisticCollection spillStats;
 
     bool isUnstable()
     {
@@ -64,7 +63,9 @@ private:
 #endif
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
+        CRuntimeStatisticCollection spillStats(spillStatistics);
         mergeStats(spillStats, iLoader);  // Not sure of the best policy if rs spills later on.
+        stats.merge(spillStats);
         PARENT::stopInput(0);
         return rs.getClear();
     }
@@ -92,7 +93,7 @@ private:
 
 public:
     SelfJoinSlaveActivity(CGraphElementBase *_container, bool _isLocal, bool _isLightweight)
-        : CSlaveActivity(_container), spillStats(spillStatistics)
+        : CSlaveActivity(_container, joinActivityStatistics)
     {
         helper = static_cast <IHThorJoinArg *> (queryHelper());
         isLocal = _isLocal||_isLightweight;
@@ -234,14 +235,15 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
+        {
+            CriticalBlock b(joinHelperCrit);
+            rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
+            stats.setStatistic(StNumLeftRows, p);
+            CRuntimeStatisticCollection spillStats(spillStatistics);
+            mergeStats(spillStats, sorter);    // No danger of a race with reset() because that never replaces a valid sorter
+            stats.merge(spillStats);
+        }
         CSlaveActivity::serializeStats(mb);
-        CriticalBlock b(joinHelperCrit);
-        rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
-        mb.append(p);
-
-        CRuntimeStatisticCollection mergedStats(spillStats);
-        mergeStats(mergedStats, sorter);    // No danger of a race with reset() because that never replaces a valid sorter
-        mergedStats.serialize(mb);
     }
 };
 
