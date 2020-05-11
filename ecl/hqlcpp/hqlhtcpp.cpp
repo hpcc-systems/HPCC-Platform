@@ -17906,6 +17906,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     if (separator)
         doBuildVarStringFunction(instance->startctx, "queryOutputIteratorPath", separator->queryChild(0));
 
+    if (service->queryValue())
+    {
+        StringBuffer serviceName;
+        getUTF8Value(serviceName, service);
+        instance->addAttribute(WaServiceName, serviceName);
+    }
+
     bool isJSON = false;
     IHqlExpression * markupAttr = expr->queryAttribute(xmlAtom);
     if (!markupAttr)
