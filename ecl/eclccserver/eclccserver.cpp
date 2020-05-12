@@ -464,7 +464,34 @@ public:
 #ifdef _CONTAINERIZED
         if (!globals->getPropBool("@useChildProcesses", false) && !globals->hasProp("@workunit"))
         {
-            runK8sJob("eclccserver", wuid, wuid, globals->getPropBool("@deleteJobs", true));
+            Owned<IException> error;
+            try
+            {
+                runK8sJob("compile", wuid, wuid, globals->getPropBool("@deleteJobs", true));
+            }
+            catch (IException *E)
+            {
+                error.setown(E);
+            }
+            if (error)
+            {
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                workunit.setown(factory->updateWorkUnit(wuid.get()));
+                if (workunit)
+                {
+                    if (workunit->aborting() || workunit->getState()==WUStateAborted)
+                        workunit->setState(WUStateAborted);
+                    else
+                    {
+                        StringBuffer msg;
+                        error->errorMessage(msg);
+                        addExceptionToWorkunit(workunit, SeverityError, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
+                        workunit->setState(WUStateFailed);
+                    }
+                }
+                workunit->commit();
+                workunit.clear();
+            }
             return;
         }
 #endif

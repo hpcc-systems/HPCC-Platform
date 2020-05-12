@@ -13904,7 +13904,7 @@ void deleteK8sJob(const char *componentName, const char *job)
     jobname.toLowerCase();
     VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
     StringBuffer output, error;
-    bool ret = runExternalCommand(output, error, deleteJob.str(), nullptr);
+    bool ret = runExternalCommand(componentName, output, error, deleteJob.str(), nullptr);
     DBGLOG("kubectl delete output: %s", output.str());
     if (error.length())
         DBGLOG("kubectl delete error: %s", error.str());
@@ -13912,23 +13912,44 @@ void deleteK8sJob(const char *componentName, const char *job)
         throw makeStringException(0, "Failed to run kubectl delete");
 }
 
-void waitK8sJob(const char *componentName, const char *job, const char *condition)
+void waitK8sJob(const char *componentName, const char *job)
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
+    VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobname.str());
+    VStringBuffer getScheduleStatus("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.conditions[?(@.type=='PodScheduled')].status}", jobname.str());
 
-    if (isEmptyString(condition))
-        condition = "condition=complete";
-
-    // MORE - blocks indefinitely here if you request too many resources
-    VStringBuffer waitJob("kubectl wait --for=%s --timeout=10h job/%s", condition, jobname.str());  // MORE - make timeout configurable
-    StringBuffer output, error;
-    bool ret = runExternalCommand(output, error, waitJob.str(), nullptr);
-    DBGLOG("kubectl wait output: %s", output.str());
-    if (error.length())
-        DBGLOG("kubectl wait error: %s", error.str());
-    if (ret)
-        throw makeStringException(0, "Failed to run kubectl wait");
+    unsigned delay = 100;
+    unsigned start = msTick();
+    unsigned pendingTimeout = 10000;
+    for (;;)
+    {
+        StringBuffer output, error;
+        unsigned ret = runExternalCommand(componentName, output, error, waitJob.str(), nullptr);
+        if (ret || error.length())
+            throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", waitJob.str(), ret, error.str());
+        if (!streq(output, "1"))  // status.active value
+        {
+            DBGLOG("kubectl jobs output: %s", output.str());
+            break;
+        }
+        ret = runExternalCommand(componentName, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
+        if (error.length())
+        {
+            DBGLOG("kubectl get pods error: %s", error.str());
+            break;
+        }
+        bool pending = streq(output, "False");
+        if (pending && msTick()-start > pendingTimeout)
+        {
+            VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobname.str());
+            runExternalCommand(componentName, output.clear(), error.clear(), getReason.str(), nullptr);
+            throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %d ms: %s ", jobname.str(), pendingTimeout, output.str());
+        }
+        MilliSleep(delay);
+        if (delay < 10000)
+            delay = delay * 2;
+    }
 }
 
 void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)

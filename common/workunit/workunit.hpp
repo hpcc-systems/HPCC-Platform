@@ -1699,7 +1699,7 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName);
 extern WORKUNIT_API void deleteK8sJob(const char *componentName, const char *job);
-extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, const char *condition=nullptr);
+extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job);
 extern WORKUNIT_API void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
 extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del=true, const std::list<std::pair<std::string, std::string>> &extraParams={});
 #endif

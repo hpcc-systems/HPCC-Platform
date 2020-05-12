@@ -48,7 +48,7 @@ data:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-  eclccserver-jobspec.yaml: |
+  compile-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
