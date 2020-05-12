@@ -209,10 +209,7 @@ void CWuGraphStats::beforeDispose()
     tag.append("sg").append(id);
 
     //Replace the particular subgraph statistics added by this creator
-    StringBuffer qualified(tag);
-    qualified.append("[@creator='").append(creator).append("']");
-    progress->removeProp(qualified);
-    IPropertyTree * subgraph = progress->addPropTree(tag);
+    IPropertyTree * subgraph = progress->setPropTree(tag);
     subgraph->setProp("@c", queryCreatorTypeName(creatorType));
     subgraph->setProp("@creator", creator);
     subgraph->setPropInt("@minActivity", minActivity);
