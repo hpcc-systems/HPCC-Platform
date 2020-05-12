@@ -25,7 +25,6 @@
 class CLookupJoinActivityMaster : public CMasterActivity
 {
     mptag_t broadcast2MpTag, broadcast3MpTag, lhsDistributeTag, rhsDistributeTag;
-    unsigned failoversToLocal = 0;
     bool isGlobal = false;
 
     bool isAll() const
