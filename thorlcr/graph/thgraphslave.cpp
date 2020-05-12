@@ -127,7 +127,7 @@ bool CThorInput::isFastThrough() const
 // 
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
-    : CActivityBase(_container), stats(statsMapping), CEdgeProgress(this)
+    : CActivityBase(_container, statsMapping), CEdgeProgress(this)
 {
     data = NULL;
 }
@@ -558,7 +558,6 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
     // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
     stats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
     stats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
-
     stats.serialize(mb);
     ForEachItemIn(i, outputs)
     {
@@ -1248,13 +1247,9 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
             {
                 CGraphElementBase &element = iter->query();
                 CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
-                unsigned pos = mb.length();
                 mb.append(activity.queryContainer().queryId());
                 activity.serializeStats(mb);
-                if (pos == mb.length()-sizeof(activity_id))
-                    mb.rewrite(pos);
-                else
-                    ++count;
+                ++count;
             }
             mb.writeDirect(cPos, sizeof(count), &count);
         }
