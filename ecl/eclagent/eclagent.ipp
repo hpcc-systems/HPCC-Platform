@@ -30,7 +30,7 @@
 #include "workflow.hpp"
 #include "roxierow.hpp"
 #include "roxiedebug.hpp"
-#include <stdexcept> 
+#include <stdexcept>
 #include "thorplugin.hpp"
 #include "thorcommon.hpp"
 #include "enginecontext.hpp"
@@ -117,28 +117,28 @@ public:
     {
         return ctx->queryResolveFilesLocally();
     }
-    virtual bool queryRemoteWorkunit() 
-    { 
-        return ctx->queryRemoteWorkunit(); 
+    virtual bool queryRemoteWorkunit()
+    {
+        return ctx->queryRemoteWorkunit();
     }
-    virtual bool queryWriteResultsToStdout() 
-    { 
+    virtual bool queryWriteResultsToStdout()
+    {
         return ctx->queryWriteResultsToStdout();
-    }   
+    }
     virtual outputFmts queryOutputFmt()
-    { 
+    {
         return ctx->queryOutputFmt();
     }
     virtual VOID outputFormattedResult(const char *name, unsigned sequence, bool close)
-    { 
+    {
         return ctx->outputFormattedResult(name, sequence, close);
     }
     virtual unsigned __int64 queryStopAfter()
-    { 
+    {
         return ctx->queryStopAfter();
     }
-    virtual IOrderedOutputSerializer * queryOutputSerializer() 
-    { 
+    virtual IOrderedOutputSerializer * queryOutputSerializer()
+    {
         return ctx->queryOutputSerializer();
     }
     virtual void setWorkflowCondition(bool value)
@@ -217,17 +217,17 @@ public:
     {
         return ctx->createGraphLoopResults();
     }
-    
+
     virtual const char *queryAllowedPipePrograms()
     {
         return ctx->queryAllowedPipePrograms();
     }
-    
+
     virtual IGroup *getHThorGroup(StringBuffer &name)
     {
         return ctx->getHThorGroup(name);
     }
-    
+
     virtual const char *queryWuid()
     {
         return ctx->queryWuid();
@@ -330,9 +330,9 @@ class CHThorDebugContext : extends CBaseServerDebugContext
 {
     Owned<CHThorDebugSocketListener> listener;
     EclAgent *eclAgent;
-    
+
 public:
-    CHThorDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, EclAgent *_eclAgent); 
+    CHThorDebugContext(const IContextLogger &_logctx, IPropertyTree *_queryXGMML, EclAgent *_eclAgent);
     inline unsigned queryPort();
     inline EclAgent * getEclAgent() { return eclAgent; };
 
@@ -582,12 +582,11 @@ public:
     virtual void getLastFailMessage(size32_t & outLen, char * & outStr, const char * tag);
     virtual void getEventName(size32_t & outLen, char * & outStr);
     virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag);
-    //virtual void logException(IEclException *e);  
+    //virtual void logException(IEclException *e);
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser);
 
-    virtual void executeThorGraph(const char * graphName);
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract);
     virtual IThorChildGraph * resolveChildQuery(__int64 subgraphId, IHThorArg * colocal);
@@ -604,8 +603,8 @@ public:
 
     void addException(ErrorSeverity severity, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
     void addExceptionEx(ErrorSeverity severity, MessageAudience aud, const char * source, unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool failOnError, bool isAbort);
-    void logException(IException *e);  
-    void logException(WorkflowException *e);  
+    void logException(IException *e);
+    void logException(WorkflowException *e);
     void logException(std::exception & e);
     void logException(ErrorSeverity severity, MessageAudience aud, unsigned code, const char * text, bool isAbort);
 
@@ -622,7 +621,7 @@ public:
     virtual unsigned getWorkflowId();
     virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
-    virtual void unlockWorkUnit();      
+    virtual void unlockWorkUnit();
     virtual void reloadWorkUnit();
     void addTimings();
 
@@ -689,9 +688,9 @@ public:
     {
         return allowedPipeProgs.get();
     }
-    
+
     IGroup *getHThorGroup(StringBuffer &out);
-    
+
     virtual void updateWULogfile();
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
@@ -944,12 +943,12 @@ private:
 
         IOutputMetaData * queryOutputMeta() const { return in->queryOutputMeta(); }
 
-        void ready() 
+        void ready()
         {
             in->ready();
         }
-        
-        void stop() 
+
+        void stop()
         {
             in->stop();
         }
@@ -975,7 +974,7 @@ private:
                 return true;
             return false;
         }
-    
+
         const void *nextRow()
         {
             const void *ret = in->nextRow();
@@ -996,7 +995,7 @@ private:
             }
             if (in)
                 in->updateProgress(progress);
-        }   
+        }
     };
 
     RedirectedAgentContext subgraphAgentContext;
@@ -1121,7 +1120,7 @@ class EclGraph : public CInterface
         }
 
         IEclGraphResults * resolveLocalQuery(__int64 activityId)
-        { 
+        {
             return container->resolveLocalQuery((unsigned)activityId);
         }
         void setContainer(EclGraph * _container)

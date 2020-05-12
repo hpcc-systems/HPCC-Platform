@@ -139,9 +139,9 @@ enum WUAction
     WUActionCheck = 2,
     WUActionRun = 3,
     WUActionExecuteExisting = 4,
-    WUActionPause = 5, 
-    WUActionPauseNow = 6, 
-    WUActionResume = 7, 
+    WUActionPause = 5,
+    WUActionPauseNow = 6,
+    WUActionResume = 7,
     WUActionSize = 8
 };
 
@@ -1496,7 +1496,7 @@ interface IExtendedWUInterface
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
-    
+
 };
 
 //Do not mark this as WORKUNIT_API - all functions are inline, and it causes windows link errors
@@ -1690,6 +1690,8 @@ extern WORKUNIT_API bool isValidPriorityValue(const char * priority);
 extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 
 inline cost_type calcCost(cost_type ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
+
+extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName);

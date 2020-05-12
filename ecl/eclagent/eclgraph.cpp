@@ -53,17 +53,17 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKdiskwrite:
     case TAKspillwrite:
         return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind);
-    case TAKsort: 
+    case TAKsort:
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind);
-    case TAKdedup: 
+    case TAKdedup:
         return createGroupDedupActivity(agent, activityId, subgraphId, (IHThorDedupArg &)arg, kind);
-    case TAKfilter: 
+    case TAKfilter:
         return createFilterActivity(agent, activityId, subgraphId, (IHThorFilterArg &)arg, kind);
-    case TAKproject: 
+    case TAKproject:
         return createProjectActivity(agent, activityId, subgraphId, (IHThorProjectArg &)arg, kind);
     case TAKprefetchproject:
         return createPrefetchProjectActivity(agent, activityId, subgraphId, (IHThorPrefetchProjectArg &)arg, kind);
-    case TAKfilterproject : 
+    case TAKfilterproject :
         return createFilterProjectActivity(agent, activityId, subgraphId, (IHThorFilterProjectArg &)arg, kind);
     case TAKrollup:
         return createRollupActivity(agent, activityId, subgraphId, (IHThorRollupArg &)arg, kind);
@@ -189,7 +189,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlfetch:
     case TAKjsonfetch:
         return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind, node);
-    case TAKmerge: 
+    case TAKmerge:
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
     case TAKhttp_rowdataset:
         return createHttpRowCallActivity(agent, activityId, subgraphId, (IHThorHttpCallArg &)arg, kind);
@@ -201,13 +201,13 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createSoapDatasetCallActivity(agent, activityId, subgraphId, (IHThorSoapCallArg &)arg, kind);
     case TAKsoap_datasetaction:
         return createSoapDatasetActionActivity(agent, activityId, subgraphId, (IHThorSoapActionArg &)arg, kind);
-    case TAKchilditerator:          
+    case TAKchilditerator:
         return createChildIteratorActivity(agent, activityId, subgraphId, (IHThorChildIteratorArg &)arg, kind);
     case TAKlinkedrawiterator:
         return createLinkedRawIteratorActivity(agent, activityId, subgraphId, (IHThorLinkedRawIteratorArg &)arg, kind);
-    case TAKrowresult:          
+    case TAKrowresult:
         return createRowResultActivity(agent, activityId, subgraphId, (IHThorRowResultArg &)arg, kind);
-    case TAKdatasetresult:          
+    case TAKdatasetresult:
         return createDatasetResultActivity(agent, activityId, subgraphId, (IHThorDatasetResultArg &)arg, kind);
     case TAKwhen_dataset:
     case TAKwhen_action:
@@ -347,7 +347,7 @@ EclGraphElement::EclGraphElement(EclSubGraph * _subgraph, EclSubGraph * _results
 
 void EclGraphElement::addDependsOn(EclSubGraph & other, EclGraphElement * sourceActivity, int controlId)
 {
-    dependentOn.append(other); 
+    dependentOn.append(other);
     dependentOnActivity.append(*sourceActivity);
     dependentControlId.append(controlId);
 }
@@ -503,13 +503,13 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                                                         input.queryOutput(branchIndexes.item(i2)),  //input
                                                         input.activity.get(),   //Source act
                                                         activity.get(),         //target activity
-                                                        0,//input.id, 
-                                                        0,//id, 
+                                                        0,//input.id,
+                                                        0,//id,
                                                         0);
                         probe = & dynamic_cast<IHThorInput &> (base->queryInput());
                     }
                 }
-                else 
+                else
                 {
                     probe = subgraph->createLegacyProbe(input.queryOutput(branchIndexes.item(i2)),
                                                     input.id,
@@ -673,8 +673,8 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKparallel:
             {
                 Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
-                unsigned numBranches = (kind == TAKsequential) ? 
-                                        ((IHThorSequentialArg *)helper.get())->numBranches() : 
+                unsigned numBranches = (kind == TAKsequential) ?
+                                        ((IHThorSequentialArg *)helper.get())->numBranches() :
                                         ((IHThorParallelArg *)helper.get())->numBranches();
                 for (unsigned branch=1; branch <= numBranches; branch++)
                     executeDependentActions(agent, parentExtract, branch);
@@ -1119,19 +1119,19 @@ EclGraphElement * EclSubGraph::idToActivity(unsigned id)
     return NULL;
 }
 
-void EclSubGraph::reset() 
-{ 
-    executed = false; 
+void EclSubGraph::reset()
+{
+    executed = false;
     ForEachItemIn(i, subgraphs)
         subgraphs.item(i).reset();
 }
 
 //---------------------------------------------------------------------------
 
-void EclAgentQueryLibrary::updateProgress() 
+void EclAgentQueryLibrary::updateProgress()
 {
     if (graph)
-        graph->updateLibraryProgress(); 
+        graph->updateLibraryProgress();
 }
 
 void EclAgentQueryLibrary::destroyGraph()
@@ -1195,7 +1195,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
             {
                 targetGraph = targetActivity->subgraph;
                 targetGraphContext = targetGraph->parentActivityId;
-                if (sourceGraphContext == targetGraphContext) 
+                if (sourceGraphContext == targetGraphContext)
                     break;
 
                 targetActivity = recurseFindActivityFromId(targetGraph, targetGraphContext);
@@ -1524,272 +1524,6 @@ EclGraph * EclAgent::loadGraph(const char * graphName, IConstWorkUnit * wu, ILoa
 
 extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const char *graphName);
 
-#define ABORT_POLL_PERIOD (5*1000)
-
-void EclAgent::executeThorGraph(const char * graphName)
-{
-    unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", agentTopology->getPropInt("@thorConnectTimeout", 60));
-#ifdef _CONTAINERIZED
-    // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
-    setBlocked();
-    unlockWorkUnit();
-
-    WUState state = WUStateUnknown;
-    if (agentTopology->hasProp("@queue"))
-    {
-        bool multiJobLinger = agentTopology->getPropBool("@multiJobLinger");
-        if (executeGraphOnLingeringThor(*queryWorkUnit(), graphName, multiJobLinger ? agentTopology->queryProp("@queue") : nullptr))
-            PROGLOG("Existing lingering Thor handled graph: %s", graphName);
-        else
-        {
-            VStringBuffer queueName("%s.thor", agentTopology->queryProp("@queue"));
-            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-            Owned<IJobQueue> queue = createJobQueue(queueName.str());
-            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
-            IJobQueueItem *item = createJobQueueItem(jobName);
-            queue->enqueue(item);
-        }
-
-        // NB: overall max runtime if guillotine set handled by abortmonitor
-        unsigned runningTimeLimit = queryWorkUnit()->getDebugValueInt("maxRunTime", 0);
-        runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
-
-        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
-        for (unsigned i=0; i<2; i++)
-        {
-            WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
-            DBGLOG("Got state: %s", getWorkunitStateStr(state));
-            if (WUStateWait == state) // already finished
-                break;
-            else if ((INFINITE != timelimit) && (WUStateUnknown == state))
-                throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
-            else
-            {
-                auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
-                if (it == expectedStates.end())
-                    throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
-            }
-            timelimit = runningTimeLimit;
-            expectedStates = { WUStateWait };
-        }
-    }
-    else
-    {        
-        VStringBuffer job("%s-%s", wuid.str(), graphName);
-        runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
-    }
-
-    if (wuRead->getExceptionCount())
-    {
-        Owned<IConstWUExceptionIterator> iter = &wuRead->getExceptions();
-        ForEach(*iter)
-        {
-            IConstWUException &e = iter->query();
-            SCMStringBuffer str;
-            e.getExceptionSource(str);
-            if (streq("thormasterexception", str.s))
-            {
-                str.clear();
-                e.getExceptionMessage(str);
-                throw makeStringException(e.getExceptionCode(), str.str());
-            }
-        }
-    }
-    else
-    {
-        WorkunitUpdate w = updateWorkUnit();
-        WUState state = w->getState();
-        if (WUStateFailed == state)
-            throw makeStringException(0, "Workunit failed");
-    }
-
-    setRunning();
-    unlockWorkUnit();
-#else
-    StringAttr wuid(wuRead->queryWuid());
-    StringAttr owner(wuRead->queryUser());
-    StringAttr cluster(wuRead->queryClusterName());
-    int priority = wuRead->getPriorityValue();
-    Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
-    if (!c)
-        throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
-    SCMStringBuffer queueName;
-    c->getThorQueue(queueName);
-    Owned<IJobQueue> jq = createJobQueue(queueName.str());
-
-    bool resubmit;
-    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-    do // loop if pause interrupted graph and needs resubmitting on resume
-    {
-        resubmit = false; // set if job interrupted in thor
-        unlockWorkUnit();
-        if (WUStatePaused == queryWorkUnit()->getState()) // check initial state - and wait if paused
-        {
-            for (;;)
-            {
-                WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
-                if (action == WUActionUnknown)
-                    throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
-                if (action != WUActionPause && action != WUActionPauseNow)
-                    break;
-            }
-        }
-        {
-            Owned <IWorkUnit> w = updateWorkUnit();
-            w->setState(WUStateBlocked);
-        }
-        unlockWorkUnit();
-            
-        class cPollThread: public Thread
-        {
-            Semaphore sem;
-            bool stopped;
-            IJobQueue *jq;
-            IConstWorkUnit *wu;
-        public:
-            
-            bool timedout;
-            CTimeMon tm;
-            cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
-                : tm(timelimit)
-            {
-                stopped = false;
-                jq = _jq;
-                wu = _wu;
-                timedout = false;
-            }
-            ~cPollThread()
-            {
-                stop();
-            }
-            int run()
-            {
-                while (!stopped) {
-                    sem.wait(ABORT_POLL_PERIOD);
-                    if (stopped)
-                        break;
-                    if (tm.timedout()) {
-                        timedout = true;
-                        stopped = true;
-                        jq->cancelInitiateConversation();
-                    }
-                    else if (wu->aborting()) {
-                        stopped = true;
-                        jq->cancelInitiateConversation();
-                    }
-
-                }
-                return 0;
-            }
-            void stop()
-            {
-                stopped = true;
-                sem.signal();
-            }
-        } pollthread(jq,wuRead,timelimit*1000);
-
-        pollthread.start();
-
-        PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
-        IJobQueueItem* item = createJobQueueItem(wuid.str());
-        item->setOwner(owner.str());
-        item->setPriority(priority);        
-        Owned<IConversation> conversation = jq->initiateConversation(item);
-        bool got = conversation.get()!=NULL;
-        pollthread.stop();
-        pollthread.join();
-        if (!got) {
-            if (pollthread.timedout)
-                throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
-            throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
-        }
-        // get the thor ep from whoever picked up
-
-        SocketEndpoint thorMaster;
-        MemoryBuffer msg;
-        if (!conversation->recv(msg,1000*60)) {
-            throw MakeStringException(0, "Query %s cancelled (2)",wuid.str());
-        }
-        thorMaster.deserialize(msg);
-        msg.clear().append(graphName);
-        SocketEndpoint myep;
-        myep.setLocalHost(0);
-        myep.serialize(msg);  // only used for tracing
-        if (!conversation->send(msg)) {
-            StringBuffer s("Failed to send query to Thor on ");
-            thorMaster.getUrlStr(s);
-            throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
-        }
-
-        StringBuffer eps;
-        PROGLOG("Thor on %s running %s",thorMaster.getUrlStr(eps).str(),wuid.str());
-        MemoryBuffer reply;
-        try
-        {
-            if (!conversation->recv(reply,INFINITE))
-            {
-                StringBuffer s("Failed to receive reply from thor ");
-                thorMaster.getUrlStr(s);
-                throw MakeStringExceptionDirect(-1, s.str());
-            }
-        }
-        catch (IException *e)
-        {
-            StringBuffer s("Failed to receive reply from thor ");
-            thorMaster.getUrlStr(s);
-            s.append("; (").append(e->errorCode()).append(", ");
-            e->errorMessage(s).append(")");
-            e->Release();
-            throw MakeStringExceptionDirect(-1, s.str());
-        }
-        unsigned replyCode;
-        reply.read(replyCode);
-        switch ((ThorReplyCodes) replyCode)
-        {
-            case DAMP_THOR_REPLY_PAUSED:
-            {
-                bool isException ;
-                reply.read(isException);
-                if (isException)
-                {
-                    Owned<IException> e = deserializeException(reply);
-                    VStringBuffer str("Pausing job %s caused exception", queryWorkUnit()->queryWuid());
-                    EXCLOG(e, str.str());
-                }
-                Owned <IWorkUnit> w = updateWorkUnit();
-                w->setState(WUStatePaused); // will trigger executeThorGraph to pause next time around.
-                WUAction action = w->getAction();
-                switch (action)
-                {
-                    case WUActionPause:
-                    case WUActionPauseNow:
-                        w->setAction(WUActionUnknown);
-                }
-                resubmit = true; // JCSMORE - all subgraph _could_ be done, thor will check though and not rerun
-                break;
-            }
-            case DAMP_THOR_REPLY_GOOD:
-                break;
-            case DAMP_THOR_REPLY_ERROR:
-            {
-                throw deserializeException(reply);
-            }
-            case DAMP_THOR_REPLY_ABORT:
-            {
-                Owned<IException> e = deserializeException(reply);
-                StringBuffer msg;
-                e->errorMessage(msg);
-                throw new WorkflowException(e->errorCode(), msg.str(), 0, WorkflowException::ABORT, MSGAUD_user);
-            }
-            default:
-                assertex(false);
-        }
-        reloadWorkUnit();
-    }
-    while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
-#endif
-}
-
 //In case of logfile rollover, update logfile name(s) stored in workunit
 
 void EclAgent::updateWULogfile()
@@ -1822,7 +1556,7 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     {
         if (isStandAloneExe)
             throw MakeStringException(0, "Cannot execute Thor Graph in standalone mode");
-        executeThorGraph(graphName);
+        executeThorGraph(graphName, *wuRead, *agentTopology);
     }
     else
     {
@@ -1909,7 +1643,7 @@ IThorChildGraph * EclAgent::resolveChildQuery(__int64 subgraphId, IHThorArg * co
 }
 
 IEclGraphResults * EclAgent::resolveLocalQuery(__int64 activityId)
-{ 
+{
     throwUnexpected();
 }
 
