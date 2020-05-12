@@ -1537,7 +1537,8 @@ void EclAgent::executeThorGraph(const char * graphName)
     WUState state = WUStateUnknown;
     if (agentTopology->hasProp("@queue"))
     {
-        if (executeGraphOnLingeringThor(*queryWorkUnit(), graphName))
+        bool multiJobLinger = agentTopology->getPropBool("@multiJobLinger");
+        if (executeGraphOnLingeringThor(*queryWorkUnit(), graphName, multiJobLinger ? agentTopology->queryProp("@queue") : nullptr))
             PROGLOG("Existing lingering Thor handled graph: %s", graphName);
         else
         {

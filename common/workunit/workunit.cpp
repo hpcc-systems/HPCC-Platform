@@ -13276,57 +13276,136 @@ bool isValidMemoryValue(const char *memoryUnit)
 }
 
 #ifdef _CONTAINERIZED
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName)
 {
     // check if lingering thor instance is up.
+    // Returns true if successfully submitted graph to a lingering Thor.
 
     /* If code was dependent on reading a workunit in parallel, the whole area of
-     * workunit locking and reading will need revisiting, because at the moment the 
+     * workunit locking and reading will need revisiting, because at the moment the
      * workunit reading code does not lock at all.
-     * 
+     *
+     * Either,
+     * 1) multiJobThorLinger is set, meaning Thor instances will wait for any job's graph.
+     * OR
+     * 2) if not set, the Thor will wait for graphs from same job only, and will be
+     *    notified to quit by the agent, when the last graph is complete.
+     *
+     * This code is called from the client (agent) when it wants to execute a Thor graph.
+     * This function checks to see if there any registered lingering Thor instances available.
+     *
+     * Lingering Thor's register when they are idle either with the workunit itself in
+     * the case of [2], or with a Dali psuedo queue (a branch under /Status/ThorLinger),
+     * in the case of [1]
+     * If they have not been contacted within the 'lingerPeriod' they shutdown and remove
+     * their registered instance from the queue.
+     *
+     * The client will attempt to find a lingering Thor in either the workunit or a global
+     * named dali queue (depending on the configuration), it will then remove that entry,
+     * and attempt to post the graph to that lingering Thor. If the Thor acknowledges the
+     * request, this function exits with success. If it it fails, or there are no more
+     * lingering Thor instances, it returns with false to indicate that the graph was not
+     * submitted to a lingering Thor.
+     * The client should then queue the wuid/graph normally, which will invoke a new Thor
+     * instance.
      */
 
-    /* NB: forcing a reload here to ensure Debug values are recent.
-     * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
-     * The area of persisting a non-locked connection to workunits should be resivisted..
-     */
-    workunit.forceReload();
-
-    Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
-    ForEach(*iter)
+    try
     {
-        /* NB: Thor's set their running endpoint into Debug values of workunit
-         * Check to see if workunit has any Thor's available lingering instances.
-         */
-        SCMStringBuffer thorInstance;
-        iter->str(thorInstance);
-        SCMStringBuffer thorInstanceValue;
-        if (workunit.getDebugValueBool(thorInstance.s, false))
+        if (multiJobLingerQueueName && graphName)
         {
-            {
-                Owned<IWorkUnit> w = &workunit.lock();
-                w->setDebugValue(thorInstance.s, "0", true);
-            }
-            /* NB: there's a window where Thor could shutdown here.
-             * In that case, the sendRecv will fail and it will fall through to queueing.
-             */
-            const char *instanceName = strchr(thorInstance.str(), '_') + 1;
+            // check a Dali queue for idle spare Thor's
+            DBGLOG("Checking multi job lingering queue: %s", multiJobLingerQueueName);
 
-            Owned<INode> masterNode = createINode(instanceName);
-            CMessageBuffer msg;
-            VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
-            msg.append(jobStr);
-            if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
+            VStringBuffer xpath("/Status/ThorLinger/%s", multiJobLingerQueueName);
+            while (true)
             {
-                bool ok;
-                msg.read(ok);
-                if (graphName) // if graphName==nullptr, then continue around to look at others
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);
+                if (!conn)
+                    break;
+                IPropertyTree *root = conn->queryRoot();
+                if (0 == root->numChildren())
+                    break;
+                IPropertyTree *entry = root->queryPropTree("Thor*[1]");
+                const char *entryName = entry->queryName();
+
+                // get available instance and remove it
+                VStringBuffer entryXPath("%s/%s", xpath.str(), entryName);
+                Owned<IRemoteConnection> lingerInstanceConn = querySDS().connect(entryXPath, myProcessSession(), RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, 5*1000);
+                if (lingerInstanceConn)
                 {
-                    if (ok)
+                    StringBuffer instanceName;
+                    lingerInstanceConn->queryRoot()->getProp(nullptr, instanceName);
+                    lingerInstanceConn->close(true);
+                    lingerInstanceConn.clear();
+                    conn.clear();
+
+                    Owned<INode> masterNode = createINode(instanceName);
+                    CMessageBuffer msg;
+                    VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName);
+                    msg.append(jobStr);
+
+                    bool success = queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000);
+                    DBGLOG("Found lingering Thor: %s, submitted: %s, success: %s", instanceName.str(), jobStr.str(), boolToStr(success));
+                    if (success)
+                    {
+                        bool ok;
+                        msg.read(ok);
                         return true;
+                    }
                 }
             }
         }
+        else
+        {
+            /* NB: forcing a reload here to ensure Debug values are recent.
+            * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
+            * The area of persisting a non-locked connection to workunits should be resivisted..
+            */
+            workunit.forceReload();
+
+            Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
+            ForEach(*iter)
+            {
+                /* NB: Thor's set their running endpoint into Debug values of workunit
+                * Check to see if workunit has any Thor's available lingering instances.
+                */
+                SCMStringBuffer thorInstance;
+                iter->str(thorInstance);
+                SCMStringBuffer thorInstanceValue;
+                if (workunit.getDebugValueBool(thorInstance.s, false))
+                {
+                    {
+                        Owned<IWorkUnit> w = &workunit.lock();
+                        w->setDebugValue(thorInstance.s, "0", true);
+                    }
+                    /* NB: there's a window where Thor could shutdown here.
+                    * In that case, the sendRecv will fail and it will fall through to queueing.
+                    */
+                    const char *instanceName = strchr(thorInstance.str(), '_') + 1;
+
+                    Owned<INode> masterNode = createINode(instanceName);
+                    CMessageBuffer msg;
+                    VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
+                    msg.append(jobStr);
+                    if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
+                    {
+                        bool ok;
+                        msg.read(ok);
+                        if (graphName) // if graphName==nullptr, then continue around to look at others
+                        {
+                            if (ok)
+                                return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "executeGraphOnLingeringThor");
+        e->Release();
     }
     return false;
 }

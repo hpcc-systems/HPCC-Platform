@@ -2282,7 +2282,8 @@ protected:
 
         if (queryComponentConfig().hasProp("@queue"))
         {
-            if (executeGraphOnLingeringThor(*workUnit, graphName))
+            bool multiJobLinger = queryComponentConfig().getPropBool("@multiJobLinger");
+            if (executeGraphOnLingeringThor(*workUnit, graphName, multiJobLinger ? queryComponentConfig().queryProp("@queue") : nullptr))
                 PROGLOG("Existing lingering Thor handled graph: %s", graphName);
             else
             {
@@ -2317,11 +2318,11 @@ protected:
             }
         }
         else
-        {        
+        {
             VStringBuffer job("%s-%s", wuid.str(), graphName);
             runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
-        }        
-            
+        }
+
         if (workUnit->getExceptionCount())
         {
             Owned<IConstWUExceptionIterator> iter = &workUnit->getExceptions();
@@ -2348,7 +2349,7 @@ protected:
 
         setWUState(WUStateRunning);
 
-#else    
+#else
         StringAttr owner(workUnit->queryUser());
         StringAttr cluster(workUnit->queryClusterName());
 
@@ -3103,7 +3104,7 @@ public:
         {
 #ifdef _CONTAINERIZED
             // signal to any lingering Thor's that job is complete and they can quit before timeout.
-            executeGraphOnLingeringThor(*workUnit, nullptr);
+            executeGraphOnLingeringThor(*workUnit, nullptr, nullptr);
 #endif
 
             if (options.failOnLeaks && !failed)
@@ -3929,7 +3930,7 @@ public:
         /* NB: platform specs. are defined if agent is running in the context of
          * another engine, e.g. query has been submitted to Thor, but some code is
         * executing outside of it.
-        * 
+        *
         * If not defined then assumed to be executing in roxie context,
         * where platform() defaults to "roxie".
         */
@@ -3937,7 +3938,7 @@ public:
         if (!topology->getProp("platform/@type", type))
             type.set("roxie");
         return type.detach();
-#else            
+#else
         if (clusterNames.length())
         {
             const char * cluster = clusterNames.tos();
@@ -4075,12 +4076,12 @@ public:
                 /* NB: platform specs. are defined if agent is running in the context of
                  * another engine, e.g. query has been submitted to Thor, but some code is
                  * executing outside of it.
-                 * 
+                 *
                  * If not defined then assumed to be executing in roxie context,
                  * where getNodes() defaults to 'numChannels'.
                  */
                 clusterWidth = topology->getPropInt("platform/@width", numChannels);
-#else            
+#else
                 const char * cluster = clusterNames.tos();
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 if (!clusterInfo)
@@ -4089,7 +4090,7 @@ public:
                     clusterWidth = numChannels;  // We assume it's the current roxie - that's ok so long as roxie's don't call other roxies.
                 else
                     clusterWidth = clusterInfo->getSize();
-#endif            
+#endif
             }
             return clusterWidth;
         }
