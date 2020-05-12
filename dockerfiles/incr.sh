@@ -72,11 +72,14 @@ if [[ -z "$FORCE" ]] ; then
   PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug.*$//")
   # create empty patch file
   echo -n > platform-build-incremental/hpcc.gitpatch
-  if [[ -n "$(git status -uno --porcelain)" || "${HEAD}" != "${PREV_COMMIT}" ]] ; then
+  porcelain=$(git status -uno --porcelain)
+  if [[ -n "${porcelain}" || "${HEAD}" != "${PREV_COMMIT}" ]] ; then
     git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
     # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
     PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
-    DIRTY="-dirty-${PATCH_MD5}"
+    if [[ -n "${porcelain}" ]] ; then
+      DIRTY="-dirty-${PATCH_MD5}"
+    fi
     # If working tree is dirty, annotate build tag, so doesn't conflict with base commit
     BUILD_LABEL="${BUILD_LABEL}${DIRTY}"
   elif [[ "$BUILD_LABEL" == "$PREV" ]] ; then
@@ -126,7 +129,7 @@ if [[ -n "$FORCE" ]] ; then
   echo Building local forced build images [ BUILD_LABEL=${BUILD_LABEL} ]
   build_image platform-build platform-build --build-arg BUILD_USER=${INPUT_BUILD_USER} --build-arg BUILD_TAG=${HEAD} --build-arg BASE_VER=7.8 --build-arg BUILD_THREADS=${BUILD_THREADS}
 else
-  echo Building local incremental images [BUILD_LABEL=${BUILD_LABEL}] based on ${PREV}
+  echo Building local incremental images [ BUILD_LABEL=${BUILD_LABEL} ] based on ${PREV}
   build_image platform-build platform-build-incremental --build-arg DOCKER_REPO=${DOCKER_REPO} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS}
 #  rm platform-build-incremental/hpcc.gitpatch
 fi
