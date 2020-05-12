@@ -577,6 +577,16 @@ int main( int argc, const char *argv[]  )
     {
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr));
     }
+#ifdef _DEBUG
+    unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
+    if (0 == holdSlave) // master
+    {
+        DBGLOG("Thor master paused for debugging purposes, attach and set held=false to release");
+        bool held = true;
+        while (held)
+            Sleep(5);
+    }
+#endif
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
     globals->setProp("@masterBuildTag", BUILD_TAG);
