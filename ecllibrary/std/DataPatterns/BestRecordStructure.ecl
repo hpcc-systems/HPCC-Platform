@@ -279,10 +279,12 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     LOCAL __MakeRecDefinition(DATASET(RECORDOF(__fieldInfo20)) ds, STRING layoutName, BOOLEAN useBest = TRUE) := FUNCTION
         displayPrefix := IF(useBest, 'New', 'Old');
         displayedLayoutName := displayPrefix + layoutName;
-        RETURN DATASET([{displayedLayoutName + ' := RECORD'}], __LayoutItems)
-            & PROJECT
+        RETURN (+)
                 (
-                    DISTRIBUTE(SORT(ds, position), 0),
+                DATASET([{displayedLayoutName + ' := RECORD'}], __LayoutItems),
+                PROJECT
+                    (
+                        SORT(DISTRIBUTE(ds, 0), position, LOCAL),
                     TRANSFORM
                         (
                             __LayoutItems,
@@ -300,8 +302,10 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                                 ),
                             SELF := LEFT
                         )
-                )
-            & DATASET([{'END;'}], __LayoutItems);
+                    ),
+                DATASET([{'END;'}], __LayoutItems),
+                ORDERED(TRUE)
+            );
     END;
 
     // Iteratively process embedded records and child dataset definitions,
@@ -386,8 +390,10 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     // Creates an ECL TRANSFORM function based on the collected information
     // about a record definition
     LOCAL __MakeTransforms(__ChildRecLayout recInfo) := FUNCTION
-        RETURN DATASET(['New' + recInfo.layoutName + ' Make_New' + recInfo.layoutName + '(Old' + recInfo.layoutName + ' r) := TRANSFORM'], __StringRec)
-            & PROJECT
+        RETURN (+)
+            (
+                DATASET(['New' + recInfo.layoutName + ' Make_New' + recInfo.layoutName + '(Old' + recInfo.layoutName + ' r) := TRANSFORM'], __StringRec),
+                PROJECT
                 (
                     DISTRIBUTE(recInfo.items, 0),
                     TRANSFORM
@@ -396,9 +402,11 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
                             assignment := LEFT.bestAssignment;
                             SELF.s := IF(assignment != '', assignment, SKIP)
                         )
-                )
-            & DATASET(['    SELF := r;'], __StringRec)
-            & DATASET(['END;'], __StringRec);
+                    ),
+                DATASET(['    SELF := r;'], __StringRec),
+                DATASET(['END;'], __StringRec),
+                ORDERED(TRUE)
+            );
     END;
 
     LOCAL __allTransforms := PROJECT
@@ -418,13 +426,17 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     // definitions, and a sample PROJECT for kicking it all off
     LOCAL __conditionalBR := #IF((BOOLEAN)textOutput) '<br/>' #ELSE '' #END;
 
-    LOCAL __oldRecDefsPlusTransforms := DATASET(['//----------' + __conditionalBR], __StringRec)
-        & PROJECT(__allOldRecDefs.items, __StringRec)
-        & DATASET(['//----------' + __conditionalBR], __StringRec)
-        & __allTransforms.lines
-        & DATASET(['//----------' + __conditionalBR], __StringRec)
-        & DATASET(['oldDS := DATASET([], OldLayout);' + __conditionalBR], __StringRec)
-        & DATASET(['newDS := PROJECT(oldDS, Make_NewLayout(LEFT));' + __conditionalBR], __StringRec);
+    LOCAL __oldRecDefsPlusTransforms := (+)
+        (
+            DATASET(['//----------' + __conditionalBR], __StringRec),
+            PROJECT(__allOldRecDefs.items, __StringRec),
+            DATASET(['//----------' + __conditionalBR], __StringRec),
+            __allTransforms.lines,
+            DATASET(['//----------' + __conditionalBR], __StringRec),
+            DATASET(['oldDS := DATASET([], OldLayout);' + __conditionalBR], __StringRec),
+            DATASET(['newDS := PROJECT(oldDS, Make_NewLayout(LEFT));' + __conditionalBR], __StringRec),
+            ORDERED(TRUE)
+        );
 
     // Combine old definitions and transforms conditionally
     LOCAL __conditionalOldStuff :=
