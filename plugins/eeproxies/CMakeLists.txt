@@ -1,5 +1,5 @@
 ###############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,17 +13,23 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
 set (proxies_out_dir "plugins")
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrcleanlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscorelib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_canadacleanlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cmslib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_datalib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_date.eclmod DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_dmslib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_entityscorelib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fingerprintlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_hktlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_namelib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ofaclib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_ziplib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+
+FOREACH ( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_addrclean.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_bridgerscore.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_canadaclean.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/_cmslib.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_datalib.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_date.eclmod
+    ${CMAKE_CURRENT_SOURCE_DIR}/dms.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_entityscore.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_fingerprintlib.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_hktlib.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_namelib.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_ofac.ecllib
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib_ziplib.ecllib
+)
+    install ( FILES ${iFILES} DESTINATION ${proxies_out_dir} COMPONENT Runtime )
+ENDFOREACH ( iFILES )
