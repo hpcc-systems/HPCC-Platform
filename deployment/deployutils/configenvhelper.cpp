@@ -188,7 +188,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     bNewFarm = true;
 
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
-      
+
     xpath.clear().appendf("RoxieCluster[@name='%s']/" XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = pParent->addPropTree(xpath.str(), createPTree());
     pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
@@ -220,7 +220,7 @@ bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
       throw MakeStringException(-1, "Could not find a RoxieCluster with name '%s'", pszRoxieCluster);
 
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Nodes/Node");
-      
+
     ForEach (*iter)
     {
       IPropertyTree* pNode = &iter->query();
@@ -234,7 +234,7 @@ bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
         return false;
 
       xpath.clear().appendf(XML_TAG_ROXIE_SERVER"[@name='%s']", pszName);
-      
+
       IPropertyTree* pServer = pFarm->queryPropTree(xpath.str());
       if (pServer && pszNewComputer && *pszNewComputer)
       {
@@ -269,7 +269,7 @@ bool CConfigEnvHelper::checkComputerUse(/*IPropertyTree* pComputerNode*/ const c
 }
 
 
-IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree* pServer, 
+IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree* pServer,
                                                  IPropertyTree* pFarm, const char* roxieClusterName)
 {
   IPropertyTree* pLegacyServer;
@@ -346,11 +346,11 @@ void CConfigEnvHelper::setAttribute(IPropertyTree* pNode, const char* szName, co
         pNewProperties = NULL;
 
       //if we just changed build for an ESP service then enumerate all bindings for all
-      //ESP server processes and if any binding uses this service then replace its 
-      //Authenticate and AuthenticateFeature nodes with those from the properties of 
-      //this service from the new build.  However, we only remove the nodes that are 
-      //not in the new build preserving the others (so their attributes are preserved - 
-      //in case they have been changed by the user).  We also add new nodes that did 
+      //ESP server processes and if any binding uses this service then replace its
+      //Authenticate and AuthenticateFeature nodes with those from the properties of
+      //this service from the new build.  However, we only remove the nodes that are
+      //not in the new build preserving the others (so their attributes are preserved -
+      //in case they have been changed by the user).  We also add new nodes that did
       //not exist before.  In essence, a merge is needed.
       //
       if (pProperties || pNewProperties)
@@ -378,9 +378,9 @@ void CConfigEnvHelper::setAttribute(IPropertyTree* pNode, const char* szName, co
   }
 }
 
-void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBinding, 
-                                                             IPropertyTree* pProperties, 
-                                                             IPropertyTree* pNewProperties, 
+void CConfigEnvHelper::mergeServiceAuthenticationWithBinding(IPropertyTree* pBinding,
+                                                             IPropertyTree* pProperties,
+                                                             IPropertyTree* pNewProperties,
                                                              const char* NodeName)
 {
   StringBuffer xpath;
@@ -472,7 +472,7 @@ void CConfigEnvHelper::createUniqueName(const char* szPrefix, const char* parent
   if (getSoftwareNode(parent, sbName.str()))
   {
     int iIdx = 2;
-    do 
+    do
     {
       sbName.clear().append(szPrefix).append(iIdx++);
     }
@@ -793,7 +793,7 @@ bool CConfigEnvHelper::EnsureInRange(const char* psz, UINT low, UINT high, const
             msg.append( high );
         }
     }
-    else 
+    else
         if (high == 0 && x < low)
             msg.append(caption).append(" must be at least ").append(low);
         else
@@ -830,7 +830,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
             const char* pszCompName = pComp->queryProp(XML_ATTR_NAME);
             xpath.clear().appendf(XML_TAG_HARDWARE "/" XML_TAG_COMPUTER "/[" XML_ATTR_NAME "='%s']", pszCompName);
             IPropertyTree* pComputer = m_pRoot->queryPropTree(xpath.str());
-            
+
             if (pComputer)
                 computers.push_back(pComputer);
         }

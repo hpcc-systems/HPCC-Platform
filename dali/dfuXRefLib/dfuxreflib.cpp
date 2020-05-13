@@ -106,7 +106,7 @@ typedef MapStringTo<COrphanEntryPtr> COrphanEntryMap;
 Owned <IFileIOStream> outfileio;
 
 void outf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void outf(const char *fmt, ...) 
+void outf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -141,7 +141,7 @@ struct CFileEntry: public CInterface
     inline bool replicate() { return (flags&FEF_REPLICATE)!=0; }
 
     //IpAddress ip;
-    //StringAttr dir;                   // TBD 
+    //StringAttr dir;                   // TBD
     //StringAttr tail;
     StringAttr fname;
     CLogicalNameEntry *owner;
@@ -160,22 +160,22 @@ struct CFileEntry: public CInterface
 };
 
 
-class CFileEntryMap : public SuperHashTableOf<CFileEntry, const char> 
+class CFileEntryMap : public SuperHashTableOf<CFileEntry, const char>
 {
 public:
     ~CFileEntryMap()
     {
         _releaseAll();
     }
-    virtual void onAdd(void *e) 
-    { 
+    virtual void onAdd(void *e)
+    {
     }
 
-    virtual void onRemove(void *e) 
-    { 
-        CFileEntry &elem=*(CFileEntry *)e;      
+    virtual void onRemove(void *e)
+    {
+        CFileEntry &elem=*(CFileEntry *)e;
         elem.Release();
-        
+
     }
 
     virtual unsigned getHashFromElement(const void *e) const
@@ -237,9 +237,9 @@ static StringBuffer &makeScopeQuery(const char *scope,StringBuffer &query)
         StringBuffer tail;
         if (e)
             tail.append(e-s,s);
-        else 
+        else
             tail.append(s);
-        query.append("Scope[@name=\"").append(tail.toLowerCase().str()).append("\"]"); 
+        query.append("Scope[@name=\"").append(tail.toLowerCase().str()).append("\"]");
         if (!e)
             break;
         s = e+2;
@@ -346,7 +346,7 @@ static unsigned short getDafsPort(const SocketEndpoint &ep,unsigned &numfails,Cr
         CriticalBlock block(*sect);
         numfails++;
     }
-    else 
+    else
         numfails++;
 #else
     throw MakeStringExceptionDirect(-1, err.str());
@@ -369,13 +369,13 @@ public:
 
     void onRemove(void *e)
     {
-        CEndpointItem &elem=*(CEndpointItem *)e;        
+        CEndpointItem &elem=*(CEndpointItem *)e;
         elem.Release();
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CEndpointItem &elem=*(const CEndpointItem *)e;        
+        const CEndpointItem &elem=*(const CEndpointItem *)e;
         return elem.ep.hash(0);
     }
 
@@ -386,7 +386,7 @@ public:
 
     const void * getFindParam(const void *p) const
     {
-        const CEndpointItem &elem=*(const CEndpointItem *)p;        
+        const CEndpointItem &elem=*(const CEndpointItem *)p;
         return &elem.ep;
     }
 
@@ -415,7 +415,7 @@ protected:
         }
     };
 
-    
+
 public:
     IArrayOf<IGroup> knowngroups;
     StringAttrArray knowngroupnames;
@@ -467,7 +467,7 @@ public:
                 break;
             }
         }
-        
+
 
         if (_grp) {
             if (queryNamedGroupStore().find(_grp,gname)) {
@@ -475,7 +475,7 @@ public:
                     _grp->Release();
                     grp=queryNamedGroupStore().lookup(gname.str());
                 }
-            }   
+            }
             else {
                 name.clear();
             }
@@ -510,7 +510,7 @@ public:
         va_end(args);
         if (errors.ordinality()<1000) {
             errors.append(*new cMessage(lname,line.str()));
-            if (errors.ordinality()==1000) 
+            if (errors.ordinality()==1000)
                 errors.append(*new cMessage("","error limit exceeded (1000), truncating"));
         }
 
@@ -534,7 +534,7 @@ public:
         va_end(args);
         if (warnings.ordinality()<1000) {
             warnings.append(*new cMessage(lname,line.str()));
-            if (warnings.ordinality()==1000) 
+            if (warnings.ordinality()==1000)
                 warnings.append(*new cMessage("","warning limit (1000) exceeded, truncating"));
         }
         if (msgcallback) {
@@ -567,9 +567,9 @@ public:
                 msg.append(", ");
             inprogress.item(i).getIpText(msg);
         }
-        if (msgcallback) 
+        if (msgcallback)
             msgcallback->progress(msg.str());
-        else 
+        else
             PROGLOG("%s",msg.str());
     }
 
@@ -577,7 +577,7 @@ public:
     {
         CDfuDirEntryPtr *entryp= dirmap.getValue(dir);
         CDfuDirEntryPtr entry;
-        if (entryp) 
+        if (entryp)
             entry = *entryp;
         else {
             entry = new CDfuDirEntry(dir,clustsize);
@@ -606,7 +606,7 @@ public:
 struct CLogicalNameEntry: public CInterface
 {
     CLogicalNameEntry(CXRefManagerBase &_manager, const char *_lname,IPropertyTree &file) // takes ownership of grp
-        : manager(_manager),lname(_lname) 
+        : manager(_manager),lname(_lname)
     {
         replicated = false;
         outsidedir = 0;
@@ -647,7 +647,7 @@ struct CLogicalNameEntry: public CInterface
         if (partmask&&*partmask) {
             if (!containsPathSepChar(partmask)) {
                 const char *dir = file.queryProp("@directory");
-                if (dir&&*dir) 
+                if (dir&&*dir)
                     tmp.append(dir).append(getPathSepChar(dir));
             }
             tmp.append(partmask);
@@ -661,7 +661,7 @@ struct CLogicalNameEntry: public CInterface
         free(primaryresolved);
         free(replicateresolved);
     }
-    void setGroup(IGroup *_grp,IGroup *lgrp)    // note incoming group does *not* override cluster 
+    void setGroup(IGroup *_grp,IGroup *lgrp)    // note incoming group does *not* override cluster
                                                 // takes ownerhip of lgrp if set
     {
         StringBuffer name;
@@ -703,7 +703,7 @@ struct CLogicalNameEntry: public CInterface
         }
         primaryresolved=(CFileEntry * *)calloc(max,sizeof(CFileEntry *));
         replicateresolved=(CFileEntry * *)calloc(max,sizeof(CFileEntry *));
-        if (!grp) 
+        if (!grp)
             manager.warn(lname.get(),"No cluster group set");
     }
     bool remove(IUserDescriptor *user)
@@ -751,8 +751,8 @@ struct CLogicalNameEntry: public CInterface
 
     bool incomplete()
     {
-        for (unsigned j=0;j<max;j++) 
-            if (!primaryresolved[j]&&!replicateresolved[j]) 
+        for (unsigned j=0;j<max;j++)
+            if (!primaryresolved[j]&&!replicateresolved[j])
                 return true;
         return false;
     }
@@ -770,7 +770,7 @@ struct CLogicalNameEntry: public CInterface
     StringBuffer errdir;
     Owned<IGroup> grp;
     SocketEndpointArray outsidenodes;
-    CIArrayOf<CLogicalNameEntry> crosslinked;   
+    CIArrayOf<CLogicalNameEntry> crosslinked;
     bool unknowngrp;
     StringAttr mismatchgrp;
     bool missinggrp;
@@ -823,7 +823,7 @@ StringBuffer &CFileEntry::getLogicalName(StringBuffer &buf)
 }
 
 
-CXRefManagerBase::~CXRefManagerBase() 
+CXRefManagerBase::~CXRefManagerBase()
 {
     ForEachItemIn(i,logicalnamelist) {
         CLogicalNameEntry &item = logicalnamelist.item(i);
@@ -849,7 +849,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
     const char *s=fullname;
     for (;;) {
         const char *e=s;
-        while (*e&&!isPathSepChar(*e)) 
+        while (*e&&!isPathSepChar(*e))
             e++;
         if (!*e)
             break;
@@ -868,7 +868,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
         ext = ne;
     }
     const char *es=ext;
-    if (memicmp(es,"._$P$_of_",9)==0) 
+    if (memicmp(es,"._$P$_of_",9)==0)
         es += 9;
     else {
         if (memcmp(es,"._",2)!=0)
@@ -881,7 +881,7 @@ static bool constructLogicalName(const char *fullname,const char *basedir,String
             n.append(*(es++));
         }
         num = atoi(n.str());
-        if (memicmp(es,"_of_",4)!=0) 
+        if (memicmp(es,"_of_",4)!=0)
             return false;
         es += 4;
     }
@@ -919,7 +919,7 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
     // takes filename and creates mask filename with $P$ extension
     StringBuffer nonrepdir;
     replicate = setReplicateDir(name,nonrepdir,false);
-    if (replicate) 
+    if (replicate)
         name = nonrepdir.str();
     num = 0;
     max = 0;
@@ -955,9 +955,9 @@ static bool parseFileName(const char *name,StringBuffer &mname,unsigned &num,uns
         name++;
     }
     return false;
-}           
+}
 
-        
+
 
 
 
@@ -1006,7 +1006,7 @@ public:
     {
         if (incompletestate)
             return (incompletestate>1);
-        if (!max) { 
+        if (!max) {
             // check matches mask
             return true;
         }
@@ -1017,7 +1017,7 @@ public:
         }
         incompletestate = 1;
         return false;
-            
+
     }
 
     bool isSingleton()
@@ -1045,7 +1045,7 @@ public:
             ep = replicateepa.item(0);
         }
         else {
-            if (primaryepa.ordinality()==0) 
+            if (primaryepa.ordinality()==0)
                 return false;
             ep = primaryepa.item(0);
         }
@@ -1062,9 +1062,9 @@ public:
         if (!max)
             return 1;
         bool *done = (bool *)calloc(sizeof(bool),max);
-        ForEachItemIn(i1,primarypna) 
+        ForEachItemIn(i1,primarypna)
             done[primarypna.item(i1)] = true;
-        ForEachItemIn(i2,replicatepna) 
+        ForEachItemIn(i2,replicatepna)
             done[replicatepna.item(i2)] = true;
         unsigned ret = 0;
         for (unsigned i=0;i<max;i++)
@@ -1124,7 +1124,7 @@ public:
         StringBuffer buf;
         IPropertyTree *out;
         if (flags&CFBpartmask) {
-    
+
             unsigned np = (flags&CFBpartprimary)?primarypna.ordinality():0;
             unsigned nr = (flags&CFBpartreplicate)?replicatepna.ordinality():0;
             if (np+nr==0)
@@ -1152,7 +1152,7 @@ public:
             out->setPropInt("Numparts",numparts);
         }
         if (flags&CFBmodified) {
-            if (modified.get()) 
+            if (modified.get())
                 out->setProp("Modified",modified.get());
         }
         if (flags&CFBcluster) {
@@ -1162,17 +1162,17 @@ public:
         if (flags&CFBsize) {
             out->setPropInt64("Size",size);
         }
-        if (flags&CFBpartmask) { 
+        if (flags&CFBpartmask) {
             for (int copy=0;copy<=1;copy++) {
                 if ((!copy&&(flags&CFBpartprimary))||
                     (copy&&(flags&CFBpartreplicate))) {
                     UnsignedArray *parts = new UnsignedArray[numparts];
                     if (copy) {
-                        ForEachItemIn(i2,replicatepna) 
+                        ForEachItemIn(i2,replicatepna)
                             parts[replicatepna.item(i2)].append(i2);
                     }
                     else {
-                        ForEachItemIn(i1,primarypna) 
+                        ForEachItemIn(i1,primarypna)
                             parts[primarypna.item(i1)].append(i1);
                     }
                     for (i=0;i<numparts;i++) {
@@ -1186,16 +1186,16 @@ public:
                                 ForEachItemIn(i3,parts[i]) {
                                     unsigned p = parts[i].item(i3);
                                     if (copy) {
-                                        replicateepa.item(p).getUrlStr(buf.clear());    
+                                        replicateepa.item(p).getUrlStr(buf.clear());
                                         b->addProp("RNode",buf.str());
                                     }
                                     else {
-                                        primaryepa.item(p).getUrlStr(buf.clear());  
+                                        primaryepa.item(p).getUrlStr(buf.clear());
                                         b->addProp("Node",buf.str());
                                     }
                                 }
                             }
-                            if (flags&CFBpartnum) 
+                            if (flags&CFBpartnum)
                                 b->setPropInt("Num",i+1);
                         }
                     }
@@ -1291,11 +1291,11 @@ IPropertyTree *CLogicalNameEntry::addFileBranch(IPropertyTree *dst,unsigned flag
             out->setPropInt("Replicatedlost",max-replicatenum);
     }
     if (flags&CFBmodified) {
-        if (modified.get()) 
+        if (modified.get())
             out->setProp("Modified",modified.get());
     }
     if (flags&CFBcluster) {
-        if (grpname.length()) 
+        if (grpname.length())
             out->setProp("Cluster",grpname.str());
     }
 #ifdef PARTS_SIZE_NEEDED
@@ -1305,7 +1305,7 @@ IPropertyTree *CLogicalNameEntry::addFileBranch(IPropertyTree *dst,unsigned flag
 #endif
     if ((flags&CFBpartmask)&&grp&&grp->ordinality()) {
         unsigned n=0;
-        unsigned nc = (flags&CFBpartreplicate)?2:1; 
+        unsigned nc = (flags&CFBpartreplicate)?2:1;
         unsigned rep;
         for (i=0;i<max;i++) {
             for (rep=0;rep<nc;rep++) {
@@ -1352,7 +1352,7 @@ struct TimedBlock
     unsigned ln;
     TimedBlock(const char *_msg,unsigned _limit,unsigned _ln)
     {
-        msg = strdup(_msg); 
+        msg = strdup(_msg);
         ln = _ln;
         start = msTick();
         limit = _limit;
@@ -1367,7 +1367,7 @@ struct TimedBlock
 };
 
 #define TIMEDBLOCK(name,msg,lim) TimedBlock name(msg,lim,__LINE__);
-      
+
 
 
 
@@ -1412,7 +1412,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
             if (!grpname)
                 return true;
             cachedgroup.setown(queryNamedGroupStore().lookup(grpname));
-            if (!cachedgroup) 
+            if (!cachedgroup)
                 return true;
             ForEachNodeInGroup(i,*cachedgroup)
                 if (testgroup->isMember(&cachedgroup->queryNode(i))) // would be better to have hash here TBD
@@ -1474,10 +1474,10 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     processPart(root,part,i+1,numparts,ep);
                 }
             }
-            
+
         }
-        
-        
+
+
         void processFile(IPropertyTree &file,StringBuffer &name)
         {
             if (!manager.msgcallback.get())
@@ -1522,7 +1522,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                 const char *partdir = file.queryProp("@directory");
                 int replicateoffset = file.getPropInt("@replicateOffset",1);
                 for (;;) {
-                    RemoteFilename rfn; 
+                    RemoteFilename rfn;
                     IGroup *grp = lnentry->queryGroup();
                     if (!grp) {
                         manager.warn(lnentry->lname.get(),"No group found, ignoring logical file");
@@ -1544,9 +1544,9 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                         if (dirmatch)                       {
                             rfn.getRemotePath(remotename.clear());
                             remotename.toLowerCase();
-                            
+
                             CFileEntry *entry= new CFileEntry(remotename.str(),lnentry,partno,replicate,part.getPropInt64("@size", -1),part.getPropInt("@rowCompression", 0)!=0,part.getPropInt("@compressedSize", -1));
-                                                        
+
                             CFileEntry *oldentry= manager.filemap.find(remotename.str());
                             if (oldentry)
                             {
@@ -1569,7 +1569,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                             else {
                                 manager.filemap.add(*entry);
                             }
-                            
+
                         }
                         else {
                             lnentry->outsidedir++;
@@ -1584,18 +1584,18 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                     if (replicate)
                         break;
                     replicate = true;
-                }               
+                }
             }
         }
 
     } scanner(manager,grp,numdirs,dirbaselist);
-    
+
     manager.log("Loading Files branch from SDS");
 
     Owned<IRemoteConnection> conn = querySDS().connect(SDS_DFS_ROOT,myProcessSession(),RTM_LOCK_READ, INFINITE);
     if (!conn) {
         throw MakeStringException(-1,"Could not connect to Files");
-        
+
     }
     conn->changeMode(RTM_NONE);
     manager.log("Files loaded, scanning");
@@ -1606,7 +1606,7 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
 
 
 
-    
+
 
 class CPhysicalXREF
 {
@@ -1621,9 +1621,9 @@ public:
     {
         numdirs = _numdirs;
         dirbaselist = _dirbaselist;
-        setDaliServixSocketCaching(true);               
+        setDaliServixSocketCaching(true);
     }
-        
+
 
     void getBaseDir(const char *name,StringBuffer &basedir)
     {
@@ -1668,7 +1668,7 @@ public:
                     manager.error(entry->owner->lname.get(),"Part %d: %s size mismatch: recorded size %" I64F "d, actual size %" I64F "d",entry->part,entry->replicate?"replicate":"primary",entry->size,sz);
                     entry->size=sz; // set to actual size for fix
                 }
-#endif              
+#endif
                 entry->owner->resolve(entry);
 #ifdef CROSSLINK_CHECK_NEEDED
                 entry = entry->crosslink;
@@ -1687,7 +1687,7 @@ public:
             unsigned n;
             bool replicate;
             parseFileName(fullname,orphanname,n,m,replicate);
-            if (n>m) 
+            if (n>m)
                 manager.error(fullname, "Part %d: number greater than max %d",n+1,m);
             else {
                 orphanname.toLowerCase();
@@ -1695,7 +1695,7 @@ public:
 
                 COrphanEntryPtr *entryp = manager.orphanmap.getValue(orphanname.str());
                 COrphanEntryPtr entry;
-                if (entryp) 
+                if (entryp)
                     entry = *entryp;
                 else {
                     StringBuffer basedir;
@@ -1800,7 +1800,7 @@ class CXRefManager: public CXRefManagerBase
                             if (total!=-1)
                                 total += entry->size;
                         }
-                        else 
+                        else
                             total = -1;
                     }
                     sz = file->queryAttributes().getPropInt64("@size", -1);
@@ -1811,7 +1811,7 @@ class CXRefManager: public CXRefManagerBase
                         else
                             file->lockProperties().removeProp("@size");
                         file->unlockProperties();
-                    }                   
+                    }
                 }
             }
         }
@@ -2001,7 +2001,7 @@ class CXRefManager: public CXRefManagerBase
                 firstp = p;
                 lastp = p;
             }
-            else if (lastp+1==p) 
+            else if (lastp+1==p)
                 lastp = p;
             else {
                 addn(b,0,firstp,lastp);
@@ -2075,7 +2075,7 @@ class CXRefManager: public CXRefManagerBase
                     outf("%s (%s)\n",s1.str(),item.fname.get());
                 }
             }
-            
+
         }
         outf("\n--------------------------------------------------------\nMISPLACED PARTS:\n");
         {
@@ -2392,8 +2392,8 @@ class CXRefManager: public CXRefManagerBase
                 item.done = false;
                 bool incomplete = false;
                 unsigned j0a;
-                for (j0a=0;j0a<item.max;j0a++) 
-                    if (!item.primaryresolved[j0a]&&!item.replicateresolved[j0a]) 
+                for (j0a=0;j0a<item.max;j0a++)
+                    if (!item.primaryresolved[j0a]&&!item.replicateresolved[j0a])
                         incomplete = true;
                 if (incomplete&&(!item.outsidedir)&&(item.outsidenodes.ordinality()==0)&&(item.primarynum!=item.max)) {
                     outf("%s,%d,%d,%d,%" I64F "d\n",item.lname.get(),item.primarynum,item.replicatenum,item.max,item.totalsize);
@@ -2457,11 +2457,11 @@ class CXRefManager: public CXRefManagerBase
                     addn(ddrv,0,firstd,lastd);
                     addn(missing,0,firstm,lastm);
                     printf("%s\n",item.lname.get());
-                    if (cdrv.length()) 
+                    if (cdrv.length())
                         printf("        C: missing part%s %s\n",plural(cdrv.str()),cdrv.str());
-                    if (ddrv.length()) 
+                    if (ddrv.length())
                         printf("        D: missing part%s %s\n",plural(ddrv.str()),ddrv.str());
-                    if (missing.length()) 
+                    if (missing.length())
                         printf("        C: and D: missing part%s %s\n",plural(missing.str()),missing.str());
                     printf("\n");
                 }
@@ -2490,14 +2490,14 @@ class CXRefManager: public CXRefManagerBase
         IPropertyTree *lost = addBranch(out,"Lost");
         IPropertyTree *message = addBranch(out,"Messages");
         IPropertyTree *directories = addBranch(out,"Directories");
-        
+
         // Lost
         {
             DBGLOG("// Lost");
             ForEachItemIn(i,logicalnamelist)
             {
                 CLogicalNameEntry &item = logicalnamelist.item(i);
-            
+
                 if ((!item.outsidedir)&&(item.outsidenodes.ordinality()==0)) {
 
                     if (item.incomplete()) { // need check for if replicated here
@@ -2596,7 +2596,7 @@ public:
         msgcallback.set(_msgcallback);
 
         IPropertyTree *out=NULL;
-        
+
         Owned<IGroup> g;
         unsigned j;
         if (!nclusters) {
@@ -2625,7 +2625,7 @@ public:
         logicalnamelist.kill();
         dirlist.kill();
         orphanlist.kill();
-        
+
         const char* cluster = clusters[0];
         loadFromDFS(*this,g,numdirs,dirbaselist,cluster);
 
@@ -2634,21 +2634,21 @@ public:
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
-        
-        if (flags&PMtextoutput) 
+
+        if (flags&PMtextoutput)
             outputTextReport(filename.str());
         filename.clear().append("xrefrpt");
         addFileTimestamp(filename, true);
         filename.append(".txt");
 
-        if (flags&PMcsvoutput) 
+        if (flags&PMcsvoutput)
             outputCsvReport(filename.str());
 
-        if (flags&PMbackupoutput) 
+        if (flags&PMbackupoutput)
             outputBackupReport();
 
-        if (flags&PMtreeoutput) 
-            out = outputTree(); 
+        if (flags&PMtreeoutput)
+            out = outputTree();
 
         logicalnamemap.kill();
         filemap.kill();
@@ -2702,7 +2702,7 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
 IPropertyTree * runXRefCluster(const char *cluster,IXRefNode *nodeToUpdate)
 {
     DBGLOG("runXRefCluster starting for cluster %s",cluster);
-        
+
 
 
     CXRefManager xrefmanager;

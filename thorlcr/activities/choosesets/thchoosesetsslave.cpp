@@ -92,7 +92,7 @@ public:
                 return row.getClear();
             }
         }
-        return NULL;        
+        return NULL;
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
@@ -135,7 +135,7 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
         ActPrintLog("CHOOSESETS: Outgoing count = %s", s.str());
 #endif
         CMessageBuffer msg;
-        msg.append(numSets * sizeof(unsigned), tallies); 
+        msg.append(numSets * sizeof(unsigned), tallies);
         queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
     }
 
@@ -173,7 +173,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (first) 
+        if (first)
         {
             first = false;
             if (container.queryLocalOrGrouped() || firstNode())
@@ -393,7 +393,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
 public:
     ChooseSetsLastActivity(CGraphElementBase *container) : ChooseSetsPlusActivity(container)
     {
-        numToSkip = numToReturn = NULL; 
+        numToSkip = numToReturn = NULL;
     }
     ~ChooseSetsLastActivity()
     {
@@ -414,14 +414,14 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (first) 
+        if (first)
         {
             first = false;
             getGlobalCounts();
             if (abortSoon) return NULL;
             calculateSelection();
         }
-        if (!done) 
+        if (!done)
         {
             while (!abortSoon)
             {
@@ -442,7 +442,7 @@ public:
                 }
             }
         }
-        return NULL;        
+        return NULL;
     }
 };
 
@@ -493,7 +493,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (first) 
+        if (first)
         {
             first = false;
             getGlobalCounts();
@@ -516,11 +516,11 @@ public:
                         counter[category-1] -= denominator[category-1];
                         dataLinkIncrement();
                         return row.getClear();
-                    }       
+                    }
                 }
             }
         }
-        return NULL;        
+        return NULL;
     }
 };
 

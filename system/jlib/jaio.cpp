@@ -27,7 +27,7 @@
 #endif
 
 
-#if defined(__linux__) 
+#if defined(__linux__)
 struct aio_result_t
 {
     int aio_return;
@@ -42,7 +42,7 @@ class AsyncRequest
 public:
     aio_result_t  result; // must be first
     int ready;
-    char *        buffer;    
+    char *        buffer;
     AsyncRequest()
     {
         result.cb = (aiocb *) calloc(1, sizeof(aiocb));
@@ -78,7 +78,7 @@ void aioSigHandler(int sig, siginfo_t *info, void *pContext)
     else
     {
         resultp->aio_return = aio_return(resultp->cb);
-    
+
         if (NULL == ready)
             ready = readyTail = resultp;
         else
@@ -150,7 +150,7 @@ void AsyncBlockReader::enqueue(AsyncRequest *req)
     int rd = blksize;
     if (insize-offset<blksize)
         rd = (int)(insize-offset);
-    if (aioread64(infile, req->buffer, rd, offset, FILE_BEGIN, &req->result)==-1) 
+    if (aioread64(infile, req->buffer, rd, offset, FILE_BEGIN, &req->result)==-1)
     {
         throw makeOSException("async failed ");
     }
@@ -167,8 +167,8 @@ void AsyncBlockReader::init(int file,offset_t st,size32_t blocksize,void *buf1,v
     finish();
     infile = file;
     struct _stat sb;
-    if(_fstat(infile, &sb)==-1) 
-        assertex(!"Illegal input file");    
+    if(_fstat(infile, &sb)==-1)
+        assertex(!"Illegal input file");
     insize = sb.st_size;
     blksize = blocksize;
     eof = 0;
@@ -227,7 +227,7 @@ void AsyncBlockReader::getinfo(offset_t &of,offset_t &p,offset_t &sz)
 
 
 
-class CW32AsyncRequest 
+class CW32AsyncRequest
 {
 
 public:
@@ -268,7 +268,7 @@ void CW32AsyncBlockReader::finish()
     if(!eof && pending)
     {
         waitblk();
-        eof = true;         
+        eof = true;
     }
 }
 
@@ -276,10 +276,10 @@ void CW32AsyncBlockReader::finish()
 void CW32AsyncBlockReader::init(HANDLE file, offset_t _start, size32_t _blockSize, void * buffer1, void * buffer2)
 {
     hfile = file;
-    start = _start; 
+    start = _start;
     blockSize = _blockSize;
 
-    DWORD sizeHi, sizeLo;   
+    DWORD sizeHi, sizeLo;
     sizeLo = GetFileSize(hfile, &sizeHi);
     insize.set(sizeLo, sizeHi);
 
@@ -295,18 +295,18 @@ void CW32AsyncBlockReader::reset()
     finish();
     eof = false;
     offset = start;
-    offset.get(overlapped.Offset, overlapped.OffsetHigh);   
+    offset.get(overlapped.Offset, overlapped.OffsetHigh);
     enqueue();
 }
 
 
-void CW32AsyncBlockReader::enqueue()    // reads next buffer 
+void CW32AsyncBlockReader::enqueue()    // reads next buffer
 {
     if (offset < insize)
     {
         DWORD bytesRead;
         if(!ReadFile(hfile, nextRequest->buffer, blockSize, &bytesRead, &overlapped))
-        {                       
+        {
             switch(GetLastError())
             {
             case ERROR_IO_PENDING:
@@ -315,8 +315,8 @@ void CW32AsyncBlockReader::enqueue()    // reads next buffer
             default:
                 pending = false;
                 eof = true;             // effectively
-            }           
-        }   
+            }
+        }
         else    // cached operations will usually complete immediately, but "pending" is still true
         {
             pending = true;
@@ -325,7 +325,7 @@ void CW32AsyncBlockReader::enqueue()    // reads next buffer
     else
     {
         pending = false;
-        eof = true;             
+        eof = true;
     }
 }
 
@@ -335,7 +335,7 @@ DWORD CW32AsyncBlockReader::waitblk()
     assertex(pending == true);
 
     DWORD bytesRead;
-    BOOL _WaitForSingleObject; 
+    BOOL _WaitForSingleObject;
     int attempts = ASYNC_MAX_TIMEOUTS;
 
     do
@@ -358,7 +358,7 @@ DWORD CW32AsyncBlockReader::waitblk()
                 assertex(false);
                 bytesRead = 0;
                 eof = true;
-            }           
+            }
             _WaitForSingleObject = FALSE;
             break;
         case WAIT_TIMEOUT:
@@ -374,15 +374,15 @@ DWORD CW32AsyncBlockReader::waitblk()
             {
                 _WaitForSingleObject = TRUE;
             }
-            break;                          
-        default:            
+            break;
+        default:
             assertex(false);                        // overlapped structure probably corrupt
             pending = false;
-            eof = true;                         
+            eof = true;
             bytesRead = 0;
             _WaitForSingleObject = FALSE;
         }
-    } 
+    }
     while (_WaitForSingleObject);
     return bytesRead;
 }
@@ -392,8 +392,8 @@ void * CW32AsyncBlockReader::readnext(size32_t &readLength)
 {
     if (eof)
     {
-        readLength = 0; 
-        return NULL;    
+        readLength = 0;
+        return NULL;
     }
     readLength = waitblk();
     if (!eof)

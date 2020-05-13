@@ -38,35 +38,35 @@ protected:
 typedef int (*sortCompareFunction)(const void * left, const void * right);
 
 extern jlib_decl void * binary_add(const void *newitem, const void *base,
-             size32_t nmemb, 
+             size32_t nmemb,
              size32_t width,
              sortCompareFunction compare,
              bool * ItemAdded);
 
 extern jlib_decl void * binary_vec_find(const void *search, const void * *base,
-                                        size32_t nmemb, 
+                                        size32_t nmemb,
                                         sortCompareFunction compare,
                                         bool * isNew);
 
 extern jlib_decl void * binary_vec_find(const void *search, const void * *base,
-                                        size32_t nmemb, 
+                                        size32_t nmemb,
                                         ICompare & compare,
                                         bool * isNew);
 
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * *base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           sortCompareFunction compare);
 
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * *base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           ICompare const & compare);
 
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * *base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           sortCompareFunction compare);
 
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * *base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           ICompare const & compare);
 
 extern jlib_decl void qsortvec(void **a, size32_t n, size32_t es);

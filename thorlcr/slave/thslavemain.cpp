@@ -22,8 +22,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "build-config.h"
 #include "jlib.hpp"
@@ -270,7 +270,7 @@ class CReleaseMutex : public CSimpleInterface, public Mutex
 public:
     CReleaseMutex(const char *name) : Mutex(name) { }
     ~CReleaseMutex() { if (owner) unlock(); }
-}; 
+};
 #endif
 
 
@@ -345,7 +345,7 @@ int main( int argc, const char *argv[]  )
 
 #ifdef _WIN32
     Owned<CReleaseMutex> globalNamedMutex;
-#endif 
+#endif
 
     globals.setown(createPTree("Thor"));
     unsigned multiThorMemoryThreshold = 0;
@@ -387,7 +387,7 @@ int main( int argc, const char *argv[]  )
             slfEp.set(slave);
             localHostToNIC(slfEp);
         }
-        else 
+        else
             slfEp.setLocalHost(0);
 
         // TBD: use new config/init system for generic handling of init settings vs command line overrides
@@ -505,7 +505,7 @@ int main( int argc, const char *argv[]  )
                 PROGLOG("Using querySo directory: %s", str.str());
                 recursiveCreateDirectory(str.str());
             }
-     
+
             multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
             if (multiThorMemoryThreshold) {
                 StringBuffer lgname;
@@ -515,7 +515,7 @@ int main( int argc, const char *argv[]  )
                     Owned<ILargeMemLimitNotify> notify = createMultiThorResourceMutex(lgname.str());
                     setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
                     PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",lgname.str(),(__int64)multiThorMemoryThreshold);
-                }   
+                }
                 else
                     multiThorMemoryThreshold = 0;
             }
@@ -529,7 +529,7 @@ int main( int argc, const char *argv[]  )
 
         LOG(MCdebugProgress, thorJob, "ThorSlave terminated OK");
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         if (!jobListenerStopped)
             FLLOG(MCexception(e), thorJob, e,"ThorSlave");

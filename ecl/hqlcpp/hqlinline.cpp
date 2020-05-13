@@ -215,7 +215,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETassign;
             return RETiterate;
         }
-    case no_choosen:        
+    case no_choosen:
     case no_index:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
@@ -243,7 +243,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_fail:
         return RETevaluate;
     case no_catchds:
-        return 0;       // for the moment always do this out of line 
+        return 0;       // for the moment always do this out of line
     case no_table:
         return 0;
     case no_createdictionary:
@@ -450,7 +450,7 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
     case no_owned_ds:
     case no_translated:
     case no_alias:
-    case no_call:               
+    case no_call:
     case no_externalcall:               // no so sure about this - should possibly be assignable only. (also no_call above)
     case no_getresult:
     case no_getgraphresult:
@@ -473,7 +473,7 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
 //============================================================================
 
 /*
-  Notes on Graph distribution/localisation etc. 
+  Notes on Graph distribution/localisation etc.
 
   There are several different things to take into account when noting the localisation of an activity, including the problem
   that meaning of "local" is overloaded.  Currently we have something like the following, for each logical instance of an activity:
@@ -511,12 +511,12 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
   _singlenode_|_independentnodes_|_
   independent       - no interaction between records on the different nodes.
   correlated        - interaction between records on the different nodes.
-  _localparts_|_allparts_ 
+  _localparts_|_allparts_
                     - access local file parts or all file parts.
   allfile           - access all file parts.
   local             - either access local file parts, or no interaction between nodes.
 
-  Ideally we want the expression tree to be independent of the current engine type, and so that derived attributes and optimizations 
+  Ideally we want the expression tree to be independent of the current engine type, and so that derived attributes and optimizations
   can work independently of the engine if possible.
 
   => spill needs to indicate whether it is a purely memory spill
@@ -924,7 +924,7 @@ bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
 }
 
 
-    
+
 //============================================================================
 
 ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, IHqlExpression * _graphId, GraphLocalisation _localisation, EvalContext * _container)
@@ -1203,7 +1203,7 @@ void ParentExtract::buildAssign(IHqlExpression * serializedTarget, IHqlExpressio
 //Note, all extracts from all parent colocal activities are cloned into the child activity, so same expression is used to access them in the child
 void ParentExtract::ensureAccessible(BuildCtx & ctx, IHqlExpression * expr, const CHqlBoundExpr & bound, CHqlBoundExpr & tgt, IHqlExpression * colocal)
 {
-    //MORE: Need to know whether it is 
+    //MORE: Need to know whether it is
     //a) a member variable b) a serialization member or c) local and needs seerializing.
     //so when then do
     //a) add colcocal-> or create local references to the variables.
@@ -1220,7 +1220,7 @@ void ParentExtract::ensureAccessible(BuildCtx & ctx, IHqlExpression * expr, cons
         if (boundExpr->getOperator() == no_implicitcast)
         {
             IHqlExpression * uncast = boundExpr->queryChild(0);
-            if (hasModifier(uncast->queryType(), typemod_wrapper) && 
+            if (hasModifier(uncast->queryType(), typemod_wrapper) &&
                 (queryUnqualifiedType(boundExpr->queryType()) == queryUnqualifiedType(uncast->queryType())))
                 boundExpr = uncast;
         }
@@ -1411,7 +1411,7 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
         //Use a dynamic offset map to represent whatever is serialized.
         //MORE: This may actually mean we want to bind these non-row contexts on demand - but then it is harder to share.
     }
-    
+
     if (localisation != GraphCoLocal)
     {
         ForEachItemInRev(i, activeRows)
@@ -1487,7 +1487,7 @@ void CtxCollection::createFunctionStructure(HqlCppTranslator & translator, Build
 
 //---------------------------------------------------------------------------
 
-EvalContext::EvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent) 
+EvalContext::EvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent)
 : HqlExprAssociation(classMarkerExpr), translator(_translator)
 {
     parent = _parent;
@@ -1507,7 +1507,7 @@ bool EvalContext::needToEvaluateLocally(BuildCtx & ctx, IHqlExpression * expr)
 
 bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool hasOnStart)
 {
-    if (!parent) 
+    if (!parent)
         return false;
 
     if (parent->isLibraryContext())
@@ -1639,7 +1639,7 @@ IHqlExpression * HqlCppTranslator::doCreateGraphLookup(BuildCtx & declarectx, Bu
         OwnedHqlExpr memberExpr = createQuoted(var, makeBoolType());
         if (declarectx.queryMatchExpr(memberExpr))
             return memberExpr.getClear();
-    
+
         s.clear().append("IEclGraphResults * ").append(var).append(";");
         declarectx.addQuoted(s);
         declarectx.associateExpr(memberExpr, memberExpr);
@@ -1654,7 +1654,7 @@ IHqlExpression * HqlCppTranslator::doCreateGraphLookup(BuildCtx & declarectx, Bu
 
 //---------------------------------------------------------------------------
 
-ClassEvalContext::ClassEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & createctx, BuildCtx & startctx) 
+ClassEvalContext::ClassEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & createctx, BuildCtx & startctx)
 : EvalContext(_translator, _parentExtract, _parent), onCreate(createctx), onStart(startctx)
 {
 }
@@ -1800,7 +1800,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
             if (isRowInvariant(value) && onStart.evalctx)
             {
                 evaluateInOnStart = true;
-                
+
                 if (isGraphDependent(value))
                 {
                     //Need to find out which graph it is dependent on, and check that isn't defined locally
@@ -1877,7 +1877,7 @@ bool ClassEvalContext::getInvariantMemberContext(BuildCtx * ctx, BuildCtx * * de
 
 //---------------------------------------------------------------------------
 
-GlobalClassEvalContext::GlobalClassEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & createctx, BuildCtx & startctx) 
+GlobalClassEvalContext::GlobalClassEvalContext(HqlCppTranslator & _translator, ParentExtract * _parentExtract, EvalContext * _parent, BuildCtx & createctx, BuildCtx & startctx)
 : ClassEvalContext(_translator, _parentExtract, _parent, createctx, startctx)
 {
 }
@@ -1893,7 +1893,7 @@ void GlobalClassEvalContext::callNestedHelpers(const char * member, IHqlStmt * o
 
 //---------------------------------------------------------------------------
 
-ActivityEvalContext::ActivityEvalContext(HqlCppTranslator & _translator, ActivityInstance * _activity, ParentExtract * _parentExtract, EvalContext * _parent, IHqlExpression * _colocal, BuildCtx & createctx, BuildCtx & startctx) 
+ActivityEvalContext::ActivityEvalContext(HqlCppTranslator & _translator, ActivityInstance * _activity, ParentExtract * _parentExtract, EvalContext * _parent, IHqlExpression * _colocal, BuildCtx & createctx, BuildCtx & startctx)
 : ClassEvalContext(_translator, _parentExtract, _parent, createctx, startctx)
 {
     activity = _activity;
@@ -1988,8 +1988,8 @@ void NestedEvalContext::initContext()
     }
 }
 
-bool NestedEvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool hasOnStart) 
-{ 
+bool NestedEvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool hasOnStart)
+{
     //This is a bit ugly.  Latter condition is to cope with group aggregate callbacks
     return parent->isRowInvariant(expr) || parentExtract->canEvaluate(expr);
 }
@@ -2074,17 +2074,17 @@ The following is the structure that we are going to generate in the C++ for an a
 virtual void onCreate(ICodeContext * _ctx, IHThorArg * _colocal, MemoryBuffer * in) {
     colocal = (c2*)_colocal;
     ctx = _ctx;
-    <<onCreate.clonectx>>                   
+    <<onCreate.clonectx>>
         // clone values from colocal-> into local variables.
     if (in) {
         //deserialize any values from
-        <<onCreate.deserializectx>>     
+        <<onCreate.deserializectx>>
     }
     else {
         //evaluate any query-invariant values.
         <<onCreate.evalctx>>
     }
-    <<onCreate.childctx>>                   
+    <<onCreate.childctx>>
         // create graph lookups.
     nestedObject.onCreate(ctx, this);
 }
@@ -2118,7 +2118,7 @@ NestedClass:
 virtual void onCreate(ICodeContext * _ctx, IHThorArg * _colocal) {
     colocal = (c2*)_colocal;
     ctx = _ctx;
-    <<onCreate.clonectx>>                   
+    <<onCreate.clonectx>>
         // clone values from colocal-> into local variables.
     <<onCreate.evalctx>>
         // evaluate graph invariant expressions
@@ -2193,7 +2193,7 @@ Notes
 
 Evaluation of expressions:
 o Table-invariant
-  - Do in the onCreate of the activity.  
+  - Do in the onCreate of the activity.
   - Could also serialize from parent to child queries, so only evaluated once.
   = Trade off between re-eveluation and cloning/extra data serialized to child query.
 
@@ -2219,7 +2219,7 @@ Activity
 
 
 Nested
-    Evaluate in parent.  If 
+    Evaluate in parent.  If
 
 
 

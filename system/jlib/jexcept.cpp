@@ -71,15 +71,15 @@ class jlib_thrown_decl StringException: public IException, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     StringException(int code, const char *str, MessageAudience aud = MSGAUD_user) : errcode(code), msg(str), audience(aud) {};
-    
+
     int             errorCode() const { return errcode; }
-    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   
+    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}
     MessageAudience errorAudience() const { return audience; }
 protected:
     int     errcode;
     StringAttr msg;
     MessageAudience audience;
-};  
+};
 
 
 IException *makeStringExceptionVA(int code, const char *format, va_list args)
@@ -176,7 +176,7 @@ public:
     OsException(int code) : errcode(code) {};
     OsException(int code, const char *_msg) : msg(_msg), errcode(code) {};
     ~OsException() {}
-    
+
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
     {
@@ -189,7 +189,7 @@ public:
 protected:
     StringAttr msg;
     int     errcode;
-};  
+};
 
 
 IOSException *makeOsException(int code)
@@ -219,7 +219,7 @@ public:
     ErrnoException(int errn) : audience(MSGAUD_user) { errcode = errn==-1?errno:errn; }
     ErrnoException(int errn, const char *_msg, MessageAudience aud = MSGAUD_user) : msg(_msg), audience(aud) { errcode = errn==-1?errno:errn; }
     ~ErrnoException() { }
-    
+
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
     {
@@ -236,7 +236,7 @@ protected:
     StringAttr msg;
     int     errcode;
     MessageAudience audience;
-};  
+};
 
 
 IErrnoException *makeErrnoException(int errn, const char *msg)
@@ -329,43 +329,43 @@ class jlib_thrown_decl CMultiException : implements IMultiException, public CInt
 {
 public:
     IMPLEMENT_IINTERFACE
-        
-    CMultiException(const char* source=NULL) 
-    { 
+
+    CMultiException(const char* source=NULL)
+    {
         if (source)
             source_.append(source);
     }
-    
+
     //convenience methods for handling this as an array
-    virtual aindex_t ordinality() const          
-    { 
+    virtual aindex_t ordinality() const
+    {
         synchronized block(m_mutex);
-        return array_.ordinality(); 
+        return array_.ordinality();
     }
-    virtual IException& item(aindex_t pos) const 
-    { 
+    virtual IException& item(aindex_t pos) const
+    {
         synchronized block(m_mutex);
-        return array_.item(pos);    
+        return array_.item(pos);
     }
-    virtual const char* source() const              
-    { 
+    virtual const char* source() const
+    {
         synchronized block(m_mutex);
-        return source_.str();           
+        return source_.str();
     }
-    
+
     //for complete control...caller is responsible for thread safety!
     virtual IArrayOf<IException>& getArray()     { return array_;              }
-    
+
     //add another exception
-    virtual void append(IException& e)              
-    { 
+    virtual void append(IException& e)
+    {
         synchronized block(m_mutex);
-        array_.append(e); 
+        array_.append(e);
     }
     virtual void append(IMultiException& me)
     {
         synchronized block(m_mutex);
-        
+
         IArrayOf<IException>& exceptions = me.getArray();
         const char* source = me.source();
         ForEachItemIn(i, exceptions)
@@ -382,54 +382,54 @@ public:
                 array_.append(*LINK(&e));
         }
     }
-    
-    
+
+
     StringBuffer& serialize(StringBuffer& buffer, unsigned indent = 0, bool simplified=false, bool root=true) const
     {
         synchronized block(m_mutex);
-        
-        if (root)   
+
+        if (root)
             buffer.append("<Exceptions>");
-        
+
         if (!simplified)
         {
             if (indent) buffer.append("\n\t");
             buffer.appendf("<Source>%s</Source>", source_.str());
         }
-        
+
         ForEachItemIn(i, array_)
         {
             IException& exception = array_.item(i);
-            
+
             if (indent) buffer.append("\n\t");
             buffer.append("<Exception>");
-            
+
             //tag order is important for some soap clients (i.e. Java Axis)
-            
+
             if (indent) buffer.append("\n\t\t");
             buffer.appendf("<Code>%d</Code>", exception.errorCode());
-            
+
             if (indent) buffer.append("\n\t\t");
             buffer.appendf("<Audience>%s</Audience>", serializeMessageAudience( exception.errorAudience() ));
-            
+
             if (simplified)
             {
                 if (indent) buffer.append("\n\t\t");
                 StringBuffer msg;
                 buffer.appendf("<Source>%s</Source>", source_.str());
             }
-            
+
             if (indent) buffer.append("\n\t\t");
-            
+
             StringBuffer msg;
             StringBuffer encoded;
             encodeXML(exception.errorMessage(msg).str(), encoded);
             buffer.appendf("<Message>%s</Message>", encoded.str());
-            
+
             if (indent) buffer.append("\n\t");
             buffer.append("</Exception>");
         }
-        
+
         if (root)
             buffer.append("</Exceptions>");
         return buffer;
@@ -507,14 +507,14 @@ public:
     {
         synchronized block(m_mutex);
         StringBuffer wrapper;
-        
+
         if (strncmp(xml, "<Exceptions>", 12))
             xml = wrapper.appendf("<Exceptions>%s</Exceptions>", xml).str();
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml);
         if (!pTree)
             throw makeStringException(-1, "Failed to deserialize IMultiException!");
         Owned<IPropertyTreeIterator> i = pTree->getElements("Exception");
-        
+
         if (pTree->hasProp("Source"))
             source_.clear().append( pTree->queryProp("Source"));
         else
@@ -525,45 +525,45 @@ public:
                 source_.clear().append( pNode->queryProp("Source"));
             }
         }
-        
+
         array_.kill();
         ForEach(*i)
         {
             IPropertyTree* pNode = &i->query();
-            IException* pException = 
+            IException* pException =
                 makeStringException(
                    deserializeMessageAudience(pNode->queryProp("Audience")),
                    pNode->getPropInt("Code", -1),
                    pNode->queryProp("Message"));
             array_.append(*pException);
         }
-    }   
-    
+    }
+
     //the following methods override those in IIException
-    // 
+    //
     virtual int errorCode() const
-    { 
+    {
         synchronized block(m_mutex);
-        return ordinality() == 1 ? item(0).errorCode() : -1; 
+        return ordinality() == 1 ? item(0).errorCode() : -1;
     }
     virtual StringBuffer& errorMessage(StringBuffer &msg) const
-    { 
+    {
         synchronized block(m_mutex);
         ForEachItemIn(i, array_)
         {
             IException& e = item(i);
-            
+
             StringBuffer buf;
             msg.appendf("[%3d: %s] ", e.errorCode(), e.errorMessage(buf).str());
         }
         return msg;
     }
     virtual MessageAudience errorAudience() const
-    { 
+    {
         synchronized block(m_mutex);
         return ordinality() == 1 ? item(0).errorAudience() : MSGAUD_programmer;
     }
-    
+
 private:
     CMultiException( const CMultiException& );
     IArrayOf<IException> array_;
@@ -645,7 +645,7 @@ void raiseAssertException(const char *assertion, const char *file, unsigned line
         //userBreakpoint();
 #endif
     }
-    
+
 #if 0
 #ifndef USING_MPATROL
 #ifdef _WIN32
@@ -679,7 +679,7 @@ void raiseAssertCore(const char *assertion, const char *file, unsigned line)
     raise(SIGABRT);
     _exit(255);
 #endif
-    
+
 }
 static int SEHnested = 0;
 static IExceptionHandler *SEHHandler = NULL;
@@ -699,9 +699,9 @@ static void *SEHrestore;
 static LPTSTR GetExceptionString( DWORD dwCode )
 {
 #define EXCEPTION( x ) case EXCEPTION_##x: return #x;
-    
+
     switch ( dwCode )
-    {   
+    {
     EXCEPTION( ACCESS_VIOLATION )
     EXCEPTION( DATATYPE_MISALIGNMENT )
     EXCEPTION( BREAKPOINT )
@@ -725,13 +725,13 @@ static LPTSTR GetExceptionString( DWORD dwCode )
     EXCEPTION( GUARD_PAGE )
     EXCEPTION( INVALID_HANDLE )
     }
-    
+
     static CHAR szBuffer[512] = { 0 };
-    
+
     FormatMessage(  FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_HMODULE,
         GetModuleHandle( "NTDLL.DLL" ),
         dwCode, 0, szBuffer, sizeof( szBuffer ), 0 );
-    
+
     return szBuffer;
 }
 
@@ -742,32 +742,32 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
     offset = 0;
     if ((unsigned)(memsize_t)addr<0x10000)
         return FALSE;
-    
-    
+
+
     MEMORY_BASIC_INFORMATION mbi;
-    
+
     if ( !VirtualQuery( addr, &mbi, sizeof(mbi) ) )
         return FALSE;
-    
+
     memsize_t hMod = (memsize_t)mbi.AllocationBase;
-    
+
     if ( !GetModuleFileName( (HMODULE)hMod, szModule, len ) )
         return FALSE;
-    
+
     PIMAGE_DOS_HEADER pDosHdr = (PIMAGE_DOS_HEADER)hMod;
-    
+
     PIMAGE_NT_HEADERS pNtHdr = (PIMAGE_NT_HEADERS)(hMod + pDosHdr->e_lfanew);
-    
+
     PIMAGE_SECTION_HEADER pSection = IMAGE_FIRST_SECTION( pNtHdr );
-    
+
     memsize_t rva = (memsize_t)addr - hMod;
-    
+
     for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; i++, pSection++ )
     {
         DWORD sectionStart = pSection->VirtualAddress;
         DWORD sectionEnd = sectionStart
             + std::max(pSection->SizeOfRawData, pSection->Misc.VirtualSize);
-        
+
         if ( (rva >= sectionStart) && (rva <= sectionEnd) )
         {
             section = i+1;
@@ -775,8 +775,8 @@ static BOOL GetLogicalAddress( PVOID addr, PTSTR szModule, DWORD len, DWORD& sec
             return TRUE;
         }
     }
-    
-    return FALSE;   
+
+    return FALSE;
 }
 
 
@@ -791,27 +791,27 @@ extern "C" {
 
 
 static void ModuleWalk()
-{ 
+{
     HMODULE hmSystem = LoadLibrary("psapi.dll");
-    if (!hmSystem) 
+    if (!hmSystem)
         return;
     LPENUMPROCESSMODULES enumProcessModules = (LPENUMPROCESSMODULES)GetProcAddress(hmSystem,"EnumProcessModules");
-    if (!enumProcessModules) 
+    if (!enumProcessModules)
         return;
     LPGETMODULEINFORMATION getModuleInformation = (LPGETMODULEINFORMATION)GetProcAddress(hmSystem,"GetModuleInformation");
-    if (!getModuleInformation) 
+    if (!getModuleInformation)
         return;
     DWORD processID = GetCurrentProcessId();
     DBGLOG("Process ID: %u", processID);
-    
+
     // Get a list of all the modules in this process.
-    
+
     HANDLE hProcess = OpenProcess(  PROCESS_QUERY_INFORMATION |
         PROCESS_VM_READ,
         FALSE, processID );
     if (NULL == hProcess)
         return;
-    
+
     HMODULE hMods[1024];
     DWORD cbNeeded;
     if (enumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded)) {
@@ -819,7 +819,7 @@ static void ModuleWalk()
             char szModName[MAX_PATH];
             szModName[0] = 0;
             // Get the full path to the module's file.
-            
+
             MODULEINFO modinfo;
             memset(&modinfo,0,sizeof(modinfo));
             getModuleInformation(hProcess, hMods[i], &modinfo, sizeof(modinfo));
@@ -827,7 +827,7 @@ static void ModuleWalk()
             IERRLOG("%8X %8X %8X  %s",(unsigned)modinfo.lpBaseOfDll,(unsigned)modinfo.SizeOfImage,(unsigned)modinfo.EntryPoint,szModName);
         }
     }
-    
+
     CloseHandle( hProcess );
     FreeLibrary(hmSystem);
 }
@@ -836,45 +836,45 @@ static void ModuleWalk()
 static void StackWalk( size_t pc, size_t bp )
 {
     IERRLOG( "Call stack:" );
-    
+
     IERRLOG( "Address   Frame     Logical addr  Module" );
-    
+
     size_t * pFrame;
     size_t * pPrevFrame=NULL;
-    
+
     pFrame = (size_t*)bp;
-    
+
     do
     {
         TCHAR szModule[MAX_PATH] = "";
         DWORD section = 0, offset = 0;
-        
+
         if (pc>0x10000)
             GetLogicalAddress((PVOID)pc, szModule,sizeof(szModule),section,offset );
         else
             strcpy(szModule,"NULL");
-        
+
         IERRLOG( "%08X  %08X  %04X:%08X %s",
             pc, pFrame, section, offset, szModule );
-        
-        if ( (size_t)pFrame & 0x80000003 )    
-            break;                  
-        
+
+        if ( (size_t)pFrame & 0x80000003 )
+            break;
+
         if ( (size_t)pFrame <= (size_t)pPrevFrame )
             break;
-        
+
         if ( IsBadWritePtr(pFrame, sizeof(PVOID)*2) )
             break;
-        
+
         pc = pFrame[1];
-        
+
         if ( IsBadCodePtr((FARPROC) pc) )
             break;
-        
+
         pPrevFrame = pFrame;
-        
-        pFrame = (size_t *)pFrame[0]; 
-        
+
+        pFrame = (size_t *)pFrame[0];
+
     } while ( 1 );
 }
 
@@ -883,7 +883,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
 {
     if (_bp==0) {
 #ifdef _ARCH_X86_
-        __asm { 
+        __asm {
             mov eax,ebp
             mov _bp,eax
         }
@@ -891,7 +891,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
         IERRLOG("inline assembler is only supported for x86_32; StackReport incomplete bp tend to not be used");
 #endif
     }
-    
+
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
 #ifdef __64BIT__
@@ -912,13 +912,13 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
         }
         IERRLOG( "%s",s.str());
     }
-    
-    
+
+
     StackWalk( ip , _bp);
     ModuleWalk();
     StringBuffer threadlist;
     IERRLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
-    
+
 }
 
 
@@ -926,30 +926,30 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
 static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 {
     IERRLOG("=====================================================");
-    
-    
+
+
     PrintMemoryStatusLog();
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
-    
+
     IERRLOG(   "Exception code: %08X %s",
         pExceptionRecord->ExceptionCode,
         GetExceptionString(pExceptionRecord->ExceptionCode) );
-    
+
     IERRLOG( "Fault address:  %08X", pExceptionRecord->ExceptionAddress);
-    
+
     TCHAR szFaultingModule[MAX_PATH];
     DWORD section, offset;
     GetLogicalAddress(  pExceptionRecord->ExceptionAddress,
         szFaultingModule,
         sizeof( szFaultingModule ),
         section, offset );
-    
+
     IERRLOG("Fault module:  %02X:%08X %s", section, offset, szFaultingModule);
-    
+
     PCONTEXT pCtx = pExceptionInfo->ContextRecord;
-    
+
     IERRLOG( "\nRegisters:" );
-    
+
 #ifdef _ARCH_X86_64_
     IERRLOG("RAX:%016" I64F "X  RBX:%016" I64F "X  RCX:%016" I64F "X  RDX:%016" I64F "X  RSI:%016" I64F "X  RDI:%016" I64F "X",
         pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx, pCtx->Rsi, pCtx->Rdi );
@@ -964,7 +964,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 #elif defined(_ARCH_X86_)
     IERRLOG("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
         pCtx->Eax, pCtx->Ebx, pCtx->Ecx, pCtx->Edx, pCtx->Esi, pCtx->Edi );
-    
+
     IERRLOG( "CS:EIP:%04X:%08X", pCtx->SegCs, pCtx->Eip );
     IERRLOG( "SS:ESP:%04X:%08X  EBP:%08X",
         pCtx->SegSs, pCtx->Esp, pCtx->Ebp );
@@ -972,7 +972,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
     // ARMFIX: Implement register bank dump for ARM on _WIN32.
     IERRLOG("Register bank not implemented for your platform");
 #endif
-    
+
     IERRLOG( "DS:%04X  ES:%04X  FS:%04X  GS:%04X",
         pCtx->SegDs, pCtx->SegEs, pCtx->SegFs, pCtx->SegGs );
     IERRLOG( "Flags:%08X", pCtx->EFlags );
@@ -1008,7 +1008,7 @@ class jlib_thrown_decl CSEHException: public ISEH_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CSEHException(unsigned int u, _EXCEPTION_POINTERS* pExp) : errcode((int)u) 
+    CSEHException(unsigned int u, _EXCEPTION_POINTERS* pExp) : errcode((int)u)
     {
 #ifdef EXTENDED_EXCEPTION_TRACE
         PrintExceptionReport(pExp);
@@ -1042,10 +1042,10 @@ public:
         msg.set(s);
     };
     int             errorCode() const { return errcode; }
-    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   
+    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}
     MessageAudience errorAudience() const { return MSGAUD_user; }
-    static void Translate(unsigned int u, _EXCEPTION_POINTERS* pExp) 
-    { 
+    static void Translate(unsigned int u, _EXCEPTION_POINTERS* pExp)
+    {
 #ifdef _DEBUG
         if (u == 0x80000003) return; // int 3 breakpoints
         static CriticalSection crit;
@@ -1061,7 +1061,7 @@ public:
 protected:
     int     errcode;
     StringAttr msg;
-};  
+};
 #endif
 #else
 #ifdef LINUX_SIGNAL_EXCEPTION
@@ -1080,12 +1080,12 @@ public:
         msg.set(s);
     };
     int             errorCode() const { return errcode; }
-    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   
+    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}
     MessageAudience errorAudience() const { return MSGAUD_user; }
 protected:
     int     errcode;
     StringAttr msg;
-};  
+};
 
 #ifndef NO_LINUX_SEH
 static void throwSigSegV()
@@ -1099,7 +1099,7 @@ static void throwSigSegV()
     }
     PROGLOG("Dumping core using child process %d",childpid);
     waitpid(childpid, NULL, 0);
-    if (SEHHandler && SEHHandler->fireException(sigsegv_exc)) 
+    if (SEHHandler && SEHHandler->fireException(sigsegv_exc))
         return;
     throw sigsegv_exc;
 }
@@ -1150,7 +1150,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
 #endif
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing " I64X ", IP=" I64X, strsignal(signum),signum, (__int64)info->si_addr, ip);
-    
+
     StringBuffer networkIp;
     PROGLOG("================================================");
     PROGLOG("Program:   %s:%s", queryHostIP().getIpText(networkIp).str(),queryCurrentProcessPath());
@@ -1164,8 +1164,8 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     PROGLOG("Registers:" );
 #ifdef __APPLE__
     PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
-        (unsigned __int64) uc->uc_mcontext->__ss.__rax, (unsigned __int64)uc->uc_mcontext->__ss.__rbx, 
-        (unsigned __int64) uc->uc_mcontext->__ss.__rcx, (unsigned __int64)uc->uc_mcontext->__ss.__rdx, 
+        (unsigned __int64) uc->uc_mcontext->__ss.__rax, (unsigned __int64)uc->uc_mcontext->__ss.__rbx,
+        (unsigned __int64) uc->uc_mcontext->__ss.__rcx, (unsigned __int64)uc->uc_mcontext->__ss.__rdx,
         (unsigned __int64) uc->uc_mcontext->__ss.__rsi, (unsigned __int64)uc->uc_mcontext->__ss.__rdi);
     PROGLOG("R8 :" I64X "  R9 :" I64X "  R10:" I64X "  R11:" I64X "",
         (unsigned __int64) uc->uc_mcontext->__ss.__r8, (unsigned __int64)uc->uc_mcontext->__ss.__r9,
@@ -1177,8 +1177,8 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext->__ss.__rbp );
 #else
     PROGLOG("EAX:" I64X "  EBX:" I64X "  ECX:" I64X "  EDX:" I64X "  ESI:" I64X "  EDI:" I64X "",
-        (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX], 
-        (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_RAX], (unsigned __int64)uc->uc_mcontext.gregs[REG_RBX],
+        (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX],
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
     PROGLOG("R8 :" I64X "  R9 :" I64X "  R10:" I64X "  R11:" I64X "",
         (unsigned __int64) uc->uc_mcontext.gregs[REG_R8], (unsigned __int64)uc->uc_mcontext.gregs[REG_R9],
@@ -1189,7 +1189,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     PROGLOG( "CS:EIP:%04X:" I64X "", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
     PROGLOG( "   ESP:" I64X "  EBP:" I64X "", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );
 #endif
-    
+
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
         s.appendf("Stack[" I64X "]:",sp);
@@ -1205,10 +1205,10 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     ucontext_t *uc = (ucontext_t *)extra;
     unsigned ip = uc->uc_mcontext.gregs[REG_EIP];
     unsigned sp = uc->uc_mcontext.gregs[REG_ESP];
-    
+
     excsignal = signum;
     s.appendf("SIG: %s(%d), accessing %p, IP=%x", strsignal(signum),signum, info->si_addr, ip);
-    
+
     StringBuffer networkIp;
     PROGLOG("================================================");
     PROGLOG("Program:   %s:%s", queryHostIP().getIpText(networkIp).str(),queryCurrentProcessPath());
@@ -1221,14 +1221,14 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
 
     PROGLOG("Registers:" );
     PROGLOG("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
-        uc->uc_mcontext.gregs[REG_EAX], uc->uc_mcontext.gregs[REG_EBX], 
-        uc->uc_mcontext.gregs[REG_ECX], uc->uc_mcontext.gregs[REG_EDX], 
+        uc->uc_mcontext.gregs[REG_EAX], uc->uc_mcontext.gregs[REG_EBX],
+        uc->uc_mcontext.gregs[REG_ECX], uc->uc_mcontext.gregs[REG_EDX],
         uc->uc_mcontext.gregs[REG_ESI], uc->uc_mcontext.gregs[REG_EDI] );
-    
+
     PROGLOG( "CS:EIP:%04X:%08X", uc->uc_mcontext.gregs[REG_CS], ip );
     PROGLOG( "SS:ESP:%04X:%08X  EBP:%08X",
-        uc->uc_mcontext.gregs[REG_SS], sp, uc->uc_mcontext.gregs[REG_EBP] );    
-    
+        uc->uc_mcontext.gregs[REG_SS], sp, uc->uc_mcontext.gregs[REG_EBP] );
+
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
         s.appendf("Stack[%08X]:",sp);
@@ -1244,7 +1244,7 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
     for (unsigned n=0; n<64; n++) {
         unsigned * nextbp = (unsigned *) *bp++;
         unsigned fip = *bp;
-        if ((fip < 0x08000000) || (fip > 0x7fffffff) || (nextbp < bp)) 
+        if ((fip < 0x08000000) || (fip > 0x7fffffff) || (nextbp < bp))
             break;
         PROGLOG("%2d  %08X  %08X",n+1,fip,(unsigned) bp);
         bp = nextbp;
@@ -1436,7 +1436,7 @@ void jlib_decl enableSEHtoExceptionMapping()
 #if defined(SA_RESETHAND)
     act.sa_flags |= SA_RESETHAND;
 #endif
-    act.sa_sigaction = &excsighandler; 
+    act.sa_sigaction = &excsighandler;
     sigaction(SIGSEGV, &act, NULL);
 #ifndef _DEBUG
     sigaction(SIGILL, &act, NULL);
@@ -1479,7 +1479,7 @@ void  jlib_decl disableSEHtoExceptionMapping()
 
 StringBuffer & formatSystemError(StringBuffer & out, unsigned errcode)
 {
-#ifdef _WIN32       
+#ifdef _WIN32
     const char * lpMessageBuffer=NULL;
     FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
         NULL,

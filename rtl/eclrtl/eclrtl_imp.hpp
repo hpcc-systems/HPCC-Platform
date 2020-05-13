@@ -91,7 +91,7 @@ public:
 protected:
     size32_t maxsize;
 };
-    
+
 class ECLRTL_API rtlEmptyRowBuilder
 {
 public:
@@ -135,7 +135,7 @@ public:
     inline rtlStrRegexFindInstance()            { instance = 0; }
     inline ~rtlStrRegexFindInstance()           { rtlDestroyStrRegExprFindInstance(instance); }
     inline IStrRegExprFindInstance * operator -> () const { return instance; }
-    
+
     void find(const rtlCompiledStrRegex & regex, size32_t len, const char * str, bool needToKeepSearchString)
     {
         IStrRegExprFindInstance * search = regex->find(str, 0, len, needToKeepSearchString);
@@ -173,7 +173,7 @@ public:
     inline rtlUStrRegexFindInstance()           { instance = 0; }
     inline ~rtlUStrRegexFindInstance()          { rtlDestroyUStrRegExprFindInstance(instance); }
     inline IUStrRegExprFindInstance * operator -> () const { return instance; }
-    
+
     void find(const rtlCompiledUStrRegex & regex, size32_t len, const UChar * str)
     {
         IUStrRegExprFindInstance * search = regex->find(str, 0, len);
@@ -232,7 +232,7 @@ inline unsigned rtlHash32Data2(const void *_buf, unsigned hval)
     const byte * buf = (const byte *)_buf;
     return FNV_32_HASHONE_VALUE(
                 FNV_32_HASHONE_VALUE(
-                    hval, 
+                    hval,
                     buf[0]),
                 buf[1]);
 }
@@ -242,7 +242,7 @@ inline unsigned rtlHash32Data3(const void *_buf, unsigned hval)
     return FNV_32_HASHONE_VALUE(
                 FNV_32_HASHONE_VALUE(
                     FNV_32_HASHONE_VALUE(
-                        hval, 
+                        hval,
                         buf[0]),
                     buf[1]),
                 buf[2]);
@@ -254,7 +254,7 @@ inline unsigned rtlHash32Data4(const void *_buf, unsigned hval)
                 FNV_32_HASHONE_VALUE(
                     FNV_32_HASHONE_VALUE(
                         FNV_32_HASHONE_VALUE(
-                            hval, 
+                            hval,
                             buf[0]),
                         buf[1]),
                     buf[2]),
@@ -268,7 +268,7 @@ inline unsigned rtlHash32Data5(const void *_buf, unsigned hval)
                     FNV_32_HASHONE_VALUE(
                         FNV_32_HASHONE_VALUE(
                             FNV_32_HASHONE_VALUE(
-                                hval, 
+                                hval,
                                 buf[0]),
                             buf[1]),
                         buf[2]),
@@ -284,7 +284,7 @@ inline unsigned rtlHash32Data6(const void *_buf, unsigned hval)
                         FNV_32_HASHONE_VALUE(
                             FNV_32_HASHONE_VALUE(
                                 FNV_32_HASHONE_VALUE(
-                                    hval, 
+                                    hval,
                                     buf[0]),
                                 buf[1]),
                             buf[2]),
@@ -302,7 +302,7 @@ inline unsigned rtlHash32Data7(const void *_buf, unsigned hval)
                             FNV_32_HASHONE_VALUE(
                                 FNV_32_HASHONE_VALUE(
                                     FNV_32_HASHONE_VALUE(
-                                        hval, 
+                                        hval,
                                         buf[0]),
                                     buf[1]),
                                 buf[2]),
@@ -322,7 +322,7 @@ inline unsigned rtlHash32Data8(const void *_buf, unsigned hval)
                                 FNV_32_HASHONE_VALUE(
                                     FNV_32_HASHONE_VALUE(
                                         FNV_32_HASHONE_VALUE(
-                                            hval, 
+                                            hval,
                                             buf[0]),
                                         buf[1]),
                                     buf[2]),

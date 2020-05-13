@@ -27,7 +27,7 @@ public:
     //}}AFX_DATA
 
     int m_count;
-    
+
     bool inited;
     void initWizDlg()
     {

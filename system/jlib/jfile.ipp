@@ -76,7 +76,7 @@ public:
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime);
 
     virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone);
-    // if toOfs is (offset_t)-1 then copies entire file 
+    // if toOfs is (offset_t)-1 then copies entire file
 
     virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, CFflags copyFlags=CFnone);
 

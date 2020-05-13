@@ -134,7 +134,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
     {
         ReadLockBlock rblock(m_rwlock);
         StringBuffer host, protocol, user, passwd, port, path;
-        Utils::SplitURL(url, protocol, user, passwd, host, port, path); 
+        Utils::SplitURL(url, protocol, user, passwd, host, port, path);
         if(host.length() > 0)
         {
             ForEachItemIn(x, m_cookies)
@@ -394,7 +394,7 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
 
     httprequest->setHost(m_host.get());
     httprequest->setPort(m_port);
-    
+
     httprequest->setContentType(contenttype);
 
     if(m_userid.length() > 0)
@@ -782,7 +782,7 @@ int CHttpClient::sendRequest(const char* method, const char* contenttype, String
     return sendRequest(NULL, method, contenttype, request, response, responseStatus, alwaysReadContent);
 }
 
-// since an element may have namespace specified in its tag, don't look for trailing '>' 
+// since an element may have namespace specified in its tag, don't look for trailing '>'
 // in its start tag
 static const char* getElementText(const char* str, const char* beginTag/*like '<A'*/, const char* endTag/*like '</A>'*/,
                                   int& textLen)
@@ -880,7 +880,7 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
 
     httprequest->setHost(m_host.get());
     httprequest->setPort(m_port);
-    
+
     if(strlen(request.get_content_type()) > 0)
         httprequest->setContentType(request.get_content_type());
 
@@ -971,7 +971,7 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     }
     else if(statusClass == '4')
     {
-        if(statusCode == HTTP_STATUS_UNAUTHORIZED_CODE || 
+        if(statusCode == HTTP_STATUS_UNAUTHORIZED_CODE ||
             statusCode == HTTP_STATUS_FORBIDDEN_CODE ||
             statusCode == HTTP_STATUS_NOT_ALLOWED_CODE ||
             statusCode == HTTP_STATUS_PROXY_AUTHENTICATION_REQUIRED_CODE)
@@ -1037,7 +1037,7 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     }
 
     response.set_text(content.str());
-            
+
     // parse soap fault
     parseSoapFault(content,errmsg.clear());
     if (errmsg.length())

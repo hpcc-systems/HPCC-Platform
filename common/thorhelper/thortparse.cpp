@@ -149,24 +149,24 @@ void NonTerminal::resetPosition(const byte * pos)
 }
 
 const byte * NonTerminal::queryStartPtr() const
-{ 
+{
     if (reduced.ordinality())
         return reduced.item(0).queryStartPtr();
     return reducePtr;
 }
 
 const byte * NonTerminal::queryEndPtr() const
-{ 
+{
     if (reduced.ordinality())
         return reduced.tos().queryEndPtr();
     return reducePtr;
 }
 
-GrammarSymbol * NonTerminal::queryChild(unsigned i)         
-{ 
+GrammarSymbol * NonTerminal::queryChild(unsigned i)
+{
     if (reduced.isItem(i))
         return &reduced.item(i);
-    return NULL; 
+    return NULL;
 }
 //---------------------------------------------------------------------------
 
@@ -207,21 +207,21 @@ GrammarSymbol * PackedSymbol::createMerged(GrammarSymbol * other)
 }
 
 GrammarSymbol * PackedSymbol::queryPacked(unsigned i)
-{ 
+{
     if (equivalents.isItem(i))
         return &equivalents.item(i);
     return NULL;
 }
 
-const byte * PackedSymbol::queryStartPtr() const                
-{ 
-    return equivalents.item(0).queryStartPtr(); 
+const byte * PackedSymbol::queryStartPtr() const
+{
+    return equivalents.item(0).queryStartPtr();
 }
 
 
-const byte * PackedSymbol::queryEndPtr() const              
-{ 
-    return equivalents.item(0).queryEndPtr(); 
+const byte * PackedSymbol::queryEndPtr() const
+{
+    return equivalents.item(0).queryEndPtr();
 }
 
 //---------------------------------------------------------------------------
@@ -278,7 +278,7 @@ void PackedSymbolChoice::expandFirst(GrammarSymbol * symbol)
         branches.append(0);
         expandFirst(symbol->queryPacked(0));
     }
-    else 
+    else
     {
         unsigned max = symbol->numChildren();
         for (unsigned i = 0; i < max; i++)
@@ -313,7 +313,7 @@ void PackedSymbolChoice::expandBest(GrammarSymbol * symbol)
         branches.append(bestIndex);
         expandBest(symbol->queryPacked(bestIndex));
     }
-    else 
+    else
     {
         unsigned max = symbol->numChildren();
         for (unsigned i = 0; i < max; i++)
@@ -351,7 +351,7 @@ bool PackedSymbolChoice::expandNext(unsigned & level, GrammarSymbol * symbol)
         symbols.pop();
         return false;
     }
-    else 
+    else
     {
         unsigned max = symbol->numChildren();
         for (unsigned i = 0; i < max; i++)
@@ -470,19 +470,19 @@ void StackElement::gatherPoolPending(CIArrayOf<StackElement> & pending)
 }
 
 //---------------------------------------------------------------------------
-LRActiveState::LRActiveState(unsigned _maxStates)       
-{ 
+LRActiveState::LRActiveState(unsigned _maxStates)
+{
     maxStates = _maxStates;
     cacheBytes = maxStates * sizeof(StackElement *);
-    cache = new StackElement * [maxStates]; 
+    cache = new StackElement * [maxStates];
     beenReduced = new bool [maxStates];
     memset(beenReduced, 0, maxStates);
-    memset(cache, 0, cacheBytes); 
+    memset(cache, 0, cacheBytes);
 }
 
-LRActiveState::~LRActiveState()                                     
-{ 
-    delete [] cache; 
+LRActiveState::~LRActiveState()
+{
+    delete [] cache;
     delete [] beenReduced;
 }
 
@@ -586,11 +586,11 @@ bool LRActiveState::mergePackedNode(unsigned stateId, StackElement * next, bool 
     } while (cur);
     return false;
 }
-            
+
 void LRActiveState::reinit()
-{ 
-    memset(cache, 0, cacheBytes); 
-    elements.kill(); 
+{
+    memset(cache, 0, cacheBytes);
+    elements.kill();
 }
 
 void LRActiveState::mergeIn(LRActiveState & other, bool keepBest)
@@ -954,7 +954,7 @@ void LRMultiParser::parse(IMultiTokenLexer & lexer)
             ForEachItemIn(idx, tokens)
             {
                 GrammarSymbol & curToken = tokens.item(idx);
-                
+
                 process(&curToken, tokens.ordinality() == 1);
             }
             if (tokens.ordinality() == 1 && tokens.item(0).id == eofId)
@@ -1113,7 +1113,7 @@ void TomitaResultIterator::reset(const GrammarSymbolArray & _values)
                     values.popn(numValues-j);
                     break;
                 }
-                else if ((def->scanAction == INlpParseAlgorithm::NlpScanNext) && 
+                else if ((def->scanAction == INlpParseAlgorithm::NlpScanNext) &&
                          (cur.queryStartPtr() < last->queryEndPtr()))
                 {
                     numValues--;
@@ -1174,7 +1174,7 @@ bool TomitaResultIterator::next()
     curIndex++;
     if (!isValid())
         return false;
-    
+
     firstChoice();
     return true;
 }
@@ -1206,7 +1206,7 @@ const void * TomitaResultIterator::getRow()
 
 //---------------------------------------------------------------------------
 
-TomitaParser::TomitaParser(ICodeContext * ctx, TomitaAlgorithm * _def, unsigned _activityId, INlpHelper * _helper, IHThorParseArg * arg) 
+TomitaParser::TomitaParser(ICodeContext * ctx, TomitaAlgorithm * _def, unsigned _activityId, INlpHelper * _helper, IHThorParseArg * arg)
 : parser(_def->table, rowState), lexer(_def->tokenDfa, _def->skipDfa, _def->endTokenChars, _def->eofId), iter(rowState, _def)
 {
     assertex(ctx);
@@ -1273,7 +1273,7 @@ bool TomitaParser::performMatch(IMatchedAction & action, const void * row, unsig
             for (unsigned idx=0; idx < numTokens;idx++)
             {
                 GrammarSymbol & curToken = tokens.item(idx);
-                
+
                 parser.process(&curToken, isOnlyToken);
                 if (!scanWhole)
                     // a bit nasty - end position is still set up after the process() call.
@@ -1332,8 +1332,8 @@ Implementing a multiple lex parser:
 
 Notes:
 
-Caching: 
-  Can only prune a branch when shifting, which loses all elements simultaneously, so a singlely linked list suffices, 
+Caching:
+  Can only prune a branch when shifting, which loses all elements simultaneously, so a singlely linked list suffices,
   and solves link counting problems that a doubly linked list would have,
 
 Local ambiguity packing:

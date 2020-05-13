@@ -62,18 +62,18 @@ public:
     {
         return m_name.str();
     }
-    
+
     bool setName(const char * name)
     {
         m_name.clear().append(name);
         return true;
     }
-    
+
     const char * getFullName()
     {
         return m_fullname.str();
     }
-    
+
     bool setFullName(const char * name)
     {
         m_fullname.clear().append(name);

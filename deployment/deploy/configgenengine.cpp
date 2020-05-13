@@ -23,7 +23,7 @@
 #include "XMLTags.h"
 #include "confighelper.hpp"
 
-#ifdef _WINDOWS 
+#ifdef _WINDOWS
 #define CONFIGGEN_COMP_LIST "cgencomplist_win.xml"
 #else
 #define CONFIGGEN_COMP_LIST "cgencomplist_linux.xml"
@@ -32,9 +32,9 @@
 //---------------------------------------------------------------------------
 // CEspDeploymentEngine
 //---------------------------------------------------------------------------
-CConfigGenEngine::CConfigGenEngine(IEnvDeploymentEngine& envDepEngine, 
-                     IDeploymentCallback& callback, IPropertyTree& process, 
-                     const char* inputDir, const char* outputDir, 
+CConfigGenEngine::CConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
+                     IDeploymentCallback& callback, IPropertyTree& process,
+                     const char* inputDir, const char* outputDir,
                      const char* instanceType, bool createIni)
  : CDeploymentEngine(envDepEngine, callback, process, instanceType, createIni),m_inDir(inputDir), m_outDir(outputDir)
 {
@@ -49,7 +49,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
 {
     try
     {
-        m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, 
+        m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
             "Determining files to install for %s", processNode.queryProp("@name"));
 
         StringBuffer compListPath(CONFIGGEN_COMP_LIST);
@@ -74,7 +74,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
 
         if (!pComponent)
         {
-            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, 
+            m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
                 "Cannot find files to install for %s", processNode.queryProp("@buildSet"));
             return 0;
         }
@@ -296,7 +296,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
             bool bAddToFileMap = installFiles.resolveConflicts(processNode, method, srcFilePath.str(), destFilePath.str(),
                 m_name, m_curInstance, NULL);
             //resolve conflicts if method is not schema or exec
-            if (0 != stricmp(method, "schema") && 0 != stricmp(method, "exec") && 0 != strnicmp(method, "del", 3)) 
+            if (0 != stricmp(method, "schema") && 0 != stricmp(method, "exec") && 0 != strnicmp(method, "del", 3))
             {
             }
             else if (!strnicmp(method, "del", 3))//treat files to be deleted as temp files - to be deleted AFTER we are done!
@@ -348,14 +348,14 @@ void CConfigGenEngine::deployInstance(IPropertyTree& instanceNode, bool useTempD
         getDeployDir(destDir, instanceNode);
     else
         destDir.set(hostDir.get());
-    
+
     const char* pszHostDir = hostDir.get();
     if (pszHostDir && *pszHostDir==PATHSEPCHAR && *(pszHostDir+1)==PATHSEPCHAR)
         connectToHost(instanceNode);
     beforeDeployInstance(instanceNode, destDir);
     copyInstallFiles(instanceNode, destDir);
     afterDeployInstance(instanceNode, destDir);
-    
+
     if (!m_compare && useTempDir)
     {
         checkAbort();

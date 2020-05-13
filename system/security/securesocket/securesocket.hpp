@@ -26,7 +26,7 @@
     #define SECURESOCKET_API DECL_EXPORT
 #endif //SECURESOCKET_EXPORTS
 
-#endif 
+#endif
 
 #include "jsocket.hpp"
 #include "jptree.hpp"

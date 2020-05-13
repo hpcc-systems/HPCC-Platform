@@ -39,7 +39,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CSecurityDescriptor(const char* name);
     const char* getName();
     const char* getRelativeBasedn();
@@ -88,7 +88,7 @@ public:
 interface IPermissionProcessor : implements IInterface
 {
     virtual void setLdapClient(ILdapClient* client) = 0;
-    
+
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources) = 0;
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype) = 0;
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype) = 0;

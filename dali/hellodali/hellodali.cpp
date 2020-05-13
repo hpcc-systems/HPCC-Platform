@@ -54,7 +54,7 @@ void doStuff()
     MemoryBuffer m;
     if (root->getPropBin("TestBranch2",m)) {
         m.append((byte)0); // add a NULL to returned data
-        const char *str = m.toByteArray();  
+        const char *str = m.toByteArray();
         printf("TestBranch2: read %s\n",str);
     }
     else {
@@ -82,7 +82,7 @@ void doStuff()
 
 int main(int argc, char* argv[])
 {
-    
+
     enableMemLeakChecking(true);
 
     InitModuleObjects();
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
         return -1;
     }
     SocketEndpoint dalieps(argv[1],DALI_SERVER_PORT);       // endpoint of dali server
-    Owned<IGroup> group = createIGroup(1,&dalieps); 
+    Owned<IGroup> group = createIGroup(1,&dalieps);
 
     try {
         initClientProcess(group, DCR_Testing);            // I will add a DCR_Orbit at some point

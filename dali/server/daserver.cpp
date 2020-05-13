@@ -126,7 +126,7 @@ bool actionOnAbort()
 {
     stopServer();
     return true;
-} 
+}
 
 USE_JLIB_ALLOC_HOOK;
 
@@ -382,7 +382,7 @@ int main(int argc, const char* argv[])
 #else
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
-	
+
         for (unsigned i=1;i<(unsigned)argc;i++) {
             if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
                 if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -432,7 +432,7 @@ int main(int argc, const char* argv[])
         if (mirrorPath.length())
             serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
 #else
-        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath)) 
+        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath))
             serverConfig->setProp("@dataPath",dataPath.str());
         else
             serverConfig->getProp("@dataPath",dataPath);
@@ -447,10 +447,10 @@ int main(int argc, const char* argv[])
             }
         }
         // JCSMORE remoteBackupLocation should not be a property of SDS section really.
-        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
+        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
             serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
 
-#endif            
+#endif
         if (dataPath.length())
         {
             addPathSepChar(dataPath); // ensures trailing path separator
@@ -506,8 +506,8 @@ int main(int argc, const char* argv[])
                         if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
                             rfn.setLocalPath(mirrorPath.str());
                         else
-                            rfn.setRemotePath(mirrorPath.str());                
-                        
+                            rfn.setRemotePath(mirrorPath.str());
+
                         if (!rfn.getPort() && !rfn.isLocal())
                         {
                             StringBuffer mountPoint;
@@ -543,7 +543,7 @@ int main(int argc, const char* argv[])
                         OwnedIFile iFileBackup = createIFile(backupCheck.str());
                         if (iFileBackup->exists())
                         {
-                            PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
+                            PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str());
                             iFileDataDir->remove();
                             return 0;
                         }
@@ -619,10 +619,10 @@ int main(int argc, const char* argv[])
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        startLogMsgChildReceiver(); 
+        startLogMsgChildReceiver();
         startLogMsgParentReceiver();
 
-        IGroup *group = createIGroup(epa); 
+        IGroup *group = createIGroup(epa);
         initCoven(group,serverConfig);
         group->Release();
         epa.kill();
@@ -641,7 +641,7 @@ int main(int argc, const char* argv[])
             auditDir.set(lf->queryLogDir());
         }
 
-// SNMP logging     
+// SNMP logging
         bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");
         if (serverConfig->getPropBool("SDS/@enableSysLog",true))
             UseSysLogForOperatorMessages();

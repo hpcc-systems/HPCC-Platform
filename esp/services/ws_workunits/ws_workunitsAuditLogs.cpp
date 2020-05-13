@@ -1440,7 +1440,7 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
     else
         request->getParameter("Password", zapInfoReq.password);
 
-    //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
+    //CWsWuFileHelper may need ESP's <Directories> settings to locate log files.
     CWsWuFileHelper helper(directories);
     response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq, thorSlaveLogThreadPoolSize));
     response->setContentType(HTTP_TYPE_OCTET_STREAM);
@@ -1485,7 +1485,7 @@ void CWsWorkunitsSoapBindingEx::downloadWUFiles(IEspContext& context, CHttpReque
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cannot download multiple files without zip");
 
         StringBuffer contentType;
-        //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
+        //CWsWuFileHelper may need ESP's <Directories> settings to locate log files.
         CWsWuFileHelper helper(directories);
         response->setContent(helper.createWUFileIOStream(context, wuid.str(), wuFileOptions, opt, contentType));
         response->setContentType(contentType);

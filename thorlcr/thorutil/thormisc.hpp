@@ -462,7 +462,7 @@ extern graph_decl void GetTempName(StringBuffer &name, const char *prefix=NULL,b
 extern graph_decl void SetTempDir(unsigned slaveNum, const char *name, const char *tempPrefix, bool clear);
 extern graph_decl void ClearDir(const char *dir);
 extern graph_decl void ClearTempDirs();
-extern graph_decl const char *queryTempDir(bool altdisk=false);  
+extern graph_decl const char *queryTempDir(bool altdisk=false);
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);
@@ -495,8 +495,8 @@ extern graph_decl unsigned queryNodeClusterWidth();
 extern graph_decl mptag_t allocateClusterMPTag();     // should probably move into so used by master only
 extern graph_decl void freeClusterMPTag(mptag_t tag); // ""
 
-extern graph_decl IThorException *deserializeThorException(MemoryBuffer &in); 
-void graph_decl serializeThorException(IException *e, MemoryBuffer &out); 
+extern graph_decl IThorException *deserializeThorException(MemoryBuffer &in);
+void graph_decl serializeThorException(IException *e, MemoryBuffer &out);
 
 class CActivityBase;
 interface IPartDescriptor;

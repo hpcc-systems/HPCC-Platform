@@ -115,14 +115,14 @@ void deleteRecursive(const char* path)
         {
             Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
             ForEach(*it)
-            {               
+            {
                 StringBuffer name;
                 it->getName(name);
-                
+
                 StringBuffer childPath(path);
                 childPath.append(PATHSEPCHAR);
                 childPath.append(name);
-                
+
                 deleteRecursive(childPath.str());
             }
         }
@@ -226,7 +226,7 @@ void replaceDotWithHostIp(IPropertyTree* pTree, bool verbose)
                 {
                     String sAttrVal(iAttr->queryValue());
                     String dot(".");
-                    
+
                     if (sAttrVal.equals(dot) || sAttrVal.indexOf(".:") == 0 || sAttrVal.indexOf("http://.:") == 0)
                     {
                         StringBuffer sb(sAttrVal);
@@ -238,21 +238,21 @@ void replaceDotWithHostIp(IPropertyTree* pTree, bool verbose)
                             sb.replaceString(".:", ip.str());
                             ip.remove(ip.length() - 1, 1);
                         }
-                        
+
                         pComponent->setProp(attrName, sb.str());
 
                         if (verbose)
                             fprintf(stdout, "Replacing '.' with host ip '%s' for component/attribute '%s'[@'%s']\n", ip.str(), pComponent->queryName(), attrName);
                     }
                 }
-            }    
+            }
         }
     }
 }
 
-int processRequest(const char* in_cfgname, const char* out_dirname, const char* in_dirname, 
-                   const char* compName, const char* compType, const char* in_filename, 
-                   const char* out_filename, bool generateOutput, const char* ipAddr, 
+int processRequest(const char* in_cfgname, const char* out_dirname, const char* in_dirname,
+                   const char* compName, const char* compType, const char* in_filename,
+                   const char* out_filename, bool generateOutput, const char* ipAddr,
                    bool listComps, bool verbose, bool listallComps, bool listallCompsAllThors, bool listESPServices, bool listdirs,
                    bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly,
                    bool listldaps, bool ldapconfig, bool ldapservers)
@@ -269,7 +269,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   Owned<IConstEnvironment> m_pConstEnvironment;
   Owned<IEnvironment>      m_pEnvironment;
 
-  replaceDotWithHostIp(pEnv, verbose); 
+  replaceDotWithHostIp(pEnv, verbose);
   StringBuffer envXML;
   toXML(pEnv, envXML);
 
@@ -494,7 +494,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     {
       IPropertyTree* pDropZone = &dropZonesInsts->query();
       const char * dropzonePath = pDropZone->queryProp(XML_ATTR_DIRECTORY);
-        
+
       Owned<IPropertyTreeIterator> serverList = pDropZone->getElements("ServerList");
       // Use new serverlist behaviour if present
       if (serverList->first())
@@ -506,7 +506,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
           if (listdropzones)
             out.appendf("%s,%s\n", netAddr, dropzonePath);
           else if (matchDeployAddress(ipAddr, netAddr))
-            out.appendf("%s\n", dropzonePath); 
+            out.appendf("%s\n", dropzonePath);
         }
       }
       // fallback to old dropzone with defined computer
@@ -548,7 +548,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         continue;
 
       dirName.replaceString("[NAME]", name.str());
-      out.appendf("%s=%s\n", pDir->queryProp(XML_ATTR_NAME), dirName.str()); 
+      out.appendf("%s=%s\n", pDir->queryProp(XML_ATTR_NAME), dirName.str());
     }
 
     fprintf(stdout, "%s", out.str());
@@ -703,7 +703,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
         if (pComponent->numChildren())
         {
           Owned<IPropertyTreeIterator> itComp = pComponent->getElements("*");
-        
+
           ForEach(*itComp)
           {
             IPropertyTree* pInst = &itComp->query();
@@ -723,7 +723,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
             }
 	    else
 		port.append(pInst->queryProp("@port"));
-            
+
             if (multiInstances)
               processName.clear().append(pInst->queryName());
 
@@ -739,12 +739,12 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                  STANDARD_OUTDIR, PATHSEPCHAR, pComponent->queryProp("@name"), pComponent->queryProp("@logDir"));
           }
         }
-        else 
+        else
         {
           netAddr.clear().append(pComponent->queryProp("@netAddress"));
           port.clear().append(pComponent->queryProp("@port"));
-          out.appendf("%s,%s,%s,%s,%s%c%s,%s\n", pComponent->queryName(), 
-            pComponent->queryProp("@name"), netAddr.str(), port.str(), 
+          out.appendf("%s,%s,%s,%s,%s%c%s,%s\n", pComponent->queryName(),
+            pComponent->queryProp("@name"), netAddr.str(), port.str(),
               STANDARD_OUTDIR, PATHSEPCHAR, pComponent->queryProp("@name"), pComponent->queryProp("@logDir"));
         }
       }
@@ -923,7 +923,7 @@ int main(int argc, char** argv)
 
   try
   {
-    processRequest(in_cfgname, out_dirname, in_dirname, compName, 
+    processRequest(in_cfgname, out_dirname, in_dirname, compName,
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
       listComps, verbose, listallComps, listallCompsAllThors, listespservices, listdirs, listdropzones, listcommondirs, listMachines,
       validateOnly, listldaps, ldapconfig, ldapservers);

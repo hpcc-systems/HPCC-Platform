@@ -57,7 +57,7 @@ static void cppunit_assert(bool condition, const char *fmt, ...)
 }
 // Do not use: cppunit_cppunit_assert(condition, "string")), as that will print the string twice
 
-class NBcdTest : public CppUnit::TestFixture  
+class NBcdTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(NBcdTest);
         CPPUNIT_TEST(testBcdUninitialized);
@@ -202,7 +202,7 @@ protected:
             }
         }
     }
-    
+
     void testBcdUninitialized()
     {
         // Test uninitialised

@@ -167,7 +167,7 @@ interface IQueryFactory : extends IInterface
 
 class ActivityArray : public CInterface
 {
-    IArrayOf<IActivityFactory> activities; 
+    IArrayOf<IActivityFactory> activities;
     MapIdToActivityIndex hash;
     bool multiInstance;
     bool delayed;
@@ -226,8 +226,8 @@ protected:
 
 public:
     CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
-    ~CActivityFactory() 
-    { 
+    ~CActivityFactory()
+    {
         ForEachItemIn(idx, childQueries)
         {
             childQueries.item(idx).Release();

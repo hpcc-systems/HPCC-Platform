@@ -26,9 +26,9 @@ class CConfigGenEngine : public CDeploymentEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CConfigGenEngine(IEnvDeploymentEngine& envDepEngine, 
-                     IDeploymentCallback& callback, IPropertyTree& process, 
-                     const char* inputDir="", const char* outputDir="", 
+    CConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
+                     IDeploymentCallback& callback, IPropertyTree& process,
+                     const char* inputDir="", const char* outputDir="",
                      const char* instanceType=NULL, bool createIni=false);
 
 protected:

@@ -320,7 +320,7 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
                 continue;
 
             subname.clear().append("executeProduction").append(i+1);
-            
+
             s.clear().append("case ").append(getIntValue(cur.queryChild(0)));
             s.append(": return ").append(subname).append("(crSelf, input);");
             prodcasectx.addQuoted(s);
@@ -369,7 +369,7 @@ bool NlpParseContext::isMatched(IHqlExpression * expr, IAtom * name)
     ForEachItemIn(i, matchedSymbols)
     {
         IHqlExpression & cur = matchedSymbols.item(i);
-        if ((cur.queryChild(0)->queryBody() == expr->queryBody()) && 
+        if ((cur.queryChild(0)->queryBody() == expr->queryBody()) &&
             (cur.queryChild(1)->queryName() == name))
             return true;
     }
@@ -683,7 +683,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKparse, expr, "Parse");
 
     buildActivityFramework(instance);
-    
+
     buildInstancePrefix(instance);
 
     //This will become conditional on the flags....
@@ -720,7 +720,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseExtra(instance->startctx, expr);
     if (options.timeTransforms)
         noteFinishedTiming("compile:PARSE:prepare", startPrepareCycles);
-    
+
     MemoryBuffer buffer;
     cycle_t startCompileCycles = get_cycles_now();
     nlpParse->compileSearchPattern();

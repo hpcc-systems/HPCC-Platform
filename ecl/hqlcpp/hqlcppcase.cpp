@@ -153,7 +153,7 @@ void HqlCppCaseInfo::addPair(IHqlExpression * expr)
     }
 
     pairs.append(*LINK(expr));
-    
+
     if (!compareExpr->queryValue())
     {
         constantCases = false;
@@ -229,7 +229,7 @@ bool HqlCppCaseInfo::buildProcess(BuildCtx & ctx, IExprProcessor & target)
                 else
                     buildGeneralAssign(subctx, target);
             }
-            else 
+            else
             {
                 if (okToAlwaysEvaluateDefault(target))
                     buildChop3Map(subctx, target, test);
@@ -317,7 +317,7 @@ void HqlCppCaseInfo::buildChop3Map(BuildCtx & ctx, IExprProcessor & target, CHql
 void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHqlBoundExpr & test, unsigned start, unsigned end)
 {
     BuildCtx subctx(ctx);
-    
+
     if ((end - start) <= 3)             // (1,2,3) avg(2) cf. (2,2,3) avg(2.3)
     {
         //optimize the case where they all create the same value
@@ -331,7 +331,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHql
                 break;
             }
         }
-        
+
         if (same)
         {
             CompoundBuilder cb(no_or);
@@ -352,7 +352,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHql
             {
                 if (stmt)
                     subctx.selectElse(stmt);
-                
+
                 IHqlExpression * compare = queryCompare(index);
                 OwnedHqlExpr cond  = createCompareExpr(no_eq, test.getTranslatedExpr(), LINK(compare));
                 CHqlBoundExpr bound;
@@ -365,7 +365,7 @@ void HqlCppCaseInfo::buildChop2Map(BuildCtx & ctx, IExprProcessor & target, CHql
     else
     {
         unsigned mid = start + (end - start) / 2;
-        
+
         IHqlExpression * compare = queryCompare(mid);
         OwnedHqlExpr cond  = createCompareExpr(no_lt, test.getTranslatedExpr(), LINK(compare));
         CHqlBoundExpr bound;
@@ -522,10 +522,10 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, IExprProcessor & target, C
         IIdAtom * func;
         switch (ctc)
         {
-        case type_data: 
-            func = searchDataTableAtom; 
+        case type_data:
+            func = searchDataTableAtom;
             break;
-        case type_varstring: 
+        case type_varstring:
             func = searchVStringTableAtom;
             break;
         case type_qstring:
@@ -704,14 +704,14 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHq
 {
     bool isCharCompare = (test->queryType()->getTypeCode() == type_string);
     Owned<ITypeInfo> unsigned1Type = makeIntType(1, false);
-    
+
     LinkedHqlExpr cond = test;
     if (isCharCompare)
         cond.setown(createValue(no_implicitcast, LINK(unsigned1Type), createValue(no_index, makeCharType(), LINK(test), getZero())));
-    
+
     BuildCtx subctx(ctx);
     IHqlStmt * stmt = subctx.addSwitch(cond);
-    
+
     // are all the comparisons against constant values?  If so we optimize it...
     unsigned sameCount = 0;
     ForEachItemIn(idx, pairs)
@@ -732,7 +732,7 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHq
                 cast.setown(createIntValue(data[0], LINK(unsigned1Type)));
             compare.setown(createConstant(cast.getClear()));
         }
-        
+
         bool same = false;
         bool skip = false;
         if (idx != pairs.ordinality()-1)
@@ -746,7 +746,7 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHq
             {
                 skip = true;
 #ifdef _DEBUG
-                throwUnexpected();      // should have been removed as a duplicate 
+                throwUnexpected();      // should have been removed as a duplicate
 #endif
             }
         }
@@ -765,7 +765,7 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHq
         if (!skip)
         {
             subctx.addCase(stmt, compare);
-            
+
             // common up case labels that produce the same result
             if (!same)
             {
@@ -776,7 +776,7 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, IExprProcessor & target, IHq
                 sameCount++;
         }
     }
-    
+
     if (target.canContinue())
     {
         subctx.addDefault(stmt);
@@ -795,7 +795,7 @@ void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, IExprProcessor & target)
     CHqlBoundExpr pureCond;
     if (cond.get())
         translator.buildCachedExpr(*subctx, cond, pureCond);
-    
+
     OwnedHqlExpr testMore;
 
     if (target.canContinue() && (max > MAX_NESTED_CASES))
@@ -851,7 +851,7 @@ void HqlCppCaseInfo::buildGeneralReturn(BuildCtx & ctx)
     CHqlBoundExpr pureCond;
     if (cond.get())
         translator.buildCachedExpr(ctx, cond, pureCond);
-    
+
     for (unsigned idx = 0; idx < max; idx++)
     {
         IHqlExpression & cur = pairs.item(idx);
@@ -985,7 +985,7 @@ IHqlExpression * HqlCppCaseInfo::createResultsExpr(IHqlExpression * matchVar, bo
             areConstant = false;
             areLinear = false;
         }
-        
+
         if (idx > 0)
         {
             if (areSame && (prevValue != value))
@@ -1051,7 +1051,7 @@ void HqlCppCaseInfo::generateCompareVar(BuildCtx & ctx, IHqlExpression * target,
     OwnedHqlExpr compare = createValue(no_order, makeIntType(4, true), test.getTranslatedExpr(), LINK(other));
     translator.buildAssignToTemp(ctx, target, compare);
 }
-    
+
 unsigned HqlCppCaseInfo::getNumPairs()
 {
     return pairs.ordinality();
@@ -1222,7 +1222,7 @@ IHqlExpression * HqlCppCaseInfo::queryReturn(unsigned index)
 {
     return pairs.item(index).queryChild(1);
 }
-        
+
 
 void HqlCppCaseInfo::setCond(IHqlExpression * expr)
 {

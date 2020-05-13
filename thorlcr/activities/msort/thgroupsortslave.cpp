@@ -30,7 +30,7 @@
 #include "thactivityutil.ipp"
 
 
-class CLocalSortSlaveActivity : public CSlaveActivity 
+class CLocalSortSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
@@ -117,7 +117,7 @@ public:
     }
 };
 
-// Sorted 
+// Sorted
 
 class CSortedSlaveActivity : public CSlaveActivity, public CThorSteppable
 {
@@ -125,7 +125,7 @@ class CSortedSlaveActivity : public CSlaveActivity, public CThorSteppable
 
     IHThorSortedArg *helper;
     ICompare *icompare;
-    OwnedConstThorRow prev; 
+    OwnedConstThorRow prev;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
@@ -177,11 +177,11 @@ public:
         return ret.getClear();
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector)
-    { 
+    {
         return input->gatherConjunctions(collector);
     }
     virtual void resetEOF()
-    { 
+    {
         inputStream->resetEOF();
     }
     virtual bool isGrouped() const override { return false; }

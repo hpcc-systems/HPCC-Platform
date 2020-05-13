@@ -415,7 +415,7 @@ private:
             serializeMe(type);
         }
     }
-    
+
     void serializeMe(const RtlTypeInfo *type)
     {
         if (!type->canSerialize())

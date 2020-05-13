@@ -29,7 +29,7 @@ static int compInt(const int* a, const int* b)
         return 0;
     else if(*a > *b)
         return 1;
-    else 
+    else
         return -1;
 }
 
@@ -41,7 +41,7 @@ CXmlDiff::CXmlDiff(IProperties* globals, const char* left, const char* right, IP
     m_filenamesPrinted = false;
 
     m_cfgtree = cfgtree;
-    
+
     if(globals && globals->hasProp("difflimit"))
         m_difflimit = globals->getPropInt("difflimit");
     else
@@ -72,7 +72,7 @@ CXmlDiff::CXmlDiff(IProperties* globals, const char* left, const char* right, IP
         }
     }
 }
-    
+
 bool CXmlDiff::compare()
 {
     const char* left = m_left.str();
@@ -246,7 +246,7 @@ bool CXmlDiff::compare()
             {
                 printDiff("> can't parse %s\n", right);
             }
-            
+
             return false;
         }
 
@@ -291,7 +291,7 @@ bool CXmlDiff::cmpAttributes(IPTree* t1, IPTree* t2, const char* xpathFull, bool
 
     for (a1->first(), a2->first(); a1->isValid() && a2->isValid(); a1->next(),a2->next())
     {
-        if (strcmp(a1->queryName(),a2->queryName()) || 
+        if (strcmp(a1->queryName(),a2->queryName()) ||
                 strcmp(a1->queryValue(),a2->queryValue()))
         {
             diff = true;
@@ -507,7 +507,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                 m_compcache.setValue(keybuf,false);
                 delete[] ptrs1;
                 delete[] ptrs2;
-                return false;           
+                return false;
             }
         }
 
@@ -563,7 +563,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         m_compcache.setValue(keybuf,isEqual);
         return isEqual;
     }
-}   
+}
 
 int CXmlDiff::countNodes(IPropertyTree* t)
 {
@@ -711,7 +711,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                             const char* did2 = ptrs2[j]->queryProp("did");
                             if(did2 && *did2 && strcmp(did, did2) == 0)
                             {
-                                int subdiff = countDiff(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());                                
+                                int subdiff = countDiff(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
                                 diffcount += subdiff;
                                 if(subdiff == 0)
                                 {
@@ -804,13 +804,13 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
             int diffval = ordered_list[ind].first;
             int x = ordered_list[ind].second.first;
             int y = ordered_list[ind].second.second;
-            
+
             if(diffval >= 0 && ptrs1[x] && ptrs2[y])
             {
                 StringBuffer xpathbuf;
                 const char* name = ptrs1[x]->queryName();
                 xpathbuf.appendf("%s/%s", xpath, name?name:"");
-            
+
                 diffcount += diffval; //countDiff(xpathbuf.str(), ptrs1[x], ptrs2[y]);
                 ptrs1[x] = NULL;
                 ptrs2[y] = NULL;
@@ -854,7 +854,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
 
     m_diffcountcache[key] = diffcount;
     return diffcount;
-}   
+}
 
 bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull)
 {
@@ -887,7 +887,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
     }
 
     const char* name1 = t1->queryName();
-    const char* name2 = t2->queryName();    
+    const char* name2 = t2->queryName();
     // If their tag names are not the same, print out the whole trees as their difference.
     if((name1 && !name2) || (!name1 && name2) || (name1 && name2 && strcmp(name1, name2) != 0))
     {
@@ -982,7 +982,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                         {
                             StringBuffer xpathbuf(xpath);
                             xpathbuf.append("/").append(name1);
-                            
+
                             StringBuffer xpathFullBuf(xpathFull);
                             xpathFullBuf.append("/").append(name1);
                             StringBuffer attrString;
@@ -1055,7 +1055,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                         {
                             StringBuffer xpathbuf(xpath);
                             xpathbuf.append("/").append(name1);
-                            
+
                             StringBuffer xpathFullBuf(xpathFull);
                             xpathFullBuf.append("/").append(name1);
                             StringBuffer attrString;
@@ -1120,7 +1120,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                         {
                             StringBuffer xpathbuf(xpath);
                             xpathbuf.append("/").append(name1);
-                            
+
                             StringBuffer xpathFullBuf(xpathFull);
                             xpathFullBuf.append("/").append(name1);
                             StringBuffer attrString;
@@ -1288,7 +1288,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                                 getAttrString(ptrs2[j], attrString);
                                 if(attrString.length())
                                     xpathFullBuf.appendf("[%s]", attrString.str());
-                                
+
                                 diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
                                 ptrs1[i] = NULL;
                                 ptrs2[j] = NULL;
@@ -1360,7 +1360,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
         getAttrString(t2, attrString);
         if(attrString.length())
             xpathFullBuf.appendf("[%s]", attrString.str());
-        
+
         printPtree("> ", xpath, t2, xpathFullBuf.str());
         return false;
     }
@@ -1380,7 +1380,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
     }
 
   return isEqual;
-}   
+}
 
 void CXmlDiff::printPtree(const char* prefix, const char* xpath, IPropertyTree* t, const char* xpathFull)
 {

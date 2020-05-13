@@ -49,7 +49,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 
 MODULE_EXIT()
-{ 
+{
     bufferManager->Release();
 }
 
@@ -63,7 +63,7 @@ ServerIdentifier myNode;
 
 //---------------------------------------------------------------------------------------------
 
-void queue_t::set_queue_size(unsigned int queue_s) 
+void queue_t::set_queue_size(unsigned int queue_s)
 {
     queue_size = queue_s;
     element_count = queue_size;
@@ -74,13 +74,13 @@ void queue_t::set_queue_size(unsigned int queue_s)
     last = 0;
 }
 
-queue_t::queue_t(unsigned int queue_s) 
+queue_t::queue_t(unsigned int queue_s)
 {
     set_queue_size(queue_s);
     signal_free_sl = 0;
 }
 
-queue_t::queue_t() 
+queue_t::queue_t()
 {
     signal_free_sl = 0;
     queue_size = 0;
@@ -91,22 +91,22 @@ queue_t::queue_t()
     last = 0;
 }
 
-queue_t::~queue_t() 
+queue_t::~queue_t()
 {
-    delete [] elements; 
+    delete [] elements;
 }
 
-int queue_t::free_slots() 
+int queue_t::free_slots()
 {
     int res=0;
-    while (!res) 
+    while (!res)
     {
         c_region.enter();
         res = queue_size - active_buffers;
-        if (!res) 
+        if (!res)
             signal_free_sl++;
         c_region.leave();
-        if (!res) 
+        if (!res)
         {
             while (!free_sl.wait(3000))
             {
@@ -143,21 +143,21 @@ DataBuffer *queue_t::pop(bool block)
 {
     if (!data_avail.wait(block ? INFINITE : 0))
         return nullptr;
-    DataBuffer *ret = NULL; 
+    DataBuffer *ret = NULL;
     bool must_signal;
     {
         CriticalBlock b(c_region);
-        if (!active_buffers) 
+        if (!active_buffers)
             return NULL;
         ret = elements[first].data;
         first = (first + 1) % element_count;
         active_buffers--;
         must_signal = signal_free_sl>0;
-        if (must_signal) 
+        if (must_signal)
             signal_free_sl--;
     }
     free_space.signal();
-    if (must_signal) 
+    if (must_signal)
         free_sl.signal();
     return ret;
 }
@@ -213,7 +213,7 @@ bool queue_t::dataQueued(const void *key, PKT_CMP_FUN pkCmpFn)
 {
     bool ret = false;
     CriticalBlock b(c_region);
-    if (active_buffers) 
+    if (active_buffers)
     {
         unsigned ix = first;
         for (;;)
@@ -228,7 +228,7 @@ bool queue_t::dataQueued(const void *key, PKT_CMP_FUN pkCmpFn)
                 ix = 0;
             if (ix==last)
                 break;
-        }           
+        }
     }
     return ret;
 }
@@ -277,7 +277,7 @@ void setLinuxThreadPriority(int level)
     int policy;
     sched_param param;
     int rc;
-    if (( rc = pthread_getschedparam(self, &policy, &param)) != 0) 
+    if (( rc = pthread_getschedparam(self, &policy, &param)) != 0)
         DBGLOG("pthread_getschedparam error: %d", rc);
     if (level < 0)
         UNIMPLEMENTED;
@@ -291,7 +291,7 @@ void setLinuxThreadPriority(int level)
         policy = SCHED_RR;
         param.sched_priority = level;
     }
-    if(( rc = pthread_setschedparam(self, policy, &param)) != 0) 
+    if(( rc = pthread_setschedparam(self, policy, &param)) != 0)
         DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "i TID=%i", rc, policy, param.sched_priority, (unsigned __int64) self, threadLogID());
     else
         DBGLOG("priority set id=%" I64F "i policy=%i pri=%i TID=%i", (unsigned __int64) self, policy, param.sched_priority, threadLogID());
@@ -323,7 +323,7 @@ If you do need global:
   Outbound packet says source node, target node size
   Reply says source,target,size
   Cop allows immediately if nothing inflight between those pairs
-  Cop assumes completion 
+  Cop assumes completion
   Cop redundancy
    - a backup cop is listening in?
      - use multicast for requests and replies?
@@ -331,7 +331,7 @@ If you do need global:
    - backup cop just needs heartbeat from active cop
    - permission expires
    - multiple cops for blocks of targets?
-    - but I want global view of who is sending 
+    - but I want global view of who is sending
 
 
 */

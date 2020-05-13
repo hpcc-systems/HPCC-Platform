@@ -26,7 +26,7 @@ class CRoxieDeploymentEngine : public CDeploymentEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieDeploymentEngine(IEnvDeploymentEngine& envDepEngine, 
+    CRoxieDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
                           IDeploymentCallback& callback,
                           IPropertyTree& process);
 

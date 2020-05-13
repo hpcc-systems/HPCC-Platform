@@ -24,7 +24,7 @@ typedef unsigned short KEYRECSIZE_T;
 #include "jlzw.hpp"
 #define USE_RANDROWDIFF true
 
-class KeyCompressor 
+class KeyCompressor
 {
 public:
     KeyCompressor() {}

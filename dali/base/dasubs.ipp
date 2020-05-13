@@ -24,15 +24,15 @@
 #define da_decl DECL_IMPORT
 #endif
 
-interface ISubscription: extends IInterface             
+interface ISubscription: extends IInterface
 {
     virtual const MemoryAttr &queryData() = 0;
-    virtual void notify(MemoryBuffer &returndata) = 0; 
+    virtual void notify(MemoryBuffer &returndata) = 0;
     virtual void abort()=0; // called when daliserver closes
     virtual bool aborted()=0; // returns true if in an aborted state (prior to being removed)
 };
 
-interface ISubscriptionManager: extends IInterface       
+interface ISubscriptionManager: extends IInterface
 {
     virtual void add(ISubscription *subs,SubscriptionId id) = 0;  // takes ownership
     virtual void remove(SubscriptionId id) = 0;
@@ -68,7 +68,7 @@ On initialization coven side:
    registerSubscriptionManager(SDS_PUBLISHER,SdsSubscriptionManager);
 
 On usage client side:
-   scsconn->subscribe(xpath,mynotify) 
+   scsconn->subscribe(xpath,mynotify)
 causes:
    ISubscription *sub = new SDSsub(xpath,notify,...) // wrapper
    querySubscriptionManager(SDS_PUBLISHER)->add(sub);

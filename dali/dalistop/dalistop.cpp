@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
                 nowait = stricmp(argv[2],"/nowait")==0;
             printf("Stopping Dali Server on %s\n",argv[1]);
 
-            Owned<IGroup> group = createIGroup(1,&ep); 
+            Owned<IGroup> group = createIGroup(1,&ep);
             initClientProcess(group, DCR_DaliStop);
             Owned<ICommunicator> comm = createCommunicator(group);
             CMessageBuffer mb;

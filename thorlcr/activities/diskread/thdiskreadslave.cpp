@@ -91,7 +91,7 @@ protected:
         return ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
     }
 public:
-    CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
+    CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL)
         : CDiskReadSlaveActivityBase(_container, _helper)
     {
         helper = (IHThorDiskReadArg *)queryHelper();
@@ -203,7 +203,7 @@ public:
 
 /////////////////////////////////////////////////
 
-CDiskRecordPartHandler::CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &_activity) 
+CDiskRecordPartHandler::CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &_activity)
     : CDiskPartHandlerBase(_activity), activity(_activity), outBuilder(nullptr)
 {
     outBuilder.setAllocator(activity.queryRowAllocator());
@@ -219,13 +219,13 @@ void CDiskRecordPartHandler::getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescri
 {
     if (!partDesc->queryProperties().hasProp("@size"))
     {
-        info.totalRowsMin = 0;          
+        info.totalRowsMin = 0;
         info.totalRowsMax = -1;
         info.unknownRowsOutput = true;
         return;
     }
     offset_t filesize = partDesc->queryProperties().getPropInt64("@size");
-    if (activity.isFixedDiskWidth) 
+    if (activity.isFixedDiskWidth)
     {
         if (compressed && !blockCompressed)
         {
@@ -240,7 +240,7 @@ void CDiskRecordPartHandler::getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescri
     }
     else
     {
-        info.totalRowsMin = filesize?1:0;  
+        info.totalRowsMin = filesize?1:0;
         info.totalRowsMax = activity.diskRowMinSz?(filesize/activity.diskRowMinSz):filesize;
     }
 }
@@ -425,7 +425,7 @@ class CDiskReadSlaveActivity : public CDiskReadSlaveActivityRecord
     {
         CDiskReadSlaveActivity &activity;
 public:
-        CDiskPartHandler(CDiskReadSlaveActivity &_activity) 
+        CDiskPartHandler(CDiskReadSlaveActivity &_activity)
             : CDiskRecordPartHandler(_activity), activity(_activity)
         {
         }
@@ -514,7 +514,7 @@ public:
             CDiskRecordPartHandler::getMetaInfo(info, partDesc);
             if (activity.helper->transformMayFilter() || activity.hasMatchFilter || (TDRkeyed & activity.helper->getFlags()))
             {
-                info.totalRowsMin = 0; // all bets off! 
+                info.totalRowsMin = 0; // all bets off!
                 info.unknownRowsOutput = info.canReduceNumRows = true;
                 info.byteTotal = (offset_t)-1;
             }
@@ -540,7 +540,7 @@ public:
         {
             return rcSz->getRecordSize(rec) + 1;
         }
-        virtual size32_t getFixedSize() const 
+        virtual size32_t getFixedSize() const
         {
             return rcSz->getFixedSize()?(rcSz->getFixedSize()+1):0;
         }
@@ -695,7 +695,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
         const void * nextrow;
 
     public:
-        CNormalizePartHandler(CDiskNormalizeSlave &_activity) 
+        CNormalizePartHandler(CDiskNormalizeSlave &_activity)
             : CDiskRecordPartHandler(_activity), activity(_activity)
         {
             nextrow = NULL;
@@ -721,7 +721,7 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
                     while (activity.helper->next())
                     {
                         size32_t sz = activity.helper->transform(outBuilder.ensureRow());
-                        if (sz) 
+                        if (sz)
                             return outBuilder.finalizeRowClear(sz);
                     }
                     prefetchDone();
@@ -742,14 +742,14 @@ class CDiskNormalizeSlave : public CDiskReadSlaveActivityRecord
             eoi = true;
             return NULL;
         }
-  
+
     };
 
     IHThorDiskNormalizeArg *helper;
     IRowStream *out = nullptr;
 
 public:
-    CDiskNormalizeSlave(CGraphElementBase *_container) 
+    CDiskNormalizeSlave(CGraphElementBase *_container)
         : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskNormalizeArg *)queryHelper();
@@ -850,7 +850,7 @@ public:
                 if (!activity.queryAbortSoon())
                 {
                     OwnedConstThorRow row = CDiskRecordPartHandler::nextRow();
-                    if (row) 
+                    if (row)
                         return row.getClear();
                 }
             }
@@ -880,7 +880,7 @@ class CDiskAggregateSlave : public CDiskReadSlaveActivityRecord
     CPartialResultAggregator aggregator;
 
 public:
-    CDiskAggregateSlave(CGraphElementBase *_container) 
+    CDiskAggregateSlave(CGraphElementBase *_container)
         : CDiskReadSlaveActivityRecord(_container), aggregator(*this)
     {
         helper = (IHThorDiskAggregateArg *)queryHelper();
@@ -1104,7 +1104,7 @@ CActivityBase *createDiskCountSlave(CGraphElementBase *container)
     return new CDiskCountSlave(container);
 }
 
-class CDiskGroupAggregateSlave 
+class CDiskGroupAggregateSlave
   : public CDiskReadSlaveActivityRecord, implements IHThorGroupAggregateCallback
 {
     typedef CDiskReadSlaveActivityRecord PARENT;
@@ -1116,11 +1116,11 @@ class CDiskGroupAggregateSlave
     Owned<IEngineRowAllocator> allocator;
     bool merging;
     Owned<IHashDistributor> distributor;
-    
+
 public:
     IMPLEMENT_IINTERFACE_USING(CDiskReadSlaveActivityRecord);
 
-    CDiskGroupAggregateSlave(CGraphElementBase *_container) 
+    CDiskGroupAggregateSlave(CGraphElementBase *_container)
         : CDiskReadSlaveActivityRecord(_container)
     {
         helper = (IHThorDiskGroupAggregateArg *)queryHelper();

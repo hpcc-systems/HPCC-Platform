@@ -211,7 +211,7 @@ typedef CIArrayOf<CColumnFilter> ColumnFilterArray;
 class CIndirectResultSet : public CResultSetBase
 {
 public:
-    CIndirectResultSet(IExtendedNewResultSet * _parent) 
+    CIndirectResultSet(IExtendedNewResultSet * _parent)
         : parent(_parent), meta(static_cast<const CResultSetMetaData &>(_parent->getMetaData()))
     {
     }
@@ -260,9 +260,9 @@ public:
     {
         parent->onClose();
     }
-    virtual IFvDataSource * queryDataSource() 
-    { 
-        return parent->queryDataSource(); 
+    virtual IFvDataSource * queryDataSource()
+    {
+        return parent->queryDataSource();
     }
 
 protected:

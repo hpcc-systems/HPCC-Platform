@@ -21,7 +21,7 @@
 
 class CConfigEngCallback: public CInterface, implements IDeploymentCallback
 {
-    virtual void printStatus(IDeployTask* task)  
+    virtual void printStatus(IDeployTask* task)
     {
         if (!m_verbose || !task || !task->isProcessed())
             return;
@@ -30,12 +30,12 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         const char* name = task->getCompName();
         if (!name || !*name)
             return;
-        
+
         const char* instance = task->getInstanceName();
         const char* caption = task->getCaption();
         const char* sourceFile = task->getFileSpec(DT_SOURCE);
         const char* targetFile = task->getFileSpec(DT_TARGET);
-    
+
         offset_t size = 0;
 
         try
@@ -48,7 +48,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
             e->Release();
         }
 
-        StringBuffer s("0"); 
+        StringBuffer s("0");
         if (size>0)
         {
             // format size into: 12,345,456
@@ -59,14 +59,14 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
         }
 
         sb.appendf("\nComponent: %s-%s\nAction: %s\nSource Path:%s\nDestination Path:%s\nTarget Size:%s\n", name, instance, caption, sourceFile, targetFile, s.str());
-        
+
         StringBuffer sbErr(task->getErrorString());
         StringBuffer sbWarnings(task->getWarnings());
         StringBuffer sbErrCode;
 
         if (task->getErrorCode() > 0)
           sbErrCode.appendlong(task->getErrorCode());
-        
+
         if (sbErr.length() == 0 && sbWarnings.length() == 0 && sbErrCode.length() == 0)
             sb.append("Result: Success\n");
         else
@@ -79,7 +79,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
 
         fprintf(stdout, "%s", sb.str());
     }
-    virtual void printStatus(StatusType type, const char* processType, const char* comp, 
+    virtual void printStatus(StatusType type, const char* processType, const char* comp,
         const char* instance, const char* msg=NULL, ...)  __attribute__((format(printf,6,7)))
     {
       if (!m_verbose) return;
@@ -94,7 +94,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
             }
             else
                 *buf = '\0';
-            
+
             StringBuffer sb;
 
             if (processType)
@@ -105,7 +105,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
                 sb.append("Instance: ").append(instance).append("\n");
             if (msg)
                 sb.append("Message: ").append(buf).append("\n");
-        
+
         if (STATUS_ERROR == type)
             fprintf(stderr, "%s", sb.str());
         else
@@ -117,7 +117,7 @@ class CConfigEngCallback: public CInterface, implements IDeploymentCallback
     virtual void setEnvironmentUpdated(){}
     virtual void getSshAccountInfo(StringBuffer& userid, StringBuffer& password)const{}
     //the following throws exception on abort, returns true for ignore
-    virtual bool processException(const char* processType, const char* process, const char* instance, 
+    virtual bool processException(const char* processType, const char* process, const char* instance,
         IException* e, const char* szMessage=NULL, const char* szCaption=NULL,
         IDeployTask* pTask = NULL )
     {

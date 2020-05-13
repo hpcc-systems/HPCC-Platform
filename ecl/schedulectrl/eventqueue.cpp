@@ -71,7 +71,7 @@ public:
         channel.setown(qconn->open(queueName.str()));
         PROGLOG("Scheduler[%s]: listening on queue %s", serverName, queueName.str());
     }
-    
+
     virtual int run();
 
     void stop()
@@ -178,7 +178,7 @@ private:
 class CScheduleEventProcessor : public CInterface, implements IScheduleEventProcessor
 {
 public:
-    CScheduleEventProcessor(char const *_serverName, IScheduleEventExecutor * _executor, IExceptionHandler * _handler) 
+    CScheduleEventProcessor(char const *_serverName, IScheduleEventExecutor * _executor, IExceptionHandler * _handler)
       : serverName(_serverName), executor(_executor), handler(_handler)
     {
         schedule.setown(getSubscribingScheduleReader(_serverName, NULL, NULL));

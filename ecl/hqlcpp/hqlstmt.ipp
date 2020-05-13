@@ -29,7 +29,7 @@ class HqlStmt : public CSingleThreadSimpleInterfaceOf<IHqlStmt>
 {
 public:
     HqlStmt(StmtKind _kind, HqlStmts * _container);
-    
+
     virtual StmtKind                getStmt() const override;
     virtual StringBuffer &          getTextExtra(StringBuffer & out) const override;
     virtual bool                    isIncluded() const override;
@@ -133,7 +133,7 @@ protected:
 
 
 #ifdef _WIN32
-#pragma warning( pop ) 
+#pragma warning( pop )
 #endif
 
 
@@ -241,7 +241,7 @@ public:
     virtual AssocKind   getKind()           { return AssocExpr; }
 };
 
-    
+
 struct HQLCPP_API HqlSimpleDefinedValue : public HqlDefinedValue
 {
 public:

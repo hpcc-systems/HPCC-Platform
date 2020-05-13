@@ -36,7 +36,7 @@
 #include "dalienv.hpp"
 #include "jpqueue.hpp"
 
-class LFWRAPPER_API LogicFileWrapper : public CInterface  
+class LFWRAPPER_API LogicFileWrapper : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -48,17 +48,17 @@ public:
 
 };
 
-struct ErrorReceiver: public CInterface, implements IErrorListener 
+struct ErrorReceiver: public CInterface, implements IErrorListener
 {
-    IMPLEMENT_IINTERFACE;    
-    
+    IMPLEMENT_IINTERFACE;
+
     virtual void reportError(const char* err,...) __attribute__((format(printf,2,3)))
     {
         va_list args;
         va_start(args, err);
         buf.valist_appendf(err, args);
         va_end(args);
-        
+
     }
 
     bool hasErrors()
@@ -76,7 +76,7 @@ struct ErrorReceiver: public CInterface, implements IErrorListener
 };
 struct DeleteTask: public CInterface, implements ITask
 {
-    IMPLEMENT_IINTERFACE;    
+    IMPLEMENT_IINTERFACE;
     DeleteTask(IDistributedFilePart* _part): part(_part)
     {
     }
@@ -126,7 +126,7 @@ struct DeleteTask: public CInterface, implements ITask
 };
 struct CompressTask: public CInterface, implements ITask
 {
-    IMPLEMENT_IINTERFACE;    
+    IMPLEMENT_IINTERFACE;
     CompressTask(IDistributedFilePart* _part): part(_part)
     {
     }

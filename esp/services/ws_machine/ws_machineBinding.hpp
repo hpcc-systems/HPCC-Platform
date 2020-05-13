@@ -32,12 +32,12 @@
 class CWsMachineSoapBindingEx : public Cws_machineSoapBinding
 {
 public:
-   CWsMachineSoapBindingEx(IPropertyTree* cfg, const char *bindname/*=NULL*/, 
+   CWsMachineSoapBindingEx(IPropertyTree* cfg, const char *bindname/*=NULL*/,
                            const char *procname/*=NULL*/);
 
-   virtual ~CWsMachineSoapBindingEx(){} 
+   virtual ~CWsMachineSoapBindingEx(){}
 
-    virtual int getMethodDescription(IEspContext &context, const char *serv, 
+    virtual int getMethodDescription(IEspContext &context, const char *serv,
                                     const char *method, StringBuffer &page)
     {
         if (Utils::strcasecmp(method, "GetMachineInfo")==0)
@@ -46,7 +46,7 @@ public:
         }
         return 0;
     }
-    virtual int getMethodHelp(IEspContext &context, const char *serv, 
+    virtual int getMethodHelp(IEspContext &context, const char *serv,
                              const char *method, StringBuffer &page)
     {
         if (Utils::strcasecmp(method, "GetMachineInfo")==0)

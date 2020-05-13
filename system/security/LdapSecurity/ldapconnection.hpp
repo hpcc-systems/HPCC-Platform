@@ -246,7 +246,7 @@ public:
     StringBuffer m_basedn;
     SecResourceType m_rtype;
     StringBuffer m_rname;
-    
+
     StringBuffer m_account_name;
     ACT_TYPE     m_account_type;
     int          m_allows;

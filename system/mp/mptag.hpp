@@ -21,11 +21,11 @@
 #define DEFTAG(t)   t ,
 #define TAGENUM     enum mptag_t { MPTAGbase = 100,
 #define TAGENUMEND  MPTAGend };
-#define DEFSTDTAG(t,v) t = v, 
+#define DEFSTDTAG(t,v) t = v,
 
 #endif
 
-TAGENUM     
+TAGENUM
 
     DEFTAG ( MPTAG_DALI_LOCK_REQUEST )
     DEFTAG ( MPTAG_DALI_SESSION_REQUEST )
@@ -105,7 +105,7 @@ interface IMPtagAllocator: extends IInterface
 {
     virtual mptag_t alloc()=0;
     virtual void release(mptag_t tag)=0;
-}; 
+};
 
 extern mp_decl IMPtagAllocator *createMPtagRangeAllocator(mptag_t base,unsigned count);
 

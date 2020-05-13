@@ -92,7 +92,7 @@ protected:
 
 class ECLRTL_API RtlLimitedFixedDatasetBuilder : public RtlFixedDatasetBuilder
 {
-public: 
+public:
     RtlLimitedFixedDatasetBuilder(unsigned _recordSize, unsigned _maxRows, DefaultRowCreator _rowCreator, IResourceContext *_ctx);
 
     byte * createRow();
@@ -218,7 +218,7 @@ public:
 class ECLRTL_API RtlDynamicRowBuilder : implements RtlRowBuilderBase
 {
 public:
-    inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator) : rowAllocator(_rowAllocator) 
+    inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator) : rowAllocator(_rowAllocator)
     {
         if (rowAllocator)
             create();
@@ -236,7 +236,7 @@ public:
     {
         return rowAllocator;
     }
-    inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator, bool createInitial) : rowAllocator(_rowAllocator) 
+    inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator, bool createInitial) : rowAllocator(_rowAllocator)
     {
         if (rowAllocator && createInitial)
             create();
@@ -248,8 +248,8 @@ public:
     }
     //This is here to allow group aggregates to perform resizing.
     inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator, size32_t _maxLength, void * _self) : rowAllocator(_rowAllocator)
-    { 
-        self = static_cast<byte *>(_self); 
+    {
+        self = static_cast<byte *>(_self);
         maxLength = _maxLength;
     }
     inline ~RtlDynamicRowBuilder() { if (self) { rowAllocator->releaseRow(self); } }
@@ -258,8 +258,8 @@ public:
 
     inline RtlDynamicRowBuilder & ensureRow() { if (!self) create(); return *this; }
     inline bool exists() { return (self != NULL); }
-    inline const void * finalizeRowClear(size32_t len) 
-    { 
+    inline const void * finalizeRowClear(size32_t len)
+    {
         const void * result = rowAllocator->finalizeRow(len, self, maxLength);
         self = NULL;
         maxLength = 0;
@@ -289,8 +289,8 @@ class ECLRTL_API RtlStaticRowBuilder : extends RtlRowBuilderBase
 {
 public:
     inline RtlStaticRowBuilder(void * _self, size32_t _maxLength)
-    { 
-        self = static_cast<byte *>(_self); 
+    {
+        self = static_cast<byte *>(_self);
         maxLength = _maxLength;
     }
 
@@ -316,7 +316,7 @@ class ECLRTL_API RtlNestedRowBuilder : extends RtlRowBuilderBase
 public:
     inline RtlNestedRowBuilder(ARowBuilder & _container, size32_t _offset, size32_t _suffix)
         : container(_container), offset(_offset), suffix(_suffix)
-    { 
+    {
         self = container.row()+offset;
     }
 

@@ -319,7 +319,7 @@ private:
     {
         if (roxieAbortMonitor)
         {
-            try 
+            try
             {
                 roxieAbortMonitor->checkForAbort();//throws
             }
@@ -651,7 +651,7 @@ interface IWSCAsyncFor: public IInterface
     virtual ConstPointerArray & getInputRows() = 0;
     virtual IWSCHelper * getMaster() = 0;
     virtual IEngineRowAllocator * getOutputAllocator() = 0;
-    
+
     virtual void For(unsigned num,unsigned maxatonce,bool abortFollowingException=false,bool shuffled=false) = 0;
     virtual void Do(unsigned idx=0)=0;
 };
@@ -776,7 +776,7 @@ private:
     virtual void createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows);
     virtual void createHttpPostQuery(IXmlWriterExt &xmlWriter, ConstPointerArray &inputRows, bool appendRequestToName, bool appendEncodeFlag);
     virtual void processQuery(ConstPointerArray &inputRows);
-    
+
     //Thread
     virtual int run();
 public:
@@ -921,7 +921,7 @@ public:
                 ++ipath;
             inputpath.set(ipath);
         }
-        
+
         service.set(s.setown(helper->getService()));
         service.trim();
 
@@ -1125,11 +1125,11 @@ protected:
             error.setown(e);
     }
     void toXML(const byte * self, IXmlWriterExt & out) { CriticalBlock block(toXmlCrit); helper->toXML(self, out); }
-    size32_t transformRow(ARowBuilder & rowBuilder, IColumnProvider * row) 
-    { 
-        CriticalBlock block(transformCrit); 
+    size32_t transformRow(ARowBuilder & rowBuilder, IColumnProvider * row)
+    {
+        CriticalBlock block(transformCrit);
         NullDiskCallback callback;
-        return rowTransformer->transform(rowBuilder, row, &callback); 
+        return rowTransformer->transform(rowBuilder, row, &callback);
     }
     unsigned onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { CriticalBlock block(onfailCrit); return callHelper->onFailTransform(rowBuilder, left, e); }
 
@@ -1289,7 +1289,7 @@ void CWSCHelperThread::createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointer
 
     xmlWriter.outputXmlns("soap", "http://schemas.xmlsoap.org/soap/envelope/");
     if (master->flags & SOAPFencoding)
-    {   //SOAP RPC/encoded.  'Encoded' usage includes type encoding 
+    {   //SOAP RPC/encoded.  'Encoded' usage includes type encoding
         xmlWriter.outputXmlns("xsd", "http://www.w3.org/2001/XMLSchema");
         xmlWriter.outputXmlns("xsi", "http://www.w3.org/2001/XMLSchema-instance");
     }
@@ -1508,7 +1508,7 @@ private:
     {
         if (roxieAbortMonitor)
         {
-            try 
+            try
             {
                 roxieAbortMonitor->checkForAbort();//throws
             }
@@ -1767,7 +1767,7 @@ private:
 
                         length := 0
                         read chunk-size, chunk-extension (if any) and CRLF
-                        while (chunk-size > 0) 
+                        while (chunk-size > 0)
                         {
                             read chunk-data and CRLF
                             append chunk-data to entity-body
@@ -2070,7 +2070,7 @@ public:
                     {
 #ifdef _USE_OPENSSL
                         Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
-                        if (ssock) 
+                        if (ssock)
                         {
                             checkTimeLimitExceeded(&remainingMS);
                             int status = ssock->secure_connect();
@@ -2110,7 +2110,7 @@ public:
                         throw;
                     }
 
-                    do 
+                    do
                     {
                         idx++;  // try next socket not blacklisted
                         if (idx==master->urlArray.ordinality())

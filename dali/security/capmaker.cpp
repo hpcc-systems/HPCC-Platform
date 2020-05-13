@@ -35,7 +35,7 @@ static unsigned csvread(IIOStream &stream, char *dst, unsigned max, bool stopEOL
     char *p = dst;
     char c;
     for (;;)
-    { 
+    {
         if (!stream.read(1, &c))
             return 0;
         else
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
             if (0!=stricmp(argv[1]+1, "local") || argc<5)
             {
                 usage(argv[0]);
-                return 0;           
+                return 0;
             }
             DaliClientRole roleType = CSystemCapability::decodeRole(argv[2]);
             if (DCR_Unknown == roleType)

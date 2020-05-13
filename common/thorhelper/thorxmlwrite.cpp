@@ -84,7 +84,7 @@ void CommonFieldProcessor::processQString(unsigned len, const char *value, const
     processString(len, temp, field);
 }
 void CommonFieldProcessor::processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
-{   
+{
     if (trim)
         len = rtlTrimUtf8StrLen(len, value);
     outputXmlUtf8(len, value, NULL, result);
@@ -107,7 +107,7 @@ bool CommonFieldProcessor::processBeginRow(const RtlFieldInfo * field)
     result.append('{');
     return true;
 }
-void CommonFieldProcessor::processEndSet(const RtlFieldInfo * field) 
+void CommonFieldProcessor::processEndSet(const RtlFieldInfo * field)
 {
     result.append(']');
 }

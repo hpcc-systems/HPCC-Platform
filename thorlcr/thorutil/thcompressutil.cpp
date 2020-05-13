@@ -28,7 +28,7 @@ size32_t ThorCompress(const void * src, size32_t srcSz, void * dest, size32_t de
         if(compressor->write(src, srcSz)==srcSz)
         {
             compressor->close();
-            memcpy(dest, &srcSz, sizeof(size32_t)); 
+            memcpy(dest, &srcSz, sizeof(size32_t));
             return compressor->buflen() + sizeof(size32_t);
         }
     }
@@ -79,8 +79,8 @@ size32_t ThorExpand(const void * src, size32_t srcSz, MemoryBuffer & dest)
     size32_t sz;
     memcpy(&sz, src, sizeof(size32_t));
     size32_t bufSz = (sz == 0) ? (srcSz-sizeof(size32_t)) : sz;
-    void * buf = dest.reserve(bufSz);   
-    return ThorExpand(src, srcSz, buf, bufSz); 
+    void * buf = dest.reserve(bufSz);
+    return ThorExpand(src, srcSz, buf, bufSz);
 }
 
 size32_t ThorExpand(MemoryBuffer & src, MemoryBuffer & dest)
@@ -96,6 +96,6 @@ size32_t ThorExpand(const void * src, size32_t srcSz, CLargeMemoryAllocator &mem
     size32_t sz;
     memcpy(&sz, src, sizeof(size32_t));
     size32_t bufSz = (sz == 0) ? (srcSz-sizeof(size32_t)) : sz;
-    byte * buf = mem.alloc(bufSz);  
-    return ThorExpand(src, srcSz, buf, bufSz); 
+    byte * buf = mem.alloc(bufSz);
+    return ThorExpand(src, srcSz, buf, bufSz);
 }

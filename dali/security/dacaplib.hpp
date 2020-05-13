@@ -22,16 +22,16 @@
 #include "dasess.hpp"
 
 #ifdef DACAP_LINKED_IN
- // only use following routine linked in 
+ // only use following routine linked in
  // (i.e. not from the DLL which is seisint only)
 
 extern  unsigned importDaliCapabilityXML_basic(const char *filename);
 // this is the basic (single dali server node verification) import
 // Note this routine  *does not* transfer data to Dali directly as dali can't start until it is imported!!
-// This is inherently weak (there is no mechanism to ensure previous dali server node is removed) 
+// This is inherently weak (there is no mechanism to ensure previous dali server node is removed)
 // We should adopt full client node authentication scheme if we want to ensure not broken
 
-#define dacaplib_decl 
+#define dacaplib_decl
 #endif
 
 #ifndef dacaplib_decl

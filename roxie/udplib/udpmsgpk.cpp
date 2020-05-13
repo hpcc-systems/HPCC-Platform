@@ -44,7 +44,7 @@ RelaxedAtomic<unsigned> unwantedDiscarded;
 //
 typedef DataBuffer * data_buffer_ptr;
 
-int g_sequence_compare(const void *arg1, const void *arg2 ) 
+int g_sequence_compare(const void *arg1, const void *arg2 )
 {
     DataBuffer *dataBuff1 =  *(DataBuffer **) arg1;
     DataBuffer *dataBuff2 =  *(DataBuffer **) arg2;
@@ -70,7 +70,7 @@ class PackageSequencer : public CInterface, implements IInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    PackageSequencer() 
+    PackageSequencer()
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: PackageSequencer::PackageSequencer this=%p", this);
@@ -81,7 +81,7 @@ public:
         lastContiguousPacket = NULL;
     }
 
-    ~PackageSequencer() 
+    ~PackageSequencer()
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: PackageSequencer::~PackageSequencer this=%p", this);
@@ -93,7 +93,7 @@ public:
             goer->Release();
         }
     }
-    
+
     DataBuffer *next(DataBuffer *after)
     {
         dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
@@ -148,7 +148,7 @@ public:
         }
         else
         {
-            finger = firstPacket; 
+            finger = firstPacket;
             prev = NULL;
         }
         while (finger)
@@ -268,7 +268,7 @@ public:
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: CMessageUnpackCursor::CMessageUnpackCursor this=%p", this);
-        pkSequencer = _pkSqncr; 
+        pkSequencer = _pkSqncr;
         dataBuff = pkSequencer->next(NULL);
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         current_pos = sizeof(UdpPacketHeader) + pkSequencer->getHeaderSize() + sizeof(unsigned short); // YUK - code neads cleaning!
@@ -286,8 +286,8 @@ public:
                 break;
         }
     }
-    
-    ~CMessageUnpackCursor() 
+
+    ~CMessageUnpackCursor()
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: CMessageUnpackCursor::~CMessageUnpackCursor this=%p", this);
@@ -304,19 +304,19 @@ public:
         return true;
     }
 
-    virtual const void *getNext(int length) 
+    virtual const void *getNext(int length)
     {
         // YUK horrid code! Though packer is even more horrid
         void        *res = 0;
-        if (dataBuff) 
-        {   
+        if (dataBuff)
+        {
             UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
             if (checkTraceLevel(TRACE_MSGPACK, 4))
             {
                 StringBuffer s;
                 DBGLOG("UdpCollator: CMessageUnpackCursor::getNext(%u) pos=%u pktLength=%u metaLen=%u ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuff=%p this=%p",
                     length, current_pos, pktHdr->length, pktHdr->metalength,
-                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, 
+                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq,
                     pktHdr->node.getTraceText(s).str(), dataBuff, this);
             }
             unsigned packetDataLimit = pktHdr->length - pktHdr->metalength;
@@ -339,10 +339,10 @@ public:
                 }
                 LinkRoxieRow(res);
                 return res;
-            }   
+            }
             char *currResLoc = (char*)rowMgr->allocate(length, 0);
             res = currResLoc;
-            while (length && dataBuff) 
+            while (length && dataBuff)
             {
                 // Spans more than one block - allocate and copy
                 unsigned cpyLen = packetDataLimit - current_pos;
@@ -378,46 +378,46 @@ public:
 
 };
 
- 
+
 class CMessageResult : public IMessageResult, CInterface {
     PackageSequencer    *pkSequencer;
     mutable MemoryBuffer metaInfo;
     mutable CriticalSection metaCrit;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMessageResult(PackageSequencer *_pkSqncr) 
+    CMessageResult(PackageSequencer *_pkSqncr)
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: CMessageResult::CMessageResult pkSqncr=%p, this=%p", _pkSqncr, this);
-        pkSequencer = _pkSqncr; 
+        pkSequencer = _pkSqncr;
     }
-    
-    ~CMessageResult() 
+
+    ~CMessageResult()
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: CMessageResult::~CMessageResult this=%p", this);
         pkSequencer->Release();
     }
 
-    virtual IMessageUnpackCursor *getCursor(IRowManager *rowMgr) const 
+    virtual IMessageUnpackCursor *getCursor(IRowManager *rowMgr) const
     {
         return new CMessageUnpackCursor(LINK(pkSequencer), rowMgr);
     }
 
-    virtual const void *getMessageHeader(unsigned &length) const 
+    virtual const void *getMessageHeader(unsigned &length) const
     {
         length = pkSequencer->getHeaderSize();
         return pkSequencer->getMessageHeader();
     }
 
-    virtual const void *getMessageMetadata(unsigned &length) const 
+    virtual const void *getMessageMetadata(unsigned &length) const
     {
         return pkSequencer->getMetaData(length);
     }
 
-    virtual void discard() const 
+    virtual void discard() const
     {
         if (checkTraceLevel(TRACE_MSGPACK, 2))
             DBGLOG("UdpCollator: CMessageResult - Roxie server discarded a packet");
@@ -426,7 +426,7 @@ public:
 
 };
 
- 
+
 
 
 // MessageCollator ====================================================================================

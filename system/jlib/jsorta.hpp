@@ -28,19 +28,19 @@
 
 /* the following somewhat inelegantly implements:
 
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, sortCompareFunction compare, sortSwapFunction doswap)
 
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, sortCompareFunction compare)
 
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, const ICompare &compare, sortSwapFunction doswap)
 
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, const ICompare &compare)
 
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n)
 
 
@@ -54,14 +54,14 @@ static inline void *med3ca(void *a, void *b, void *c, sortCompareFunction compar
 { return CMP(a, b) < 0 ? (CMP(b, c) < 0 ? b : (CMP(a, c) < 0 ? c : a )) : (CMP(b, c) > 0 ? b : (CMP(a, c) < 0 ? a : c )); }
 #define VECTOR C*
 #define SWAP(a,b)        doswap(a,b)
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, sortCompareFunction compare, sortSwapFunction doswap)
 #include "jsort2.inc"
 #undef SWAP
 #define SWAP(a,b)        { C t = *(a); *(a) = *(b); *(b) = t; }
 #undef RECURSE
 #define RECURSE(a,b)     qsortarray(a, b, compare)
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, sortCompareFunction compare)
 #include "jsort2.inc"
 #undef SWAP
@@ -74,14 +74,14 @@ void qsortarray(C *a, size32_t n, sortCompareFunction compare)
 static inline void *med3cac(void *a, void *b, void *c, const ICompare &compare)
 { return CMP(a, b) < 0 ? (CMP(b, c) < 0 ? b : (CMP(a, c) < 0 ? c : a )) : (CMP(b, c) > 0 ? b : (CMP(a, c) < 0 ? a : c )); }
 #define MED3(a,b,c)      ((C*)med3cac(a,b,c,compare))
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, const ICompare &compare, sortSwapFunction doswap)
 #include "jsort2.inc"
 #undef SWAP
 #define SWAP(a,b)        { C t = *(a); *(a) = *(b); *(b) = t; }
 #undef RECURSE
 #define RECURSE(a,b)     qsortarray(a, b, compare)
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n, const ICompare &compare)
 #include "jsort2.inc"
 #undef CMP
@@ -89,11 +89,11 @@ void qsortarray(C *a, size32_t n, const ICompare &compare)
 #undef RECURSE
 #define RECURSE(a,b)     qsortarray(a, b)
 #undef MED3
-template <class C> 
+template <class C>
 static inline C *med3cas(C *a, C *b, C *c)
 { return *a<*b ? (*b<*c ? b : (*a<*c ? c : a )) : (*b>*c ? b : (*a<*c ? a : c )); }
 #define MED3(a,b,c)      med3cas<C>(a,b,c)
-template <class C> 
+template <class C>
 void qsortarray(C *a, size32_t n)
 #include "jsort2.inc"
 #undef CMP

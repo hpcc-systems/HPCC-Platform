@@ -86,7 +86,7 @@ public:
         unsigned r;
         _cpyrev4(&r,&ip);
         unsigned h = hashc((const byte *)&r,sizeof(r),0)%iphashsz;
-        while (!iphash[h].isNull()) 
+        while (!iphash[h].isNull())
             if (++h==iphashsz)
                 h = 0;
         iphash[h] = ip;
@@ -121,7 +121,7 @@ public:
 
     ~CFileListWriter()
     {
-        if (iphash) 
+        if (iphash)
             delete [] iphash;
         delete [] ipnum;
     }
@@ -141,10 +141,10 @@ public:
         bool grphasports = false;
         ForEachNodeInGroup(i,*group) {
             const SocketEndpoint &ep = group->queryNode(i).endpoint();
-            if (ep.port!=0) 
+            if (ep.port!=0)
                 grphasports = true;
             addIpHash(ep,i);
-        }   
+        }
         if (grphasports)
             ERRLOG(LOGPFX "Group has ports!");
 
@@ -162,14 +162,14 @@ public:
                     return false;
                 StringArray groups;
                 getFileGroups(&file,groups);
-                if (groups.ordinality()==0) { 
+                if (groups.ordinality()==0) {
                     parent.error("File has no group defined: %s",filename);
                     return false;
                 }
                 ForEachItemIn(i,groups) {
                     const char *cluster = groups.item(i);
                     ForEachItemIn(j1,parent.clustersin) {
-                        if (strcmp(parent.clustersin.item(j1),cluster)==0) 
+                        if (strcmp(parent.clustersin.item(j1),cluster)==0)
                             return true;
                     }
                     bool excluded = false;
@@ -202,7 +202,7 @@ public:
             {
                 return !abort;
             }
-            
+
 
             void processFile(IPropertyTree &file,StringBuffer &name)
             {
@@ -227,7 +227,7 @@ public:
                     parent.numfiles++;
                     StringBuffer fn;
                     StringBuffer dir;
-                    bool incluster = true;          
+                    bool incluster = true;
                     StringBuffer ln;
                     for (unsigned p=0;p<np;p++) {
                         if (abort)
@@ -271,7 +271,7 @@ public:
                         }
                     }
                 }
-                else 
+                else
                     parent.error("cannot create file descriptor %s",name.str());
             }
         public:
@@ -330,7 +330,7 @@ public:
     {
         if (lbsize<maxlinesize) {
             if (!eof) {
-                if (lbsize&&(p!=buf)) 
+                if (lbsize&&(p!=buf))
                     memmove(buf,p,lbsize);
                 p = buf;
                 size32_t rd = strm->read(buffsize,buf+lbsize);
@@ -341,7 +341,7 @@ public:
                     if (buf[lbsize-1]!='\n')
                         buf[lbsize++] = '\n';               // terminate unfinished line
                 }
-                else 
+                else
                     lbsize += rd;
             }
             else if (lbsize==0)
@@ -412,7 +412,7 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
                         return false;
                     }
                     outStreams.append(*out.getClear());
-                }   
+                }
                 writer.write(group,outStreams);
                 closedownClientProcess();
                 return true;
@@ -426,7 +426,7 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
             e->Release();
         }
     }
-    else 
+    else
         errstr.append(LOGPFX "no dali server specified");
     if (dalistarted)
         closedownClientProcess();

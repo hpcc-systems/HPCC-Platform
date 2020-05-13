@@ -25,9 +25,9 @@
 
 /*
  * Copyright 2001 Unicode, Inc.
- * 
+ *
  * Disclaimer
- * 
+ *
  * This source code is provided as is by Unicode, Inc. No claims are
  * made as to fitness for any particular purpose. No warranties of any
  * kind are expressed or implied. The recipient agrees to determine
@@ -35,9 +35,9 @@
  * purchased on magnetic or optical media from Unicode, Inc., the
  * sole remedy for any claim will be exchange of defective media
  * within 90 days of receipt.
- * 
+ *
  * Limitations on Rights to Redistribute This Code
- * 
+ *
  * Unicode, Inc. hereby grants the right to freely use the information
  * supplied in this file in the creation of products supporting the
  * Unicode Standard, and to make copies of this file in any form
@@ -129,14 +129,14 @@ UTF32 UtfReader::next16le()
         UTF32 ch2 = source[0] | (source[1] << 8);
         source += 2;
 
-        if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) 
+        if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END)
         {
             ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                 + (ch2 - UNI_SUR_LOW_START) + halfBase;
-        } 
+        }
         else if (strictConversion) /* it's an unpaired high surrogate */
             return sourceIllegal;
-    } 
+    }
     else if ((strictConversion) && (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END))
         return sourceIllegal;
 
@@ -154,7 +154,7 @@ UTF32 UtfReader::next16be()
     UTF32 ch = (source[0] << 8) | source[1];
     source += 2;
 
-    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) 
+    if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END)
     {
         if (end - cur < 2)
             return sourceExhausted;
@@ -162,14 +162,14 @@ UTF32 UtfReader::next16be()
         UTF32 ch2 = (source[0] << 8) | source[1];
         source += 2;
 
-        if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) 
+        if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END)
         {
             ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                 + (ch2 - UNI_SUR_LOW_START) + halfBase;
-        } 
+        }
         else if (strictConversion) /* it's an unpaired high surrogate */
             return sourceIllegal;
-    } 
+    }
     else if ((strictConversion) && (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END))
         return sourceIllegal;
     cur = source;
@@ -200,7 +200,7 @@ inline unsigned getTrailingBytesForUTF8(byte value)
  * This table contains as many values as there might be trailing bytes
  * in a UTF-8 sequence.
  */
-static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 
+static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL,
                      0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 
 /*
@@ -234,11 +234,11 @@ UTF32 readUtf8Char(const void * _data)
     return ch - offsetsFromUTF8[extraBytesToRead];
 }
 
-inline bool isLegalUTF8(const UTF8 *source, unsigned length) 
+inline bool isLegalUTF8(const UTF8 *source, unsigned length)
 {
     UTF8 a;
     const UTF8 *srcptr = source+length;
-    switch (length) 
+    switch (length)
     {
     default: return false;
         /* Everything else falls through when "true"... */
@@ -249,7 +249,7 @@ inline bool isLegalUTF8(const UTF8 *source, unsigned length)
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return false;
         // fallthrough
     case 2: if ((a = (*--srcptr)) > 0xBF) return false;
-        switch (*source) 
+        switch (*source)
         {
             /* no fall-through in this inner switch */
             case 0xE0: if (a < 0xA0) return false; break;
@@ -331,21 +331,21 @@ UTF32 readUtf8Character(unsigned len, const byte * & cur)
  */
 static const UTF8 firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 static const UTF32 byteMask = 0xBF;
-static const UTF32 byteMark = 0x80; 
+static const UTF32 byteMark = 0x80;
 
 unsigned writeUtf8(void * vtarget, unsigned maxLength, UTF32 ch)
 {
     unsigned short bytesToWrite;
     /* Figure out how many bytes the result will require */
-    if (ch < (UTF32)0x80) 
+    if (ch < (UTF32)0x80)
         bytesToWrite = 1;
-    else if (ch < (UTF32)0x800) 
+    else if (ch < (UTF32)0x800)
         bytesToWrite = 2;
-    else if (ch < (UTF32)0x10000) 
+    else if (ch < (UTF32)0x10000)
         bytesToWrite = 3;
     else if (ch < (UTF32)0x200000)
         bytesToWrite = 4;
-    else {              
+    else {
         bytesToWrite = 2;
         ch = UNI_REPLACEMENT_CHAR;
     }
@@ -370,20 +370,20 @@ unsigned writeUtf16le(void * vtarget, unsigned maxLength, UTF32 ch)
         return 0;
 
     UTF16 * target = (UTF16 *)vtarget;
-    if (ch <= UNI_MAX_BMP) 
-    { 
+    if (ch <= UNI_MAX_BMP)
+    {
         /* Target is a character <= 0xFFFF */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END)
             ch = UNI_REPLACEMENT_CHAR;
         *target = ch;   /* normal case */
         return 2;
-    } 
-        
-    if (ch > UNI_MAX_UTF16) 
+    }
+
+    if (ch > UNI_MAX_UTF16)
     {
         *target = UNI_REPLACEMENT_CHAR;
         return 2;
-    } 
+    }
 
     /* target is a character in range 0xFFFF - 0x10FFFF. */
     if (maxLength < 4)
@@ -401,22 +401,22 @@ unsigned writeUtf16be(void * vtarget, unsigned maxLength, UTF32 ch)
 
     UTF16 * target = (UTF16 *)vtarget;
     UTF16 temp;
-    if (ch <= UNI_MAX_BMP) 
-    { 
+    if (ch <= UNI_MAX_BMP)
+    {
         /* Target is a character <= 0xFFFF */
         if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END)
             ch = UNI_REPLACEMENT_CHAR;
         temp = ch;
         _cpyrev2(target, &temp);    /* normal case */
         return 2;
-    } 
-        
-    if (ch > UNI_MAX_UTF16) 
+    }
+
+    if (ch > UNI_MAX_UTF16)
     {
         temp = UNI_REPLACEMENT_CHAR;
         _cpyrev2(target, &temp);
         return 2;
-    } 
+    }
 
     /* target is a character in range 0xFFFF - 0x10FFFF. */
     if (maxLength < 4)

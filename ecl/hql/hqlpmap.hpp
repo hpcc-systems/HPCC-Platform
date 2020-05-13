@@ -57,7 +57,7 @@ private:
     void setTransform(IHqlExpression * transform);
     void setTransformRowAssignment(IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * record);
     void setTransformRowAssignment(IHqlExpression * nestedSelf, IHqlExpression * lhs, IHqlExpression * rhs, IHqlExpression * record, TableProjectMapper & mapper);
-        
+
     IHqlExpression * doExpandFields(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset, IHqlExpression * oldParent);
     IHqlExpression * doCollapseFields(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset);
     inline IHqlExpression * cacheCollapseFields(IHqlExpression * expr, IHqlExpression * oldParent, IHqlExpression * newDataset)

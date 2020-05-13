@@ -174,7 +174,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
             clbin_dir.append(".");
         else
             clbin_dir.append((dir_end - fname.str()) + 1, fname.str());
-        
+
         StringBuffer pathenv(clbin_dir.str());
         const char* oldpath = getenv("PATH");
         if(oldpath != NULL && *oldpath != '\0')
@@ -260,7 +260,7 @@ CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const 
     setDebug(false);
     setDebugLibrary(false);
 #endif
-    
+
     setDirectoryPrefix(sourceDir, _sourceDir);
     setDirectoryPrefix(targetDir, _targetDir);
     maxCompileThreads = 1;
@@ -360,7 +360,7 @@ void CppCompiler::addInclude(const char * paths)
 
 void CppCompiler::addLinkOption(const char * option)
 {
-    if (option && *option)	
+    if (option && *option)
         linkerOptions.append(' ').append(LIB_OPTION_PREFIX[targetCompiler]).append(option);
 }
 
@@ -501,7 +501,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const c
         cmdline.append(" ").append(LIBFLAG_RELEASE[targetCompiler]);
 
     _addInclude(cmdline, stdIncludes);
-    
+
     if (targetCompiler == Vs6CppCompiler)
     {
         if (targetDir.get())
@@ -522,7 +522,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const c
     }
     if (flags)
         cmdline.append(" ").append(flags);
-    
+
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
     StringBuffer logFile;
@@ -796,9 +796,9 @@ void CppCompiler::setDebugLibrary(bool debug)
     useDebugLibrary = debug;
 }
 
-void CppCompiler::setCreateExe(bool _createExe) 
-{ 
-    createDLL = !_createExe; 
+void CppCompiler::setCreateExe(bool _createExe)
+{
+    createDLL = !_createExe;
 }
 
 

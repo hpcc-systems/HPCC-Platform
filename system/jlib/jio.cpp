@@ -54,7 +54,7 @@ void setIORetryCount(unsigned _ioRetryCount) // non atomic, expected to be calle
 extern jlib_decl offset_t checked_lseeki64( int handle, offset_t offset, int origin )
 {
     offset_t ret=_lseeki64(handle,offset,origin);
-    if (ret==(offset_t)-1) 
+    if (ret==(offset_t)-1)
         throw makeErrnoException("checked_lseeki64");
     return ret;
 }
@@ -192,7 +192,7 @@ extern jlib_decl size32_t checked_write( int handle, const void *buffer, size32_
 class CReadSeq : public IReadSeq, public CInterface
 {
     int fh;
-    size32_t size;  
+    size32_t size;
     char *buffer;
     char *ptr;
     size32_t bufSize;
@@ -240,7 +240,7 @@ class CReadSeq : public IReadSeq, public CInterface
         size32_t rd=bufSize-left;
         if (endpos-nextbufpos<(offset_t)rd)
             rd = (size32_t)(endpos-nextbufpos);
-        if (rd) 
+        if (rd)
             rd = checked_pread(fh, buffer+left, rd, nextbufpos);
         nextbufpos += rd;
         bytesInBuffer = left+rd;
@@ -254,12 +254,12 @@ public:
     CReadSeq(int _fh, offset_t _offset, unsigned maxrecs, size32_t _size, size32_t _bufsize, bool _compressed)
     {
         assertex(_size);
-        fh = _fh; 
+        fh = _fh;
         size = _size;
         bufSize = (_bufsize==(unsigned) -1)?DEFAULTBUFFERSIZE:_bufsize;
         bytesInBuffer = 0;
         startpos = _offset;
-        nextbufpos = _offset;   
+        nextbufpos = _offset;
         compressed = ((size<bufSize/2)&&(size>=MINCOMPRESSEDROWSIZE)&&(size<=MAXCOMPRESSEDROWSIZE))?_compressed:false;
         if (compressed) {
             maxcompsize = size+size/3+3; // migger than needed
@@ -274,14 +274,14 @@ public:
 
     }
 
-    ~CReadSeq() 
+    ~CReadSeq()
     {
         free(buffer);
     }
 
     virtual bool get(void *dst)
     {
-        if (!compressed) 
+        if (!compressed)
             return getBytes(dst, size)==size;
         return (getn(dst,1)==1);
     }
@@ -301,7 +301,7 @@ public:
                 first = false;
             }
             else {
-                if (remaining()<maxcompsize) 
+                if (remaining()<maxcompsize)
                     refill();
                 if (remaining()==0)
                     break;
@@ -316,9 +316,9 @@ public:
         return ret;
     }
 
-    virtual unsigned getRecordSize() 
-    { 
-        return size; 
+    virtual unsigned getRecordSize()
+    {
+        return size;
     }
     virtual void reset()
     {
@@ -327,11 +327,11 @@ public:
         bytesInBuffer = 0;
         first = true;
     }
-    virtual void stop() 
+    virtual void stop()
     {
         free(buffer);   // no one should access after stop
         buffer = NULL;
-    } 
+    }
 };
 
 
@@ -342,7 +342,7 @@ IReadSeq *createReadSeq(int fh, offset_t _offset, size32_t size, size32_t bufsiz
 {
     if (!bufsize) {
         IReadSeq *seq=new CUnbufferedReadWriteSeq(fh, _offset, size);
-        seq->reset(); // not done itself 
+        seq->reset(); // not done itself
         return seq;
     }
     return new CReadSeq(fh, _offset, maxrecs, size, bufsize, compressed);
@@ -368,7 +368,7 @@ private:
     void *aux;
     bool first;
 
-    inline size32_t remaining() 
+    inline size32_t remaining()
     {
         return (size32_t)(bufSize - (ptr-buffer));
     }
@@ -405,13 +405,13 @@ public:
     {
         assertex(_fh);
         assertex(_size);
-        fh = _fh; 
+        fh = _fh;
         size = _size;
         fpos = 0;
         if (_bufsize == (unsigned) -1)
             _bufsize = DEFAULTBUFFERSIZE;
         bufSize = _bufsize;
-        
+
         compressed = ((size<bufSize/2)&&(size>=MINCOMPRESSEDROWSIZE)&&(size<=MAXCOMPRESSEDROWSIZE))?_compressed:false;
         if (compressed) {
             maxcompsize = size+size/3+3; // bigger than needed
@@ -445,7 +445,7 @@ public:
                 ptr += sz;
                 return;
             }
-            else { 
+            else {
                 putBytes(aux, DiffCompress(src,aux,prev,size));
                 return;
             }
@@ -480,9 +480,9 @@ public:
         return fpos;
     }
 
-    virtual size32_t getRecordSize() 
-    { 
-        return size; 
+    virtual size32_t getRecordSize()
+    {
+        return size;
     }
 
 };
@@ -538,7 +538,7 @@ bool CUnbufferedReadWriteSeq::get(void *dst)
     while (toread)
     {
         int read = checked_read(fh, dst, toread);
-        if (!read) 
+        if (!read)
             return false;
         toread -= read;
         dst = (char *) dst + read;
@@ -553,7 +553,7 @@ unsigned CUnbufferedReadWriteSeq::getn(void *dst, unsigned n)
     while (toread)
     {
         int read = checked_read(fh, dst, toread);
-        if (!read) 
+        if (!read)
             break;
         toread -= read;
         totread += read;
@@ -741,7 +741,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
     virtual void beforeDispose();
-    
+
     ElevatorScanner(int file, size32_t recordSize);
     ~ElevatorScanner();
 
@@ -754,9 +754,9 @@ public:
     void flush(IRecordFetchChannel *);
     void fetch(offset_t, void *, IReceiver *, IRecordFetchChannel *);
 };
-    
+
 int PendingFetch::compare(const void *a, const void *b)
-{ 
+{
     offset_t aa = ((PendingFetch *) a)->pos;
     offset_t bb = ((PendingFetch *) b)->pos;
     if (aa > bb)
@@ -836,7 +836,7 @@ void ElevatorScanner::fetch(offset_t fpos, void *buffer, IReceiver *receiver, IR
         pending[nextSlot].receiver = receiver;
         pending[nextSlot].target = buffer;
         pending[nextSlot].channel = channel;
-    
+
         nextSlot++;
         resetTimer();
         scanlist.notify();
@@ -892,7 +892,7 @@ int ElevatorScanner::run()
             {
                 //  if (!connections.length())
                 //      break;
-                int timeleft = (int)(duetime-msTick());             
+                int timeleft = (int)(duetime-msTick());
                 if (timeleft<=0)
                     break;
             }
@@ -939,7 +939,7 @@ protected:
     offset_t pos;
 public:
     IMPLEMENT_IINTERFACE;
-    CChainedWriteSeq(IWriteSeqAllocator *_allocator) 
+    CChainedWriteSeq(IWriteSeqAllocator *_allocator)
     {
         allocator = _allocator;
         allocator->Link();
@@ -947,7 +947,7 @@ public:
         recsize = 0;
         pos = 0;
     }
-    virtual ~CChainedWriteSeq() 
+    virtual ~CChainedWriteSeq()
     {
         ::Release(stream);
         allocator->Release();
@@ -1002,11 +1002,11 @@ public:
         allocator->Release();
     }
     virtual bool get(void *dst) { return (getn(dst,1)==1); }
-    virtual unsigned getn(void *dst, unsigned n) 
-    { 
+    virtual unsigned getn(void *dst, unsigned n)
+    {
         unsigned done=0;
         while (stream&&n) {
-            unsigned r = stream->getn(dst,n); 
+            unsigned r = stream->getn(dst,n);
             if (r==0) {
                 IReadSeq *oldstream=stream;
                 stream = allocator->next();
@@ -1068,20 +1068,20 @@ size32_t CBufferedIOStreamBase::doread(size32_t len, void * data)
 
     size32_t sizeGot = readFromBuffer(len, data);
     len -= sizeGot;
-    if (len!=0) 
+    if (len!=0)
     {
         data = (char *)data + sizeGot;
         if (len >= minDirectSize)
             sizeGot += directRead(len, data);   // if direct read specified don't loop
-        else 
+        else
         {
-            do  
+            do
             {
                 if (!fillBuffer())
                     break;
                 size32_t numRead = readFromBuffer(len, data);
                 sizeGot += numRead;
-                len -= numRead; 
+                len -= numRead;
                 data = (char *)data + numRead;
             } while (len);
         }
@@ -1113,7 +1113,7 @@ size32_t CBufferedIOStreamBase::dowrite(size32_t len, const void * data)
                 break;
             data = (char *)data + wr;
         }
-        if (len >= minDirectSize) 
+        if (len >= minDirectSize)
             return directWrite(len, data)+ret-len;
         wr = std::min(len,bufferSize);
         writeToBuffer(wr, data);
@@ -1122,7 +1122,7 @@ size32_t CBufferedIOStreamBase::dowrite(size32_t len, const void * data)
         len -= wr;
         data = (char *)data + wr;
     }
-    return ret; // there is a bit of an assumption here that flush always works 
+    return ret; // there is a bit of an assumption here that flush always works
 }
 
 ////////////////////////////
@@ -1170,13 +1170,13 @@ public:
         curBufferOffset = 0;
         return numInBuffer!=0;
     }
-    virtual size32_t directRead(size32_t len, void * data) 
-    { 
-        return io->read(len, data); 
+    virtual size32_t directRead(size32_t len, void * data)
+    {
+        return io->read(len, data);
     }
-    virtual size32_t directWrite(size32_t len, const void * data) 
-    { 
-        return io->write(len,data); 
+    virtual size32_t directWrite(size32_t len, const void * data)
+    {
+        return io->write(len,data);
     }
     virtual void doflush()
     {
@@ -1309,14 +1309,14 @@ public:
         }
         return NULL;
     }
-            
-    virtual void stop()  
-    { 
+
+    virtual void stop()
+    {
         while (idx<num)
-            in[idx++]->stop(); 
+            in[idx++]->stop();
     }
 
-            
+
 };
 
 extern jlib_decl IWriteSeq *createChainedWriteSeq(IWriteSeqAllocator *iwsa)

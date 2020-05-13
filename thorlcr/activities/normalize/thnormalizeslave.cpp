@@ -38,7 +38,7 @@ class NormalizeSlaveActivity : public CSlaveActivity
 
 
 public:
-    NormalizeSlaveActivity(CGraphElementBase *_container) 
+    NormalizeSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorNormalizeArg *> (queryHelper());
@@ -47,7 +47,7 @@ public:
         appendOutputLinked(this);
     }
     virtual void start() override
-    { 
+    {
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         numThisRow = 0;
@@ -61,7 +61,7 @@ public:
         {
             while (curRow == numThisRow)
             {
-                if (abortSoon) 
+                if (abortSoon)
                     return NULL;
                 row.setown(inputStream->nextRow());
                 if (!row&&!anyThisGroup)
@@ -73,7 +73,7 @@ public:
                 curRow = 0;
                 numThisRow = helper->numExpandedRows(row);
             }
-            if (abortSoon) 
+            if (abortSoon)
                 return NULL;
             RtlDynamicRowBuilder ret(allocator);
             size32_t sz = helper->transform(ret, row, ++curRow);
@@ -110,9 +110,9 @@ class CNormalizeChildSlaveActivity : public CSlaveActivity
     Owned<IEngineRowAllocator> allocator;
 
 public:
-    CNormalizeChildSlaveActivity(CGraphElementBase *_container) 
+    CNormalizeChildSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
-    { 
+    {
         helper = static_cast <IHThorNormalizeChildArg *> (queryHelper());
         cursor = helper->queryIterator();
         allocator.set(queryRowAllocator());
@@ -135,7 +135,7 @@ public:
                 curRow = 0;
                 childBuf.setown(inputStream->nextRow());
                 if (!childBuf) {
-                    if (anyThisGroup) 
+                    if (anyThisGroup)
                     {
                         anyThisGroup = false;
                         return NULL;
@@ -200,9 +200,9 @@ class CNormalizeLinkedChildSlaveActivity : public CSlaveActivity
     }
 
 public:
-    CNormalizeLinkedChildSlaveActivity(CGraphElementBase *_container) 
+    CNormalizeLinkedChildSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
-    { 
+    {
         helper = static_cast <IHThorNormalizeLinkedChildArg *> (queryHelper());
         setRequireInitData(false);
         appendOutputLinked(this);

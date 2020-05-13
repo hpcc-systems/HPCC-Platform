@@ -42,7 +42,7 @@ static const char * EclDefinition =
 "  varstring getCallerId() : c,context,entrypoint='logGetCallerId'; \n"
 "END;";
 
-LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {

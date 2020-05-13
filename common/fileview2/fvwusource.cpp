@@ -133,7 +133,7 @@ bool PagedWorkUnitDataSource::getRowData(__int64 row, size32_t & length, const v
 bool PagedWorkUnitDataSource::fetchRowData(MemoryBuffer & out, __int64 offset)
 {
     MemoryBuffer temp;
-    MemoryBuffer2IDataVal wrapper(out); 
+    MemoryBuffer2IDataVal wrapper(out);
     wuResult->getResultRaw(wrapper, offset, returnedMeta->getMaxRecordSize(), NULL, NULL);
     if (temp.length() == 0)
         return false;
@@ -144,7 +144,7 @@ bool PagedWorkUnitDataSource::fetchRowData(MemoryBuffer & out, __int64 offset)
 bool PagedWorkUnitDataSource::loadBlock(__int64 startRow, offset_t startOffset)
 {
     MemoryBuffer temp;
-    MemoryBuffer2IDataVal xxx(temp); 
+    MemoryBuffer2IDataVal xxx(temp);
     RowBlock * rows;
     if (returnedMeta->isFixedSize())
     {

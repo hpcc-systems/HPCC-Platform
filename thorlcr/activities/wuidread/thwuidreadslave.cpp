@@ -57,7 +57,7 @@ class CWuidReadSlaveActivity : public CSlaveActivity
         masterReplyMsg.reset();
     }
 public:
-    CWuidReadSlaveActivity(CGraphElementBase *_container) 
+    CWuidReadSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
         helper = (IHThorWorkunitReadArg *)queryHelper();

@@ -63,7 +63,7 @@ private:
     void setDefaultValue(StringBuffer& buf, const char* type, const char* tag);
     void setDefaultValue(StringBuffer& buf, IXmlType* type, const char* tag);
     void initCfgDefValues(const char* method);
-    
+
     void doType(StringStack& parent, int indent, const char* tag, IXmlType* type, IPTree* tmplat, StringBuffer& buf);
     void doType(StringStack& parent, int indent, const char* tag, IXmlType* type, StringBuffer& buf);
 

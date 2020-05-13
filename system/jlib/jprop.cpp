@@ -46,7 +46,7 @@ protected:
     const HashTable &properties;
 
 public:
-    IMPLEMENT_IINTERFACE; 
+    IMPLEMENT_IINTERFACE;
 
     PropertyIteratorOf(const HashTable &_properties) : properties(_properties)
     {
@@ -163,7 +163,7 @@ public:
         FILE *inFile = fopen(filename, "r" TEXT_TRANS);
         if (inFile)
         {
-            StringBuffer sbuff; 
+            StringBuffer sbuff;
             char buf[1024];
             while (fgets(buf,1024,inFile))
             {

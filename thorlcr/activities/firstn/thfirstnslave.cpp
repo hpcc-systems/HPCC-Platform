@@ -160,7 +160,7 @@ public:
                     do
                     {
                         OwnedConstThorRow row = inputStream->nextRow();
-                        if (row) 
+                        if (row)
                             skipped++;
                         else
                         {
@@ -307,7 +307,7 @@ public:
             // sneaky short circuit
             sendOnce(r);
         }
-        ActPrintLog("FIRSTN: Record limit is %" RCPF "d %" RCPF "d", limit, skipCount); 
+        ActPrintLog("FIRSTN: Record limit is %" RCPF "d %" RCPF "d", limit, skipCount);
         return true;
     }
     void sendCount()

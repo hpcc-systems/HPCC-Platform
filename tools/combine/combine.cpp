@@ -83,7 +83,7 @@ bool addFilename(StringAttrArray &names,const char *name,bool sub)
             names.append(*new StringAttrItem(subname.str()));
         }
     }
-    else 
+    else
         names.append(*new StringAttrItem(name));
     return true;
 }
@@ -196,7 +196,7 @@ int main(int argc, const char *argv[])
             dstarg = ai;
         }
     }
-    if (!dstarg||!srcargs.ordinality()) 
+    if (!dstarg||!srcargs.ordinality())
         usage();
     try {
         if (isWild(argv[dstarg])) {
@@ -214,10 +214,10 @@ int main(int argc, const char *argv[])
             return 1;
         }
         Owned<IFileIOStream> dststrm = createIOStream(dstio);
-        if (header.length()) 
+        if (header.length())
             dststrm->write(header.length(),header.str());
         StringAttrArray srcnames;
-        ForEachItemIn(i,srcargs) 
+        ForEachItemIn(i,srcargs)
             if (!addFilename(srcnames,argv[srcargs.item(i)],sub))
                 return 1;
         MemoryBuffer pref;
@@ -228,7 +228,7 @@ int main(int argc, const char *argv[])
                 printf("ERROR Could not open Source %s\n",srcnames.item(j).text.get());
                 return 1;
             }
-            if (j&&glue.length()) 
+            if (j&&glue.length())
                 dststrm->write(glue.length(),glue.str());
             if (prefix.length()) {
                 genPrefix(pref.clear(),prefix.str(),srcnames.item(j).text.get(),srcio->size());
@@ -237,7 +237,7 @@ int main(int argc, const char *argv[])
             }
             appendFile(srcio,dststrm,sub);
         }
-        if (footer.length()) 
+        if (footer.length())
             dststrm->write(footer.length(),footer.str());
     }
     catch (IException * e) {

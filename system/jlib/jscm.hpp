@@ -62,8 +62,8 @@ public:
     inline ~Shared()                             { ::Release(ptr); }
     inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
-    inline CLASS * operator -> () const         { return ptr; } 
-    inline operator CLASS *() const             { return ptr; } 
+    inline CLASS * operator -> () const         { return ptr; }
+    inline operator CLASS *() const             { return ptr; }
 
     inline void clear()                         { CLASS *temp=ptr; ptr=NULL; ::Release(temp); }
     inline CLASS * get() const                  { return ptr; }
@@ -82,7 +82,7 @@ public:
     inline void set(const Shared<CLASS> &other) { this->set(other.get()); }
     inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; ::Release(temp); }
     inline void swap(Shared<CLASS> & other)     { CLASS * temp = ptr; ptr = other.ptr; other.ptr = temp; }
-    
+
 protected:
     inline Shared(CLASS * _ptr)                  { ptr = _ptr; } // deliberately protected
 
@@ -146,7 +146,7 @@ interface IDataVal
 };
 
 
-// IIterator 
+// IIterator
 interface IIterator : extends IInterface
 {
     virtual bool first() = 0;
@@ -156,7 +156,7 @@ interface IIterator : extends IInterface
     virtual IInterface & get() = 0;
 };
 
-template <class C> 
+template <class C>
 interface IIteratorOf : public IInterface
 {
 public:

@@ -38,7 +38,7 @@ const UINT MSG_COLUMN_SIZED = 7000;
 const UINT MSG_EIP_RESIZE   = 7001;
 
 
-bool ShowAttrsOnProps = true;   
+bool ShowAttrsOnProps = true;
 bool ShowQualifiedNames = false;
 
 IConnection * connection = NULL;        // the current connection
@@ -57,15 +57,15 @@ const COLORREF color_eip_back       = RGB(210, 210, 240);
 #define STRCAT(dest, destSz, src) {size32_t l = strlen(src); if(destSz > l) { strcat(dest, src); destSz -= l; } }
 
 enum CTState { CTS_None, CTS_Visible = 0x01, CTS_Expanded = 0x02 };
-class CTreeListItem 
+class CTreeListItem
 {
 private:
     TreeList_t type;
     char * name;
-    IPropertyTree * pTree;      
+    IPropertyTree * pTree;
     byte state;
 
-public: 
+public:
     CTreeListItem(LPCSTR _name, IPropertyTree * _pTree, TreeList_t _type)
     {
         state = CTS_None;
@@ -79,7 +79,7 @@ public:
     inline int getDisplayName(IPropertyTree * parent, char * buffer, size32_t buffsz) const
     {
         *buffer = 0;
-        size32_t insz = buffsz; 
+        size32_t insz = buffsz;
         switch(type)
         {
         case TLT_root:
@@ -93,14 +93,14 @@ public:
                 attrIterator->first();
                 while(attrIterator->isValid())
                 {
-                    STRCAT(buffer, buffsz, "  ");                   
+                    STRCAT(buffer, buffsz, "  ");
                     if(first)
                     {
                         STRCAT(buffer, buffsz, "<");
                         first = false;
                     }
                     STRCAT(buffer, buffsz, attrIterator->queryName() + 1);
-                    STRCAT(buffer, buffsz, "=");                    
+                    STRCAT(buffer, buffsz, "=");
                     STRCAT(buffer, buffsz, attrIterator->queryValue());
                     attrIterator->next();
                 }
@@ -126,18 +126,18 @@ public:
             connection->unlockWrite();
             return true;
         }
-        return false;       
+        return false;
     }
 
-    inline bool isBinary() const { return pTree->isBinary(name); }  
+    inline bool isBinary() const { return pTree->isBinary(name); }
     inline bool isExpanded() const { return 0 != (state & CTS_Expanded); }
     inline bool isVisible() const { return 0 != (state & CTS_Visible); }
     inline void setExpanded() { state += CTS_Expanded; }
     inline void setVisible() { state += CTS_Visible; }
-    inline IPropertyTree *queryPropertyTree() const { return pTree; } 
+    inline IPropertyTree *queryPropertyTree() const { return pTree; }
 
-    inline LPCSTR getName(IPropertyTree * parent, bool forceQualified = false) const 
-    { 
+    inline LPCSTR getName(IPropertyTree * parent, bool forceQualified = false) const
+    {
         if(type != TLT_attribute && parent && (ShowQualifiedNames || forceQualified))
         {
             static StringBuffer buf;
@@ -147,16 +147,16 @@ public:
             buf.append("]");
             return buf.str();
         }
-        return type == TLT_attribute ? name + 1 : pTree->queryName(); 
+        return type == TLT_attribute ? name + 1 : pTree->queryName();
     }
 
     inline LPCSTR getValue() const
     {
         static StringBuffer buf;
-        if(isBinary())      
-            buf.clear().append(binaryValue);        
-        else        
-            pTree->getProp(name, buf.clear());      
+        if(isBinary())
+            buf.clear().append(binaryValue);
+        else
+            pTree->getProp(name, buf.clear());
 
         return buf.str();
     }
@@ -166,13 +166,13 @@ public:
 
 
 CTreeListItem * createTreeListProperty(LPCSTR PropName, IPropertyTree & pTree)
-{ 
-    return new CTreeListItem(PropName, &pTree, TLT_property); 
+{
+    return new CTreeListItem(PropName, &pTree, TLT_property);
 }
 
 CTreeListItem * createTreeListAttribute(LPCSTR AttrName, IPropertyTree & pTree)
 {
-    return new CTreeListItem(AttrName, &pTree, TLT_attribute); 
+    return new CTreeListItem(AttrName, &pTree, TLT_attribute);
 }
 
 CTreeListItem * createTreeListRoot(LPCSTR RootName, IPropertyTree & pTree)
@@ -205,7 +205,7 @@ private:
         if(matchCase)
         {
             if(strstr(name, findWhat)) return true;
-            if(value && !tli->isBinary() && strstr(value, findWhat)) return true;           
+            if(value && !tli->isBinary() && strstr(value, findWhat)) return true;
         }
         else
         {
@@ -214,7 +214,7 @@ private:
             nbuf = name;
             what.MakeUpper();
             nbuf.MakeUpper();
-            if(strstr(nbuf, what)) return true;     
+            if(strstr(nbuf, what)) return true;
             if(value && !tli->isBinary())
             {
                 static CString vbuf;
@@ -227,7 +227,7 @@ private:
     }
 
 public:
-    CFinderThread(CInspectorTreeCtrl &_tree, LPCSTR _findWhat, BOOL _matchCase, BOOL _wholeWord) : tree(_tree) 
+    CFinderThread(CInspectorTreeCtrl &_tree, LPCSTR _findWhat, BOOL _matchCase, BOOL _wholeWord) : tree(_tree)
     {
         findWhat = strdup(_findWhat);
         matchCase = _matchCase;
@@ -242,25 +242,25 @@ public:
     }
 
     void process(HTREEITEM in)
-    {       
+    {
         if(!terminate)
         {
             CTreeListItem * tli = tree.GetTreeListItem(in);
-            if(tli->getType() == TLT_property && !tli->isExpanded()) tree.AddLevel(*tli->queryPropertyTree(), in);                      
+            if(tli->getType() == TLT_property && !tli->isExpanded()) tree.AddLevel(*tli->queryPropertyTree(), in);
             if(matches(tli))
             {
                 tree.EnsureVisible(in);
                 tree.SelectItem(in);
                 hold.wait();
                 if(terminate) return;
-            }   
-            HTREEITEM i = tree.GetChildItem(in);        
+            }
+            HTREEITEM i = tree.GetChildItem(in);
             while(i)
             {
                 process(i);
                 if(terminate) break;
-                i = tree.GetNextItem(i, TVGN_NEXT);             
-            }           
+                i = tree.GetNextItem(i, TVGN_NEXT);
+            }
         }
     }
 
@@ -333,7 +333,7 @@ END_MESSAGE_MAP()
 CInspectorTreeCtrl::CInspectorTreeCtrl()
 {
     linePen.CreatePen(PS_SOLID, 0, color_inactiveborder);
-    whitespaceHighlightBrush_Focused.CreateSolidBrush(color_highlight); 
+    whitespaceHighlightBrush_Focused.CreateSolidBrush(color_highlight);
     whitespaceHighlightBrush_Unfocused.CreateSolidBrush(color_inactiveborder);
     EIPBrush.CreateSolidBrush(color_eip_back);
 
@@ -355,12 +355,12 @@ void CInspectorTreeCtrl::killDataItems(HTREEITEM in)
 {
     if(in)
     {
-        HTREEITEM i = GetChildItem(in);     
+        HTREEITEM i = GetChildItem(in);
         while(i)
         {
             killDataItems(i);
             i = GetNextItem(i, TVGN_NEXT);
-        }           
+        }
         CTreeListItem * tli = GetTreeListItem(in);
         SetItemData(in, 0);
         delete tli;
@@ -388,13 +388,13 @@ LRESULT CInspectorTreeCtrl::WindowProc(UINT Msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-void CInspectorTreeCtrl::DeleteCurrentItem(bool confirm) 
+void CInspectorTreeCtrl::DeleteCurrentItem(bool confirm)
 {
     HTREEITEM hItem = GetSelectedItem();
     if (hItem)
     {
         if(connection->lockWrite())
-        {           
+        {
             IPropertyTree * pTree = NULL;
             CString name;
 
@@ -402,8 +402,8 @@ void CInspectorTreeCtrl::DeleteCurrentItem(bool confirm)
             if(tli->getType() == TLT_property)
             {
                 if (!confirm || MessageBox("Delete property, are you sure?", "Delete Confirmation", MB_ICONQUESTION | MB_YESNO) == IDYES)
-                {                       
-                    CTreeListItem * parentTli = GetTreeListItem(GetParentItem(hItem));                  
+                {
+                    CTreeListItem * parentTli = GetTreeListItem(GetParentItem(hItem));
                     pTree = parentTli->queryPropertyTree();
                     name = tli->getName(pTree, true);
                 }
@@ -416,7 +416,7 @@ void CInspectorTreeCtrl::DeleteCurrentItem(bool confirm)
                     name = "@";
                     name += tli->getName(NULL);
                 }
-            }       
+            }
             if(pTree)
             {
                 if(pTree->removeProp(name))
@@ -428,12 +428,12 @@ void CInspectorTreeCtrl::DeleteCurrentItem(bool confirm)
                 {
                     MessageBox("Failed to remove property or attribute, removeProp()\nfailed", "Failed to Remove", MB_OK | MB_ICONEXCLAMATION);
                 }
-            
-            }   
+
+            }
             connection->unlockWrite();
         }
         else
-            MessageBox("Unable to lock connection for write", "Cannot Obtain Lock", MB_OK);         
+            MessageBox("Unable to lock connection for write", "Cannot Obtain Lock", MB_OK);
     }
 }
 
@@ -456,11 +456,11 @@ void CInspectorTreeCtrl::xpath(HTREEITEM item, CString & dest)
 {
     HTREEITEM parent = GetParentItem(item);
     if(parent) xpath(parent, dest);             // recursion
-        
+
     CTreeListItem * i = GetTreeListItem(item);
     if(i->getType() != TLT_root)
     {
-        if(parent && GetTreeListItem(parent)->getType() != TLT_root) dest += "/";   
+        if(parent && GetTreeListItem(parent)->getType() != TLT_root) dest += "/";
 
         IPropertyTree * ppTree = GetTreeListItem(parent)->queryPropertyTree();
         if(i->getType() == TLT_attribute) dest += "@";
@@ -477,7 +477,7 @@ DWORD CInspectorTreeCtrl::getFullXPath(HTREEITEM item, CString & dest)
 
 
 BOOL CInspectorTreeCtrl::DestroyWindow()
-{   
+{
     DeactivateEIP();
     DeleteAllItems();
     return CWnd::DestroyWindow();
@@ -486,7 +486,7 @@ BOOL CInspectorTreeCtrl::DestroyWindow()
 
 bool CInspectorTreeCtrl::VScrollVisible()
 {
-    int sMin, sMax;                             // crafty eh?       
+    int sMin, sMax;                             // crafty eh?
     GetScrollRange(SB_VERT, &sMin, &sMax);
     return sMax != 0;
 }
@@ -504,7 +504,7 @@ void CInspectorTreeCtrl::setColumnWidth(int idx, int wid)
 }
 
 
-#define DRAWLINE(x1, y1, x2, y2) dc.MoveTo(x1, y1); dc.LineTo(x2, y2) 
+#define DRAWLINE(x1, y1, x2, y2) dc.MoveTo(x1, y1); dc.LineTo(x2, y2)
 
 void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
 {
@@ -515,7 +515,7 @@ void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
     dc.SelectObject(linePen);
     dc.SetBkMode(TRANSPARENT);
     dc.SelectObject(GetFont());
-    dc.SetTextColor(color_windowtext);  
+    dc.SetTextColor(color_windowtext);
 
     DRAWLINE(0, 0, rect.right, 0);
 
@@ -538,7 +538,7 @@ void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
         {
             iRect.left = cWid0 + 6;
             iRect.right = cWid0 + cWid1;
-            
+
             if(hItem == hItemFocus)
             {
                 CRect whitespaceRect;
@@ -548,16 +548,16 @@ void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
                 {
                     whitespaceRect.left = whitespaceRect.right;
                     whitespaceRect.right = cWid0;
-                
+
                     CWnd * focusWnd = GetFocus();
-                    if(focusWnd && (focusWnd->m_hWnd == m_hWnd))        // I have focus             
-                        dc.FillRect(whitespaceRect, &whitespaceHighlightBrush_Focused);                 
-                    else                
-                        dc.FillRect(whitespaceRect, &whitespaceHighlightBrush_Unfocused);                                   
-                }               
+                    if(focusWnd && (focusWnd->m_hWnd == m_hWnd))        // I have focus
+                        dc.FillRect(whitespaceRect, &whitespaceHighlightBrush_Focused);
+                    else
+                        dc.FillRect(whitespaceRect, &whitespaceHighlightBrush_Unfocused);
+                }
                 CString xpath;
                 getTypeText(itemData->getType(), xpath, true);
-                if(getFullXPath(hItem, xpath)) 
+                if(getFullXPath(hItem, xpath))
                 {
                     CRect itemRect, r;
                     GetItemRect(hItem, &itemRect, FALSE);
@@ -568,7 +568,7 @@ void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
             }
             dc.DrawText(itemData->getValue(), &iRect, DT_SINGLELINE | DT_LEFT);
         }
-        hItem = GetNextVisibleItem(hItem);      
+        hItem = GetNextVisibleItem(hItem);
     }
     DRAWLINE(cWid0, 0, cWid0, height);
 }
@@ -576,22 +576,22 @@ void CInspectorTreeCtrl::drawValues(CPaintDC & dc)
 
 void CInspectorTreeCtrl::OnSize(UINT type, int cx, int cy)
 {
-    CWnd::OnSize(type, cx, cy); 
+    CWnd::OnSize(type, cx, cy);
     if(EIPActive) PostMessage(MSG_EIP_RESIZE);
 }
 
 
 void CInspectorTreeCtrl::OnPaint()
-{   
-    CPaintDC dc(this); 
+{
+    CPaintDC dc(this);
 
     CPropertyInspector * parent = static_cast <CPropertyInspector *> (GetParent());
 
     CRect rcClip;
-    dc.GetClipBox( &rcClip );       
+    dc.GetClipBox( &rcClip );
     rcClip.right = getColumnWidth(0);
 
-    CRgn rgn;                   
+    CRgn rgn;
     rgn.CreateRectRgnIndirect( &rcClip );
     dc.SelectClipRgn(&rgn);
 
@@ -623,7 +623,7 @@ int CInspectorTreeCtrl::OnCreate(LPCREATESTRUCT createStruct)
 HTREEITEM CInspectorTreeCtrl::selectFromPoint(CPoint & point)
 {
     HTREEITEM hitItem = HitTest(point);
-    if(hitItem && hitItem != GetSelectedItem()) SelectItem(hitItem);    
+    if(hitItem && hitItem != GetSelectedItem()) SelectItem(hitItem);
     return hitItem;
 }
 
@@ -632,14 +632,14 @@ void CInspectorTreeCtrl::OnLButtonDown(UINT flags, CPoint point)
 {
     DeactivateEIP();
     HTREEITEM hitItem = HitTest(point);
-    if(hitItem && hitItem != GetSelectedItem()) selectFromPoint(point); 
+    if(hitItem && hitItem != GetSelectedItem()) selectFromPoint(point);
     CTreeCtrl::OnLButtonDown(flags, point);
 }
 
 
 void CInspectorTreeCtrl::DeactivateEIP(BOOL save)
-{   
-    if(editCtrl.Deactivate(save)) Invalidate(); 
+{
+    if(editCtrl.Deactivate(save)) Invalidate();
 }
 
 
@@ -661,8 +661,8 @@ void CInspectorTreeCtrl::OnLButtonUp(UINT flags, CPoint point)
         GetItemRect(hitItem, &rect, FALSE);
         rect.left = getColumnWidth(0);
         rect.right = rect.left + getColumnWidth(1);
-        if(rect.PtInRect(point)) ActivateEIP(hitItem, rect);        
-    }   
+        if(rect.PtInRect(point)) ActivateEIP(hitItem, rect);
+    }
     CTreeCtrl::OnLButtonUp(flags, point);
 }
 
@@ -736,20 +736,20 @@ void CInspectorTreeCtrl::OnClose()
 }
 
 
-void CInspectorTreeCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) 
+void CInspectorTreeCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-    DeactivateEIP();    
+    DeactivateEIP();
     CTreeCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
 
-BOOL CInspectorTreeCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt) 
+BOOL CInspectorTreeCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-    DeactivateEIP();    
+    DeactivateEIP();
     return CTreeCtrl::OnMouseWheel(nFlags, zDelta, pt);
 }
 
-void CInspectorTreeCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult) 
+void CInspectorTreeCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 {
     TV_DISPINFO * pTVDispInfo = reinterpret_cast <TV_DISPINFO *> (pNMHDR);
 
@@ -760,7 +760,7 @@ void CInspectorTreeCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 
         IPropertyTree * ppTree = tli->getType() == TLT_root ? NULL : GetTreeListItem(GetParentItem(pTVDispInfo->item.hItem))->queryPropertyTree();
         int origlen = tli->getDisplayName(ppTree, nameBuffer , sizeof(nameBuffer));
-        
+
         HTREEITEM parent = NULL;
         CDC * dc = GetDC();
         dc->SetViewportOrg(0, 0);
@@ -787,12 +787,12 @@ void CInspectorTreeCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
             }
             else
             {
-                pTVDispInfo->item.pszText = nameBuffer; 
+                pTVDispInfo->item.pszText = nameBuffer;
             }
         }
         else
         {
-            pTVDispInfo->item.pszText = NULL;   
+            pTVDispInfo->item.pszText = NULL;
         }
         ReleaseDC(dc);
     }
@@ -801,16 +801,16 @@ void CInspectorTreeCtrl::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 
 HBRUSH CInspectorTreeCtrl::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-    HBRUSH hbr = CTreeCtrl::OnCtlColor(pDC, pWnd, nCtlColor);  
+    HBRUSH hbr = CTreeCtrl::OnCtlColor(pDC, pWnd, nCtlColor);
 
     if(pWnd->GetDlgCtrlID() == IDC_EIP_CTRL)
     {
         if(nCtlColor == CTLCOLOR_EDIT || nCtlColor == CTLCOLOR_MSGBOX)
         {
             pDC->SetBkColor(color_eip_back);
-            return EIPBrush;                
-        } 
-    }    
+            return EIPBrush;
+        }
+    }
     return hbr;
 }
 
@@ -824,13 +824,13 @@ void CInspectorTreeCtrl::NewTree(LPCSTR rootxpath)
         TV_INSERTSTRUCT is;
         is.hInsertAfter = TVI_LAST;
         is.item.mask = TVIF_TEXT | TVIF_PARAM;
-        is.item.pszText = LPSTR_TEXTCALLBACK;           
+        is.item.pszText = LPSTR_TEXTCALLBACK;
         is.hParent = TVI_ROOT;
         is.item.lParam = reinterpret_cast <DWORD> (createTreeListRoot(pTree.queryName(), pTree));
         HTREEITEM r = InsertItem(&is);
         AddLevel(pTree, r);
         Expand(r, TVE_EXPAND);
-    }   
+    }
 }
 
 
@@ -845,14 +845,14 @@ void CInspectorTreeCtrl::dynExpand(HTREEITEM in)
         while(i)
         {
             DeleteItem(i);
-            i = GetNextItem(i, TVGN_NEXT);              
+            i = GetNextItem(i, TVGN_NEXT);
         }
         CString txt;
         TV_INSERTSTRUCT is;
         is.hInsertAfter = TVI_LAST;
         is.item.mask = TVIF_TEXT | TVIF_PARAM;
-        is.item.pszText = LPSTR_TEXTCALLBACK;   
-        
+        is.item.pszText = LPSTR_TEXTCALLBACK;
+
         Owned<IAttributeIterator> attrIterator = pTree.getAttributes();
         ForEach(*attrIterator)
         {
@@ -875,19 +875,19 @@ void CInspectorTreeCtrl::dynExpand(HTREEITEM in)
         parent->setExpanded();
     }
 
-    HTREEITEM i = GetChildItem(in);     
+    HTREEITEM i = GetChildItem(in);
     while(i)
     {
         CTreeListItem * ctli = GetTreeListItem(i);
 
         if(ctli->getType() == TLT_property) AddLevel(*ctli->queryPropertyTree(), i);
         i = GetNextItem(i, TVGN_NEXT);
-    }       
+    }
 }
 
-void CInspectorTreeCtrl::OnItemExpanded(NMHDR* pNMHDR, LRESULT* pResult) 
+void CInspectorTreeCtrl::OnItemExpanded(NMHDR* pNMHDR, LRESULT* pResult)
 {
-    NM_TREEVIEW * pNMTreeView = reinterpret_cast <NM_TREEVIEW*> (pNMHDR);   
+    NM_TREEVIEW * pNMTreeView = reinterpret_cast <NM_TREEVIEW*> (pNMHDR);
     dynExpand(pNMTreeView->itemNew.hItem);
     *pResult = 0;
 }
@@ -902,7 +902,7 @@ void CInspectorTreeCtrl::AddLevel(IPropertyTree & pTree, HTREEITEM hParent)
         TV_INSERTSTRUCT is;
         is.hInsertAfter = TVI_LAST;
         is.item.mask = TVIF_TEXT | TVIF_PARAM;
-        is.item.pszText = LPSTR_TEXTCALLBACK;       
+        is.item.pszText = LPSTR_TEXTCALLBACK;
         // place holder for children
         if (pTree.hasChildren())
         {
@@ -947,7 +947,7 @@ void CInspectorTreeCtrl::NextFind(LPCSTR txt, BOOL matchCase, BOOL wholeWord)
 }
 
 
-void CInspectorTreeCtrl::OnSetAsRoot() 
+void CInspectorTreeCtrl::OnSetAsRoot()
 {
     HTREEITEM hItem = GetSelectedItem();
     if(hItem)
@@ -972,11 +972,11 @@ bool CInspectorTreeCtrl::GetNewItem(NewValue_t nvt, CString & name, CString & va
             value = nvDlg.GetValue();
             return true;
         }
-    }   
+    }
     return false;
 }
 
-void CInspectorTreeCtrl::OnAddAttribute() 
+void CInspectorTreeCtrl::OnAddAttribute()
 {
     CString name, value;
     HTREEITEM hParent;
@@ -984,8 +984,8 @@ void CInspectorTreeCtrl::OnAddAttribute()
     {
         if(connection->lockWrite())
         {
-            CString attrName;   
-            
+            CString attrName;
+
             if(name[0] != '@')
             {
                 attrName = "@";
@@ -1000,20 +1000,20 @@ void CInspectorTreeCtrl::OnAddAttribute()
             TV_INSERTSTRUCT is;
             is.hInsertAfter = TVI_LAST;
             is.item.mask = TVIF_TEXT | TVIF_PARAM;
-            is.item.pszText = LPSTR_TEXTCALLBACK;           
+            is.item.pszText = LPSTR_TEXTCALLBACK;
             is.hParent = hParent;
             is.item.lParam = reinterpret_cast <DWORD> (createTreeListAttribute(attrName, *pTree));
             InsertItem(&is);
 
             connection->unlockWrite();
-            Expand(hParent, TVE_EXPAND);            
-            break;      
+            Expand(hParent, TVE_EXPAND);
+            break;
         }
     }
 }
 
 
-void CInspectorTreeCtrl::OnAddProperty() 
+void CInspectorTreeCtrl::OnAddProperty()
 {
     HTREEITEM hParent;
     CString name, value;
@@ -1024,34 +1024,34 @@ void CInspectorTreeCtrl::OnAddProperty()
         {
             IPropertyTree * t = createPTree();
             t->setProp(NULL, value);
-            t = GetTreeListItem(hParent)->queryPropertyTree()->addPropTree(name, t);    
+            t = GetTreeListItem(hParent)->queryPropertyTree()->addPropTree(name, t);
 
             TV_INSERTSTRUCT is;
             is.hInsertAfter = TVI_LAST;
             is.item.mask = TVIF_TEXT | TVIF_PARAM;
-            is.item.pszText = LPSTR_TEXTCALLBACK;           
+            is.item.pszText = LPSTR_TEXTCALLBACK;
             is.hParent = hParent;
             is.item.lParam = reinterpret_cast <DWORD> (createTreeListProperty(t->queryName(), * t));
             InsertItem(&is);
 
             connection->unlockWrite();
-            Expand(hParent, TVE_EXPAND);            
+            Expand(hParent, TVE_EXPAND);
             break;
         }
         else
-            MessageBox("Unable to lock connection for write", "Cannot Obtain Lock", MB_OK); 
+            MessageBox("Unable to lock connection for write", "Cannot Obtain Lock", MB_OK);
     }
 }
 
 
-void CInspectorTreeCtrl::OnDelete() 
+void CInspectorTreeCtrl::OnDelete()
 {
     DeleteCurrentItem();
 }
 
-void CInspectorTreeCtrl::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar) 
+void CInspectorTreeCtrl::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-    /* NULL */ 
+    /* NULL */
 }
 
 
@@ -1079,7 +1079,7 @@ LRESULT CPropertyInspector::WindowProc(UINT Msg, WPARAM wParam, LPARAM lParam)
 {
     switch(Msg)
     {
-    case MSG_COLUMN_SIZED:  
+    case MSG_COLUMN_SIZED:
         CRect rect;
         GetWindowRect(&rect);
         setColumnWidth(1, rect.Width() - getColumnWidth(0) - 2);
@@ -1094,15 +1094,15 @@ void CPropertyInspector::registerClass()
 {
     WNDCLASS wc;
     memset(&wc, 0, sizeof(wc));
-    
+
     wc.style = CS_DBLCLKS | CS_VREDRAW | CS_HREDRAW | CS_GLOBALCLASS;
     wc.lpfnWndProc = (WNDPROC)wndProc;
     wc.hInstance = AfxGetInstanceHandle();
     wc.hCursor = 0;
     wc.lpszClassName = "PROPERTY_INSPECTOR_CTRL";
     wc.hbrBackground = (HBRUSH) GetStockObject(LTGRAY_BRUSH);
-    
-    if (!::RegisterClass(&wc)) ASSERT(FALSE);   
+
+    if (!::RegisterClass(&wc)) ASSERT(FALSE);
 }
 
 BOOL CPropertyInspector::SubclassDlgItem(UINT id, CWnd * parent)
@@ -1117,14 +1117,14 @@ CWnd * CPropertyInspector::SetFocus()
 
 int CPropertyInspector::initialize()
 {
-    CRect rect; 
+    CRect rect;
     GetWindowRect(rect);
 
     if(!staticCtrl.Create(NULL, WS_CHILD | WS_VISIBLE | SS_SUNKEN, CRect(0, 0 ,0 ,0), this)) return FALSE;
     staticCtrl.SetWindowPos(&wndBottom, 0, 0, rect.Width(), rect.Height(), SWP_SHOWWINDOW);
 
     if(!headerCtrl.Create(WS_CHILD | WS_VISIBLE |  HDS_HORZ, CRect(0, 0, 0, 0), this, IDC_TREE_LIST_HEADER)) return FALSE;
-    CSize textSize;         
+    CSize textSize;
     headerCtrl.SetFont(GetParent()->GetFont());
     CDC * dc = headerCtrl.GetDC();
     textSize = dc->GetTextExtent("A");
@@ -1151,12 +1151,12 @@ int CPropertyInspector::initialize()
 }
 
 BOOL CPropertyInspector::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * result)
-{   
+{
     LPNMHEADER hdn = reinterpret_cast <LPNMHEADER> (lParam);
 
     if(wParam == IDC_TREE_LIST_HEADER)
-    {   
-        if(hdn->hdr.code == HDN_ENDTRACK) PostMessage(MSG_COLUMN_SIZED);        
+    {
+        if(hdn->hdr.code == HDN_ENDTRACK) PostMessage(MSG_COLUMN_SIZED);
     }
 
     return CWnd::OnNotify(wParam, lParam, result);
@@ -1168,7 +1168,7 @@ void CPropertyInspector::OnSize(UINT type, int cx, int cy)
     staticCtrl.MoveWindow(0, 0, cx, cy);
     CRect headerRect;
     headerCtrl.GetWindowRect(&headerRect);
-    headerCtrl.MoveWindow(1, 1, cx - 2, headerRect.Height());   
+    headerCtrl.MoveWindow(1, 1, cx - 2, headerRect.Height());
     inspectorCtrl.MoveWindow(1, headerRect.Height() + 1, cx - 2, cy - headerRect.Height() - 2);
     setColumnWidth(1, cx - getColumnWidth(0) - 2);
 }
@@ -1215,7 +1215,7 @@ int CPropertyInspector::getColumnWidth(int idx)
     {
         static HD_ITEM hdItem;
         hdItem.mask = HDI_WIDTH;
-        if(headerCtrl.GetItem(idx, &hdItem)) return hdItem.cxy;     
+        if(headerCtrl.GetItem(idx, &hdItem)) return hdItem.cxy;
     }
     return 0;
 }
@@ -1277,7 +1277,7 @@ END_MESSAGE_MAP()
 // CEditEIP message handlers
 
 
-int CEditEIP::OnCreate(LPCREATESTRUCT lpCreateStruct) 
+int CEditEIP::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
     if(CEdit::OnCreate(lpCreateStruct) == -1) return -1;
     parent = static_cast <CInspectorTreeCtrl *> (GetParent());
@@ -1292,10 +1292,10 @@ BOOL CEditEIP::Activate(CTreeListItem * i, CRect & rect)
     if(!i->isBinary())
     {
         tli = i;
-        Resize(rect);       
+        Resize(rect);
         SetFocusText(tli->getValue());
         GetWindowText(ValuePreserve);
-        return TRUE;        
+        return TRUE;
     }
     return FALSE;
 }
@@ -1309,22 +1309,22 @@ BOOL CEditEIP::Deactivate(BOOL save)
 
         ShowWindow(FALSE);
         CString ecTxt;
-        GetWindowText(ecTxt);           
+        GetWindowText(ecTxt);
 
         if(connection && save && GetModify())
         {
             if((!tli->getValue() || strcmp(tli->getValue(), ecTxt) != 0))
-            {   
-                if(tli->setValue(ecTxt)) 
+            {
+                if(tli->setValue(ecTxt))
                 {
                     GetParent()->Invalidate();
                     r = TRUE;
                 }
                 else
-                {   
+                {
                     ::MessageBox(NULL, "Unable to gain exclusive lock for write", "Unable to lock", MB_OK);
                 }
-            }   
+            }
         }
         tli = NULL;
     }
@@ -1337,7 +1337,7 @@ BOOL CEditEIP::IsActive()
 }
 
 
-void CEditEIP::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags) 
+void CEditEIP::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
     switch(nChar)
     {
@@ -1346,7 +1346,7 @@ void CEditEIP::OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags)
         Deactivate();
         break;
     case 0x1b:              // esc key - get value when editing began
-        SetFocusText(ValuePreserve);        
+        SetFocusText(ValuePreserve);
         break;
     default:
         CEdit::OnKeyUp(nChar, nRepCnt, nFlags);

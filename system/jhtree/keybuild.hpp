@@ -82,9 +82,9 @@ public:
     {
         CNodeInfo *l = (CNodeInfo *) *ll;
         CNodeInfo *r = (CNodeInfo *) *rr;
-        if (l->pos < r->pos) 
+        if (l->pos < r->pos)
             return -1;
-        else if (l->pos == r->pos) 
+        else if (l->pos == r->pos)
             return 0;
         else
             return 1;

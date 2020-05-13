@@ -27,7 +27,7 @@ unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmplst,Strin
                         if (!group||!*group)
                             group = name;
                         bool found = false;
-                        ForEachItemIn(j,groups) 
+                        ForEachItemIn(j,groups)
                             if (strcmp(groups.item(j),group)==0)
                                 found = true;
                         if (!found) {

@@ -478,7 +478,7 @@ class CMailInfo
     static char const * subjectHeader;
     static char const * senderHeader;
 public:
-    CMailInfo(char const * _to, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings) 
+    CMailInfo(char const * _to, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings)
         : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0)
     {
         warnings = _warnings;

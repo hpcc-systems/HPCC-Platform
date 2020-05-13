@@ -61,12 +61,12 @@ public:
         patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName, false, false, false, container.activityIsCodeSigned()));
         if (isFileKey(patchFile))
             throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a patch file: %s", patchHelperName.get());
-        
+
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
             throw MakeActivityException(this, 0, "Patching super files not supported");
-        
+
         addReadFile(originalIndexFile);
         addReadFile(patchFile);
 
@@ -107,7 +107,7 @@ public:
                 {
                     dst.append(true);
                     Owned<IPartDescriptor> originalTlkPartDesc = originalDesc->getPart(originalDesc->numParts()-1);
-                    originalTlkPartDesc->serialize(dst);                                        
+                    originalTlkPartDesc->serialize(dst);
                     Owned<IPartDescriptor> patchTlkPartDesc = patchDesc->getPart(patchDesc->numParts()-1);
                     patchTlkPartDesc->serialize(dst);
                     newIndexDesc->queryPart(newIndexDesc->numParts()-1)->serialize(dst);

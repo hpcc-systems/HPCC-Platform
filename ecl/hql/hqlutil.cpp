@@ -605,7 +605,7 @@ node_operator queryTransformSingleAggregate(IHqlExpression * expr)
 {
     return containsSingleAggregate(expr);
 }
-    
+
 
 static bool containsOnlyLeftTable(IHqlExpression * expr, bool ignoreSelfOrFilepos)
 {
@@ -1353,7 +1353,7 @@ JoinSortInfo::JoinSortInfo(IHqlExpression * expr)
 {
     init();
 }
-        
+
 JoinSortInfo::JoinSortInfo(IHqlExpression * _condition, IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * _seq, IHqlExpression * _atmost)
 : lhs(_leftDs), rhs(_rightDs), cond(_condition), seq(_seq), atmostAttr(_atmost)
 {
@@ -1381,7 +1381,7 @@ void JoinSortInfo::doFindJoinSortOrders(IHqlExpression * condition, bool allowSl
         HqlExprCopyArray pending;
         spotter.findImplicitBetween(condition, slidingMatches, matched, pending);
     }
-    
+
     extraMatch.setown(spotter.doFindJoinSortOrders(condition, allowSlidingMatch, matched));
     conditionAllEqualities = (extraMatch == NULL);
     if (extraMatch)
@@ -1507,7 +1507,7 @@ static bool isSameFieldSelected(IHqlExpression * leftExpr, IHqlExpression * righ
         return false;
     if (leftExpr->queryChild(1) != rightExpr->queryChild(1))
         return false;
- 
+
     IHqlExpression * leftSelector = leftExpr->queryChild(0);
     IHqlExpression * rightSelector = rightExpr->queryChild(0);
     if (leftSelector == left || rightSelector == right)
@@ -1965,7 +1965,7 @@ class SearchHintVisitor : implements IHintVisitor
 public:
     SearchHintVisitor(IAtom * _name) : name(_name) {}
 
-    virtual IHqlExpression * visit(IHqlExpression * hint) 
+    virtual IHqlExpression * visit(IHqlExpression * hint)
     {
         return hint->queryAttribute(name);
     }
@@ -1979,7 +1979,7 @@ class GatherHintVisitor : implements IHintVisitor
 public:
     GatherHintVisitor(HqlExprCopyArray & _target) : target(_target) {}
 
-    virtual IHqlExpression * visit(IHqlExpression * hint) 
+    virtual IHqlExpression * visit(IHqlExpression * hint)
     {
         unwindChildren(target, hint);
         return NULL;
@@ -2138,7 +2138,7 @@ void expandRowSelectors(HqlExprArray & target, HqlExprArray const & source)
             target.append(OLINK(cur));
     }
 }
-        
+
 //---------------------------------------------------------------------------
 
 unsigned getFirstActivityArgument(IHqlExpression * expr)
@@ -2198,7 +2198,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_libraryscopeinstance:
         {
             //It would be very nice to be able to cache this, but because the arguments are associated with the
-            //no_funcdef instead of the no_libraryscope it is a bit tricky.  It could be optimized onto the 
+            //no_funcdef instead of the no_libraryscope it is a bit tricky.  It could be optimized onto the
             //no_libraryscopeinstance I guess.
             IHqlExpression * libraryFuncDef = expr->queryDefinition();
             IHqlExpression * library = libraryFuncDef->queryChild(0);
@@ -2763,7 +2763,7 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
     IHqlExpression * cosort = queryRealChild(child, 2);
     if (cosort)
         return NULL;
-    
+
     //grouped sort->choosen.  Don't convert unless choosen preserves grouping
     if (isGrouped(child) && !expr->hasAttribute(groupedAtom))
         return NULL;
@@ -2784,7 +2784,7 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
         if (limit > topNlimit)
             return NULL;
     }
-    else 
+    else
     {
         if (!expr->hasAttribute(fewAtom) || first)
             return NULL;
@@ -4218,7 +4218,7 @@ void SubStringHelper::init(IHqlExpression * _src, IHqlExpression * range)
             if (knownStart() && knownEnd())
                 special = true;
     }
-    
+
     if (isStringOrData && srcType->getSize() == INFINITE_LENGTH)
         infiniteString = true;
 }
@@ -5087,7 +5087,7 @@ int compareScopesByName(IInterface * const * pleft, IInterface * const * pright)
 class ModuleExpander
 {
 public:
-    ModuleExpander(HqlLookupContext & _ctx, bool _expandCallsWhenBound, node_operator _outputOp) 
+    ModuleExpander(HqlLookupContext & _ctx, bool _expandCallsWhenBound, node_operator _outputOp)
         : ctx(_ctx), expandCallsWhenBound(_expandCallsWhenBound), outputOp(_outputOp) {}
 
     IHqlExpression * createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, IIdAtom *matchId);
@@ -5246,7 +5246,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
 
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
-                newScope->defineSymbol(name, moduleName, value.getClear(), 
+                newScope->defineSymbol(name, moduleName, value.getClear(),
                                        true, false, cur.getSymbolFlags());
             }
         }
@@ -5320,12 +5320,12 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
 
 //---------------------------------------------------------------------------
 
-void HqlExprHashTable::onAdd(void *et) 
-{  
+void HqlExprHashTable::onAdd(void *et)
+{
     ((IHqlExpression*)et)->Link();
 }
 
-void HqlExprHashTable::onRemove(void *et) 
+void HqlExprHashTable::onRemove(void *et)
 {
     ((IHqlExpression*)et)->Release();
 }
@@ -5410,12 +5410,12 @@ void getStoredDescription(StringBuffer & text, IHqlExpression * sequence, IHqlEx
     {
         switch (sequence->queryValue()->getIntValue())
         {
-        case ResultSequencePersist: 
+        case ResultSequencePersist:
             text.append("PERSIST(");
             name->toString(text);
             text.append(")");
             break;
-        case ResultSequenceStored: 
+        case ResultSequenceStored:
             text.append("STORED(");
             name->toString(text);
             text.append(")");
@@ -5592,7 +5592,7 @@ protected:
 
 static HqlTransformerInfo hqlSplitDatasetAttributeInfo("SplitDatasetAttributeTransformer");
 SplitDatasetAttributeTransformer::SplitDatasetAttributeTransformer(): NewHqlTransformer(hqlSplitDatasetAttributeInfo)
-{ 
+{
 }
 
 void SplitDatasetAttributeTransformer::analyseExpr(IHqlExpression * expr)
@@ -5656,7 +5656,7 @@ void SplitDatasetAttributeTransformer::doAnalyseSelect(IHqlExpression * expr)
         return;
     }
 
-    //ds is a no_select, so will be handled correctly.  
+    //ds is a no_select, so will be handled correctly.
     NewHqlTransformer::analyseExpr(expr);
 }
 
@@ -5757,7 +5757,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
             ForEachItemIn(i, newDatasets)
             {
                 IHqlExpression & cur = newDatasets.item(i);
-                OwnedHqlExpr rows = createDataset(no_rows, LINK(&cur), LINK(rowsId)); 
+                OwnedHqlExpr rows = createDataset(no_rows, LINK(&cur), LINK(rowsId));
                 selectors.append(*createRow(no_selectnth, LINK(rows), createComma(getSizetConstant(i+1), createAttribute(noBoundCheckAtom))));
             }
             break;
@@ -6376,14 +6376,14 @@ static bool matchOption(unsigned cur, unsigned max, const char * buffer, unsigne
             {
                 ++cur;
                 commaBetweenPair = true;
-            } 
+            }
             else if (requireValue)
                 return false;
         }
         else  // Not possible to match option name in quotes
             return false;
-    } 
-    else 
+    }
+    else
     {
         if (memicmp(buffer+cur, match, lenMatch) != 0)
             return false;
@@ -6392,7 +6392,7 @@ static bool matchOption(unsigned cur, unsigned max, const char * buffer, unsigne
             return false;
     }
     cur = skipSpace(cur, max, buffer);
-    if (cur < max) 
+    if (cur < max)
     {
         if ('\'' == buffer[cur])
         {
@@ -6442,7 +6442,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
             if ('/' == prev) // Ignore directives in multi-line comments
             {
                 i+=2;
-                while (i < lenBuffer && ('*' != buffer[i-1] || '/' != buffer[i])) 
+                while (i < lenBuffer && ('*' != buffer[i-1] || '/' != buffer[i]))
                     ++i;
             }
             next = ' '; // treat as whitespace
@@ -7239,7 +7239,7 @@ static void gatherSortOrder(HqlExprArray & sorts, IHqlExpression * ds, IHqlExpre
 }
 
 void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool sortIndexPayload)
-{ 
+{
     // If any field types collate differently before and after translation to their hozed
     // format, then we need to do the translation here, otherwise this
     // sort may not be in the correct order.  (ebcdic->ascii?  integers are ok; unicode isn't!)
@@ -7339,7 +7339,7 @@ void LibraryInputMapper::expandParameters()
     realParameters.sort(compareLibraryParameterOrder);
 
     //Count number of datasets (always at the front), so can use to adjust library counts when streaming
-    numDatasets = 0; 
+    numDatasets = 0;
     while ((numDatasets < realParameters.ordinality()) && realParameters.item(numDatasets).isDataset())
         numDatasets++;
 }
@@ -7434,7 +7434,7 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
             else
                 result = createValue(no_libraryinput, cur->getType(), seq);
         }
-        
+
         inputExprs.append(*createSymbol(cur->queryId(), result, ob_private));
     }
 
@@ -7534,7 +7534,7 @@ bool LibraryInputMapper::isSupportedParameterType(IHqlExpression & param) const
     }
 }
 
-static byte key[32] = { 
+static byte key[32] = {
     0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x77, 0xd1, 0x68, 0xd3,
     0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
 };
@@ -7586,7 +7586,7 @@ protected:
 static HqlTransformerInfo hqlGraphIdCollectorInfo("GraphIdCollector");
 GraphIdCollector::GraphIdCollector(HqlExprCopyArray & _graphs, bool _externalIds)
 : NewHqlTransformer(hqlGraphIdCollectorInfo), graphs(_graphs), externalIds(_externalIds)
-{ 
+{
 }
 
 void GraphIdCollector::analyseExpr(IHqlExpression * expr)
@@ -8897,7 +8897,7 @@ static ITypeInfo * containsSingleSimpleFieldBlankXPath(IHqlExpression * record)
 class EclXmlSchemaBuilder
 {
 public:
-    EclXmlSchemaBuilder(ISchemaBuilder & _builder, bool _useXPath) 
+    EclXmlSchemaBuilder(ISchemaBuilder & _builder, bool _useXPath)
         : builder(_builder), useXPath(_useXPath)
     {
     }
@@ -9355,7 +9355,7 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
     IValue * castValue = castRhs->queryValue();
     if (!castValue)
         return false;
-    
+
     if (optLhs && mapper)
         mapper->setMapping(optLhs, castRhs);
 

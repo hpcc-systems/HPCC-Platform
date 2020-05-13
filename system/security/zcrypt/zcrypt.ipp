@@ -37,7 +37,7 @@
 #include <openssl/rand.h>
 
 #ifndef _WIN32
-//x509.h includes evp.h, which in turn includes des.h which defines 
+//x509.h includes evp.h, which in turn includes des.h which defines
 //crypt() that throws different exception than in unistd.h
 //(this causes build break on linux) so exclude it
 #define crypt DONT_DEFINE_CRYPT
@@ -55,9 +55,9 @@
 typedef struct linkedlist_filetozip_s
 {
     struct linkedlist_filetozip_s* next_filetozip;
-    char*   file_name;       
-    void*   file_content;   
-    time_t  file_time;    
+    char*   file_name;
+    void*   file_content;
+    time_t  file_time;
     uLong   content_length;
 } linkedlist_filetozip;
 
@@ -102,7 +102,7 @@ public:
             memcpy(m_buffer, buf, len);
         }
     }
-    
+
     virtual ~ZBuffer()
     {
         if(m_len > 0 && m_buffer)
@@ -159,7 +159,7 @@ public:
     {
         return m_len;
     }
-    
+
     void setLength(int len)
     {
         m_len = len;
@@ -170,7 +170,7 @@ public:
         if(m_buffer)
         {
             free(m_buffer);
-            m_buffer = NULL; 
+            m_buffer = NULL;
         }
 
         m_len = 0;
@@ -215,13 +215,13 @@ private:
 
     ZBuffer m_sessionkey;
     ZBuffer m_encrypted_sessionkey;
-    
+
     bool m_encoding;
 
     ZKeyCache* m_keycache;
 
     linkedlist_filetozip* m_filesToBeZIP;
-    
+
     void throw_error();
     int zip(int in_len, unsigned char* in, ZBuffer& outbuf);
     int unzip(int in_len, unsigned char* in, ZBuffer& outbuf);
@@ -251,12 +251,12 @@ public:
     virtual IZBuffer* decrypt(int key_len, unsigned char* keybuf, int in_len, unsigned char* inbuf);
     virtual IZBuffer* decrypt(unsigned char* keybuf, unsigned char* inbuf);
     virtual int gzipToFile(unsigned in_len, void const *in, const char* fileToBeZipped);
-    
+
     virtual int addContentToZIP(unsigned contentLength, void *content, char* fileName,  bool append = false);
     virtual int addContentToZIP(unsigned contentLength, void *content, char* fileName,  time_t tm, bool append = false);
     virtual int zipToFile(const char* zipFileName, bool cleanFileListAfterUsed = true);
     virtual int zipToFile(unsigned contentLength, void const *content, const char* fileToBeZipped, const char* fileOut);
-    
+
 };
 
 class ZKeyEntry : public IZInterface
@@ -274,7 +274,7 @@ public:
 
         time_t t;
         time(&t);
-        m_timestamp = t;            
+        m_timestamp = t;
     }
 
     ZBuffer* getEKey()
@@ -292,7 +292,7 @@ public:
         return m_key;
     }
 
-    virtual ~ZKeyEntry() 
+    virtual ~ZKeyEntry()
     {
         if(m_ekey)
             delete m_ekey;
@@ -329,7 +329,7 @@ public:
             m_cache[i] = NULL;
     }
 
-    virtual ~ZKeyCache() 
+    virtual ~ZKeyCache()
     {
         for(int i = 0; i < ZKEYCACHESIZE; i++)
         {
@@ -338,7 +338,7 @@ public:
                 delete cur;
         }
     }
-    
+
     ZBuffer* getCachedKey(RSAZCryptor* zc, int elen, unsigned char* ekey);
 };
 

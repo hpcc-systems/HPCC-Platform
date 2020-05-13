@@ -29,8 +29,8 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CWsMachineSoapBindingEx::CWsMachineSoapBindingEx(IPropertyTree* cfg, 
-                                                 const char *bindname/*=NULL*/, 
+CWsMachineSoapBindingEx::CWsMachineSoapBindingEx(IPropertyTree* cfg,
+                                                 const char *bindname/*=NULL*/,
                                                  const char *procname/*=NULL*/)
    :Cws_machineSoapBinding(cfg, bindname, procname)
 {

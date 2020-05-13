@@ -62,7 +62,7 @@ public:
 private:
     Linked<IRecordSize> recordSize;
 };
-    
+
 
 //NB: In the following the following convention is used:
 // storedX - size/structure in WU/on disk
@@ -233,7 +233,7 @@ class VariableRowBlock : public RowBlock
 {
 public:
     VariableRowBlock(MemoryBuffer & _buffer, __int64 _start, __int64 _startOffset, IRecordSizeEx * recordSize, bool isLast);
-    VariableRowBlock(MemoryBuffer & inBuffer, __int64 _start);  // used by remote 
+    VariableRowBlock(MemoryBuffer & inBuffer, __int64 _start);  // used by remote
 
     virtual const void * fetchRow(__int64 offset, size32_t & len);
     virtual const void * getRow(__int64 search, size32_t & len, unsigned __int64 & rowOffset);

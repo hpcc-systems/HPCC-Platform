@@ -59,14 +59,14 @@ BITMASK_ENUM(LexerFlags);
 
 struct DefineIdSt
 {
-private: 
+private:
     ITypeInfo* type;
     IPropertyTree * doc;
 public:
     IIdAtom *      id;
     int        scope;
     DefineIdSt() { type = NULL; id = NULL; scope = 0; doc = NULL; }
-    ~DefineIdSt() { ::Release(type); ::Release(doc); }  
+    ~DefineIdSt() { ::Release(type); ::Release(doc); }
     void setDoc(IPropertyTree * _doc) { doc = _doc; }
     void setType(ITypeInfo* t) { type = t; }
     ITypeInfo* queryType() const { return type; }
@@ -77,7 +77,7 @@ public:
 struct attribute
 {
 private:
-    union 
+    union
     {
         IHqlExpression *expr;
         ITypeInfo      *type;
@@ -94,7 +94,7 @@ public:
 
 public:
     void annotateExprWithLocation();
-    
+
     inline void clearPosition()
     {
         pos.clear();
@@ -115,19 +115,19 @@ public:
     void setPosition(int _line, int _column, int _position, ISourcePath * _sourcePath);
     inline IHqlExpression *getExpr()
     {
-        assertex(atr_type==t_expr); 
+        assertex(atr_type==t_expr);
         atr_type = t_none;
-        return expr; 
+        return expr;
     }
     inline IHqlExpression *queryExpr() const
     {
-        assertex(atr_type==t_expr); 
-        return expr; 
+        assertex(atr_type==t_expr);
+        return expr;
     }
     inline ITypeInfo *queryExprType() const
     {
-        assertex(atr_type==t_expr); 
-        return expr->queryType(); 
+        assertex(atr_type==t_expr);
+        return expr->queryType();
     }
     inline DefineIdSt* queryDefineId() const
     {
@@ -139,13 +139,13 @@ public:
         assertex(atr_type==t_catom);
         return cname;
     }
-    
+
     /* getters */
     inline IFileContents * getContents()
     {
-        assertex(atr_type==t_contents);         
+        assertex(atr_type==t_contents);
         atr_type = t_none;
-        return contents; 
+        return contents;
     }
     inline IIdAtom * getId()
     {
@@ -157,19 +157,19 @@ public:
     {
         assertex(atr_type==t_string);
         atr_type = t_none;
-        return str_val; 
+        return str_val;
     }
-    inline __int64 getInt() 
-    { 
-        assertex(atr_type==t_int); 
+    inline __int64 getInt()
+    {
+        assertex(atr_type==t_int);
         atr_type = t_none;
-        return int_val; 
+        return int_val;
     }
-    inline ITypeInfo *getType() 
-    { 
-        assertex(atr_type==t_type); 
+    inline ITypeInfo *getType()
+    {
+        assertex(atr_type==t_type);
         atr_type = t_none;
-        return type; 
+        return type;
     }
     inline DefineIdSt* getDefineId()
     {
@@ -202,43 +202,43 @@ public:
     }
 
     bool isZero() const;
-    inline void setNullExpr() 
-    { 
-        atr_type=t_expr; 
-        expr = NULL; 
+    inline void setNullExpr()
+    {
+        atr_type=t_expr;
+        expr = NULL;
         clearPosition();
     }
 
-    inline void setExpr(IHqlExpression *v) 
-    { 
-        atr_type=t_expr; 
-        expr = v; 
+    inline void setExpr(IHqlExpression *v)
+    {
+        atr_type=t_expr;
+        expr = v;
     }
 
-    inline void setType(ITypeInfo *t) 
-    { 
-        atr_type=t_type; 
-        type = t; 
+    inline void setType(ITypeInfo *t)
+    {
+        atr_type=t_type;
+        type = t;
     }
-    inline void setContents(IFileContents * _contents) 
+    inline void setContents(IFileContents * _contents)
     {
         atr_type = t_contents;
-        contents = _contents; 
+        contents = _contents;
     }
     inline void setId(IIdAtom * v)
     {
         atr_type=t_catom;
         cname = v;
     }
-    inline void setString(char *v) 
-    { 
-        atr_type=t_string; 
-        str_val = v; 
+    inline void setString(char *v)
+    {
+        atr_type=t_string;
+        str_val = v;
     }
-    inline void setInt(__int64 v) 
-    { 
-        atr_type=t_int; 
-        int_val = v; 
+    inline void setInt(__int64 v)
+    {
+        atr_type=t_int;
+        int_val = v;
     }
     inline void setDefineId(DefineIdSt* defid)
     {
@@ -253,30 +253,30 @@ public:
             flattenListOwn(tgt, e);
     }
 
-    inline void setExpr(IHqlExpression *v, const attribute &from) 
-    { 
+    inline void setExpr(IHqlExpression *v, const attribute &from)
+    {
         setExpr(v);
         setPosition(from);
     }
 
-    inline void setType(ITypeInfo *t, const attribute &from) 
-    { 
+    inline void setType(ITypeInfo *t, const attribute &from)
+    {
         setType(t);
         setPosition(from);
     }
 
-    attribute & release() 
-    { 
+    attribute & release()
+    {
         switch(atr_type)
         {
-        case t_expr: 
-            ::Release(expr); 
+        case t_expr:
+            ::Release(expr);
             break;
-        case t_string: 
-            free(str_val); 
+        case t_string:
+            free(str_val);
             break;
-        case t_type: 
-            ::Release(type); 
+        case t_type:
+            ::Release(type);
             break;
         case t_none:
             break;
@@ -289,7 +289,7 @@ public:
             ::Release(contents);
             break;
         case t_defineid:
-            delete defineid; 
+            delete defineid;
             break;
         default:
             assertex(false);
@@ -302,7 +302,7 @@ public:
     {
         atr_type = t_none;
     }
-    inline void clear(const attribute &from) 
+    inline void clear(const attribute &from)
     {
         clear();
         setPosition(from);
@@ -673,7 +673,7 @@ public:
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
-    
+
     IHqlExpression * queryAlreadyAssigned(IHqlExpression * select);
     bool checkAlreadyAssigned(const attribute & errpos, IHqlExpression * select);
     IHqlExpression * findAssignment(IHqlExpression *field);
@@ -819,7 +819,7 @@ protected:
 
     void appendToActiveScope(IHqlExpression * arg);
     bool isVirtualFunction(DefineIdSt * defineid, const attribute & errpos);
-    
+
     IHqlExpression * castIndexTypes(IHqlExpression *sortList);
     IHqlExpression * processSortList(const attribute & errpos, node_operator op, IHqlExpression * dataset, HqlExprArray & items, OwnedHqlExpr *joinedClause, OwnedHqlExpr *attributes);
     void expandSortedAsList(HqlExprArray & args);
@@ -918,11 +918,11 @@ protected:
 
     unsigned getExtraLookupFlags(IHqlScope * scope);
 
-    void appendTransformOption(IHqlExpression * expr) 
-    { 
+    void appendTransformOption(IHqlExpression * expr)
+    {
         if (curTransform)
             curTransform->addOperand(expr);
-        else 
+        else
             expr->Release();
     }
     void restoreTypeFromActiveTransform()
@@ -1118,7 +1118,7 @@ class HqlLex
 {
     public:
         HqlLex(HqlGram *gram, IFileContents * _text, IXmlScope *xmlScope, IHqlExpression *macroExpr);
-        ~HqlLex();   
+        ~HqlLex();
 
         void enterEmbeddedMode();
         static int doyyFlex(attribute & returnToken, yyscan_t yyscanner, HqlLex * lexer, LexerFlags lookupFlags, const short * activeState);
@@ -1164,7 +1164,7 @@ class HqlLex
             else
                 pos.set(yyLineNo, yyColumn, yyPosition, sourcePath);
         }
-        inline IFileContents * queryFileContents() { return text; } 
+        inline IFileContents * queryFileContents() { return text; }
         inline ISourcePath * querySourcePath() { return sourcePath; }
         inline int queryLastToken() const { return lastToken; }
 
@@ -1296,7 +1296,7 @@ private:
         HqlGram *yyParser;
         Owned<IFileContents> text;
         Linked<ISourcePath> sourcePath;
-        
+
         HqlLex *inmacro;
 
         /* to handle recursive macro */

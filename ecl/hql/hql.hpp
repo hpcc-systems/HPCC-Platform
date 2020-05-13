@@ -16,7 +16,7 @@
 ############################################################################## */
 #ifndef _HQL_INCL
 #define _HQL_INCL
- 
+
 #ifdef HQL_EXPORTS
 #define HQL_API DECL_EXPORT
 #else
@@ -69,7 +69,7 @@ Relevant changes include
 typedef const char * user_t;
 
 
-enum object_type 
+enum object_type
 {
     ob_none         = 0x0000,
 //Flags set on symbols
@@ -95,10 +95,10 @@ enum object_type
 
 enum cs_access
 {
-    cs_none   = 0,    
-    cs_access = 1,    
-    cs_read   = 2,    
-    cs_write  = 4,    
+    cs_none   = 0,
+    cs_access = 1,
+    cs_read   = 2,
+    cs_write  = 4,
     cs_full   = 0x7fffffff
 };
 
@@ -150,7 +150,7 @@ public:
     }
     inline bool equals(const ECLlocation & _other) const
     {
-        return (lineno == _other.lineno) && 
+        return (lineno == _other.lineno) &&
                (column == _other.column) &&
                (position == _other.position) &&
                (sourcePath == _other.sourcePath);

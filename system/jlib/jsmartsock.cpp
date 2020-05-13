@@ -163,7 +163,7 @@ void CSmartSocket::read(void* buf, size32_t size)
         throw;
     }
 }
-    
+
 size32_t CSmartSocket::write(void const* buf, size32_t size)
 {
     try
@@ -243,7 +243,7 @@ void CSmartSocketFactory::stop()
 void CSmartSocketFactory::resolveHostnames() {
     for(unsigned i=0; i < sockArray.ordinality(); i++) {
         SmartSocketEndpoint *ep=sockArray.item(i);
-        
+
         SmartSocketEndpoint resolveEP=*ep;
 
         resolveEP.ep.set(resolveEP.name.str(), resolveEP.ep.port);
@@ -252,7 +252,7 @@ void CSmartSocketFactory::resolveHostnames() {
             synchronized block(lock);
             *ep=resolveEP;
         }
-    }   
+    }
 }
 
 void CSmartSocketFactory::shuffleEndpoints()
@@ -304,7 +304,7 @@ ISocket *CSmartSocketFactory::connect_sock(unsigned timeoutms, SmartSocketEndpoi
         throw createSmartSocketException(0, "smartsocket failed to get nextEndpoint");
 
     ISocket *sock = nullptr;
-    try 
+    try
     {
         {
             synchronized block(lock);
@@ -346,7 +346,7 @@ ISmartSocket *CSmartSocketFactory::connectNextAvailableSocket()
 {
     while(1)
     {
-        try 
+        try
         {
             return connect_timeout(1000);  // 1 sec
         }

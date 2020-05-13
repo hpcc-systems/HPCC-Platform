@@ -103,8 +103,8 @@ public:
 class CseScopeInfo : public NewTransformInfo
 {
 public:
-    CseScopeInfo(IHqlExpression * expr) : NewTransformInfo(expr) 
-    { 
+    CseScopeInfo(IHqlExpression * expr) : NewTransformInfo(expr)
+    {
     }
 
     void addParent(CseScopeInfo * nextParent)

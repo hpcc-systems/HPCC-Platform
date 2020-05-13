@@ -114,8 +114,8 @@ public:
     }
 
     virtual bool isDistributed() const                      { return distributed; }
-    virtual bool hasPostFilter() 
-    { 
+    virtual bool hasPostFilter()
+    {
         return postFiltered;
     }
 
@@ -153,13 +153,13 @@ public:
         }
     }
 };
-    
+
 
 //---------------------------------------------------------------------------
 
 /*
  This is like a lexer with a one row look ahead.  skip() is needed to move onto the next record.
- 
+
  This class handles the row reading lookahead for the join inputs.
  There are a couple of complications to improve the efficiency of GSS
  a) It is inefficient to provide one seek record at a time to the second lowest frequency input.  So this class
@@ -169,10 +169,10 @@ public:
     we really need to pass a block of seeks to the third term.  However to get a block of seeks for the second term
     it means we need to read even further ahead on the primary term.  So the fields from the previous
     seek are sometimes transferred to the readAheadRows member (to avoid them being passed as seek pointers)
-    
+
  This is not designed to support multi-threaded access.
  */
- 
+
 class THORHELPER_API CSteppedInputLookahead : public CInterface, implements IMultipleStepSeekInfo
 {
 public:
@@ -200,7 +200,7 @@ public:
     virtual void ensureFilled(const void * seek, unsigned numFields, unsigned maxcount);
     virtual unsigned ordinality() const;
     virtual const void * querySeek(unsigned i) const;
-    
+
 //inline helper functions
     inline void clearPending() { if (readAheadRow) skip(); }
     inline bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return input->gatherConjunctions(collector); }
@@ -423,7 +423,7 @@ public:
     {
         merger.cleanup();
     }
-        
+
     virtual const void * nextOutputRow()
     {
         return merger.nextRow();
@@ -570,7 +570,7 @@ public:
     virtual void afterProcessing();
     virtual void beforeProcessing(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator);
     virtual bool candidatesExhaustEquality() { return true; }
-    
+
     void addInput(ISteppedInput * _input);
     const void * nextRow();
     const void * nextGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra);
@@ -595,9 +595,9 @@ public:
 protected:
     virtual bool findCandidates(const void * seekValue, unsigned numSeekFields) = 0;
     virtual void finishCandidates();
-    
+
     inline const void * nextCandidate() { return outputProcessor->nextOutputRow(); }
-    inline const void * nextCandidateGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra) 
+    inline const void * nextCandidateGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
     { return outputProcessor->nextOutputRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
 
     inline void clearMatches() { memset(matched, false, numInputs); }
@@ -807,7 +807,7 @@ public:
     // throw away, and skip all records < minDistance, return true if there is a record <= maxDistance
     bool ensureCandidateExists(unsigned __int64 minDistance, unsigned __int64 maxDistance);
     bool checkExistsGE(const void * seek, unsigned numFields);
-    
+
     inline void updateContext(CNaryJoinLookaheadQueue * _left, const void * * _activeRowPtr)
     {
         left = _left;

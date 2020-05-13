@@ -278,13 +278,13 @@ public:
 #endif
 #endif
             if (!noport)            // expect all filenames that specify port to be dafilesrc or daliservix
-                return createDaliServixFile(filename);  
+                return createDaliServixFile(filename);
             if (filename.isUnixPath()
-#ifdef TEST_DAFILESRV_FOR_UNIX_PATHS        
+#ifdef TEST_DAFILESRV_FOR_UNIX_PATHS
                 &&testDaliServixPresent(ep)
 #endif
                 )
-                return createDaliServixFile(filename);  
+                return createDaliServixFile(filename);
         }
         else if (forceRemotePattern)
         {
@@ -1778,7 +1778,7 @@ void disconnectRemoteIoOnExit(IFileIO *fileio,bool set)
 
 bool resetRemoteFilename(IFile *file, const char *newname)
 {
-    return clientResetFilename(file,newname); 
+    return clientResetFilename(file,newname);
 }
 
 
@@ -1862,7 +1862,7 @@ public:
             : eps(_eps), sockets(_sockets), failures(_failures),
               failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect),
               dataDir(_dataDir), mirrorDir(_mirrorDir)
-        { 
+        {
             chkv = _chkv;
             filename = _filename;
         }

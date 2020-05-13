@@ -52,11 +52,11 @@ ESP_FACTORY IEspService * ecl_service_factory(const char *name, const char* type
     {
         throw MakeStringException(-1, "Unknown service type %s", type);
     }
-   
+
     return NULL;
 }
-   
-   
+
+
 //#ifdef ESP_PLUGIN
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {

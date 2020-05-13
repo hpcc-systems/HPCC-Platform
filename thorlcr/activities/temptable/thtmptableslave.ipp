@@ -19,7 +19,7 @@
 #define _thtemptableslave_ipp
 
 #include "platform.h"
-#include "jiface.hpp"       // IInterface defined in jlib   
+#include "jiface.hpp"       // IInterface defined in jlib
 #include "eclhelper.hpp"        // for IHThorInlineTableArg
 #include "slave.ipp"
 #include "thactivityutil.ipp"

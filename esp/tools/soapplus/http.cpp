@@ -39,7 +39,7 @@ void Sleep(int msecs)
 
 int http_tracelevel = 10;
 bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpStat);
-void createDirectories(const char* outdir, const char* url, bool bClient, bool bServer, StringBuffer& outpath, StringBuffer& outpath1, 
+void createDirectories(const char* outdir, const char* url, bool bClient, bool bServer, StringBuffer& outpath, StringBuffer& outpath1,
                        StringBuffer& outpath2, StringBuffer& outpath3, StringBuffer& outpath4, StringBuffer& outpath5);
 
 const char* sepstr = "\n---------------\n";
@@ -149,7 +149,7 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
         isRoxie = false;
     else
         isRoxie = true;
-    
+
     if(isRoxie)
     {
         unsigned int len;
@@ -189,13 +189,13 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
         if(isClientSide && lenread >= 8)
         {
             int status = atoi(oneline+9);
-            
+
             if (status == 100)
             {
                 //read empty line
                 lenread = bsocket->readline(oneline, 2048, true, NULL);
                 totalresplen += lenread;
-                
+
                 if(full_stream.get())
                     full_stream->write(lenread, oneline);
 
@@ -205,19 +205,19 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
                 if(lenread >= 8)
                     status = atoi(oneline+9);
             }
-            
+
             if(status == 200 || status == 206 || status==500)
                 alwaysReadContent = true;
             if((status / 100) == 3 && status != 304)
                 isRedirect = true;
-            
+
         }
 
         int content_length = 0;
         while(lenread >= 0 && oneline[0] != '\0' && oneline[0] != '\r' && oneline[0] != '\n')
         {
             totalresplen += lenread;
-            
+
             if(full_stream.get())
                 full_stream->write(lenread, oneline);
 
@@ -232,7 +232,7 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
                 if(!strstr(curheader.str(), headersToRemove))
                     ostream->writeBytes(oneline, lenread);
             }
-            else        
+            else
                 ostream->writeBytes(oneline, lenread);
 
             if(strncmp(oneline, "Content-Length:", 15) == 0)
@@ -273,7 +273,7 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
             int totallen = content_length;
             if(buflen > totallen)
                 buflen = totallen;
-            int readlen = 0;    
+            int readlen = 0;
             for(;;)
             {
                 readlen = bsocket->read(buf, buflen);
@@ -292,7 +292,7 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
                     full_stream->write(readlen, buf);
                 if(content_stream.get())
                     content_stream->write(readlen, buf);
-                
+
                 totallen -= readlen;
                 if(totallen <= 0)
                     break;
@@ -412,7 +412,7 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
 
     char* hostptr;
     char *username = NULL;
-    char* atsign = strrchr(buf, '@'); 
+    char* atsign = strrchr(buf, '@');
     if(atsign)
     {
         username = buf + protlen;
@@ -457,10 +457,10 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
     path.append("/");
     if(pathptr)
         path.append(pathptr);
-        
+
 }
 
-HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname, 
+HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname,
                        const char* outdir, const char* outfilename, bool writeToFiles,
                        int doValidation, const char* xsdpath, bool isEspLogFile) : m_stopstress(false)
 {
@@ -572,7 +572,7 @@ void HttpClient::start()
                 {
                     dir.append(".");
                     mask = m_inname.str();
-                }   
+                }
 
                 di.setown(createDirectoryIterator(dir.str(), mask));
             }
@@ -594,7 +594,7 @@ void HttpClient::start()
             m_xsdpath.append( strchr(m_url.str(), '?') ? '&' : '?');
             m_xsdpath.append("xsd");
         }
-        
+
         if(http_tracelevel >= 5)
             fprintf(m_logfile, "Loading xsd from %s\n", m_xsdpath.str());
 
@@ -773,7 +773,7 @@ void HttpClient::start()
             fprintf(m_logfile, "%d requests read in\n", filenum);
         }
 
-    }   
+    }
     else if(infile.get() != NULL)
     {
         if(infile->size() > 0)
@@ -1023,7 +1023,7 @@ int HttpClient::sendStressRequests(HttpStat* overall_stat)
 
     if(http_tracelevel > 0)
         fprintf(m_logfile, "Running the test for %d seconds...\n", m_stressduration);
-    
+
     sleep(m_stressduration);
     m_stopstress = true;
 
@@ -1031,7 +1031,7 @@ int HttpClient::sendStressRequests(HttpStat* overall_stat)
         thrdlist[i]->join();
 
     //__int64 end = msTick();
-    
+
     if(http_tracelevel > 0)
         fprintf(m_logfile, "All %d stresstest threads finished.\n", m_stressthreads);
 
@@ -1066,7 +1066,7 @@ void GetLastErrorAndMessage(char* buf)
     DWORD dw = GetLastError();
 
     FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM,
         NULL,
         dw,
@@ -1074,8 +1074,8 @@ void GetLastErrorAndMessage(char* buf)
         (LPTSTR) &lpMsgBuf,
         0, NULL );
 
-    wsprintf(buf, "%d: %s", dw, lpMsgBuf); 
- 
+    wsprintf(buf, "%d: %s", dw, lpMsgBuf);
+
     LocalFree(lpMsgBuf);
 }
 #else
@@ -1129,7 +1129,7 @@ public:
             fprintf(m_logfile, "Error: failed to connect to %s:%d - %s", address->m_ip.str(), address->m_port, errbuf);
             return -1;
         }
-        
+
         if(m_ssctx != NULL)
         {
             m_securesocket.setown(m_ssctx->createSecureSocket(m_sockfd));
@@ -1227,7 +1227,7 @@ public:
         }
         else
             sent = m_securesocket->write(data.str(), data.length());
-        
+
         return sent;
     }
 
@@ -1497,7 +1497,7 @@ int HttpClient::sendRequest(StringBuffer& request, const char* fname, HttpStat* 
 
     if(request.length() > 0)
     {
-        insertSoapHeaders(request);     
+        insertSoapHeaders(request);
         sendRequest(request, io_o1.get(), io_o2.get(), io_o3.get(), NULL, stat);
     }
 
@@ -1521,7 +1521,7 @@ StringBuffer& HttpClient::generateGetRequest(StringBuffer& request)
         request.append("Connection: Close\r\n");
     request.append(m_authheader.str());
     request.append("\r\n");
-    
+
     return request;
 }
 
@@ -1603,7 +1603,7 @@ int HttpClient::validate(StringBuffer& xml)
         const char* ensptr = nsptr;
         while(*ensptr && *ensptr != '"')
             ensptr++;
-        
+
         targetns.append(ensptr - nsptr,nsptr);
     }
 
@@ -1631,16 +1631,16 @@ int HttpClient::validate(StringBuffer& xml)
 
     Owned<IXmlDomParser> p = getXmlDomParser();
     Owned<IXmlValidator> v = p->createXmlValidator();
-    
+
     v->setXmlSource(bptr, len);
     v->setSchemaSource(m_xsd.str(), m_xsd.length());
     v->setTargetNamespace(targetns.str());
-    try 
+    try
     {
         v->validate();
     }
-    catch (IMultiException* me) 
-    {   
+    catch (IMultiException* me)
+    {
         if(http_tracelevel > 0)
         {
             IArrayOf<IException> &es = me->getArray();
@@ -1733,7 +1733,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
             char c2 = req.charAt(seq - 2);
             if(c1 == '\n' || (c1 == '\r' && c2 == '\n'))
                 endofheaders = true;
-            
+
             if(c1 != '\r')
                 request.append("\r\n");
             else
@@ -1925,7 +1925,7 @@ int SimpleServer::start()
                     fprintf(m_logfile, "Server input file/directory %s doesn't exist", m_inputpath.str());
                 return -1;
         }
-        
+
         if(!server_infile->isDirectory())
         {
             try
@@ -1950,7 +1950,7 @@ int SimpleServer::start()
             else
                 fname = m_inputpath.str();
         }
-    }   
+    }
 
     m_roxie_response.append(m_response);
 
@@ -2026,10 +2026,10 @@ int SimpleServer::start()
             }
             else
                 client->write(m_roxie_response.str(), m_roxie_response.length());
-            
+
             replyLen = 0;
             client->write((void*)&replyLen, 4);
-            
+
             if(http_tracelevel >= 10)
                 fprintf(m_logfile, "\n>>sent back response - \n");
             if(http_tracelevel >= 10)
@@ -2052,7 +2052,7 @@ int SimpleServer::start()
                     for (elems->first(); elems->isValid() && !bfound; elems->next())
                     {
                         Owned<IPropertyTreeIterator> funcs = elems->query().getElements("*");
-                    
+
                         for (funcs->first(); funcs->isValid() && !bfound; funcs->next())
                         {
                             StringBuffer fnName(funcs->query().queryName());

@@ -43,7 +43,7 @@ interface IDaftCopyProgress
 enum DaftReplicateMode
 {
     DRMreplicatePrimary,
-    DRMreplicateSecondary, 
+    DRMreplicateSecondary,
     DRMcreateMissing
 };
 
@@ -58,7 +58,7 @@ interface IDistributedFileSystem : public IInterface
     virtual void move(IDistributedFile * from, IDistributedFile * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;
     virtual void replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;        // create new set of copies assumes partname and dir location same as src (only nodes differ) will raise exception if nodes clash
     virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;  // create new set of copies (between copy 0 to copy 1 depending on the mode) @crc set in options to copy if crc differs @sizedate if size/date differ.
-    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;       // copy between external files, must have 
+    virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;       // copy between external files, must have
 
     virtual void directory(const char * directory, IGroup * machines, IPropertyTree * options, IPropertyTree * result) = 0;                 // @recurse=false @time=true @crc=false
     virtual void physicalCopy(const char * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress = NULL) = 0;      // options can include @recurse @copyMissing @copyExisting @preserveTimes @preserveIfNewer @verboseFull @verbose
@@ -68,7 +68,7 @@ interface IDistributedFileSystem : public IInterface
     virtual offset_t getSize(IDistributedFile * file,
                              bool forceget=false,                               // if true gets physical size (ignores cached attribute)
                              bool dontsetattr=true) = 0;                        // if true doesn't set attribute when physical size got
-    virtual bool compress(IDistributedFile * file) = 0;                                                  
+    virtual bool compress(IDistributedFile * file) = 0;
     virtual offset_t getCompressedSize(IDistributedFile * part) = 0;
 
 //operations on a file part
@@ -77,7 +77,7 @@ interface IDistributedFileSystem : public IInterface
                              bool forceget=false,                               // if true gets physical size (ignores cached attribute)
                              bool dontsetattr=true) = 0;                        // if true doesn't set attribute when physical size got
     virtual void replicate(IDistributedFilePart * part, INode *node) = 0;       // creates single copy
-    virtual bool compress(IDistributedFilePart * part) = 0;   
+    virtual bool compress(IDistributedFilePart * part) = 0;
     virtual offset_t getCompressedSize(IDistributedFilePart * part) = 0;
 };
 

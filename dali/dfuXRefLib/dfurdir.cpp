@@ -39,7 +39,7 @@ class XREFDirectoryBuilder
             pdir.setLength(pdir.length()-1);
         if (pdir.length()==0)
             parent = root;
-        else 
+        else
             parent = lookupDir(root,pdir.str());
         if (!parent)
             return NULL;
@@ -89,15 +89,15 @@ public:
 
     void resetParent(IPropertyTree *parent,__int64 parentfsz)
     {
-        if (parent) 
+        if (parent)
             parent->setPropInt64("@size", parentfsz);
     }
 
     void setParent(IPropertyTree *parent,__int64 &parentfsz)
     {
-        if (parent) 
+        if (parent)
             parentfsz = parent->getPropInt64("@size", 0);
-        else 
+        else
             parentfsz = 0;
     }
 
@@ -170,7 +170,7 @@ public:
             }
         }
         resetParent(parent,parentfsz);
-    }       
+    }
 };
 
 IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short port)
@@ -195,11 +195,11 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
                 else
                     nextDir.set(cur);
                 builder.rootDirectory(nextDir, node, dirTree, port);
-            
+
                 if (!sep)
                     break;
 
-                cur = sep+1;        
+                cur = sep+1;
             }
 
             return LINK(dirTree.get());
@@ -217,9 +217,9 @@ IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short
                 s.append(" on ");
                 node->endpoint().getUrlStr(s);
             }
-            if (port) 
+            if (port)
                 s.append(" port ").append(port);
-            
+
             EXCLOG(e, s.str());
             e->Release();
             Sleep(retries*retries*500);

@@ -77,10 +77,10 @@ interface IAssociationVisitor
 {
     virtual bool visit(HqlExprAssociation & assoc) = 0;         // return true if done
 };
-    
+
 //---------------------------------------------------------------------------
 // Class used to represent current location for generating source code statements.
-    
+
 class CHqlBoundExpr;
 class HQLCPP_API BuildCtx : public CInterface
 {

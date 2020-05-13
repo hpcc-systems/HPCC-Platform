@@ -56,13 +56,13 @@ int keyboard::kbhit()
     new_settings.c_cc[VMIN]=1;
     tcsetattr(0, TCSANOW, &new_settings);
 
-    if (nread == 1) 
+    if (nread == 1)
     {
         peek_character = ch;
         return 1;
     }
     return 0;
-#else 
+#else
     return ::_kbhit();
 #endif
 }
@@ -72,11 +72,11 @@ int keyboard::getch()
 #ifndef _WIN32
     char ch;
 
-    if (peek_character != -1) 
+    if (peek_character != -1)
     {
         ch = peek_character;
         peek_character = -1;
-    } 
+    }
     else
     {
         if (read(0,&ch,1) == 0)

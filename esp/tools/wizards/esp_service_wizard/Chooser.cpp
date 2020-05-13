@@ -71,7 +71,7 @@ CAppWizStepDlg* CDialogChooser::Next(CAppWizStepDlg* pDlg)
 
     IEspWizDlg *wd=dynamic_cast<IEspWizDlg*>(m_pDlgs[m_nCurrDlg]);
     wd->initWizDlg();
-    
+
     return m_pDlgs[m_nCurrDlg];
 }
 

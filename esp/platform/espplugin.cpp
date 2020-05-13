@@ -88,9 +88,9 @@ void CEspServiceThread::setSocket(ISocket *sock)
 void CEspServiceThread::stop(bool wait)
 {
     terminating = true;
-    
+
    ticksem.signal();
-    
+
    if (wait)
         join();
 }
@@ -99,11 +99,11 @@ int CEspServiceThread::run()
 {
    Link();
 
-   try 
+   try
    {
       while(onRequest());
     }
-    catch (IException *e) 
+    catch (IException *e)
    {
       StringBuffer estr;
       IERRLOG("Exception(%d, %s) socket(%d).", e->errorCode(), e->errorMessage(estr).str(), m_socket->OShandle());

@@ -67,7 +67,7 @@ interface IAtomPropertyIterator : public IPropertyIteratorOf<IAtom *> { };
 interface IProperties : public IPropertiesOf<char_ptr, IPropertyIterator> { };
 
 #ifdef _MSC_VER
-#pragma warning( pop ) 
+#pragma warning( pop )
 #endif
 
 extern jlib_decl IProperties *createProperties(bool nocase = false);

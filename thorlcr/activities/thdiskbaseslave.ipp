@@ -99,7 +99,7 @@ public:
     IThorRowInterfaces * queryProjectedDiskRowInterfaces();
     virtual void start() override;
 
-    
+
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData);
     virtual void kill();

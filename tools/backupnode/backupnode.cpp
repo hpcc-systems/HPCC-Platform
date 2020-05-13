@@ -24,7 +24,7 @@
 
 #include "jlib.hpp"
 #include "jhtree.hpp"
-#include "jio.hpp" 
+#include "jio.hpp"
 #include "jstring.hpp"
 #include "jfile.hpp"
 #include "jexcept.hpp"
@@ -460,7 +460,7 @@ static void waitSlaves(const char *dir,unsigned num,StringAttr *slaves)
                                 else {
                                     try {
                                         fio.clear();
-                                        file->remove(); 
+                                        file->remove();
                                     }
                                     catch (IException *e) {
                                         StringBuffer msg("waitSlaves.1: ");
@@ -628,7 +628,7 @@ int main(int argc, const char *argv[])
     try
     {
         if (thorMode)
-        { 
+        {
             if (args.ordinality()<4 || 0 == errdatdir.length())
                 usage();
             slaveNum = atoi(args.item(0));
@@ -636,7 +636,7 @@ int main(int argc, const char *argv[])
             const char *myIp = args.item(2);
             const char *backupIp = args.item(3);
 
-            setDaliServixSocketCaching(true); 
+            setDaliServixSocketCaching(true);
             if (!slaveNum || slaveNum>numSlaves)
             {
                 printerr("'%s' is not a valid slave number (range is 1 to %d)", args.item(1), numSlaves);

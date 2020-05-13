@@ -47,11 +47,11 @@ public:
         ICompare *icompare,
         ICompare *icollate,
         ICompare *icollateupper,
-        ISortKeySerializer *keyserializer, 
+        ISortKeySerializer *keyserializer,
         ICompare *primaryCompare,
-        const void *partitionrow, 
-        bool nosort, 
-        bool unstable, 
+        const void *partitionrow,
+        bool nosort,
+        bool unstable,
         bool &abort,
         IThorRowInterfaces *_auxrowif
         )=0;
@@ -88,7 +88,7 @@ interface ISortedInput: extends IInterface // reads rows from sorted local data 
 };
 
 
-interface ISortSlaveBase  // for global merging 
+interface ISortSlaveBase  // for global merging
 {
     virtual IRowStream *createMergeInputStream(rowcount_t sstart, rowcount_t _snum) = 0;
     virtual size32_t getTransferBlockSize() = 0;

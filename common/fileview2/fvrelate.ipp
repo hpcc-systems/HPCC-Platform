@@ -169,11 +169,11 @@ class CFileTreeBrowser;
 struct BrowseCreateInfo
 {
 public:
-    inline BrowseCreateInfo(CFileTreeBrowser * _browser, bool _isEfficient, unsigned _maxRecursion) 
+    inline BrowseCreateInfo(CFileTreeBrowser * _browser, bool _isEfficient, unsigned _maxRecursion)
         : browser(_browser), isEfficient(_isEfficient), maxRecursion(_maxRecursion) {}
 
     unsigned getNestingCount(const ViewFile * search);
-    
+
 public:
     CFileTreeBrowser * browser;
     unsigned maxRecursion;
@@ -357,7 +357,7 @@ protected:
     StringBuffer activeFieldPrefix;
     StringBuffer activeFieldId;
     unsigned activeFieldCount;
-    UnsignedArray savedFieldCounts; 
+    UnsignedArray savedFieldCounts;
 };
 
 class FILEVIEW_API ViewXgmmlERdiagramVisitor : public IErDiagramBuilder

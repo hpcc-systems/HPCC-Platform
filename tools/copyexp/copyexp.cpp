@@ -216,7 +216,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
         throw e;
     }
     dstio.clear();
-    if (stats) 
+    if (stats)
         printStats(offset,start,startu);
     CDateTime createTime, modifiedTime;
     if (srcfile->getTime(&createTime, &modifiedTime, NULL))
@@ -264,12 +264,12 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
             plaincopy = true;
     }
     else
-        srcio = baseio; 
+        srcio = baseio;
 
     if (plaincopy) {
         if(cmpio)
             cmpio.clear();
-        srcio = baseio.get(); 
+        srcio = baseio.get();
     }
 
     Owned<IFile> dstfile = createIFile(to);
@@ -305,7 +305,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
                 strmdst.setown(createLZ4StreamWrite(dstio));
         }
     }
-    else 
+    else
     {
         unsigned compMethod = COMPRESS_METHOD_LZW;
         if (fast)
@@ -361,13 +361,13 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
     if (strmdst)
         strmdst.clear();
     dstio.clear();
-    if (stats) 
+    if (stats)
         printStats(offset,start,startu);
     CDateTime createTime, modifiedTime;
     if (srcfile->getTime(&createTime, &modifiedTime, NULL))
         dstfile->setTime(&createTime, &modifiedTime, NULL);
     printf("copied %s to %s%s\n",from,to,plaincopy?"":" compressing");
-    { // print details 
+    { // print details
         dstio.setown(dstfile->open(IFOread, extraFlags));
         if (dstio) {
             Owned<ICompressedFileIO> cmpio = createCompressedFileReader(dstio);
@@ -380,7 +380,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
             }
             if (cmpio||strmchk)
                 printCompDetails(to,dstio,cmpio,strmchk,flzstrm,lz4strm);
-            else 
+            else
                 printf("destination %s not compressed\n",to);
         }
         else

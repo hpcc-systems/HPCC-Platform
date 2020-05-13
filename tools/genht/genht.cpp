@@ -140,7 +140,7 @@ void process(const char *fname)
             unsigned res = 0;
             while (*s&&isdigit(*s)) {
                 res = 10*res+(*s-'0');
-                s++;    
+                s++;
             }
             values.append(res);
             if (res>=0x10000)
@@ -162,14 +162,14 @@ void process(const char *fname)
                 s++;
             const char *e = s;
             while (*e&&(*e!='"'))
-                e++;            
+                e++;
             if (e!=s) {
                 size32_t l = (byte)((e-s>254)?254:(e-s));
                 mb.append((byte)l).append(l,s);
                 count++;
             }
         }
-        else { 
+        else {
             if (memcmp(ln,"TITLE:",6)==0) {
                 if (ln[6]>' ') {
                     strcpy(eclmodname,ln+6);
@@ -184,7 +184,7 @@ void process(const char *fname)
                 usetable = ln[9]=='Y';
                 matchonly = true;
             }
-            else if (memcmp(ln,"MAPVALUE:",9)==0) 
+            else if (memcmp(ln,"MAPVALUE:",9)==0)
                 mapvalue = ln[9]=='Y';
 */
             gotheader = true;
@@ -277,16 +277,16 @@ void process(const char *fname)
 }
 
 
-        
 
 
-    
+
+
 
 int main(int argc, char* argv[])
 {
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
-    if (argc<2) 
+    if (argc<2)
         printf("Usage: genht <mst-file>\n");
     else
         process(argv[1]);

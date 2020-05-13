@@ -160,7 +160,7 @@ bool CXmlScope::declareValue(const char *name)
 {
     if (locals && locals->hasProp(name))
         return false;
-    
+
     if (!locals)
         locals = createProperties(true);
     locals->setProp(name, "");

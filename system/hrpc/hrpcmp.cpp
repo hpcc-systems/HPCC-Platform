@@ -20,14 +20,14 @@
 
 #include "hrpc.hpp"
 #include "hrpc.ipp"
-#include "hrpcmp.hpp" 
+#include "hrpcmp.hpp"
 
 #include "jsocket.hpp"
 #include "jmutex.hpp"
 #include "jexcept.hpp"
 
-#include <mpbase.hpp> 
-#include <mpcomm.hpp> 
+#include <mpbase.hpp>
+#include <mpcomm.hpp>
 
 interface IMpTransportState : extends IInterface
 {
@@ -79,7 +79,7 @@ public:
     void timedout()
     {
         if (cancelled)
-            THROWHRPCEXCEPTION(HRPCERR_internal);               
+            THROWHRPCEXCEPTION(HRPCERR_internal);
         THROWHRPCEXCEPTION(HRPCERR_call_timeout);
     }
 
@@ -95,7 +95,7 @@ class MpIntraClientState: public MpTransportStateCommon
 public:
     MpIntraClientState(ICommunicator* _comm, rank_t _serverrank, mptag_t _connecttag)
     {
-        comm.set(_comm); 
+        comm.set(_comm);
         serverrank = _serverrank;
         comm->verifyConnection(serverrank);
         connecttag = _connecttag;
@@ -104,10 +104,10 @@ public:
     void Connect(int timeout)
     {
         Disconnect();
-        clienttag = createReplyTag();                   
+        clienttag = createReplyTag();
         CMessageBuffer mb;
         serializeMPtag(mb,clienttag);
-        comm->sendRecv(mb,serverrank, connecttag, timeout);  
+        comm->sendRecv(mb,serverrank, connecttag, timeout);
         deserializeMPtag(mb,servertag);
     }
 
@@ -121,7 +121,7 @@ public:
     {
         //client only receives from server
         assertex(servertag!=TAG_NULL);
-        if (!comm->recv(mb,serverrank, clienttag, NULL ,timeout)) 
+        if (!comm->recv(mb,serverrank, clienttag, NULL ,timeout))
             THROWHRPCEXCEPTION(HRPCERR_call_timeout);
     }
 
@@ -132,17 +132,17 @@ public:
             return false;
         if (peer) {
             ep = comm->queryGroup().queryNode(serverrank).endpoint();
-            tag = servertag; 
+            tag = servertag;
         }
         else {
             ep = queryMyNode()->endpoint();
-            tag = clienttag; 
+            tag = clienttag;
         }
         return true;
     }
 
     bool  Listen()
-    {   
+    {
         assertex(!"only on server");
         return false;
     }
@@ -160,7 +160,7 @@ public:
     MpIntraServerState(ICommunicator* _comm, mptag_t _listentag)
     {
         listening = false;
-        comm.set(_comm); 
+        comm.set(_comm);
         clientrank = RANK_NULL;
         listentag = _listentag;
     }
@@ -168,7 +168,7 @@ public:
     void Transmit(CMessageBuffer &mb)
     {
         if (!connected())
-            THROWHRPCEXCEPTION(HRPCERR_transport_not_open); 
+            THROWHRPCEXCEPTION(HRPCERR_transport_not_open);
         assertex(clienttag!=TAG_NULL);
         comm->send(mb,clientrank,clienttag);
     }
@@ -176,7 +176,7 @@ public:
     void Receive(CMessageBuffer &mb,int timeout)
     {
         if (!connected())
-            THROWHRPCEXCEPTION(HRPCERR_transport_not_open); 
+            THROWHRPCEXCEPTION(HRPCERR_transport_not_open);
         if (!comm->recv(mb,clientrank, servertag,NULL, timeout))
             timedout();
     }
@@ -192,7 +192,7 @@ public:
             if (comm->recv(mb, RANK_ALL, listentag, &clientrank, MP_WAIT_FOREVER)) {
                 critsect.enter();
                 deserializeMPtag(mb,clienttag);
-                servertag = createReplyTag();                   
+                servertag = createReplyTag();
                 serializeMPtag(mb.clear(),servertag);
                 comm->reply(mb);
             }
@@ -220,11 +220,11 @@ public:
             return false;
         if (peer) {
             ep = comm->queryGroup().queryNode(clientrank).endpoint();
-            tag = clienttag; 
+            tag = clienttag;
         }
         else {
             ep = queryMyNode()->endpoint();
-            tag = servertag; 
+            tag = servertag;
         }
         return true;
     }
@@ -251,10 +251,10 @@ public:
     void Connect(int timeout)
     {
         Disconnect();
-        clienttag = createReplyTag();               
+        clienttag = createReplyTag();
         CMessageBuffer mbs;
         serializeMPtag(mbs,clienttag);
-        queryWorldCommunicator().sendRecv(mbs,servernode,connecttag,timeout); 
+        queryWorldCommunicator().sendRecv(mbs,servernode,connecttag,timeout);
         deserializeMPtag(mbs,servertag);
     }
 
@@ -267,7 +267,7 @@ public:
     void Receive(CMessageBuffer &mb,int timeout)
     {
         assertex(connected());
-        if (!queryWorldCommunicator().recv(mb,servernode, clienttag, NULL ,timeout)) 
+        if (!queryWorldCommunicator().recv(mb,servernode, clienttag, NULL ,timeout))
             THROWHRPCEXCEPTION(HRPCERR_call_timeout);
     }
 
@@ -278,11 +278,11 @@ public:
             return false;
         if (peer) {
             ep = servernode->endpoint();
-            tag = servertag; 
+            tag = servertag;
         }
         else {
             ep = queryMyNode()->endpoint();
-            tag = clienttag; 
+            tag = clienttag;
         }
         return true;
     }
@@ -312,14 +312,14 @@ public:
     void Transmit(CMessageBuffer &mb)
     {
         if (!connected())
-            THROWHRPCEXCEPTION(HRPCERR_transport_not_open); 
+            THROWHRPCEXCEPTION(HRPCERR_transport_not_open);
         queryWorldCommunicator().send(mb,clientnode,clienttag);
     }
 
     void Receive(CMessageBuffer &mb,int timeout)
     {
         if (!connected())
-            THROWHRPCEXCEPTION(HRPCERR_transport_not_open); 
+            THROWHRPCEXCEPTION(HRPCERR_transport_not_open);
         assertex(clienttag!=TAG_NULL);
         if (!queryWorldCommunicator().recv(mb,clientnode, servertag,NULL, timeout))
             timedout();
@@ -332,11 +332,11 @@ public:
             return false;
         if (peer) {
             ep = clientnode->endpoint();
-            tag = clienttag; 
+            tag = clienttag;
         }
         else {
             ep = queryMyNode()->endpoint();
-            tag = servertag; 
+            tag = servertag;
         }
         return true;
     }
@@ -355,7 +355,7 @@ public:
                 critsect.enter();
                 clientnode.setown(node);
                 deserializeMPtag(mb,clienttag);
-                servertag = createReplyTag();                   
+                servertag = createReplyTag();
                 serializeMPtag(mb.clear(),servertag);
                 queryWorldCommunicator().reply(mb);
             }
@@ -390,8 +390,8 @@ protected:
     Owned<IMpTransportState>    state;
     CMessageBuffer              mb;
 
-    int                         timeoutms;          
-    int                         connecttimeoutms;           
+    int                         timeoutms;
+    int                         connecttimeoutms;
     Mutex                       mx;
 
 public:
@@ -415,7 +415,7 @@ public:
     void Transmit(HRPCbuffer &c) // assume packet header at head
     {
         size32_t len = c.len(); // complete left
-        HRPCpacketheader* h=(HRPCpacketheader*)c.readptr(len); 
+        HRPCpacketheader* h=(HRPCpacketheader*)c.readptr(len);
         size32_t sz = c.len(); // length left
         h->size = sz;
         h->winrev();
@@ -424,7 +424,7 @@ public:
         c.readptr(sz); //...
     }
 
-    
+
     //Receive will fill HRPCbuffer with what is heard (received message)
     void Receive(HRPCbuffer &c,int timeo)
     {
@@ -433,7 +433,7 @@ public:
         if (timeo != -1) { // timeout overridden
             state->Receive(mb,timeo);
         }
-        else 
+        else
             state->Receive(mb,timeoutms);
         mb.read(size);
         c.ensure(size);
@@ -447,7 +447,7 @@ public:
 
     //block until there is a message received by this node
     bool Listen()
-    {   
+    {
         return state->Listen();
     }
 
@@ -464,7 +464,7 @@ public:
     virtual IHRPCtransport * Accept()
     {
         if (Listen()==0)  //hrpcmp: state shared
-            return NULL;    
+            return NULL;
         state->Link();
         return new HRPCmptransport(state);
     }
@@ -519,22 +519,22 @@ public:
     {
         assertex(!"SetName not supported in MP HRPC");
     }
-    
+
     void Attach(ISocket *sock)
     {
         assertex(!"Attach not supported in MP HRPC");
 
     }
 
-    void SetTimeout(int secs,int msecs)  
+    void SetTimeout(int secs,int msecs)
     {
-        if (secs<0) 
+        if (secs<0)
             timeoutms = MP_WAIT_FOREVER;
-        else 
+        else
             timeoutms = secs*1000+msecs;
     }
-    
-    Mutex &Sync()  
+
+    Mutex &Sync()
     {
         return mx;
     }
@@ -556,7 +556,7 @@ IHRPCtransport *MakeClientMpTransport( ICommunicator *comm, rank_t rank, mptag_t
     // line below: check valid rank value is between 0 and ordinatlity-1
     unsigned count  = comm->queryGroup().ordinality();
     if (rank>=count)
-        THROWHRPCEXCEPTION(HRPCERR_bad_address);     
+        THROWHRPCEXCEPTION(HRPCERR_bad_address);
     MpIntraClientState * s = new MpIntraClientState(comm,rank,tag);
     return MakeHRPCmptransport(s);
 };
@@ -568,7 +568,7 @@ IHRPCtransport *MakeServerMpTransport( ICommunicator *comm, mptag_t tag )
     MpIntraServerState * s = new MpIntraServerState(comm,tag);
     return MakeHRPCmptransport(s);
 };
-                                                                        
+
 // Inter (using InterCommunicator)
 IHRPCtransport *MakeClientMpInterTransport( INode *node, mptag_t tag)
 {

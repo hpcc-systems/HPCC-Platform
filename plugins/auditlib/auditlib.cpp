@@ -31,7 +31,7 @@ static const char * EclDefinition =
 "END;";
 
 
-AUDITLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+AUDITLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {

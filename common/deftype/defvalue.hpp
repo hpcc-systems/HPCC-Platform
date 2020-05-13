@@ -45,10 +45,10 @@ public:
     virtual int rangeCompare(ITypeInfo * targetType) = 0;                       // can the value be represented in the type -1-too small,0-yes,+1-too big
 
     virtual const void *queryValue() const = 0;
-    virtual bool getBoolValue() = 0;    
-    virtual __int64 getIntValue() = 0;  
+    virtual bool getBoolValue() = 0;
+    virtual __int64 getIntValue() = 0;
     virtual double getRealValue() = 0;
-    virtual const char *getStringValue(StringBuffer & out) = 0; 
+    virtual const char *getStringValue(StringBuffer & out) = 0;
     virtual void * getUCharStringValue(unsigned len, void * out) = 0; //copies into buffer of outlen UChars at out; null-terminates if there is room
     virtual const char *getUTF8Value(StringBuffer & out) = 0;
     virtual const char *getCodepageValue(StringBuffer & out, char const * codepage) = 0; // codepages: see system/icu/include/codepages.txt

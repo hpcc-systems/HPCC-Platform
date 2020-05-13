@@ -37,7 +37,7 @@ void registerCreateFunc(CreateFunc func)
 }
 
 ///////////////////////////////////
-    
+
 //////
 
 /////
@@ -301,7 +301,7 @@ void CIOConnection::connect(unsigned which, CActivityBase *destActivity)
     destActivity->setInput(which, activity->queryActivity(), index);
 }
 
-/////////////////////////////////// 
+///////////////////////////////////
 CGraphElementBase *createGraphElement(IPropertyTree &node, CGraphBase &owner, CGraphBase *resultsGraph)
 {
     CGraphElementBase *container = NULL;
@@ -3094,7 +3094,7 @@ void CJobChannel::freePort(unsigned short p, unsigned num)
         return;
     if (num == 0)
         num = 1;
-    while (num--) 
+    while (num--)
         portMap->set(p-queryMyBasePort()+num, false);
 }
 
@@ -3280,7 +3280,7 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
     }
     return rowAllocator;
 }
-    
+
 IOutputRowSerializer * CActivityBase::queryRowSerializer()
 {
     if (CABserializerlock.lock()) {

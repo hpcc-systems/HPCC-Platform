@@ -45,7 +45,7 @@ typedef CopyReferenceArrayOf<CSortMerge> CSortMergeArray;
 
 class CMergeReadStream : public CSimpleInterface, public IRowStream
 {
-protected:  
+protected:
     IRowStream *stream;
     SocketEndpoint endpoint;
     void eos()
@@ -66,7 +66,7 @@ public:
         DBGLOG("SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
 #endif
         SocketEndpoint mergeep = targetep;
-        mergeep.port+=SOCKETSERVERINC; 
+        mergeep.port+=SOCKETSERVERINC;
         stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs);
 #ifdef _TRACE
         DBGLOG("SORT Merge READ: Stream(%u) connected to %s",streamno,url);
@@ -82,9 +82,9 @@ public:
         }
         eos();
     }
-    
+
     const void *nextRow()
-    { 
+    {
         if (stream) {
             OwnedConstThorRow row = stream->nextRow();
             if (row)
@@ -196,7 +196,7 @@ public:
                         out->flush();
                     break;
                 }
-                out->putRow(row.getClear());     
+                out->putRow(row.getClear());
                 ndone ++;
                 sent = true;
                 if (out->bufferSent())
@@ -251,7 +251,7 @@ public:
                 return false;
             }
             try {
-                if (processRows()) 
+                if (processRows())
                     return false;   // false correct here
             }
             catch (IException *e) {
@@ -285,13 +285,13 @@ protected: friend class CSortMerge;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread)
 
-    void start() 
-    { 
-        Thread::start(); 
+    void start()
+    {
+        Thread::start();
     }
 
-    CSortTransferServerThread(ISortSlaveBase &in) 
-        : slave(in), Thread("SortTransferServer") 
+    CSortTransferServerThread(ISortSlaveBase &in)
+        : slave(in), Thread("SortTransferServer")
     {
         unsigned port = in.getTransferPort();
         server.setown(ISocket::create(port));
@@ -331,7 +331,7 @@ public:
         DBGLOG("CSortTransferServerThread::stopped");
     }
 
-    int run() 
+    int run()
     {
         DBGLOG("CSortTransferServerThread started port %d",slave.getTransferPort());
         unsigned numretries = 10;
@@ -394,7 +394,7 @@ public:
             c.waitdone();
         }
         if (selecthandler) {
-            selecthandler->stop(true);  
+            selecthandler->stop(true);
             selecthandler.clear();
         }
         ForEachItemIn(i2,children)
@@ -423,7 +423,7 @@ public:
     void remove(ISocket *socket)
     {
         CriticalBlock proc(childsect);
-        if (selecthandler) 
+        if (selecthandler)
             selecthandler->remove(socket);
     }
 
@@ -434,7 +434,7 @@ public:
                    unsigned partno)
     {
 
-    // map format is an array numnodes*numnodes 
+    // map format is an array numnodes*numnodes
     //     with columns corresponding to split pos (final column is size)
     //     and rows indicating node number
 
@@ -457,14 +457,14 @@ public:
                 k++;
             }
         }
-#endif  
+#endif
         rowcount_t resnum=0;
-        for (i=0;i<numnodes;i++) 
+        for (i=0;i<numnodes;i++)
             resnum += vMAPU(i,partno)-vMAPL(i,partno-1);
         // calculate start position
         unsigned __int64 respos=0;
-        for(i=0;i<partno;i++) 
-            for (j=0;j<numnodes;j++) 
+        for(i=0;i<partno;i++)
+            for (j=0;j<numnodes;j++)
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
         rowcount_t totalrows = resnum;

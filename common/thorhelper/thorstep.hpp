@@ -78,7 +78,7 @@ enum
     SSEFonlyReturnFirstSeekMatch    = 0x0004,
 
 };
-    
+
 struct SmartStepExtra
 {
     inline SmartStepExtra(unsigned _flags, IMultipleStepSeekInfo * _extraSeeks)
@@ -95,7 +95,7 @@ struct SmartStepExtra
 
     inline unsigned queryFlags() const { return flags; }
 
-    //If extraSeeks is provided, then it is used to provide a list of additional seek positions - but only as a hint.  
+    //If extraSeeks is provided, then it is used to provide a list of additional seek positions - but only as a hint.
     //If provided, then we are interested in any rows that match the seek positions (and match the post filter), or the row
     //following the last seek position (postfilter determined by returmMismatches)
     inline IMultipleStepSeekInfo * queryExtraSeeks() const { return extraSeeks; }
@@ -137,8 +137,8 @@ i) The input should be read-ahead
 ii) Mismatches for non equal seek positions should be returned
  a) If the priority of the input isn't known
  b) Except if all medians are known, and a row from the lowest frequency term mismatches and it is still the lowest frequemcy input
- 
-Note: The buffering and mismatch semantics are generally ignored by the merge join code.  
+
+Note: The buffering and mismatch semantics are generally ignored by the merge join code.
       An exception is left only join.
 */
 

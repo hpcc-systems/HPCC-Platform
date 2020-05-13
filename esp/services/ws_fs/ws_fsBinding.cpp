@@ -127,7 +127,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                     userdesc.setown(createUserDescriptor());
                     userdesc->set(username.str(), passwd, context.querySignature());
 
-                    try 
+                    try
                     {
                         if (stricmp(method, "CopyInput") == 0)
                         {
@@ -136,7 +136,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                             {
                                 throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.",sourceLogicalFile.str());
                             }
-            
+
                             const char *kind = df->queryAttributes().queryProp("@kind");
                             if (kind && strcmp(kind,"key")==0)
                             {
@@ -175,7 +175,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
             Owned<IPropertyTree> pTree = createPTreeForXslt(context.getClientVersion(), method, wuid.str());
             toXML(pTree, xml, false);
         }
-    
+
         IProperties* requestparams = request->queryParameters();
         if(requestparams && requestparams->hasProp("rawxml_"))
         {
@@ -214,7 +214,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion,
             Owned<IDFUWorkUnitFactory> dfuwu_factory = getDFUWorkUnitFactory();
             Owned<IConstDFUWorkUnit> dfuwu = dfuwu_factory->openWorkUnit(dfuwuid, false);
             if(dfuwu)
-            {   
+            {
                 dfuwu->toXML(wuxml);
 
                 Owned<IPropertyTree> wu = createPTreeFromXMLString(wuxml.str());
@@ -255,18 +255,18 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion,
             const char* name = cluster.queryProp("@name");
             if (!name||!*name)
                 continue;
-            
+
             unsigned ins = 0;
             Owned<IPropertyTreeIterator> insts = cluster.getElements("Instance");
-            ForEach(*insts) 
+            ForEach(*insts)
             {
                 const char *na = insts->query().queryProp("@netAddress");
-                if (!na || !*na) 
+                if (!na || !*na)
                 {
                     insts->query().setProp("@gname", name);
                     continue;
                 }
-                
+
                 SocketEndpoint ep(na);
                 if (ep.isNull())
                     continue;
@@ -394,7 +394,7 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         request->getParameter("OS", osStr);
         request->getParameter("Path", pathStr);
         request->getParameter("Name", nameStr);
-        
+
 #if 0
         StringArray files;
         IProperties* params = request->queryParameters();
@@ -453,7 +453,7 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
 
         IFileIOStream* ioS = createIOStream(rIO);
         context.addCustomerHeader("Content-disposition", headerStr.str());
-        response->setContent(ioS);  
+        response->setContent(ioS);
         response->setContentType(HTTP_TYPE_OCTET_STREAM);
         response->send();
     }

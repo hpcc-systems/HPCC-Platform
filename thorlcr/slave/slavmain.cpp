@@ -2256,7 +2256,7 @@ public:
         }
         write();
     }
-    
+
 // IFileInProgressHandler
     virtual void add(const char *fip)
     {

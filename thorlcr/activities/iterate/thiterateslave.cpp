@@ -106,7 +106,7 @@ class IterateSlaveActivity : public IterateSlaveActivityBase
 
 public:
 
-    IterateSlaveActivity(CGraphElementBase *_container, bool _global) 
+    IterateSlaveActivity(CGraphElementBase *_container, bool _global)
         : IterateSlaveActivityBase(_container,_global)
     {
         helper = static_cast <IHThorIterateArg *> (queryHelper());
@@ -123,7 +123,7 @@ public:
         for (;;) {
             if (eof || abortSoon)
                 break;
-            
+
             if (!prev) {
                 if (!global || firstNode()) {
                     // construct first row
@@ -189,7 +189,7 @@ class CProcessSlaveActivity : public IterateSlaveActivityBase
 
 public:
 
-    CProcessSlaveActivity(CGraphElementBase *_container, bool _global) 
+    CProcessSlaveActivity(CGraphElementBase *_container, bool _global)
         : IterateSlaveActivityBase(_container,_global)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
@@ -206,13 +206,13 @@ public:
             if (!left) {
                 if (!global || firstNode()) {
                     // construct first row
-                    RtlDynamicRowBuilder r(rightRowAllocator);  
-                    size32_t sz = helper->createInitialRight(r);  
+                    RtlDynamicRowBuilder r(rightRowAllocator);
+                    size32_t sz = helper->createInitialRight(r);
                     right.setown(r.finalizeRowClear(sz));
                 }
                 else {
                     right.setown(getFirst());
-                    if (!right) { 
+                    if (!right) {
                         putNext(NULL); // send to right node (even though right not got)
                         eof = true;
                         break;
@@ -221,12 +221,12 @@ public:
             }
             left.setown(inputStream->ungroupedNextRow());
             if (!left) {
-                putNext(right); // send to next node 
+                putNext(right); // send to next node
                 eof = true;
                 break;
             }
             RtlDynamicRowBuilder nextl(queryRowAllocator());
-            RtlDynamicRowBuilder nextr(rightRowAllocator);  
+            RtlDynamicRowBuilder nextr(rightRowAllocator);
             size32_t thisSize = helper->transform(nextl, nextr, left, right, ++count);
             if (thisSize != 0) {
                 nextright.setown(right.getClear());
@@ -268,7 +268,7 @@ class CChildIteratorSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    // only for toplevel activity 
+    // only for toplevel activity
     IHThorChildIteratorArg * helper;
     bool eof;
     rowcount_t count;
@@ -319,12 +319,12 @@ class CLinkedRawIteratorSlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
 
-    // only for toplevel activity 
+    // only for toplevel activity
     IHThorLinkedRawIteratorArg * helper;
     bool dohere, grouped;
 
 public:
-    CLinkedRawIteratorSlaveActivity(CGraphElementBase *_container) 
+    CLinkedRawIteratorSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorLinkedRawIteratorArg *> (queryHelper());
@@ -381,7 +381,7 @@ class CStreamedIteratorSlaveActivity : public CSlaveActivity
     bool eof;
 
 public:
-    CStreamedIteratorSlaveActivity(CGraphElementBase *_container) 
+    CStreamedIteratorSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
     {
         helper = static_cast <IHThorStreamedIteratorArg *> (queryHelper());

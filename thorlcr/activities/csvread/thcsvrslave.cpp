@@ -106,7 +106,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             inputCRC.reset();
             CDiskPartHandlerBase::setPart(partDesc);
         }
-        virtual void open() 
+        virtual void open()
         {
             allocator.set(activity.queryRowAllocator());
             localOffset = 0;
@@ -372,7 +372,7 @@ public:
         out.clear();
         CDiskReadSlaveActivityBase::kill();
     }
-    
+
 // IThorDataLink
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {

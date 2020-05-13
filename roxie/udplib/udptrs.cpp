@@ -199,7 +199,7 @@ public:
                 StringBuffer s;
                 DBGLOG("UdpSender: write exception - write(%p, %u) - %s", buffer->data, length, e->errorMessage(s).str());
                 e->Release();
-            } 
+            }
             catch(...)
             {
                 DBGLOG("UdpSender: write exception - unknown exception");
@@ -225,7 +225,7 @@ public:
         return false;
     }
 
-    bool removeData(void *key, PKT_CMP_FUN pkCmpFn) 
+    bool removeData(void *key, PKT_CMP_FUN pkCmpFn)
     {
         // Used after receiving an abort, to avoid sending data that is no longer required
         unsigned removed = 0;
@@ -261,7 +261,7 @@ public:
             requestToSend();
     }
 
-    DataBuffer *popQueuedData() 
+    DataBuffer *popQueuedData()
     {
         DataBuffer *buffer;
         for (unsigned i = 0; i < numQueues; i++)
@@ -314,7 +314,7 @@ public:
         assert(numQueues > 0);
         if (!ip.isNull())
         {
-            try 
+            try
             {
                 SocketEndpoint sendFlowEp(_sendFlowPort, ip);
                 SocketEndpoint dataEp(_dataPort, ip);
@@ -327,13 +327,13 @@ public:
                         DBGLOG("UdpSender: sendbuffer set for local socket (size=%d)", udpLocalWriteSocketSize);
                 }
             }
-            catch(IException *e) 
+            catch(IException *e)
             {
                 StringBuffer error, ipstr;
                 DBGLOG("UdpSender: udp_connect failed %s %s", ip.getIpText(ipstr).str(), e->errorMessage(error).str());
                 throw;
             }
-            catch(...) 
+            catch(...)
             {
                 StringBuffer ipstr;
                 DBGLOG("UdpSender: udp_connect failed %s %s", ip.getIpText(ipstr).str(), "Unknown error");
@@ -341,7 +341,7 @@ public:
             }
             output_queue = new queue_t[numQueues];
             maxPktsPerQ = new int[numQueues];
-            for (unsigned j = 0; j < numQueues; j++) 
+            for (unsigned j = 0; j < numQueues; j++)
             {
                 output_queue[j].set_queue_size(_queueSize);
                 maxPktsPerQ[j] = (int) pow((double)udpOutQsPriority, (double)numQueues - j - 1);
@@ -461,17 +461,17 @@ class CSendManager : implements ISendManager, public CInterface
 
     };
 
-    class send_receive_flow : public StartedThread 
+    class send_receive_flow : public StartedThread
     {
         CSendManager &parent;
         int      receive_port;
         Owned<ISocket> flow_socket;
-        
+
     public:
         send_receive_flow(CSendManager &_parent, int r_port) : StartedThread("UdpLib::send_receive_flow"), parent(_parent)
         {
             receive_port = r_port;
-            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
+            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0)
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
             flow_socket.setown(ISocket::udp_create(receive_port));
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
@@ -479,28 +479,28 @@ class CSendManager : implements ISendManager, public CInterface
             DBGLOG("UdpSender: rcv_flow_socket created port=%d sockbuffsize=%d actualsize=%d", receive_port, udpFlowSocketsSize, actualSize);
             start();
         }
-        
-        ~send_receive_flow() 
+
+        ~send_receive_flow()
         {
             running = false;
-            if (flow_socket) 
+            if (flow_socket)
                 flow_socket->close();
             join();
         }
-        
-        virtual int doRun() 
+
+        virtual int doRun()
         {
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender: send_receive_flow started");
 #ifdef __linux__
             setLinuxThreadPriority(2);
 #endif
-            while(running) 
+            while(running)
             {
                 UdpPermitToSendMsg f = { flowType::ok_to_send, 0, { } };
-                while (running) 
+                while (running)
                 {
-                    try 
+                    try
                     {
                         unsigned int res ;
                         flow_socket->read(&f, sizeof(f), sizeof(f), res, 5);
@@ -508,7 +508,7 @@ class CSendManager : implements ISendManager, public CInterface
                         switch (f.cmd)
                         {
                         case flowType::ok_to_send:
-                            if (udpTraceLevel > 1) 
+                            if (udpTraceLevel > 1)
                             {
                                 StringBuffer s;
                                 DBGLOG("UdpSender: received ok_to_send msg max %d packets from node=%s", f.max_data, f.destNode.getTraceText(s).str());
@@ -525,11 +525,11 @@ class CSendManager : implements ISendManager, public CInterface
                             parent.receiversTable[f.destNode.getNodeAddress()].requestAcknowledged();
                             break;
 
-                        default: 
+                        default:
                             DBGLOG("UdpSender: received unknown flow message type=%d", f.cmd);
                         }
                     }
-                    catch (IException *e) 
+                    catch (IException *e)
                     {
                         if (running && e->errorCode() != JSOCKERR_timeout_expired)
                         {
@@ -538,9 +538,9 @@ class CSendManager : implements ISendManager, public CInterface
                         }
                         e->Release();
                     }
-                    catch (...) 
+                    catch (...)
                     {
-                        if (running)   
+                        if (running)
                             DBGLOG("UdpSender: send_receive_flow::unknown exception");
                         MilliSleep(0);
                     }
@@ -550,7 +550,7 @@ class CSendManager : implements ISendManager, public CInterface
         }
     };
 
-    class send_data : public StartedThread 
+    class send_data : public StartedThread
     {
         CSendManager &parent;
         ISocket     *sniffer_socket;
@@ -561,9 +561,9 @@ class CSendManager : implements ISendManager, public CInterface
         void send_sniff(sniffType::sniffCmd busy)
         {
             sniff_msg msg = { busy, parent.myIP};
-            try 
+            try
             {
-                if (!sniffer_socket) 
+                if (!sniffer_socket)
                 {
                     sniffer_socket = ISocket::multicast_connect(ep, multicastTTL);
                     if (udpTraceLevel > 1)
@@ -576,18 +576,18 @@ class CSendManager : implements ISendManager, public CInterface
                 if (udpTraceLevel > 1)
                     DBGLOG("UdpSender: sent busy=%d multicast msg", busy);
             }
-            catch(IException *e) 
+            catch(IException *e)
             {
                 StringBuffer s;
                 StringBuffer url;
                 DBGLOG("UdpSender: multicast_connect or write failed ep=%s - %s", ep.getUrlStr(url).str(), e->errorMessage(s).str());
                 e->Release();
             }
-            catch(...) 
+            catch(...)
             {
                 StringBuffer url;
                 DBGLOG("UdpSender: multicast_connect or write unknown exception - ep=%s", ep.getUrlStr(url).str());
-                if (sniffer_socket) 
+                if (sniffer_socket)
                 {
                     sniffer_socket->Release();
                     sniffer_socket = NULL;
@@ -600,26 +600,26 @@ class CSendManager : implements ISendManager, public CInterface
             : StartedThread("UdpLib::send_data"), parent(_parent), bucket(_bucket), ep(s_port, snif_ip), send_queue(100) // MORE - send q size should be configurable and/or related to size of cluster?
         {
             sniffer_socket = NULL;
-            if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
+            if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0)
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
             start();
         }
-        
+
         ~send_data()
         {
             running = false;
             UdpPermitToSendMsg dummy = {};
             send_queue.push(dummy);
             join();
-            if (sniffer_socket) 
+            if (sniffer_socket)
                 sniffer_socket->Release();
-        }   
+        }
 
-        bool ok_to_send(const UdpPermitToSendMsg &msg) 
+        bool ok_to_send(const UdpPermitToSendMsg &msg)
         {
-            if (send_queue.push(msg, 15)) 
+            if (send_queue.push(msg, 15))
                 return true;
-            else 
+            else
             {
                 StringBuffer s;
                 DBGLOG("UdpSender: push() failed - ignored ok_to_send msg - node=%s, maxData=%u", msg.destNode.getTraceText(s).str(), msg.max_data);
@@ -627,7 +627,7 @@ class CSendManager : implements ISendManager, public CInterface
             }
         }
 
-        virtual int doRun() 
+        virtual int doRun()
         {
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender: send_data started");
@@ -635,7 +635,7 @@ class CSendManager : implements ISendManager, public CInterface
             setLinuxThreadPriority(1); // MORE - windows? Is this even a good idea? Must not send faster than receiver can pull off the socket
         #endif
             UdpPermitToSendMsg permit;
-            while (running) 
+            while (running)
             {
                 send_queue.pop(permit);
                 if (!running)
@@ -647,8 +647,8 @@ class CSendManager : implements ISendManager, public CInterface
                 unsigned payload = receiverInfo.sendData(permit, bucket);
                 if (udpSnifferEnabled)
                     send_sniff(sniffType::idle);
-                
-                if (udpTraceLevel > 1) 
+
+                if (udpTraceLevel > 1)
                 {
                     StringBuffer s;
                     DBGLOG("UdpSender: sent %u bytes to node=%s", payload, permit.destNode.getTraceText(s).str());
@@ -672,7 +672,7 @@ class CSendManager : implements ISendManager, public CInterface
     send_data         *data;
     Linked<TokenBucket> bucket;
     IpAddress myIP;
-    
+
     std::atomic<unsigned> msgSeq{0};
 
     inline unsigned getNextMessageSequence()
@@ -684,7 +684,7 @@ class CSendManager : implements ISendManager, public CInterface
         } while (unlikely(!res));
         return res;
     }
-        
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -703,7 +703,7 @@ public:
     }
 
 
-    ~CSendManager() 
+    ~CSendManager()
     {
         delete resend_flow;
         delete receive_flow;
@@ -743,7 +743,7 @@ public:
         return receiversTable[dest].removeData((void*) &pkHdr, &UdpReceiverEntry::comparePacket);
     }
 
-    virtual bool allDone() 
+    virtual bool allDone()
     {
         // Used for some timing tests only
         for (auto&& dest: receiversTable)

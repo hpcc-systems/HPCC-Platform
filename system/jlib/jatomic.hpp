@@ -203,7 +203,7 @@ typedef struct { volatile int counter; } atomic_t;
 #define atomic_set(v,i)         (((v)->counter) = (i))
 
 static __inline__ bool atomic_dec_and_test(atomic_t *v)
-{   
+{
     // returns (--*v==0)
     return (__sync_add_and_fetch(&v->counter,-1)==0);
 }

@@ -84,9 +84,9 @@ void AccessFailure(IEspContext& context, char const * msg,...)
 struct QueueLock
 {
     QueueLock(IJobQueue* q): queue(q) { queue->lock(); }
-    ~QueueLock() 
-    { 
-        queue->unlock(); 
+    ~QueueLock()
+    {
+        queue->unlock();
     }
 
     Linked<IJobQueue> queue;
@@ -959,7 +959,7 @@ void CActivityInfo::readServerJobQueueDetails(IEspContext &context, const char* 
             hasPaused =  true;
         else if (strieq(status.str(), "stopped"))
             hasStopped =  true;
-    
+
         if (details && *details)
             queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
         else
@@ -983,7 +983,7 @@ void CActivityInfo::readServerJobQueueDetails(IEspContext &context, const char* 
         {
             jobQueue->setQueueStatus("running");
         }
-    
+
         if (details && *details)
         {
             queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
@@ -1362,7 +1362,7 @@ void CWsSMCEx::setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMC
     }
 }
 
-void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access, 
+void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access,
                                          IArrayOf<IEspCapability>& capabilities)
 {
     StringBuffer xpath(access);
@@ -1404,7 +1404,7 @@ bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1433,7 +1433,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1479,7 +1479,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1526,7 +1526,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1556,7 +1556,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1582,7 +1582,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1608,7 +1608,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1651,7 +1651,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1681,7 +1681,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1746,7 +1746,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1767,7 +1767,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
             const char* targetName = targetNames.item(x);
             const char* queueName = queueNames.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
-                
+
             returnCluster->setClusterName(targetName);
             returnCluster->setQueueName(queueName);
 
@@ -1794,7 +1794,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
         resp.setThorClusters(ThorClusters);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1875,7 +1875,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/Activity");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -2162,7 +2162,7 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);

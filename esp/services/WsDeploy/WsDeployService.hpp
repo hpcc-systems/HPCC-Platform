@@ -61,20 +61,20 @@ class CWsDeployFileInfo : public CInterface, implements IConfigFileObserver
 {
 private:
     //==========================================================================================
-    // the following class implements notification handler for subscription to dali for environment 
+    // the following class implements notification handler for subscription to dali for environment
     // updates by other clients.
     //==========================================================================================
     class CSdsSubscription : public CInterface, implements ISDSSubscription
     {
     public:
         CSdsSubscription(CWsDeployFileInfo* pFileInfo)
-        { 
+        {
             m_pFileInfo.set(pFileInfo);
             sub_id = querySDS().subscribe("/Environment", *this);
         }
         virtual ~CSdsSubscription() { unsubscribe(); }
 
-        void unsubscribe() 
+        void unsubscribe()
         {
             if (sub_id) {
                 if (sub_id) { querySDS().unsubscribe(sub_id); sub_id = 0; }
@@ -83,7 +83,7 @@ private:
         IMPLEMENT_IINTERFACE;
 
         //another client (like configenv) may have updated the environment and we got notified
-        //(thanks to our subscription) but don't just reload it yet since this notification is sent on 
+        //(thanks to our subscription) but don't just reload it yet since this notification is sent on
         //another thread asynchronously and we may be actively working with the old environment.  Just
         //invoke handleEnvironmentChange() when we are ready to invalidate cache in environment factory.
         //
@@ -95,20 +95,20 @@ private:
     };
 
     //==========================================================================================
-    // the following class generates JavaScript files required by the service gui, at startup or 
+    // the following class generates JavaScript files required by the service gui, at startup or
     // whenever the environment is updated.
     //==========================================================================================
     class CGenerateJSFactoryThread : public CInterface, implements IThreaded, implements IInterface
     {
     public:
         CGenerateJSFactoryThread(CWsDeployExCE* pService,IConstEnvironment* pConstEnv)
-        { 
+        {
             m_pService.set(pService);
             m_pWorkerThread = NULL;
             m_constEnv.set(pConstEnv);
         }
-        virtual ~CGenerateJSFactoryThread() 
-        { 
+        virtual ~CGenerateJSFactoryThread()
+        {
             bool joinedOk = m_pWorkerThread->join();
 
             if(NULL != m_pWorkerThread) {
@@ -302,14 +302,14 @@ private:
     {
     public:
         CClientAliveThread(CWsDeployFileInfo* pFileInfo, unsigned brokenConnTimeout)
-        { 
+        {
             m_pFileInfo = pFileInfo;
             m_pWorkerThread = NULL;
             m_quitThread = false;
             m_brokenConnTimeout = brokenConnTimeout;
         }
-        virtual ~CClientAliveThread() 
-        { 
+        virtual ~CClientAliveThread()
+        {
             m_quitThread = true;
             m_sem.signal();
             bool joinedOk = m_pWorkerThread->join();
@@ -362,7 +362,7 @@ private:
   {
   public:
     CLockerAliveThread(CWsDeployFileInfo* pFileInfo, unsigned brokenConnTimeout, const char* uname, const char* ip)
-    { 
+    {
       m_pFileInfo = pFileInfo;
       m_pWorkerThread = NULL;
       m_quitThread = false;
@@ -372,8 +372,8 @@ private:
       m_pComputers.setown(createPTreeFromXMLString(sb.str()));
       m_user.clear().append(uname);
     }
-    virtual ~CLockerAliveThread() 
-    { 
+    virtual ~CLockerAliveThread()
+    {
       m_quitThread = true;
       m_sem.signal();
       bool joinedOk = m_pWorkerThread->join();
@@ -451,8 +451,8 @@ public:
       if (m_pFile == NULL)
       {
         return NULL;
-      } 
-       
+      }
+
       return m_pFile->queryFilename();
     };
     static void setFilePath(StringBuffer &filePath, const char* targetName);
@@ -460,7 +460,7 @@ public:
     virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool graph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
-    virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
+    virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req,
                                             IEspNavMenuEventResponse &resp);
     virtual bool displaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp);
     virtual bool isAlphaNumeric(const char *pstr) const;
@@ -500,7 +500,7 @@ public:
     virtual bool notifyInitSystemSaveEnvForCloud(IEspContext &context, IEspNotifyInitSystemSaveEnvForCloudRequest &req, IEspNotifyInitSystemSaveEnvForCloudResponse &resp);
     virtual bool getSummary(IEspContext &context, IEspGetSummaryRequest &req, IEspGetSummaryResponse &resp);
     virtual bool addReqdComps(IEspContext &context, IEspAddReqdCompsRequest &req, IEspAddReqdCompsResponse &resp);
-    
+
     void environmentUpdated()
     {
         if (m_skipEnvUpdateFromNotification)
@@ -531,8 +531,8 @@ private:
                                                           const char* displayType);
     IPropertyTree* findComponentForFolder(IPropertyTree* pFolder, IPropertyTree* pEnvSoftware);
     const char* GetDisplayProcessName(const char* processName, char* buf) const;
-    void addInstance( IPropertyTree* pDst,  const char* comp, const char* displayType, 
-                            const char* compName, const char* build, const char* instType, 
+    void addInstance( IPropertyTree* pDst,  const char* comp, const char* displayType,
+                            const char* compName, const char* build, const char* instType,
                             const char* instName, const char* computer);
     void checkForRefresh(IEspContext &context, IConstWsDeployReqInfo *reqInfo, bool checkWriteAccess);
     IPropertyTree* getEnvTree(IEspContext &context, IConstWsDeployReqInfo *reqInfo);
@@ -541,7 +541,7 @@ private:
     void unlockEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, const char* xmlarg, StringBuffer& sbMsg, bool saveEnv = false);
     void setEnvironment(IEspContext &context, IConstWsDeployReqInfo *reqInfo, const char* newEnv, const char* fnName, StringBuffer& sbBackup, bool validate = true, bool updateDali = true);
     bool checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip, StringBuffer& reqdCompNames, const char* buildSet, bool autoAdd=false);
-  
+
     Owned<CSdsSubscription>   m_pSubscription;
     Owned<IConstEnvironment>  m_constEnvRdOnly;
     Owned<SCMStringBuffer>    m_pEnvXml;
@@ -572,7 +572,7 @@ private:
     CWsDeployExCE*              m_pService;
 };
 
-class CCloudTaskThread : public CInterface, 
+class CCloudTaskThread : public CInterface,
     implements IPooledThread
 {
 public:
@@ -624,9 +624,9 @@ const char* getFnString(EnvAction ea);
 class CCloudActionHandler : public CInterface, implements IInterface
 {
 public:
-    CCloudActionHandler(CWsDeployFileInfo* pFileInfo, EnvAction eA, EnvAction cancelEA, 
+    CCloudActionHandler(CWsDeployFileInfo* pFileInfo, EnvAction eA, EnvAction cancelEA,
         const char* user, const char* port, IPropertyTree* pComputers)
-    { 
+    {
         m_pFileInfo = pFileInfo;
         m_opFailed = false;
         m_eA = eA;
@@ -635,9 +635,9 @@ public:
         m_user.append(user);
         m_pComputers = pComputers;
     }
-    
-  virtual ~CCloudActionHandler() 
-    { 
+
+  virtual ~CCloudActionHandler()
+    {
         m_pFileInfo = NULL;
     }
 
@@ -686,9 +686,9 @@ public:
             {
                 IPropertyTree* pComputer = &iter->query();
                 const char* netAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
-                if (!strcmp(netAddr, ".") || 
-                    !strcmp(netAddr, "127.0.0.1") || 
-                    !strcmp(netAddr, "0.0.0.0") || 
+                if (!strcmp(netAddr, ".") ||
+                    !strcmp(netAddr, "127.0.0.1") ||
+                    !strcmp(netAddr, "0.0.0.0") ||
                     !strcmp(netAddr, localip.str()))
                     continue;
                 else
@@ -706,9 +706,9 @@ public:
                 {
                     IPropertyTree* pComputer = &iter->query();
                     const char* netAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
-                    if (!strcmp(netAddr, ".") || 
-                        !strcmp(netAddr, "127.0.0.1") || 
-                        !strcmp(netAddr, "0.0.0.0") || 
+                    if (!strcmp(netAddr, ".") ||
+                        !strcmp(netAddr, "127.0.0.1") ||
+                        !strcmp(netAddr, "0.0.0.0") ||
                         !strcmp(netAddr, localip.str()))
                         continue;
                     else
@@ -741,9 +741,9 @@ public:
                     {
                         IPropertyTree* pComputer = &iter->query();
                         const char* netAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
-                        if (!strcmp(netAddr, ".") || 
-                            !strcmp(netAddr, "127.0.0.1") || 
-                            !strcmp(netAddr, "0.0.0.0") || 
+                        if (!strcmp(netAddr, ".") ||
+                            !strcmp(netAddr, "127.0.0.1") ||
+                            !strcmp(netAddr, "0.0.0.0") ||
                             !strcmp(netAddr, localip.str()))
                             continue;
                         else
@@ -781,7 +781,7 @@ public:
 
         return false;
     }
-    
+
     void setResult(const char* ip, const char* msg)
     {
         synchronized block(m_mutex);
@@ -902,7 +902,7 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
-    virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
+    virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req,
                                                     IEspNavMenuEventResponse &resp);
     virtual bool onDisplaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp);
     virtual bool onSaveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp);
@@ -976,7 +976,7 @@ public:
 
     virtual ~CWsDeployEx(){}
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
-    virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
+    virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req,
                                                     IEspNavMenuEventResponse &resp);
     virtual bool onDisplaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp);
     virtual bool onSaveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp);

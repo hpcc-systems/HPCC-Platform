@@ -280,7 +280,7 @@ IHqlExpression * CTreeOptimizer::removeParentNode(IHqlExpression * expr)
     DBGLOG("Optimizer: Node %s remove self (now %s)", queryNode0Text(expr), queryNode1Text(child));
 
     // Need to dec link count of child because it is just about to inherited the link count from the parent
-    decUsage(child);        
+    decUsage(child);
     return LINK(child);
 }
 
@@ -786,7 +786,7 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
 
         DBGLOG("Optimizer: Convert %s to a filter", queryNode0Text(transformed));
 
-        //NOTE: left and right never walk over any shared nodes, so don't need to decrement usage for 
+        //NOTE: left and right never walk over any shared nodes, so don't need to decrement usage for
         //child(1), child(2) or intermediate nodes to left/right, since not referenced any more.
         if (baseDataset == left)
             noteUnused(right);      // dataset is now used one less time
@@ -1171,7 +1171,7 @@ IHqlExpression * CTreeOptimizer::hoistFilterOverProject(IHqlExpression * transfo
 {
     IHqlExpression * child = transformed->queryChild(0);
 
-    //Should be able to move filters over count projects, as long as not filtering on the count fields.  
+    //Should be able to move filters over count projects, as long as not filtering on the count fields.
     //Would need to add a containsCounter() test in the expandFields code - cannot just test filterExpr
     //because counter may be there (e.g., countindex3.hql)
     if (child->hasAttribute(_countProject_Atom) || child->hasAttribute(prefetchAtom) || isAggregateDataset(child))
@@ -1495,7 +1495,7 @@ IHqlExpression * mapJoinConditionToFilter(IHqlExpression * expr, IHqlExpression 
         return NULL;
     return LINK(expr);
 }
-    
+
 IHqlExpression * splitJoinFilter(IHqlExpression * expr, HqlExprArray * leftOnly, HqlExprArray * rightOnly)
 {
     node_operator op = expr->getOperator();
@@ -1608,8 +1608,8 @@ IHqlExpression * CTreeOptimizer::optimizeDistributeDedup(IHqlExpression * expr)
         return NULL;
 
     DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
-    
-    
+
+
     OwnedHqlExpr distn;
     if (expr->hasAttribute(manyAtom))
     {
@@ -1925,8 +1925,8 @@ bool CTreeOptimizer::childrenAreShared(IHqlExpression * expr)
         {
         case childdataset_none:
             return false;
-        case childdataset_dataset: 
-        case childdataset_datasetleft: 
+        case childdataset_dataset:
+        case childdataset_datasetleft:
         case childdataset_left:
         case childdataset_same_left_right:
         case childdataset_top_left_right:
@@ -2082,7 +2082,7 @@ IHqlExpression * CTreeOptimizer::moveProjectionOverSimple(IHqlExpression * trans
             args.append(*collapsed);
         }
     }
-    
+
     DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(transformed), queryNode1Text(child));
     OwnedHqlExpr swapped = child->clone(args);
     if (!alreadyHasUsage(swapped))
@@ -2262,7 +2262,7 @@ void CTreeOptimizer::recursiveDecChildUsage(IHqlExpression * expr)
     {
     case childdataset_none:
         break;
-    case childdataset_dataset: 
+    case childdataset_dataset:
     case childdataset_datasetleft:
     case childdataset_left:
     case childdataset_same_left_right:
@@ -2562,7 +2562,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
             //MORE: The OHOinsidecompound isn't really good enough - because might remove projects from
             //nested child aggregates which could benefit from them.  Probably not as long as all compound
-            //activities support aggregation.  In fact test should be removable everywhere once all 
+            //activities support aggregation.  In fact test should be removable everywhere once all
             //engines support the new activities.
             if (isGrouped(transformed->queryChild(0)) || (queryRealChild(transformed, 3) && !(options & HOOinsidecompound)))
                 break;
@@ -2590,7 +2590,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                     if (index < 1 || index > values->numChildren())
                         return replaceWithNull(transformed);
-        
+
                     //MORE If trivial projection then might be worth merging with multiple items, but unlikely to occur in practice
                     OwnedHqlExpr ret = createRow(no_createrow, LINK(values->queryChild((unsigned)index-1)));
                     noteUnused(child);
@@ -2605,7 +2605,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                     if (index != 1)
                         return replaceWithNull(transformed);
-        
+
                     IHqlExpression * ret = child->queryChild(0);
                     noteUnused(child);
                     decUsage(ret);  // will inherit later
@@ -2681,7 +2681,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 case no_inlinetable:
                     {
                         IHqlExpression * values = child->queryChild(0);
-                        if (values->numChildren() == 1) 
+                        if (values->numChildren() == 1)
                         {
                             IHqlExpression * transform = values->queryChild(0);
                             OwnedHqlExpr match = getExtractSelect(transform, transformed->queryChild(1), false);
@@ -2727,7 +2727,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if ((extracted->getOperator() == no_select) && (extracted->queryChild(0) == child->queryNormalizedSelector()))
                     {
                         IHqlExpression * values = child->queryChild(0);
-                        if (values->numChildren() == 1) 
+                        if (values->numChildren() == 1)
                         {
                             IHqlExpression * transform = values->queryChild(0);
                             OwnedHqlExpr match = getExtractSelect(transform, extracted->queryChild(1), false);
@@ -3621,7 +3621,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 
                     if (child->hasAttribute(_countProject_Atom) || child->hasAttribute(prefetchAtom))
                         break;
-    
+
                     IHqlExpression * transformKeyed = transformed->queryAttribute(keyedAtom);
                     IHqlExpression * childKeyed = child->queryAttribute(keyedAtom);
                     if (childKeyed && !transformKeyed)
@@ -3633,7 +3633,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     HqlExprArray args;
                     args.append(*LINK(grandchild));
                     args.append(*LINK(transformed->queryChild(1)));
-                    
+
                     ExpandSelectorMonitor monitor(*this);
                     IHqlExpression * transformExpr = transformed->queryChild(2);
                     HqlExprArray assigns;
@@ -3952,8 +3952,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             }
 
             //MORE: The OHOinsidecompound isn't really good enough - because might remove projects from
-            //nested child aggregates which could benifit from them.  Probably not as long as all compound 
-            //activities support aggregation.  In fact test should be removable everywhere once all 
+            //nested child aggregates which could benifit from them.  Probably not as long as all compound
+            //activities support aggregation.  In fact test should be removable everywhere once all
             //engines support the new activities.
             if (isGrouped(transformed->queryChild(0)) || (queryRealChild(transformed, 3) && !(options & HOOinsidecompound)))
                 break;
@@ -4317,11 +4317,11 @@ or
 First is not likely to affect many nodes - since only will be set on datasets.
 Second is likely to use much less memory, and probably as quick - trading an extra indirection+construction time with an assign to a structure.
 
-Have a noComma(top-ds, prev-ctx) to mark the current context.  
+Have a noComma(top-ds, prev-ctx) to mark the current context.
 *** Only need to change if dataset is visible inside the arguments to the ECL syntax ***
-Use an array of ctx, where tos is current don't seed with a dummy value - because will cause commas to be created 
+Use an array of ctx, where tos is current don't seed with a dummy value - because will cause commas to be created
 
-The idea of the transformedSelector should also be generalized: 
+The idea of the transformedSelector should also be generalized:
 if (!transformed) try transformedSelector, and set transformedSelector to result.
 
 
@@ -4329,7 +4329,7 @@ if (!transformed) try transformedSelector, and set transformedSelector to result
 - should we replace the boolean flags in CHqlExpression with a mask?
   i) would make anding /oring more efficient.
   ii) would make adding code generator helpers much less painful - use 32bits and allocate from top down for the code generator.
-  
+
 Useful flags
 - context free - not getresults or access to fields in unrelated tables.
 - unconditional?

@@ -48,7 +48,7 @@ public:
     }
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {       
+    {
     }
 
 // IThorDataLink

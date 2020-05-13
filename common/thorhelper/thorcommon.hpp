@@ -57,7 +57,7 @@ class THORHELPER_API CMemoryRowSerializer: implements IRowSerializerTarget
     MemoryBuffer & buffer;
     unsigned nesting;
 public:
-    inline CMemoryRowSerializer(MemoryBuffer & _buffer) 
+    inline CMemoryRowSerializer(MemoryBuffer & _buffer)
         : buffer(_buffer)
     {
         nesting = 0;
@@ -71,9 +71,9 @@ public:
 // useful package
 interface IRowInterfaces: extends IInterface
 {
-    virtual IEngineRowAllocator * queryRowAllocator()=0;  
-    virtual IOutputRowSerializer * queryRowSerializer()=0; 
-    virtual IOutputRowDeserializer * queryRowDeserializer()=0; 
+    virtual IEngineRowAllocator * queryRowAllocator()=0;
+    virtual IOutputRowSerializer * queryRowSerializer()=0;
+    virtual IOutputRowDeserializer * queryRowDeserializer()=0;
     virtual IOutputMetaData *queryRowMetaData()=0;
     virtual unsigned queryActivityId() const=0;
     virtual ICodeContext *queryCodeContext()=0;
@@ -539,9 +539,9 @@ public:
     {
         return ctx->querySuperFileTransaction();
     }
-    virtual char *getEnv(const char *name, const char *defaultValue) const 
+    virtual char *getEnv(const char *name, const char *defaultValue) const
     {
-        return ctx->getEnv(name, defaultValue); 
+        return ctx->getEnv(name, defaultValue);
     }
     virtual char *getJobName()
     {

@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "Can't open file %s\n", path);
     }
     else
-    {   
+    {
         char* pidbuf[32];
         int numread = fread(pidbuf, sizeof(char), 31, f);
         if(numread > 0)
@@ -133,18 +133,18 @@ int main(int argc, char** argv)
     // Disk Usage
     char        drivePath[] = "?:\\";
     char        driveName;
-    for( driveName = 'A'; driveName <= 'Z'; driveName++ ) 
+    for( driveName = 'A'; driveName <= 'Z'; driveName++ )
     {
         drivePath[0] = driveName;
         int dtype = GetDriveTypeA(drivePath);
-        if(dtype == DRIVE_FIXED || dtype == DRIVE_RAMDISK || dtype == DRIVE_REMOVABLE || dtype == DRIVE_CDROM) 
+        if(dtype == DRIVE_FIXED || dtype == DRIVE_RAMDISK || dtype == DRIVE_REMOVABLE || dtype == DRIVE_CDROM)
         {
             ULARGE_INTEGER diskAvailStruct;
             ULARGE_INTEGER diskTotalStruct;
             diskAvailStruct.QuadPart = 0;
             diskTotalStruct.QuadPart = 0;
             GetDiskFreeSpaceExA(drivePath, &diskAvailStruct, &diskTotalStruct, 0);
-            double DiskSize = diskTotalStruct.QuadPart / 1024.0; 
+            double DiskSize = diskTotalStruct.QuadPart / 1024.0;
             double FreeSize = diskAvailStruct.QuadPart / 1024.0;
             printf("%s: %.0f %.0f\n", drivePath, DiskSize - FreeSize, FreeSize);
         }

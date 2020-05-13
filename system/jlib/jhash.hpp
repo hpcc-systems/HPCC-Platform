@@ -267,7 +267,7 @@ class CopyMapXToIInterface  : public MapBetween<KEY, KEYINIT, IInterfacePtr,IInt
 {
 };
 
-template <class KEY, class KEYINIT, class C> 
+template <class KEY, class KEYINIT, class C>
 class CopyMapXToMyClass : public CopyMapXToIInterface<KEY, KEYINIT>
 {
   public:
@@ -302,7 +302,7 @@ public:
     using ELEMENT = MappingXToIInterface<KEY, KEYINIT>;
 };
 
-template <class KEY, class KEYINIT, class C> 
+template <class KEY, class KEYINIT, class C>
 class MapXToMyClass : public MapXToIInterface<KEY, KEYINIT>
 {
   public:
@@ -320,7 +320,7 @@ class MapXToMyClass : public MapXToIInterface<KEY, KEYINIT>
       }
 };
 
-template <class KEY, class KEYINIT, class C, class BASE> 
+template <class KEY, class KEYINIT, class C, class BASE>
 class MapXToMyClassViaBase : public MapXToIInterface<KEY, KEYINIT>
 {
   public:
@@ -458,7 +458,7 @@ protected:
         }
         free(table);
         table = newtable;
-    }       
+    }
 
 public:
     CMinHashTable<C>(unsigned _initialSize = 7)
@@ -469,9 +469,9 @@ public:
     }
     ~CMinHashTable<C>()
     {
-        C **t = table+htn; 
-        while (t--!=table) 
-            if (*t) 
+        C **t = table+htn;
+        while (t--!=table)
+            if (*t)
                 C::destroy(*t);
         free(table);
     }
@@ -481,14 +481,14 @@ public:
         if (n*4>htn*3)
             expand();
         unsigned i = c->hash%htn;
-        while (table[i]) 
+        while (table[i])
             if (++i==htn)
                 i = 0;
         table[i] = c;
         n++;
     }
 
-    C *findh(const char *key,unsigned h) 
+    C *findh(const char *key,unsigned h)
     {
         unsigned i=h%htn;
         while (table[i]) {
@@ -500,7 +500,7 @@ public:
         return NULL;
     }
 
-    C *find(const char *key,bool add) 
+    C *find(const char *key,bool add)
     {
         unsigned h = C::getHash(key);
         unsigned i=h%htn;
@@ -554,7 +554,7 @@ public:
             if (j==htn)
                 j = 0;
             C *cn = table[j];
-            if (cn==NULL) 
+            if (cn==NULL)
                 break;
             unsigned k = cn->hash%htn;
             if (j>i) {
@@ -577,7 +577,7 @@ public:
 
     C *first(unsigned &i)
     {
-        i = 0; 
+        i = 0;
         return next(i);
     }
     C *next(unsigned &i)

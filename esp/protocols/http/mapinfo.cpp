@@ -37,7 +37,7 @@ public:
     virtual const char* getOptional(const char* structName, const char* field) { return NULL; }
     virtual void addDeprVersion(const char* structName, const char* field, double version) { }
     virtual void addMaxVersion(const char* structName, const char* field, double version) { }
-    virtual void addMinVersion(const char* structName, const char* field, double version) { } 
+    virtual void addMinVersion(const char* structName, const char* field, double version) { }
     virtual void addOptional(const char* structName, const char* field, const char* option) { }
     virtual void toString(class StringBuffer& s) {  s.append("Null map info:"); }
 };
@@ -74,17 +74,17 @@ public:
     virtual void toString(StringBuffer& s);
 };
 
-double CMapInfo::getMinVersion(const char* structName, const char* field) 
+double CMapInfo::getMinVersion(const char* structName, const char* field)
 {
     string tag = string(structName)+":"+field;
     VersionMap::iterator it = m_minvers.find(tag);
     if (it!=m_minvers.end())
         return (*it).second;
-    
+
     return -1;
 }
 
-double CMapInfo::getMaxVersion(const char* structName, const char* field) 
+double CMapInfo::getMaxVersion(const char* structName, const char* field)
 {
     string tag = string(structName)+":"+field;
     VersionMap::iterator it = m_maxvers.find(tag);
@@ -93,7 +93,7 @@ double CMapInfo::getMaxVersion(const char* structName, const char* field)
     return -1;
 }
 
-double CMapInfo::getDeprVersion(const char* structName, const char* field) 
+double CMapInfo::getDeprVersion(const char* structName, const char* field)
 {
     string tag = string(structName)+":"+field;
     VersionMap::iterator it = m_deprvers.find(tag);
@@ -109,31 +109,31 @@ const char* CMapInfo::getOptional(const char* structName, const char* field)
     return (it==m_optionals.end()) ? NULL : (*it).second.c_str();
 }
 
-void CMapInfo::addMaxVersion(const char* structName, const char* field, double version) 
+void CMapInfo::addMaxVersion(const char* structName, const char* field, double version)
 {
     string tag = string(structName)+":"+field;
     m_maxvers.insert(pair<string,double>(tag,version));
 }
 
-void CMapInfo::addDeprVersion(const char* structName, const char* field, double version) 
+void CMapInfo::addDeprVersion(const char* structName, const char* field, double version)
 {
     string tag = string(structName)+":"+field;
     m_deprvers.insert(pair<string,double>(tag,version));
 }
 
-void CMapInfo::addMinVersion(const char* structName, const char* field, double version) 
+void CMapInfo::addMinVersion(const char* structName, const char* field, double version)
 {
     string tag = string(structName)+":"+field;
     m_minvers.insert(pair<string,double>(tag,version));
 }
 
-void CMapInfo::addOptional(const char* structName, const char* field, const char* option) 
+void CMapInfo::addOptional(const char* structName, const char* field, const char* option)
 {
     string tag = string(structName)+":"+field;
     m_optionals.insert(pair<string,string>(tag,option));
 }
 
-void CMapInfo::toString(StringBuffer& s) 
+void CMapInfo::toString(StringBuffer& s)
 {
     VersionMap::const_iterator it;
     s.append("=== MinVer ===\n");

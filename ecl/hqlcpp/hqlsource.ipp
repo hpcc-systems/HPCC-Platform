@@ -27,7 +27,7 @@ struct VirtualFieldsInfo
 {
 public:
     VirtualFieldsInfo()
-    { 
+    {
         simpleVirtualsAtEnd = true;
         requiresDeserialize = false;
     }

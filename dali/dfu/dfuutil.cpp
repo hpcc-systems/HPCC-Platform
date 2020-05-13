@@ -367,7 +367,7 @@ public:
                             got = getFileInfo(dstfn,dstf,dstsize,dstmodtime);
                             // check size/date TBD
                             sem.signal();
-                            if (got&&(srcsize==dstsize)&&srcmodtime.equals(dstmodtime)) 
+                            if (got&&(srcsize==dstsize)&&srcmodtime.equals(dstmodtime))
                                 continue;
                         }
 

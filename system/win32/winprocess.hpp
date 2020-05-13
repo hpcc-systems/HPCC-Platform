@@ -36,7 +36,7 @@ typedef std::vector<wchar_t> wstring;
 class Process: public Handle
 {
 public:
-    Process() 
+    Process()
     {}
 
     Process(int _pid, int access): Handle(::OpenProcess(access, FALSE, _pid))
@@ -126,7 +126,7 @@ public:
         {
             return;
         }
-    
+
         read.set(pipeRead);
         Handle hstdout(pipeWrite,0,true,DUPLICATE_SAME_ACCESS|DUPLICATE_CLOSE_SOURCE);
 
@@ -171,7 +171,7 @@ public:
 
     }
 
-    size_t Write(const char *input, size_t inputLen) 
+    size_t Write(const char *input, size_t inputLen)
     {
         DWORD wrote;
         if(!::WriteFile(write, input, inputLen, &wrote, NULL))
@@ -222,7 +222,7 @@ struct ProcessPid: public Process
 };
 
 class ProcessList: public std::list<ProcessPid>
-{ 
+{
 public:
     ProcessList(DWORD _access=SYNCHRONIZE): access(_access)
     {
@@ -250,10 +250,10 @@ public:
             return;
         }
         size_t len=imagepath ? _tcslen(imagepath) : 0;
-        
+
         for(DWORD buflen=1024*sizeof(DWORD);;buflen*=2)
         {
-            DWORD* processes=(DWORD*)_alloca(buflen), size=0; 
+            DWORD* processes=(DWORD*)_alloca(buflen), size=0;
 
             if (::EnumProcesses(processes, buflen, &size))
             {

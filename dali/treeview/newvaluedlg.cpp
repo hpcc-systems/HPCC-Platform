@@ -60,22 +60,22 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CNewValueDlg message handlers
 
-BOOL CNewValueDlg::OnInitDialog() 
+BOOL CNewValueDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
-    
+
     switch(NewValueType)
     {
     case NVT_property:  SetWindowText("New Property Details"); break;
     case NVT_attribute: SetWindowText("New Attribute Details"); break;
-    }       
+    }
 
-    CEdit * edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWNAMEEDIT));  
+    CEdit * edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWNAMEEDIT));
     edt->SetWindowText(Name);
     edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWVALUEEDIT));
     edt->SetWindowText(Value);
 
-    return TRUE;  
+    return TRUE;
 }
 
 LPCSTR CNewValueDlg::GetName()
@@ -90,13 +90,13 @@ LPCSTR CNewValueDlg::GetValue()
 
 void CNewValueDlg::OnOK()
 {
-    CEdit * edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWNAMEEDIT));  
+    CEdit * edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWNAMEEDIT));
     edt->GetWindowText(Name);
     edt = static_cast <CEdit *> (GetDlgItem(IDC_NEWVALUEEDIT));
     edt->GetWindowText(Value);
 
     if(Validate())
-    {   
+    {
         CDialog::OnOK();
     }
 }

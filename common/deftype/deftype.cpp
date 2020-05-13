@@ -159,12 +159,12 @@ CTypeInfo::~CTypeInfo()
 {
 }
 
-IValue * CTypeInfo::castFrom(double value)       
-{ 
+IValue * CTypeInfo::castFrom(double value)
+{
     //NB: Force VMT use...
     if (value < 0)
-        return ((ITypeInfo *)this)->castFrom(true, (__int64)value); 
-    return ((ITypeInfo *)this)->castFrom(false, (__int64)(unsigned __int64)value); 
+        return ((ITypeInfo *)this)->castFrom(true, (__int64)value);
+    return ((ITypeInfo *)this)->castFrom(false, (__int64)(unsigned __int64)value);
 }
 
 IValue * CTypeInfo::castFrom(size32_t len, const UChar * text)
@@ -249,14 +249,14 @@ inline ITypeInfo * getPromotedBitfieldType(unsigned len)
     return makeIntType(getPromotedBitfieldSize(len), false);
 }
 
-CBitfieldTypeInfo::CBitfieldTypeInfo(int _length, ITypeInfo * _baseType) : CTypeInfo((_length+7)/8), bitLength(_length) 
+CBitfieldTypeInfo::CBitfieldTypeInfo(int _length, ITypeInfo * _baseType) : CTypeInfo((_length+7)/8), bitLength(_length)
 {
     storeType  = _baseType;
     promoted = getPromotedBitfieldType(_length);
 }
 
-bool CBitfieldTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CBitfieldTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_real: case type_int: case type_decimal: case type_swapint: case type_bitfield: case type_any: case type_packedint:
@@ -300,8 +300,8 @@ StringBuffer &CBitfieldTypeInfo::getECLType(StringBuffer &out)
 
 //---------------------------------------------------------------------------
 
-bool CIntTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CIntTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_real: case type_int: case type_decimal: case type_swapint: case type_bitfield: case type_any: case type_packedint:
@@ -370,8 +370,8 @@ StringBuffer &CSwapIntTypeInfo::getECLType(StringBuffer &out)
 
 //---------------------------------------------------------------------------
 
-bool CPackedIntTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CPackedIntTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_real: case type_int: case type_decimal: case type_swapint: case type_bitfield: case type_any: case type_packedint:
@@ -442,7 +442,7 @@ IValue * CRealTypeInfo::castFrom(bool isSignedValue, __int64 value)
 }
 
 IValue * CRealTypeInfo::castFrom(double value)
-{ 
+{
     return createRealValue(value, LINK(this));
 }
 
@@ -459,8 +459,8 @@ StringBuffer &CRealTypeInfo::getECLType(StringBuffer &out)
     return out;
 }
 
-bool CRealTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CRealTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_real: case type_int: case type_decimal: case type_swapint: case type_bitfield: case type_any: case type_packedint:
@@ -514,7 +514,7 @@ IValue * CDecimalTypeInfo::createValueFromStack()
 IValue * CDecimalTypeInfo::castFrom(bool isSignedValue, __int64 value)
 {
     BcdCriticalBlock bcdBlock;
-    
+
     if (isSignedValue)
         DecPushInt64(value);
     else
@@ -523,7 +523,7 @@ IValue * CDecimalTypeInfo::castFrom(bool isSignedValue, __int64 value)
 }
 
 IValue * CDecimalTypeInfo::castFrom(double value)
-{ 
+{
     DecPushReal(value);
     return createValueFromStack();
 }
@@ -575,8 +575,8 @@ StringBuffer &CDecimalTypeInfo::getECLType(StringBuffer &out)
     return out;
 }
 
-bool CDecimalTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CDecimalTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_real: case type_int: case type_decimal: case type_swapint: case type_any: case type_packedint:
@@ -716,8 +716,8 @@ unsigned CStringTypeInfo::getCardinality()
     return (unsigned)-1;
 }
 
-bool CStringTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CStringTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_string: case type_varstring:
@@ -847,8 +847,8 @@ StringBuffer &CUnicodeTypeInfo::getECLType(StringBuffer &out)
     return out;
 }
 
-bool CUnicodeTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CUnicodeTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_any:
@@ -916,7 +916,7 @@ StringBuffer &CUtf8TypeInfo::getECLType(StringBuffer &out)
 
 //---------------------------------------------------------------------------
 
-CDataTypeInfo::CDataTypeInfo(int _length) : CStringTypeInfo(_length, getCharset(dataAtom), NULL) 
+CDataTypeInfo::CDataTypeInfo(int _length) : CStringTypeInfo(_length, getCharset(dataAtom), NULL)
 {
 }
 
@@ -928,14 +928,14 @@ StringBuffer &CDataTypeInfo::getECLType(StringBuffer &out)
         return out.append("data");
 }
 
-bool CDataTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CDataTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_data:
     case type_any:
 #ifdef DATA_STRING_COMPATIBLE
-    case type_string: case type_varstring: 
+    case type_string: case type_varstring:
 #endif
         return true;
     }
@@ -952,8 +952,8 @@ IValue * CDataTypeInfo::castFrom(size32_t len, const char * text)
 
 //---------------------------------------------------------------------------
 
-CVarStringTypeInfo::CVarStringTypeInfo(unsigned len, ICharsetInfo * _charset, ICollationInfo * _collation) : 
-CStringTypeInfo(len, _charset, _collation) 
+CVarStringTypeInfo::CVarStringTypeInfo(unsigned len, ICharsetInfo * _charset, ICollationInfo * _collation) :
+CStringTypeInfo(len, _charset, _collation)
 {
 #if UNKNOWN_LENGTH != 0
     assertex(len != 0);
@@ -998,8 +998,8 @@ CQStringTypeInfo::CQStringTypeInfo(unsigned _strLength) : CStringTypeInfo(_strLe
 }
 
 #if 0
-bool CQStringTypeInfo::assignableFrom(ITypeInfo *t2)  
-{ 
+bool CQStringTypeInfo::assignableFrom(ITypeInfo *t2)
+{
     switch (t2->getTypeCode())
     {
     case type_qstring:
@@ -1198,9 +1198,9 @@ bool CBasedTypeInfo::equals(const CTypeInfo & _other) const
 
 void CBasedTypeInfo::serializeSkipChild(MemoryBuffer &tgt)
 {
-    CTypeInfo::serialize(tgt); 
+    CTypeInfo::serialize(tgt);
     ITypeInfo * child = basetype ? basetype->queryChildType() : NULL;
-    serializeType(tgt, child); 
+    serializeType(tgt, child);
 
 }
 
@@ -1303,8 +1303,8 @@ bool CTableTypeInfo::assignableFrom(ITypeInfo *t2)
     return false;
 }
 
-StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)   
-{ 
+StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)
+{
     ITypeInfo * recordType = ::queryRecordType(this);
     out.append(queryTypeName());
     if (recordType)
@@ -1312,7 +1312,7 @@ StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)
         out.append(" of ");
         recordType->getECLType(out);
     }
-    return out; 
+    return out;
 }
 
 
@@ -1337,22 +1337,22 @@ bool CGroupedTableTypeInfo::assignableFrom(ITypeInfo *t2)
 
 bool CSetTypeInfo::assignableFrom(ITypeInfo *t2)
 {
-    return getTypeCode()==t2->getTypeCode() && 
+    return getTypeCode()==t2->getTypeCode() &&
         (!queryChildType() || !t2->queryChildType() || queryChildType()->assignableFrom(t2->queryChildType()));
 }
 
-StringBuffer & CSetTypeInfo::getECLType(StringBuffer & out) 
-{ 
+StringBuffer & CSetTypeInfo::getECLType(StringBuffer & out)
+{
     out.append(queryTypeName());
     if (basetype)
     {
-        out.append(" of "); 
-        queryChildType()->getECLType(out); 
+        out.append(" of ");
+        queryChildType()->getECLType(out);
     }
     else
         out.append(" of any");
 
-    return out; 
+    return out;
 }
 
 //===========================================================================
@@ -1387,7 +1387,7 @@ bool CFunctionTypeInfo::equals(const CTypeInfo & _other) const
 
 
 void CFunctionTypeInfo::serialize(MemoryBuffer &tgt)
-{ 
+{
     throwUnexpected();
     CBasedTypeInfo::serialize(tgt);
 }
@@ -1395,8 +1395,8 @@ void CFunctionTypeInfo::serialize(MemoryBuffer &tgt)
 //===========================================================================
 
 
-size32_t CArrayTypeInfo::getSize()                  
-{ 
+size32_t CArrayTypeInfo::getSize()
+{
     if (length == UNKNOWN_LENGTH)
         return UNKNOWN_LENGTH;
     if (basetype->isReference())
@@ -2331,7 +2331,7 @@ static ITypeInfo * getPromotedVarUnicode(ITypeInfo * left, ITypeInfo * right)
         lLen = rLen;
     return makeVarUnicodeType(lLen, getCommonLocale(left, right));
 }
-        
+
 static ITypeInfo * getPromotedUtf8(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lLen = left->getStringLen();
@@ -2349,7 +2349,7 @@ static ITypeInfo * getPromotedVarString(ITypeInfo * left, ITypeInfo * right)
     //MORE: Didn't this ought to have the charset logic of getPromotedString?
     return makeVarStringType(lLen);
 }
-        
+
 static ITypeInfo * getPromotedString(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lLen = left->getStringLen();
@@ -2368,7 +2368,7 @@ static ITypeInfo * getPromotedString(ITypeInfo * left, ITypeInfo * right)
 
     return makeStringType(lLen, LINK(lCharset), LINK(collation));
 }
-        
+
 static ITypeInfo * getPromotedQString(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lLen = left->getStringLen();
@@ -2376,7 +2376,7 @@ static ITypeInfo * getPromotedQString(ITypeInfo * left, ITypeInfo * right)
     if (lLen < rLen) lLen = rLen;
     return makeQStringType(lLen);
 }
-        
+
 static ITypeInfo * getPromotedData(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lLen = left->getStringLen();
@@ -2421,17 +2421,17 @@ static ITypeInfo * getPromotedDecimal(ITypeInfo * left, ITypeInfo * right, bool 
     if (lPrec < rPrec) lPrec = rPrec;
     return makeDecimalType(lLead + lPrec, lPrec, left->isSigned() || right->isSigned());
 }
-        
+
 static ITypeInfo * getPromotedReal(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned lDigits = left->getDigits();
     unsigned rDigits = right->getDigits();
     if (lDigits < rDigits) lDigits = rDigits;
-    if (lDigits >= DOUBLE_SIG_DIGITS) 
+    if (lDigits >= DOUBLE_SIG_DIGITS)
         return makeRealType(8);
     return makeRealType(4);
 }
-        
+
 
 static void getPromotedIntegerSize(ITypeInfo * left, ITypeInfo * right, unsigned & pSize, bool & pSigned)
 {
@@ -2441,7 +2441,7 @@ static void getPromotedIntegerSize(ITypeInfo * left, ITypeInfo * right, unsigned
     bool rSigned = right->isSigned();
 
     //This assumes it's an addition! For other operands rules are not necessarily the same!
-    //Need to get the correct size and sign combination.  
+    //Need to get the correct size and sign combination.
     //Try and preserve value whenever possible.
     //u1+s1=>s2 s1+u4=>s8 u2+u4=>u4 u1+s2=s2 b+s1->s1 b+u1=>u1
     //Also needs to cope with integer6 etc...
@@ -2475,7 +2475,7 @@ static void getPromotedIntegerSize(ITypeInfo * left, ITypeInfo * right, unsigned
                 if (lSize != promotedIntSize[lSize])
                     lSize = promotedIntSize[lSize];
                 else if (lSize != 8)
-                    lSize += lSize; 
+                    lSize += lSize;
             }
         }
     }
@@ -2503,7 +2503,7 @@ static ITypeInfo * getPromotedSwapInteger(ITypeInfo * left, ITypeInfo * right)
     getPromotedIntegerSize(left, right, size, isSigned);
     return makeSwapIntType(size, isSigned);
 }
-        
+
 static ITypeInfo * getPromotedPackedInteger(ITypeInfo * left, ITypeInfo * right)
 {
     unsigned size;
@@ -2511,7 +2511,7 @@ static ITypeInfo * getPromotedPackedInteger(ITypeInfo * left, ITypeInfo * right)
     getPromotedIntegerSize(left, right, size, isSigned);
     return makePackedIntType(size, isSigned);
 }
-        
+
 //============================================================================
 
 static ITypeInfo * getPromotedType(ITypeInfo * lType, ITypeInfo * rType, bool isCompare)
@@ -2543,16 +2543,16 @@ static ITypeInfo * getPromotedType(ITypeInfo * lType, ITypeInfo * rType, bool is
         return getPromotedQString(l, r);
     if ((lcode == type_decimal) || (rcode == type_decimal))
         return getPromotedDecimal(l, r, isCompare);
-    if ((lcode == type_real) || (rcode == type_real)) 
+    if ((lcode == type_real) || (rcode == type_real))
         return getPromotedReal(l, r);
-    if ((lcode == type_int) || (rcode == type_int)) 
+    if ((lcode == type_int) || (rcode == type_int))
         return getPromotedInteger(l, r);
     if (lcode == type_boolean) return LINK(l);
     if (rcode == type_boolean) return LINK(r);
 
-    if ((lcode == type_swapint) || (rcode == type_swapint)) 
+    if ((lcode == type_swapint) || (rcode == type_swapint))
         return getPromotedSwapInteger(l, r);
-    if ((lcode == type_packedint) || (rcode == type_packedint)) 
+    if ((lcode == type_packedint) || (rcode == type_packedint))
         return getPromotedPackedInteger(l, r);
 
     //NB: Enumerations should come last...
@@ -2603,7 +2603,7 @@ ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right)
             {
                 if ((left->getTypeCode() == ptc) && (right->getTypeCode() == ptc))
                 {
-                    if ((left->queryCollation() == right->queryCollation()) && 
+                    if ((left->queryCollation() == right->queryCollation()) &&
                         (left->queryCharset() == right->queryCharset()))
                     {
                         promoted.setown(getStretchedType(UNKNOWN_LENGTH, left));
@@ -2628,7 +2628,7 @@ static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveI
 
     switch (beforeType)
     {
-    case type_boolean: 
+    case type_boolean:
         return true;
     case type_keyedint:
         return preservesValue(after, before->queryChildType(), preserveInformation);
@@ -2651,7 +2651,7 @@ static bool preservesValue(ITypeInfo * after, ITypeInfo * before, bool preserveI
                 bool afterSigned  = after->isSigned();
                 size32_t beforeSize = before->getSize();
                 size32_t afterSize = after->getSize();
-                if (preserveInformation && (beforeSize <= afterSize)) 
+                if (preserveInformation && (beforeSize <= afterSize))
                     return true; // sign doesn't matter...
                 return !((beforeSigned && !afterSigned) ||
                          (beforeSize > afterSize) ||
@@ -2750,7 +2750,7 @@ bool castLosesInformation(ITypeInfo * after, ITypeInfo * before)
     return !preservesValue(after, before, true);
 }
 
-// should always call preservesValue first to determine if conversion is possible 
+// should always call preservesValue first to determine if conversion is possible
 bool preservesOrder(ITypeInfo * after, ITypeInfo * before)
 {
     type_t beforeType = before->getTypeCode();
@@ -2773,7 +2773,7 @@ bool preservesOrder(ITypeInfo * after, ITypeInfo * before)
             return (before->getPrecision() == 0);
         }
         return false;
-    case type_int: 
+    case type_int:
     case type_swapint:
     case type_packedint:
         switch (afterType)
@@ -3506,7 +3506,7 @@ extern DEFTYPE_API ITypeInfo * deserializeType(MemoryBuffer &src)
     case type_bitfield:
         {
             int bitLength;
-            src.read(bitLength); 
+            src.read(bitLength);
             ITypeInfo *base = deserializeType(src);
             return makeBitfieldType(bitLength, base);
         }
@@ -3547,7 +3547,7 @@ extern DEFTYPE_API ITypeInfo * deserializeType(MemoryBuffer &src)
             return makeGroupedTableType(base);
         }
 
-        
+
     }
     assertex(false);
     return NULL;
@@ -3567,7 +3567,7 @@ bool getNormalizedLocaleName(unsigned len, char const * str, StringBuffer & buff
 }
 
 //---------------------------------------------------------------------------
-    
+
 
 static bool alreadyHadSize(int size, IntArray &sizes)
 {
@@ -3637,7 +3637,7 @@ void XmlSchemaBuilder::getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type)
         if (type.isSigned())
             xmlType.append("xs:integer");
         else
-            xmlType.append("xs:nonNegativeInteger"); 
+            xmlType.append("xs:nonNegativeInteger");
         break;
     case type_data:
         if (len == UNKNOWN_LENGTH)

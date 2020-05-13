@@ -30,12 +30,12 @@ typedef count_t findex_t;       //row index in a file.
 
 #ifndef IRECORDSIZE_DEFINED     // also in eclhelper.hpp
 #define IRECORDSIZE_DEFINED
-interface IRecordSize: public IInterface 
+interface IRecordSize: public IInterface
 // used to determine record size from record contents
 {
     virtual size32_t getRecordSize(const void *rec) = 0;
        //passing NULL to getRecordSize returns size for fixed records and initial size for variable
-    virtual size32_t getFixedSize() const = 0;                      
+    virtual size32_t getFixedSize() const = 0;
        // returns 0 for variable row size
     virtual size32_t getMinRecordSize() const = 0;
        // The minimum size that a variable (or fixed) size record can be.
@@ -53,7 +53,7 @@ interface IReadSeq : public IInterface
     virtual void     reset() = 0;
     virtual bool get(void *dst) = 0;
     virtual unsigned getn(void *dst, unsigned numrecs) = 0;
-    virtual size32_t getRecordSize() = 0; 
+    virtual size32_t getRecordSize() = 0;
     virtual void stop() = 0; // indicate finished reading
 };
 
@@ -125,7 +125,7 @@ interface IRecordFetcher : public IInterface
 
 interface IWriteSeqAllocator : public IInterface
 {
-    virtual IWriteSeq *next(size32_t &num) = 0; 
+    virtual IWriteSeq *next(size32_t &num) = 0;
 };
 
 interface IReadSeqAllocator : public IInterface
@@ -134,7 +134,7 @@ interface IReadSeqAllocator : public IInterface
 };
 
 
-extern jlib_decl IReadSeq *createReadSeq(int fh, offset_t _offset, size32_t size, size32_t _bufsize = (size32_t)-1, // bufsize in bytes 
+extern jlib_decl IReadSeq *createReadSeq(int fh, offset_t _offset, size32_t size, size32_t _bufsize = (size32_t)-1, // bufsize in bytes
                                          unsigned maxrecs=(unsigned)-1, bool compress=false); // compression is *not* blocked and needs buffer size
 extern jlib_decl IWriteSeq *createWriteSeq(int fh, size32_t size, size32_t bufsize = (size32_t)-1,bool compress=false); // compression is *not* blocked and needs buffer size
 extern jlib_decl IWriteSeq *createTeeWriteSeq(IWriteSeq *, IWriteSeq *);
@@ -161,12 +161,12 @@ interface IFileIOStream;
 
 #ifndef IROWSTREAM_DEFINED
 #define IROWSTREAM_DEFINED
-interface IRowStream : extends IInterface 
+interface IRowStream : extends IInterface
 {
     virtual const void *nextRow()=0;                      // rows returned must be freed
     virtual void stop() = 0;                              // after stop called NULL is returned
 
-    inline const void *ungroupedNextRow() 
+    inline const void *ungroupedNextRow()
     {
         const void *ret = nextRow();
         if (!ret)

@@ -43,7 +43,7 @@ using std::map;
 
 class CInstDetails : public CInterface, implements IInterface
 {
-  public: 
+  public:
     CInstDetails(){};
     CInstDetails(const char * compName, const char * ipAssigned):m_compName(compName)
     {
@@ -63,9 +63,9 @@ class CInstDetails : public CInterface, implements IInterface
         m_ipAssigned.kill();
 
       m_ipAssigned.append(value);
-    } 
+    }
 
-  private : 
+  private :
      StringArray m_ipAssigned;
      StringBuffer m_compName;
 };
@@ -80,8 +80,8 @@ class CWizardInputs : public CInterface, implements IInterface
 // Construction
 public:
   CWizardInputs(const char* xmlArg, const char* service, IPropertyTree* cfg, MapStringTo<StringAttr, const char *>* dirMap, StringArray &arrBuildSetsWithAssignedIPs, StringArray &arrAssignedIPs);
-  virtual ~CWizardInputs(); 
-  
+  virtual ~CWizardInputs();
+
   void setEnvironment();
   void setWizardIPList(const StringArray ipArray);
   void setWizardRules();
@@ -118,7 +118,7 @@ private:
 private:
   typedef StringArray* StringArrayPtr;
   typedef MapStringTo<StringArrayPtr> MapStringToStringArray;
-    
+
    //for rules
    count_t m_maxCompOnNode;
    StringArray m_doNotGenComp;
@@ -127,7 +127,7 @@ private:
    StringArray m_clusterForTopology;
    StringArray &m_arrBuildSetsWithAssignedIPs;
    StringArray &m_arrAssignedIPs;
-   MapStringToStringArray m_compForTopology; 
+   MapStringToStringArray m_compForTopology;
    MapStringToStringArray m_invalidServerCombo;
    unsigned m_supportNodes;
    unsigned m_roxieNodes;
@@ -139,11 +139,11 @@ private:
    unsigned m_roxieAgentRedChannels;
    unsigned m_roxieAgentRedOffset;
    bool m_roxieOnDemand;
-   
+
    StringArray m_ipaddress;
    StringArray m_ipaddressSupport;
    StringArray m_sipaddress; //user specified ip addresses
-   MapStringToMyClass<CInstDetails> m_compIpMap; 
+   MapStringToMyClass<CInstDetails> m_compIpMap;
    Owned<IPropertyTree> m_pXml;
    IPropertyTree* m_cfg;
    StringBuffer m_service;

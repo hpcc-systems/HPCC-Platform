@@ -27,11 +27,11 @@ static const char * EclDefinition =
 "END;";
 
 static const char * compatibleVersions[] = {
-    "DEBUGSERVICES 1.0  [7294888b4271178e0cfda307826d4823]", 
+    "DEBUGSERVICES 1.0  [7294888b4271178e0cfda307826d4823]",
     "DEBUGSERVICES 1.0.1",
     NULL };
 
-DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size != sizeof(ECLPluginDefinitionBlock))
         return false;
@@ -46,7 +46,7 @@ DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 }
 
 DEBUGSERVICES_API char * DEBUGSERVICES_CALL dsGetBuildInfo(void)
-{ 
+{
     return strdup(DEBUGSERVICES_VERSION);
 }
 
@@ -58,7 +58,7 @@ DEBUGSERVICES_API void DEBUGSERVICES_CALL dsSleep(unsigned milli)
     Sleep(milli);
 #else
     timespec sleepTime;
-    
+
     if (milli>=1000)
     {
         sleepTime.tv_sec = milli/1000;

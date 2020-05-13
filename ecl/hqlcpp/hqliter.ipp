@@ -20,7 +20,7 @@
 class TransformSequenceBuilder
 {
 public:
-    TransformSequenceBuilder(HqlCppTranslator & _translator, IHqlExpression * failValue) : translator(_translator) 
+    TransformSequenceBuilder(HqlCppTranslator & _translator, IHqlExpression * failValue) : translator(_translator)
     {
         assertex(failValue);
         failedFilterValue.set(failValue);

@@ -25,7 +25,7 @@
 
 using namespace std;
 
-IEspService& ImageAccessSF(const char* ipLocalSync, int portLocalSync, 
+IEspService& ImageAccessSF(const char* ipLocalSync, int portLocalSync,
                            const char* ipPeerSync,  int portPeerSync);
 
 IEspRpcBinding &GetSOAPBindingFor_ImageAccess();
@@ -60,12 +60,12 @@ public:
 
 
 
-class CEdgeServiceEntry : public CInterface, 
+class CEdgeServiceEntry : public CInterface,
    implements IEspServiceEntry
 {
 private:
    char m_name[256];
-   
+
    Owned<IEspService> m_service;
    Owned<IEspRpcBinding> m_bindings[8];
 
@@ -90,12 +90,12 @@ public:
 
    int run()
    {
-      //temporarily only exucute 1 binding   
+      //temporarily only exucute 1 binding
       return (!m_bindings[0]) ? -1 : m_bindings[0]->run();
    }
    int stop()
    {
-      //temporarily only exucute 1 binding   
+      //temporarily only exucute 1 binding
       return (!m_bindings[0]) ? -1 : m_bindings[0]->stop();
    }
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
    {
       g_topology = atoi(argv[2]);
    }
-   
+
    StringAttr ip("");
    unsigned port = 4242;
 
@@ -160,9 +160,9 @@ int main(int argc, char **argv)
       SplitIpPort(ip, port, argv[1]);
 
    CEdgeServicePlatform platform;
-   
+
    IEspService& iaService = ImageAccessSF(ipSync.get(), portSync, ipPeer, portPeer);
-   
+
    CEdgeServiceEntry servImageToken(platform, "ImageAccess", iaService);
 
    servImageToken.addRpcBinding(GetSOAPBindingFor_ImageAccess(), ip.get(), port);
@@ -184,8 +184,8 @@ int main(int argc, char **argv)
       }
 
       platform.stop();
-   }   
-   
+   }
+
    iaService.Release();
    return 0;
 }

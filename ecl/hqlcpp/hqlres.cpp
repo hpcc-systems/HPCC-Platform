@@ -31,7 +31,7 @@
 class ResourceItem : public CInterface
 {
 public:
-    ResourceItem(const char * _type, unsigned _id, size32_t _len, const void * _ptr) 
+    ResourceItem(const char * _type, unsigned _id, size32_t _len, const void * _ptr)
         : data(_len, _ptr), type(_type), id(_id) {}
 
 public:
@@ -194,7 +194,7 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
     }
     Owned<IPropertyTree> manifestSrc = createPTreeFromXMLString(useContents);
 
-    StringBuffer dir; 
+    StringBuffer dir;
     splitDirTail(filename, dir);
 
     ensureManifestInfo();
@@ -526,16 +526,16 @@ bool ResourceManager::flush(StringBuffer &filename, const char *basename, bool f
 {
     finalize();
 
-    // Use "resources" for strings that are a bit large to generate in the c++ (some compilers had limits at 64k) 
+    // Use "resources" for strings that are a bit large to generate in the c++ (some compilers had limits at 64k)
     // or that we want to access without having to run the dll/so
-    // In linux there is no .res concept but we can achieve the same effect by generating an object file with a specially-named section 
+    // In linux there is no .res concept but we can achieve the same effect by generating an object file with a specially-named section
     // bintils tools can be used to extract the data externally (internally we just have a named symbol for it)
     // Alternatively we can generate an assembler file to create the equivalent object file, if binutils is not available
     bool isObjectFile = true;
 #ifdef _WIN32
     filename.append(basename).append(".res");
     int h = _open(filename, _O_WRONLY|_O_CREAT|_O_TRUNC|_O_BINARY|_O_SEQUENTIAL, _S_IREAD | _S_IWRITE | _S_IEXEC);
-    
+
     //assertex(h != HFILE_ERROR);
     if (h == HFILE_ERROR) // error can not be ignored!
         throwError1(HQLERR_ResourceCreateFailed, filename.str());

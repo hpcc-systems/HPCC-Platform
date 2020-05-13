@@ -27,18 +27,18 @@
 
 //---------------------------------------------------------------------------
 
-void ViewFile::addRelation(ViewRelation & _relation) 
-{ 
-    relations.append(_relation); 
+void ViewFile::addRelation(ViewRelation & _relation)
+{
+    relations.append(_relation);
 }
 
-void ViewFile::addSuperFile(ViewFile & _superFile) 
-{ 
+void ViewFile::addSuperFile(ViewFile & _superFile)
+{
     if (!superFiles.contains(_superFile))
-        superFiles.append(_superFile); 
+        superFiles.append(_superFile);
 }
 
-void ViewFile::addSubFile(ViewFile & _subFile) 
+void ViewFile::addSubFile(ViewFile & _subFile)
 {
     throwUnexpected();
 }
@@ -61,10 +61,10 @@ INewResultSet * ViewFile::queryResultSet()
 }
 
 
-void ViewSuperFile::addSubFile(ViewFile & _subFile) 
-{ 
-    if (!subFiles.contains(_subFile)) 
-        subFiles.append(_subFile); 
+void ViewSuperFile::addSubFile(ViewFile & _subFile)
+{
+    if (!subFiles.contains(_subFile))
+        subFiles.append(_subFile);
 }
 
 //---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ unsigned ViewRelation::queryMappingField(unsigned whichMapping, bool needPrimary
 {
     if (whichMapping >= columnMappings.ordinality())
         return NotFound;
-    
+
     ViewJoinColumnMapping & mapping = columnMappings.item(whichMapping);
     if (needPrimary)
         return mapping.primary->queryBaseColumn();
@@ -156,7 +156,7 @@ void ViewRelation::init()
     {
         FieldTransformInfoArray primaryFields;
         FieldTransformInfoArray secondaryFields;
-        
+
         parseColumnMappingList(primaryFields, primaryResultSet->getMetaData(), false, definition->queryPrimaryFields());
         parseColumnMappingList(secondaryFields, secondaryResultSet->getMetaData(), true, definition->querySecondaryFields());
 
@@ -195,7 +195,7 @@ bool ViewRelation::matches(IFileRelationship * searchDefinition, ViewFile * sear
 
     if (definition->isPayload() != searchDefinition->isPayload())
         return false;
-    
+
     return true;
 }
 

@@ -53,7 +53,7 @@ public:
 
     virtual void setContainer(IEspContainer *container){m_container = container;}
     IEspContainer * queryContainer(){return m_container;}
-    
+
     virtual const char * getServiceType() {return "SeiSoap";};
 
     bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process)

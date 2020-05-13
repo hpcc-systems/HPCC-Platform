@@ -67,7 +67,7 @@ public:
 
     inline bool matches(IIdAtom * search) const { return name == lower(search); }
     inline IAtom * queryName() const { return name; }
-    
+
     virtual ViewFieldTransformer * bind(const HqlExprArray & args);
 
     void transform(MemoryAttr & utfTarget, const MemoryAttr & utfSrc);
@@ -83,7 +83,7 @@ class FILEVIEW_API ViewFailTransformer : public ViewFieldTransformer
 {
 public:
     ViewFailTransformer();
-    
+
     virtual void transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source);
 };
 
@@ -105,7 +105,7 @@ class FILEVIEW_API ViewAddTransformer : public ViewFieldTransformer
 public:
     ViewAddTransformer();
     ViewAddTransformer(const HqlExprArray & _args);
-    
+
     virtual void transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source);
     virtual ViewFieldTransformer * bind(const HqlExprArray & args);
 
@@ -212,7 +212,7 @@ public:
     virtual void addFieldUtf8Transformer(const char * name, utf8FieldTransformerFunction func);
     virtual void addFieldUnicodeTransformer(const char * name, unicodeFieldTransformerFunction func);
     virtual void addPlugins(const char * pluginname);
-            
+
     void addTransformer(ViewFieldTransformer * ownedTransformer);
 
     ViewFieldTransformer * resolve(const char * name, const HqlExprArray & args);
@@ -266,7 +266,7 @@ typedef CIArrayOf<ViewJoinColumn> ViewJoinColumnArray;
 
 struct FieldTransformInfo : public CInterface
 {
-//output 
+//output
     unsigned datasetColumn;
     unsigned column;
     ViewFieldTransformerArray getTransforms;

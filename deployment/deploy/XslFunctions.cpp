@@ -35,7 +35,7 @@ FunctionSample::~FunctionSample()
 XObjectPtr
 FunctionSample::execute(
             XPathExecutionContext&  executionContext,
-            XalanNode*              /* context */,          
+            XalanNode*              /* context */,
             const XObjectPtr        arg1,
             const XObjectPtr        arg2,
             const Locator*          /* locator */) const
@@ -66,7 +66,7 @@ FunctionSample::execute(
       if (path[i] == dchOld)
          path[i] = dchNew;
 
-    return executionContext.getXObjectFactory().createString(path); 
+    return executionContext.getXObjectFactory().createString(path);
 }
 
 

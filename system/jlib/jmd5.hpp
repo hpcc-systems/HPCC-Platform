@@ -91,7 +91,7 @@ typedef struct md5_state_s {
 } md5_state_t;
 #include "jstring.hpp"
 #ifdef __cplusplus
-extern "C" 
+extern "C"
 {
 #endif
 

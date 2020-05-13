@@ -289,7 +289,7 @@ public:
                         {
                             throw MakeStringException(-1,"Fatal error: received %u bytes of data, not a multiple of -ow %u",len-(size32_t)(payload-obuf),out_width);
                         }
-                        
+
                         outputQ.enqueue(x);
                         continue;
                     }
@@ -388,7 +388,7 @@ public:
                                     EXCLOG(e,"Roxie exception");
                                     CriticalBlock block(fatalErrorSect);
                                     Aborting = true;
-                                    if (fatalError.length()==0) 
+                                    if (fatalError.length()==0)
                                         e->errorMessage(fatalError);
                                     OERRLOG("Exiting: maxRetries exceeded");
                                     break;
@@ -407,7 +407,7 @@ public:
                                 e->errorMessage(s);
                                 e->Release();
                                 s.append(" - Failed to connect to ").append(hosts);
-                                if (fatalError.length()==0) 
+                                if (fatalError.length()==0)
                                     fatalError.append(s.str());
                                 OERRLOG("%s",s.str());
                                 break;
@@ -416,7 +416,7 @@ public:
                             e->Release();
                             while (outputQ.ordinality() > 0)
                                 delete outputQ.dequeue();
-                            
+
                         }
                     }
                     if (!Aborting) {
@@ -441,7 +441,7 @@ public:
 
         if (Aborting)
             PROGLOG("roxiepipe thread aborting");
-            
+
         free(inputBuffer);
 
         return 0;
@@ -644,7 +644,7 @@ int main(int argc, char *argv[])
     if (logFile.length())
         lf->setCompleteFilespec(logFile.str());
     lf->setCreateAliasFile(false);
-    try 
+    try
     {
         lf->beginLogging();
         PROGLOG("Logging to %s",lf->queryLogFileSpec());
@@ -661,9 +661,9 @@ int main(int argc, char *argv[])
         {
             fatalError.append("Missing/invalid parameter (-iw, -q & -h are all required)");
         }
-        else 
+        else
         {
-            
+
         #ifdef _WIN32
             _setmode(_fileno(stdin), _O_BINARY);
             _setmode(_fileno(stdout), _O_BINARY);
@@ -687,8 +687,8 @@ int main(int argc, char *argv[])
                 e->errorMessage(fatalError);
                 e->Release();
             }
-            
-            if (fatalError.length()==0) 
+
+            if (fatalError.length()==0)
             {
                 for (i=0; i<(int)numThreads; i++)
                 {

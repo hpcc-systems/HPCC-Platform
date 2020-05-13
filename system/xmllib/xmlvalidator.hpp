@@ -26,7 +26,7 @@ interface XMLLIB_API IXmlValidator : public IInterface
     // setXmlSource - specifies the source of the XML to process
     virtual int setXmlSource(const char *pszFileName) = 0;
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize) = 0;
- 
+
     // setSchemaSource - specifies the schema to validate against
     virtual int setSchemaSource(const char *pszFileName) = 0;
     virtual int setSchemaSource(const char *pszBuffer, unsigned int nSize) = 0;
@@ -34,11 +34,11 @@ interface XMLLIB_API IXmlValidator : public IInterface
     // setDTDSource - specifies the DTD to validate against
     virtual int setDTDSource(const char *pszFileName) = 0;
     virtual int setDTDSource(const char *pszBuffer, unsigned int nSize) = 0;
-    
+
     // set schema target namespace
     virtual void setTargetNamespace(const char* ns) = 0;
 
-    // validation am xml against Schema; exception on error 
+    // validation am xml against Schema; exception on error
     virtual void validate() = 0;
 };
 

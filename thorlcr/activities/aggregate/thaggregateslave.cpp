@@ -190,7 +190,7 @@ public:
             dataLinkIncrement();
             return ret.getClear();
         }
-        sz = helper->clearAggregate(resultcr);  
+        sz = helper->clearAggregate(resultcr);
         return resultcr.finalizeRowClear(sz);
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
@@ -248,7 +248,7 @@ public:
     }
     virtual void stop() override
     {
-        if (inputStopped) 
+        if (inputStopped)
             return;
         readRest();
         OwnedConstThorRow partrow = partResult.finalizeRowClear(partResultSize);

@@ -86,7 +86,7 @@ public:
         return LINK(query(key, doPromote));
     }
     bool remove(MAPPING *_mapping)
-    {   
+    {
         Linked<MAPPING> mapping = _mapping;
         if (!table.removeExact(_mapping))
             return false;

@@ -35,7 +35,7 @@ public:
     virtual BoundRow * clone(IHqlExpression * _newBound)    { return new BoundRow(*this, _newBound); }
     virtual IHqlExpression * getMappedSelector(BuildCtx & ctx, IReferenceSelector * selector);
     virtual IHqlExpression * getFinalFixedSizeExpr();
-    
+
 //meta information about the cursor...
     virtual bool isBinary();
     virtual bool isInherited() const        { return inherited; }           // inherited in any way.
@@ -153,7 +153,7 @@ public:
 
     virtual BoundRow * clone(IHqlExpression * _newBound)    { UNIMPLEMENTED; }
     virtual IHqlExpression * getMappedSelector(BuildCtx & ctx, IReferenceSelector * selector);
-    virtual bool isInherited() const                        { return true; } 
+    virtual bool isInherited() const                        { return true; }
     virtual bool isNonLocal() const                         { return true; }
 
 protected:

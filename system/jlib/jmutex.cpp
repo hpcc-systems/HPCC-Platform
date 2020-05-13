@@ -81,7 +81,7 @@ void Mutex::unlock()
     pthread_mutex_lock(&mutex);
 #ifdef _DEBUG
     assertex(pthread_equal(owner, pthread_self()));
-#endif 
+#endif
     if (--lockcount==0)
     {
         owner = 0;
@@ -121,27 +121,27 @@ int Mutex::unlockAll()
 
 
 
-inline bool read_data(int fd, void *buf, size_t nbytes) 
+inline bool read_data(int fd, void *buf, size_t nbytes)
 {
     size32_t nread = 0;
     while (nread<nbytes) {
         size32_t rd = read(fd, (char *)buf + nread, nbytes-nread);
         if ((int)rd>=0)
             nread += rd;
-        else if (errno != EINTR) 
+        else if (errno != EINTR)
             return false;
     }
     return true;
 }
 
-inline bool write_data(int fd, const void *buf, size_t nbytes) 
+inline bool write_data(int fd, const void *buf, size_t nbytes)
 {
     size32_t nwritten= 0;
     while (nwritten<nbytes) {
         size32_t wr = write(fd, (const char *)buf + nwritten, nbytes-nwritten);
         if ((int)wr>=0)
             nwritten += wr;
-        else if (errno != EINTR) 
+        else if (errno != EINTR)
             return false;
     }
     return true;
@@ -149,17 +149,17 @@ inline bool write_data(int fd, const void *buf, size_t nbytes)
 
 #define POLLTIME (1000*15)
 
-static bool lock_file(const char *lfpath) 
+static bool lock_file(const char *lfpath)
 {
     unsigned attempt = 0;
     while (attempt < 3) {
         char lckcontents[12];
         int fd = open(lfpath, O_RDWR | O_CREAT | O_EXCL, S_IRWXU);
         if (fd==-1) {
-            if (errno != EEXIST) 
+            if (errno != EEXIST)
                 break;
             fd = open(lfpath, O_RDONLY);
-            if (fd==-1) 
+            if (fd==-1)
                 break;
             bool ok = read_data(fd, lckcontents, sizeof(lckcontents)-1);
             close(fd);
@@ -169,7 +169,7 @@ static bool lock_file(const char *lfpath)
                 if (pid==getpid())
                     return true;
                 if (kill(pid, 0) == -1) {
-                    if (errno != ESRCH) 
+                    if (errno != ESRCH)
                         return false;
                     unlink(lfpath);
                     continue;
@@ -189,7 +189,7 @@ static bool lock_file(const char *lfpath)
     return false;
 }
 
-static void unlock_file(const char *lfpath) 
+static void unlock_file(const char *lfpath)
 {
     for (unsigned attempt=0;attempt<10;attempt++) {
         if (unlink(lfpath)>=0)
@@ -323,9 +323,9 @@ void Monitor::notifyAll()
 #ifndef USE_PTHREAD_RWLOCK
 
 bool ReadWriteLock::lockRead(bool timed, unsigned timeout)
-{  
-    cs.enter(); 
-    if (writeLocks == 0) 
+{
+    cs.enter();
+    if (writeLocks == 0)
     {
         readLocks++;
         cs.leave();
@@ -338,7 +338,7 @@ bool ReadWriteLock::lockRead(bool timed, unsigned timeout)
         {
             if (!readSem.wait(timeout))
             {
-                cs.enter(); 
+                cs.enter();
                 if (!readSem.wait(0))
                 {
                     readWaiting--;
@@ -371,7 +371,7 @@ bool ReadWriteLock::lockWrite(bool timed, unsigned timeout)
         {
             if (!writeSem.wait(timeout))
             {
-                cs.enter(); 
+                cs.enter();
                 if (!writeSem.wait(0))
                 {
                     writeWaiting--;
@@ -421,7 +421,7 @@ bool ReadWriteLock::changeToWrite(bool timed, unsigned timeout)
         {
             if (!readToWriteSem.wait(timeout))
             {
-                cs.enter(); 
+                cs.enter();
                 if (!readToWriteSem.wait(0))
                 {
                     readToWriteWaiting--;
@@ -462,7 +462,7 @@ bool ReadWriteLock::changeToRead()
 
 void ReadWriteLock::unlock()
 {
-    cs.enter(); 
+    cs.enter();
     if (readLocks) // implies this unlock() is paired with a previous read lock
     {
         readLocks--;
@@ -604,9 +604,9 @@ void checkedCritLeave(CheckedCriticalSection &crit)
     crit.unlock();
 }
 
-CheckedCriticalBlock::CheckedCriticalBlock(CheckedCriticalSection &c, unsigned timeout, const char *fname,unsigned lnum) 
-    : crit(c)       
-{ 
+CheckedCriticalBlock::CheckedCriticalBlock(CheckedCriticalSection &c, unsigned timeout, const char *fname,unsigned lnum)
+    : crit(c)
+{
     for (;;)
     {
         if (crit.lockWait(timeout))
@@ -617,7 +617,7 @@ CheckedCriticalBlock::CheckedCriticalBlock(CheckedCriticalSection &c, unsigned t
 }
 
 CheckedCriticalUnblock::~CheckedCriticalUnblock()
-{ 
+{
     for (;;)
     {
         if (crit.lockWait(timeout))

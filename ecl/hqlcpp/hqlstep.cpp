@@ -579,7 +579,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
             }
             func.ctx.addReturn(result);
         }
-    
+
         classctx.addQuoted(s.clear().append("virtual IRangeCompare * queryCompare() override { return &").append(compareName).append("; }"));
     }
 
@@ -624,7 +624,7 @@ IHqlExpression * SteppingFieldSelection::generateSteppingMeta(HqlCppTranslator &
 
             func.ctx.addQuotedLiteral("return DISTANCE_EXACT_MATCH;");
         }
-    
+
         classctx.addQuoted(s.clear().append("virtual IDistanceCalculator * queryDistance() override { return &").append(distanceName).append("; }"));
     }
 
@@ -1020,12 +1020,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
             OwnedHqlExpr delta = createVariable("delta", LINK(distanceType));
             OwnedHqlExpr castDelta = ensureExprType(delta, rangeType);
             OwnedHqlExpr minusDelta = getNegative(delta);
-            OwnedHqlExpr cond = createBoolExpr(no_or, 
+            OwnedHqlExpr cond = createBoolExpr(no_or,
                                             createBoolExpr(no_ge, LINK(delta), ensureExprType(queryZero(), distanceType)),
                                             createBoolExpr(no_ge, LINK(rangeValue), ensureExprType(minusDelta, rangeType)));
             OwnedHqlExpr firstValue = bias ? getNegative(bias) : getZero();
-            OwnedHqlExpr assignValue = createValue(no_if, rangeSelect->getType(), 
-                                                          LINK(cond), 
+            OwnedHqlExpr assignValue = createValue(no_if, rangeSelect->getType(),
+                                                          LINK(cond),
                                                           createValue(no_add, rangeSelect->getType(), LINK(rangeSelect), ensureExprType(delta, rangeSelect->queryType())),
                                                           ensureExprType(firstValue, rangeSelect->queryType()));
             buildAssign(func.ctx, target, assignValue);
@@ -1124,13 +1124,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 /*
 
   Stepping info.
-  Assume we have 
+  Assume we have
   a) an index read, stepped on [doc, wpos, wip]
   b) an index read, stepped on [doc, wpos]
   c) an index read, stepped on [doc, wpos, wip]
   d) mergejoin(a,b, merge[doc, wpos, wip], left.doc = right.doc));
   e) join(d, c, stepped(left.doc = right.doc, right.wpos in range left.wpos - 5, left.wpos + 10), sorted([doc, wpos, wip]);
-  f) SORT(e, [doc, wpos, wip], RANGE(left.wpos - right.wpos between [-5, 5]))       
+  f) SORT(e, [doc, wpos, wip], RANGE(left.wpos - right.wpos between [-5, 5]))
      // could push top and right scope for range, but not very nice..., introduce a new no_sort keyword regardless of syntax.
 
 

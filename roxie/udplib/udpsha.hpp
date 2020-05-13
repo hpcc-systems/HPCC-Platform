@@ -32,7 +32,7 @@ typedef bool (*PKT_CMP_FUN) (const void *pkData, const void *key);
 #define UDP_PACKET_RESERVED           0x40000000  // Not used - could move UDP_SEQUENCE_COMPLETE here?
 #define UDP_PACKET_SEQUENCE_MASK      0x3fffffff
 
-struct UdpPacketHeader 
+struct UdpPacketHeader
 {
     unsigned short length;      // total length of packet including the header, data, and meta
     unsigned short metalength;  // length of metadata (comes after header and data)
@@ -44,14 +44,14 @@ struct UdpPacketHeader
     unsigned       msgId;       // sub-id allocated by the server to this request within the transaction
 };
 
-class queue_t 
+class queue_t
 {
 
-    class queue_element 
+    class queue_element
     {
     public:
         roxiemem::DataBuffer  *data;
-        queue_element() 
+        queue_element()
         {
             data = NULL;
         }
@@ -59,7 +59,7 @@ class queue_t
 
     queue_element   *elements;
     unsigned int    element_count;
-    
+
     unsigned        first;
     unsigned        last;
     CriticalSection c_region;
@@ -71,8 +71,8 @@ class queue_t
     unsigned        signal_free_sl;
 
     void removeElement(int ix);
-    
-public: 
+
+public:
     void interrupt();
     void pushOwn(roxiemem::DataBuffer *buffer);
     roxiemem::DataBuffer *pop(bool block);
@@ -98,8 +98,8 @@ class simple_queue
     CriticalSection c_region;
     Semaphore       data_avail;
     Semaphore       free_space;
-    
-public: 
+
+public:
     void push(const _et &element)
     {
         free_space.wait();
@@ -111,7 +111,7 @@ public:
         c_region.leave();
         data_avail.signal();
     }
-    
+
     bool push(const _et &element,long timeout)
     {
         if (free_space.wait(timeout) ) {
@@ -126,8 +126,8 @@ public:
         }
         return false;
     }
-    
-    void pop (_et &element) 
+
+    void pop (_et &element)
     {
         data_avail.wait();
         c_region.enter();
@@ -137,15 +137,15 @@ public:
         c_region.leave();
         free_space.signal();
     }
-    
+
     unsigned in_queue() {
         c_region.enter();
         unsigned res = active_buffers;
         c_region.leave();
         return res;
     }
-    
-    bool empty() 
+
+    bool empty()
     {
         c_region.enter();
         bool res = (active_buffers == 0);
@@ -153,7 +153,7 @@ public:
         return res;
     }
 
-    simple_queue(unsigned int queue_size) 
+    simple_queue(unsigned int queue_size)
     {
         element_count = queue_size;
         elements = new _et[element_count];
@@ -162,7 +162,7 @@ public:
         first = 0;
         last = 0;
     }
-    
+
     ~simple_queue() {
         delete [] elements;
     }

@@ -157,11 +157,11 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    UserMetric(const char *name, const char *regex) 
+    UserMetric(const char *name, const char *regex)
     {
         metric.setown(createUserMetric(name, regex));
     }
-    virtual long getValue() 
+    virtual long getValue()
     {
         return (long) metric->queryCount();
     }
@@ -189,7 +189,7 @@ class TickProvider : public Thread
     }
 
 public:
-    TickProvider() : Thread("TickProvider") 
+    TickProvider() : Thread("TickProvider")
     {
     }
     int run()
@@ -251,7 +251,7 @@ public:
     {
         takeSnapshot();
     }
-    virtual long getValue() 
+    virtual long getValue()
     {
         takeSnapshot();
         return value;
@@ -275,7 +275,7 @@ class UnsignedRatioMetric : implements INamedMetric, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     UnsignedRatioMetric(RelaxedAtomic<unsigned> &_counter, RelaxedAtomic<unsigned __int64> &_elapsed) : counter(_counter) , elapsed(_elapsed) {}
-    virtual long getValue() 
+    virtual long getValue()
     {
         unsigned count = counter;
         if (count)
@@ -394,7 +394,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(getHeapPercentAllocated, 0);
     addMetric(getDataBufferPages, 0);
     addMetric(getDataBuffersActive, 0);
-    
+
     addMetric(maxScanLength, 0);
     addMetric(totScanLength, 0);
     addMetric(totScans, 0);
@@ -471,7 +471,7 @@ void CRoxieMetricsManager::dumpMetrics()
 {
     HashIterator metrics(metricMap);
     ForEach(metrics)
-    {           
+    {
         IMapping &cur = metrics.query();
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
         if (m->isCumulative())
@@ -488,7 +488,7 @@ StringBuffer &CRoxieMetricsManager::getMetrics(StringBuffer &xml)
     xml.append("<Metrics>\n");
     HashIterator metrics(metricMap);
     ForEach(metrics)
-    {           
+    {
         IMapping &cur = metrics.query();
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
         const char *name = (const char *) cur.getKey();
@@ -503,7 +503,7 @@ void CRoxieMetricsManager::resetMetrics()
 {
     HashIterator metrics(metricMap);
     ForEach(metrics)
-    {           
+    {
         IMapping &cur = metrics.query();
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
         m->resetValue();
@@ -518,16 +518,16 @@ IRoxieMetricsManager *createRoxieMetricsManager()
 Owned<IRoxieMetricsManager> roxieMetrics;
 
 // Requirements for query stats: Want to be able to ask:
-// 1.   Average response time for query since ....??last restart of roxie??(or 
+// 1.   Average response time for query since ....??last restart of roxie??(or
 //      maybe last 24 hours)
 // 2.   Average response time of query in last hours
-// 3.   Quantity of searches on each query since........??last restart of roxie?? 
+// 3.   Quantity of searches on each query since........??last restart of roxie??
 //      (or maybe last 24 hours)
 // 4.   Quantity of searches in last hour
 // 5.   Breakout of number of searches for each query with certain standard deviations
 
-// Implementation notes: In production usage at present there may be up to 100000 queries on a given node per day, 
-// - it is likely that this will increase and that roxie may be restarted less frequently if we start loading data 
+// Implementation notes: In production usage at present there may be up to 100000 queries on a given node per day,
+// - it is likely that this will increase and that roxie may be restarted less frequently if we start loading data
 // on-the-fly.
 // We probably need a mechanism of concentric ring buffers to ensure that we don't end up using excessive memory
 // OR we could log the info to disk (roll every hour?) (so restarts would not destroy) and scan it when asked... can cache results if we want.
@@ -538,9 +538,9 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 // If hour (or minute, or minute/5, or whatever minimum granularity we pick) has changed since last noted a query,
 // shuffle...
 // we will be able to give results for any hour (x:00 to x+1:00), day (midnight to midnight), 5 minute period, etc
-// as well as current hour-so-far, current day-so-far 
+// as well as current hour-so-far, current day-so-far
 // and also last 5 minutes, last 60 minutes.
-// OR - just use a fixed size circular buffer and discard info once full. Anyone needing to know aggregated info 
+// OR - just use a fixed size circular buffer and discard info once full. Anyone needing to know aggregated info
 // about more than the last (say) 64k queries will have to start grepping logs.
 // Probably better to use expanding array with max size as may queries will not get anywhere near.
 // A binchop to find start-time/end-time ...
@@ -650,7 +650,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         }
 
     };
-    
+
     class QueryStatsAggregateRecord
     {
         // one of these per hour...
@@ -736,7 +736,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             {
                 buckets[bucketIndex] += other.buckets[bucketIndex];
             }
-            
+
         }
 
         void noteQuery(bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut)
@@ -804,7 +804,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
                     if (belowMe >= percentile97)
                     {
                         if (bucketLimit > maxTimeMs)
-                            bucketLimit = maxTimeMs; 
+                            bucketLimit = maxTimeMs;
                         result.setPropInt("percentile97", bucketLimit);
                         result.setPropBool("percentile97/@estimate", true);
                         break;
@@ -888,14 +888,14 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         queryTimeExpanded.tm_sec = slotLengthSeconds;
         slotEnd = mktime(&queryTimeExpanded);
     }
-    
+
     static CQueryStatsAggregator globalStatsAggregator;
     static ReadWriteLock queryStatsLock;
 
 public:
     static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
     virtual void Link(void) const { CInterface::Link(); }
-    virtual bool Release(void) const    
+    virtual bool Release(void) const
     {
         if (CInterface::Release())
             return true;
@@ -1087,7 +1087,7 @@ IPropertyTree *getQueryRawStats(const char *queryID, time_t from, time_t to)
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
 
-class StatsAggregatorTest : public CppUnit::TestFixture  
+class StatsAggregatorTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( StatsAggregatorTest );
         CPPUNIT_TEST(test1);
@@ -1114,27 +1114,27 @@ protected:
         tmStruct.tm_hour = 11;
         s->noteQuery(mktime(&tmStruct), false, 80000, 4000, 5000, 66);
 
-        tmStruct.tm_hour = 0; 
+        tmStruct.tm_hour = 0;
         tmStruct.tm_min = 0;
         tmStruct.tm_sec = 0;
         time_t start = mktime(&tmStruct);
-        tmStruct.tm_hour = 24; 
+        tmStruct.tm_hour = 24;
         time_t end = mktime(&tmStruct);
         {
             Owned<IPropertyTree> p = s->getStats(start, end);
-            StringBuffer stats; 
+            StringBuffer stats;
             toXML(p, stats);
             DBGLOG("%s", stats.str());
         }
         {
             Owned<IPropertyTree> p = getAllQueryStats(true, false, start, end);
-            StringBuffer stats; 
+            StringBuffer stats;
             toXML(p, stats);
             DBGLOG("%s", stats.str());
         }
         {
             Owned<IPropertyTree> p = getAllQueryStats(true, true, start, end);
-            StringBuffer stats; 
+            StringBuffer stats;
             toXML(p, stats);
             DBGLOG("%s", stats.str());
         }

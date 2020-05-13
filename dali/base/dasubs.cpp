@@ -39,7 +39,7 @@
 #pragma warning (disable : 4355)
 #endif
 
-enum MSubscriptionRequestKind { 
+enum MSubscriptionRequestKind {
     MSR_REMOVE_SUBSCRIPTION_PRIMARY,
     MSR_ADD_SUBSCRIPTION_PRIMARY,
     MSR_REMOVE_SUBSCRIPTION_SECONDARY,
@@ -57,7 +57,7 @@ class CSubscriptionStub: implements ISubscription, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSubscriptionStub(unsigned _tag,SubscriptionId _sid,size32_t _datalen, const byte *_data,INode *_dst) 
+    CSubscriptionStub(unsigned _tag,SubscriptionId _sid,size32_t _datalen, const byte *_data,INode *_dst)
        : data(_datalen,_data)
     {
         tag = _tag;
@@ -76,7 +76,7 @@ public:
     {
         return data;
     }
-    
+
     void notify(MemoryBuffer &returndata)   // if returns false should unsubscribe
     {
         if (hasaborted) {
@@ -317,7 +317,7 @@ public:
             }
             break;
         }
-    }   
+    }
 
 
     void nodeDown(rank_t rank)
@@ -354,7 +354,7 @@ public:
         if (telapsed>1000)
             DBGLOG("CDaliPublisherServer::unlink took %dms",telapsed);
     }
-    
+
     void onClose(SocketEndpoint &ep)
     {
         // mark stub closed
@@ -515,7 +515,7 @@ public:
         {
             CriticalBlock block(subscriptionsect);
             unsigned i = ids.find(id);
-            if (i == NotFound) 
+            if (i == NotFound)
                 return;
             item.set(&subscriptions.item(i));
         }
@@ -564,7 +564,7 @@ public:
     {
         CHECKEDCRITICALBLOCK(tagsect,60000);
         unsigned i = tags.find(tag);
-        if (i!=NotFound) 
+        if (i!=NotFound)
             return &managers.item(i);
         CDaliSubscriptionManagerStub *stub = new CDaliSubscriptionManagerStub(tag);
         tags.append(tag);
@@ -610,7 +610,7 @@ public:
         SubscriptionId id;
         mb.read(id);
         unsigned i = tags.find(tag);
-        if (i!=NotFound) {      
+        if (i!=NotFound) {
             MemoryBuffer qb;
             size32_t dlen;
             mb.read(dlen);

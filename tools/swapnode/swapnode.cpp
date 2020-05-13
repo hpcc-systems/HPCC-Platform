@@ -34,7 +34,7 @@
 #include "rmtfile.hpp"
 #include "rmtsmtp.hpp"
 
-#include "dautils.hpp" 
+#include "dautils.hpp"
 #include "workunit.hpp"
 
 #include "swapnodelib.hpp"

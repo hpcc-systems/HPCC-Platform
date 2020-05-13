@@ -38,22 +38,22 @@
 #include "thorplugin.hpp"
 
 void * SimplePluginCtx::ctxMalloc(size_t size)
-{ 
-    return rtlMalloc(size); 
+{
+    return rtlMalloc(size);
 }
 
 void * SimplePluginCtx::ctxRealloc(void * _ptr, size_t size)
-{ 
+{
     return rtlRealloc(_ptr, size);
 }
 void SimplePluginCtx::ctxFree(void * _ptr)
-{ 
+{
     rtlFree(_ptr);
 }
 
 char * SimplePluginCtx::ctxStrdup(char * _ptr)
-{ 
-    return strdup(_ptr); 
+{
+    return strdup(_ptr);
 }
 
 int SimplePluginCtx::ctxGetPropInt(const char *propName, int defaultValue) const
@@ -845,7 +845,7 @@ void SafePluginMap::loadFromList(const char * pluginsList)
 void SafePluginMap::loadFromDirectory(const char * pluginDirectory)
 {
     const char * mask = "*" SharedObjectExtension;
-    
+
     Owned<IFile> pluginDir = createIFile(pluginDirectory);
     Owned<IDirectoryIterator> pluginFiles = pluginDir->directoryFiles(mask,false,false);
     ForEach(*pluginFiles)

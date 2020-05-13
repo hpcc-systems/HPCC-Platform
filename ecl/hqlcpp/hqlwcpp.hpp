@@ -29,7 +29,7 @@ interface HQLCPP_API ISectionWriter : public IInterface
 public:
     virtual void generateSection(unsigned indent, IAtom * section, unsigned pass) = 0;
     virtual void noteLines(size32_t count) = 0;
-    virtual void setOutput(IFile * out, IIOStream * outStream) = 0; 
+    virtual void setOutput(IFile * out, IIOStream * outStream) = 0;
 };
 
 interface HQLCPP_API ITemplateExpander : public IInterface

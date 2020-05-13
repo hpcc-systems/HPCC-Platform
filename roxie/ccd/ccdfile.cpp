@@ -58,7 +58,7 @@ atomic_t numFilesOpen[2];
 
 class DECL_EXCEPTION NotYetOpenException : implements IException, public CInterface
 {
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     virtual int             errorCode() const { return 0; }
     virtual StringBuffer &  errorMessage(StringBuffer &msg) const { return msg.append("not yet open"); }
@@ -120,7 +120,7 @@ public:
         copying = false;
         cached = NULL;
     }
-    
+
     ~CRoxieLazyFileIO()
     {
         setFailure(); // ensures the open file count properly maintained
@@ -156,19 +156,19 @@ public:
             currentIdx = 0;
             _checkOpen();
         }
-        copying = _copying; 
+        copying = _copying;
     }
 
     virtual bool isCopying() const
     {
         CriticalBlock b(crit);
-        return copying; 
+        return copying;
     }
 
-    virtual bool isOpen() const 
+    virtual bool isOpen() const
     {
         CriticalBlock b(crit);
-        return current.get() != &failure; 
+        return current.get() != &failure;
     }
 
     virtual unsigned getLastAccessed() const
@@ -197,16 +197,16 @@ public:
                 return;
             atomic_dec(&numFilesOpen[remote]);
             mergeStats(fileStats, current);
-            current.set(&failure); 
+            current.set(&failure);
         }
-        catch (IException *E) 
+        catch (IException *E)
         {
             if (traceLevel > 5)
             {
                 StringBuffer s;
                 DBGLOG("setFailure ignoring exception %s from IFileIO close", E->errorMessage(s).str());
             }
-            E->Release(); 
+            E->Release();
         }
     }
 
@@ -320,7 +320,7 @@ public:
         }
     }
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data) 
+    virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
@@ -370,8 +370,8 @@ public:
             active->flush();
     }
 
-    virtual offset_t size() 
-    { 
+    virtual offset_t size()
+    {
         unsigned activeIdx;
         Owned<IFileIO> active = getCheckOpen(activeIdx);
         lastAccess = msTick();
@@ -479,11 +479,11 @@ public:
         }
     }
 
-    virtual IFile *querySource() 
+    virtual IFile *querySource()
     {
         CriticalBlock b(crit);
         _checkOpen();
-        return &sources.item(currentIdx); 
+        return &sources.item(currentIdx);
     };
     virtual IFile *queryTarget() { return logical; }
 
@@ -894,7 +894,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 OERRLOG("Dest directory %s does not exist", destPath.str());
                 return false;
             }
-            
+
             tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
             return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, copyFlags);
@@ -1019,7 +1019,7 @@ public:
                         EXCLOG(MCoperatorError, E, "Roxie background copy: ");
                         E->Release();
                     }
-                    catch (...) 
+                    catch (...)
                     {
                         EXCLOG(MCoperatorError, "Unknown exception in Roxie background copy");
                     }
@@ -1039,7 +1039,7 @@ public:
                 EXCLOG(MCoperatorError, E, "Roxie background copy: ");
             E->Release();
         }
-        catch (...) 
+        catch (...)
         {
             IERRLOG("Unknown exception in background copy thread");
         }
@@ -1057,7 +1057,7 @@ public:
         {
             for (;;)
             {
-                toClose.wait(10 * 60 * 1000);  // check expired file handles every 10 minutes 
+                toClose.wait(10 * 60 * 1000);  // check expired file handles every 10 minutes
                 if (closing)
                     break;
                 doCloseExpired(true);
@@ -1070,7 +1070,7 @@ public:
                 EXCLOG(MCoperatorError, E, "Roxie handle closer: ");
             E->Release();
         }
-        catch (...) 
+        catch (...)
         {
             IERRLOG("Unknown exception in handle closer thread");
         }
@@ -1243,7 +1243,7 @@ public:
                         case ROXIE_KEY:
                             fileErrorList.setValue(lfn, "Key");
                             break;
-                        
+
                         case ROXIE_FILE:
                             fileErrorList.setValue(lfn, "File");
                             break;
@@ -1304,7 +1304,7 @@ public:
                 }
             }
         }
-        unsigned numFilesLeft = goers.ordinality(); 
+        unsigned numFilesLeft = goers.ordinality();
         if (numFilesLeft > maxFilesOpen[remote])
         {
             goers.sort(CRoxieLazyFileIO::compareAccess);
@@ -1339,7 +1339,7 @@ public:
                     const char *thisName = iter->query().queryFilename();
                     flushUnusedDirectories(origBaseDir, thisName, xml);
                 }
-                
+
                 if (stricmp(origBaseDir, directory) != 0)
                 {
                     try
@@ -1895,7 +1895,7 @@ protected:
         globalPackageSetManager->requestReload(false, false);
     }
 
-    // We cache all the file maps/arrays etc here. 
+    // We cache all the file maps/arrays etc here.
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
     mutable PerChannelCacheOf<IInMemoryIndexManager> indexMap;
@@ -2302,7 +2302,7 @@ public:
 
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
-                        if (fdesc) // NB there may be no parts for this channel 
+                        if (fdesc) // NB there may be no parts for this channel
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
                             if (pdesc)
@@ -2766,7 +2766,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 
 MODULE_EXIT()
-{ 
+{
     fileCache->join();
     fileCache->Release();
 }

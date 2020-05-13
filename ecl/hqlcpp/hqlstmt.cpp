@@ -63,11 +63,11 @@ public:
 };
 
 
-void HqlExprAssociation::getBound(CHqlBoundExpr & result)   
-{ 
-    result.expr.set(queryExpr()); 
+void HqlExprAssociation::getBound(CHqlBoundExpr & result)
+{
+    result.expr.set(queryExpr());
 }
-    
+
 //---------------------------------------------------------------------------
 
 BuildCtx::BuildCtx(HqlCppInstance & _state, IAtom * section) : state(_state)
@@ -543,7 +543,7 @@ HqlStmt * BuildCtx::appendCompound(HqlCompoundStmt * next)
     return next;
 }
 
-HqlStmt * BuildCtx::appendSimple(HqlStmt * next)                     
+HqlStmt * BuildCtx::appendSimple(HqlStmt * next)
 {
     assertThrow(!ignoreInput);
     if (nextPriority == OutermostScopePrio)
@@ -556,7 +556,7 @@ HqlStmt * BuildCtx::appendSimple(HqlStmt * next)
         curStmts->appendStmt(*next);
     }
     nextPriority = curPriority;
-    return next; 
+    return next;
 }
 
 
@@ -598,7 +598,7 @@ found:
     else
     {
         next->setPriority(curPriority);
-        curStmts->appendStmt(*next); 
+        curStmts->appendStmt(*next);
     }
 }
 
@@ -642,7 +642,7 @@ HqlExprAssociation *BuildCtx::associateExpr(IHqlExpression * represents, IHqlExp
 
 
 HqlExprAssociation * BuildCtx::associateExpr(IHqlExpression * represents, const CHqlBoundExpr & bound)
-{ 
+{
     if (!ignoreInput)
     {
         HqlExprAssociation * assoc = new HqlBoundDefinedValue(represents->queryBody(), bound);
@@ -749,7 +749,7 @@ void BuildCtx::removeAssociation(HqlExprAssociation * search)
             break;
         searchStmts = limitStmt->queryContainer();
     }
-        
+
     assertex(!"Association not found");
 }
 
@@ -836,7 +836,7 @@ bool BuildCtx::getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & tgt)
     return false;
 }
 
-    
+
 
 void BuildCtx::init(HqlStmts * _root)
 {
@@ -1273,7 +1273,7 @@ bool HqlStmt::hasChildren() const
     }
     return false;
 }
-            
+
 bool HqlStmt::isIncluded() const
 {
     if (!included)
@@ -1863,7 +1863,7 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
                 }
                 break;
             }
-            
+
             if (!memsetOnly)
             {
                 switch (tc)
@@ -2015,8 +2015,8 @@ bool SpecialFunction::queryCombine(const SpecialFunction & next, bool memsetOnly
     return false;
 }
 
-PeepHoleOptimizer::PeepHoleOptimizer(HqlCppTranslator & _translator) : translator(_translator) 
-{ 
+PeepHoleOptimizer::PeepHoleOptimizer(HqlCppTranslator & _translator) : translator(_translator)
+{
     combineStringLimit = -1;
     peepholeOptions = 0;
     if (translator.queryOptions().convertRealAssignToMemcpy)

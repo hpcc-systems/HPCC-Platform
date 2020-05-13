@@ -142,7 +142,7 @@ public:
             eogNext = false;
             return NULL;
         }
-        
+
         OwnedConstThorRow prev = next.getClear();
         next.setown(getNext());
         if (next && !helper->isSameGroup(prev, next))

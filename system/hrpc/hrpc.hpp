@@ -174,7 +174,7 @@ protected:
     HRPCbuffer cbretbuff;
     int  CallerName(char *name,size32_t namemax) { return _server->CallerName(name,namemax); }
     int  SetCallbackModule(HRPCmodule &m);
-                                            
+
 private:
     void callstub(int fn,HRPCbuffer  &rbuff);
     void _callbackstub(HRPCbuffer &buff,HRPCbuffer &obuff,int fn) { assertex(!"should not be called"); }
@@ -263,7 +263,7 @@ HRPCserver:
 RPC (i.e. client side remote procedure call)
     HRPCERR_call_timeout
     HRPCERR_mismatched_hrpc_version
-        
+
 
 
 */

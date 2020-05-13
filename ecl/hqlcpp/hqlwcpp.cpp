@@ -153,7 +153,7 @@ void CppWriterTemplate::loadTemplate(const char * codeTemplate)
 {
     len = strlen(codeTemplate);
     text = codeTemplate;
-    
+
     unsigned index=0;
     unsigned startLine = 0;
     while (index != len)
@@ -177,7 +177,7 @@ void CppWriterTemplate::loadTemplate(const char * codeTemplate)
                             type = TplEndCondition;
                     }
                 }
-                
+
                 unsigned end = start;
                 for (;;)
                 {
@@ -187,7 +187,7 @@ void CppWriterTemplate::loadTemplate(const char * codeTemplate)
                         break;
                     ++end;
                 }
-                
+
                 unsigned indent = 0;
                 while (indent < index - startLine && isspace((byte)text[index-indent-1]))
                     indent++;
@@ -197,10 +197,10 @@ void CppWriterTemplate::loadTemplate(const char * codeTemplate)
                 next->len = end+1 - index + indent;
                 next->indent = indent;
                 next->id = createAtom(text+start, end-start);
-                
+
                 if (end == index+1)
                     next->len--;        // quoted character => include the next @/$
-                
+
                 sections.append(*next);
                 index = end+1;
                 break;
@@ -223,21 +223,21 @@ const char * getOpText(node_operator op)
 {
     switch (op)
     {
-        case no_mul: return "*"; 
-        case no_div: return "/"; 
+        case no_mul: return "*";
+        case no_div: return "/";
         case no_modulus: return "%";
         case no_negate: return "-";
-        case no_add: return "+"; 
+        case no_add: return "+";
         case no_sub: return "-";
-        case no_eq: return "=="; 
-        case no_ne: return "!="; 
-        case no_lt: return "<"; 
-        case no_le: return "<="; 
-        case no_gt: return ">"; 
+        case no_eq: return "==";
+        case no_ne: return "!=";
+        case no_lt: return "<";
+        case no_le: return "<=";
+        case no_gt: return ">";
         case no_ge: return ">=";
         case no_not: return "!";
-        case no_and: return "&&"; 
-        case no_or: return "||"; 
+        case no_and: return "&&";
+        case no_or: return "||";
         case no_xor: return "xor";  //doesn't actually exist, should be transformed
         case no_comma: return ",";
         case no_compound: return ",";
@@ -275,8 +275,8 @@ unsigned getPrecedence(IHqlExpression * expr)
             return 17;
         case no_postinc: case no_postdec:
             return 16;
-        case no_not: case no_negate: 
-        case no_preinc: case no_predec: 
+        case no_not: case no_negate:
+        case no_preinc: case no_predec:
         case no_bnot: case no_address: case no_deref:
             return 15;
         case no_cast:
@@ -284,9 +284,9 @@ unsigned getPrecedence(IHqlExpression * expr)
             return 14;
         case no_mul: case no_div: case no_modulus:
             return 13;
-        case no_add: case no_sub: 
+        case no_add: case no_sub:
             return 12;
-        case no_lshift: case no_rshift: 
+        case no_lshift: case no_rshift:
             return 11;
         case no_lt: case no_gt: case no_le: case no_ge:
             return 10;
@@ -341,12 +341,12 @@ public:
         }
         return str;
     }
-    
+
     StringBuffer & addArray(unsigned length)
     {
         return addSuffix().append("[").append(length ? length : 1).append("]");
     }
-    
+
     void get(StringBuffer & out)
     {
         if (isConst)
@@ -801,7 +801,7 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
 void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * attrs)
 {
     ITypeInfo *paramType = param->queryType();
-    
+
     //Case is significant if these parameters are use for BEGINC++ sections
     IAtom * paramName = param->queryName();
     StringBuffer paramNameText;
@@ -887,7 +887,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
         isConst = false; // bit of a hack - we forced it on in generateType above, and this avoids duplicates.
         break;
     }
-    
+
     bool nameappended = false;
     switch (paramType->getTypeCode())
     {
@@ -1109,12 +1109,12 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
         case no_le:
         case no_gt:
         case no_ge:
-        case no_mul: 
-        case no_div: 
-        case no_modulus: 
+        case no_mul:
+        case no_div:
+        case no_modulus:
         case no_add:
         case no_sub:
-        case no_and: 
+        case no_and:
         case no_or:
         case no_xor:
         case no_comma:
@@ -1270,7 +1270,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     }
                     break;
                 }
-                
+
                 out.append("(");
                 generateType(type, NULL);
                 out.append(")");
@@ -1398,9 +1398,9 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 }
                 break;
             }
-        case no_negate: 
-        case no_not: 
-        case no_bnot: 
+        case no_negate:
+        case no_not:
+        case no_bnot:
         case no_deref:
         case no_preinc:
         case no_predec:
@@ -1561,16 +1561,16 @@ void HqlCppWriter::generateOrderExpr(IHqlExpression * left, IHqlExpression * rig
 
 //---------------------------------------------------------------------------
 HqlCppWriter::HqlCppWriter(StringBuffer & _out, CompilerType _compiler) : out(_out)
-{ 
-    curIndent = 0; 
+{
+    curIndent = 0;
     startOffset = 0;
     compiler = _compiler;
     outputLineNum = 1;
 }
 
 HqlCppWriter::HqlCppWriter(CompilerType _compiler) : out(defaultOut)
-{ 
-    curIndent = 0; 
+{
+    curIndent = 0;
     startOffset = 0;
     compiler = _compiler;
     outputLineNum = 1;
@@ -1897,7 +1897,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign, bool link)
             {
                 type->getTypeCode();
                 assertex(!"Unexpected type assignment!");
-                generateSimpleAssign(target, source); 
+                generateSimpleAssign(target, source);
                 out.append("$$BadType$$");
             }
             break;
@@ -1993,7 +1993,7 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
 {
     IHqlExpression * name = declare->queryExpr(0);
     IHqlExpression * value = declare->queryExpr(1);
-    
+
     ITypeInfo * type = name->queryType();
 
     StringBuffer targetName;
@@ -2069,7 +2069,7 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
         }
     }
     out.append(";");
-    
+
     newline();
 }
 
@@ -2145,14 +2145,14 @@ void HqlCppWriter::generateStmtLoop(IHqlStmt * stmt)
             newline();
         }
         indent(-1);
-        indent().append("} while ("); 
+        indent().append("} while (");
         generateExprCpp(cond);
         out.append(");");
         newline();
     }
     else
     {
-        indent().append("for (;"); 
+        indent().append("for (;");
         if (cond)
             generateExprCpp(cond);
         out.append(";");

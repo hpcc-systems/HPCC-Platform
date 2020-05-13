@@ -35,7 +35,7 @@ public:
     StringAttr password;
     StringAttr qsetname;
     StringAttr queryname;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 

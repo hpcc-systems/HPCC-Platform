@@ -110,7 +110,7 @@ char *CThorCodeContextBase::getExpandLogicalName(const char * logicalName)
 }
 
 IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
-{ 
+{
     return jobChannel.getRowAllocator(meta, activityId);
 }
 

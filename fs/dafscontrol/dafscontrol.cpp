@@ -66,7 +66,7 @@ enum ApplyMode
 {
     AMcheckver,         // check version failures to result and resultstr version
     AMcheckvermajor,    // only check major version
-    AMcheck,    // 
+    AMcheck,    //
     AMstop,     // unconditional stop - stopped to results and resultstr version
     AMstopver,  // stop if not current version
     AMver,      // return versions of each
@@ -92,7 +92,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
     SocketEndpointArray eps;
     if (isdali&&(stricmp(grpip,"all")==0)) {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-        if (!conn) 
+        if (!conn)
             return 0;
         IPropertyTree* root = conn->queryRoot();
         Owned<IPropertyTreeIterator> clusters= root->getElements("ThorCluster");
@@ -138,9 +138,9 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
         StringAttrArray &resultstr;
         CriticalSection &sect;
     public:
-        casyncfor(ApplyMode _mode, unsigned _ver,SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets,SocketEndpointArray &_result, StringAttrArray &_resultstr,CriticalSection &_sect) 
+        casyncfor(ApplyMode _mode, unsigned _ver,SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets,SocketEndpointArray &_result, StringAttrArray &_resultstr,CriticalSection &_sect)
             : eps(_eps), sockets(_sockets), result(_result), resultstr(_resultstr), sect(_sect)
-        { 
+        {
             mode = _mode;
             ver = _ver;
         }
@@ -168,7 +168,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                     }
                     return;
                 case AMstopver:
-                case AMcheckver: 
+                case AMcheckver:
                 case AMcheckvermajor: {
                     // compares versions up to the '-'
                         const char *rv = verstr.str();
@@ -197,7 +197,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
                             if (mode!=AMstopver)
                                 return;     // even though failed to stop - still return code
                         }
-                        else 
+                        else
                             Sleep(1000); // let stop
                     }
                     break;
@@ -217,17 +217,17 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
     if (result.ordinality()==0)
         return 0;
     switch (mode) {
-    case AMstopver: 
-    case AMcheckver: 
-    case AMcheckvermajor: 
+    case AMstopver:
+    case AMcheckver:
+    case AMcheckvermajor:
         if (!quiet) {
             StringBuffer epstr;
             ForEachItemIn(i,result) {
                 result.item(i).getUrlStr(epstr.clear());
                 StringAttrItem &attr = resultstr.item(i);
-                if (attr.text.length()==0) 
+                if (attr.text.length()==0)
                     UERRLOG("%s: %s not running DAFILESRV",grpip,epstr.str());
-                else 
+                else
                     UERRLOG("%s: %s %s running DAFILESRV version %s",grpip,(mode==AMstopver)?"was":"is",epstr.str(),attr.text.get());
             }
             unsigned numok = eps.ordinality()-result.ordinality();
@@ -248,16 +248,16 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
             ForEachItemIn(i,result) {
                 result.item(i).getUrlStr(epstr.clear());
                 StringAttrItem &attr = resultstr.item(i);
-                if (attr.text.length()!=0) 
+                if (attr.text.length()!=0)
                     PROGLOG("%s,%s,%s",grpip,epstr.str(),attr.text.get());
                 else
                     failed++;
             }
-            if (failed&&!quiet) 
+            if (failed&&!quiet)
                 PROGLOG("%s: %d node%s not running DAFILESRV",grpip,failed,(failed!=1)?"s":"");
         }
         break;
-    case AMcheck: 
+    case AMcheck:
         if (!quiet) {
             StringBuffer epstr;
             ForEachItemIn(i,result) {
@@ -280,7 +280,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
 
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 int main(int argc, char* argv[])
-{   
+{
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
     if (argc<2) {
@@ -320,29 +320,29 @@ int main(int argc, char* argv[])
 
             }
             if (stricmp(argv[ai],"stop")==0) {
-                if (ai+1>=ac) 
-                    usage(); 
+                if (ai+1>=ac)
+                    usage();
                 else
                     applyNodes(argv[ai+1], AMstop, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"stopver")==0) {
-                if (ai+1>=ac) 
-                    usage(); 
+                if (ai+1>=ac)
+                    usage();
                 else
                     applyNodes(argv[ai+1], AMstopver, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"check")==0) {
-                if (ai+1>=ac) 
-                    usage(); 
+                if (ai+1>=ac)
+                    usage();
                 else
                     if (applyNodes(argv[ai+1], AMcheck, DAFILESRV_VERSION,isdali,quiet)>0)
                         ret = 1;
                 break;
             }
             if (stricmp(argv[ai],"checkver")==0) {
-                if (ai+1>=ac) 
+                if (ai+1>=ac)
                     usage();
                 else
                     if (applyNodes(argv[ai+1], AMcheckver, DAFILESRV_VERSION,isdali,quiet)>0)
@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
                 break;
             }
             if (stricmp(argv[ai],"checkvermajor")==0) {
-                if (ai+1>=ac) 
+                if (ai+1>=ac)
                     usage();
                 else
                     if (applyNodes(argv[ai+1], AMcheckvermajor, DAFILESRV_VERSION,isdali,quiet)>0)
@@ -358,15 +358,15 @@ int main(int argc, char* argv[])
                 break;
             }
             if (stricmp(argv[ai],"ver")==0) {
-                if (ai+1>=ac) 
-                    usage(); 
+                if (ai+1>=ac)
+                    usage();
                 else
                     applyNodes(argv[ai+1], AMver, DAFILESRV_VERSION,isdali,quiet);
                 break;
             }
             if (stricmp(argv[ai],"trace")==0) {
                 if (ai+2>=ac)
-                    usage(); 
+                    usage();
                 else {
                     SocketEndpointArray eps;
                     if (!isdali||!getCluster(argv[ai+1],eps)) {

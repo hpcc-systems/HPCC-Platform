@@ -4755,9 +4755,9 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         zapInfoReq.includeThorSlaveLog = req.getIncludeThorSlaveLog();
         zapInfoReq.zapFileName = req.getZAPFileName();
         zapInfoReq.password = req.getZAPPassword();
-    
+
         StringBuffer zipFileName, zipFileNameWithPath;
-        //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
+        //CWsWuFileHelper may need ESP's <Directories> settings to locate log files.
         CWsWuFileHelper helper(directories);
         helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath, thorSlaveLogThreadPoolSize);
 

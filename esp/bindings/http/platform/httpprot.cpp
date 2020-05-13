@@ -134,7 +134,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
 
         if(apport == NULL)
             throw MakeStringException(-1, "binding not found!");
-        
+
         if(apport != NULL)
         {
             Owned<ISocket> accepted;
@@ -149,7 +149,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
 
     #if defined(_DEBUG)
                 DBGLOG("HTTP connection from %s:%d on %s socket", peername, port, persistentHandler?"persistent":"new");
-    #endif          
+    #endif
 
                 if(m_maxConcurrentThreads > 0)
                 {
@@ -175,7 +175,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
                         if(accepted.get())
                         {
                             accepted->close();
-                            //Assumption here is that if start() throws exception, that means the new 
+                            //Assumption here is that if start() throws exception, that means the new
                             //thread hasn't been started, so there's no other thread holding a link.
                             CInterface* ci = dynamic_cast<CInterface*>(accepted.get());
                             if(ci && ci->IsShared())
@@ -202,7 +202,7 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersistentH
             throw MakeStringException(-1, "can't acquire bindings IEspHttpBinding interface (via dynamic_cast)!");
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) in CHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
@@ -322,7 +322,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
         CEspApplicationPort *apport = queryApplicationPort(port);
         if(apport == NULL)
             throw MakeStringException(-1, "binding not found!");
-        
+
         if(apport != NULL)
         {
             Owned<ISocket>accepted;
@@ -375,7 +375,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
             throw MakeStringException(-1, "can't acquire bindings IEspHttpBinding interface (via dynamic_cast)!");
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) in CSecureHttpProtocol::notifySelected()", e->errorCode(), e->errorMessage(estr).str());
@@ -399,7 +399,7 @@ const char * CSecureHttpProtocol::getProtocolName()
 /**************************************************************************
  *  CHttpThread Implementation                                            *
  **************************************************************************/
-CHttpThread::CHttpThread(bool viewConfig) : 
+CHttpThread::CHttpThread(bool viewConfig) :
    CEspProtocolThread("Http Thread")
 {
     m_viewConfig = viewConfig;
@@ -407,7 +407,7 @@ CHttpThread::CHttpThread(bool viewConfig) :
     m_ssctx = NULL;
 }
 
-CHttpThread::CHttpThread(ISocket *sock, bool viewConfig) : 
+CHttpThread::CHttpThread(ISocket *sock, bool viewConfig) :
    CEspProtocolThread(sock, "HTTP Thread")
 {
     m_viewConfig = viewConfig;
@@ -434,7 +434,7 @@ bool CHttpThread::onRequest()
     ActiveRequests recording;
 
     Owned<CEspHttpServer> httpserver;
-    
+
     Owned<ISecureSocket> secure_sock;
     if(m_is_ssl && m_ssctx && m_persistentHandler == nullptr)
     {
@@ -472,7 +472,7 @@ bool CHttpThread::onRequest()
         httpserver.setown(new CEspHttpServer(*m_socket, m_apport, m_viewConfig, getMaxRequestEntityLength()));
     }
 
-    time_t t = time(NULL);  
+    time_t t = time(NULL);
     initThreadLocal(sizeof(t), &t);
 
     httpserver->setIsSSL(m_is_ssl);
@@ -517,7 +517,7 @@ void CPooledHttpThread::threadmain()
 {
     TimeSection timing("CPooledHttpThread::threadmain()");
     Owned<CEspHttpServer> httpserver;
-    
+
     Owned<ISecureSocket> secure_sock;
     if(m_is_ssl && m_ssctx && m_persistentHandler == nullptr)
     {
@@ -550,7 +550,7 @@ void CPooledHttpThread::threadmain()
         httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
     }
     httpserver->setShouldClose(m_shouldClose);
-    time_t t = time(NULL);  
+    time_t t = time(NULL);
     initThreadLocal(sizeof(t), &t);
     bool keepAlive = false;
     try
@@ -569,7 +569,7 @@ void CPooledHttpThread::threadmain()
             m_persistentHandler->doneUsing(m_socket, keepAlive);
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
@@ -590,7 +590,7 @@ void CPooledHttpThread::threadmain()
             m_socket.clear();
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) - CPooledHttpThread::threadmain(), closing socket.", e->errorCode(), e->errorMessage(estr).str());

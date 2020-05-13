@@ -33,11 +33,11 @@ interface IJobQueueItem: extends serializable
     virtual unsigned getPort()=0;                   // conversation port (not used for DFU server)
     virtual bool equals(IJobQueueItem *other)=0;
     virtual IJobQueueItem* clone()=0;
-    
+
     virtual void setPriority(int priority)=0;
     virtual void setOwner(const char *owner)=0;
-    virtual void setEndpoint(const SocketEndpoint &ep)=0;  
-    virtual void setPort(unsigned)=0;            
+    virtual void setEndpoint(const SocketEndpoint &ep)=0;
+    virtual void setPort(unsigned)=0;
     virtual void setSessionId(SessionId id)=0;
     virtual bool isValidSession()=0;                // used before conversation started
 
@@ -56,7 +56,7 @@ typedef IIteratorOf<IJobQueueItem> IJobQueueIterator;
 class WORKUNIT_API CJobQueueContents: public IArrayOf<IJobQueueItem>
 {  // used as a 'snapshot' of queue items
 public:
-    IJobQueueIterator *getIterator(); // only valid during lifetime of CJobQueueContents    
+    IJobQueueIterator *getIterator(); // only valid during lifetime of CJobQueueContents
 };
 
 interface IDynamicPriority
@@ -107,7 +107,7 @@ interface IJobQueue: extends IJobQueueConst
 //manipulation
     virtual IJobQueueItem *take(const char *wuid)=0; // finds and removes
     virtual unsigned takeItems(CJobQueueContents &dest)=0;   // takes items and clears queue
-    virtual void enqueueItems(CJobQueueContents &items)=0;   // enqueues to first sub-queue 
+    virtual void enqueueItems(CJobQueueContents &items)=0;   // enqueues to first sub-queue
     virtual bool moveBefore(const char *wuid,const char *nextwuid)=0;
     virtual bool moveAfter(const char *wuid,const char *prevwuid)=0;
     virtual bool moveToHead(const char *wuid)=0;
@@ -117,7 +117,7 @@ interface IJobQueue: extends IJobQueueConst
     virtual void clear()=0;                     // removes all items
 
 // transactions (optional)
-    virtual void lock()=0;          
+    virtual void lock()=0;
     virtual void unlock(bool rollback=false)=0;
 
 // control:
@@ -130,7 +130,7 @@ interface IJobQueue: extends IJobQueueConst
 
 // conversations:
     virtual IConversation *initiateConversation(IJobQueueItem *item)=0; // does enqueue - take ownership of item
-    virtual IConversation *acceptConversation(IJobQueueItem *&item,unsigned prioritytransitiondelay=0,IDynamicPriority *maxp=NULL)=0;  
+    virtual IConversation *acceptConversation(IJobQueueItem *&item,unsigned prioritytransitiondelay=0,IDynamicPriority *maxp=NULL)=0;
                                                                         // does dequeue - returns queue item dequeued
     virtual void cancelInitiateConversation()=0;                        // cancels initiateConversation in progress
     virtual bool cancelInitiateConversation(const char *wuid)=0;        // cancels remote initiate
@@ -150,7 +150,7 @@ interface IJQSnapshot : extends IInterface
 extern WORKUNIT_API IJQSnapshot *createJQSnapshot();
 
 extern WORKUNIT_API IJobQueueItem *createJobQueueItem(const char *wuid);
-extern WORKUNIT_API IJobQueueItem *deserializeJobQueueItem(MemoryBuffer &mb); 
+extern WORKUNIT_API IJobQueueItem *deserializeJobQueueItem(MemoryBuffer &mb);
 
 extern WORKUNIT_API IJobQueue *createJobQueue(const char *name);
 

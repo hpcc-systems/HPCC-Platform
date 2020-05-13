@@ -115,7 +115,7 @@ bool lazyOpen;
 bool localSlave;
 bool useAeron;
 bool ignoreOrphans;
-bool doIbytiDelay = true; 
+bool doIbytiDelay = true;
 bool copyResources;
 bool enableKeyDiff = true;
 bool chunkingHeap = true;
@@ -247,7 +247,7 @@ void init_signals()
     signal(SIGALRM, caughtSIGALRM);
 
 #endif
-}   
+}
 
 //=========================================================================================
 
@@ -589,7 +589,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
             runner.addTest( registry.makeTest() );
         }
-        else 
+        else
         {
             // MORE - maybe add a 'list' function here?
             for (int name = 2; name < argc; name++)
@@ -1046,8 +1046,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         if (traceLevel)
         {
-            DBGLOG("Current Hardware Info: CPUs=%i, speed=%i MHz, Mem=%i MB , primDisk=%i GB, primFree=%i GB, secDisk=%i GB, secFree=%i GB, NIC=%i", 
-              hdwInfo.numCPUs, hdwInfo.CPUSpeed, hdwInfo.totalMemory, 
+            DBGLOG("Current Hardware Info: CPUs=%i, speed=%i MHz, Mem=%i MB , primDisk=%i GB, primFree=%i GB, secDisk=%i GB, secFree=%i GB, NIC=%i",
+              hdwInfo.numCPUs, hdwInfo.CPUSpeed, hdwInfo.totalMemory,
               hdwInfo.primDiskSize, hdwInfo.primFreeSize, hdwInfo.secDiskSize, hdwInfo.secFreeSize, hdwInfo.NICSpeed);
         }
         parallelAggregate = topology->getPropInt("@parallelAggregate", 0);
@@ -1062,7 +1062,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setKeyIndexCacheSize((unsigned)-1); // unbound
         nodeCachePreload = topology->getPropBool("@nodeCachePreload", false);
         setNodeCachePreload(nodeCachePreload);
-        nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100); 
+        nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100);
         setNodeCacheMem(nodeCacheMB * 0x100000);
         leafCacheMB = topology->getPropInt("@leafCacheMem", 50);
         setLeafCacheMem(leafCacheMB * 0x100000);
@@ -1407,7 +1407,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     _CrtSetReportFile( _CRT_ERROR, h);
     _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE|_CRTDBG_MODE_DEBUG);
     _CrtSetReportFile( _CRT_ASSERT, h);
-//  _CrtDumpMemoryLeaks(); if you uncomment these lines you get to see the leaks sooner (so can look in debugger at full memory) 
+//  _CrtDumpMemoryLeaks(); if you uncomment these lines you get to see the leaks sooner (so can look in debugger at full memory)
 //   CloseHandle(h); but there will be additional leaks reported that are not really leaks
 #endif
 #endif

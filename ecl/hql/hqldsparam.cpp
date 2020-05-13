@@ -43,7 +43,7 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
     LinkedHqlExpr transformed = _expr;
     IHqlExpression* formalRecord = formal->queryRecord();
     IHqlExpression* actualRecord = actual->queryRecord();
-    assertex(formalRecord && actualRecord); 
+    assertex(formalRecord && actualRecord);
 
     hadError = false;
     IHqlSimpleScope *actualScope = actualRecord->querySimpleScope();
@@ -78,7 +78,7 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
             reportError(ERR_DSPARM_MISSINGFIELD,errpos,"Dataset %s has no field named '%s'", str(actual->queryName()), str(mapto));
             hadError = true;
         }
-    }       
+    }
 
     return transformed.getClear();
 }
@@ -101,7 +101,7 @@ IHqlExpression* HqlGram::bindConcreteDataset(IHqlExpression* _expr, IHqlExpressi
     {
         mapping = actual->queryChild(1);
         actual = actual->queryChild(0);
-    } 
+    }
 
     bool hadError = false;
     return processAbstractDataset(expr, formal, actual, mapping, errpos, true, hadError);
@@ -165,7 +165,7 @@ IIdAtom * HqlGram::fieldMapFrom(IHqlExpression* mapping, IIdAtom * id)
     return id;
 }
 
-// either a abstract dataset 
+// either a abstract dataset
 bool HqlGram::requireLateBind(IHqlExpression* funcdef, const HqlExprArray& actuals)
 {
     ForEachItemIn(idx, actuals)
@@ -174,7 +174,7 @@ bool HqlGram::requireLateBind(IHqlExpression* funcdef, const HqlExprArray& actua
         if (isAbstractDataset(actual))
             return true;
     }
-    
+
     return false;
 }
 
@@ -285,13 +285,13 @@ IHqlExpression* HqlGram::bindTemplateFunctionParameters(IHqlExpression* funcdef,
     IHqlExpression* formals = funcdef->queryChild(1);
     IHqlExpression* defaults = funcdef->queryChild(2);
     assert(func->getOperator() == no_template_context);
-    
+
     if (!checkTemplateFunctionParameters(funcdef, actuals, errpos))
         return createNullExpr(func);
 
     // Get the scope which preserves the symbols which we resolved when it was originally parsed
     IHqlScope* scope = func->queryScope();
-    
+
     // Add parameters to that scope
     Owned<IHqlScope> newScope = new CHqlContextScope(scope);
     ForEachItemIn(idx, actuals)

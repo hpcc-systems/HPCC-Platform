@@ -41,7 +41,7 @@ CComputerPicker::~CComputerPicker()
 //---------------------------------------------------------------------------
 //  SetRootNode
 //---------------------------------------------------------------------------
-void CComputerPicker::SetRootNode(const IPropertyTree* pNode) 
+void CComputerPicker::SetRootNode(const IPropertyTree* pNode)
 {
   m_pRootNode = pNode;
 
@@ -138,7 +138,7 @@ void CComputerPicker::ResetUsageMap()
   }
 }
 
-bool CComputerPicker::GetUsage(const char* szComputer, StringBuffer& sUsage, 
+bool CComputerPicker::GetUsage(const char* szComputer, StringBuffer& sUsage,
                                bool bIncludeComponentType) const
 {
   MapStrToStrArray::const_iterator iUsage = m_usageMap.find(szComputer);
@@ -194,8 +194,8 @@ bool CComputerPicker::GetUsage(const char* szComputer, StringBuffer& sUsage,
       }
     }
 
-    //if this computer has to be excluded because of some component and 
-    //then don't use it unless it is explicitly included by the user 
+    //if this computer has to be excluded because of some component and
+    //then don't use it unless it is explicitly included by the user
     //for another
     if (bExclude && bInclude)
       bExclude = false;
@@ -369,10 +369,10 @@ void CComputerPicker::CreateComputerFilterTree()
 //---------------------------------------------------------------------------
 //  NoteFilter
 //---------------------------------------------------------------------------
-void CComputerPicker::NoteFilter(IPropertyTree* pFilter, const char *componentType, 
+void CComputerPicker::NoteFilter(IPropertyTree* pFilter, const char *componentType,
                                  const char *component, const char* computer)
 {
-  if (component && *component && 
+  if (component && *component &&
     componentType && *componentType)
   {
     StringBuffer sComponentType(componentType);
@@ -396,7 +396,7 @@ void CComputerPicker::NoteFilter(IPropertyTree* pFilter, const char *componentTy
       pComputer->addProp("@name", computer);
       pComputer->addPropBool("@__bHidden", true);
     }
-  }   
+  }
 }
 
 void CComputerPicker::Refresh()
@@ -423,8 +423,8 @@ void CComputerPicker::Refresh()
   }
 }
 
-void CComputerPicker::ApplyFilter(const char* szSubTreeName, 
-                                  const char* szIncAttrib, 
+void CComputerPicker::ApplyFilter(const char* szSubTreeName,
+                                  const char* szIncAttrib,
                                   char chStatus,
                                   StringBuffer& sFilterApplied)
 {

@@ -67,7 +67,7 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
                 ctx->setPassword(password.str());
                 if(realm.length()>0)
                     ctx->setRealm(realm.str());
-                
+
                 ISecManager* secmgr = ctx->querySecManager();
                 if(secmgr != NULL)
                 {
@@ -137,7 +137,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     CSoapResponse& response = *(dynamic_cast<CSoapResponse*>(&resp));
 
     IEspContext* ctx = req.queryContext();
-    
+
     StringBuffer requeststr;
 
     Owned<CMimeMultiPart> multipart;
@@ -162,7 +162,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     {
         throw MakeStringException(-1, "Request type %s not supported", request.get_content_type());
     }
-    
+
     OwnedPtr<XJXPullParser> xpp;
     int bufSize = requeststr.length();
     //Parse the content
@@ -176,7 +176,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     }
     xpp->setInput(requeststr.str(), bufSize);
 
-    int type; 
+    int type;
     StartTag stag;
     EndTag etag;
     StringBuffer peerStr;
@@ -189,7 +189,7 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
     rpc_call.setown(new CRpcCall);
     rpc_call->setContext(req.queryContext());
     rpc_call->setHttpReq(request.getHttpReq());
-    
+
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
         rpc_call->preunmarshall(xpp.get());

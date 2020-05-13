@@ -50,11 +50,11 @@ struct CmdMessage
             _snprintf(username,arraysize(username)-1,"%hs",user);
         }
 
-        if(pwd && *pwd) 
+        if(pwd && *pwd)
         {
             _snprintf(password,arraysize(password)-1,"%hs",pwd);
         }
-            
+
     }
 
     LPTSTR GetStdin(LPTSTR buf,size32_t size,LPCSTR remote=".") const
@@ -73,7 +73,7 @@ struct CmdMessage
     {
         _sntprintf(buf,size,_T("\\\\%hs\\pipe\\%s.%hs.%d.%d.err"),remote,PSEXECPIPE,machine,processId,threadId);
         return buf;
-    } 
+    }
 
     char  command[16];
     DWORD processId;
@@ -87,7 +87,7 @@ struct CmdMessage
 struct ExecMessage
 {
     enum Flags {NoWait=1};
-    
+
     ExecMessage()
     {
         memset(this,0,sizeof(*this));

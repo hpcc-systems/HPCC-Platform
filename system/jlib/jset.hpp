@@ -139,7 +139,7 @@ inline int ffs(unsigned i)
 }
 #endif
 
-interface jlib_decl IBitSet : public IInterface 
+interface jlib_decl IBitSet : public IInterface
 {
     virtual void set(unsigned n,bool val=true)      = 0;
     virtual bool invert(unsigned n)                 = 0;            // returns inverted value

@@ -361,7 +361,7 @@ bool HqlDllGenerator::processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget
     case EclGenerateCpp:
         return true;
     }
-    
+
     flushResources();
     addLibrariesToCompiler();
 
@@ -570,7 +570,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             insertStandAloneCode();
 
         wu->commit();
-        
+
         //Commit work unit so can view graphs etc. while compiling the C++
         if ((generateTarget == EclGenerateNone) || wu->getDebugValueBool("OnlyCheckQuery", false))
         {

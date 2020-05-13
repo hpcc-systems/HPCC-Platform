@@ -64,7 +64,7 @@ bool DeleteHelper::doit(FILE * fp)
 
     Owned<IClientWUDeleteRequest> req = wuclient->createWUDeleteRequest();
     req->setWuids(wuids);
-    
+
     Owned<IClientWUDeleteResponse> resp = wuclient->WUDelete(req);
     if(!resp)
         return false;
@@ -143,7 +143,7 @@ bool AbortHelper::doit(FILE * fp)
             }
         }
     }
-    
+
     Owned<IClientWUAbortRequest> req = wuclient->createWUAbortRequest();
     req->setWuids(wuids);
     Owned<IClientWUAbortResponse> resp = wuclient->WUAbort(req);
@@ -160,6 +160,6 @@ bool AbortHelper::doit(FILE * fp)
     {
         printf("Requested abort for %s\n", wuids.item(x));
     }
-    
+
     return true;
 }

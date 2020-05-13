@@ -188,7 +188,7 @@ public:
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper(); 
+        IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         dst.append(mpTag);  // used to build TLK on node1
         dst.append(mpTag2); // counts for moxie OR used to send all recs to node 1 in singlePartKey
         if (slave < fileDesc->numParts()-(buildTlk?1:0)) // if false - due to mismatch width fitting - fill in with a blank entry

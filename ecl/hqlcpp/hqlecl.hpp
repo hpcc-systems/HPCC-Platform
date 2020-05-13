@@ -28,11 +28,11 @@ interface IWorkUnit;
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType);
 extern HQLCPP_API void dumpActivityCounts();
 
-enum EclGenerateTarget { 
-    EclGenerateNone, 
-    EclGenerateCpp, 
-    EclGenerateDll, 
-    EclGenerateExe 
+enum EclGenerateTarget {
+    EclGenerateNone,
+    EclGenerateCpp,
+    EclGenerateDll,
+    EclGenerateExe
 };
 
 interface IHqlExprDllGenerator : extends IInterface

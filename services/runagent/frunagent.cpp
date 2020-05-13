@@ -16,8 +16,8 @@
 ############################################################################## */
 
 #include "platform.h"
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -64,7 +64,7 @@ char * unscr(char * s)
 
 static int _nn = 1;
 
-class cmd_dispatch : public c_dispatch 
+class cmd_dispatch : public c_dispatch
 {
 public :
     int argc;
@@ -74,21 +74,21 @@ public :
     char *next;
 
     virtual void action();
-    
+
     cmd_dispatch(int _argc,char * _argv[],const char * _name) { argc=_argc; argv=_argv; name=strdup(_name);id=name;node_number=_nn++; next = NULL;};
-    
-    cmd_dispatch(int _argc,char * _argv[],const char * _name, const char* _next) 
-    { 
-        argc=_argc; 
-        argv=_argv; 
+
+    cmd_dispatch(int _argc,char * _argv[],const char * _name, const char* _next)
+    {
+        argc=_argc;
+        argv=_argv;
         name=strdup(_name);
         id=name;
-        node_number=_nn++; 
+        node_number=_nn++;
         next = strdup(_next);
     };
 
-    ~cmd_dispatch() 
-    { 
+    ~cmd_dispatch()
+    {
         free(name);
         if(next)
             free(next);
@@ -97,12 +97,12 @@ public :
 
 m_dispatch *disp=0;
 
-class split_node : public split_nodes_base_ex 
+class split_node : public split_nodes_base_ex
 {
 public:
     int argc;
     char ** argv;
-    
+
     virtual void add_machine(const char * s);
     virtual void add_machine_ex(const char * s, const char* nxt);
     split_node(int _argc,char * _argv[] ){ argc=_argc; argv=_argv; };
@@ -112,13 +112,13 @@ int calltimeout=0;
 bool encrypted = false;
 unsigned replicationoffset = 1;
 
-void cmd_dispatch::action() 
+void cmd_dispatch::action()
 {
     //  printf("%s\n",name);
     char x[100];
     sprintf(x,"elapsed time : %s",name);
     //  elapsed_time_trace t(x);
-    
+
     IHRPCtransport * transport = MakeTcpTransportFromUrl(name, HOAGENT_PORT);
     hoagent agent;
     agent.UseTransport(transport);
@@ -126,7 +126,7 @@ void cmd_dispatch::action()
     transport->SetTimeout(calltimeout?calltimeout:3);
     StringBuffer result;
     result.append(name).appendf("(%d) ",node_number);
-    
+
     if (stricmp(argv[2], "alive") == 0)
         result.append(agent.alive(atoi(argv[3])));
     else if (stricmp(argv[2], "start") == 0)
@@ -164,8 +164,8 @@ void cmd_dispatch::action()
     }
     else if (stricmp(argv[2], "stop") == 0)
         result.append(agent.stop_process(atoi(argv[3])));
-    else if (stricmp(argv[2], "account") == 0) 
-    { 
+    else if (stricmp(argv[2], "account") == 0)
+    {
         transport->SetTimeout(calltimeout?calltimeout:15);
         int cd=25;
         bool success=false;
@@ -177,18 +177,18 @@ void cmd_dispatch::action()
             else
                 pw.append(argv[4]);
             char *p = unscr(pw.detach());
-            if (cd>1) 
+            if (cd>1)
             {
-                try 
+                try
                 {
                     agent.account(u, p, argv[5]);
                     if (agent.start_process(statcmd) )
                         success=true;
-                    
+
                 }
                 catch (...)
                 {
-                    
+
                 }
                 if (!success)
                 {
@@ -196,57 +196,57 @@ void cmd_dispatch::action()
                     MilliSleep((fastRand() * 3000) / RAND_MAX);
                 }
             }
-            else 
+            else
             {
                 agent.account(u, p, argv[5]);
                 if (agent.start_process(statcmd) )
                     success=true;
             }
-            
+
             cd--;
         }
         if (!success) result.append(" failed"); else result.appendf(" ok (retries=%i)",24-cd);
     }
-    else if (stricmp(argv[2], "dir") == 0) 
-    { 
+    else if (stricmp(argv[2], "dir") == 0)
+    {
         transport->SetTimeout(15);
-        agent.set_dir(argv[3]);     
+        agent.set_dir(argv[3]);
     }
-    
-    
+
+
     if (result.length()) {
         printf("%s\n", result.str());
     }
     transport->Release();
 }
 
-void split_node::add_machine(const char *n) 
+void split_node::add_machine(const char *n)
 {
     disp->dispatch(new cmd_dispatch(argc,argv,n));
 }
 
-void split_node::add_machine_ex(const char *n, const char *nxt) 
+void split_node::add_machine_ex(const char *n, const char *nxt)
 {
     disp->dispatch(new cmd_dispatch(argc,argv,n,nxt));
 }
 
-void setoptions(int argc,char * argv[] ) 
+void setoptions(int argc,char * argv[] )
 {
     calltimeout=0;
-    for (int i=1; i<argc; i++) 
+    for (int i=1; i<argc; i++)
     {
         if (argv[i]==stristr(argv[i],"/n"))
-        { 
+        {
             int c=atoi(&argv[i][2]);
             printf("%i threads\n",c);
             num_threads=c;
         }
         else if (argv[i]==stristr(argv[i],"/t"))
-        { 
+        {
             calltimeout=atoi(&argv[i][2]);
         }
         else if (argv[i]==stristr(argv[i],"/e"))
-        { 
+        {
             encrypted=true;
         }
         else if (argv[i]==stristr(argv[i],"/o"))
@@ -260,7 +260,7 @@ void setoptions(int argc,char * argv[] )
 }
 
 int main( int argc, char *argv[] )
-{ 
+{
     int res=0;
     if (argc < 3)
     {
@@ -283,8 +283,8 @@ int main( int argc, char *argv[] )
     tracepath.append(".").append(PATHSEPCHAR).append("frunagent.txt");
     settrace(tracepath.str(),false);
     ECHO_TO_CONSOLE=true;
-    
-    try 
+
+    try
     {
         setoptions(argc,argv);
         split_node x(argc,argv);
@@ -295,10 +295,10 @@ int main( int argc, char *argv[] )
             char *finger = (char *) b.str();
             while (*finger)
             {
-                if (*finger == '\n') 
+                if (*finger == '\n')
                     *finger++ = ';';
                 else if (*finger == '#')
-                {   
+                {
                     while (*finger && *finger != '\n')
                         *finger++ = ' ';
                 }
@@ -311,13 +311,13 @@ int main( int argc, char *argv[] )
             x.split_nodes_ex(argv[1],replicationoffset);
         disp->all_done_ex(false);
     }
-    catch(IException *e) 
-    { 
+    catch(IException *e)
+    {
         pexception("",e);
         e->Release();
         res=255;
-    } 
-    catch (...) 
+    }
+    catch (...)
     {
         traceft("Caught unknown exception");
     }

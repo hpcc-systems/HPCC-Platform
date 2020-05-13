@@ -227,8 +227,8 @@ void IfBlockOffsetInfo::setValid(bool nowValid)
 /*
 Variable sized arrays.
     - Nodes know when their conditions change.  If possible change, structure is notified.
-    - Checking and creation functions need 
-      i) offset structure 
+    - Checking and creation functions need
+      i) offset structure
       ii) indexes to initialise (as an unsigned[])
       passed into them.  So they know what they are working on, and so not too inefficient.  Means sizes should
       always be consistent in the structure.

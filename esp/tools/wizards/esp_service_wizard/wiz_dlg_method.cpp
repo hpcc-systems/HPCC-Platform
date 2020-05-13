@@ -54,7 +54,7 @@ BOOL CEspMethodWizDlg::OnDismiss()
 {
     if (!UpdateData(TRUE))
         return FALSE;
-    
+
     if (m_method.IsEmpty())
     {
         MessageBox("Method Name required.");
@@ -69,21 +69,21 @@ BOOL CEspMethodWizDlg::OnDismiss()
 
     espaw.m_Dictionary["ESP_METHOD"]=m_method;
     espaw.m_Dictionary["ESP_SCM_PATH"]=m_scm_path;
-    
+
     return TRUE;
 }
 
-void CEspMethodWizDlg::OnBrowseScmFile() 
+void CEspMethodWizDlg::OnBrowseScmFile()
 {
     UpdateData();
 
     CPidl id_root_path(CSIDL_DRIVES);
-    
+
     char browsePath[MAX_PATH]={0};
-    
+
     BROWSEINFO info;
     memset(&info, 0, sizeof(info));
-    
+
     info.hwndOwner = (HWND) *this;
     info.pszDisplayName=browsePath;
     info.lpszTitle="SCM File Path";

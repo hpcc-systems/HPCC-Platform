@@ -151,7 +151,7 @@ class THORHELPER_API CPrefixedRowBuilder : implements RtlRowBuilderBase
 {
 public:
     inline CPrefixedRowBuilder(size32_t _offset, ARowBuilder & _builder) : offset(_offset), builder(_builder)
-    { 
+    {
         self = builder.getSelf()+offset;
     }
 
@@ -214,7 +214,7 @@ class THORHELPER_API RowAggregator : private SuperHashTable
 {
     // We have to be careful with ownership of the items in the hashtable. Because we free them as we iterate, we need to make sure
     // that we always do exactly one iteration through the hash table. We therefore DON'T free anything in onRemove.
-    
+
 public:
     RowAggregator(IHThorHashAggregateExtra &_extra, IHThorRowAggregator & _helper);
     ~RowAggregator();
@@ -230,7 +230,7 @@ public:
 
 protected:
     virtual void onAdd(void *et) {}
-    virtual void onRemove(void *et) {} 
+    virtual void onRemove(void *et) {}
     virtual unsigned getHashFromElement(const void *et) const { return hashFromElement(et); }
     virtual unsigned getHashFromFindParam(const void *fp) const { return hasher->hash(fp); }
     virtual const void * getFindParam(const void *et) const;
@@ -274,7 +274,7 @@ public:
     }
 
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<IOutputRowSerializer> original;
 };
 
@@ -294,9 +294,9 @@ public:
         CPrefixedRowBuilder prefixedBuilder(offset, rowBuilder);
         return original->deserialize(prefixedBuilder, in)+offset;
     }
-    
+
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<IOutputRowDeserializer> original;
 };
 
@@ -313,9 +313,9 @@ public:
         in.skip(offset);
         original->readAhead(in);
     }
-    
+
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<ISourceRowPrefetcher> original;
 };
 
@@ -331,14 +331,14 @@ public:
         if (originalSerialized != original)
             serializedMeta.setown(new CPrefixedOutputMeta(_offset, originalSerialized));
     }
-    
-    virtual size32_t getRecordSize(const void *rec) 
+
+    virtual size32_t getRecordSize(const void *rec)
     {
         if (rec)
             rec = ((const byte *) rec) + offset;
         return original->getRecordSize(rec) + offset;
     }
-    
+
     virtual size32_t getMinRecordSize() const
     {
         return original->getMinRecordSize() + offset;
@@ -362,7 +362,7 @@ public:
     {
         return new CPrefixedRowSerializer(offset, original->createDiskSerializer(ctx, activityId));
     }
-    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) 
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
     {
         return new CPrefixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
@@ -421,7 +421,7 @@ public:
     }
 
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<IOutputRowSerializer> original;
 };
 
@@ -439,9 +439,9 @@ public:
         in.read(offset, rowBuilder.getSelf()+size);
         return size+offset;
     }
-    
+
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<IOutputRowDeserializer> original;
 };
 
@@ -458,9 +458,9 @@ public:
         original->readAhead(in);
         in.skip(offset);
     }
-    
+
 protected:
-    size32_t offset; 
+    size32_t offset;
     Owned<ISourceRowPrefetcher> original;
 };
 
@@ -475,12 +475,12 @@ public:
         if (originalSerialized != original)
             serializedMeta.setown(new CSuffixedOutputMeta(_offset, originalSerialized));
     }
-    
-    virtual size32_t getRecordSize(const void *rec) 
+
+    virtual size32_t getRecordSize(const void *rec)
     {
         return original->getRecordSize(rec) + offset;
     }
-    
+
     virtual size32_t getMinRecordSize() const
     {
         return original->getMinRecordSize() + offset;
@@ -504,7 +504,7 @@ public:
     {
         return new CSuffixedRowSerializer(offset, original->createDiskSerializer(ctx, activityId));
     }
-    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) 
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
     {
         return new CSuffixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
@@ -566,7 +566,7 @@ public:
     unsigned queryNextInput();                  // which input will the next item come from?
     inline void reset() { clearPending(); }
     void skipRow();
-    
+
 protected:
     //The following function must fill in pending[i] AND pendingMatches[i]
     virtual bool pullInput(unsigned i, const void * seek, unsigned numFields, const SmartStepExtra * stepExtra) = 0;
@@ -632,7 +632,7 @@ public:
     }
 
     inline size32_t size() const { return pos; }
-    
+
 protected:
     byte *buffer;
     unsigned maxSize;
@@ -681,7 +681,7 @@ public:
         in.read(fixedSize, rowBuilder.getSelf());
         return fixedSize;
     }
-        
+
 protected:
     size32_t fixedSize;
 };
@@ -716,7 +716,7 @@ public:
         in.read(size, rowBuilder.ensureCapacity(size, NULL));
         return size;
     }
-        
+
 protected:
     CachedOutputMetaData * meta;        // assume lifetime is shorter than this meta
 };

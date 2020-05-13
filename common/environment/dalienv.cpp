@@ -104,10 +104,10 @@ EnvMachineOS queryOS(const IpAddress & ip)
     }
     CriticalBlock block(ipcachesect);
     EnvMachineOS ret = MachineOsUnknown;
-    if (!ipToOsCache) 
+    if (!ipToOsCache)
         ipToOsCache = new CIpOsHashTable;
     CIpOsInstance * match = ipToOsCache->find((const char *)&ip,false);
-    if (match) 
+    if (match)
         ret = match->os;
     else {
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -119,7 +119,7 @@ EnvMachineOS queryOS(const IpAddress & ip)
             ret = machine->getOS();
         if (ret==MachineOsUnknown) { // lets try asking dafilesrv
             SocketEndpoint ep(0,ip);
-            switch (getDaliServixOs(ep)) { 
+            switch (getDaliServixOs(ep)) {
               case DAFS_OSwindows: ret = MachineOsW2K; break;
               case DAFS_OSlinux:     ret = MachineOsLinux; break;
               case DAFS_OSsolaris: ret = MachineOsSolaris; break;
@@ -145,12 +145,12 @@ bool canAccessFilesDirectly(const IpAddress & ip)
     if ((os==MachineOsUnknown)&&!testDaliServixPresent(ip))
         return true;    // maybe lucky if windows
 #endif
-    return false; 
+    return false;
 }
 
 bool canSpawnChildProcess(const IpAddress & ip)
 {
-    //MORE: This isn't the correct implementation, but at least the calls now have the 
+    //MORE: This isn't the correct implementation, but at least the calls now have the
     //correct name.
     return canAccessFilesDirectly(ip);
 }
@@ -193,13 +193,13 @@ public:
             return NULL;
         active = true;
         IFile * ret;
-        if (canAccessFilesDirectly(filename)) 
+        if (canAccessFilesDirectly(filename))
             ret = NULL;
-        else 
-            ret = createDaliServixFile(filename);   
+        else
+            ret = createDaliServixFile(filename);
         active = false;
         return ret;
-    }   
+    }
 } *DaliEnvIntercept;
 
 
@@ -241,14 +241,14 @@ const char * querySlaveExecutable(const char * keyName, const char * exeName, co
         throw MakeStringException(1, "Could not find the location of the slave program %s for machine %s", keyName, addr.str());
 #endif
     }
-    // on linux check that file exists where it is supposed to be 
+    // on linux check that file exists where it is supposed to be
 #ifndef _WIN32
     if (progpath.length()) {
         RemoteFilename rfn;
         SocketEndpoint ep;
         ep.ipset(ip);
         rfn.setPath(ep,progpath.str());
-        Owned<IFile> file = createIFile(rfn); 
+        Owned<IFile> file = createIFile(rfn);
         if (!file->exists())  {
             WARNLOG("Could not find the the slave program %s for machine %s at %s", keyName, addr.str(), progpath.str());
             throw MakeStringException(1, "Could not find the slave program %s for machine %s at %s", keyName, addr.str(), progpath.str());
@@ -314,7 +314,7 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
                         appendexe = false;
                     }
                     StringBuffer tmp;
-                    const char *program = inst->queryProp("@program"); // if program specified assume absolute 
+                    const char *program = inst->queryProp("@program"); // if program specified assume absolute
                     if (!program||!*program) {
                         tmp.append(psep).append(psep).append(ips2).append(psep).append(inst->queryProp("@directory")).append(psep).append(exeName);
                         size32_t l = strlen(exeName);
@@ -323,7 +323,7 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
                         program = tmp.str();
                     }
                     progpath.set(program);
-                    const char *workd = inst->queryProp("@workdir"); // if program specified assume absolute 
+                    const char *workd = inst->queryProp("@workdir"); // if program specified assume absolute
                     workdir.set(workd?workd:"");
                     return true;
                 }

@@ -93,7 +93,7 @@ static const char * EclDefinition =
 "  STRING StringRepeat(const string src, unsigned4 n) : c, pure,entrypoint='slStringRepeat'; \n"
 "END;";
 
-STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -112,7 +112,7 @@ STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 }
 
 namespace nsStringlib {
-    
+
 IPluginContext * parentCtx = NULL;
 
 enum { bitsInUnsigned = sizeof(unsigned) * 8 };
@@ -338,7 +338,7 @@ extern STRINGLIB_API unsigned editDistanceWithinRadius(unsigned leftLen, const c
 //-------------------------------------------------------------------------------------------------------------------------------------------
 // Exported functions are NOT in the namespace
 
-using namespace nsStringlib; 
+using namespace nsStringlib;
 
 STRINGLIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 
@@ -346,7 +346,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringFilterOut(unsigned & tgtLen, char * & 
 {
     char *temp = (char *)CTXMALLOC(parentCtx, srcLen);
     unsigned tlen = 0;
-    if (hitLen==1) 
+    if (hitLen==1)
     {
         char test = *hit;
         for ( unsigned i = 0; i < srcLen; i++ )
@@ -407,7 +407,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringSubsOut(unsigned & tgtLen, char * & tg
     }
 
     tgt = (char *)CTXMALLOC(parentCtx, srcLen);
-    
+
     if (newCharLen > 0)
     {
         for ( unsigned i = 0; i < srcLen; i++ )
@@ -516,7 +516,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringRepad(unsigned & tgtLen, char * & tgt,
 STRINGLIB_API unsigned STRINGLIB_CALL slStringFind(unsigned srcLen, const char * src, unsigned hitLen, const char * hit, unsigned instance)
 {
     if ( srcLen < hitLen )
-        return 0;   
+        return 0;
     if (hitLen==1) {           // common case optimization
         const char *p=src;
         const char *e = p+srcLen;
@@ -526,7 +526,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringFind(unsigned srcLen, const char *
                 if (!--instance)
                     return (unsigned)(p-src);
     }
-    else 
+    else
     {
         unsigned steps = srcLen-hitLen+1;
         for ( unsigned i = 0; i < steps; i++ )
@@ -546,7 +546,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringFind(unsigned srcLen, const char *
 STRINGLIB_API unsigned STRINGLIB_CALL slStringFindCount(unsigned srcLen, const char * src, unsigned hitLen, const char * hit)
 {
     if ( srcLen < hitLen )
-        return 0;   
+        return 0;
     unsigned matches = 0;
     if (hitLen==1) {           // common case optimization
         const char *p=src;
@@ -556,7 +556,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringFindCount(unsigned srcLen, const c
             if ((*(p++)==c))
                 matches++;
     }
-    else 
+    else
     {
         unsigned steps = srcLen-hitLen+1;
         for ( unsigned i = 0; i < steps; i++ )
@@ -669,7 +669,7 @@ STRINGLIB_API void STRINGLIB_CALL slGetDateYYYYMMDD2(char * ret)
 }
 
 STRINGLIB_API char * STRINGLIB_CALL slGetBuildInfo(void)
-{ 
+{
     return CTXSTRDUP(parentCtx, STRINGLIB_VERSION);
 }
 
@@ -677,7 +677,7 @@ STRINGLIB_API void STRINGLIB_CALL slData2String(size32_t & __ret_len,char * & __
 {
     char *out = (char *)CTXMALLOC(parentCtx, _len_y * 2);
     char *res = out;
-    
+
     unsigned char *yy = (unsigned char *) y;
     for (unsigned int i = 0; i < _len_y; i++)
     {
@@ -711,17 +711,17 @@ STRINGLIB_API void STRINGLIB_CALL slString2Data(size32_t & __ret_len,void * & __
     }
     __ret_len = (size32_t)(target - out);
     __ret_str = out;
-} 
+}
 
 // -----------------------------------------------------------------
 
 STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src)
 {
     char * res = (char *)CTXMALLOC(parentCtx, srcLen);
-    
+
     for (unsigned int i=0;i<srcLen;i++)
         res[i] = tolower(src[i]);
-    
+
     tgt = res;
     tgtLen = srcLen;
 }
@@ -732,10 +732,10 @@ STRINGLIB_API void STRINGLIB_CALL slStringToLowerCase(unsigned & tgtLen, char * 
 STRINGLIB_API void STRINGLIB_CALL slStringToUpperCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src)
 {
     char * res = (char *)CTXMALLOC(parentCtx, srcLen);
-    
+
     for (unsigned int i=0;i<srcLen;i++)
         res[i] = toupper(src[i]);
-    
+
     tgt = res;
     tgtLen = srcLen;
 }
@@ -746,7 +746,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToProperCase(unsigned & tgtLen, char *
 {
     tgt = (char *)CTXMALLOC(parentCtx, srcLen);
     char * res = tgt;
-    
+
     bool seenSpace = true;
     for (unsigned int i=0;i<srcLen;i++)
     {
@@ -754,7 +754,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToProperCase(unsigned & tgtLen, char *
         *tgt++ = seenSpace ? toupper(c) : c;
         seenSpace = (c==' ');
     }
-    
+
     tgt = res;
     tgtLen = srcLen;
 }
@@ -764,7 +764,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringToProperCase(unsigned & tgtLen, char *
 STRINGLIB_API void STRINGLIB_CALL slStringToCapitalCase(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src)
 {
     char * const result = (char *)CTXMALLOC(parentCtx, srcLen);
-    
+
     bool upperPending = true;
     for (unsigned int i=0;i<srcLen;i++)
     {
@@ -812,7 +812,7 @@ STRINGLIB_API int STRINGLIB_CALL slStringCompareIgnoreCase (unsigned src1Len, co
                 return lc > rc ? 1 : -1;
         }
     }
-        
+
     while (i < src1Len)
     {
         if (src1[i++] != ' ')
@@ -835,7 +835,7 @@ STRINGLIB_API void STRINGLIB_CALL slStringReverse (unsigned & tgtLen, char * & t
     unsigned int n = srcLen - 1;
     for (unsigned int i=0;i<srcLen;i++)
         res[i] = src[n-i];
-    
+
     tgt = res;
     tgtLen = srcLen;
 }
@@ -1381,7 +1381,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s,
     for (unsigned off=0; off < lenFormats; )
     {
         const char * curFormat = formats+off;
-        
+
         memset(&tm, 0, sizeof(tm));
         tm.tm_mday = 1;
         if (simple_strptime(lenS, s, curFormat, &tm))
@@ -1400,7 +1400,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchTimeOfDay(size32_t lenS, const char
     for (unsigned off=0; off < lenFormats; )
     {
         const char * curFormat = formats+off;
-        
+
         memset(&tm, 0, sizeof(tm));
         if (simple_strptime(lenS, s, curFormat, &tm))
             return makeTimeOfDay(tm);

@@ -26,16 +26,16 @@ class CEspDeploymentEngine : public CDeploymentEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CEspDeploymentEngine(IEnvDeploymentEngine& envDepEngine, 
+    CEspDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
         IDeploymentCallback& callback,
         IPropertyTree& process);
-    
+
     virtual void xslTransform(const char *xsl, const char *outputFile, const char *instanceName,
         EnvMachineOS os=MachineOsUnknown, const char* processName=NULL, bool isEspModuleOrPlugin=false);
-    
-    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile, 
+
+    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile,
         const char *instanceName, EnvMachineOS os);
-    
+
 protected:
     void check();
     int  determineInstallFiles(IPropertyTree& node, CInstallFiles& installFiles) const;

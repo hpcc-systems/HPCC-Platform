@@ -389,7 +389,7 @@ bool processDirCommand(ISocket * masterSocket, MemoryBuffer & cmd, MemoryBuffer 
 
     DirectoryBuilder builder(masterSocket, options);
     StringBuffer url;
-    
+
     Owned<IPropertyTree> dirTree = createPTree("machine", ipt_caseInsensitive);
     node->endpoint().getIpText(url.clear());
     dirTree->setProp("@ip", url.str());
@@ -405,11 +405,11 @@ bool processDirCommand(ISocket * masterSocket, MemoryBuffer & cmd, MemoryBuffer 
             nextDir.set(cur);
         LOG(MCdebugProgress, unknownJob, "Process Directory Command: %s", nextDir.get());
         builder.rootDirectory(nextDir, node, dirTree);
-    
+
         if (!sep)
             break;
 
-        cur = sep+1;        
+        cur = sep+1;
     }
 
     result.clear();
@@ -459,7 +459,7 @@ bool DirectoryThread::performCommand()
         MemoryBuffer msg;
         msg.setEndian(__BIG_ENDIAN);
 
-        //Send message and wait for response... 
+        //Send message and wait for response...
         //MORE: they should probably all be sent on different threads....
         msg.append((byte)FTactiondirectory);
         msg.append(directory);
@@ -590,16 +590,16 @@ bool BroadcastAbortHandler::onAbort()
     return false;
 }
 
-void BroadcastAbortHandler::addSlave(ISocket * socket)      
-{ 
+void BroadcastAbortHandler::addSlave(ISocket * socket)
+{
     CriticalBlock procedure(crit);
-    sockets.append(*LINK(socket)); 
+    sockets.append(*LINK(socket));
 }
 
-void BroadcastAbortHandler::removeSlave(ISocket * socket)   
-{ 
+void BroadcastAbortHandler::removeSlave(ISocket * socket)
+{
     CriticalBlock procedure(crit);
-    sockets.zap(*socket); 
+    sockets.zap(*socket);
 }
 
 void doDirectory(const char * directory, IGroup * machines, IPropertyTree * options, IPropertyTree * result)
@@ -819,7 +819,7 @@ void doPhysicalCopy(IPropertyTree * source, const char * target, IPropertyTree *
         MemoryBuffer msg;
         msg.setEndian(__BIG_ENDIAN);
 
-        //Send message and wait for response... 
+        //Send message and wait for response...
         //MORE: they should probably all be sent on different threads....
         msg.append((byte)FTactionpcopy);
         source->serialize(msg);

@@ -46,7 +46,7 @@ void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& re
             throw MakeStringException(-1,"Could not find logical file");
         df->getClusterName(0,returnCluster);    // ** TBD other cluster
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -114,7 +114,7 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
         tq.join();
         err.getErrors(returnStr);
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -124,5 +124,5 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
         IWARNLOG("Unknown Exception caught within doCompressFile");
     }
 
-    return true; 
+    return true;
 }

@@ -39,7 +39,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CEspBinding()
     {
         m_container = NULL;

@@ -95,7 +95,7 @@ protected:
 
 private:
     StringAttr m_protocol;
-    StringAttr m_host; 
+    StringAttr m_host;
     int        m_port;
     StringAttr m_path;
     StringAttr m_url;

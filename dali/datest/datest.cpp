@@ -70,7 +70,7 @@ static void addTestFile(const char *name,unsigned n)
         SocketEndpoint ep(ips.str());
         epa.append(ep);
     }
-    Owned<IGroup> group = createIGroup(epa); 
+    Owned<IGroup> group = createIGroup(epa);
     Owned<IPropertyTree> fileInfo = createPTree();
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
     StringBuffer dir;
@@ -294,7 +294,7 @@ void Test_PartIter()
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup("nhtest::file_name_ssn20030805",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
     Owned<IDistributedFilePartIterator> parts = file->getIterator();
     ForEach(*parts) {
-        IDistributedFilePart & thisPart = parts->query(); 
+        IDistributedFilePart & thisPart = parts->query();
         IPropertyTree &partProps = thisPart.queryAttributes();
     }
     printf("time taken = %d\n",msTick()-start);
@@ -381,7 +381,7 @@ void testCDfsLogicalFileName()
     assertex(cdlfn.isExternal());
     lfn=cdlfn.get(); assertex(strcmp(lfn,"file::10.150.10.75::c$::test::file.xyz")==0);
     lfn=cdlfn.get(true); assertex(strcmp(lfn,"file::10.150.10.75::c$::test::file.xyz")==0);
-    verifyex(cdlfn.getEp(ep)); 
+    verifyex(cdlfn.getEp(ep));
     ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,true)); assertex(strcmp(path.str(),"c:\\test\\file.xyz")==0);
     verifyex(cdlfn.getExternalPath(dir.clear(),path.clear(),true)); assertex(strcmp(path.str(),"file.xyz")==0);
@@ -392,7 +392,7 @@ void testCDfsLogicalFileName()
     assertex(!cdlfn.isForeign());
     assertex(cdlfn.isExternal());
     lfn=cdlfn.get(); assertex(strcmp(lfn,"file::10.150.10.75:7100::c$::test::file.xyz")==0);
-    verifyex(cdlfn.getEp(ep)); 
+    verifyex(cdlfn.getEp(ep));
     ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75:7100")==0);
     verifyex(cdlfn.getExternalPath(path.clear(),path,true)); assertex(strcmp(path.str(),"c:\\test\\file.xyz")==0);
     verifyex(cdlfn.getExternalPath(dir.clear(),path.clear(),true)); assertex(strcmp(path.str(),"file.xyz")==0);
@@ -402,7 +402,7 @@ void testCDfsLogicalFileName()
     assertex(cdlfn.isSet());
     assertex(cdlfn.isForeign());
     assertex(!cdlfn.isExternal());
-    verifyex(cdlfn.getEp(ep)); 
+    verifyex(cdlfn.getEp(ep));
     ep.getUrlStr(eps.clear()); assertex(strcmp(eps.str(),"10.150.10.75")==0);
     lfn=cdlfn.get(); assertex(strcmp(lfn,"foreign::10.150.10.75::test::file.xyz")==0);
     lfn=cdlfn.get(true); assertex(strcmp(lfn,"test::file.xyz")==0);
@@ -417,10 +417,10 @@ void testCDfsLogicalFileName()
     dlfn.makeScopeQuery(baseq.clear(),a); \
     assertex(strcmp(q,baseq.str())==0)
 */
-    
+
     #define T(s,a,q) assertex(strcmp(q,s)==0)
     T("abcd::efgh",true,"abcd");
-/*      
+/*
 //      "Files/Scope[@name=\"abcd\"]/Scope[@name=\"efgh\"]");
     T("efgh",true,"Files/Scope[@name=\"efgh\"]");
     T(".",true,"Files/Scope[@name=\".\"]");
@@ -885,11 +885,11 @@ void TestRemoteFile2()
     }
     io->Release();
     r = msTick()-t;
-    printf("Write (buffsize = %dk): elapsed time write = %d\n",(buffsize+1023)/1024,t/1000); 
+    printf("Write (buffsize = %dk): elapsed time write = %d\n",(buffsize+1023)/1024,t/1000);
     Sleep(10);
 #endif
     br = 0x2000/sizeof(RecordStruct);
-    for (unsigned iter=1;iter<10;iter++) {     
+    for (unsigned iter=1;iter<10;iter++) {
         buffsize = br*sizeof(RecordStruct);
         buffer = (byte *)realloc(buffer,buffsize);
         curidx = 0;
@@ -923,7 +923,7 @@ void TestRemoteFile(unsigned part,unsigned of)
     size32_t buffsize = br*sizeof(RecordStruct);
     unsigned t=msTick();
     unsigned nr = ((20*1024*1024)/(sizeof(RecordStruct)*of))*1024;
-    
+
     //ISocket *sock = ISocket::connect(7100,"10.150.10.8");
     SocketEndpoint ep("10.150.10.8:7100");
     IFile *infile = createRemoteFile(ep, "testfile20.d00");
@@ -947,7 +947,7 @@ void TestRemoteFile(unsigned part,unsigned of)
     inio->Release();
     outio->Release();
     t = msTick()-t;
-    printf("Transfer: elapsed time write = %d\n",t/1000); 
+    printf("Transfer: elapsed time write = %d\n",t/1000);
 
     infile->Release();
     outfile->Release();
@@ -1279,7 +1279,7 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
                 i = _i%subscriptions;
                     StringBuffer key;
                     key.append("TEST").append(i).append("/index");
-                    root->setPropInt(key.str(), subscriptions-i);            
+                    root->setPropInt(key.str(), subscriptions-i);
                     conn->commit();
             }
             PROGLOG("paused 3");
@@ -1288,7 +1288,7 @@ myProcessSession(), RTM_CREATE_QUERY, 1000000);
                 i = _i%subscriptions;
                     StringBuffer key;
                     key.append("TEST").append(i).append("/index");
-                    root->setPropInt(key.str(), i);         
+                    root->setPropInt(key.str(), i);
                     conn->commit();
             }
     }
@@ -1626,7 +1626,7 @@ void TestStress2()
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/Tests/Stress2", myProcessSession(), RTM_CREATE_QUERY|RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     conn->changeMode(RTM_LOCK_READ);
-    
+
     Owned<CStressPoolFactory> factory = new CStressPoolFactory();
     Owned<IThreadPool> threadPool = createThreadPool("Stress2 Thread Pool", factory, NULL, 60);
 
@@ -1648,7 +1648,7 @@ void TestStress2()
     tests.append(*new CStressTest4(15));
     tests.append(*new CStressTest5(15));
     tests.append(*new CStressTest6(15));
-    
+
     MemoryBuffer rangeMb;
     Range *ranges = (Range *) rangeMb.reserveTruncate(sizeof(Range) * tests.ordinality());
     unsigned r = 0;
@@ -1662,7 +1662,7 @@ void TestStress2()
         assertex(r <= 100);
         range.upper = r;
     }
-    
+
     // count # of each test
 
     seedRandom((unsigned)get_cycles_now());
@@ -2095,7 +2095,7 @@ void TestSDS1()
     f->addPropTree("part",p);
     f->setProp("directory","c:\\thordata");
     f->setProp("@name","testfile1");
-    
+
     IPropertyTree *f2 = createPTree("file", ipt_caseInsensitive);
     p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","1");
@@ -2114,7 +2114,7 @@ void TestSDS1()
     f2->addPropTree("part",p);
     f2->setProp("directory","c:\\thordata");
     f2->setProp("@name","testfile2");
-    
+
     IPropertyTree *f3 = createPTree("file", ipt_caseInsensitive);
     p = createPTree("part", ipt_caseInsensitive);
     p->setProp("@num","1");
@@ -2590,7 +2590,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     TestSDS3TestThread() : threaded("TestSDS3TestThread") { }
-    
+
     virtual void init(void *param) override
     {
         SDS3Params *params = (SDS3Params *)param;
@@ -3013,7 +3013,7 @@ NULL
                     writeStringToStream(*newFileIOStream, out.newline().str());
                     count++;
                 }
-                
+
                 writeStringToStream(*newFileIOStream, outMsg.clear().append("Match count = ").append(count).newline().str());
             }
             catch (IException *e)
@@ -3057,7 +3057,7 @@ void TestLocks()
         lockid = createDistributedLockId();
         mb.append(lockid);
         comm->send(mb,RANK_ALL,1);
-    } 
+    }
     else {
         comm->recv(mb,RANK_ALL,1);
         mb.read(lockid);
@@ -3086,29 +3086,29 @@ void TestServerShutdown(IGroup *group)
     while (i<10) {
         i++;
         try {
-            printf("Test 1\n"); Sleep(5000); //_getch(); 
+            printf("Test 1\n"); Sleep(5000); //_getch();
             ISDSManager &sdsManager = querySDS();
-            printf("Test 2\n"); Sleep(1000); //_getch(); 
+            printf("Test 2\n"); Sleep(1000); //_getch();
             IRemoteConnection *conn;
             conn = sdsManager.connect("/", myProcessSession(), RTM_LOCK_WRITE, 2000*MDELAY);
             IPropertyTree *root = conn->queryRoot();
-            printf("Test 3\n"); Sleep(1000); //_getch(); 
+            printf("Test 3\n"); Sleep(1000); //_getch();
             root->setPropInt("subtest", i);
-            printf("Test 4\n"); Sleep(1000); //_getch(); 
+            printf("Test 4\n"); Sleep(1000); //_getch();
             conn->commit();
-            printf("Test 5\n"); Sleep(1000); //_getch(); 
+            printf("Test 5\n"); Sleep(1000); //_getch();
             conn->changeMode( RTM_LOCK_READ);
-            printf("Test 6\n"); Sleep(1000); //_getch(); 
+            printf("Test 6\n"); Sleep(1000); //_getch();
             root->setPropInt("subtest/test", i);
-            printf("Test 7\n"); Sleep(1000); //_getch(); 
+            printf("Test 7\n"); Sleep(1000); //_getch();
             conn->changeMode( 0);
-            printf("Test 9\n"); Sleep(1000); //_getch(); 
+            printf("Test 9\n"); Sleep(1000); //_getch();
             root->setPropInt("subtest/test", i+100);
-            printf("Test 10\n"); Sleep(1000); //_getch(); 
+            printf("Test 10\n"); Sleep(1000); //_getch();
             root->setPropInt("subtest/test", i+200);
             conn->changeMode( RTM_LOCK_WRITE);
             conn->Release();
-            printf("Test 11\n"); Sleep(5000); //_getch(); 
+            printf("Test 11\n"); Sleep(5000); //_getch();
         }
         catch (IException *e) {
             pexception("Exception",e);
@@ -3126,7 +3126,7 @@ class TestCCSThread : public Thread
 {
     const char *name;
 public:
-    TestCCSThread(const char *_name) : Thread(_name) { name = strdup(_name); } 
+    TestCCSThread(const char *_name) : Thread(_name) { name = strdup(_name); }
     ~TestCCSThread() { free((void *)name); }
     int run()
     {
@@ -3178,9 +3178,9 @@ static void TestCriticalSection()
         CCS[j] = new CriticalSection();
     }
     unsigned k;
-    for (k=0;k<NCCSTHREAD; k++) 
+    for (k=0;k<NCCSTHREAD; k++)
         threads[k]->start();
-    for (k=0;k<NCCSTHREAD; k++) 
+    for (k=0;k<NCCSTHREAD; k++)
         threads[k]->join();
 }
 
@@ -3192,7 +3192,7 @@ class TestMemThread : public Thread
     void *ptrs[NMEMPTRS];
 
 public:
-    TestMemThread(const char *_name) : Thread(_name) { name = strdup(_name); memset(ptrs, 0, NMEMPTRS * sizeof(void*));} 
+    TestMemThread(const char *_name) : Thread(_name) { name = strdup(_name); memset(ptrs, 0, NMEMPTRS * sizeof(void*));}
     ~TestMemThread() { free((void *)name); }
     int run()
     {
@@ -3224,9 +3224,9 @@ static void TestMemThreads()
         threads[i] = new TestMemThread(id);
     }
     unsigned k;
-    for (k=0;k<NCCSTHREAD; k++) 
+    for (k=0;k<NCCSTHREAD; k++)
         threads[k]->start();
-    for (k=0;k<NCCSTHREAD; k++) 
+    for (k=0;k<NCCSTHREAD; k++)
         threads[k]->join();
 }
 
@@ -3237,14 +3237,14 @@ class TestMemThread2 : public Thread
     static void *ptrs[NUMPTRS2];
 
 public:
-    TestMemThread2(const char *_name) : Thread(_name) 
-    { 
+    TestMemThread2(const char *_name) : Thread(_name)
+    {
         memset(ptrs, 0, NUMPTRS2 * sizeof(void*));
-    } 
+    }
     int run()
     {
         try {
-            unsigned i;         
+            unsigned i;
             unsigned res=0;
             for (i=0;i<NUMPTRS2;i++) {
                 ptrs[i] = malloc(0x10000);
@@ -3255,7 +3255,7 @@ public:
                 memset(ptrs[i],i,0x10000);
                 res+=0x10000;
             }
-            while (--i) 
+            while (--i)
                 free(ptrs[i]);
             printf("allocated %x",res);
         }
@@ -3274,7 +3274,7 @@ void *TestMemThread2::ptrs[NUMPTRS2];
 
 void testMultiConnect()
 {
-    const char *grpname = "dummy" ; // "thor18way"; // "thor_data400" ; 
+    const char *grpname = "dummy" ; // "thor18way"; // "thor_data400" ;
     Owned<IGroup> grp = queryNamedGroupStore().lookup(grpname);
     if (!grp) {
         printf("Group %s not found\n",grpname);
@@ -3317,7 +3317,7 @@ void testDaliLog(bool listener)
         ILogMsgListener * listener = startLogMsgListener();
         fileMsgHandler = getRollingFileLogMsgHandler("datest1", ".log", MSGFIELD_STANDARD, false, true, NULL);
         listener->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_audit, MSGCLS_all, TopDetail));
-        connectLogMsgListenerToDali(); 
+        connectLogMsgListenerToDali();
         Sleep(1000*60*5);
         disconnectLogMsgListenerFromDali();
     }
@@ -3351,7 +3351,7 @@ struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 
 
 int main(int argc, char* argv[])
-{   
+{
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
 
@@ -3371,7 +3371,7 @@ int main(int argc, char* argv[])
         printf("end...\n");
         return 0;
 #endif
-        
+
 
 // Non dali tests
 #if defined(TEST_THREADS)
@@ -3466,14 +3466,14 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        IGroup *group = createIGroup(epa); 
+        IGroup *group = createIGroup(epa);
 
         if (TEST("SESSION"))
             initClientProcess(group,DCR_Testing, testParams.ordinality() ? 0 : 7777);
         else
             initClientProcess(group, DCR_Testing);
 
-        
+
         //testlockprop("test::propagated_matchrecs");
 
 
@@ -3566,6 +3566,6 @@ int main(int argc, char* argv[])
         pexception("Exception",e);
     }
     catch (...) { if (!TEST("RANDTEST")) throw; }
-    
+
     return 0;
 }

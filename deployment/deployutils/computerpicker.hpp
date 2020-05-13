@@ -69,10 +69,10 @@ private:
    bool GetUsage(const char *computer, StringBuffer& sUsage, bool bIncludeComponentType) const;
 
    void CreateComputerFilterTree();
-   void NoteFilter(IPropertyTree* pFilter, const char *componentType, 
+   void NoteFilter(IPropertyTree* pFilter, const char *componentType,
                    const char *component, const char* computer);
 
-   void ApplyFilter(const char* szSubTreeName, const char* szIncAttrib, 
+   void ApplyFilter(const char* szSubTreeName, const char* szIncAttrib,
                     char chStatus, StringBuffer& sFilterApplied);
 
 private:

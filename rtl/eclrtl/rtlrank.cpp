@@ -49,7 +49,7 @@ void rtlCreateOrder(void * tgt, const void * src, unsigned num, unsigned width, 
     free(vector);
 }
 
-unsigned rtlRankFromOrder(unsigned index, unsigned num, const void * order) 
+unsigned rtlRankFromOrder(unsigned index, unsigned num, const void * order)
 {
     const unsigned * indices = (const unsigned *)order;
     unsigned idx;
@@ -59,7 +59,7 @@ unsigned rtlRankFromOrder(unsigned index, unsigned num, const void * order)
     return 0;
 }
 
-unsigned rtlRankedFromOrder(unsigned index, unsigned num, const void * order) 
+unsigned rtlRankedFromOrder(unsigned index, unsigned num, const void * order)
 {
     const unsigned * indices = (const unsigned *)order;
     if ((index < 1) || (index > num))

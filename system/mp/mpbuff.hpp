@@ -45,11 +45,11 @@ public:
     inline mptag_t getReplyTag()                    { return replytag; } // called after recv to determine tag to reply to
     inline mptag_t getTag()                         { return tag; }
 
-    inline void init()             
-    { 
+    inline void init()
+    {
         tag = TAG_NULL;
         replytag = TAG_NULL;
-    }   
+    }
 
     inline void init(const SocketEndpoint &_sender, mptag_t _tag, mptag_t _replytag)
     {
@@ -74,7 +74,7 @@ public:
         StringBuffer data;
         unsigned n=(length()<16)?length():16;
         for (unsigned i=0;i<n;i++) {
-            if (i!=0) 
+            if (i!=0)
                 data.append(", ");
             data.append((unsigned)(byte)toByteArray()[i]);
         }

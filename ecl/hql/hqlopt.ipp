@@ -51,12 +51,12 @@ protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
 
-protected:  
+protected:
     virtual IHqlExpression * replaceWithNull(IHqlExpression * transformed);
     virtual IHqlExpression * removeParentNode(IHqlExpression * expr);
     virtual IHqlExpression * replaceWithNullRowDs(IHqlExpression * expr);
     virtual IHqlExpression * replaceWithNullRow(IHqlExpression * expr);
-    virtual IHqlExpression * transformExpanded(IHqlExpression * expr);              
+    virtual IHqlExpression * transformExpanded(IHqlExpression * expr);
 
     IHqlExpression * doCreateTransformed(IHqlExpression * transformed, IHqlExpression * expr);
     IHqlExpression * extractFilterDs(HqlExprArray & conds, IHqlExpression * expr);
@@ -118,7 +118,7 @@ protected:
     IHqlExpression * optimizeIf(IHqlExpression * expr);
     IHqlExpression * optimizeIfAppend(IHqlExpression * expr, node_operator combineOp);
     IHqlExpression * optimizeProjectInlineTable(IHqlExpression * transformed, bool childrenAreShared);
-        
+
     inline const char * queryNode0Text(IHqlExpression * expr) { return queryChildNodeTraceText(nodeText[0], expr); }
     inline const char * queryNode1Text(IHqlExpression * expr) { return queryChildNodeTraceText(nodeText[1], expr); }
 

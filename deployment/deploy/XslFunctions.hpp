@@ -36,29 +36,29 @@
 class DEPLOY_API FunctionSample : public Function
 {
 public:
-    
+
     FunctionSample();
-    
+
     virtual ~FunctionSample();
-    
+
     // These methods are inherited from Function ...
-    
+
     virtual XObjectPtr execute(
         XPathExecutionContext&  executionContext,
-        XalanNode*              context,            
+        XalanNode*              context,
         const XObjectPtr        arg1,
         const XObjectPtr        arg2,
         const Locator*          locator) const;
-    
+
 #if defined(XALAN_NO_COVARIANT_RETURN_TYPE)
     virtual Function*   clone() const;
 #else
     virtual FunctionSample* clone() const;
 #endif
-    
+
 protected:
     const XalanDOMString    getError() const;
-    
+
 private:
     // Not implemented...
     Function& operator=(const FunctionSample&);

@@ -43,7 +43,7 @@ inline void FORWARDEXCEPTION(IEspContext &context, IException *e, unsigned codeN
     gmtime_r(&tNow, &timeStruct);
     strftime(timeString, 32, "%Y-%m-%d %H:%M:%S GMT", &timeStruct);
     throw MakeStringException(err, "%s: %s", timeString, eMsg.str());
-        
+
     return;
 }
 #endif //_ECLWATCH_EXCEPTIONS_HPP__

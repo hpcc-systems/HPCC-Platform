@@ -56,7 +56,7 @@ public:
         m_discard = false;
         m_path.set("/");
     }
-    
+
     void getSetCookieHeaderName(StringBuffer& headername)
     {
         if(m_version >= 1)
@@ -177,7 +177,7 @@ public:
     {
         m_discard = flag;
     }
-    
+
     int getVersion()
     {
         return m_version;
@@ -238,7 +238,7 @@ public:
             buf.append("; SameSite=").append(sameSite.get());
         if(m_version >= 1)
         {
-            buf.append("; Version=").append(m_version);     
+            buf.append("; Version=").append(m_version);
             if(m_ports.length() > 0)
                 buf.append("; Port=").append('"').append(m_ports.get()).append('"');
             if(m_comment.length() > 0)

@@ -29,7 +29,7 @@
 
 interface INamedQueueSubscription: extends IInterface
 {
-    virtual void notify(const char *name,MemoryBuffer &buf) = 0; 
+    virtual void notify(const char *name,MemoryBuffer &buf) = 0;
         // buffer contains queue item
     virtual void abort() = 0; // called if Dali Server closes down
 };
@@ -37,15 +37,15 @@ interface INamedQueueSubscription: extends IInterface
 
 interface IQueueChannel: extends IInterface
 {
-    virtual void put(MemoryBuffer &buf, int priority=0) = 0;    
+    virtual void put(MemoryBuffer &buf, int priority=0) = 0;
                                                         // puts message on queue, buf is clear on return
-    virtual bool get(MemoryBuffer &buf, int priority=0, unsigned timeout=WAIT_FOREVER) = 0; 
+    virtual bool get(MemoryBuffer &buf, int priority=0, unsigned timeout=WAIT_FOREVER) = 0;
                                                         // gets message from queue
-    virtual void cancelGet() = 0;                       // called from other thread to cancel ongoing get 
+    virtual void cancelGet() = 0;                       // called from other thread to cancel ongoing get
     virtual SubscriptionId subscribe(INamedQueueSubscription *subs, int priority, bool oneshot=false) = 0;
                                                         // cause notify to be called when item added to queue
-    virtual void cancelSubscription(SubscriptionId id) = 0; // called from other thread to cancel subscription 
-    virtual int changePriority(int newpriority,SubscriptionId id=0) = 0;        
+    virtual void cancelSubscription(SubscriptionId id) = 0; // called from other thread to cancel subscription
+    virtual int changePriority(int newpriority,SubscriptionId id=0) = 0;
                                                         // called from other thread to change priority of ongoing get (id=0)or subscribe
     virtual unsigned probe() = 0;                       // enquires number of queue items available
     virtual unsigned probe(MemoryBuffer &buf,PointerArray &ptrs) = 0; // probes contents of queue

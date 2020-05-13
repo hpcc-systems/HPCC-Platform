@@ -6363,7 +6363,7 @@ void CWsDfuEx::exportRecordDefinitionBinaryType(const char *recordDefinition, Me
     }
     if (!expr)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "exportRecordDefinitionBinaryType: Failed in parsing ECL: %s.", recordDefinition);
-    
+
     if (!exportBinaryType(layoutBin, expr, false))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "exportRecordDefinitionBinaryType: Failed in exportBinaryType.");
 }

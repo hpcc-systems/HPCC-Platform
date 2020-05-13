@@ -28,10 +28,10 @@ namespace sxt {
 
   class XmlTokenizerException  : public exception{
   public:
-    XmlTokenizerException(string exMessage) throw() 
+    XmlTokenizerException(string exMessage) throw()
       : message(exMessage) {}
 
-    XmlTokenizerException(string exMessage, int exRow, int exColumn) throw() 
+    XmlTokenizerException(string exMessage, int exRow, int exColumn) throw()
       : message(exMessage), row(exRow), column(exColumn) {}
 
     XmlTokenizerException(const char *exMessage, char ch, const string &posDesc, int exRow, int exColumn) throw()
@@ -48,23 +48,23 @@ namespace sxt {
         message.append(posDesc);
     }
 
-    XmlTokenizerException(const XmlTokenizerException& other) throw() 
+    XmlTokenizerException(const XmlTokenizerException& other) throw()
       : exception (other)
      {  message       = other.message; }
 
     XmlTokenizerException& operator=(const XmlTokenizerException& other)
      throw()
-    { 
+    {
       exception::operator= (other);
 
       if (&other != this) {
-        message = other.message; 
+        message = other.message;
       }
 
-      return *this; 
+      return *this;
     }
 
-    virtual ~XmlTokenizerException() throw() 
+    virtual ~XmlTokenizerException() throw()
     {
     }
 
@@ -73,13 +73,13 @@ namespace sxt {
 
     string getMessage() const throw() { return message; }
     void setMessage(string exMessage) throw() { message = exMessage;}
-    
+
     virtual const char* what() const throw() {
       return message.c_str();
     }
-          
 
-    friend ostream& operator<<(ostream& output, 
+
+    friend ostream& operator<<(ostream& output,
        const XmlTokenizerException& xte);
 
   protected:
@@ -88,8 +88,8 @@ namespace sxt {
     int column;
   };
 
-inline ostream& operator<<(ostream& output, 
-  const XmlTokenizerException& xte) 
+inline ostream& operator<<(ostream& output,
+  const XmlTokenizerException& xte)
 {
     output << "XmlTokenizerException: ";
     output << xte.message << endl;

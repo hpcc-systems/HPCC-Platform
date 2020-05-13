@@ -56,7 +56,7 @@ private:
     unsigned     m_userid;
     MemoryBuffer m_usersid;
     BufferArray  m_groupsids;
-    
+
     bool         m_posixenabled;
     StringAttr   m_gidnumber;
     StringAttr   m_uidnumber;
@@ -208,7 +208,7 @@ public:
         return m_posixenabled;
     }
 
-// Sudoers specific fields  
+// Sudoers specific fields
     virtual void setSudoersEnabled(bool enabled)
     {
         m_sudoersenabled = enabled;
@@ -263,7 +263,7 @@ private:
     StringBuffer       m_value;
     SecResourceType    m_resourcetype;
 
-public: 
+public:
     IMPLEMENT_IINTERFACE
 
     CLdapSecResource(const char *name);
@@ -289,8 +289,8 @@ public:
     virtual void copy(ISecResource* from);
     virtual StringBuffer& toString(StringBuffer& s)
     {
-        s.appendf("%s: %s (value: %s, rqr'ed access: %d, type: %s)", m_name.get(), m_description.str(),  
-                    m_value.str(), m_required_access, resTypeDesc(m_resourcetype)); 
+        s.appendf("%s: %s (value: %s, rqr'ed access: %d, type: %s)", m_name.get(), m_description.str(),
+                    m_value.str(), m_required_access, resTypeDesc(m_resourcetype));
         return s;
     }
 };
@@ -302,7 +302,7 @@ private:
     bool m_complete;
     StringAttr m_name;
     IArrayOf<ISecResource> m_rlist;
-    std::map<std::string, ISecResource*> m_rmap;  
+    std::map<std::string, ISecResource*> m_rmap;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -330,14 +330,14 @@ public:
     virtual ISecResource * queryResource(unsigned seq);
     virtual ISecPropertyIterator * getPropertyItr();
     virtual ISecProperty* findProperty(const char* name);
-    virtual StringBuffer& toString(StringBuffer& s) 
-    { 
-        s.appendf("name=%s, count=%d.", m_name.get(), count()); 
-        for (int i=0; i<count(); i++) 
-        { 
-            s.appendf("\nItem %d: ",i+1); 
-            queryResource(i)->toString(s); 
-        } 
+    virtual StringBuffer& toString(StringBuffer& s)
+    {
+        s.appendf("name=%s, count=%d.", m_name.get(), count());
+        for (int i=0; i<count(); i++)
+        {
+            s.appendf("\nItem %d: ",i+1);
+            queryResource(i)->toString(s);
+        }
         return s;
     }
 };
@@ -439,10 +439,10 @@ public:
     virtual bool authTypeRequired(SecResourceType rtype) {return true;};
 
     virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL);
-    
-    virtual LdapServerType getLdapServerType() 
-    { 
-        if(m_ldap_client) 
+
+    virtual LdapServerType getLdapServerType()
+    {
+        if(m_ldap_client)
             return m_ldap_client->getServerType();
         else
             return ACTIVE_DIRECTORY;
@@ -450,12 +450,12 @@ public:
 
     virtual const char* getPasswordStorageScheme()
     {
-        if(m_ldap_client) 
+        if(m_ldap_client)
             return m_ldap_client->getPasswordStorageScheme();
         else
             return NULL;
     }
-        
+
     virtual const char* getDescription()
     {
         return m_description.str();

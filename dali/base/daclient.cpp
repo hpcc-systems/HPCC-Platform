@@ -58,7 +58,7 @@ public:
     }
 
     StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
+    {
         switch (error) {
         case DCERR_ok:                          str.append("OK"); break;
         case DCERR_server_closed:               str.append("Connection to Dali server lost or server closed"); break;
@@ -68,13 +68,13 @@ public:
         return str;
     }
     int             errorCode() const { return error; }
-    MessageAudience errorAudience() const 
-    { 
+    MessageAudience errorAudience() const
+    {
         switch (error) {
-        case DCERR_server_closed:         
-            return MSGAUD_operator; 
+        case DCERR_server_closed:
+            return MSGAUD_operator;
         }
-        return MSGAUD_user; 
+        return MSGAUD_user;
     }
 private:
     DaliClientError error;

@@ -302,7 +302,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
             manager->setKey(curPart);
             manager->reset();
         }
-        
+
         if (manager->lookup(true))
         {
             if (extractRow)

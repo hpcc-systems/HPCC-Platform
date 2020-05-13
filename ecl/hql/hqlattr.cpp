@@ -87,7 +87,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_assertwild:
     case no_eventname:
     case no_eventextra:
-    case no_debug_option_value: 
+    case no_debug_option_value:
 
 //Arithmetic operators
     case no_mul:
@@ -151,7 +151,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_pure:
     case no_sequence:
     case no_getenv:
-    
+
 //Selection operators  - could be arithmetic, string, dataset etc.
     case no_map:
     case no_if:
@@ -465,7 +465,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_catch:
     case no_once:
 
-//Patterns 
+//Patterns
     case no_pat_select:
     case no_pat_const:
     case no_pat_pattern:
@@ -872,8 +872,8 @@ static IHqlExpression * evaluatePropSerializedForm(IHqlExpression * expr, ExprPr
 //-- Attribute: size -------------------------------------------------------------------------------
 
 //no_field
-static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr) 
-{ 
+static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
+{
     ITypeInfo * type = expr->queryType();
     unsigned minSize = UNKNOWN_LENGTH;
     unsigned maxSize = 0;
@@ -1033,7 +1033,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
             {
                 IHqlAlienTypeInfo * alien = queryAlienType(type);
                 thisSize = alien->getPhysicalTypeSize();
-                
+
                 if (thisSize == UNKNOWN_LENGTH)
                 {
                     IHqlExpression * lengthAttr = queryUncastExpr(alien->queryLengthFunction());
@@ -1098,8 +1098,8 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
 }
 
 //no_ifblock
-static IHqlExpression * evaluateIfBlockAttrSize(IHqlExpression * expr) 
-{ 
+static IHqlExpression * evaluateIfBlockAttrSize(IHqlExpression * expr)
+{
     IHqlExpression * size = expr->queryChild(1)->queryProperty(EPsize);
     unsigned averageSize = (unsigned)getIntValue(size->queryChild(0), 0)/2;
     OwnedHqlExpr attr = createExprAttribute(_propSize_Atom, getSizetConstant(averageSize), getSizetConstant(0), LINK(size->queryChild(2)));
@@ -1108,8 +1108,8 @@ static IHqlExpression * evaluateIfBlockAttrSize(IHqlExpression * expr)
 }
 
 //no_record
-static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr) 
-{ 
+static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr)
+{
     unsigned __int64 expectedSize = 0;
     unsigned __int64 minimumSize = 0;
     unsigned __int64 maximumSize = 0;
@@ -1531,7 +1531,7 @@ public:
                     return (int)(leftSize - rightSize);
 #endif
 
-                //fall through to default 
+                //fall through to default
             }
             else if (!leftIsBitfield)
                 return -1;
@@ -1604,7 +1604,7 @@ static IHqlExpression * evaluatePropAligned(IHqlExpression * expr)
         return queryAlignedAttr();
     }
     meta.addProperty(newRecord, EPaligned, queryAlignedAttr());
-    
+
     OwnedHqlExpr alignAttr = createExprAttribute(_propAligned_Atom, newRecord.getClear());
     meta.addProperty(expr, EPaligned, alignAttr);
     return alignAttr;
@@ -3067,7 +3067,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_colon:
         {
             IHqlExpression * workflow = expr->queryChild(1);
-            //For either of 
+            //For either of
             if (queryOperatorInList(no_stored, workflow) || queryOperatorInList(no_recovery, workflow))
             {
                 info.setUnknown(RCMdisk);
@@ -3158,7 +3158,7 @@ IHqlExpression * queryFixedRowCount(IHqlExpression * expr)
     return NULL;
 }
 
-// Functions for testing whether 
+// Functions for testing whether
 
 // Functions for accessing attributes from types etc.
 

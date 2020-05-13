@@ -24,7 +24,7 @@
 #include "jsocket.hpp"
 
 
-enum Connection_t               
+enum Connection_t
 {
     CT_none,                        // not connected to property tree
     CT_local,                       // connected to local property tree

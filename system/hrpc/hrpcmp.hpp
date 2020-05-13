@@ -26,13 +26,13 @@
 // Intra Communication. rank is server's rank, server tag is tag server is listening on
 IHRPCtransport *MakeClientMpTransport( ICommunicator *comm, rank_t rank, mptag_t servertag ) ;
 IHRPCtransport *MakeServerMpTransport( ICommunicator *comm, mptag_t servertag );
-                                                                        
-// Inter (using InterCommunicator) node is server's node, server tag is tag server is listening on 
+
+// Inter (using InterCommunicator) node is server's node, server tag is tag server is listening on
 IHRPCtransport *MakeClientMpInterTransport( INode *node, mptag_t servertag );
 IHRPCtransport *MakeServerMpInterTransport(mptag_t tag);
-                                                                        
+
 
 #endif
 
 
-                                  
+

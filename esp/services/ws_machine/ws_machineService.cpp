@@ -2476,7 +2476,7 @@ void Cws_machineEx::readDropZoneUsageReq(const char* name, IConstEnvironment* co
     componentReq->addProp("@type", eqDropZone);
 
     SCMStringBuffer computerName;
-    envDropZone->getComputerName(computerName); 
+    envDropZone->getComputerName(computerName);
     if (computerName.length() == 0)
     {
         OS_TYPE os = (getPathSepChar(directory.str()) == '/') ? OS_LINUX : OS_WINDOWS;
@@ -2529,9 +2529,9 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
         const char* computer = instance.queryProp("@computer");
         if (isEmptyString(computer))
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get %s", xpath.str());
-    
+
         Owned<IPropertyTree> machineReq = createMachineUsageReq(constEnv, computer);
-    
+
         IPropertyTree* envDirectories = envRoot->queryPropTree("Software/Directories");
         Owned<IPropertyTree> logFolder = createDiskUsageReq(envDirectories, "log", type, name);
         if (logFolder)
@@ -2540,7 +2540,7 @@ void Cws_machineEx::readOtherComponentUsageReq(const char* name, const char* typ
         Owned<IPropertyTree> dataFolder = createDiskUsageReq(envDirectories, "data", componentType, name);
         if (dataFolder)
             machineReq->addPropTree(dataFolder->queryName(), LINK(dataFolder));
-    
+
         if (strieq(type, eqDali))
         {
             Owned<IPropertyTree> repFolder = createDiskUsageReq(envDirectories, "mirror", "dali", name);
@@ -2564,7 +2564,7 @@ void Cws_machineEx::setUniqueMachineUsageReq(IPropertyTree* usageReq, IPropertyT
         {
             IPropertyTree& machine = machines->query();
             const char* netAddress = machine.queryProp("@netAddress");
-    
+
             VStringBuffer xpath("Machine[@netAddress='%s']", netAddress);
             IPropertyTree* uniqueMachineReqTree = uniqueUsages->queryPropTree(xpath);
             if (!uniqueMachineReqTree)
@@ -3120,7 +3120,7 @@ StringArray& Cws_machineEx::listThorHThorNodeGroups(IConstEnvironment* constEnv,
 
         unsigned ins = 0;
         Owned<IPropertyTreeIterator> insts = cluster.getElements("Instance");
-        ForEach(*insts) 
+        ForEach(*insts)
         {
             ins++;
             StringBuffer gname("hthor__");
@@ -3295,7 +3295,7 @@ bool Cws_machineEx::onUpdateComponentStatus(IEspContext &context, IEspUpdateComp
         const char* reporter = req.getReporter();
         if (!reporter || !*reporter)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Report not specified.");
-        
+
         Owned<IComponentStatusFactory> factory = getComponentStatusFactory();
         factory->updateComponentStatus(reporter, req.getComponentStatusList());
         resp.setStatusCode(0);

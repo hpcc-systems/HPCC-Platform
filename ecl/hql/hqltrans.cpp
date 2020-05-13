@@ -73,20 +73,20 @@ MODULE_EXIT()
 
 unsigned HqlTransformStats::globalDepth;
 
-HqlTransformStats::HqlTransformStats() 
-{ 
+HqlTransformStats::HqlTransformStats()
+{
     clear();
 }
 
 void HqlTransformStats::clear()
 {
-    numAnalyse = 0; 
-    numAnalyseCalls = 0; 
-    numTransforms = 0; 
-    numTransformsSame = 0; 
-    numTransformCalls = 0; 
-    numTransformCallsSame = 0; 
-    numTransformSelects = 0; 
+    numAnalyse = 0;
+    numAnalyseCalls = 0;
+    numTransforms = 0;
+    numTransformsSame = 0;
+    numTransformCalls = 0;
+    numTransformCallsSame = 0;
+    numTransformSelects = 0;
     numTransformSelectsSame = 0;
     depth = 0;
     maxDepth = 0;
@@ -136,8 +136,8 @@ void HqlTransformStats::endNewTransform(IHqlExpression * expr, IHqlExpression * 
 }
 
 
-void HqlTransformStats::add(const HqlTransformStats & other) 
-{ 
+void HqlTransformStats::add(const HqlTransformStats & other)
+{
 #ifdef TRANSFORM_STATS_DETAILS
     numAnalyse += other.numAnalyse;
     numAnalyseCalls += other.numAnalyseCalls;
@@ -182,7 +182,7 @@ void HqlTransformStats::gatherTransformStats(IStatisticTarget & target, const ch
 }
 
 StringBuffer & HqlTransformStats::getText(StringBuffer & out) const
-{ 
+{
 #ifdef TRANSFORM_STATS_TIME
     out.append(" ti:").append(cycle_to_millisec(totalTime-(childTime-recursiveTime))).append(" tt:").append(cycle_to_millisec(totalTime)).append(" tr:").append(cycle_to_millisec(recursiveTime));
 #endif
@@ -462,7 +462,7 @@ bool HqlTransformerBase::optimizedTransformChildren(IHqlExpression * expr, HqlEx
         if (&children.item(idx) != expr->queryChild(idx))
             break;
     }
-    
+
     if (idx == numDone)
     {
         OwnedHqlExpr lastTransformedChild;
@@ -616,7 +616,7 @@ ITypeInfo * HqlTransformerBase::transformType(ITypeInfo * type)
             OwnedHqlExpr transformedOriginal = transform(original);
             if ((typeBase == newTypeBase) && (original == transformedOriginal))
                 return LINK(type);
-            return makeOriginalModifier(newTypeBase.getClear(), transformedOriginal.getClear()); 
+            return makeOriginalModifier(newTypeBase.getClear(), transformedOriginal.getClear());
         }
     case typemod_indirect:
         {
@@ -690,7 +690,7 @@ ITypeInfo * HqlTransformerBase::transformType(ITypeInfo * type)
 //---------------------------------------------------------------------------
 
 QuickHqlTransformer::QuickHqlTransformer(HqlTransformerInfo & _info, IErrorReceiver * _errors) : HqlTransformerBase(_info)
-{ 
+{
     errors = _errors;
 }
 
@@ -1061,8 +1061,8 @@ void QuickHqlTransformer::setMapping(IHqlExpression * oldValue, IHqlExpression *
 
 //NB: Derived from QuickHqlTransformer since it is called before the tree is normalised
 static HqlTransformerInfo quickExpressionReplacerInfo("QuickExpressionReplacer");
-QuickExpressionReplacer::QuickExpressionReplacer() 
-: QuickHqlTransformer(quickExpressionReplacerInfo, NULL) 
+QuickExpressionReplacer::QuickExpressionReplacer()
+: QuickHqlTransformer(quickExpressionReplacerInfo, NULL)
 {
 }
 
@@ -1106,7 +1106,7 @@ static HqlTransformerInfo quickExpressionLocatorInfo("QuickExpressionLocator");
 class HQL_API QuickExpressionLocator : public QuickHqlTransformer
 {
 public:
-    QuickExpressionLocator(IHqlExpression * _search) 
+    QuickExpressionLocator(IHqlExpression * _search)
     : QuickHqlTransformer(quickExpressionLocatorInfo, NULL), search(_search)
     {
     }
@@ -1133,9 +1133,9 @@ extern void assertNoMatchingExpression(IHqlExpression * expr, IHqlExpression * s
 
 static HqlTransformerInfo debugDifferenceAnalyserInfo("DebugDifferenceAnalyser");
 DebugDifferenceAnalyser::DebugDifferenceAnalyser(IIdAtom * _search) : QuickHqlTransformer(debugDifferenceAnalyserInfo, NULL)
-{ 
-    prev = NULL; 
-    search = _search; 
+{
+    prev = NULL;
+    search = _search;
 }
 
 
@@ -1159,8 +1159,8 @@ void DebugDifferenceAnalyser::doAnalyse(IHqlExpression * expr)
 
 //NB: Derived from QuickHqlTransformer since it is called before the tree is normalised
 static HqlTransformerInfo hqlSectionAnnotatorInfo("HqlSectionAnnotator");
-HqlSectionAnnotator::HqlSectionAnnotator(IHqlExpression * sectionWorkflow) 
-: QuickHqlTransformer(hqlSectionAnnotatorInfo, NULL) 
+HqlSectionAnnotator::HqlSectionAnnotator(IHqlExpression * sectionWorkflow)
+: QuickHqlTransformer(hqlSectionAnnotatorInfo, NULL)
 {
     HqlExprArray args;
     args.append(*LINK(sectionWorkflow->queryChild(0)));
@@ -1452,7 +1452,7 @@ IHqlExpression * NewHqlTransformer::quickTransformTransform(IHqlExpression * exp
 }
 
 
-//optimization: don't traverse LHS of an assignment, and minimise 
+//optimization: don't traverse LHS of an assignment, and minimise
 IHqlExpression * NewHqlTransformer::transformAssign(IHqlExpression * expr)
 {
     IHqlExpression * rhs = expr->queryChild(1);
@@ -1959,7 +1959,7 @@ IHqlExpression * NewHqlTransformer::transformExternalCall(IHqlExpression * expr)
     IHqlExpression * body = expr->queryBody();
     IHqlExpression * oldFuncdef = body->queryExternalDefinition();
     OwnedHqlExpr newFuncdef = transform(oldFuncdef);
-    
+
     HqlExprArray args;
     bool same = transformChildren(body, args);
     if (same && (oldFuncdef == newFuncdef))
@@ -1974,7 +1974,7 @@ IHqlExpression * NewHqlTransformer::transformCall(IHqlExpression * expr)
     IHqlExpression * body = expr->queryBody();
     IHqlExpression * oldFuncdef = body->queryFunctionDefinition();
     OwnedHqlExpr newFuncdef = transform(oldFuncdef);
-    
+
     HqlExprArray args;
     bool same = transformChildren(body, args);
     if (same && (oldFuncdef == newFuncdef))
@@ -2026,7 +2026,7 @@ void NewHqlTransformer::setSelectorMapping(IHqlExpression * oldValue, IHqlExpres
 IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * expr, IHqlExpression * transformed)
 {
     //If the parent has changed to then the active selector may have changed out of step with the parent dataset
-    //so need to explicitly remap the dataset.  
+    //so need to explicitly remap the dataset.
     //Happens in constant folding when filters etc. are replaced with a very different child
     //Happens when also hoisting a non-table expression e.g, globalAutoHoist
 
@@ -2239,7 +2239,7 @@ HqlScopedMapSelectorTransformer::HqlScopedMapSelectorTransformer(IHqlExpression 
     if (oldDataset->isDatarow() || op == no_activetable || op == no_self || op == no_selfref)
     {
         setMappingOnly(oldDataset, newDataset);         // A row, so Don't change any new references to the dataset
-        //MORE: We should be very 
+        //MORE: We should be very
     }
     else
     {
@@ -2259,9 +2259,9 @@ NestedHqlMapTransformer::NestedHqlMapTransformer() : NestedHqlTransformer(nested
 //---------------------------------------------------------------------------
 
 ConditionalHqlTransformer::ConditionalHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : NewHqlTransformer(_info)
-{ 
-    flags = _flags; 
-    conditionDepth = 0; 
+{
+    flags = _flags;
+    conditionDepth = 0;
     containsUnknownIndependentContents = false;
 }
 
@@ -2310,7 +2310,7 @@ void ConditionalHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_colon:
         //Hoisting transforms need to happen after the workflow separation - otherwise
         //you can end up with an exponential expansion of persist points.
-        throwUnexpected();              
+        throwUnexpected();
     case no_cluster:
     case no_sequential:
         containsUnknownIndependentContents = true;
@@ -2676,8 +2676,8 @@ bool onlyTransformOnce(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-MergingTransformSimpleInfo::MergingTransformSimpleInfo(IHqlExpression * _expr) : AMergingTransformInfo(_expr) 
-{ 
+MergingTransformSimpleInfo::MergingTransformSimpleInfo(IHqlExpression * _expr) : AMergingTransformInfo(_expr)
+{
 }
 
 IHqlExpression * MergingTransformSimpleInfo::queryAlreadyTransformed(IHqlExpression * childScope)
@@ -2708,8 +2708,8 @@ void MergingTransformSimpleInfo::setTransformedSelector(IHqlExpression * childSc
 //---------------------------------------------------------------------------
 
 MergingTransformComplexCache::MergingTransformComplexCache()
-{ 
-    mapped = NULL; 
+{
+    mapped = NULL;
     mappedSelector = NULL;
 }
 
@@ -2846,9 +2846,9 @@ void MergingTransformComplexCache::setTransformedSelector(AMergingTransformInfo 
 
 //---------------------------------------------------------------------------
 
-MergingTransformInfo::MergingTransformInfo(IHqlExpression * _expr) : AMergingTransformInfo(_expr) 
-{ 
-    mapped = NULL; 
+MergingTransformInfo::MergingTransformInfo(IHqlExpression * _expr) : AMergingTransformInfo(_expr)
+{
+    mapped = NULL;
     mappedSelector = NULL;
     setOnlyTransformOnce(::onlyTransformOnce(original));
 }
@@ -3028,8 +3028,8 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
 
     switch (getChildDatasetType(expr))
     {
-    case childdataset_dataset: 
-    case childdataset_datasetleft: 
+    case childdataset_dataset:
+    case childdataset_datasetleft:
     case childdataset_top_left_right:
         {
             IHqlExpression * arg0 = expr->queryChild(0);
@@ -3131,11 +3131,11 @@ void MergingHqlTransformer::setTransformedSelector(IHqlExpression * expr, IHqlEx
 //---------------------------------------------------------------------------
 
 #if 0
-SelectorReplacingTransformer::SelectorReplacingTransformer() 
-{ 
-    introducesAmbiguity = false; 
-    savedNewDataset = NULL; 
-    isHidden = false; 
+SelectorReplacingTransformer::SelectorReplacingTransformer()
+{
+    introducesAmbiguity = false;
+    savedNewDataset = NULL;
+    isHidden = false;
 }
 
 void SelectorReplacingTransformer::initSelectorMapping(IHqlExpression * _oldDataset, IHqlExpression * _newDataset)
@@ -3192,9 +3192,9 @@ IHqlExpression * SelectorReplacingTransformer::createTransformed(IHqlExpression 
     HqlExprArray children;
     switch (getChildDatasetType(expr))
     {
-    case childdataset_dataset: 
+    case childdataset_dataset:
         throwUnexpected();
-    case childdataset_datasetleft: 
+    case childdataset_datasetleft:
     case childdataset_top_left_right:
         {
             assertex(numNonHidden == 1);
@@ -3240,10 +3240,10 @@ void SelectorReplacingTransformer::pushChildContext(IHqlExpression * expr, IHqlE
 
 static HqlTransformerInfo newSelectorReplacingTransformerInfo("NewSelectorReplacingTransformer");
 NewSelectorReplacingTransformer::NewSelectorReplacingTransformer() : NewHqlTransformer(newSelectorReplacingTransformerInfo)
-{ 
-    introducesAmbiguity = false; 
-    savedNewDataset = NULL; 
-    isHidden=false; 
+{
+    introducesAmbiguity = false;
+    savedNewDataset = NULL;
+    isHidden=false;
 }
 
 void NewSelectorReplacingTransformer::initNullMapping(IHqlExpression * selector)
@@ -3933,7 +3933,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
                 }
                 break;
             case childdataset_same_left_right:
-            case childdataset_nway_left_right:              
+            case childdataset_nway_left_right:
                 {
                     IHqlExpression * left = expr->queryChild(0);
                     analyseExpr(left);
@@ -4333,7 +4333,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
                 }
                 break;
             case childdataset_same_left_right:
-            case childdataset_nway_left_right:              
+            case childdataset_nway_left_right:
                 {
                     IHqlExpression * left = expr->queryChild(0);
                     children.append(*transform(left));
@@ -4423,7 +4423,7 @@ void ScopedTransformer::popEvaluateScope()
     popScope();
 }
 
-void ScopedTransformer::clearDataset(bool nested)                                       
+void ScopedTransformer::clearDataset(bool nested)
 {
     assertex(innerScope->dataset || innerScope->left);
     innerScope->clear();
@@ -4492,9 +4492,9 @@ bool ScopedTransformer::checkInScope(IHqlExpression * selector, bool allowCreate
     case no_selfref:
     case no_activetable:
     case no_matchattr:
-        return true;    
+        return true;
     case no_field:
-        return true;    
+        return true;
         // assume the expression couldn't have been parsed without this being true.....
         //otherwise we need to search up the list checking if a scope exists that defines left/right.
     case no_selectnth:
@@ -4559,8 +4559,8 @@ IHqlExpression * ScopedTransformer::getScopeState()
     unsigned num = attrs.ordinality();
     if (num == 0)
         return LINK(emptyScopeMarker);
-    if (num == 1) 
-        return &attrs.popGet();                     
+    if (num == 1)
+        return &attrs.popGet();
     return createAttribute(scopeAtom, attrs);
 }
 
@@ -4694,8 +4694,8 @@ void ScopedDependentTransformer::popEvaluateScope()
     popChildContext();
 }
 
-void ScopedDependentTransformer::clearDataset(bool nested)                                      
-{ 
+void ScopedDependentTransformer::clearDataset(bool nested)
+{
     if (nested)
         popChildContext();
     ScopedTransformer::clearDataset(nested);
@@ -4894,7 +4894,7 @@ IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr)
   conditional:
     should multiple conditional items be commoned up, or kept conditional.  There is no correct answer, but generally
     if there are any unconditional uses, then they should be commoned up, otherwise they should remain separate.
-  
+
   sequential:
     nothing within the sequential should be moved before another item.  This messes up the conditional handling - since
     we can't move an unconditional evaluation before a conditional sequential one.
@@ -4918,7 +4918,7 @@ IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr)
 
   Try two passes.....
   1. Treat sequential as a new scope and don't common up between items.
-  2. 
+  2.
   */
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
@@ -5101,7 +5101,7 @@ Some notes on selector ambiguity.
 
 a) Whatever work is done, it is going to be impossible to completely get rid of ambiguious selectors.
 
-It may be possible with no_left/no_right, depending on the implementation, but not with dataset selectors. 
+It may be possible with no_left/no_right, depending on the implementation, but not with dataset selectors.
 E.g, x(f1 in set(x(f2), f3))
 inside the evaluation of f3, the code generator needs to correctly ensure that
 i) the inner iterator on x(f2) is used when evaluating f3.

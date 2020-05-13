@@ -75,7 +75,7 @@ void ProcessSlaveActivity::startProcess(bool async)
 }
 
 void ProcessSlaveActivity::threadmain()
-{ 
+{
     try
     {
 #ifdef TIME_ACTIVITIES
@@ -322,7 +322,7 @@ public:
                 break;
             case TAKdiskgroupaggregate:
                 ret = createDiskGroupAggregateSlave(this);
-                break;  
+                break;
             case TAKindexread:
                 ret = createIndexReadSlave(this);
                 break;

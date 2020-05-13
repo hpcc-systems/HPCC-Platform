@@ -255,7 +255,7 @@ bool mergeFeatures(FeatureValue & result, const ProductionFeatureInfo * info, Gr
         case FKmask:
             {
                 mask_feature_t srcValue = srcMaskValues[cur.srcFeatureIndex];
-                if (!isMaskValid(resultMaskFeature[tgtFeatureIndex], srcValue)) 
+                if (!isMaskValid(resultMaskFeature[tgtFeatureIndex], srcValue))
                     return false;
                 break;
             }
@@ -271,7 +271,7 @@ bool mergeFeatures(FeatureValue & result, const ProductionFeatureInfo * info, Gr
         case FKemask:
             {
                 mask_feature_t srcValue = srcMaskValues[cur.srcFeatureIndex];
-                if (!isMaskValid(extraMaskFeature[tgtFeatureIndex], srcValue)) 
+                if (!isMaskValid(extraMaskFeature[tgtFeatureIndex], srcValue))
                     return false;
                 break;
             }
@@ -517,8 +517,8 @@ public:
     {
         assertex(idx < numSymbols);
         const GrammarSymbol * cur = symbols[idx];
-        const byte * start = cur->queryStartPtr(); 
-        size32_t size = (size32_t)(cur->queryEndPtr() - start); 
+        const byte * start = cur->queryStartPtr();
+        size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
         switch (state.inputFormat)
         {
@@ -541,8 +541,8 @@ public:
     {
         assertex(idx < numSymbols);
         const GrammarSymbol * cur = symbols[idx];
-        const byte * start = cur->queryStartPtr(); 
-        size32_t size = (size32_t)(cur->queryEndPtr() - start); 
+        const byte * start = cur->queryStartPtr();
+        size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
         switch (state.inputFormat)
         {
@@ -565,8 +565,8 @@ public:
     {
         assertex(idx < numSymbols);
         const GrammarSymbol * cur = symbols[idx];
-        const byte * start = cur->queryStartPtr(); 
-        size32_t size = (size32_t)(cur->queryEndPtr() - start); 
+        const byte * start = cur->queryStartPtr();
+        size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
         switch (state.inputFormat)
         {
@@ -646,7 +646,7 @@ GrammarSymbol * LRProduction::reduce(GrammarSymbol * * symbols, const byte * red
     if (!mergeFeatures(resultFeatures, &feature, symbols))
         return NULL;
 
-    //Is the user 
+    //Is the user
     if (!validator.isValid(numSymbols, symbols, reducePtr, state))
         return NULL;
 
@@ -1034,25 +1034,25 @@ void LRTableBuilder::init(unsigned _numStates, unsigned _numTokens, unsigned _nu
 
 void LRTableBuilder::addAccept(token_id id)
 {
-    assertex(id < table.numTokens); 
+    assertex(id < table.numTokens);
     actions.append(* new LRActionItem(id, AcceptAction, 0));
 }
 
 void LRTableBuilder::addShift(token_id id, unsigned newState)
 {
-    assertex(id < table.numTokens); 
+    assertex(id < table.numTokens);
     actions.append(* new LRActionItem(id, ShiftAction, newState));
 }
 
 void LRTableBuilder::addGoto(symbol_id id, unsigned newState)
 {
-    assertex(id >= table.numTokens && id < table.numSymbols); 
+    assertex(id >= table.numTokens && id < table.numSymbols);
     curState->gotos[id - table.numTokens] = newState;
 }
 
 void LRTableBuilder::addProduction(unsigned id, unsigned ruleId, IAtom * ruleName, unsigned numToPop, int penalty, bool transformClonesFirstSymbol)
 {
-    assertex(id < table.numProductions); 
+    assertex(id < table.numProductions);
     LRProduction & cur = table.productions[id];
     cur.prodId = id;
     cur.numSymbols = numToPop;
@@ -1078,7 +1078,7 @@ void LRTableBuilder::addValidator(unsigned prodId, byte kind, unsigned low, unsi
 
 void LRTableBuilder::addReduce(token_id id, unsigned prod)
 {
-    assertex(id < table.numTokens && prod < table.numProductions); 
+    assertex(id < table.numTokens && prod < table.numProductions);
     actions.append(* new LRActionItem(id, ReduceAction, prod));
 }
 
@@ -1217,8 +1217,8 @@ void TomitaAlgorithm::deserialize(MemoryBuffer & in)
 
 
 INlpParser * TomitaAlgorithm::createParser(ICodeContext * ctx, unsigned activityId, INlpHelper * helper, IHThorParseArg * arg)
-{ 
-    return new TomitaParser(ctx, this, activityId, helper, arg); 
+{
+    return new TomitaParser(ctx, this, activityId, helper, arg);
 }
 
 INlpParseAlgorithm * createTomitaParser(MemoryBuffer & buffer, IOutputMetaData * outRecordSize)

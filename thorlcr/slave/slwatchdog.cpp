@@ -179,7 +179,7 @@ public:
             if (count--==0)
             {
                 gatherAndSend();
-                count = HEARTBEAT_INTERVAL+getRandom()%8-4;         
+                count = HEARTBEAT_INTERVAL+getRandom()%8-4;
             }
         }
     }

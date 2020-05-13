@@ -143,18 +143,18 @@ size32_t RtlTypeInfoBase::getMinSize() const
     return length;
 }
 
-size32_t RtlTypeInfoBase::size(const byte * self, const byte * selfrow) const 
+size32_t RtlTypeInfoBase::size(const byte * self, const byte * selfrow) const
 {
-    return length; 
+    return length;
 }
 
-size32_t RtlTypeInfoBase::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const 
+size32_t RtlTypeInfoBase::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
 {
     rtlFailUnexpected();
     return 0;
 }
 
-size32_t RtlTypeInfoBase::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const 
+size32_t RtlTypeInfoBase::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const
 {
     rtlFailUnexpected();
     return 0;
@@ -265,9 +265,9 @@ bool RtlFieldInfo::equivalent(const RtlFieldInfo *to) const
     return true;
 }
 
-const char * RtlTypeInfoBase::queryLocale() const 
+const char * RtlTypeInfoBase::queryLocale() const
 {
-    return NULL; 
+    return NULL;
 }
 
 bool RtlTypeInfoBase::isScalar() const
@@ -275,14 +275,14 @@ bool RtlTypeInfoBase::isScalar() const
     return true;
 }
 
-const RtlFieldInfo * const * RtlTypeInfoBase::queryFields() const 
+const RtlFieldInfo * const * RtlTypeInfoBase::queryFields() const
 {
-    return NULL; 
+    return NULL;
 }
 
-const RtlTypeInfo * RtlTypeInfoBase::queryChildType() const 
+const RtlTypeInfo * RtlTypeInfoBase::queryChildType() const
 {
-    return NULL; 
+    return NULL;
 }
 
 const IFieldFilter * RtlTypeInfoBase::queryFilter() const
@@ -1035,9 +1035,9 @@ size32_t RtlPackedIntTypeInfo::getMinSize() const
     return 1;
 }
 
-size32_t RtlPackedIntTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlPackedIntTypeInfo::size(const byte * self, const byte * selfrow) const
 {
-    return rtlGetPackedSize(self); 
+    return rtlGetPackedSize(self);
 }
 
 size32_t RtlPackedIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
@@ -1073,7 +1073,7 @@ size32_t RtlPackedIntTypeInfo::process(const byte * self, const byte * selfrow, 
         target.processUInt(rtlGetPackedUnsigned(self), field);
     else
         target.processInt(rtlGetPackedSigned(self), field);
-    return rtlGetPackedSize(self); 
+    return rtlGetPackedSize(self);
 }
 
 size32_t RtlPackedIntTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
@@ -1161,7 +1161,7 @@ size32_t RtlStringTypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return length;
@@ -1471,7 +1471,7 @@ size32_t RtlDataTypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlDataTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return length;
@@ -1691,7 +1691,7 @@ size32_t RtlVarStringTypeInfo::getMinSize() const
     return 1;
 }
 
-size32_t RtlVarStringTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlVarStringTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return length + 1;
@@ -1886,7 +1886,7 @@ size32_t RtlQStringTypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlQStringTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return rtlQStrSize(length);
@@ -2147,7 +2147,7 @@ size32_t RtlDecimalTypeInfo::getMinSize() const
     return calcSize();
 }
 
-size32_t RtlDecimalTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlDecimalTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     return calcSize();
 }
@@ -2356,7 +2356,7 @@ size32_t RtlUnicodeTypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return length * sizeof(UChar);
@@ -2661,7 +2661,7 @@ size32_t RtlVarUnicodeTypeInfo::getMinSize() const
     return sizeof(UChar);
 }
 
-size32_t RtlVarUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlVarUnicodeTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isFixedSize())
         return (length+1) * sizeof(UChar);
@@ -2873,7 +2873,7 @@ size32_t RtlUtf8TypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlUtf8TypeInfo::size(const byte * self, const byte * selfrow) const
 {
     assertex(!isFixedSize());
     return sizeof(size32_t) + rtlUtf8Size(rtlReadSize32t(self), self+sizeof(unsigned));
@@ -3199,7 +3199,7 @@ size32_t RtlRecordTypeInfo::getMinSize() const
     return ::getMinSize(fields);
 }
 
-size32_t RtlRecordTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlRecordTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     return sizeFields(fields, self, self);
 }
@@ -3343,7 +3343,7 @@ size32_t RtlSetTypeInfo::getMinSize() const
     return sizeof(bool) + sizeof(size32_t);
 }
 
-size32_t RtlSetTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlSetTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     return sizeof(bool) + sizeof(size32_t) + rtlReadSize32t(self + sizeof(bool));
 }
@@ -3542,7 +3542,7 @@ size32_t RtlRowTypeInfo::getMinSize() const
     return child->getMinSize();
 }
 
-size32_t RtlRowTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlRowTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isLinkCounted())
         return sizeof(void *);
@@ -3628,7 +3628,7 @@ size32_t RtlDatasetTypeInfo::getMinSize() const
     return sizeof(size32_t);
 }
 
-size32_t RtlDatasetTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlDatasetTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (isLinkCounted())
         return sizeof(size32_t) + sizeof(void * *);
@@ -4102,7 +4102,7 @@ size32_t RtlIfBlockTypeInfo::getMinSize() const
     return 0;
 }
 
-size32_t RtlIfBlockTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlIfBlockTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (getCondition(selfrow))
         return sizeFields(fields, self, selfrow);
@@ -4323,7 +4323,7 @@ size32_t RtlBitfieldTypeInfo::getMinSize() const
     return 0;
 }
 
-size32_t RtlBitfieldTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlBitfieldTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     if (fieldType & RFTMislastbitfield)
         return getBitfieldIntSize();
@@ -4410,7 +4410,7 @@ size32_t RtlUnimplementedTypeInfo::getMinSize() const
     rtlFailUnexpected();
 }
 
-size32_t RtlUnimplementedTypeInfo::size(const byte * self, const byte * selfrow) const 
+size32_t RtlUnimplementedTypeInfo::size(const byte * self, const byte * selfrow) const
 {
     rtlFailUnexpected();
 }
@@ -4686,7 +4686,7 @@ size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldIn
 //-------------------------------------------------------------------------------------------------------------------
 
 
-/* 
+/*
 
 Stack:
 * Change hqlhtcpp so that the correct derived classes are generated.
@@ -4742,9 +4742,9 @@ ii) How is it stored internally in an IHqlExpression * ?
 
 * Could generate from the expanded record instead of walking the record structure directly
   + That already knows how the bitfields are allocated, and could easily know which is the last field.
-  - A field is no longer sufficient as key fr searching for the information.  
+  - A field is no longer sufficient as key fr searching for the information.
   - Best would be a createFieldTypeKey(select-expr) which returns field when approriate, or modified if a bitfield.  Then the pain is localised.
-  
+
 * Output a bitfield container item into the type information
   + Solves the size problem
   - Individual bitfields still need to know their offsets, so doesn't solve the full problem.

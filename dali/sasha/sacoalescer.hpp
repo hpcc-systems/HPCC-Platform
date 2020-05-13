@@ -2,7 +2,7 @@
 #define SACOALESCER_HPP
 
 interface ISashaServer;
-extern ISashaServer *createSashaSDSCoalescingServer(); 
+extern ISashaServer *createSashaSDSCoalescingServer();
 extern void suspendCoalescingServer();
 extern void resumeCoalescingServer();
 

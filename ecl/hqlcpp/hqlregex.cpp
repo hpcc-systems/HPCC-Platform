@@ -72,7 +72,7 @@ static IValue * getCastConstant(IValue * value, type_t tc)
 }
 
 
-static HqlRegexExpr * createRegexExpr(const ParseInformation & options, IHqlExpression * expr, bool caseSensitive) 
+static HqlRegexExpr * createRegexExpr(const ParseInformation & options, IHqlExpression * expr, bool caseSensitive)
 {
     switch (expr->getOperator())
     {
@@ -104,12 +104,12 @@ static HqlRegexExpr * createRegexExpr(const ParseInformation & options, node_ope
 
 //---------------------------------------------------------------------------
 
-void HqlRegexHashTable::onAdd(void *et) 
-{  
+void HqlRegexHashTable::onAdd(void *et)
+{
     ((HqlRegexExpr*)et)->Link();
 }
 
-void HqlRegexHashTable::onRemove(void *et) 
+void HqlRegexHashTable::onRemove(void *et)
 {
     ((HqlRegexExpr*)et)->Release();
 }
@@ -192,8 +192,8 @@ regexid_t RegexIdAllocator::queryID(IHqlExpression * expr, IAtom * name)
 
 
 int compareUnsigned(unsigned const * left, unsigned const * right)
-{ 
-    return (*left < *right) ? -1 : (*left > *right) ? +1 : 0; 
+{
+    return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
 
 
@@ -239,8 +239,8 @@ class SymbolArrayIterator
 {
 public:
     SymbolArrayIterator(SymbolArray & _table) : table(_table) { cur = 0; }
-    inline bool first() 
-    { 
+    inline bool first()
+    {
         cur = 0; return table.symbols.isItem(cur);
     }
     inline bool isValid()
@@ -263,9 +263,9 @@ protected:
 //---------------------------------------------------------------------------
 
 HqlNamedRegex::HqlNamedRegex(IHqlExpression * _expr, IAtom * _name, IHqlExpression * _searchExpr, node_operator _kind, bool _caseSensitive, bool _isMatched)
-{ 
+{
     kind = _kind;
-    expr.set(_expr); 
+    expr.set(_expr);
     searchExpr.set(_searchExpr);
     name = _name;
     numUses = 1;
@@ -280,8 +280,8 @@ HqlNamedRegex::HqlNamedRegex(IHqlExpression * _expr, IAtom * _name, IHqlExpressi
     caseSensitive = _caseSensitive;
 }
 
-HqlNamedRegex::~HqlNamedRegex() 
-{ 
+HqlNamedRegex::~HqlNamedRegex()
+{
     cleanup();
 }
 
@@ -443,18 +443,18 @@ bool HqlNamedRegex::queryExpandInline()
     return false;
 }
 
-RegexPattern * HqlNamedRegex::queryRootPattern()                        
-{ 
-    //return a reference to the begin 
+RegexPattern * HqlNamedRegex::queryRootPattern()
+{
+    //return a reference to the begin
     HqlRegexExpr * first = def->queryChild(0);
     if ((first->getOperator() == no_pat_beginpattern) && (first->following.ordinality() == 1))
         first = &first->following.item(0);
     return first->created;
 }
 
-void HqlNamedRegex::setRegexOwn(HqlRegexExpr * _def)    
-{ 
-    def.setown(_def); 
+void HqlNamedRegex::setRegexOwn(HqlRegexExpr * _def)
+{
+    def.setown(_def);
     IHqlExpression * defExpr = def->expr;
     if (def->getOperator() == no_define)
         defineName.set(defExpr->queryChild(1)->queryBody());
@@ -494,7 +494,7 @@ static HqlRegexExpr * expandStringAsChars(IHqlExpression * expr, const ParseInfo
             nextValue = ((UChar *)value)[i];
         else
             nextValue = ((unsigned char *)value)[i];
-        OwnedHqlExpr next = getSizetConstant(nextValue);    
+        OwnedHqlExpr next = getSizetConstant(nextValue);
         expanded->addOperand(createRegexExpr(options, no_pat_singlechar, next, caseSensitive));
     }
     return expanded;
@@ -503,22 +503,22 @@ static HqlRegexExpr * expandStringAsChars(IHqlExpression * expr, const ParseInfo
 //---------------------------------------------------------------------------
 
 HqlRegexExpr::HqlRegexExpr(const ParseInformation & _options, IHqlExpression * _expr, bool _caseSensitive) : options(_options)
-{ 
+{
     expr.set(_expr);
-    op = expr->getOperator(); 
+    op = expr->getOperator();
     caseSensitive = _caseSensitive;
     init();
 }
 
 HqlRegexExpr::HqlRegexExpr(const ParseInformation & _options, node_operator _op, IHqlExpression * _expr, bool _caseSensitive) : options(_options)
-{ 
+{
     expr.set(_expr);
     op = _op;
     caseSensitive = _caseSensitive;
     init();
 }
 
-HqlRegexExpr::~HqlRegexExpr() 
+HqlRegexExpr::~HqlRegexExpr()
 {
     ::Release(dfa);
 }
@@ -810,17 +810,17 @@ static bool canConsume(const ParseInformation & options, unsigned nextChar, unsi
         //Should only occur if unicode.
         switch (matcherChar)
         {
-        case RCCalnum: 
+        case RCCalnum:
             return (nextChar == RCCalpha) || (nextChar == RCClower) || (nextChar == RCCupper) || (nextChar == RCCdigit);
         case RCCalpha:
             return (nextChar == RCClower) || (nextChar == RCCupper);
-        case RCCspace: 
+        case RCCspace:
             return (nextChar == RCCblank);
-        case RCCprint: 
+        case RCCprint:
             return (nextChar == RCCalnum) || (nextChar == RCCalpha) || (nextChar == RCClower) || (nextChar == RCCupper) || (nextChar == RCCdigit) || (nextChar == RCCpunct) || (nextChar == RCCxdigit) || (nextChar == RCCgraph);
-        case RCCgraph: 
+        case RCCgraph:
             return (nextChar == RCCalnum) || (nextChar == RCCalpha) || (nextChar == RCClower) || (nextChar == RCCupper) || (nextChar == RCCdigit) || (nextChar == RCCpunct) || (nextChar == RCCxdigit);
-        case RCCxdigit: 
+        case RCCxdigit:
             return (nextChar == RCCdigit);
         case RCCany:
             return true;
@@ -1187,7 +1187,7 @@ HqlRegexExpr * HqlRegexExpr::expandAsDFA()
             orRegexExpr->addOperand(createRegexExpr(options, no_pat_utf8single, NULL, caseSensitive));
             Owned<HqlRegexExpr> followRegexExpr = createRegexExpr(options, no_pat_follow, NULL, caseSensitive);
             followRegexExpr->addOperand(createRegexExpr(options, no_pat_utf8lead, NULL, caseSensitive));
-            
+
             OwnedHqlExpr trailExpr = createValue(no_pat_utf8follow, makePatternType());
             Owned<HqlRegexExpr> trailRegexExpr = createRegexExpr(options, no_pat_utf8follow, NULL, caseSensitive);
 
@@ -1260,7 +1260,7 @@ HqlRegexExpr * HqlRegexExpr::expandNamedSymbols()
                 node_operator op = args.item(idx).getOperator();
                 switch (op)
                 {
-                    //Remove begin_token/end_token around the following, otherwise 
+                    //Remove begin_token/end_token around the following, otherwise
                     //we might get too many separators which may be non-optional
                     case no_pat_first:
                     case no_pat_last:
@@ -1855,7 +1855,7 @@ HqlRegexExpr * HqlRegexExpr::removeTrivialInstances()
             if (!queryNamed()->isMatched && def->getOperator() == no_pat_instance)
             {
                 queryNamed()->removeUse();
-                return 
+                return
 #if 0
             //Do this later - recursion means we can't do it yet
             //Optimization whilst building the tree.  If a named symbol is just a definition of another named symbol
@@ -1988,7 +1988,7 @@ void HqlComplexRegexExpr::analyseNullLeadTrail()
         break;
     case no_pat_dfa:
         limit = named->queryLimit();
-        limit.containsAssertion = true; // this means that it will process optional values 
+        limit.containsAssertion = true; // this means that it will process optional values
         leading.append(*LINK(this));
         trailing.append(*LINK(this));
         break;
@@ -2131,13 +2131,13 @@ void HqlComplexRegexExpr::cleanup()
     subPattern.clear();
 }
 
-void HqlComplexRegexExpr::gatherLeading(HqlRegexUniqueArray & target)       
-{ 
+void HqlComplexRegexExpr::gatherLeading(HqlRegexUniqueArray & target)
+{
     inherit(target, leading);
 }
 
-void HqlComplexRegexExpr::gatherTrailing(HqlRegexUniqueArray & target)      
-{ 
+void HqlComplexRegexExpr::gatherTrailing(HqlRegexUniqueArray & target)
+{
     inherit(target, trailing);
 }
 
@@ -2145,15 +2145,15 @@ void HqlComplexRegexExpr::gatherTrailing(HqlRegexUniqueArray & target)
 //---------------------------------------------------------------------------
 // DFA helper classes.
 
-inline int compareHqlRegexExpr(HqlRegexExpr * left, HqlRegexExpr * right) 
-{ 
+inline int compareHqlRegexExpr(HqlRegexExpr * left, HqlRegexExpr * right)
+{
     unique_id_t idl = left->queryUid();
     unique_id_t idr = right->queryUid();
-    return (idl < idr) ? -1 : (idl > idr) ? +1 : 0; 
+    return (idl < idr) ? -1 : (idl > idr) ? +1 : 0;
 }
 
 static int compareHqlRegexExpr(CInterface * const * left, CInterface * const * right)
-{ 
+{
     return compareHqlRegexExpr((HqlRegexExpr *)*left, (HqlRegexExpr *)*right);
 }
 
@@ -2212,13 +2212,13 @@ bool HqlDfaState::isAccepting()
 }
 
 
-static inline int compareState(HqlDfaState * left, HqlDfaState * right) 
-{ 
+static inline int compareState(HqlDfaState * left, HqlDfaState * right)
+{
     return left->position.compare(right->position);
 }
 
 static int compareState(CInterface * const * left, CInterface * const * right)
-{ 
+{
     return compareState((HqlDfaState *)*left, (HqlDfaState *)*right);
 }
 
@@ -2286,7 +2286,7 @@ void HqlRegexExpr::generateDFAs()
                     dfa->states.append(*LINK(nextState));
                 else
                     nextState->Release();
-    
+
                 HqlDfaState * matchedState = &dfa->orderedStates.item(matchIndex);
 
                 //Finally associate a transition for this symbol...
@@ -2329,7 +2329,7 @@ Merge(consumeSet, first, positionSet)
             newOnly = consumeSet - diff;
             if (newOnly = [])
                 return;
-    
+
             consumeSet = newOnly;
         }
     }

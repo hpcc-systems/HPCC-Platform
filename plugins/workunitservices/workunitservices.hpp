@@ -46,7 +46,7 @@ WORKUNITSERVICES_API bool WORKUNITSERVICES_CALL wsWorkunitExists(ICodeContext *c
 
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitList( ICodeContext *ctx,
                                                                 size32_t & __lenResult,
-                                                                void * & __result, 
+                                                                void * & __result,
                                                                 const char *lowwuid,
                                                                 const char *highwuid,
                                                                 const char *username,

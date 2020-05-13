@@ -113,7 +113,7 @@ int CEclAgentExecutionServer::run()
         queue.setown(createJobQueue(queueNames.str()));
         queue->connect(false);
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server queue create/connect: ");
         e->Release();
@@ -130,7 +130,7 @@ int CEclAgentExecutionServer::run()
     serverStatus.commitProperties();
     writeSentinelFile(sentinelFile);
 
-    try 
+    try
     {
         while (true)
         {
@@ -171,18 +171,18 @@ int CEclAgentExecutionServer::run()
         }
     }
 
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server Exception: ");
         e->Release();
         PROGLOG("Exiting");
     }
 
-    try 
+    try
     {
         queue->disconnect();
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Server queue disconnect: ");
         e->Release();
@@ -324,12 +324,12 @@ bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 #ifdef _WIN32
     bool success = invoke_program(cmdLine.str(), runcode, false, NULL, NULL);
 #else
-    //specify "wait" to eliminate linux zombies. Waits for the startup script to 
+    //specify "wait" to eliminate linux zombies. Waits for the startup script to
     //complete (not eclagent), because script starts eclagent in the background
     bool success = invoke_program(cmdLine.str(), runcode, true, NULL, NULL);
 #endif
     if (success)
-    { 
+    {
         if (runcode != 0)
             PROGLOG("Process failed during execution: %s error(%" I64F "i)", cmdLine.str(), (unsigned __int64) runcode);
         else
@@ -360,8 +360,8 @@ eclagent:
     type: hthor
 )!!";
 
-int main(int argc, const char *argv[]) 
-{ 
+int main(int argc, const char *argv[])
+{
 #ifndef _CONTAINERIZED
     for (unsigned i=0;i<(unsigned)argc;i++) {
         if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
@@ -380,7 +380,7 @@ int main(int argc, const char *argv[])
     {
         config.setown(loadConfiguration(defaultYaml, argv, "eclagent", "AGENTEXEC", "agentexec.xml", nullptr));
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         EXCLOG(e, "Error processing config file\n");
         return 1;
@@ -391,7 +391,7 @@ int main(int argc, const char *argv[])
     {
         CEclAgentExecutionServer server(config);
         server.run();
-    } 
+    }
     catch (...)
     {
         printf("Unexpected error running agentexec server\r\n");

@@ -142,12 +142,12 @@ bool canCreateTemporary(IHqlExpression * expr)
 
   */
 
-CseSpotterInfo::CseSpotterInfo(IHqlExpression * expr) : NewTransformInfo(expr) 
-{ 
-    numRefs = 0; 
-    numAssociatedRefs = 0; 
-    alreadyAliased = false; 
-    canAlias = false; 
+CseSpotterInfo::CseSpotterInfo(IHqlExpression * expr) : NewTransformInfo(expr)
+{
+    numRefs = 0;
+    numAssociatedRefs = 0;
+    alreadyAliased = false;
+    canAlias = false;
     dontTransform = false;
     dontTransformSelector = false;
     treatAsAliased = false;
@@ -157,8 +157,8 @@ CseSpotterInfo::CseSpotterInfo(IHqlExpression * expr) : NewTransformInfo(expr)
 
 //worth aliasing if referenced more than once, and used more than once in the expressions that are going to be evaluated now
 bool CseSpotterInfo::worthAliasingOnOwn()
-{ 
-    return numRefs > 1 && (numRefs != numAssociatedRefs); 
+{
+    return numRefs > 1 && (numRefs != numAssociatedRefs);
 }
 
 bool CseSpotterInfo::worthAliasing()
@@ -238,7 +238,7 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
 
     if (isAssociated)
         extra->numAssociatedRefs++;
-    
+
     node_operator op = expr->getOperator();
 #ifdef OPTIMIZE_INVERSE
     if (getInverseOp(op) != no_none)
@@ -249,7 +249,7 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
         inverseExtra->inverse = extra;
     }
 #endif
-    
+
     if (op == no_alias)
     {
         queryBodyExtra(expr->queryChild(0))->alreadyAliased = true;
@@ -475,7 +475,7 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
 
     if (invariantSelector && exprReferencesDataset(expr, invariantSelector))
         return false;
-    
+
     switch (expr->getOperator())
     {
     case no_eq:
@@ -565,7 +565,7 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
             break;
         }
         //Following are all source datasets - no point in commoning them up
-        //although probably exceptions e.g., table(,pipe) 
+        //although probably exceptions e.g., table(,pipe)
     case no_none:
     case no_null:
     case no_anon:
@@ -1263,8 +1263,8 @@ static bool canHoistInvariant(IHqlExpression * expr)
 
 static HqlTransformerInfo tableInvariantTransformerInfo("TableInvariantTransformer");
 TableInvariantTransformer::TableInvariantTransformer() : NewHqlTransformer(tableInvariantTransformerInfo)
-{ 
-    canAlias = true; 
+{
+    canAlias = true;
 }
 
 bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
@@ -1420,7 +1420,7 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
         return;
     }
 
-    //We are trying to ensure that any expressions that don't access fields that are dependent on the activeDatasets/context are only 
+    //We are trying to ensure that any expressions that don't access fields that are dependent on the activeDatasets/context are only
     //evaluated once => check for active dataset rather than any dataset
     bool candidate = false;
     if (!isContextDependent(expr) && !expr->isAttribute())
@@ -1434,7 +1434,7 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
             if (!containsActiveDataset(expr))
             {
                 //MORE: We should be able to hoist constant datasets (e.g., temptables), but it causes problems
-                //e.g., stops items it contains from being aliased.  So 
+                //e.g., stops items it contains from being aliased.  So
                 if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow())
                 {
                     switch (op)
@@ -1567,8 +1567,8 @@ IHqlExpression * spotTableInvariantChildren(IHqlExpression * expr)
 
 static HqlTransformerInfo globalAliasTransformerInfo("GlobalAliasTransformer");
 GlobalAliasTransformer::GlobalAliasTransformer() : NewHqlTransformer(globalAliasTransformerInfo)
-{ 
-    insideGlobal = false; 
+{
+    insideGlobal = false;
 }
 
 void GlobalAliasTransformer::analyseExpr(IHqlExpression * expr)
@@ -1603,7 +1603,7 @@ void GlobalAliasTransformer::analyseExpr(IHqlExpression * expr)
         //We could rerun this again if that was a major issue.
         if (insideGlobal)
         {
-            if (extra->numUses > 2)  
+            if (extra->numUses > 2)
                 return;     // may need to visit children more than once so that alias is linked twice.
         }
         else

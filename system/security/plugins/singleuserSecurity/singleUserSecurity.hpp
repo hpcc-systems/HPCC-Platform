@@ -26,9 +26,9 @@
     #define SINGLEUSERSECURITY_API DECL_EXPORT
 #endif //SINGLEUSERSECURITY_EXPORTS
 
-#endif 
+#endif
 
-extern "C" 
+extern "C"
 {
     SINGLEUSERSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &bndCfg);
 }

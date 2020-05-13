@@ -285,7 +285,7 @@ protected:
     LRActiveState * getPosition(position_t pos);
     void setPositionOwn(position_t pos, LRActiveState * value);
     void reduce(StackElement & element, GrammarSymbol * next);
-    
+
 protected:
     LRActiveState *     activeInput;
     LRActiveState *     activeOutput;

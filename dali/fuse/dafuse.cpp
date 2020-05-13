@@ -227,7 +227,7 @@ public:
 
 
     // required
-    virtual int fuse_getattr(const char *path, struct stat *stbuf) = 0;  
+    virtual int fuse_getattr(const char *path, struct stat *stbuf) = 0;
     virtual int fuse_readdir (const char *path, void *buf, fuse_fill_dir_t filler, off_t pos, struct fuse_file_info *info) = 0;
     virtual int fuse_open (const char *path, struct fuse_file_info *info) = 0;
 
@@ -361,7 +361,7 @@ public:
         donefiles = false;
         err = -ENOENT;
     }
-        
+
     int init(const char *caller,const char *_path, bool allscopes,bool allfiles)
     {
         if (_path==NULL)
@@ -379,7 +379,7 @@ public:
         catch (IException *e) {
             EXCLOG(e,caller);
             err = -EFAULT;
-        }   
+        }
         return err;
     }
 
@@ -391,10 +391,10 @@ public:
         }
         idx -= scopes.ordinality();
         isscope = false;
-        if (idx<supers.ordinality()) 
+        if (idx<supers.ordinality())
             return supers.item(idx);
         idx -= supers.ordinality();
-        if (idx<files.ordinality()) 
+        if (idx<files.ordinality())
             return files.item(idx);
         return NULL;
     }
@@ -542,7 +542,7 @@ class CFuseDaliDFS: public CFuseBase
         catch (IException *e) {
             EXCLOG(e,"fuse_getattr");
             res = -EFAULT;
-        }   
+        }
         return res;
     }
 
@@ -573,7 +573,7 @@ class CFuseDaliDFS: public CFuseBase
             int err = dci->init("fuse_readdir",lfnstr,false,true); // scopes already done
             if (err) {
                 dircache.zap(*dci);
-                return err; 
+                return err;
             }
         }
 
@@ -595,7 +595,7 @@ class CFuseDaliDFS: public CFuseBase
             PROGLOG("filler('%s',%d,%s)",fn,(unsigned)pos,isscope?"scope":"file");
             if (!filler(buf,fn,&s,++pos))
                 break;
-            
+
         }
         PROGLOG("fuse_readdir(%s,) exit",path);
 
@@ -613,7 +613,7 @@ class CFuseDaliDFS: public CFuseBase
             Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user,false,false,false,nullptr,defaultPrivilegedUser);
             if (!file)
                 return -ENOENT;
-            if((info->flags & 3) != O_RDONLY ) 
+            if((info->flags & 3) != O_RDONLY )
                 return -EACCES;
             ForEachItemIn(i,openfiles) {
                 if (openfiles.item(i)==NULL) {
@@ -628,7 +628,7 @@ class CFuseDaliDFS: public CFuseBase
         catch (IException *e) {
             EXCLOG(e,"fuse_open");
             return -EFAULT;
-        }   
+        }
         return 0;
     }
 
@@ -641,7 +641,7 @@ class CFuseDaliDFS: public CFuseBase
         try {
             unsigned h = (unsigned)info->fh;
             Owned<IDistributedFile> file;
-            if ((h>=FH_SALT)&&(h<FH_SALT+openfiles.ordinality())) 
+            if ((h>=FH_SALT)&&(h<FH_SALT+openfiles.ordinality()))
                 file.set((IDistributedFile *)openfiles.item(h-FH_SALT));
             else { // don't think this should happen but...
                 CDfsLogicalFileName lfn;
@@ -721,7 +721,7 @@ class CFuseDaliDFS: public CFuseBase
         catch (IException *e) {
             EXCLOG(e,"fuse_open");
             return -EFAULT;
-        }   
+        }
         return ret;
     }
 
@@ -731,13 +731,13 @@ class CFuseDaliDFS: public CFuseBase
         try {
             unsigned h = (unsigned)info->fh;
             Owned<IDistributedFile> file;
-            if ((h>=FH_SALT)&&(h<FH_SALT+openfiles.ordinality())) 
+            if ((h>=FH_SALT)&&(h<FH_SALT+openfiles.ordinality()))
                 openfiles.replace(NULL,h-FH_SALT);
         }
         catch (IException *e) {
             EXCLOG(e,"fuse_release");
             return -EFAULT;
-        }   
+        }
         return 0;
     }
 
@@ -747,13 +747,13 @@ class CFuseDaliDFS: public CFuseBase
         try {
             setDaliServixSocketCaching(true);
             Owned<IGroup> serverGroup = createIGroup(daliServer,DALI_SERVER_PORT);
-            initClientProcess(serverGroup, DCR_Dfu, 0, NULL, NULL, MP_WAIT_FOREVER);                // so that 
+            initClientProcess(serverGroup, DCR_Dfu, 0, NULL, NULL, MP_WAIT_FOREVER);                // so that
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
         }
         catch (IException *e) {
             EXCLOG(e,"fuse_init");
-        }   
+        }
         PROGLOG("fuse_init done");
         return this;
 
@@ -768,7 +768,7 @@ class CFuseDaliDFS: public CFuseBase
         }
         catch (IException *e) {
             EXCLOG(e,"fuse_destroy");
-        }   
+        }
         PROGLOG("fuse_destroy done");
     }
 
@@ -1029,7 +1029,7 @@ int main(int argc, char *_argv[])
     ep.setLocalHost(0);
     char **argv = (char **)calloc(MAXPARAM,sizeof(char *));
     for (int i1=0;i1<argc;i1++)
-        argv[i1] = strdup(_argv[i1]);       
+        argv[i1] = strdup(_argv[i1]);
 
     Owned<IProperties> prop = createProperties("dafuse.ini",true);
     if (!parseParams(argc,argv,prop))
@@ -1070,10 +1070,10 @@ int main(int argc, char *_argv[])
     catch (IException *e) {
         EXCLOG(e,"dafuse");
         res = 2;
-    }   
+    }
 /*  only needed for leak checking
     for (unsigned i2=0;i2<MAXPARAM;i2++)
-        free(argv[i2]);     
+        free(argv[i2]);
     free(argv);
     releaseAtoms();
 */

@@ -21,7 +21,7 @@
 #include "thortparse.ipp"
 
 enum { ValueUnknown, ValueRecursive, ValueKnown };
- 
+
 class TomFeature;
 class TomRule;
 typedef CIArrayOf<TomFeature> TomFeatureArray;
@@ -124,7 +124,7 @@ protected:
     HqlExprAttr pattern;
     TomGuardArray guards;
 };
-    
+
 
 class TomTokenSet
 {
@@ -278,7 +278,7 @@ public:
 
 public:
     unique_id_t seq;
-    
+
 protected:
     unsigned id;
     TomRule * rule;
@@ -321,7 +321,7 @@ public:
     void addUse()                                           { numUses++; }
     void setProductionIds(HqlExprArray & productionMappings, unsigned & id);
     void setTest(IHqlExpression * value)                    { test.set(value); }
-    
+
     inline unsigned getId()                                 { return id; }
     inline void setId(unsigned _id)                         { id = _id; }
 
@@ -455,7 +455,7 @@ protected:
     virtual TomRule * queryDefine(IHqlExpression * defineName);
     TomFeature * queryFeature(IHqlExpression * expr);
     TomRule * queryRule(IHqlExpression * expr, IAtom * name);
-    
+
 protected:
     TomitaAlgorithm parser;
     const HqlCppOptions & translatorOptions;

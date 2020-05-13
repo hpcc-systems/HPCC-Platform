@@ -141,7 +141,7 @@ class THORHELPER_API CMatchedResultInfo : public CInterface
     friend class CMatchedResults;
 public:
     CMatchedResultInfo();
-    
+
     virtual void deserialize(MemoryBuffer & buffer);
     virtual void serialize(MemoryBuffer & buffer) const;
 
@@ -164,7 +164,7 @@ public:
     CMatchedResults(CMatchedResultInfo * _def);
     ~CMatchedResults();
     IMPLEMENT_IINTERFACE
-    
+
     void kill();
 
     //IMatchedResults
@@ -214,9 +214,9 @@ public:
     virtual void serialize(MemoryBuffer & out);
             void deserialize(MemoryBuffer & in);
 
-    virtual void setChoose(bool _chooseMin, bool _chooseMax, bool _chooseBest, bool _singleChoicePerLine); 
-    virtual void setJoin(bool _notMatched, bool _notMatchedOnly); 
-    virtual void setLimit(size32_t _maxLength); 
+    virtual void setChoose(bool _chooseMin, bool _chooseMax, bool _chooseBest, bool _singleChoicePerLine);
+    virtual void setJoin(bool _notMatched, bool _notMatchedOnly);
+    virtual void setLimit(size32_t _maxLength);
     virtual void setOptions(MatchAction _matchAction, ScanAction _scanAction, NlpInputFormat _inputFormat, unsigned _keepLimit, unsigned _atMostLimit);
 
 public:

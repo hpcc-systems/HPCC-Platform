@@ -75,7 +75,7 @@ public:
     {
         free(r);
     }
-    
+
     void encrypt( void * buffer )
     {
         unsigned * w = (unsigned *)buffer;
@@ -90,7 +90,7 @@ public:
             i++;
         }
     }
-    
+
     void decrypt( void * buffer )
     {
         unsigned * w = (unsigned*)buffer;
@@ -104,7 +104,7 @@ public:
             w[j] = ( wj & mask ) | ( wi & ~mask );
         }
     }
-    
+
 };
 
 

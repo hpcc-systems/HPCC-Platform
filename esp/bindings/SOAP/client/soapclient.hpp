@@ -40,7 +40,7 @@ private:
     unsigned m_connectTimeoutMs = 0;
     unsigned m_readTimeoutSecs = 0;
 
-    int postRequest(const char* contenttype, const char* soapaction, IRpcMessage& rpccall, 
+    int postRequest(const char* contenttype, const char* soapaction, IRpcMessage& rpccall,
                          StringBuffer& responsebuf, CMimeMultiPart* resp_multipart, IRpcMessageArray *headers=NULL);
 
 public:

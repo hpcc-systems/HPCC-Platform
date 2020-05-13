@@ -43,7 +43,7 @@ private:
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
 
-    
+
     void doReportGraph(IStatisticGatherer & stats, CGraphBase *graph)
     {
         ((CMasterGraph *)graph)->getStats(stats);
@@ -279,7 +279,7 @@ public:
                 graph->queryJob().queryWuid(),
                 graphname,
                 (unsigned)graph->queryGraphId(), queryServerStatus().queryProperties()->queryProp("@nodeGroup"), queryServerStatus().queryProperties()->queryProp("@queue"));
-    }   
+    }
     void endGraph(CGraphBase *graph, bool success)
     {
         synchronized block(mutex);

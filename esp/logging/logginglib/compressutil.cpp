@@ -29,7 +29,7 @@ size32_t LZWCompress(const void* src, size32_t srcSz, void* dest, size32_t destS
         if(compressor->write(src, srcSz)==srcSz)
         {
             compressor->close();
-            memcpy(dest, &srcSz, sizeof(size32_t)); 
+            memcpy(dest, &srcSz, sizeof(size32_t));
             return compressor->buflen() + sizeof(size32_t);
         }
     }
@@ -91,7 +91,7 @@ size32_t LZWExpand(const void* src, size32_t srcSz, StringBuffer& dest)
     memcpy(&sz, src, sizeof(size32_t));
     size32_t bufSz = (sz == 0) ? (srcSz-sizeof(size32_t)) : sz;
     void* buf = dest.reserve(bufSz);
-    return LZWExpand(src, srcSz, buf, bufSz); 
+    return LZWExpand(src, srcSz, buf, bufSz);
 }
 
 size32_t LZWExpand(const void* src, size32_t srcSz, MemoryBuffer& dest)
@@ -100,7 +100,7 @@ size32_t LZWExpand(const void* src, size32_t srcSz, MemoryBuffer& dest)
     memcpy(&sz, src, sizeof(size32_t));
     size32_t bufSz = (sz == 0) ? (srcSz-sizeof(size32_t)) : sz;
     void* buf = dest.reserve(bufSz);
-    return LZWExpand(src, srcSz, buf, bufSz); 
+    return LZWExpand(src, srcSz, buf, bufSz);
 }
 
 size32_t LZWExpand(MemoryBuffer& src, MemoryBuffer& dest)
@@ -117,5 +117,5 @@ size32_t LZWExpend(const void* src, size32_t srcSz, CLargeMemoryAllocator& mem)
     memcpy(&sz, src, sizeof(size32_t));
     size32_t bufSz = (sz == 0) ? (srcSz-sizeof(size32_t)) : sz;
     byte* buf = mem.alloc(bufSz);
-    return LZWExpand(src, srcSz, buf, bufSz); 
+    return LZWExpand(src, srcSz, buf, bufSz);
 }

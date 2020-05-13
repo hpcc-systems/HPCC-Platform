@@ -1010,14 +1010,14 @@ MultiLevelDatasetCursor::MultiLevelDatasetCursor(HqlCppTranslator & _translator,
 }
 
 
-void MultiLevelDatasetCursor::buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt)           
-{ 
-    throwUnexpected(); 
+void MultiLevelDatasetCursor::buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
+    throwUnexpected();
 }
 
-void MultiLevelDatasetCursor::buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt)          
-{ 
-    throwUnexpected(); 
+void MultiLevelDatasetCursor::buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
+    throwUnexpected();
 }
 
 BoundRow * MultiLevelDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
@@ -1068,7 +1068,7 @@ BoundRow * MultiLevelDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpressio
         subctx.addFilter(test);
     }
 
-    //Now we have the correct element, assign it to the pointer.  
+    //Now we have the correct element, assign it to the pointer.
     //Need to be careful that the row we are pointing at is preserved, and doesn't go out of scope.  (Don't need to worry about  t can't be reused).
     BoundRow * curIter = translator.resolveSelectorDataset(subctx, selector);
     OwnedHqlExpr source = getPointer(curIter->queryBound());
@@ -1127,7 +1127,7 @@ BoundRow * MultiLevelDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, IHqlExpre
 
 //---------------------------------------------------------------------------
 
-BaseSetCursor::BaseSetCursor(HqlCppTranslator & _translator, IHqlExpression * _expr) : translator(_translator) 
+BaseSetCursor::BaseSetCursor(HqlCppTranslator & _translator, IHqlExpression * _expr) : translator(_translator)
 {
     expr.set(_expr);
 }
@@ -1201,7 +1201,7 @@ void ListSetCursor::gatherSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHq
         unsigned which = (unsigned)folded->queryValue()->getIntValue()-1;
         if (which < expr->numChildren())
             translator.buildExpr(ctx, expr->queryChild(which), value);
-        else 
+        else
         {
             OwnedHqlExpr null = getOutOfRangeValue(indexExpr);
             translator.buildExpr(ctx, null, value);
@@ -1269,8 +1269,8 @@ void ListSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & ta
 
 
 IHqlExpression * ListSetCursor::getCountExpr()
-{ 
-    return getSizetConstant(expr->numChildren()); 
+{
+    return getSizetConstant(expr->numChildren());
 }
 
 
@@ -1482,7 +1482,7 @@ void CreateSetCursor::buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt)
 
 IHqlExpression * CreateSetCursor::createDatasetSelect(IHqlExpression * indexExpr)
 {
-    if (value->getOperator() == no_select && 
+    if (value->getOperator() == no_select &&
         (value->queryChild(0)->queryNormalizedSelector() == ds->queryNormalizedSelector()))
     {
         HqlExprArray args;
@@ -2229,7 +2229,7 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
                 for (unsigned i=0; i < max; i++)
                 {
                     //Need a subcontext otherwise sizeof(target-row) gets cached.
-                    BuildCtx subctx(ctx);       
+                    BuildCtx subctx(ctx);
                     Owned<IReferenceSelector> selector = builder->buildCreateElement(subctx);
                     selector->set(subctx, expr->queryChild(i));
                     builder->finishElement(subctx);

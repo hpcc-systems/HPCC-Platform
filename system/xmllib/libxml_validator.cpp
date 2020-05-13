@@ -37,7 +37,7 @@
 
 class CLibXmlValidator : public CInterface, public IXmlValidator
 {
-public:    
+public:
     StringAttr      xmlFile;
     StringBuffer    xml;
     StringAttr      xsdFile;
@@ -53,7 +53,7 @@ public:
 
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
- 
+
     virtual int setSchemaSource(const char *pszFileName);
     virtual int setSchemaSource(const char *pszBuffer, unsigned int nSize);
 
@@ -91,7 +91,7 @@ int CLibXmlValidator::setXmlSource(const char* filename)
     if (!filename)
         return 0;
 
-    try 
+    try
     {
         xml.loadFile(filename);
     }
@@ -106,11 +106,11 @@ int CLibXmlValidator::setXmlSource(const char* filename)
     return 1;
 }
 
-int CLibXmlValidator::setXmlSource(const char *s, unsigned int len) 
-{ 
+int CLibXmlValidator::setXmlSource(const char *s, unsigned int len)
+{
     xmlFile.set("_xml-buffer_");
     xml.clear().append(len, s);
-    return 0; 
+    return 0;
 }
 
 int CLibXmlValidator::setSchemaSource(const char* filename)
@@ -126,18 +126,18 @@ int CLibXmlValidator::setSchemaSource(const char* filename)
     {
         DBGLOG(e);
         e->Release();
-        return 0; 
+        return 0;
     }
 
     xsdFile.set(filename);
     return 1;
 }
 
-int CLibXmlValidator::setSchemaSource(const char *s, unsigned int len) 
+int CLibXmlValidator::setSchemaSource(const char *s, unsigned int len)
 {
     xsdFile.set("_xsd-buffer_");
-    xsd.clear().append(len, s); 
-    return 0; 
+    xsd.clear().append(len, s);
+    return 0;
 }
 
 static xmlSAXHandler emptySAXHandlerStruct = {
@@ -253,7 +253,7 @@ IXmlValidator* CLibXmlParser::createXmlValidator()
 }
 
 //=============================================================================================
-// factory  
+// factory
 
 XMLLIB_API IXmlDomParser* getXmlDomParser()
 {

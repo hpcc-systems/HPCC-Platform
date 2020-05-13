@@ -2117,7 +2117,7 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
 #endif
 
     Owned<IJobQueue> queue = createJobQueue(agentQueue.str());
-    if (!queue.get()) 
+    if (!queue.get())
         throw MakeStringException(-1, "Could not create workunit queue");
 
     IJobQueueItem *item = createJobQueueItem(wuid);

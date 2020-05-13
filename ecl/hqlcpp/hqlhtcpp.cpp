@@ -590,7 +590,7 @@ public:
                         max -= num;
                     }
                 }
-                //MORE: Combine no_case and no_map - but need to be careful, 
+                //MORE: Combine no_case and no_map - but need to be careful,
                 //because they don't currently have an implementation for actions, so either need to implement, or convert
                 //to ifs, but also need to be careful we don't make the implementation worse!
             }
@@ -954,14 +954,14 @@ void TransformBuilder::buildTransform(BuildCtx & ctx, IHqlExpression * expr, IHq
                 childBuilder.buildTransformChildren(subctx, expr->queryChild(1), parentSelector);
                 childBuilder.flush(subctx);
 
-                //This calculates the size of the previous block.  It means that subsequent uses of the 
+                //This calculates the size of the previous block.  It means that subsequent uses of the
                 //offsets are cached - even if they are inside another ifblock().
                 CHqlBoundExpr bound;
                 translator.buildCachedExpr(ctx, sizeOfIfBlock, bound);
             }
             else
             {
-                //This calculates the size of the previous block.  It means that subsequent uses of the 
+                //This calculates the size of the previous block.  It means that subsequent uses of the
                 //offsets are cached - even if they are inside another ifblock().
                 OwnedHqlExpr zero = getSizetConstant(0);
                 ctx.associateExpr(sizeOfIfBlock, zero);
@@ -2269,7 +2269,7 @@ void ActivityInstance::noteChildActivityLocation(IHqlExpression * pass)
     if (containerActivity && colocalMember)
         containerActivity->noteChildActivityLocation(pass);
 
-    //A child helper has been generated in a different module => 
+    //A child helper has been generated in a different module =>
     //remove this class from the c++ file and include it in the header file instead
     if (translator.queryOptions().spanMultipleCpp && !includedInHeader && (pass != sourceFileSequence))
         moveDefinitionToHeader();
@@ -4191,7 +4191,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 
     IHqlExpression * record = instance.queryRecord();
 
-    unsigned flags = MDFhasserialize;       // we always generate a serialize since 
+    unsigned flags = MDFhasserialize;       // we always generate a serialize since
     bool useTypeForXML = false;
     if (instance.isGrouped())
         flags |= MDFgrouped;
@@ -4292,7 +4292,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 unsigned maxLength = getMaxRecordSize(record);
                 if (maxLength < minSize)
                     reportError(queryLocation(record), ECODETEXT(HQLERR_MaximumSizeLessThanMinimum_XY), maxLength, minSize);
-                    
+
                 //These use a CVariableOutputMetaData base class instead, and trade storage for number of virtuals
                 s.clear().append("inline ").append(instance.metaName).append("() : CVariableOutputMetaData(").append(minSize).append(") {}");
                 metactx.addQuoted(s);
@@ -5674,7 +5674,7 @@ void HqlCppTranslator::buildOrderedCompare(BuildCtx & ctx, IHqlExpression * data
     //MORE: This needs to be more intelligent to deal with related datasets (child datasets will work ok).
 
     //MORE: Should create a member function if a member of a class.
-    //Otherwise a function + generate an error if it uses fields outside of the context?  
+    //Otherwise a function + generate an error if it uses fields outside of the context?
     //Would also need to pass in parent cursors for a global function since parent will not be available.
 
     //MORE:Support multiple comparison fields.
@@ -6351,7 +6351,7 @@ void HqlCppTranslator::generateStatistics(const char * targetDir, const char * v
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
         writeFieldUsage(targetDir, sources, NULL);
     }
-    
+
     if (options.recordFieldUsage)
     {
         Owned<IPropertyTree> sources = gatherFieldUsage(variant, NULL);
@@ -8757,7 +8757,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     ThorActivityKind kind = TAKnone;
     //LOOP(dataset, count[, rowFilter])
     //LOOP(dataset, <dataset-filter>, <rowfilter>)
-    //LOOP(dataset, <dataset-filter|rowfilter> 
+    //LOOP(dataset, <dataset-filter|rowfilter>
     if (count)
         kind = TAKloopcount;
     else if (loopCond)
@@ -12555,7 +12555,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     //bool couldBeKeepOne = keepLimit && (!keepLimit->queryValue() || (keepLimit->queryValue()->getIntValue() <= 1));
     if (dataset1->queryRecord() == dataset2->queryRecord())
     {
-        //more could use the compareLeftRight function instead of generating the same code 
+        //more could use the compareLeftRight function instead of generating the same code
         //several time....
     }
     bool canReuseLeftCompare = recordTypesMatch(dataset1, dataset2) && arraysMatch(joinInfo.queryLeftSort(), joinInfo.queryRightSort());
@@ -13116,7 +13116,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNth(BuildCtx & ctx, IHql
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 
-    //If selecting 1st element of a non-grouped aggregate (which can only produce one row) then don't need to 
+    //If selecting 1st element of a non-grouped aggregate (which can only produce one row) then don't need to
     //add the selectNth operator.
     if (hasSingleRow(dataset))
     {
@@ -13745,7 +13745,7 @@ IHqlExpression * MergeTransformCreator::transform(IHqlExpression * expr)
 //------------------------------------------------------------------------------------------------
 
 // Replace SELF.x := F(LEFT) with SELF.x := RIGHT.x.
-//i) To ensure the first value is always used and 
+//i) To ensure the first value is always used and
 //ii) to allow subsequent optimizations to remove the assignment
 class NextTransformCreator
 {
@@ -14744,7 +14744,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRollup(BuildCtx & ctx, IHqlExp
     else
         conds.append(*LINK(cond));
 
-    //build child table.... 
+    //build child table....
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 
     //Now generate the instance definition...
@@ -14766,7 +14766,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRollup(BuildCtx & ctx, IHqlExp
         flags.append("|RFrolledismatchleft");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
-    
+
     buildInstanceSuffix(instance);
 
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
@@ -17031,7 +17031,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     if (cosort)
     {
-        //cosort has form joined(dataset), 
+        //cosort has form joined(dataset),
         IHqlExpression * cosortDataset = cosort->queryChild(0);
         if (cosortDataset->getOperator() == no_compound_diskread)
             cosortDataset = cosortDataset->queryChild(0);

@@ -33,10 +33,10 @@
 static char *_itoa(unsigned long n, char *str, int b, bool sign)
 {
     char *s = str;
-    
+
     if (sign)
         n = -n;
-    
+
     do
     {
         byte d = n % b;
@@ -46,7 +46,7 @@ static char *_itoa(unsigned long n, char *str, int b, bool sign)
     if (sign)
         *(s++) = '-';
     *s = '\0';
-    
+
     // reverse
     char *s2 = str;
     s--;
@@ -56,7 +56,7 @@ static char *_itoa(unsigned long n, char *str, int b, bool sign)
         *(s2++) = *s;
         *(s--) = tc;
     }
-    
+
     return str;
 }
 char *itoa(int n, char *str, int b)
@@ -81,7 +81,7 @@ void nodeStats(int fd,offset_t ofs,unsigned &leaves,unsigned &nonleaves)
         printf("ERROR: Could not read node at %" I64F "x", ofs);
         return;
     }
-    if (hdr.leafFlag) 
+    if (hdr.leafFlag)
         leaves++;
     else
         nonleaves++;
@@ -110,7 +110,7 @@ void printFileCache(const char *fname, unsigned &globtot, unsigned &globfs, bool
     fstat(fd, &file_stat);
     if (!S_ISREG(file_stat.st_mode))
         return;
-    
+
 
     void * file_mmap = mmap((void *)0, file_stat.st_size, PROT_NONE, MAP_SHARED, fd, 0);
     page_size = getpagesize();
@@ -176,7 +176,7 @@ void printPidCachedFiles(int pid,bool verbose,bool onlykey)
     unsigned fs = 0;
     size_t pl = strlen(path);
     while (1) {
-        struct dirent *entry = readdir(handle);  // don't need _r here 
+        struct dirent *entry = readdir(handle);  // don't need _r here
         if (!entry)
             break;
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)

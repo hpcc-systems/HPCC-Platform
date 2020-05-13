@@ -51,20 +51,20 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         CRC32 inputCRC;
         OwnedIFileIO iFileIO;
         Owned<IIOStream> inputIOstream;
-        offset_t localOffset;  // not sure what this is for 
+        offset_t localOffset;  // not sure what this is for
         Linked<IEngineRowAllocator> allocator;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CXmlPartHandler(CXmlReadSlaveActivity &_activity, IEngineRowAllocator *_allocator) 
+        CXmlPartHandler(CXmlReadSlaveActivity &_activity, IEngineRowAllocator *_allocator)
             : CDiskPartHandlerBase(_activity), activity(_activity), allocator(_allocator)
         {
             xmlTransformer = activity.helper->queryTransformer();
             localOffset = 0;
         }
 
-        virtual void open() 
+        virtual void open()
         {
             CDiskPartHandlerBase::open();
 
@@ -195,7 +195,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         {
             return localOffset; // NH->JCS is this what is wanted? (or should it be stream position relative?
         }
-    
+
         virtual void gatherStats(CRuntimeStatisticCollection & merged)
         {
             CriticalBlock block(statsCs);
@@ -212,7 +212,7 @@ public:
         if (helper->getFlags() & TDRlimitskips)
             limit = RCMAX;
         else
-            limit = (rowcount_t)helper->getRowLimit();  
+            limit = (rowcount_t)helper->getRowLimit();
         appendOutputLinked(this);
     }
     ~CXmlReadSlaveActivity()
@@ -233,7 +233,7 @@ public:
         }
         CDiskReadSlaveActivityBase::kill();
     }
-    
+
 // IThorDataLink
     virtual void start() override
     {
@@ -258,7 +258,7 @@ public:
         if (!row)
             return NULL;
         rowcount_t c = getDataLinkCount();
-        if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity 
+        if (stopAfter && (c >= stopAfter)) // NB: only slave limiter, global performed in chained choosen activity
             return NULL;
         if (c >= limit) // NB: only slave limiter, global performed in chained limit activity
         {
@@ -268,7 +268,7 @@ public:
         dataLinkIncrement();
         return row.getClear();
     }
-    
+
     virtual bool isGrouped() const override { return false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {

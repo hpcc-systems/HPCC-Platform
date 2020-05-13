@@ -43,9 +43,9 @@ bool listWUs(const char * sashaserver,const char *wuid)
     Owned<ISashaCommand> cmd = createSashaCommand();
     cmd->setAction(SCA_LIST);       // get WU info
     cmd->setArchived(true);         // include archived WUs
-    cmd->setAfter("200401010000");      
+    cmd->setAfter("200401010000");
     cmd->setBefore("200402010000");             // jan 2004
-    cmd->setOwner("nigel");         
+    cmd->setOwner("nigel");
     cmd->setState("failed");
     SocketEndpoint ep(sashaserver);
     Owned<INode> node = createINode(ep);
@@ -99,8 +99,8 @@ void usage()
     printf("examples:\n");
     printf("    sasha server=10.150.10.75 action=archive wuid=W20040514-123412\n");
     printf("    sasha server=10.150.10.75 action=list owner=nhicks\n");
-    printf("    sasha server=10.150.10.75 action=list after=20040101\n");                
-    printf("    sasha server=10.150.10.75 action=list state=failed output=owner,jobname\n");                
+    printf("    sasha server=10.150.10.75 action=list after=20040101\n");
+    printf("    sasha server=10.150.10.75 action=list state=failed output=owner,jobname\n");
     printf("    sasha server=10.150.10.75 action=restore W20040514-123412\n");
     printf("    sasha server=10.150.10.75 action=list dfu=1 online=1 owner=nhicks\n");
     exit(1);
@@ -178,10 +178,10 @@ void DumpWorkunitTimings(IPropertyTree *wu)
                         if (strcmp(logname.str(),curfilename.str())!=0) {
                             fileio.clear();
                             file.setown(createIFile(logname.str()));
-                            if (!file) 
+                            if (!file)
                                 throw MakeStringException(-1,"Could not create file %s",logname.str());
                             fileio.setown(file->open(IFOwrite));
-                            if (!fileio) 
+                            if (!fileio)
                                 throw MakeStringException(-1,"Could not open file %s",logname.str());
                             filepos = fileio->size();
                             curfilename.clear().append(logname);
@@ -224,7 +224,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 (stricmp(arg,"archive")==0)||
                 (stricmp(arg,"stop")==0))
                 arg = xcmd.clear().append("action=").append(arg);
-            else if ((strchr(arg,'*')!=NULL)||(strchr(arg,'?')!=NULL)|| 
+            else if ((strchr(arg,'*')!=NULL)||(strchr(arg,'?')!=NULL)||
                      ((toupper(arg[0])=='W')&&(arg[1]=='2'))||
                      ((toupper(arg[0])=='D')&&(arg[1]=='2')))
                 arg = xcmd.clear().append("wuid=").append(arg);
@@ -236,8 +236,8 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
                 arg = xcmd.clear().append("archived=1");
             else {
                 SocketEndpoint ep;
-                if (isdigit(arg[0])) 
-                    ep.set(arg,DEFAULT_SASHA_PORT);             
+                if (isdigit(arg[0]))
+                    ep.set(arg,DEFAULT_SASHA_PORT);
                 if (ep.isNull()) {
                     OERRLOG("parameter '%s' not recognized",arg);
                     return NULL;
@@ -291,12 +291,12 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
         else if (stricmp(head.str(),"wuid")==0) {
             if (!*tail)
                 tail = "*";
-            if ((strchr(tail,'*')!=NULL)||(strchr(tail,'?')!=NULL)) 
+            if ((strchr(tail,'*')!=NULL)||(strchr(tail,'?')!=NULL))
                 iswild = true;
             cmd->addId(tail);
         }
         else if (stricmp(head.str(),"server")==0) {
-            SocketEndpoint ep(tail,DEFAULT_SASHA_PORT);             
+            SocketEndpoint ep(tail,DEFAULT_SASHA_PORT);
             if (ep.isNull()) {
                 OERRLOG("server '%s' not resolved",tail);
                 return NULL;
@@ -341,7 +341,7 @@ ISashaCommand *createCommand(unsigned argc, char* argv[], SocketEndpoint &server
             cmd->setArchived(strToBool(tail));
         else {
             needloadwu = true;
-            if (stricmp(head.str(),"owner")==0) 
+            if (stricmp(head.str(),"owner")==0)
                 cmd->setOwner(tail);
             else if (stricmp(head.str(),"state")==0)
                 cmd->setState(tail);
@@ -395,7 +395,7 @@ bool getVersion(INode *node)
 
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 int main(int argc, char* argv[])
-{   
+{
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
     if (argc<3) {
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
                                     if (cmd->getResult(i,res)) {
                                         if (extractTimings) {
                                             Owned<IPropertyTree> pt = createPTreeFromXMLString(res.str());
-                                            if (pt) 
+                                            if (pt)
                                                 DumpWorkunitTimings(pt);
                                         }
                                         else {

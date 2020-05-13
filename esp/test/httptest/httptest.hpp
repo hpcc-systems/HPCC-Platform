@@ -99,16 +99,16 @@ class HttpServer
     void handleOneRequest(ISocket* client);
 
 public:
-    
+
     HttpServer(int port, const char* in, FILE* ofile, bool use_ssl, IPropertyTree* sslconfig);
-    
-    void setDelays(int recvDelay, int sendDelay, int closeDelay) 
+
+    void setDelays(int recvDelay, int sendDelay, int closeDelay)
     {
         m_recvDelay = recvDelay;
         m_sendDelay = sendDelay;
         m_closeDelay = closeDelay;
     }
-    
+
     int start();
 };
 

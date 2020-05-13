@@ -166,15 +166,15 @@ public:
 
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
+    {
         if (errcode==0)
             return str;
         str.appendf("LDAP Exception(%d): ",errcode);
         if (errcode==CLDAPE_getpermtimeout)
-            return str.append("getPermissionsLDAP - timeout to LDAP server"); 
+            return str.append("getPermissionsLDAP - timeout to LDAP server");
         if (errcode==CLDAPE_ldapfailure)
             return str.append("getPermissionsLDAP - LDAP server failure");
-        return str.append("Unknown Exception"); 
+        return str.append("Unknown Exception");
     }
     MessageAudience errorAudience() const { return MSGAUD_user; }
 
@@ -196,7 +196,7 @@ class CdelayedTerminate: public Thread // slightly obfuscated stop code
     }
 
 public:
-    CdelayedTerminate(byte _err) 
+    CdelayedTerminate(byte _err)
     {
         err = _err;
         start();
@@ -232,13 +232,13 @@ class CSessionStateTable: private SuperHashTableOf<CSessionState,SessionId>
 
     void onRemove(void *e)
     {
-        CSessionState &elem=*(CSessionState *)e;        
+        CSessionState &elem=*(CSessionState *)e;
         elem.Release();
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CSessionState &elem=*(const CSessionState *)e;        
+        const CSessionState &elem=*(const CSessionState *)e;
         SessionId id=elem.id;
         return low(id)^(unsigned)high(id);
     }
@@ -251,7 +251,7 @@ class CSessionStateTable: private SuperHashTableOf<CSessionState,SessionId>
 
     const void * getFindParam(const void *p) const
     {
-        const CSessionState &elem=*(const CSessionState *)p;        
+        const CSessionState &elem=*(const CSessionState *)p;
         return (void *)&elem.id;
     }
 
@@ -262,11 +262,11 @@ class CSessionStateTable: private SuperHashTableOf<CSessionState,SessionId>
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CSessionState,SessionId);
 
-public: 
-    CSessionStateTable() 
+public:
+    CSessionStateTable()
     {
     }
-    ~CSessionStateTable() { 
+    ~CSessionStateTable() {
         CHECKEDCRITICALBLOCK(sessstatesect,60000);
         _releaseAll();
     }
@@ -284,7 +284,7 @@ public:
         CHECKEDCRITICALBLOCK(sessstatesect,60000);
         return SuperHashTableOf<CSessionState,SessionId>::find(&id);
     }
-    
+
     void remove(SessionId id)
     {
         CHECKEDCRITICALBLOCK(sessstatesect,60000);
@@ -362,7 +362,7 @@ class CMapProcessToSession: private SuperHashTableOf<CProcessSessionState,INode>
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CProcessSessionState &elem=*(const CProcessSessionState *)e;      
+        const CProcessSessionState &elem=*(const CProcessSessionState *)e;
         return elem.queryNode().getHash();
     }
 
@@ -373,7 +373,7 @@ class CMapProcessToSession: private SuperHashTableOf<CProcessSessionState,INode>
 
     const void * getFindParam(const void *p) const
     {
-        const CProcessSessionState &elem=*(const CProcessSessionState *)p;      
+        const CProcessSessionState &elem=*(const CProcessSessionState *)p;
         return (void *)&elem.queryNode();
     }
 
@@ -384,8 +384,8 @@ class CMapProcessToSession: private SuperHashTableOf<CProcessSessionState,INode>
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CProcessSessionState,INode);
 
-public: 
-    CMapProcessToSession() 
+public:
+    CMapProcessToSession()
     {
     }
 
@@ -395,7 +395,7 @@ public:
         _releaseAll();
     }
 
-    bool add(CProcessSessionState *e) 
+    bool add(CProcessSessionState *e)
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
         if (SuperHashTableOf<CProcessSessionState,INode>::find(&e->queryNode()))
@@ -410,12 +410,12 @@ public:
         SuperHashTableOf<CProcessSessionState,INode>::replace(*e);
     }
 
-    CProcessSessionState *query(INode *n) 
+    CProcessSessionState *query(INode *n)
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
         return SuperHashTableOf<CProcessSessionState,INode>::find(n);
     }
-    
+
     bool remove(const CProcessSessionState *state, ISessionManagerServer *manager)
     {
         CHECKEDCRITICALBLOCK(mapprocesssect,60000);
@@ -437,12 +437,12 @@ public:
 
 
 
-enum MSessionRequestKind { 
-    MSR_REGISTER_PROCESS_SESSION, 
-    MSR_SECONDARY_REGISTER_PROCESS_SESSION, 
-    MSR_REGISTER_SESSION, 
-    MSR_SECONDARY_REGISTER_SESSION, 
-    MSR_LOOKUP_PROCESS_SESSION, 
+enum MSessionRequestKind {
+    MSR_REGISTER_PROCESS_SESSION,
+    MSR_SECONDARY_REGISTER_PROCESS_SESSION,
+    MSR_REGISTER_SESSION,
+    MSR_SECONDARY_REGISTER_SESSION,
+    MSR_LOOKUP_PROCESS_SESSION,
     MSR_STOP_SESSION,
     MSR_IMPORT_CAPABILITIES,
     MSR_LOOKUP_LDAP_PERMISSIONS,
@@ -503,7 +503,7 @@ class CSessionRequestServer: public Thread
     Semaphore acceptConnections;
 
 public:
-    CSessionRequestServer(ISessionManagerServer &_manager) 
+    CSessionRequestServer(ISessionManagerServer &_manager)
         : Thread("Session Manager, CSessionRequestServer"), manager(_manager)
     {
         stopped = true;
@@ -728,7 +728,7 @@ public:
     }
 
     class CSessionSubscriptionProxy: implements ISubscription, public CInterface
-    {   
+    {
         ISessionNotify *sub;
         SubscriptionId id;
         MemoryAttr ma;
@@ -858,7 +858,7 @@ public:
             return false;
         node.setown(getProcessSessionNode(id));
         return node.get()==NULL;
-    }   
+    }
 
     void notifyServerStopped(bool aborted)
     {
@@ -968,7 +968,7 @@ public:
                 mb.read(e);
                 if (err)
                     *err = e;
-                else if (e) 
+                else if (e)
                     throw new CDaliLDAP_Exception(e);
             }
         }
@@ -1118,7 +1118,7 @@ public:
             StringBuffer str;
             PROGLOG("Coven Session Stopping (%s)",ep.getUrlStr(str).str());
             if (queryCoven().size()==1)
-                notifyServerStopped(true); 
+                notifyServerStopped(true);
         }
     }
 
@@ -1184,7 +1184,7 @@ public:
     void start(const char *_key,const char *_obj,IUserDescriptor *_udesc,unsigned _flags)
     {
         key.set(_key);
-        obj.set(_obj); 
+        obj.set(_obj);
 
 #ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
@@ -1216,7 +1216,7 @@ public:
                 ret = ldapconn->getPermissions(key,obj,udesc,flags);
             }
             catch(IException *e) {
-                LOG(MCoperatorError, unknownJob, e, "CLdapWorkItem"); 
+                LOG(MCoperatorError, unknownJob, e, "CLdapWorkItem");
                 e->Release();
             }
             ready.signal();
@@ -1390,9 +1390,9 @@ public:
         rank_t myrank = coven.getServerRank();
         rank_t ownerrank = coven.chooseServer(id);
         // first do local
-        if (myrank==ownerrank) 
+        if (myrank==ownerrank)
             addSession(id);
-        else 
+        else
             remoteAddSession(ownerrank,id);
         ForEachOtherNodeInGroup(r,coven.queryGroup()) {
             if (r!=ownerrank)
@@ -1411,9 +1411,9 @@ public:
         rank_t myrank = coven.getServerRank();
         rank_t ownerrank = coven.chooseServer(id);
         // first do local
-        if (myrank==ownerrank) 
+        if (myrank==ownerrank)
             addProcessSession(id,client,role);
-        else 
+        else
             remoteAddProcessSession(ownerrank,id,client,role);
         ForEachOtherNodeInGroup(r,coven.queryGroup()) {
             if (r!=ownerrank)
@@ -1435,7 +1435,7 @@ public:
     INode *getProcessSessionNode(SessionId id)
     {
         StringBuffer eps;
-        if (SessionManager->getClientProcessEndpoint(id,eps).length()!=0) 
+        if (SessionManager->getClientProcessEndpoint(id,eps).length()!=0)
             return createINode(eps.str());
         return NULL;
     }
@@ -1478,7 +1478,7 @@ public:
                         SecAccessFlags ret;
                         if (ldapworker->wait(1000*20,(int&)ret)) {
                             if (ret==CLDAPE_ldapfailure) {
-                                OERRLOG("LDAP - failure (returning no access for %s)",obj); 
+                                OERRLOG("LDAP - failure (returning no access for %s)",obj);
                                 ldapsig.signal();
                                 if (err)
                                     *err = CLDAPE_ldapfailure;
@@ -1503,7 +1503,7 @@ public:
                         ldapworker->stop();
                     ldapworker.clear(); // abandon thread
                 }
-                OERRLOG("LDAP stalled - aborting (returning no access for %s)",obj); 
+                OERRLOG("LDAP stalled - aborting (returning no access for %s)",obj);
                 ldapsig.signal();
                 if (err)
                     *err = CLDAPE_getpermtimeout;
@@ -1523,7 +1523,7 @@ public:
                     if (first50==0)
                         first50 = msTick();
                     else if (msTick()-first50>60*1000) {
-                        OERRLOG("LDAP stalled - aborting (returning 0 for %s)", obj); 
+                        OERRLOG("LDAP stalled - aborting (returning 0 for %s)", obj);
                         if (err)
                             *err = CLDAPE_getpermtimeout;
                         break;
@@ -1588,7 +1588,7 @@ public:
         return ldapconn?ldapconn->checkScopeScans():false;
 #endif
     }
-    
+
     virtual unsigned getLDAPflags()
     {
 #ifdef _NO_LDAP
@@ -1623,7 +1623,7 @@ public:
 protected:
 
     class CSessionSubscriptionStub: public CInterface
-    {   
+    {
         ISubscription *subs;
         SubscriptionId id;
         SessionId sessid;
@@ -1637,7 +1637,7 @@ protected:
             mb.read(sessid);
         }
 
-        ~CSessionSubscriptionStub() 
+        ~CSessionSubscriptionStub()
         {
             subs->Release();
         }
@@ -1648,7 +1648,7 @@ protected:
         {
             MemoryBuffer mb;
             mb.append(abort);
-            subs->notify(mb); 
+            subs->notify(mb);
         }
         const void *queryFindParam() const { return &id; }
     };
@@ -1672,7 +1672,7 @@ protected:
         bool abort=true;
         mb.append(abort);
         OWARNLOG("Session Manager - adding unknown session ID %" I64F "x", nstub->getSessionId());
-        subs->notify(mb); 
+        subs->notify(mb);
         delete nstub;
         return;
     }
@@ -1820,7 +1820,7 @@ protected:
         const CSessionState *state = sessionstates.query(id);
         if (state) {
             const CProcessSessionState *pstate = QUERYINTERFACE(state,const CProcessSessionState);
-            if (pstate) 
+            if (pstate)
                 return pstate->queryNode().endpoint().getUrlStr(buf);
         }
         return buf;
@@ -1927,7 +1927,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
         if (remaining>t)
             remaining = t;
         r = getRandom()%comm->queryGroup().ordinality();
-        
+
         bool ok = false;
         if (remaining>10000) // MP protocol has a minimum time of 10s so if remaining < 10s use a detachable thread
             ok = comm->verifyConnection(r,remaining);
@@ -1970,7 +1970,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 throw e;
             }
             t->Release();
-        }   
+        }
         if (ok) {
             CMessageBuffer mb;
             mb.append((int)MSR_REGISTER_PROCESS_SESSION);
@@ -1980,7 +1980,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
             if (comm->sendRecv(mb,r,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT)) {
                 if (!mb.length())
                 {
-                    // failed system capability match, 
+                    // failed system capability match,
                     retcoven = comm->getGroup(); // continue as if - will fail later more obscurely.
                     return true;
                 }
@@ -2030,7 +2030,7 @@ extern void stopClientProcess()
         mySessionId = 0;
     }
 }
-    
+
 
 class CProcessSessionWatchdog
 {

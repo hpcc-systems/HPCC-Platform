@@ -38,8 +38,8 @@
 #include "jutil.hpp"
 
 #ifdef _DEBUG
-#define KILL_CLEARS_MEMORY  
-//#define TRACE_LARGEMEM  
+#define KILL_CLEARS_MEMORY
+//#define TRACE_LARGEMEM
 //#define TRACE_LARGEMEM_ALLOC
 #define TRACE_LARGEMEM_OOM
 #endif
@@ -64,7 +64,7 @@
 #ifdef _DEBUG
 #define     CHECKREADPOS(len)  assertex(readPos+(len)<=length())
 #else
-#define     CHECKREADPOS(len)  
+#define     CHECKREADPOS(len)
 #endif
 
 //-----------------------------------------------------------------------
@@ -115,7 +115,7 @@ public:
 
         if ((recursion++==0)&&!expected) {
 // Bit risky if *very* out of memory so protect against recursion and catch exceptions
-            try { 
+            try {
                 // try to log
                 PROGLOG("Jbuff: %s (%d,%" I64F "d,%" I64F "dk)",errorMsg.str(),_errcode,(unsigned __int64)wanted,(unsigned __int64) (got/1024));
                 PrintStackReport();
@@ -126,12 +126,12 @@ public:
         }
         recursion--;
     };
-    
+
     int             errorCode() const { return errcode; }
     StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
+    {
         str.append("Jbuff: ").append(errorMsg.str()).append(" (").append((unsigned __int64)wanted);
-        if (got) 
+        if (got)
             str.append(',').append((unsigned __int64)got);
         return str.append(")");
     }
@@ -152,7 +152,7 @@ void RaiseOutOfMemException(int errcode, size_t wanted, size_t got, bool expecte
 
 MemoryAttr::MemoryAttr(size_t _len)
 {
-    ptr = checked_malloc(_len,-1); 
+    ptr = checked_malloc(_len,-1);
     len = _len;
 }
 
@@ -192,8 +192,8 @@ void MemoryAttr::setOwn(size_t _len, void * _ptr)
 void MemoryAttr::clear()
 {
     free(ptr);
-    ptr = NULL; 
-    len = 0; 
+    ptr = NULL;
+    len = 0;
 }
 
 void * MemoryAttr::detach()
@@ -209,7 +209,7 @@ int MemoryAttr::compare(const MemoryAttr & m1, const MemoryAttr & m2)
     size_t len1 = m1.length();
     size_t len2 = m2.length();
     size_t len = len1;
-    
+
     if (len1 > len2)
         len = len2;
     int compare = memcmp(m1.get(), m2.get(), len);
@@ -219,13 +219,13 @@ int MemoryAttr::compare(const MemoryAttr & m1, const MemoryAttr & m2)
 }
 
 void *  MemoryAttr::allocate(size_t _len)
-{ 
+{
     if (_len==len)
         return ptr;
     clear();
-    ptr = checked_malloc(_len,-2); 
+    ptr = checked_malloc(_len,-2);
     len = _len;
-    return ptr; 
+    return ptr;
 }
 
 void * MemoryAttr::ensure(size_t _len)
@@ -236,12 +236,12 @@ void * MemoryAttr::ensure(size_t _len)
 }
 
 void *  MemoryAttr::reallocate(size_t _len)
-{ 
+{
     if (_len==len)
         return ptr;
     ptr = checked_realloc(ptr, _len, len, -9);
     len = _len;
-    return ptr; 
+    return ptr;
 }
 
 //===========================================================================
@@ -379,7 +379,7 @@ MemoryBuffer & MemoryBuffer::_reverse()
 {
     unsigned max = curLen/2;
     char * end = buffer + curLen;
-    
+
     unsigned idx;
     for (idx = 0; idx < max; idx++)
     {
@@ -388,7 +388,7 @@ MemoryBuffer & MemoryBuffer::_reverse()
         buffer[idx] = *end;
         *end = temp;
     }
-    
+
     return *this;
 }
 
@@ -406,7 +406,7 @@ void MemoryBuffer::setBuffer(size_t len, void * _buffer, bool takeOwnership)
 void *MemoryBuffer::detach()
 {
     void *ret;
-    if (ownBuffer) { 
+    if (ownBuffer) {
         if (maxLen>curLen+DETACH_GRANULARITY)
             buffer = (char *)realloc(buffer,curLen);
         ret = buffer;
@@ -660,21 +660,21 @@ MemoryBuffer &MemoryBuffer::appendFile(const char *fileName)
 {
     char buf[1024];
     int h = _open(fileName, _O_BINARY | _O_RDONLY | _O_SEQUENTIAL);
-    
+
     if (h == HFILE_ERROR)
         throw MakeStringException(0, "MemoryBuffer: Error reading file : %s", fileName);
-    
+
     append(fileName);
-    
+
     unsigned fileSize = _lseek(h, 0, FILE_END);
     _lseek(h, 0, FILE_BEGIN);
     append(fileSize);
-    
+
     int r;
     while ((r = _read(h, buf, 1024)) != 0)
     {
         if (-1==r) throw makeErrnoException("MemoryBuffer::appendFile");
-        append(r, buf); 
+        append(r, buf);
     }
     _close(h);
     return *this;
@@ -862,7 +862,7 @@ MemoryBuffer & MemoryBuffer::readEndian(size32_t len, void * value)
         _cpyrevn(value, buffer + readPos, len);
     else
         memcpy_iflen(value, buffer + readPos, len);
-    
+
     readPos += len;
     return *this;
 }
@@ -880,11 +880,11 @@ MemoryBuffer &MemoryBuffer::readFile(StringAttr &fileName)
     read(fileName);
     unsigned fileSize;
     read(fileSize);
-    
+
     int h = _open(fileName.get(), _O_WRONLY|_O_CREAT|_O_TRUNC|_O_BINARY|_O_SEQUENTIAL, _S_IREAD | _S_IWRITE);
     if (h == HFILE_ERROR)
         throw MakeStringException(0, "MemoryBuffer: Unable to create file : %s, error=%d", fileName.get(), GetLastError());
-    
+
     CHECKREADPOS(fileSize);
     int w;
     while (fileSize) {
@@ -911,7 +911,7 @@ MemoryBuffer & MemoryBuffer::rewrite(size32_t pos)
 {
     assertex(pos<=maxLen);
     curLen = pos;
-    if (readPos>pos) 
+    if (readPos>pos)
         readPos = pos;
     return *this;
 }
@@ -1001,9 +1001,9 @@ MemoryBuffer & deserialize(MemoryBuffer & buffer, StringAttr & value)
 
 // =====================================================================================================
 
-const char * MemoryAttr2IStringVal::str() const 
-{ 
-    UNIMPLEMENTED;  
+const char * MemoryAttr2IStringVal::str() const
+{
+    UNIMPLEMENTED;
 }
 
 // =====================================================================================================
@@ -1022,7 +1022,7 @@ void setLargeMemLimitNotify(memsize_t size,ILargeMemLimitNotify *notify)
     CriticalBlock block(LMsemsect);
     LMsemlimit = size;
     LMnotify.set(notify);
-    if (LMlocked&&(LMtotal<LMsemlimit)) 
+    if (LMlocked&&(LMtotal<LMsemlimit))
         LMlocked = false;
 }
 
@@ -1083,14 +1083,14 @@ void CLargeMemoryAllocator::allocchunkmem()
         return;
     }
 #endif
-    chunk.base = (byte *)malloc(chunk.max); 
+    chunk.base = (byte *)malloc(chunk.max);
 #ifdef TRACE_LARGEMEM_ALLOC
     PROGLOG("CLargeMemoryAllocator::allocchunkmem malloced %d at %p",chunk.max,chunk.base);
 #endif
 }
 
-void CLargeMemoryAllocator::disposechunkmem() 
-{ 
+void CLargeMemoryAllocator::disposechunkmem()
+{
 #ifdef LARGEMEM_USE_MMAP_SIZE
     size32_t masize = VMPAGEROUND(chunk.max);
     if (masize>=LARGEMEM_USE_MMAP_SIZE) { // use mmap
@@ -1098,7 +1098,7 @@ void CLargeMemoryAllocator::disposechunkmem()
         return;
     }
 #endif
-    free(chunk.base); 
+    free(chunk.base);
 }
 
 
@@ -1133,7 +1133,7 @@ bool CLargeMemoryAllocator::newchunk(size32_t sz,size32_t extra,bool exceptionwa
     if (!chunk.base) {
         // restore prev
         if (chunk.prev) {
-            Chunk *p = chunk.prev; 
+            Chunk *p = chunk.prev;
             chunk = *p;
             atot -= chunk.size;
             delete p;
@@ -1183,7 +1183,7 @@ void CLargeMemoryAllocator::reduceSize(memsize_t amount)
         reduced += chunk.max;
         disposechunkmem();
         amax -= chunk.max;
-        Chunk *p = chunk.prev; 
+        Chunk *p = chunk.prev;
         chunk = *p;
         atot -= chunk.size;
         delete p;
@@ -1211,7 +1211,7 @@ byte *CLargeMemoryAllocator::next(memsize_t pos,size32_t &size) // this should n
     Chunk *p = &chunk;
     while (dif>p->size) {
         dif -= p->size;
-        p = p->prev; 
+        p = p->prev;
     }
     size = (size32_t)dif;       // must be smaller than chunk
     return p->base+p->size-dif;
@@ -1346,7 +1346,7 @@ void *CFixedSizeAllocator::alloc()
         freelist = *(void **)freelist;
     }
     else {
-        void **newchunk = (void **)allocChunk(); 
+        void **newchunk = (void **)allocChunk();
         unsigned num = (chunksize-sizeof(void *))/allocsize;
         assertex(num);
         *newchunk = chunklist;

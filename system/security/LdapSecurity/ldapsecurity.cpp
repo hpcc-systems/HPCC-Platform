@@ -85,7 +85,7 @@ bool CLdapSecUser::setName(const char * name)
         {
             m_name.set(name);
         }
-    }           
+    }
     return TRUE;
 }
 
@@ -179,7 +179,7 @@ const char * CLdapSecUser::getFqdn()
 {
     return m_Fqdn.get();
 }
-    
+
 bool CLdapSecUser::setFqdn(const char * Fqdn)
 {
     m_Fqdn.set(Fqdn);
@@ -363,7 +363,7 @@ ISecResource * CLdapSecResource::clone()
     CLdapSecResource* _res = new CLdapSecResource(m_name.get());
     if(!_res)
         return NULL;
-    
+
     _res->setResourceType(m_resourcetype);
     _res->setValue(m_value.str());
     _res->m_access = m_access;
@@ -576,7 +576,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     for(int i = 0; i < RT_SCOPE_MAX; i++)
         m_cache_off[i] = false;
     m_cache_off[RT_VIEW_SCOPE] = true;
-    
+
     m_usercache_off = false;
 
     m_cfg.setown(cfg);
@@ -585,7 +585,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     cfg->getProp(".//@description", m_description);
 
     ILdapClient* ldap_client = createLdapClient(cfg);
-    
+
     IPermissionProcessor* pp;
     if(ldap_client->getServerType() == ACTIVE_DIRECTORY)
         pp = new PermissionProcessor(cfg);
@@ -809,7 +809,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
                 m_permissionsCache->add(sec_user, rlist2);
         }
         else
-            rc = true;  
+            rc = true;
     }
     else
     {
@@ -826,7 +826,7 @@ SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & us
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("resources"));
     rlist->addResource(resourcename);
-    
+
     bool ok = authorizeEx(rtype, user, rlist.get(), secureContext);
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
@@ -884,7 +884,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
                 m_permissionsCache->add(sec_user, rlist2);
         }
         else
-            rc = true;  
+            rc = true;
     }
     else
     {
@@ -901,7 +901,7 @@ SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & us
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("resources"));
     rlist->addResource(resourcename);
-    
+
     bool ok = authorizeEx(rtype, user, rlist.get(), doAuthentication);
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
@@ -917,7 +917,7 @@ SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser
     Owned<ISecResourceList> rlist0;
     rlist0.setown(createResourceList("resources"));
     rlist0->addResource(resourcename);
-    
+
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)rlist0.get();
     if(!reslist)
         return SecAccess_Unavailable;
@@ -961,7 +961,7 @@ SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser
                 m_permissionsCache->add(user, rlist2);
         }
         else
-            ok = true;  
+            ok = true;
     }
     else
     {
@@ -1002,7 +1002,7 @@ SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char *
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("FileScope"));
     rlist->addResource(managedFilescope.length() ? managedFilescope.str() : filescope );
-    
+
     bool ok = authorizeFileScope(user, rlist.get());
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
@@ -1020,7 +1020,7 @@ bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filename
     if (filenames.length() != columnnames.length())
     {
         PROGLOG("Error authorizing view scope: number of filenames (%d) do not match number of columnnames (%d).", filenames.length(), columnnames.length());
-        return false; 
+        return false;
     }
 
     const char* username = user.getName();
@@ -1069,14 +1069,14 @@ SecAccessFlags CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const ch
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("WorkunitScope"));
     rlist->addResource(wuscope);
-    
+
     bool ok = authorizeWorkunitScope(user, rlist.get());
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
         return SecAccess_Unavailable;
 }
-    
+
 bool CLdapSecManager::authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
 {
     return authorizeEx(RT_WORKUNIT_SCOPE, user, resources);
@@ -1091,7 +1091,7 @@ bool CLdapSecManager::addResourcesEx(SecResourceType rtype, ISecUser& sec_user, 
     IArrayOf<ISecResource>& rlist = reslist->getResourceList();
     if(rlist.length() <= 0)
         return true;
-    
+
     return m_ldap_client->addResources(rtype, sec_user, rlist, ptype, basedn);
 }
 
@@ -1100,7 +1100,7 @@ bool CLdapSecManager::addResourceEx(SecResourceType rtype, ISecUser& user, const
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("resources"));
     rlist->addResource(resourcename);
-    
+
     return addResourcesEx(rtype, user, rlist.get(), ptype, basedn);
 }
 
@@ -1245,7 +1245,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
                 location->getProp("@resource", rstr);
                 location->getProp("@required", required);
                 location->getProp("@description", description);
-                
+
                 if(rstr.length() == 0)
                     throw MakeStringException(-1, "resource empty in Authenticate/Location");
                 if(pathstr.length() == 0)
@@ -1255,7 +1255,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
                 ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
                 if(rlist == NULL)
                 {
-                    rlist = createResourceList("ldapsecurity");                     
+                    rlist = createResourceList("ldapsecurity");
                     authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
@@ -1302,7 +1302,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
                         throw MakeStringException(-1, "resource empty in Feature Map");
                     if(pathstr.length() == 0)
                         throw MakeStringException(-1, "path empty in Feature Map for resource '%s'", rstr.str());
-                    rlist = createResourceList(pathstr.str());                      
+                    rlist = createResourceList(pathstr.str());
                     feature_authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
@@ -1317,7 +1317,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
     }
 
     feature_authmap->addToBackend();
-    
+
     return feature_authmap;
 }
 

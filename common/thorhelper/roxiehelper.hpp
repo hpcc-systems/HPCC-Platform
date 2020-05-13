@@ -27,7 +27,7 @@
 #include "workunit.hpp"
 #include "thorhelper.hpp"
 
-//========================================================================================= 
+//=========================================================================================
 
 void parseHttpParameterString(IProperties *p, const char *str);
 
@@ -395,7 +395,7 @@ public:
     IMPLEMENT_IINTERFACE;
     CSafeSocket(ISocket *_sock);
     ~CSafeSocket();
-    
+
     ISocket *querySocket() { return sock; }
     virtual CriticalSection &queryCrit() { return crit; };
     size32_t write(const void *buf, size32_t size, bool takeOwnership=false);
@@ -558,7 +558,7 @@ private:
     StringBuffer physicalBase;
     StringAttr activityType;
     StringAttr localClusterName;
-    Owned<IGroup> localCluster; 
+    Owned<IGroup> localCluster;
     IArrayOf<IGroup> remoteNodes;
     StringArray remoteClusters;
 };

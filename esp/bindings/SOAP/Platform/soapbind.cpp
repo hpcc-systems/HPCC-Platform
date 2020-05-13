@@ -98,9 +98,9 @@ static CSoapFault* makeSoapFault(CHttpRequest* request, IMultiException* me, con
             if (request->getPort()>0)
               host.append(":").append(request->getPort());
         }
-        
+
         VStringBuffer ns_ext("xmlns=\"%s\""
-            " xsi:schemaLocation=\"%s %s/%s/%s?xsd\"", 
+            " xsi:schemaLocation=\"%s %s/%s/%s?xsd\"",
             ns, ns, host.str(), svcName, method ? method : "");
         return new CSoapFault(me, ns_ext);
     }
@@ -265,7 +265,7 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     rpccall.setProxy(proxy);
 
     serialize(*static_cast<IRpcMessage*>(&rpccall));
-    
+
     CSoapClient soapclient; //to add support for handling cookies soapclient(false);
     if (connectTimeoutMs_)
         soapclient.setConnectTimeoutMs(connectTimeoutMs_);

@@ -28,7 +28,7 @@
 #else
     #define SECLIB_API DECL_EXPORT
 #endif //SECLIB_EXPORTS
-#endif 
+#endif
 
 #define SECLIB "seclib"
 #define LDAPSECLIB "LdapSecurity"
@@ -118,7 +118,7 @@ enum SecPasswordEncoding : int
 };
 
 
- 
+
 enum SecUserStatus : int
 {
     SecUserStatus_Inhouse = 0,

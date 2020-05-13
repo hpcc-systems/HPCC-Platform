@@ -37,12 +37,12 @@ static const char * EclDefinition = nullptr;//Definitions specified in lib_crypt
 
 CRYPTOLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
-    //  Warning:    This function may be called without the plugin being loaded fully.  
+    //  Warning:    This function may be called without the plugin being loaded fully.
     //              It should not make any library calls or assume that dependent modules
     //              have been loaded or that it has been initialized.
     //
-    //              Specifically:  "The system does not call DllMain for process and thread 
-    //              initialization and termination.  Also, the system does not load 
+    //              Specifically:  "The system does not call DllMain for process and thread
+    //              initialization and termination.  Also, the system does not load
     //              additional executable modules that are referenced by the specified module."
 
     if (pb->size != sizeof(ECLPluginDefinitionBlock))

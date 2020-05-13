@@ -24,7 +24,7 @@
 #include "jarray.hpp"
 #include "jbuff.hpp"
 
-#include <algorithm> 
+#include <algorithm>
 #include <iterator>
 
 #if defined (__APPLE__)
@@ -84,7 +84,7 @@ class jlib_decl SharedObject : public CInterfaceOf<IInterface>
 public:
     SharedObject()      { h = 0; bRefCounted = false; }
     ~SharedObject()     { unload(); }
-    
+
     bool load(const char * dllName, bool isGlobal, bool raiseOnError=false);
     bool loadCurrentExecutable();
     bool loadResources(const char * dllName);
@@ -120,7 +120,7 @@ extern jlib_decl unique_id_t    getUniqueId();
 extern jlib_decl StringBuffer & getUniqueId(StringBuffer & target);
 extern jlib_decl void           resetUniqueId();
 
-extern jlib_decl unsigned getRandom();              // global 
+extern jlib_decl unsigned getRandom();              // global
 extern jlib_decl void seedRandom(unsigned seed);
 
 interface IRandomNumberGenerator: public IInterface
@@ -144,7 +144,7 @@ extern jlib_decl void fillRandomData(size32_t writeSz, MemoryBuffer &mb);
 jlib_decl int rand_r(unsigned int *seed);
 #define RAND_R_MAX  INT_MAX
 
-#else 
+#else
 
 #define RAND_R_MAX  RAND_MAX
 
@@ -195,7 +195,7 @@ extern jlib_decl MemoryBuffer &JBASE64_Decode(ISimpleReadStream &in, MemoryBuffe
 extern jlib_decl bool JBASE64_Decode(size32_t length, const char *in, StringBuffer &out);
 
 extern jlib_decl void JBASE32_Encode(const char *in,StringBuffer &out);  // result all lower
-extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);  
+extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);
 
 /* URL: http://user:passwd@host:port/path */
 extern jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* in);
@@ -408,9 +408,9 @@ extern jlib_decl const IProperties &queryEnvironmentConf();
  */
 extern jlib_decl IPropertyTree *getHPCCEnvironment();
 extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, // NULL to use HPCC config
-                                                const char *category, 
+                                                const char *category,
                                                 const char *component,
-                                                const char *instance, 
+                                                const char *instance,
                                                 StringBuffer &dirout);
 
 extern jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,

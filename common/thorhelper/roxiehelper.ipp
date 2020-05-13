@@ -106,7 +106,7 @@ interface IRHLimitedCompareHelper: public IInterface
 
 //===================================================================================
 
-interface IOrderedOutputSerializer : extends IInterface 
+interface IOrderedOutputSerializer : extends IInterface
 {
   virtual size32_t printf(int seq, const char *format, ...) __attribute__((format(printf, 3, 4)))= 0;
   virtual size32_t fwrite(int seq, const void * data, size32_t size, size32_t count) = 0;

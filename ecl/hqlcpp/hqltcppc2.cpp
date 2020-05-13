@@ -126,7 +126,7 @@ void CChildSetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ct
     {
     case no_list:
         if ((value->numChildren() != 0) && ::isFixedSize(elementType))
-            inlineSize.setown(getSizetConstant(value->numChildren() * elementType->getSize())); 
+            inlineSize.setown(getSizetConstant(value->numChildren() * elementType->getSize()));
         break;
     }
 
@@ -528,7 +528,7 @@ bool CChildLimitedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translato
             translator.generateExprCpp(helperCpp, state.helper);
             StringBuffer prefetcherInstanceName;
             translator.ensureRowPrefetcher(prefetcherInstanceName, ctx, column->queryRecord());
-            
+
             StringBuffer s;
             loopctx.addQuoted(s.clear().append(helperCpp).append(".noteStartChild();"));
             loopctx.addQuoted(s.clear().append(prefetcherInstanceName).append("->readAhead(").append(helperCpp).append(");"));
@@ -763,7 +763,7 @@ void CChildLinkedDatasetColumnInfo::setColumn(HqlCppTranslator & translator, Bui
 
     if (value->getOperator() == no_null)
         value.setown(createNullExpr(column));
-    
+
     translator.buildDatasetAssign(ctx, boundTarget, value);
 }
 

@@ -48,7 +48,7 @@ static char THIS_FILE[] = __FILE__;
 #define CONNECT_SECTION         "RemoteConnect"
 #define COVEN_SIZE              "CovenSize"
 
-    
+
 UINT WM_FINDREPLACE = ::RegisterWindowMessage(FINDMSGSTRING);
 
 
@@ -112,39 +112,39 @@ private:
     bool expand;
 
 public:
-    CExpanderThread(CTreeviewDlg * _dlg, bool _expand) 
+    CExpanderThread(CTreeviewDlg * _dlg, bool _expand)
     {
         dlg = _dlg;
         tree = dlg->inspector.getTree();
-        expand = _expand;   
+        expand = _expand;
     }
 
     void process(HTREEITEM in, int lvl)
-    {       
+    {
         if(lvl > 0)
         {
             if(expand)
             {
-                if(tree->ItemHasChildren(in) && !(tree->GetItemState(in, TVIS_EXPANDED) & TVIS_EXPANDED)) 
+                if(tree->ItemHasChildren(in) && !(tree->GetItemState(in, TVIS_EXPANDED) & TVIS_EXPANDED))
                 {
                     tree->Expand(in, TVE_EXPAND);
                     lvl--;
                 }
             }
             else if(tree->ItemHasChildren(in) && tree->GetItemState(in, TVIS_EXPANDED) & TVIS_EXPANDED)
-                tree->Expand(in, TVE_COLLAPSE);             
-            
-            HTREEITEM i = tree->GetChildItem(in);       
+                tree->Expand(in, TVE_COLLAPSE);
+
+            HTREEITEM i = tree->GetChildItem(in);
             while(i)
             {
                 process(i, lvl);
                 i = tree->GetNextItem(i, TVGN_NEXT);
-            }           
+            }
         }
     }
 
     virtual int run()
-    {       
+    {
         process(tree->GetRootItem(), 1);
         dlg->endExpand();
         return 0;
@@ -260,10 +260,10 @@ BOOL CTreeviewDlg::OnInitDialog()
 
     tooltipCtrl = new CToolTipCtrl;
     tooltipCtrl->Create(this);
-    
+
     CRect DialogRect, rect;
     GetWindowRect(DialogRect);
-            
+
     CWnd * wnd = GetDlgItemRect(IDC_EXIT, rect);
     CloseRightOffset = DialogRect.right - rect.left;
     CloseBottomOffset = DialogRect.bottom - rect.top;
@@ -277,8 +277,8 @@ BOOL CTreeviewDlg::OnInitDialog()
         _loadTree(cmdfname);
     else
         updateMenuState();
-    
-    return FALSE; 
+
+    return FALSE;
 }
 
 void CTreeviewDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -295,18 +295,18 @@ void CTreeviewDlg::OnSysCommand(UINT nID, LPARAM lParam)
 }
 
 
-BOOL CTreeviewDlg::PreTranslateMessage(MSG * msg) 
+BOOL CTreeviewDlg::PreTranslateMessage(MSG * msg)
 {
     if(tooltipCtrl) tooltipCtrl->RelayEvent(msg);
-    
+
     if(msg->message >= WM_KEYFIRST && msg->message <= WM_KEYLAST)
-        return ::TranslateAccelerator(m_hWnd, hAccel, msg); 
-            
+        return ::TranslateAccelerator(m_hWnd, hAccel, msg);
+
     return CDialog::PreTranslateMessage(msg);
 }
 
 
-void CTreeviewDlg::OnPaint() 
+void CTreeviewDlg::OnPaint()
 {
     if (IsIconic())
     {
@@ -339,10 +339,10 @@ HCURSOR CTreeviewDlg::OnQueryDragIcon()
 }
 
 
-void CTreeviewDlg::OnSize(UINT nType, int cx, int cy) 
+void CTreeviewDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialog::OnSize(nType, cx, cy);
-    
+
     if(!IsIconic())
     {
         CRect rect, DialogRect;
@@ -368,15 +368,15 @@ void CTreeviewDlg::OnSize(UINT nType, int cx, int cy)
             rect.right = DialogRect.right - TreeRightMargin;
             rect.bottom = DialogRect.bottom - TreeBottomMargin;
             ScreenToClient(&rect);
-            DeferWindowPos(hDefer, Wnd->m_hWnd, NULL, rect.left, rect.top, rect.Width(), rect.Height(), SWP_NOZORDER | SWP_NOREDRAW);                   
+            DeferWindowPos(hDefer, Wnd->m_hWnd, NULL, rect.left, rect.top, rect.Width(), rect.Height(), SWP_NOZORDER | SWP_NOREDRAW);
         }
 
         EndDeferWindowPos(hDefer);
         Invalidate();
-    }   
+    }
 }
 
-void CTreeviewDlg::OnMenuSave() 
+void CTreeviewDlg::OnMenuSave()
 {
     if(connection && connection->getType() != CT_none)
     {
@@ -387,11 +387,11 @@ void CTreeviewDlg::OnMenuSave()
             CString fullfname = fileDialog.GetPathName();
             if(!fullfname.IsEmpty())
             {
-                if(fileDialog.GetFileExt().IsEmpty()) fullfname += ".xml";          
-                if(_saveTree(fullfname)) break;             
+                if(fileDialog.GetFileExt().IsEmpty()) fullfname += ".xml";
+                if(_saveTree(fullfname)) break;
             }
         }
-    }   
+    }
     setWindowTitle();
 }
 
@@ -406,7 +406,7 @@ bool CTreeviewDlg::_loadTree(LPCSTR fname)
         updateMenuState();
         inspector.SetFocus();
         inspector.Invalidate();
-        return true;        
+        return true;
     }
     MessageBox("Tree failed to load", "Load Failure", MB_OK | MB_ICONEXCLAMATION);
     return false;
@@ -415,11 +415,11 @@ bool CTreeviewDlg::_loadTree(LPCSTR fname)
 
 bool CTreeviewDlg::_saveTree(LPCSTR fname)
 {
-    return connection && connection->getType() != CT_none && saveTree(fname, *connection->queryRoot()) ? true : false;  
+    return connection && connection->getType() != CT_none && saveTree(fname, *connection->queryRoot()) ? true : false;
 }
 
 
-void CTreeviewDlg::OnMenuLoad() 
+void CTreeviewDlg::OnMenuLoad()
 {
     CFileDialog fileDialog(TRUE, DEFAULT_FILE_EXT, DEFAULT_FILE_MASK, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "XML Files (*.xml)|*.xml||", this);
 
@@ -427,7 +427,7 @@ void CTreeviewDlg::OnMenuLoad()
     {
         resetDialog();
         CString fullfname = fileDialog.GetPathName();
-        if(!fullfname.IsEmpty() && _loadTree(fullfname)) break;     
+        if(!fullfname.IsEmpty() && _loadTree(fullfname)) break;
     }
 }
 
@@ -445,7 +445,7 @@ BOOL CTreeviewDlg::OnNextPrevField(UINT cmdId)
             if(cmdId == IDD_NEXT_FIELD)
                 i = (++i % ctrlsMax);
             else
-                i = i ? --i : ctrlsMax - 1; 
+                i = i ? --i : ctrlsMax - 1;
 
             switch(ctrls[i])
             {
@@ -462,7 +462,7 @@ BOOL CTreeviewDlg::OnNextPrevField(UINT cmdId)
 }
 
 
-void CTreeviewDlg::OnMenuAbout() 
+void CTreeviewDlg::OnMenuAbout()
 {
     CAboutDlg about;
     about.DoModal();
@@ -502,17 +502,17 @@ void CTreeviewDlg::OnMenuShowQualified()
 
 }
 
-void CTreeviewDlg::OnMenuDelete() 
+void CTreeviewDlg::OnMenuDelete()
 {
     inspector.getTree()->DeleteCurrentItem(false);
 }
 
-void CTreeviewDlg::OnMenuDeleteConfirm() 
+void CTreeviewDlg::OnMenuDeleteConfirm()
 {
     inspector.getTree()->DeleteCurrentItem();
 }
 
-void CTreeviewDlg::OnMenuFind() 
+void CTreeviewDlg::OnMenuFind()
 {
     findReplaceDialog = new CFindReplaceDialog();                       // deleted by itself
     if(!findReplaceDialog->Create(TRUE, findStr, NULL, FR_DOWN, this))
@@ -542,18 +542,18 @@ LRESULT CTreeviewDlg::OnFindReplace(WPARAM wParam, LPARAM lParam)
 }
 
 
-void CTreeviewDlg::OnMenuExpandall() 
+void CTreeviewDlg::OnMenuExpandall()
 {
-    if(expander) delete expander;   
+    if(expander) delete expander;
     expander = new CExpanderThread(this, true);
     updateMenuState();
     expander->start();
 }
 
 
-void CTreeviewDlg::OnMenuContractall() 
+void CTreeviewDlg::OnMenuContractall()
 {
-    if(expander) delete expander;   
+    if(expander) delete expander;
     expander = new CExpanderThread(this, false);
     updateMenuState();
     expander->start();
@@ -568,12 +568,12 @@ void CTreeviewDlg::endExpand()
 }
 
 
-void CTreeviewDlg::OnMenuExit() 
+void CTreeviewDlg::OnMenuExit()
 {
-    OnExit();   
+    OnExit();
 }
 
-void CTreeviewDlg::OnMenuConnectRemote() 
+void CTreeviewDlg::OnMenuConnectRemote()
 {
     resetDialog();
 
@@ -585,7 +585,7 @@ void CTreeviewDlg::OnMenuConnectRemote()
         {
             SocketEndpoint ep;
             toEp(ep, ConnectDlg.GetServerEndpoint(i));
-            connectedEpa.append(ep);            
+            connectedEpa.append(ep);
         }
 
         connection = createRemoteConnection(connectedEpa);
@@ -597,10 +597,10 @@ void CTreeviewDlg::OnMenuConnectRemote()
         }
         else
             MessageBox("Failed to connect to any of the remote Dali servers\nthat you listed in the connection details.", "Connection Failed", MB_OK | MB_ICONEXCLAMATION);
-    } 
+    }
 }
 
-void CTreeviewDlg::OnMenuReconnect() 
+void CTreeviewDlg::OnMenuReconnect()
 {
     if (!connectedEpa.ordinality())
     {
@@ -620,15 +620,15 @@ void CTreeviewDlg::OnMenuReconnect()
         MessageBox("Failed to reconnect to any of the remote Dali servers\nthat you listed in the connection details.", "Connection Failed", MB_OK | MB_ICONEXCLAMATION);
 }
 
-void CTreeviewDlg::OnExit() 
+void CTreeviewDlg::OnExit()
 {
     resetDialog();
     EndDialog(0);
 }
 
 
-void CTreeviewDlg::OnClose() 
-{   
+void CTreeviewDlg::OnClose()
+{
     resetDialog();
     CDialog::OnClose();
 }
@@ -737,7 +737,7 @@ bool saveTree(LPCSTR fname, IPropertyTree & pTree)
     {
         showFIOErr(fname, false);
         r = false;
-    }   
+    }
     return r;
 }
 
@@ -785,7 +785,7 @@ void CConnectDlg::killEndpoints()
 {
     for(int i = 0; i < ServerEndpoints.GetSize(); i++) delete ServerEndpoints.GetAt(i);
     ServerEndpoints.RemoveAll();
-}   
+}
 
 LPCSTR CConnectDlg::GetServerEndpoint(int idx)
 {
@@ -806,7 +806,7 @@ int CConnectDlg::GetDlgItemInt(UINT id)
     return atoi(tmp);
 }
 
-void CConnectDlg::OnOK() 
+void CConnectDlg::OnOK()
 {
     CListBox * listBox = static_cast <CListBox *> (GetDlgItem(IDC_SERVERS_LIST));
     CovenSize = listBox->GetCount();
@@ -825,21 +825,21 @@ void CConnectDlg::OnOK()
             putProfile(CONNECT_SECTION, key, *ep);
         }
 
-        CDialog::OnOK();            
+        CDialog::OnOK();
     }
-    else    
-        MessageBox("There must be at least 1 server in\nthe coven.", "Connection Configuration Error", MB_OK | MB_ICONEXCLAMATION); 
+    else
+        MessageBox("There must be at least 1 server in\nthe coven.", "Connection Configuration Error", MB_OK | MB_ICONEXCLAMATION);
 }
 
-void CConnectDlg::OnCancel() 
+void CConnectDlg::OnCancel()
 {
     CDialog::OnCancel();
 }
 
-BOOL CConnectDlg::OnInitDialog() 
+BOOL CConnectDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
-    
+
     CListBox * listBox = static_cast <CListBox *> (GetDlgItem(IDC_SERVERS_LIST));
     for(int i = 0; i < getProfileInt(CONNECT_SECTION, COVEN_SIZE); i++)
     {
@@ -848,20 +848,20 @@ BOOL CConnectDlg::OnInitDialog()
         listBox->AddString(getProfileStr(CONNECT_SECTION, key));
     }
 
-    CovenSize = 0;  
-    return TRUE; 
+    CovenSize = 0;
+    return TRUE;
 }
 
-void CConnectDlg::OnRemoveServerButton() 
+void CConnectDlg::OnRemoveServerButton()
 {
     CListBox * lb = static_cast <CListBox *> (GetDlgItem(IDC_SERVERS_LIST));
-    if(lb->GetCurSel() >= 0) lb->DeleteString(lb->GetCurSel());     
+    if(lb->GetCurSel() >= 0) lb->DeleteString(lb->GetCurSel());
 }
 
-void CConnectDlg::OnAddServerButton() 
+void CConnectDlg::OnAddServerButton()
 {
     CEndpointDlg epd;
-    
+
     if(epd.DoModal() == IDOK)
     {
         CListBox * lb = static_cast <CListBox *> (GetDlgItem(IDC_SERVERS_LIST));
@@ -907,7 +907,7 @@ LPCSTR CEndpointDlg::GetEndpointStr()
     return Endpoint;
 }
 
-void CEndpointDlg::OnOK() 
+void CEndpointDlg::OnOK()
 {
     GetDlgItem(IDC_SERVER_IP_EDIT)->GetWindowText(Endpoint);
     if(Endpoint.GetLength() > 0)
@@ -918,7 +918,7 @@ void CEndpointDlg::OnOK()
         {
             Endpoint += ":";
             Endpoint += port;
-            
+
             CDialog::OnOK();
         }
         else
@@ -928,15 +928,15 @@ void CEndpointDlg::OnOK()
         MessageBox("An IP must be specified", "Endpoint Error", MB_OK | MB_ICONEXCLAMATION);
 }
 
-void CEndpointDlg::OnCancel() 
+void CEndpointDlg::OnCancel()
 {
-    Endpoint.Empty();   
+    Endpoint.Empty();
     CDialog::OnCancel();
 }
 
-BOOL CEndpointDlg::OnInitDialog() 
+BOOL CEndpointDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
-    GetDlgItem(IDC_SERVER_PORT_EDIT)->SetWindowText("7070");    
+    GetDlgItem(IDC_SERVER_PORT_EDIT)->SetWindowText("7070");
     return TRUE;
 }

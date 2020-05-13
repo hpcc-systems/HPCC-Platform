@@ -97,7 +97,7 @@ class jlib_decl TokenBucket : public CInterface
     unsigned period;
     unsigned then;
 
-    inline void tokenUsed() 
+    inline void tokenUsed()
     {
         SpinBlock b(crit);
         assertex(tokensAvailable);

@@ -26,7 +26,7 @@ private:
     char m_url[256];
     long m_reqId;
 protected:
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -42,7 +42,7 @@ public:
     virtual IClientWsEclResp* search(IClientWsEclRequest* request);
     virtual IClientWsEclResp* searchEx(IClientWsEclRequest* request, const char *user, const char *pw, const char *relm);
     virtual IClientWsEclResp* searchEx(IClientWsEclRequest* request,const char* URL, const char *user, const char *pw, const char *relm);
-    virtual IClientWsEclResp* sendHttpRequest( IClientWsEclRequest* request,const char* method, const char* URL, const char *user, 
+    virtual IClientWsEclResp* sendHttpRequest( IClientWsEclRequest* request,const char* method, const char* URL, const char *user,
                                                                         const char *pw, const char *realm, const char* httpPostVariableName, bool encodeHttpPostBody);
 
     virtual void searchAsync(IClientWsEclRequest* request, IClientWsEclEvents &events);

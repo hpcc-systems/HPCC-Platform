@@ -88,7 +88,7 @@ struct builtin
 };
 
 struct esp_option
-{   
+{
     LogLevel logLevel;
     LogRequest logReq;
     bool logResp;
@@ -145,8 +145,8 @@ private:
 
     SocketEndpoint m_address;
 
-    map<string, protocol_cfg*> m_protocols; 
-    list<binding_cfg*> m_bindings; 
+    map<string, protocol_cfg*> m_protocols;
+    list<binding_cfg*> m_bindings;
     map<string, srv_cfg*> m_services;
 
     IArrayOf<IEspPlugin> m_plugins;
@@ -292,7 +292,7 @@ public:
            stopEsdlMonitor();
 
         serverstatus=NULL;
-        
+
         m_envpt.clear();
         m_cfg.clear();
 

@@ -2096,7 +2096,7 @@ void WsWuInfo::readWorkunitLog(IFile* sourceFile, MemoryBuffer& buf, const char*
     const unsigned columnNumPID = getPositionOfField(logfields, MSGFIELD_process);
     bool outputThisLine = false;
     unsigned processID = 0;
-    bool foundEndWUID = false; 
+    bool foundEndWUID = false;
     while (!eof)
     {
         if (outputThisLine)

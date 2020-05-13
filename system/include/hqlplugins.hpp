@@ -39,7 +39,7 @@ struct ECLPluginDefinitionBlock
     const char *description;
 };
 
-struct ECLPluginDefinitionBlockEx : public ECLPluginDefinitionBlock 
+struct ECLPluginDefinitionBlockEx : public ECLPluginDefinitionBlock
 {
     const char **compatibleVersions;
 };

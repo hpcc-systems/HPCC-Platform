@@ -46,20 +46,20 @@ enum GraphLocalisation {
     GraphRemote
 };
 
-enum { 
+enum {
     EclTextPrio = 1000,         // has no dependencies on anything else
     HashFunctionPrio = 1100,
     TypeInfoPrio = 1200,
-    RowMetaPrio = 1500,         
+    RowMetaPrio = 1500,
     XmlTransformerPrio = 1700,
     SteppedPrio = 1800,
     SegMonitorPrio = 2000,
     RecordTranslatorPrio = BuildCtx::NormalPrio,
 };
 
-enum ExpressionFormat { 
-    FormatNatural, 
-    FormatBlockedDataset, 
+enum ExpressionFormat {
+    FormatNatural,
+    FormatBlockedDataset,
     FormatLinkedDataset,
     FormatArrayDataset,
     FormatStreamedDataset,
@@ -77,11 +77,11 @@ class DatasetReference
 {
 public:
     DatasetReference(IHqlExpression * _ds) : ds(_ds)                        { side = no_none; }
-    DatasetReference(IHqlExpression * _ds, node_operator _side, IHqlExpression * seq) : ds(_ds) 
-    { 
-        side = _side; 
+    DatasetReference(IHqlExpression * _ds, node_operator _side, IHqlExpression * seq) : ds(_ds)
+    {
+        side = _side;
         if (side)
-            selector.setown(getSelector(side, seq)); 
+            selector.setown(getSelector(side, seq));
     }
 
     inline node_operator querySide() const                                  { return side; }
@@ -156,7 +156,7 @@ public:
     virtual void getActivityRange(unsigned cppIndex, unsigned & minActivityId, unsigned & maxActivityId);
     virtual void useSourceFile(const char * srcname, const char *flags, bool isTemp);
     virtual void addTemporaryDir(const char * path);
-    
+
     bool useFunction(IHqlExpression * funcdef);
     void useInclude(const char * include);
     void useLibrary(const char * libname);
@@ -166,7 +166,7 @@ public:
 
     void processIncludes();
     void addPlugin(const char *plugin, const char *version);
-        
+
 private:
     void addPluginsAsResource();
     void appendHintText(const char * xml);
@@ -331,7 +331,7 @@ interface IReferenceSelector : public IInterface
 {
 public:
 //code generation
-//change these to inline functions 
+//change these to inline functions
     virtual void assignTo(BuildCtx & ctx, const CHqlBoundTarget & target) = 0;
     virtual void buildAddress(BuildCtx & ctx, CHqlBoundExpr & target) = 0;
     virtual void buildClear(BuildCtx & ctx, int direction) = 0;
@@ -566,7 +566,7 @@ public:
     LinkedHqlExpr graphTag;
     SubGraphType type;
 };
-    
+
 //MORE: This class is far too big and needs restructuring!!!!!
 
 
@@ -837,8 +837,8 @@ struct HqlCppOptions
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
 struct HqlCppDerived
 {
-    HqlCppDerived() 
-    { 
+    HqlCppDerived()
+    {
     }
 };
 
@@ -1015,7 +1015,7 @@ public:
     void buildFunctionCall(BuildCtx & ctx, IIdAtom * name, HqlExprArray & args);
     void buildTranslatedFunctionCall(BuildCtx & ctx, IIdAtom * name, HqlExprArray & args);
     void callProcedure(BuildCtx & ctx, IIdAtom * name, HqlExprArray & args);
-    
+
     void expandFunctions(bool expandInline);
     IHqlExpression * needFunction(IIdAtom * name);
     bool registerGlobalUsage(IHqlExpression * filename);
@@ -1063,7 +1063,7 @@ public:
     void convertBoundDatasetToFirstRow(IHqlExpression * expr, CHqlBoundExpr & bound);
     void convertBoundRowToDataset(BuildCtx & ctx, CHqlBoundExpr & bound, const BoundRow * row, ExpressionFormat preferredFormat);
 
-    //Be very careful before calling this.......  
+    //Be very careful before calling this.......
     //Either isIndependentMaybeShared is set - which case the item inserted into the initctx can have no dependencies
     //or isIndependentMaybeShared is false, and the code that is inserted is never implicitly shared.
     bool getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart);
@@ -1139,7 +1139,7 @@ public:
     AliasKind buildExprInCorrectContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, bool evaluateLocally);
     ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare);
     ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, GraphLocalisation localisation, bool doDeclare);
-        
+
     void buildDefaultRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
     void buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
 
@@ -1236,8 +1236,8 @@ public:
     IReferenceSelector * createReferenceSelector(BoundRow * cursor);
 
     IHqlExpression * convertBetweenCountAndSize(const CHqlBoundExpr & bound, bool getLength);
-    
-    void assignBound(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * rhs);             // assign rhs to 
+
+    void assignBound(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * rhs);             // assign rhs to
     void assignBoundToTemp(BuildCtx & ctx, IHqlExpression * lhs, IHqlExpression * rhs);
 
     bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef);
@@ -1380,10 +1380,10 @@ public:
     IHqlExpression * createLoopSubquery(IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, bool multiInstance, unsigned & loopAgainResult);
     unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance, bool unlimitedResources);
     unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset);
-        
+
     void doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
     IHqlExpression * doBuildInternalFunction(IHqlExpression * funcdef);
-    
+
     IHqlExpression * doBuildCharLength(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildHashMd5Element(BuildCtx & ctx, IHqlExpression * elem, CHqlBoundExpr & state);
     AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt, AliasExpansionInfo * parentInfo);
@@ -1490,7 +1490,7 @@ public:
 
     bool buildNWayInputs(CIArrayOf<ABoundActivity> & inputs, BuildCtx & ctx, IHqlExpression * input);
 
-//Activities.   
+//Activities.
     ABoundActivity * doBuildActivityAction(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityAggregate(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityApply(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
@@ -1711,10 +1711,10 @@ public:
     void gatherExplicitMatched(IHqlExpression * expr);
 
     void doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * expr, CHqlBoundExpr * bound);
-    
+
     IHqlExpression * doBuildRegexCompileInstance(BuildCtx & ctx, IHqlExpression * pattern, bool unicode, bool caseSensitive);
     IHqlExpression * doBuildRegexFindInstance(BuildCtx & ctx, IHqlExpression * compiled, IHqlExpression * search, bool cloneSearch);
-    
+
     IHqlExpression * doCreateGraphLookup(BuildCtx & declarectx, BuildCtx & resolvectx, unique_id_t id, const char * activity, bool isChild);
     IHqlExpression * buildGetLocalResult(BuildCtx & ctx, IHqlExpression * expr);
 
@@ -2089,7 +2089,7 @@ protected:
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;
-    
+
 #ifdef SPOT_POTENTIAL_COMMON_ACTIVITIES
     LocationArray       savedActivityLocations;
     HqlExprArray        savedActivities;
@@ -2261,8 +2261,8 @@ extern bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr);
 
 SubGraphInfo * matchActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
 bool isActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
-inline SubGraphInfo * queryActiveSubGraph(BuildCtx & ctx) 
-{ 
+inline SubGraphInfo * queryActiveSubGraph(BuildCtx & ctx)
+{
     return static_cast<SubGraphInfo *>(ctx.queryFirstAssociation(AssocSubGraph));
 }
 

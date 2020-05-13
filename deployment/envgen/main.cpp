@@ -396,14 +396,14 @@ int main(int argc, char** argv)
       queryHostIP().getIpText(thisip);
       env.appendf("<" XML_HEADER ">\n<!-- Generated with envgen on ip %s -->\n", thisip.str());
       env.append(envXml);
-      
+
       Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
       Owned<IConstEnvironment>  constEnv = factory->loadLocalEnvironment(env);
       validateEnv(constEnv);
 
       Owned<IFile> pFile;
       pFile.setown(createIFile(out_envname));
-      
+
       Owned<IFileIO> pFileIO;
       pFileIO.setown(pFile->open(IFOcreaterw));
       pFileIO->write(0, env.length(), env.str());

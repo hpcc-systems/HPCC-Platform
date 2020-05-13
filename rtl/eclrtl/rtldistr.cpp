@@ -57,7 +57,7 @@ class CBoolDistributionTable : public CDistributionTable, implements IBoolDistri
     unsigned __int64 counts[2];
 public:
     IMPLEMENT_IINTERFACE;
-    CBoolDistributionTable(const char *_fieldname) : CDistributionTable(_fieldname) 
+    CBoolDistributionTable(const char *_fieldname) : CDistributionTable(_fieldname)
     {
         counts[0] = counts[1] = 0;
     }
@@ -65,8 +65,8 @@ public:
     {
         CDistributionTable::report(out);
     }
-    virtual void merge(MemoryBuffer &in)    
-    { 
+    virtual void merge(MemoryBuffer &in)
+    {
         unsigned __int64 c[2];
         in.read(sizeof(c), &c);
         counts[false] += c[false];
@@ -98,7 +98,7 @@ class CByteDistributionTable : public CDistributionTable
 {
     unsigned __int64 counts[256];
 public:
-    CByteDistributionTable(const char *_fieldname) : CDistributionTable(_fieldname) 
+    CByteDistributionTable(const char *_fieldname) : CDistributionTable(_fieldname)
     {
         memset(counts, 0, sizeof(counts));
     }
@@ -114,10 +114,10 @@ public:
     {
         return true;
     }
-    virtual void merge(MemoryBuffer &in)    
-    { 
+    virtual void merge(MemoryBuffer &in)
+    {
         unsigned __int64 _counts[256];
-        in.read(sizeof(_counts), &_counts); 
+        in.read(sizeof(_counts), &_counts);
         for (unsigned i = 0; i < _elements_in(counts); i++)
             counts[i] += _counts[i];
     }
@@ -180,7 +180,7 @@ FixedMapper::FixedMapper(const void *_key, int _ksize) : Mapping(_key, _ksize)
 class CFixedDistributionTable : public CDistributionTable
 {
 public:
-    CFixedDistributionTable(const char *_fieldname, unsigned _ksize, unsigned _threshold) 
+    CFixedDistributionTable(const char *_fieldname, unsigned _ksize, unsigned _threshold)
         : CDistributionTable(_fieldname), ksize(_ksize), threshold(_threshold), table(_ksize, false)
     {
         estimated = false;
@@ -188,7 +188,7 @@ public:
     }
     virtual unsigned __int64 distinct() { return estimated ? cardinality : table.count(); }
     virtual bool exact() { return !estimated; }
-    virtual void merge(MemoryBuffer &in)    
+    virtual void merge(MemoryBuffer &in)
     {
         bool inEstimated;
         unsigned inNum, inCardinality;
@@ -206,8 +206,8 @@ public:
                 mapped->count += count;
         }
     }
-    virtual void serialize(MemoryBuffer &out)   
-    { 
+    virtual void serialize(MemoryBuffer &out)
+    {
         out.append(cardinality);
         out.append(estimated);
         out.append(table.count());

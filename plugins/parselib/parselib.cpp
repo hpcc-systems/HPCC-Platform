@@ -41,11 +41,11 @@ static const char * EclDefinition =
 "END;";
 
 static const char * compatibleVersions[] = {
-    "PARSELIB 1.0.0 [fa9b3ab8fad8e46d8c926015cbd39f06]", 
+    "PARSELIB 1.0.0 [fa9b3ab8fad8e46d8c926015cbd39f06]",
     PARSELIB_VERSION,
     NULL };
 
-PARSELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+PARSELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {

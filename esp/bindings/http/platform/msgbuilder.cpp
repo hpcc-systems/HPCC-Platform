@@ -79,7 +79,7 @@ StringBuffer & CSoapMsgBuilder::getSoapResponse(StringBuffer & soapResponse)
         StringBuffer key, val;
         prop.getName(key);
         m_properties->getProp(key.str(), val);
-        soapResponse.appendf("<%s>%s</%s>", key.str(), val.str(), key.str()); 
+        soapResponse.appendf("<%s>%s</%s>", key.str(), val.str(), key.str());
         itr->next();
     }
     itr->Release();
@@ -166,7 +166,7 @@ StringBuffer & CSoapMsgXsdBuilder::getXsd(StringBuffer & wsdlSchema)
     wsdlSchema.appendf("</%s:complexType>", m_var.str());
 
     wsdlSchema.appendf("<%s:element name=\"%s\" nillable=\"true\" type=\"tns:%s\" />", m_var.str(), m_structLabel.str(), m_structLabel.str());
-    wsdlSchema.appendf("<%s:element name=\"ArrayOf%s\" nillable=\"true\" type=\"tns:ArrayOf%s\" />", m_var.str(), m_structLabel.str(), m_structLabel.str()); 
+    wsdlSchema.appendf("<%s:element name=\"ArrayOf%s\" nillable=\"true\" type=\"tns:ArrayOf%s\" />", m_var.str(), m_structLabel.str(), m_structLabel.str());
   return wsdlSchema;
 }
 
@@ -184,7 +184,7 @@ const char * CSoapMsgXsdBuilder::getXsdTypeLabel(XSD_TYPES type)
         return XSD_INT_DESC;
     case XSD_BOOL:
         return XSD_BOOL_DESC;
-    default: 
+    default:
         return XSD_STRING_DESC;
     }
 }

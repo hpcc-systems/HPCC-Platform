@@ -167,7 +167,7 @@ StringBuffer &ListHelper::doFormat(StringBuffer &s, IConstECLWorkunit * w)
     s.append(format->getDataDelimiter())
      .append(w->getState())
      .append(format->getDataDelimiter())
-     .append(format->getRecordSeparator()); 
+     .append(format->getRecordSeparator());
 
     return s;
 }

@@ -47,9 +47,9 @@ private:
     IPropertyTree* addLegacyServer(const char* name, IPropertyTree* pServer, IPropertyTree*pFarm, const char* roxieClusterName);
     void setComputerState(IPropertyTree* pNode, COMPUTER_STATE state);
     void setAttribute(IPropertyTree* pNode, const char* szName, const char* szValue);
-    void mergeServiceAuthenticationWithBinding(IPropertyTree* pBinding, 
-                                                                                 IPropertyTree* pProperties, 
-                                                                                 IPropertyTree* pNewProperties, 
+    void mergeServiceAuthenticationWithBinding(IPropertyTree* pBinding,
+                                                                                 IPropertyTree* pProperties,
+                                                                                 IPropertyTree* pNewProperties,
                                                                                  const char* NodeName);
     IPropertyTree* lookupComputerByName(const char* szName) const;
     void createUniqueName(const char* szPrefix, const char* parent, StringBuffer& sbName);

@@ -111,8 +111,8 @@ public:
     }
     void open()
     {
-        if (previntercept) interceptLog(previntercept); 
-        previntercept = interceptLog(this); 
+        if (previntercept) interceptLog(previntercept);
+        previntercept = interceptLog(this);
     }
 
 } *FileLogServer=NULL;

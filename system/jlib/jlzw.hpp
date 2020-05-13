@@ -29,8 +29,8 @@ interface jlib_decl ICompressor : public IInterface
     virtual void   open(MemoryBuffer &mb, size32_t initialSize=0)=0; // variable internally sized buffer
     virtual void   open(void *blk, size32_t blksize)=0;              // fixed size output
     virtual void   close()=0;
-    virtual size32_t write(const void *buf,size32_t len)=0;             
-                                                                            
+    virtual size32_t write(const void *buf,size32_t len)=0;
+
     virtual void * bufptr()=0;
     virtual size32_t buflen()=0;
     virtual void   startblock()=0;                      // row based must call startblock/commitblock
@@ -50,7 +50,7 @@ interface jlib_decl IRandRowExpander : public IInterface
 {
     static inline bool isRand(const void *blk) { return *((const unsigned short *)blk+1)==0xffff; }
     virtual bool init(const void *blk,bool copy=true)=0;
-    virtual size32_t rowSize() const = 0;       
+    virtual size32_t rowSize() const = 0;
     virtual unsigned numRows() const = 0;
     virtual bool expandRow(void *target,unsigned index) const =0;
     virtual size32_t expandRow(void *target,unsigned index,size32_t ofs,size32_t sz) const =0;
@@ -73,7 +73,7 @@ extern jlib_decl size32_t DiffCompressFirst(const void *src,void *dst,void *buff
                                                                                             // buf need not be initialized
 extern jlib_decl size32_t DiffCompress(const void *src,void *dst,void *buff,size32_t rs);       // compress subsequent rows (bufs set by previous DiffFirstCompress or DiffCompress
 extern jlib_decl size32_t DiffCompress2(const void *src,void *dst,const void *prev,size32_t rs);// compress row (prev not updated)
-extern jlib_decl size32_t DiffExpand(const void *src,void *dst,const void *prev,size32_t rs);   // expand row, prev must be passed previous expanded row 
+extern jlib_decl size32_t DiffExpand(const void *src,void *dst,const void *prev,size32_t rs);   // expand row, prev must be passed previous expanded row
 extern jlib_decl size32_t DiffCompressedSize(const void *cmpressedsrc,size32_t rs);             // calculate compressed row size - rs is expanded size
 inline size32_t MaxDiffCompressedRowSize (size32_t rowsize) { return rowsize+((rowsize+254)/255)*2; }
 

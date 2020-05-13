@@ -222,7 +222,7 @@ protected:
 protected:
     //For a no_select, is this the root no_select (rather than a.b.c), and is it also an active selector.
     //That requires the left hand side to be a dataset, and not marked as new.
-    //Used for determining how a no_select should be interpreted e.g., in table gathering. 
+    //Used for determining how a no_select should be interpreted e.g., in table gathering.
     inline bool isSelectRootAndActive() const
     {
         dbgassertex(op == no_select);
@@ -322,7 +322,7 @@ public:
     virtual void addObserver(IObserver & observer) override;
     virtual void removeObserver(IObserver & observer) override;
     virtual unsigned getHash() const override;
-    
+
     virtual void beforeDispose() override;               // called before item is freed so whole object still valid
     virtual unsigned getSymbolFlags() const override;
 
@@ -380,13 +380,13 @@ protected:
     std::atomic<CHqlDynamicProperty *> attributes = { nullptr };
 };
 
-//The following couple of classes are here primarily to save memory.  
+//The following couple of classes are here primarily to save memory.
 //It is preferrable not to artificially introduce extra classes, but one representative large example has
 //12M+ instances, and not including the tables/type save 16 and 8 bytes each.  That quickly becomes a significant
 //amount of memory.
 //
-//The nodes with significant number of instances are (no_assign, no_select and annotations).  
-//One further possibilitiy is to add a CHqlAssignExpression which could also remove the tables and type. 
+//The nodes with significant number of instances are (no_assign, no_select and annotations).
+//One further possibilitiy is to add a CHqlAssignExpression which could also remove the tables and type.
 //If any more class splitting is contemplated it would be worth revisiting in terms of policies.
 
 //This class calculates which tables the expression references to ensure it is evaluated in the correct conext.
@@ -429,7 +429,7 @@ public:
 
 protected:
     inline CHqlExpressionWithType(node_operator op, ITypeInfo * _type) : CHqlExpressionWithTables(op), type(_type) {}
-    
+
     CHqlExpressionWithType(node_operator op, ITypeInfo *type, HqlExprArray & ownedOperands);
     ~CHqlExpressionWithType();
 
@@ -534,7 +534,7 @@ public:
     }
     //NB: This is the string length, so subtract one to remove the null terminator
     virtual size32_t length() override
-    { 
+    {
         ensureLoaded();
         return (size32_t)(fileContents.length()-1);
     }
@@ -758,7 +758,7 @@ public:
     static CHqlNamedSymbol *makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int lineno, int column, int _startpos, int _bodypos, int _endpos);
 
     virtual ISourcePath * querySourcePath() const override;
-    
+
     virtual StringBuffer& getTextBuf(StringBuffer& buf) override { return buf.append(text->length(),text->getText()); }
     virtual IFileContents * queryDefinitionText() const override;
     virtual int  getStartLine() const override { return startLine; }
@@ -1086,8 +1086,8 @@ inline IHqlExpression * lookupSymbol(SymbolTable & symbols, IIdAtom * searchName
     OwnedHqlExpr ret = symbols.getLinkedValue(lower(searchName));
 
     if (!ret)
-        return NULL; 
-    
+        return NULL;
+
     if (!(ret->isExported() || sharedOK))
         return NULL;
 
@@ -1433,7 +1433,7 @@ public:
     virtual IHqlDataset* queryDataset() override { return queryChild(0)->queryDataset(); }
     virtual IHqlExpression *clone(HqlExprArray &newkids) override;
 
-protected: 
+protected:
     Owned<IHqlScope> context;             // allows symbols to be resolved when reparsing.
     virtual void sethash();
 };
@@ -1765,7 +1765,7 @@ public:
     virtual const char *queryTypeName() override { return str(queryName()); }
     virtual IHqlExpression * castToExpression() override { return this; }
     virtual IHqlScope * castToScope() override { return NULL; }
-    
+
     virtual unsigned getCardinality() override           { return 0; }
     virtual bool isInteger() override                    { return false; }
     virtual bool isReference() override                  { return false; }
@@ -1801,7 +1801,7 @@ public:
 
     virtual IHqlExpression *clone(HqlExprArray &newkids) override;
     virtual IHqlExpression *queryNormalizedSelector() override;
-    
+
 protected:
     OwnedHqlExpr normalized;
 };
@@ -1837,7 +1837,7 @@ public:
     CHqlDataset(node_operator op, ITypeInfo *_type, HqlExprArray &_ownedOperands);
     ~CHqlDataset();
 
-//interface IHqlDataset 
+//interface IHqlDataset
     virtual IHqlDataset *queryRootTable() override { return rootTable; };
     virtual IHqlExpression * queryContainer() override { return container; }
     virtual bool isAggregate() override;

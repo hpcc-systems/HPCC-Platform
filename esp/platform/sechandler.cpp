@@ -28,7 +28,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-SecHandler::SecHandler() 
+SecHandler::SecHandler()
 {
 }
 
@@ -78,7 +78,7 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
         return false;
 
     //by now the prime ISecUser will have been fully initialized. We should be able
-    //..to tell its status. 
+    //..to tell its status.
     if(m_user->getStatus() == SecUserStatus_FreeTrial || m_user->getStatus() == SecUserStatus_Rollover)
     {
         bool bReturn = true;
@@ -87,7 +87,7 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
         user_status = m_user->getStatus();
         return bReturn;
     }
-    
+
     //m_user should be the user who logs in. This may not be the user whose resource we are looking for.
     //if userid and companyid are blank then we must be authenticating a normal user.. so continue on..
     if(UserID==0 || *UserID=='\0' || CompanyID==0 || *CompanyID=='\0')
@@ -209,7 +209,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
 {
     if(features.length() == 0)
         return false;
-    
+
     if(m_secmgr.get() == NULL)
     {
         for(unsigned i = 0; i < features.length(); i++)
@@ -238,7 +238,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
         const char* feature = features.item(i);
         if(feature == NULL || feature[0] == 0)
             continue;
-        
+
         if(m_feature_authmap.get() == NULL)
         {
             plist->addResource(feature);
@@ -262,7 +262,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
             }
         }
     }
-    
+
     bool auth_ok = false;
     try
     {
@@ -324,7 +324,7 @@ bool SecHandler::validateSecFeatureAccess(const char* pszFeatureUrl, unsigned re
     }
     if (throwExcpt)
         throw MakeStringException(-1, "Access Denied!");
-    
+
     return false;
 }
 
@@ -338,7 +338,7 @@ void SecHandler::AuditMessage(AuditType type, const char *filterType, const char
     msg.appendf("\n\tProcess: esp\n\tUser: %s",  m_user->getName());
     if (parms)
         msg.append("\n\t").valist_appendf(parms, args);
-    
+
     va_end(args);
     AUDIT(type, msg.str());
 }

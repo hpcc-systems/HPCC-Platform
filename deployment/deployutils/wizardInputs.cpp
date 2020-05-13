@@ -43,8 +43,8 @@ CInstDetails::CInstDetails(const char * compName, const StringArray &ipAssigned)
 //---------------------------------------------------------------------------
 //  CWizardInputs
 //---------------------------------------------------------------------------
-CWizardInputs::CWizardInputs(const char* xmlArg,const char *service, 
-                             IPropertyTree * cfg, 
+CWizardInputs::CWizardInputs(const char* xmlArg,const char *service,
+                             IPropertyTree * cfg,
                              MapStringTo<StringAttr, const char *>* dirMap,
                              StringArray &arrBuildSetsWithAssignedIPs,
                              StringArray &arrAssignedIPs): m_service(service),
@@ -158,7 +158,7 @@ void CWizardInputs::setEnvironment()
      Owned<IProperties> pParams = createProperties(pConfFile);
      Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
      StringBuffer sb, fileName;
-     
+
      CConfigHelper *pConfigHelper = CConfigHelper::getInstance(m_cfg, m_service.str());
 
      if (pConfigHelper == NULL)
@@ -174,10 +174,10 @@ void CWizardInputs::setEnvironment()
      }
 
      m_buildSetTree.setown(pBuildSet);
-     
+
      fileName.clear().append((pEnvParams->queryProp("configs") != NULL ? (sb.clear().append(pEnvParams->queryProp("configs")).append("/")): STANDARD_CONFIG_DIR));
      fileName.append((pParams->queryProp("wizardalgorithm") != NULL ? (sb.clear().append(pParams->queryProp("wizardalgorithm"))) : STANDARD_CONFIG_ALGORITHMFILE));
-     
+
      if(fileName.length() && checkFileExists(fileName.str()))
        m_algProp.setown(createProperties(fileName.str()));
      else
@@ -188,7 +188,7 @@ void CWizardInputs::setEnvironment()
 }
 
 void CWizardInputs::setWizardRules()
-{ 
+{
    const char* roxieRedTypes[] = {"Full", "Circular", "None", "Overloaded"};
    m_roxieAgentRedType.clear().append("Circular");
    m_roxieAgentRedChannels = 2;
@@ -225,7 +225,7 @@ void CWizardInputs::setWizardRules()
                ForEachItemIn(x, eachpair)
                {
                  StringArrayPtr* pairServerArr = m_invalidServerCombo.getValue(eachpair.item(x));
-                 if(pairServerArr)  
+                 if(pairServerArr)
                  {
                    serverCompArr = (*pairServerArr);
                    serverCompArr->append(x == 0 ? eachpair.item(1): eachpair.item(0));
@@ -288,7 +288,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
   StringBuffer xPath;
   xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]",buildSetName);
   IPropertyTree* pBuildSet = pEnvTree->queryPropTree(xPath.str());
-  
+
   CInstDetails* instDetails = NULL;
   if(pBuildSet)
   {
@@ -344,7 +344,7 @@ CInstDetails* CWizardInputs::getServerIPMap(const char* compName, const char* bu
         else if (!applyOverlappingRules(compName, buildSetName, numOfIPSAlreadyTaken, pIpAddrMap))
           break;
       }
- 
+
       if(m_compIpMap.find(buildSetName) != NULL)
       {
         delete instDetails; // Possibly previously NEW'ed, delete to avoid override
@@ -397,7 +397,7 @@ bool CWizardInputs::applyOverlappingRules(const char* compName,const char* build
   StringArray dontAssign , ignoredForOverlap;
   bool assignedIP = false;
   CInstDetails* compPtr = NULL;
-  
+
   if(m_invalidServerCombo.find(buildSetName) != NULL)
   {
     StringArray* serverCompArr = 0;
@@ -452,7 +452,7 @@ bool CWizardInputs::applyOverlappingRules(const char* compName,const char* build
       if(ipAssignedCount >= m_maxCompOnNode )
       {
         ignoredForOverlap.append(pIpAddrMap->item(ii));
-      } 
+      }
       else
       {
         assignedIP = true;
@@ -462,7 +462,7 @@ bool CWizardInputs::applyOverlappingRules(const char* compName,const char* build
     }
   }
   if(!assignedIP && ignoredForOverlap.ordinality() > 0)
-  {          
+  {
     addToCompIPMap(buildSetName, ignoredForOverlap.item(0), compName);
     assignedIP = true;
   }
@@ -479,7 +479,7 @@ count_t CWizardInputs::getNumOfInstForIP(const char * ip)
     CInstDetails* comp = m_compIpMap.mapToValue(&ips.query());
     StringArray& ipArray = comp->getIpAssigned();
     if(ipArray.find(ip) != NotFound)
-      cnt++;  
+      cnt++;
   }
   return cnt;
 }
@@ -504,7 +504,7 @@ bool CWizardInputs::generateEnvironment(StringBuffer& envXml)
 IPropertyTree* CWizardInputs::createEnvironment()
 {
   StringBuffer xpath, sbTemp, name ;
- 
+
   sbTemp.clear().appendf("<%s><%s></%s>", XML_HEADER, XML_TAG_ENVIRONMENT, XML_TAG_ENVIRONMENT);
   IPropertyTree* pNewEnvTree = createPTreeFromXMLString(sbTemp.str());
 
@@ -518,7 +518,7 @@ IPropertyTree* CWizardInputs::createEnvironment()
   {
     Owned<IProperties> pParams = createProperties(tmp);
     Owned<IPropertyIterator> iter = pParams->getIterator();
-     
+
     ForEach(*iter)
     {
       StringBuffer prop;
@@ -537,28 +537,28 @@ IPropertyTree* CWizardInputs::createEnvironment()
   pCompTree->removeProp(xpath.str());
   xpath.clear().appendf("./%s/%s", XML_TAG_COMPUTERTYPE, XML_ATTR_NICSPEED);
   pCompTree->removeProp(xpath.str());
-      
+
   xpath.clear().append(XML_TAG_SWITCH).append("/").append(XML_ATTR_NAME);
   pCompTree->setProp(xpath.str(), "Switch") ;
-  
-  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_NAME);   
+
+  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_NAME);
   pCompTree->setProp(xpath.str(), "localdomain");
-  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_PASSWORD);   
+  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_PASSWORD);
   pCompTree->setProp(xpath.str(), m_pXml->queryProp("@password"));
-  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_USERNAME);   
+  xpath.clear().append(XML_TAG_DOMAIN).append("/").append(XML_ATTR_USERNAME);
   pCompTree->setProp(xpath.str(), m_pXml->queryProp("@username"));
 
   xpath.clear().appendf("./%s/@snmpSecurityString", XML_TAG_DOMAIN);
   pCompTree->removeProp(xpath.str());
-  
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_COMPUTERTYPE); 
-  pCompTree->setProp(xpath.str(), "linuxmachine"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_MANUFACTURER); 
-  pCompTree->setProp(xpath.str(), "unknown"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NAME); 
-  pCompTree->setProp(xpath.str(), "linuxmachine"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
-  pCompTree->setProp(xpath.str(), "linux"); 
+
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_COMPUTERTYPE);
+  pCompTree->setProp(xpath.str(), "linuxmachine");
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_MANUFACTURER);
+  pCompTree->setProp(xpath.str(), "unknown");
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NAME);
+  pCompTree->setProp(xpath.str(), "linuxmachine");
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);
+  pCompTree->setProp(xpath.str(), "linux");
   xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NICSPEED);
   pCompTree->setProp(xpath.str(), "1000");
   unsigned x;
@@ -695,7 +695,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, const char * a
     nodeName.clear().append(pHardTemp->queryProp("./" XML_ATTR_NAME));//NodeName
 
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, buildSetName);
-  
+
   IPropertyTree* pComp = pNewEnvTree->queryPropTree(xpath.str());
   compName.clear().append(pComp->queryProp(XML_ATTR_NAME));//compName
 
@@ -704,7 +704,7 @@ void CWizardInputs::addInstanceToTree(IPropertyTree* pNewEnvTree, const char * a
 
   if(pInstance)
     addInstanceToCompTree(pNewEnvTree, pInstance, sbl.clear(), sb.clear(),NULL);
-  
+
   xpath.clear().appendf("./%s/%s[%s=\"%s\"]/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_NAME, compName.str(), XML_TAG_INSTANCE, XML_ATTR_COMPUTER, nodeName.str());
   IPropertyTree* pInst = pNewEnvTree->queryPropTree(xpath.str());
   if(pInst)
@@ -757,7 +757,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
               pSWCompTree->setProp(iAttr->queryName(), iAttr->queryValue());
           }
         }
-    
+
         //Now adding elements
         Owned<IPropertyTreeIterator> iterElems = pCompTree->getElements("*");
         ForEach (*iterElems)
@@ -765,7 +765,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
           IPropertyTree* pElem = &iterElems->query();
 
           Owned<IAttributeIterator> iAttr = pElem->getAttributes();
-          
+
           ForEach(*iAttr)
           {
             IPropertyTree* pNewSubElem = pSWCompTree->queryPropTree(pElem->queryName());
@@ -882,13 +882,13 @@ unsigned CWizardInputs::getCntForAlreadyAssignedIPS(const char* buildSetName)
 void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDetails* pInstDetails, const char* buildSetName, bool genRoxieOnDemand)
 {
   StringBuffer xmlForRoxiePorts, xmlForRoxieServers, xpath, compName, computerName, msg;
-    
+
   if(!strcmp(buildSetName, "roxie"))
   {
     //Before proceeding remove the roxieserver already added to env via xsd.
     xpath.clear().appendf("./%s/%s/%s", XML_TAG_SOFTWARE, XML_TAG_ROXIECLUSTER, XML_ATTR_NAME);
     compName.clear().append(pNewEnvTree->queryProp(xpath.str()));
-    
+
     xmlForRoxiePorts.clear().appendf("<RoxieData type=\"RoxieFarm\" parentName=\"\" roxieName=\"%s\" ", compName.str());
 
     if (genRoxieOnDemand)
@@ -937,21 +937,21 @@ void CWizardInputs::addRoxieThorClusterToEnv(IPropertyTree* pNewEnvTree, CInstDe
     StringBuffer masterIP, xml;
     xpath.clear().appendf("./%s/%s/%s", XML_TAG_SOFTWARE, XML_TAG_THORCLUSTER, XML_ATTR_NAME);
     compName.clear().append(pNewEnvTree->queryProp(xpath.str()));
-   
+
     if(pInstDetails)
     {
       StringArray& ipAssignedToComp = pInstDetails->getIpAssigned();
 
       if(!ipAssignedToComp.empty())
         masterIP.clear().append(ipAssignedToComp.item(0));
-    
+
       xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_HARDWARE, XML_TAG_COMPUTER, XML_ATTR_NETADDRESS, masterIP.str());
       IPropertyTree* pHardTemp = pNewEnvTree->queryPropTree(xpath.str());
       if(pHardTemp)
         xml.clear().appendf("<ThorData type=\"Master\" name=\"%s\" validateComputers=\"false\" skipExisting=\"false\" > <Computer name=\"%s\" /></ThorData>", compName.str(), pHardTemp->queryProp("./@name"));
       handleThorTopologyOp(pNewEnvTree, "Add", xml.str(), msg);
 
-      //Now add Slave 
+      //Now add Slave
       xml.clear().appendf("<ThorData type=\"Slave\" name=\"%s\" validateComputers=\"false\" slavesPerNode=\"%d\" channelsPerSlave=\"%d\" skipExisting=\"false\" >", compName.str(), m_thorSlavesPerNode, m_thorChannelsPerSlave);
       unsigned numOfNodes = ipAssignedToComp.ordinality() == 1 ? 0 : 1;
 
@@ -972,14 +972,14 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
 {
    StringBuffer xpath, sbDefn, xmlArg, compName, sbNewName;
    Owned<IPropertyTreeIterator> espProcessIter = pNewEnvTree->getElements("./" XML_TAG_SOFTWARE "/" XML_TAG_ESPPROCESS);
-        
+
    ForEach(*espProcessIter)
    {
      IPropertyTree* pEspProcess = &espProcessIter->query();
      compName.clear().append(pEspProcess->queryProp(XML_ATTR_NAME));
      xpath.clear().appendf("./%s/%s/%s[@processName=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_TAG_ESPSERVICE);
      Owned<IPropertyTreeIterator> espServiceIter = pNewEnvTree->getElements(xpath.str());
-       
+
      ForEach (*espServiceIter)
      {
        IPropertyTree* pEspService = &espServiceIter->query();
@@ -987,7 +987,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
        {
          StringBuffer espServiceName;
          espServiceName.appendf("my%s", pEspService->queryProp("@name"));
-                
+
          xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, espServiceName.str());
          IPropertyTree* pEspServiceInSWTree = pNewEnvTree->queryPropTree(xpath.str());
          if(pEspServiceInSWTree)
@@ -1005,10 +1005,10 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
 
            xmlArg.clear().appendf("<EspServiceBindings type=\"EspBinding\" compName=\"%s\" > <Item name=\"%s\" params=\"pcType=EspProcess::pcName=%s::subType=EspBinding::subTypeKey=%s \"/></EspServiceBindings>", compName.str(), espServiceName.str(), compName.str(), espServiceName.str());
            addEspBindingInformation(xmlArg, pNewEnvTree, sbNewName, NULL, m_cfg, m_service.str());
-           
+
            xpath.clear().appendf("./%s/%s/%s/[%s=\"\"]", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPBINDING, XML_ATTR_SERVICE);
            IPropertyTree* pEspBindingInfo = pNewEnvTree->queryPropTree(xpath.str());
-                   
+
            pEspBindingInfo->setProp(XML_ATTR_NAME,(espServiceName.toLowerCase()).str());
            pEspBindingInfo->setProp(XML_ATTR_SERVICE,(espServiceName.toLowerCase()).str());
            pEspBindingInfo->setProp(XML_ATTR_PORT, port );
@@ -1055,7 +1055,7 @@ void CWizardInputs::addTopology(IPropertyTree* pNewEnvTree)
   StringBuffer xpath;
   if(!pNewEnvTree->hasProp("./" XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY))
     pNewEnvTree->addPropTree("./" XML_TAG_SOFTWARE "/" XML_TAG_TOPOLOGY, createPTree());
- 
+
   HashIterator sIter(m_compForTopology);
   for(sIter.first();sIter.isValid();sIter.next())
   {
@@ -1075,12 +1075,12 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
      xmlTag.clear().append(XML_TAG_THORCLUSTER);
    else if(!strcmp(component, "hthor"))
      xmlTag.clear().append("hthor");
-     
-     
+
+
    xpath.clear().appendf("./%s/%s[1]/%s", XML_TAG_SOFTWARE, xmlTag.str(), XML_ATTR_NAME);
 
    clusterStr.clear().appendf("<Cluster name=\"%s\" prefix=\"%s\" alias=\"\"></Cluster>", component, component);
- 
+
    IPropertyTree* pCluster = createPTreeFromXMLString(clusterStr.str());
    if(pCluster)
    {
@@ -1114,7 +1114,7 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
                 }
               }
             }
-            
+
          }
          clusterCompEle->kill();
      }
@@ -1126,8 +1126,8 @@ IPropertyTree* CWizardInputs::createTopologyForComp(IPropertyTree* pNewEnvTree, 
 
 void CWizardInputs::checkForDependencies()
 {
-  StringBuffer xpath; 
-  
+  StringBuffer xpath;
+
   if(m_buildSetTree)
   {
     xpath.clear().appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
@@ -1196,13 +1196,13 @@ void CWizardInputs::setTopologyParam()
   {
     StringBuffer topologySec;
     ForEachItemIn(x, m_clusterForTopology)
-    { 
+    {
       topologySec.clear().appendf("%s_topology",m_clusterForTopology.item(x));
       const char * elemForCluster = m_algProp->queryProp(topologySec.str());
       if(elemForCluster && *elemForCluster)
       {
         StringArray* compClusterArr = new StringArray();
-       
+
         StringArray clusterElemArr;
         clusterElemArr.appendList(elemForCluster, ",");
         ForEachItemIn(y, clusterElemArr)

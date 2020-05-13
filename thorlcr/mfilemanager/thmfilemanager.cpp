@@ -522,7 +522,7 @@ public:
             if (nonLocalIndex)
                 ++total;
             StringBuffer dir;
-            if (temporary && !job.queryUseCheckpoints()) 
+            if (temporary && !job.queryUseCheckpoints())
                 dir.append(queryTempDir(false));
             else
             {
@@ -697,7 +697,7 @@ IFileDescriptor *getConfiguredFileDescriptor(IDistributedFile &file)
         IDistributedFilePart &part = iter->query();
         IPartDescriptor *partDesc = fileDesc->queryPart(partn);
         try {
-            offset_t sz = part.getFileSize(true, false);             
+            offset_t sz = part.getFileSize(true, false);
             partDesc->queryProperties().setPropInt64("@size", sz);
         }
         catch (IDFS_Exception *e) {

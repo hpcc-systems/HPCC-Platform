@@ -75,7 +75,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
                 Owned<IJobQueue> jq = createJobQueue(loadGroup.str());
                 IJobQueueItem* item = createJobQueueItem(wuid.str());
                 item->setOwner(owner.str());
-                item->setPriority(priority);        
+                item->setPriority(priority);
 
                 class cPollThread: public Thread
                 {
@@ -98,7 +98,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
                     ~cPollThread()
                     {
                         stop();
-                    }   
+                    }
                     int run()
                     {
                         while (!stopped) {
@@ -158,7 +158,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
                         LOG(MCwarning, unknownJob, "Failed to remove file part %s from %s", partfile->queryFilename(),rfn.queryEndpoint().getUrlStr(eps).str());
                     else {
                         unsigned t = msTick()-start;
-                        if (t>5*1000) 
+                        if (t>5*1000)
                             LOG(MCwarning, unknownJob, "Removing %s from %s took %ds", partfile->queryFilename(), rfn.queryEndpoint().getUrlStr(eps).str(), t/1000);
                     }
 
@@ -166,7 +166,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
                 catch (IException *e)
                 {
                     CriticalBlock block(errcrit);
-                    if (mexcept) 
+                    if (mexcept)
                         mexcept->append(*e);
                     else {
                         StringBuffer s("Failed to remove file part ");
@@ -193,7 +193,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
         IJobQueue *jq;
         IAgentContext *realagent;
     public:
-        
+
         bool timedout;
         CTimeMon tm;
         cPollThread(IJobQueue *_jq,IAgentContext *_realagent,unsigned timelimit)
@@ -264,7 +264,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
 
 #endif
 
-static void cmd_list(IJobQueue *queue)                            
+static void cmd_list(IJobQueue *queue)
 {
     CJobQueueContents contents;
     queue->copyItems(contents);
@@ -279,7 +279,7 @@ static void cmd_list(IJobQueue *queue)
     }
 }
 
-static void cmd_prior(IJobQueue *queue)                            
+static void cmd_prior(IJobQueue *queue)
 {
     const char *qn = queue->nextQueueName(NULL);
     while (qn) {
@@ -308,7 +308,7 @@ static void cmd_xremove(IJobQueue *queue,const char *wuid)
 
 }
 
-static void cmd_tofront(IJobQueue *queue,const char *wuid) 
+static void cmd_tofront(IJobQueue *queue,const char *wuid)
 {
     if (queue->moveToHead(wuid))
         printf("%s moved to front\n",wuid);
@@ -316,7 +316,7 @@ static void cmd_tofront(IJobQueue *queue,const char *wuid)
         printf("%s not moved\n",wuid);
 }
 
-static void cmd_toback(IJobQueue *queue,const char *wuid) 
+static void cmd_toback(IJobQueue *queue,const char *wuid)
 {
     if (queue->moveToTail(wuid))
         printf("%s moved to back\n",wuid);
@@ -324,7 +324,7 @@ static void cmd_toback(IJobQueue *queue,const char *wuid)
         printf("%s not moved\n",wuid);
 }
 
-static void cmd_setprio(IJobQueue *queue,const char *wuid,int prio) 
+static void cmd_setprio(IJobQueue *queue,const char *wuid,int prio)
 {
     if (queue->changePriority(wuid,prio))
         printf("%s changed priority to %d\n",wuid,prio);
@@ -332,7 +332,7 @@ static void cmd_setprio(IJobQueue *queue,const char *wuid,int prio)
         printf("%s could not change priority\n",wuid);
 }
 
-static void cmd_movebefore(IJobQueue *queue,const char *wuid,const char *wuid2) 
+static void cmd_movebefore(IJobQueue *queue,const char *wuid,const char *wuid2)
 {
     if (queue->moveBefore(wuid,wuid2))
         printf("%s moved before %s\n",wuid,wuid2);
@@ -340,7 +340,7 @@ static void cmd_movebefore(IJobQueue *queue,const char *wuid,const char *wuid2)
         printf("%s not moved\n",wuid);
 }
 
-static void cmd_moveafter(IJobQueue *queue,const char *wuid,const char *wuid2) 
+static void cmd_moveafter(IJobQueue *queue,const char *wuid,const char *wuid2)
 {
     if (queue->moveAfter(wuid,wuid))
         printf("%s moved after %s\n",wuid,wuid2);
@@ -348,12 +348,12 @@ static void cmd_moveafter(IJobQueue *queue,const char *wuid,const char *wuid2)
         printf("%s not moved\n",wuid);
 }
 
-static void cmd_pause(IJobQueue *queue) 
+static void cmd_pause(IJobQueue *queue)
 {
     queue->pause();
 }
 
-static void cmd_stop(IJobQueue *queue) 
+static void cmd_stop(IJobQueue *queue)
 {
     queue->stop();
     for (;;) {
@@ -371,17 +371,17 @@ static void cmd_stop(IJobQueue *queue)
     }
 }
 
-static void cmd_resume(IJobQueue *queue) 
+static void cmd_resume(IJobQueue *queue)
 {
     queue->resume();
 }
 
-static void cmd_clear(IJobQueue *queue) 
+static void cmd_clear(IJobQueue *queue)
 {
     queue->clear();
 }
 
-static void cmd_add(IJobQueue *queue,const char *wuid,int prio,const char *eps) 
+static void cmd_add(IJobQueue *queue,const char *wuid,int prio,const char *eps)
 {
     IJobQueueItem *item = createJobQueueItem(wuid);
     item->setPriority(prio);
@@ -393,7 +393,7 @@ static void cmd_add(IJobQueue *queue,const char *wuid,int prio,const char *eps)
     queue->enqueue(item);
 }
 
-static void cmd_accept(IJobQueue *queue) 
+static void cmd_accept(IJobQueue *queue)
 {
     queue->connect();
     IJobQueueItem *item;
@@ -404,14 +404,14 @@ static void cmd_accept(IJobQueue *queue)
         return;
     }
     MemoryBuffer mb;
-    mb.append("hello"); 
+    mb.append("hello");
     conv->send(mb);
     printf("sent '%s'\n","hello");
     queue->disconnect();
 
 }
 
-static void cmd_dequeue(IJobQueue *queue) 
+static void cmd_dequeue(IJobQueue *queue)
 {
     queue->connect(false);
     Owned<IJobQueueItem> item = queue->dequeue(1000*60);
@@ -424,11 +424,11 @@ static void cmd_dequeue(IJobQueue *queue)
     queue->disconnect();
 }
 
-static void cmd_initiate(IJobQueue *queue,const char *wuid,int prio) 
+static void cmd_initiate(IJobQueue *queue,const char *wuid,int prio)
 {
     IJobQueueItem *item = createJobQueueItem(wuid);
     item->setPriority(prio);
-    item->setPort(DEFAULT_PORT);    
+    item->setPort(DEFAULT_PORT);
     Owned<IConversation> conv= queue->initiateConversation(item);
     if (!conv.get()) {
         printf("Initiate failed\n");
@@ -454,7 +454,7 @@ static void cmd_remove(IJobQueue *queue,const char *wuid)
 }
 
 
-static void cmd_stats(IJobQueue *queue,bool wait) 
+static void cmd_stats(IJobQueue *queue,bool wait)
 {
     for (;;) {
         unsigned enqueued=0;
@@ -511,54 +511,54 @@ int main(int argc, const char *argv[])
     initClientProcess(serverGroup,DCR_Other);
     try
     {
-        const char *action = argv[2];       
-        const char *qname = argv[3];        
-        const char *wuid = (argc>4)?argv[4]:"";     
-        int prio = (argc>5)?atoi(argv[5]):0;        
-        const char *wuid2 = (argc>5)?argv[5]:"";        
+        const char *action = argv[2];
+        const char *qname = argv[3];
+        const char *wuid = (argc>4)?argv[4]:"";
+        int prio = (argc>5)?atoi(argv[5]):0;
+        const char *wuid2 = (argc>5)?argv[5]:"";
         Owned<IJobQueue> queue = (stricmp(action,"switch")!=0)?createJobQueue(qname):NULL;
 
         if (stricmp(action,"list")==0)
-            cmd_list(queue);                            
+            cmd_list(queue);
         else if (stricmp(action,"xremove")==0)
             cmd_xremove(queue,wuid);
         else if (stricmp(action,"remove")==0)
             cmd_remove(queue,wuid);
         else if (stricmp(action,"tofront")==0)
-            cmd_tofront(queue,wuid); 
+            cmd_tofront(queue,wuid);
         else if (stricmp(action,"toback")==0)
-            cmd_toback(queue,wuid); 
+            cmd_toback(queue,wuid);
         else if (stricmp(action,"setprio")==0)
-            cmd_setprio(queue,wuid,prio); 
+            cmd_setprio(queue,wuid,prio);
         else if (stricmp(action,"movebefore")==0)
-            cmd_movebefore(queue,wuid,wuid2); 
+            cmd_movebefore(queue,wuid,wuid2);
         else if (stricmp(action,"moveafter")==0)
-            cmd_moveafter(queue,wuid,wuid2); 
+            cmd_moveafter(queue,wuid,wuid2);
         else if (stricmp(action,"pause")==0)
-            cmd_pause(queue); 
+            cmd_pause(queue);
         else if (stricmp(action,"stop")==0)
-            cmd_stop(queue); 
+            cmd_stop(queue);
         else if (stricmp(action,"resume")==0)
-            cmd_resume(queue); 
+            cmd_resume(queue);
         else if (stricmp(action,"clear")==0)
-            cmd_clear(queue); 
+            cmd_clear(queue);
         else if (stricmp(action,"add")==0)
-            cmd_add(queue,wuid,prio,(argc>6)?argv[6]:NULL); 
+            cmd_add(queue,wuid,prio,(argc>6)?argv[6]:NULL);
         else if (stricmp(action,"switch")==0) {
-//          switchWorkunitQueue(argv[3],argv[4]); 
+//          switchWorkunitQueue(argv[3],argv[4]);
         }
         else if (stricmp(action,"accept")==0)
-            cmd_accept(queue); 
+            cmd_accept(queue);
         else if (stricmp(action,"dequeue")==0)
-            cmd_dequeue(queue); 
+            cmd_dequeue(queue);
         else if (stricmp(action,"initiate")==0)
-            cmd_initiate(queue,wuid,prio); 
+            cmd_initiate(queue,wuid,prio);
         else if (stricmp(action,"stats")==0)
-            cmd_stats(queue,(argc>4)?(stricmp(argv[4],"loop")==0):false); 
+            cmd_stats(queue,(argc>4)?(stricmp(argv[4],"loop")==0):false);
         else if (stricmp(action,"activity")==0)
-            cmd_activity(queue,qname); 
+            cmd_activity(queue,qname);
         else if (stricmp(action,"prior")==0)
-            cmd_prior(queue); 
+            cmd_prior(queue);
         else
             usage();
         queue.clear();

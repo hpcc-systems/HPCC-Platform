@@ -79,7 +79,7 @@ public:
     {
         value.set(_value);
     }
-    
+
     virtual IValue * queryCompareValue() const
     {
         return value;

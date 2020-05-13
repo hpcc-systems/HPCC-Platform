@@ -189,7 +189,7 @@ public:
                 free(buff);
                 buff = (char *)malloc(buffhigh);
             }
-            else 
+            else
                 buff = (char *)::realloc(buff,buffhigh);
         }
     }
@@ -228,7 +228,7 @@ protected:
         else
             buff = (char *)::malloc(buffhigh);
 #ifdef LOG
-        if (!buff) 
+        if (!buff)
             ERRLOG("HRPC parameter out of memory %d,%d",sz,buffhigh);
 #endif
         assertex(buff);

@@ -43,7 +43,7 @@ public:
         m_curpos = 0;
         m_remain = 0;
     }
-    
+
     int read(char* buf, int buflen)
     {
         int totalread = 0;
@@ -242,7 +242,7 @@ static bool lookupMethod(const char* config, StringBuffer& service, StringBuffer
 /*
 QUERY: GBGroup[User[ReferenceCode(RJVCC)GLBPurpose(1)DLPurpose(1)]SearchBy[RequestDetails[Profile(Sweden)]Person[Title(Mr)FirstName(Floren)Gender(Female)]Addresses[Address1[AddressLayout(5)BuildingNumber(2)Street(Norgardsplan)Country(Sweden)ZipPCode(55337)]]]]"
 */
-static bool expandConciseRequest(const char* concise, StringBuffer& service, StringBuffer& method, 
+static bool expandConciseRequest(const char* concise, StringBuffer& service, StringBuffer& method,
                                  StringBuffer& request, StringBuffer& xml, StringBuffer& msg)
 {
     method.clear();
@@ -306,7 +306,7 @@ static bool expandConciseRequest(const char* concise, StringBuffer& service, Str
                 errP = q;
             }
             else if (tagStack.empty())
-            { 
+            {
                 msg.appendf("Invalid concise XML: no matching tag for ']':\n");
                 errP = q;
             }
@@ -325,9 +325,9 @@ static bool expandConciseRequest(const char* concise, StringBuffer& service, Str
 
             p = ++q;
             bValue = true;
-            if (q==NULL) 
-            { 
-                msg.appendf("Invalid input: no ending '(' for <").append(tag).append('>'); 
+            if (q==NULL)
+            {
+                msg.appendf("Invalid input: no ending '(' for <").append(tag).append('>');
                 errP = q;
             }
             break;
@@ -436,7 +436,7 @@ bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpS
                             StringBuffer tag(request);
 
                             xml.remove(1, q-p).insert(1, tag);//replace starting root tag
-                            
+
                             //now find last tag and replace that as well
                             p = xml.str();
                             q = p + xml.length() - 1;

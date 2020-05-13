@@ -71,7 +71,7 @@ extern DEPLOYUTILS_API void deleteRecursive(const char* path);
 extern DEPLOYUTILS_API bool handleRoxieOperation(IPropertyTree* pEnv, const char* cmd, const char* xmlStr);
 extern DEPLOYUTILS_API bool handleThorTopologyOp(IPropertyTree* pEnv, const char* cmd, const char* xmlStr, StringBuffer& sMsg);
 extern DEPLOYUTILS_API void addComponentToEnv(IPropertyTree* pEnv, const char* buildSet, StringBuffer& sbNewName, IPropertyTree* pCompTree);
-extern DEPLOYUTILS_API bool onChangeAttribute(const IPropertyTree* pEnv, IConstEnvironment* pConstEnv, const char* attrName, IPropertyTree* pOnChange, IPropertyTree*& pNode, IPropertyTree* pParentNode, 
+extern DEPLOYUTILS_API bool onChangeAttribute(const IPropertyTree* pEnv, IConstEnvironment* pConstEnv, const char* attrName, IPropertyTree* pOnChange, IPropertyTree*& pNode, IPropertyTree* pParentNode,
                                               int position, const char* szNewValue, const char* prevValue, const char* buildset);
 extern DEPLOYUTILS_API bool xsltTransform(const char *xml, const char* sheet, IProperties *params, StringBuffer& ret);
 extern DEPLOYUTILS_API void UpdateRefAttributes(IPropertyTree* pEnv, const char* szPath, const char* szAttr, const char* szOldVal, const char* szNewVal);

@@ -36,7 +36,7 @@ void *GetThunkingHandle()
    {
       gt_hWndThunking = CreateWindow("edwin","edwin",0,0,0,0,0,0,0, GetModuleHandle(NULL),(LPVOID)4242);
    }
-   
+
    return (void *)gt_hWndThunking;
 }
 
@@ -57,20 +57,20 @@ LRESULT CALLBACK edwinProc
   LPARAM lParam   // second message parameter
 )
 {
-   switch (uMsg) 
-   { 
+   switch (uMsg)
+   {
       case (WM_USER + 4242):
       {
          if (wParam)
          {
             ((PFN_THUNK_CLIENT)(wParam))((void*)lParam);
          }
-         return 0; 
+         return 0;
       }
-      default: 
-         return DefWindowProc(hwnd, uMsg, wParam, lParam); 
-    } 
-    
+      default:
+         return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    }
+
    return 0;
 }
 
@@ -79,9 +79,9 @@ LRESULT CALLBACK edwinProc
 
 
 BOOL APIENTRY DllMain
-( 
-   HANDLE hModule, 
-   DWORD  ul_reason_for_call, 
+(
+   HANDLE hModule,
+   DWORD  ul_reason_for_call,
    LPVOID lpReserved
 )
 {
@@ -93,7 +93,7 @@ BOOL APIENTRY DllMain
       {
          UnregisterClass("edwin", GetModuleHandle(NULL));
       }
-      
+
       //fall through
 
       case DLL_THREAD_DETACH:
@@ -104,7 +104,7 @@ BOOL APIENTRY DllMain
         // }
          break;
 
-      
+
       case DLL_PROCESS_ATTACH:
       {
          WNDCLASS edwinClass;
@@ -113,11 +113,11 @@ BOOL APIENTRY DllMain
          edwinClass.hInstance = GetModuleHandle(NULL);
          edwinClass.lpfnWndProc = edwinProc;
          edwinClass.lpszClassName = "edwin";
-      
+
          g_hWinClass = RegisterClass(&edwinClass);
          g_hModule = hModule;
       }
-      
+
       //fall through
 
       case DLL_THREAD_ATTACH:
@@ -140,7 +140,7 @@ int GetResourceData(const char *restype, int resid, void *&data, unsigned &len)
    if (hRsrc != NULL)
    {
       len = ::SizeofResource((HINSTANCE)g_hModule, hRsrc);
-      
+
       if (len > 0)
       {
          HGLOBAL hResData = ::LoadResource((HINSTANCE)g_hModule, hRsrc);
@@ -151,7 +151,7 @@ int GetResourceData(const char *restype, int resid, void *&data, unsigned &len)
          }
       }
    }
-   
+
    return 0;
 }
 

@@ -45,7 +45,7 @@ constexpr offset_t unknownFileSize = -1;
 
 class CDateTime;
 
-interface IDirectoryIterator : extends IIteratorOf<IFile> 
+interface IDirectoryIterator : extends IIteratorOf<IFile>
 {
     virtual StringBuffer &getName(StringBuffer &buf)=0;
     virtual bool isDir()=0;
@@ -76,7 +76,7 @@ interface IDirectoryDifferenceIterator : extends IDirectoryIterator
 
 interface ICopyFileProgress
 {
-    virtual CFPmode onProgress(offset_t sizeDone, offset_t totalSize) = 0; 
+    virtual CFPmode onProgress(offset_t sizeDone, offset_t totalSize) = 0;
 };
 
 class RemoteFilename;
@@ -120,7 +120,7 @@ interface IFile :extends IInterface
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) = 0; // return false if doesn't exist
                                                                             // size is undefined if directory
     virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) = 0;
-    // if toOfs is (offset_t)-1 then copies entire file 
+    // if toOfs is (offset_t)-1 then copies entire file
 
     virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone)=0;
 
@@ -148,9 +148,9 @@ public:
 typedef enum { SD_nosort, SD_byname, SD_bynameNC, SD_bydate, SD_bysize }  SortDirectoryMode;
 
 
-extern jlib_decl unsigned sortDirectory( 
+extern jlib_decl unsigned sortDirectory(
                         CIArrayOf<CDirectoryEntry> &sortedfiles, // returns sorted directory
-                        IDirectoryIterator &iter, 
+                        IDirectoryIterator &iter,
                         SortDirectoryMode mode,
                         bool rev=false,                             // reverse sort
                         bool includedirs=false
@@ -190,7 +190,7 @@ interface IMemoryMappedFile: extends IInterface
     virtual offset_t fileSize()=0;          // size of total file
     virtual int compareWithin(const void *p)=0;   // return 0 if pointer within mapped section -1 if lt +1 if gt
     virtual bool writeAccess()=0;           // true if write enabled map
-    virtual void flush()=0;                 // flushed written buffers 
+    virtual void flush()=0;                 // flushed written buffers
     virtual byte *nextPtr(const void *ptr,offset_t skip, memsize_t extent, memsize_t &got)=0; // used to move about in partially mapped file
     virtual void reinit(offset_t ofs, memsize_t len=(memsize_t)-1, bool write=false)=0; // move map
 };
@@ -233,7 +233,7 @@ interface IDiscretionaryLock: extends IInterface
 void jlib_decl _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
 #endif
 
-//-- Helper routines 
+//-- Helper routines
 
 
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
@@ -282,7 +282,7 @@ extern jlib_decl IFileIO * createIFileIO(MemoryBuffer & buffer);
 interface IReadSeq;
 interface IWriteSeq;
 
-// NB the following are unbuffered 
+// NB the following are unbuffered
 extern jlib_decl IReadSeq *createReadSeq(IFileIOStream * stream, offset_t _offset, size32_t size); // no buffering
 extern jlib_decl IWriteSeq *createWriteSeq(IFileIOStream * stream, size32_t size);                 // no buffering
 
@@ -293,10 +293,10 @@ extern jlib_decl IDiscretionaryLock *createDiscretionaryLock(IFileIO *fileio);
 
 
 
-// useful stream based reader 
+// useful stream based reader
 interface ISerialStream: extends IInterface
 {
-    virtual const void * peek(size32_t wanted,size32_t &got) = 0;   // try and ensure wanted bytes are available. 
+    virtual const void * peek(size32_t wanted,size32_t &got) = 0;   // try and ensure wanted bytes are available.
                                                                     // if got<wanted then approaching eof
                                                                     // if got>wanted then got is size available in buffer
 
@@ -360,32 +360,32 @@ class jlib_decl RemoteFilename
     void badFilename(const char * filename);
 
     SocketEndpoint      ep;         // node for file (port is used for daliservix and user defined ports)
-    StringAttr          localhead;  // local base directory 
+    StringAttr          localhead;  // local base directory
     StringAttr          sharehead;  // remote share equvalent to localbase (always starts with separator if present)
     StringAttr          tailpath;   // tail directory and filename appended to one of the above (always starts with separator)
 public:
     void clear();
 
     StringBuffer & getTail(StringBuffer &name) const;       // Tail Name (e.g. "test.d00._1_of_3")
-    StringBuffer & getPath(StringBuffer & name) const;      // Either local or full depending on location 
+    StringBuffer & getPath(StringBuffer & name) const;      // Either local or full depending on location
     StringBuffer & getLocalPath(StringBuffer &name) const;  // Local Path (e.g. "c:\dfsdata\test.d00._1_of_3")
     StringBuffer & getRemotePath(StringBuffer &name) const; // Full Remote Path  (e.g. "\\192.168.0.123\c$\dfsdata\test.d00._1_of_3")
-    
+
     bool isLocal() const;                                   // on calling node
     bool isUnixPath() const;                                // a unix filename
     char getPathSeparator() const;                          // separator for this path
     const SocketEndpoint & queryEndpoint() const            { return ep; } // node containing file
     const IpAddress      & queryIP() const                  { return ep; }
     unsigned short getPort() const                          { return ep.port; }
-    bool isNull() const;                        
+    bool isNull() const;
 
     // the following overwrite previous contents
-    void set(const RemoteFilename & other);         
+    void set(const RemoteFilename & other);
     void setPath(const SocketEndpoint & _ep, const char * filename); // filename should be full windows or unix path (local)
     void setLocalPath(const char *name);                    // local path - can partial but on linux must be under \c$ or \d$
     void setRemotePath(const char * url,const char *local=NULL); // url should be full (share) path including ep
 
-    // the following modify existing 
+    // the following modify existing
     void setIp(const IpAddress & ip)                        { ep.ipset(ip); }
     void setEp(const SocketEndpoint & _ep)                  { ep.set(_ep); }
     void setPort(unsigned short port)                       { ep.port=port; }
@@ -394,7 +394,7 @@ public:
     void setTailPath(const char *name)                      { tailpath.set(name); }
     void setExtension(const char * newext);
 
-    void split(StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext) const;   
+    void split(StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext) const;
         // same buffer can be passed to several
         // note that this is for a *local* file
 
@@ -413,7 +413,7 @@ class jlib_decl RemoteMultiFilename: public RemoteFilenameArray
 public:
     static void expand(const char *mpath, StringArray &array);
     static void tostr(StringArray &array,StringBuffer &out);
-    void append(const char *path,const char *defaultdir=NULL);      
+    void append(const char *path,const char *defaultdir=NULL);
                                         // can be local or remote URL path (though urls must point at same machine)
                                         // can contain comma separated entries including wildcards
                                         // if no directory then uses defaultdir if present
@@ -468,7 +468,7 @@ extern jlib_decl void removeContainedFileHook(IContainedFileHook *);
 
 inline bool isPathSepChar(char sep)
 {
-    return (sep=='\\')||(sep=='/');     
+    return (sep=='\\')||(sep=='/');
 }
 
 inline const char *findPathSepChar(const char *s)
@@ -489,7 +489,7 @@ inline char getPathSepChar(const char *dir)
 
 inline bool containsPathSepChar(const char *s)
 {
-    return findPathSepChar(s)!=NULL;    
+    return findPathSepChar(s)!=NULL;
 }
 
 inline StringBuffer &addPathSepChar(StringBuffer &path,char sepchar=0)
@@ -536,7 +536,7 @@ inline const char *splitDirTail(const char *path,StringBuffer &dir)
     const char *tail=pathTail(path);
     if (tail)
         dir.append((size32_t)(tail-path),path);
-    return tail;        
+    return tail;
 }
 
 extern jlib_decl bool isAbsolutePath(const char *path);

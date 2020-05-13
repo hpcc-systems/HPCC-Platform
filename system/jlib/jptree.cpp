@@ -624,7 +624,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool 
                 set(newSize, newData);
             }
             free(newData);
-            compressor->Release();  
+            compressor->Release();
         }
         catch (...)
         {
@@ -858,7 +858,7 @@ void PTree::appendLocal(size32_t l, const void *data, bool binary)
         value->getValue(mb, binary);
         mb.append(l, data);
         delete value;
-        
+
         l = mb.length();
         data = mb.toByteArray();
     }
@@ -1366,7 +1366,7 @@ bool PTree::renameTree(IPropertyTree *child, const char *newName) // really here
 
 bool PTree::renameProp(const char *xpath, const char *newName)
 {
-    if (!xpath || '\0' == *xpath) 
+    if (!xpath || '\0' == *xpath)
         throw MakeIPTException(-1, "renameProp: cannot rename self, renameProp has to rename in context of a parent");
     if (strcmp(xpath,"/")==0)   // rename of self allowed assuming no parent
         setName(newName);
@@ -1566,7 +1566,7 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
         IPropertyTree *branch, *child;
         resolveParentChild(xpath, branch, child, prop, qualifier);
         if (branch == this)
-        {   
+        {
             IPropertyTree *_val = ownPTree(val);
             dbgassertex(QUERYINTERFACE(_val, PTree));
             PTree *__val = static_cast<PTree *>(_val);
@@ -1797,7 +1797,7 @@ bool PTree::removeProp(const char *xpath)
 
         if (!iter)
             return false;
-        
+
         bool res = false;
         if (iter->first())
         {
@@ -2111,7 +2111,7 @@ restart:
                         iter.setown(new SingleIdIterator(*this));
                 }
             }
-            else 
+            else
             {
                 if (checkPattern(xpath))
                     iter.setown(new SingleIdIterator(*this));
@@ -2162,7 +2162,7 @@ restart:
                                     while (_iter->next());
                                 }
                             }
-                            xpath = xxpath; 
+                            xpath = xxpath;
                         }
                         else
                         {
@@ -2284,7 +2284,7 @@ void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropert
         case '[':
             if (inQualifier)
             {
-                if (!quote) 
+                if (!quote)
                     throw MakeXPathException(xpath, PTreeExcpt_XPath_ParseError, str-xpath, "Unclosed qualifier detected");
             }
             else
@@ -2473,7 +2473,7 @@ void PTree::deserializeSelf(MemoryBuffer &src)
     StringAttr _name;
     src.read(_name);
     src.read(flags);
-    if (_name[0]==0) 
+    if (_name[0]==0)
         setName(NULL);
     else
         setName(_name);
@@ -2493,7 +2493,7 @@ void PTree::deserializeSelf(MemoryBuffer &src)
     if (value) delete value;
     if (size)
     {
-        src.reset(pos); 
+        src.reset(pos);
         value = new CPTValue(src);
     }
     else value = NULL;
@@ -2603,7 +2603,7 @@ IPropertyTree *_createPropBranch(IPropertyTree *tree, const char *xpath, bool cr
             throw MakeIPTException(-1, "createPropBranch: cannot create path : %s", xpath);
         if (!createIntermediates)
             throw MakeIPTException(-1, "createPropBranch: no path found for : %s", path.str());
-    
+
         if ('/' == path.charAt(path.length()-1))
             path.remove(path.length()-1, 1);
         branch = _createPropBranch(tree, path.str(), createIntermediates, created, createdParent);
@@ -2724,7 +2724,7 @@ bool PTree::checkPattern(const char *&xxpath) const
 {
     // Pattern is an additional filter at the current node level
     // It can be [condition], or it can be empty (we don't support anything else)
-    // supported conditions are: 
+    // supported conditions are:
     //    tag - must have child called tag
     //    @attr - must have attribute called attr
     //    tag="value" - must have child called tag with given value
@@ -3497,7 +3497,7 @@ bool SingleIdIterator::first()
         else
             return false;
     }
-    ++whichNext;            
+    ++whichNext;
     return true;
 }
 
@@ -3522,10 +3522,10 @@ bool SingleIdIterator::isValid()
 class StackElement
 {
 public:
-    void init(IPropertyTreeIterator *_iter, const char *_xpath) 
+    void init(IPropertyTreeIterator *_iter, const char *_xpath)
     {
         xpath = (char *)strdup(_xpath);
-        iter=LINK(_iter); 
+        iter=LINK(_iter);
     }
     void clear()
     {
@@ -3533,10 +3533,10 @@ public:
         if (xpath)
             free(xpath);
     }
-    IPropertyTreeIterator *get(StringAttr &str) 
-    { 
+    IPropertyTreeIterator *get(StringAttr &str)
+    {
         str.setown(xpath); return iter; // NB used in place of pop, as element invalid after call
-    } 
+    }
     IPropertyTreeIterator *iter;
     char * xpath;
 };
@@ -3572,7 +3572,7 @@ void PTStackIterator::setIterator(IPropertyTreeIterator *_iter)
 }
 
 // IIterator impl.
-bool PTStackIterator::first() 
+bool PTStackIterator::first()
 {
     while (stacklen)
         stack[--stacklen].clear();
@@ -3640,7 +3640,7 @@ bool PTStackIterator::next()
                     if ('/' == *xxpath)
                     {
                         --xxpath;
-                        if (iter->isValid()) 
+                        if (iter->isValid())
                             pushToStack(iter, xxpath);
                         setIterator(element->getElements(xxpath));
                         xxpath = "";
@@ -3650,7 +3650,7 @@ bool PTStackIterator::next()
                     break;
                 default:
                     separator=false;
-                    if (iter->isValid()) 
+                    if (iter->isValid())
                         pushToStack(iter, xxpath);
 
                     bool wild;
@@ -3712,7 +3712,7 @@ void PTStackIterator::pushToStack(IPropertyTreeIterator *iter, const char *xpath
 
 IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 {
-    if (!stacklen) 
+    if (!stacklen)
         return NULL;
     return stack[--stacklen].get(path);
 }
@@ -3782,7 +3782,7 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool remove
         ForEachItemIn (a, targetAttrs)
             target->removeProp(targetAttrs.item(a));
     }
-    
+
     bool equal = true;
     MemoryBuffer srcMb;
     const char *src = NULL;
@@ -3814,7 +3814,7 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool remove
         else
             target->setProp(NULL, src);
     }
-    
+
     ICopyArrayOf<IPropertyTree> toProcess;
     Owned<IPropertyTreeIterator> iter = source->getElements("*");
     ForEach (*iter)
@@ -3943,7 +3943,7 @@ IPTreeReadException *createPTreeReadException(int code, const char *msg, const c
             return str;
         }
         MessageAudience errorAudience() const { return MSGAUD_user; }
-    
+
         const char *queryDescription() { return msg; }
         unsigned queryLine() { return line; }
         offset_t queryOffset() { return offset; }
@@ -4307,7 +4307,7 @@ protected:
         readNext();
         skipWS();
         StringBuffer entityName;
-        if ('%' != nextChar) 
+        if ('%' != nextChar)
         {
             readID(entityName);
             skipWS();
@@ -4481,7 +4481,7 @@ protected:
                 text.append(']');
             }
             text.append(nextChar);
-        }           
+        }
     }
     void parsePI(StringBuffer &target)
     {
@@ -4546,7 +4546,7 @@ protected:
                 if (nextChar=='>')
                     return;
                 else if (nextChar != '-') // should be syntax error really.
-                    seen = 0; 
+                    seen = 0;
             }
             else if (nextChar=='-')
                 seen++;
@@ -4769,7 +4769,7 @@ restart:
                     readNext();
                 }
             }
-            else 
+            else
                 error();
 
             _decodeXML(0, attrval.str(), tmpStr.clear());
@@ -4838,7 +4838,7 @@ restart:
                             if (strlen(tagText.str()) != tagText.length())
                                 binary = true;
                         }
-                        break; // exit 
+                        break; // exit
                     }
                     else
                         _loadXML();
@@ -4893,7 +4893,7 @@ class CPullXMLReader : public CXMLReaderBase<X>, implements IPullPTreeReader
     class CStateInfo : public CInterface
     {
     public:
-        CStateInfo() 
+        CStateInfo()
         {
             tag.ensureCapacity(15);
             binary = base64 = false;
@@ -5102,7 +5102,7 @@ public:
                             readNext();
                         }
                     }
-                    else 
+                    else
                         error();
 
                     _decodeXML(0, attrval.str(), tmpStr.clear());
@@ -5200,7 +5200,7 @@ public:
                         const char *m = mark.str();
                         const char *es = m+mark.length();
                         do
-                        { 
+                        {
                             if (!isspace(*m++))
                             {
                                 e->Release();
@@ -5229,7 +5229,7 @@ public:
                             stateInfo->binary = true;
                     }
                     state = tagClose;
-                    break; // exit 
+                    break; // exit
                 }
                 else
                 {
@@ -5597,7 +5597,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, u
             {
                 const char *m = thislevel;
                 const char *p = m;
-                while (isspace(*p)) 
+                while (isspace(*p))
                     p++;
                 encodeXML(m, out, ENCODE_WHITESPACE, p-m, true);
                 if (*p) {   // check not all spaces
@@ -6056,7 +6056,7 @@ restart:
                     if (']' != *xpath)
                         throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
                 }
-                else 
+                else
                     validateQualifier(xpath);
                 ++xpath;
                 break;
@@ -6084,7 +6084,7 @@ restart:
                             if (index)
                             {
                             }
-                            xpath = xxpath; 
+                            xpath = xxpath;
                         }
                     }
                 }

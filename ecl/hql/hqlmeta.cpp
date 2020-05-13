@@ -128,8 +128,8 @@ Projects:
 
 Distributions:
 * A global sort activity ensures that each row with the same sort component fields will end up on the same node.  This means it is important to know
-  if we have lost track of one of the sort components, and not just lose it.  Otherwise we might assume the dataset is distributed by (x,y) when it 
-  is actually distributed by (x,y,z) - meaning some values of (x,y) may be on different nodes.  
+  if we have lost track of one of the sort components, and not just lose it.  Otherwise we might assume the dataset is distributed by (x,y) when it
+  is actually distributed by (x,y,z) - meaning some values of (x,y) may be on different nodes.
   It may still be more efficient to group by (x,y) though instead of redistributing by (x,y).
 * A distribute activity similarly ensures that all rows with the same disrtibute expression end up on the same node.
 * For both of these it means that a pre-existing distribution is sufficient if it is a subset of a following required distribution.
@@ -151,7 +151,7 @@ Problems of constants, unknown attributes and duplicates:
   cause us to miss matching sort orders.
 
 =>
-- Distributions are either fully mapped, unknown or sorted(list of components, terminated by unknown).  This latter may possibly useful for 
+- Distributions are either fully mapped, unknown or sorted(list of components, terminated by unknown).  This latter may possibly useful for
   knowing we could use group to subsort instead of resorting.
 - Global sort lists do not include any trailing unknown attributes.
 - Local sort lists may contain a trailing unknown attribute if they are partial.
@@ -182,8 +182,8 @@ The following are a sample of some of the key activities and how they affect the
 * GROUP (x,y)
 - If non local then the distribution is invalidated.
 - Global sort order is preserved as-is.
-- Local sort order is split in two.  
-  The last sort component which is included in the grouping condition (and any trailing constants) marks the end of the local order.  
+- Local sort order is split in two.
+  The last sort component which is included in the grouping condition (and any trailing constants) marks the end of the local order.
   The trailing components become the grouped sort order.
 - If none of the sort components occur in the grouping condition, then set the local order to a "grouping attribute".
 
@@ -837,7 +837,7 @@ extern HQL_API IHqlExpression * mapJoinDistribution(TableProjectMapper & mapper,
 
 extern HQL_API IHqlExpression * mapDistribution(IHqlExpression * distribution, TableProjectMapper & mapper)
 {
-    if (!distribution) 
+    if (!distribution)
         return NULL;
 
     bool matchedAll = false;
@@ -871,7 +871,7 @@ extern HQL_API IHqlExpression * mapSortOrder(IHqlExpression * order, TableProjec
         }
         newComponents.append(*mapped.getClear());
     }
-    
+
     if (newComponents.ordinality() == 0)
         return NULL;
 
@@ -1815,7 +1815,7 @@ static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
     }
 }
 
-//Check if the distribution functions are essentially identical, except for the places 
+//Check if the distribution functions are essentially identical, except for the places
 bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     IHqlExpression * distribute1 = queryDistribution(dataset1);
@@ -1887,7 +1887,7 @@ static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlE
         }
         else if (isSortDistribution(distribution))
         {
-            
+
             //Sort distribution is still ok to preserve - since the assumption that trailing elements are not
             //split over nodes still holds.
         }
@@ -1897,7 +1897,7 @@ static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlE
             distribution.clear();
         }
     }
-    
+
     LinkedHqlExpr ret = newTable;
     if (distribution || globalSort || localSort || grouping || groupSort)
         ret.setown(createDataset(no_preservemeta, { LINK(newTable), ensureNonNull(distribution), ensureNonNull(globalSort), ensureNonNull(localSort),  ensureNonNull(grouping), ensureNonNull(groupSort) }));

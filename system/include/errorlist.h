@@ -28,9 +28,9 @@
 
 // actual error codes do not belong in this file
 
-#define ERRORID_UNKNOWN         999      // Right now, this value is used to filter out error messages which have 
+#define ERRORID_UNKNOWN         999      // Right now, this value is used to filter out error messages which have
                                                     // not been verified for well-defined error code and message content. For
-                                                    // example, if an error code is not greater than this value, ECLWatch displays 
+                                                    // example, if an error code is not greater than this value, ECLWatch displays
                                                     // the error as "internal system error".
 
 //Some legacy ecl warnings appear in the following range, most new ones are in the range below

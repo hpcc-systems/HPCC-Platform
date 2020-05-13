@@ -501,7 +501,7 @@ template <class ARRAY, class PARAM> class ArrayIteratorOf
 {
 public:
       ArrayIteratorOf(ARRAY & _array) : array(_array) { cur = 0; }
-      
+
       inline bool         first(void)             { cur = 0; return isValid(); }
       inline bool         isValid(void)           { return array.isItem(cur); }
       inline PARAM        query()                 { assertex(isValid()); return array.item(cur); }
@@ -511,11 +511,11 @@ public:
       inline bool         next(void)              { ++cur; return isValid(); }
       inline bool         prev(void)              { --cur; return isValid(); }
       inline bool         select(aindex_t seek)    { cur = seek; return isValid(); }
-      
+
 private:
       ARRAY &             array;
       aindex_t             cur;
-      
+
 };
 
 

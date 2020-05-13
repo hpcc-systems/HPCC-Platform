@@ -118,7 +118,7 @@ protected:
         while (count--)
             lock();
     }
-    
+
 private:
     int lockcount;
 };
@@ -129,7 +129,7 @@ public:
     NamedMutex(const char *name)
         : Mutex(name)
     {
-    }   
+    }
 };
 
 
@@ -159,7 +159,7 @@ private:
 class jlib_decl NamedMutex
 {
 public:
-    NamedMutex(const char *name);   
+    NamedMutex(const char *name);
     ~NamedMutex();
     void lock();
     bool lockWait(unsigned timeout);
@@ -260,7 +260,7 @@ public:
 /**
  * Mutex locking wrapper. Use enter/leave to lock/unlock.
  */
-class CriticalSection 
+class CriticalSection
 {
 private:
     MutexId mutex;
@@ -268,7 +268,7 @@ private:
     ThreadId owner;
     unsigned depth;
 #endif
-    CriticalSection (const CriticalSection &);  
+    CriticalSection (const CriticalSection &);
 public:
     inline CriticalSection()
     {
@@ -398,12 +398,12 @@ class  SpinLock
 {
     CriticalSection sect;
 public:
-    inline void enter()       
-    { 
+    inline void enter()
+    {
         sect.enter();
     }
     inline void leave()
-    { 
+    {
         sect.leave();
     }
 };
@@ -418,19 +418,19 @@ class jlib_decl  SpinLock
     inline SpinLock(SpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
     inline SpinLock()
-    {   
+    {
     }
 #ifdef _DEBUG
-    ~SpinLock()             
-    { 
+    ~SpinLock()
+    {
         if (value)
             printf("Warning - Owned Spinlock destroyed"); // can't use DBGLOG here!
     }
 #endif
-    inline void enter()       
-    { 
-        ThreadId self = GetCurrentThreadId(); 
-#ifdef SPINLOCK_RR_CHECK    // as requested by RKC 
+    inline void enter()
+    {
+        ThreadId self = GetCurrentThreadId();
+#ifdef SPINLOCK_RR_CHECK    // as requested by RKC
         int policy;
         sched_param param;
         if ((pthread_getschedparam(self, &policy, &param)==0)&&(policy==SCHED_RR)) {
@@ -501,16 +501,16 @@ public:
     inline NonReentrantSpinLock() : value(false), owner(0)
     {
     }
-    inline void enter()       
-    { 
-        ThreadId self = GetCurrentThreadId(); 
+    inline void enter()
+    {
+        ThreadId self = GetCurrentThreadId();
         assertex(self!=owner.load(std::memory_order_relaxed)); // check for reentrancy
         while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
         owner.store(self, std::memory_order_relaxed);
     }
     inline void leave()
-    { 
+    {
         assertex(GetCurrentThreadId()==owner.load(std::memory_order_relaxed)); // check for spurious leave
         owner.store(0, std::memory_order_relaxed);
         value.store(false, std::memory_order_release);
@@ -525,15 +525,15 @@ class jlib_decl  NonReentrantSpinLock
     inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock() : value(false)
-    {   
+    {
     }
-    inline void enter()       
-    { 
+    inline void enter()
+    {
         while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
     }
     inline void leave()
-    { 
+    {
         value.store(false, std::memory_order_release);
     }
 };
@@ -729,7 +729,7 @@ public:
             waiting--;
         }
     }
-    void abort()            
+    void abort()
     {
         CriticalBlock block(crit);
         remaining = -1;
@@ -771,9 +771,9 @@ class  jlib_decl CheckedCriticalBlock
     CheckedCriticalSection &crit;
 public:
     CheckedCriticalBlock(CheckedCriticalSection &c, unsigned timeout, const char *fname,unsigned lnum);
-    ~CheckedCriticalBlock()                                         
-    { 
-        crit.unlock(); 
+    ~CheckedCriticalBlock()
+    {
+        crit.unlock();
     }
 };
 
@@ -785,13 +785,13 @@ class  jlib_decl CheckedCriticalUnblock
     unsigned timeout;
 
 public:
-    CheckedCriticalUnblock(CheckedCriticalSection &c,unsigned _timeout,const char *_fname,unsigned _lnum) 
-        : crit(c)   
-    { 
+    CheckedCriticalUnblock(CheckedCriticalSection &c,unsigned _timeout,const char *_fname,unsigned _lnum)
+        : crit(c)
+    {
         timeout = _timeout;
         fname = _fname;
         lnum = _lnum;
-        crit.unlock(); 
+        crit.unlock();
     }
     ~CheckedCriticalUnblock();
 };

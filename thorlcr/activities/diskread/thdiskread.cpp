@@ -171,7 +171,7 @@ class CDiskCountActivityMaster : public CDiskReadMasterVF
     bool totalCountKnown;
     IHThorDiskCountArg *helper;
     rowcount_t stopAfter;
-    
+
 public:
     CDiskCountActivityMaster(CMasterGraphElement *info) : CDiskReadMasterVF(info)
     {

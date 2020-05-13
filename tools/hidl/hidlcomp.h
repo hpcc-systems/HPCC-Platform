@@ -108,7 +108,7 @@ void outf(int indent, const char*,...) __attribute__((format(printf, 2, 3)));
 struct attribute
 {
 private:
-    union 
+    union
     {
         const char*  str_val;
         int    int_val;
@@ -116,7 +116,7 @@ private:
     };
 
     enum { t_none, t_string, t_int, t_double, t_name } atr_type;
-    
+
 public:
 
     attribute()
@@ -232,14 +232,14 @@ public:
         str_val = strdup(value);
         atr_type = t_name;
     }
-    
+
     void setNameF(const char *format, ...) __attribute__((format(printf, 2, 3)))
     {
         release();
-        
+
         va_list args;
         StrBuffer buf;
-        
+
         va_start(args, format);
         buf.va_append(format,args);
         str_val = buf.detach();
@@ -265,7 +265,7 @@ class MetaTagInfo
 {
 private:
     char *name_;
-    
+
     union
     {
         char *str_val_;
@@ -302,7 +302,7 @@ public:
         double_val_=doubleval;
         name_ =strdup(name);
     }
-    
+
     ~MetaTagInfo()
     {
         release();
@@ -341,7 +341,7 @@ public:
     {
         if (mttype_==mt_string && str_val_!=NULL)
             free(str_val_);
-        
+
         str_val_=strdup(val);
 
         mttype_ = mt_string;
@@ -395,7 +395,7 @@ inline bool getMetaStringValue(MetaTagInfo *list, StrBuffer &val, const char *ta
     if (!mtval || strlen(mtval)<2)
         return false;
     val.append((unsigned)(strlen(mtval)-2), mtval+1);
-    return true;    
+    return true;
 }
 
 inline int getMetaInt(MetaTagInfo *list, const char *tag, int def_val=0)
@@ -426,7 +426,7 @@ public:
     ParamInfo();
     ~ParamInfo();
 
-    char *bytesize(int deref=0); 
+    char *bytesize(int deref=0);
     bool simpleneedsswap();
     void cat_type(char *s,int deref=0,int var=0);
     clarion_special_type_enum clarion_special_type();
@@ -438,7 +438,7 @@ public:
     size_t typesizealign(size_t &ofs);
     void write_body_struct_elem(int ref);
     void write_param_convert(int deref=0);
-    
+
     void write_esp_param();
     void write_esp_declaration();
     void write_esp_ng_declaration(int pos);
@@ -472,14 +472,14 @@ public:
         return false;
     }
 
-    bool isPrimitiveArray() 
-    { 
+    bool isPrimitiveArray()
+    {
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
             return (kind != TK_STRUCT && kind != TK_null && kind != TK_ESPENUM && kind != TK_ESPSTRUCT) || !typname;
         return false;
     }
 
-    type_kind getArrayItemType() 
+    type_kind getArrayItemType()
     {
         assert(isPrimitiveArray());
         return kind;
@@ -536,7 +536,7 @@ public:
     const char *getMetaXsdType() {  const char* xsd = getMetaString("xsd_type",NULL);  return xsd ? xsd : getMetaString("format_as",NULL); }
 
     // should be call once at a time. Better: use CStrBuffer
-    const char* getXmlTag() 
+    const char* getXmlTag()
     {
         static char buffer[256];
         const char* xmlTag = getMetaString("xml_tag", NULL);
@@ -564,13 +564,13 @@ public:
     char      *sizebytes;
     unsigned   flags;
     LayoutInfo *layouts;
-    ParamInfo   *next;  
+    ParamInfo   *next;
     MetaTagInfo *tags;
 
 private:
     char      *xsdtype;
     StrBuffer *m_arrayImplType;
-};  
+};
 
 class ProcInfo
 {
@@ -590,7 +590,7 @@ public:
     void write_head_size();
 
     void out_clarion_method();
-    
+
     char      * name;
     ParamInfo * rettype;
     ParamInfo * params;
@@ -598,8 +598,8 @@ public:
     char      * calltimeout;
     int         async;
     int         callback;
-    ParamInfo * firstin;    
-    ParamInfo * lastin; 
+    ParamInfo * firstin;
+    ParamInfo * lastin;
     int         virt;
     int         constfunc;
     ProcInfo  * next;
@@ -628,7 +628,7 @@ public:
     ModuleInfo  *next;
     bool         isSCMinterface;
 };
-        
+
 class ExportDefInfo
 {
 public:
@@ -637,7 +637,7 @@ public:
         name_=strdup(name);
         next=NULL;
     }
-    
+
     ~ExportDefInfo()
     {
         if (name_)
@@ -744,7 +744,7 @@ public:
         espm_type_=type;
 
         name_ =strdup(procInfo->name);
-        
+
         if (espm_type_==espm_struct)
         {
             name_ =(char *)malloc(strlen(procInfo->name)+6);
@@ -779,9 +779,9 @@ public:
         xsdgrouptype=NULL;
     }
 
-    ~EspMessageInfo() 
+    ~EspMessageInfo()
     {
-        if (name_) 
+        if (name_)
             free(name_);
         if (base_)
             free(base_);
@@ -805,7 +805,7 @@ public:
             free(name_);
         name_=strdup(name);
     }
-    
+
     const char *getBase(){return base_;}
     void setBase(const char *base)
     {
@@ -872,7 +872,7 @@ public:
                 return true;
         return false;
     }
-    
+
     const char *getMetaString(const char *tag, const char *def_val)
     {
         return ::getMetaString(tags, tag, def_val);
@@ -926,17 +926,17 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
+
     EspMethodInfo(ProcInfo *procInfo)
     {
         proc_=procInfo;
 
         name_ =strdup(procInfo->name);
-        
+
         request_ =(char *)malloc(strlen(name_)+8);
         strcpy(request_, name_);
         strcat(request_, "Request");
-        
+
         response_ =(char *)malloc(strlen(name_)+9);
         strcpy(response_, name_);
         strcat(response_, "Response");
@@ -957,7 +957,7 @@ public:
         delete proc_;
         delete next;
     }
-    
+
     const char *getName(){return name_;}
     void setName(const char *name)
     {
@@ -1032,12 +1032,12 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
-    ~EspMountInfo() 
+
+    ~EspMountInfo()
     {
-        if (name_) 
+        if (name_)
             free(name_);
-        if (localPath_) 
+        if (localPath_)
             free(localPath_);
         delete tags;
         delete next;
@@ -1096,10 +1096,10 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
-    ~EspStructInfo() 
+
+    ~EspStructInfo()
     {
-        if (name_) 
+        if (name_)
             free(name_);
         delete tags;
         delete next;
@@ -1133,7 +1133,7 @@ public:
 };
 
 typedef enum _catch_type
-{ 
+{
     ct_httpresp,
     ct_soapresp,
 } catch_type;
@@ -1157,14 +1157,14 @@ public:
         next=NULL;
         needsXslt = false;
     }
-    
+
     ~EspServInfo()
     {
         if (name_)
             free(name_);
         if (base_)
             free(base_);
-        
+
         delete methods;
         delete mounts;
         delete tags;
@@ -1234,9 +1234,9 @@ public:
         path_ = strdup(path);
         next = NULL;
     };
-    
-    ~IncludeInfo() 
-    { 
+
+    ~IncludeInfo()
+    {
         if (path_)
             free(path_);
         delete next;
@@ -1247,7 +1247,7 @@ public:
         outf(0, "#include \"%s_esp.ipp\"", path_);
     }
 
-    char        *path_; 
+    char        *path_;
     IncludeInfo *next;
 };
 

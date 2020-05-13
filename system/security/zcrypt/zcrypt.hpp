@@ -27,7 +27,7 @@
 #else
     #define ZCRYPT_API DECL_EXPORT
 #endif
-#endif 
+#endif
 
 #include <string>
 
@@ -62,7 +62,7 @@ class ZCRYPT_API IZDecryptor : public IZInterface
 public:
     virtual ~IZDecryptor();
     virtual void setTraceLevel(unsigned trace_level) = 0;
-    virtual void setEncoding(bool yes = true) = 0;  
+    virtual void setEncoding(bool yes = true) = 0;
     virtual IZBuffer* decrypt(int key_len, unsigned char* keybuf, int in_len, unsigned char* inbuf) = 0;
     virtual IZBuffer* decrypt(unsigned char* keybuf, unsigned char* inbuf) = 0;
 };

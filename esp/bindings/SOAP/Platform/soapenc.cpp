@@ -24,7 +24,7 @@ void SoapEnc::deserialize(const char* str, StringAttr& val)
     val.set(str);
 }
 
-void SoapEnc::deserialize(const char* str, unsigned long& val) 
+void SoapEnc::deserialize(const char* str, unsigned long& val)
 {
     if(str == NULL)
         val = 0;
@@ -41,8 +41,8 @@ void SoapEnc::deserialize(const char* str, StringArray& val)
     const char* pe;
 
     pb = str;
-    
-    for(;;) 
+
+    for(;;)
     {
         if(*pb == '\0')
             return;
@@ -51,7 +51,7 @@ void SoapEnc::deserialize(const char* str, StringArray& val)
 
         while(*pe && *pe != ';')
             pe++;
-        
+
         char* oneelem = new char[pe - pb + 1];
         memcpy(oneelem, pb, pe - pb);
         oneelem[pe - pb] = '\0';
@@ -64,7 +64,7 @@ void SoapEnc::deserialize(const char* str, StringArray& val)
 }
 
 
-    
+
 StringBuffer& SoapEnc::serialize(StringBuffer& str, long val)
 {
     return str.append(val);

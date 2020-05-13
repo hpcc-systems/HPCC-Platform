@@ -26,16 +26,16 @@ class CEspConfigGenEngine : public CConfigGenEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CEspConfigGenEngine(IEnvDeploymentEngine& envDepEngine, 
+    CEspConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
         IDeploymentCallback& callback,
         IPropertyTree& process, const char* inputDir="", const char* outputDir="" );
-    
+
     virtual void xslTransform(const char *xsl, const char *outputFile, const char *instanceName,
         EnvMachineOS os=MachineOsUnknown, const char* processName=NULL, bool isEspModuleOrPlugin=false);
-    
-    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile, 
+
+    virtual void processCustomMethod(const char *method, const char *source, const char *outputFile,
         const char *instanceName, EnvMachineOS os);
-    
+
 protected:
     void check();
     int  determineInstallFiles(IPropertyTree& node, CInstallFiles& installFiles) const;

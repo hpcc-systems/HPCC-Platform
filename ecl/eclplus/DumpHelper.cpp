@@ -53,7 +53,7 @@ bool DumpHelper::doit(FILE * fp)
         if (whichPath)
         {
             if (stricmp(whichPath, "ecl")==0)
-            {                   
+            {
                 Owned<IClientWUInfoRequest> inforeq = wuclient->createWUInfoRequest();
                 inforeq->setWuid(wuid);
                 Owned<IClientWUInfoResponse> inforesp = wuclient->WUInfo(inforeq);
@@ -139,7 +139,7 @@ bool GraphHelper::doit(FILE * fp)
         fprintf(fp, "%s", graphbuf.str());
         return true;
     }
-    else 
+    else
     {
         printf("Please specify the WUID\n");
         return false;

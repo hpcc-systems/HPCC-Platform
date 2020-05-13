@@ -323,15 +323,15 @@ class CRoxieQueryPacket : implements IRoxieQueryPacket, public CInterface
 {
 protected:
     RoxiePacketHeader *data;
-    const byte *continuationData; 
+    const byte *continuationData;
     unsigned continuationLength;
-    const byte *smartStepInfoData; 
+    const byte *smartStepInfoData;
     unsigned smartStepInfoLength;
     const byte *contextData;
     unsigned contextLength;
     const byte *traceInfo;
     unsigned traceLength;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -495,14 +495,14 @@ public:
         // NOTE - don't hash the trace info!
         hash = hashc((const unsigned char *) contextData, contextLength, hash);
         hash = hashc((const unsigned char *) &data->channel, sizeof(data->channel), hash);
-        hash = hashc((const unsigned char *) &data->overflowSequence, sizeof(data->overflowSequence), hash); 
-        hash = hashc((const unsigned char *) &data->continueSequence, sizeof(data->continueSequence), hash); 
+        hash = hashc((const unsigned char *) &data->overflowSequence, sizeof(data->overflowSequence), hash);
+        hash = hashc((const unsigned char *) &data->continueSequence, sizeof(data->continueSequence), hash);
         // MORE - sequence fields should always be zero for anything we are caching I think... (?)
         // Note - no point hashing activityId (as cache is local to one activity) or serverIP (likewise)
         return hash;
     }
 
-    virtual bool cacheMatch(const IRoxieQueryPacket *c) const 
+    virtual bool cacheMatch(const IRoxieQueryPacket *c) const
     {
         // note - this checks whether it's a repeat from Roxie server's point-of-view
         // So fields that are compared are the same as the ones that are hashed....
@@ -580,7 +580,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
         const byte *traceInfo = packet->queryTraceInfo();
         unsigned traceLength = packet->getTraceLength();
         unsigned char loggingFlags = *traceInfo;
-        if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL 
+        if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
         {
             traceInfo++;
             traceLength--;
@@ -909,7 +909,7 @@ public:
             if (traceLevel > 10)
             {
                 SlaveContextLogger l(x);
-                StringBuffer xx; 
+                StringBuffer xx;
                 l.CTXLOG("enqueued %s", header.toString(xx).str());
             }
         }
@@ -1037,7 +1037,7 @@ public:
     virtual bool stop() override
     {
         stopped = true;
-        return true; 
+        return true;
     }
     inline void setActivity(IRoxieSlaveActivity *act)
     {
@@ -1046,7 +1046,7 @@ public:
     }
     inline bool match(RoxiePacketHeader &h)
     {
-        // There is a window between getting packet from queue and being able to match it. 
+        // There is a window between getting packet from queue and being able to match it.
         // This could cause some deduping to fail, but it does not matter if it does (so long as it is rare!)
         CriticalBlock b(actCrit);
         return packet && packet->queryHeader().matchPacket(h);
@@ -1058,9 +1058,9 @@ public:
         if (packet && packet->queryHeader().channel==channel)
         {
             abortJob = true;
-            if (doIbytiDelay) 
+            if (doIbytiDelay)
                 ibytiSem.signal();
-            if (activity) 
+            if (activity)
                 activity->abort();
         }
     }
@@ -1074,21 +1074,21 @@ public:
             abortJob = true;
             if (doIbytiDelay)
                 ibytiSem.signal();
-            if (activity) 
+            if (activity)
             {
-                // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority slave 
+                // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority slave
                 // (more primary in the rank). The slaves with higher rank will hold the lower bits of the retries field in IBYTI packet).
                 if (!checkRank || topology->queryChannelInfo(h.channel).otherSlaveHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
                 {
                     activity->abort();
                     return true;
                 }
-                else 
+                else
                 {
                     return false;
                 }
             }
-            if (busy) 
+            if (busy)
             {
                 preActivity = true;
                 return true;
@@ -1099,7 +1099,7 @@ public:
 
     void throwRemoteException(IException *E, IRoxieSlaveActivity *activity, IRoxieQueryPacket *packet, bool isUser)
     {
-        try 
+        try
         {
             if (activity && (logctx.queryTraceLevel() > 1))
             {
@@ -1109,7 +1109,7 @@ public:
                 if (!isUser)
                     EXCLOG(E, "throwRemoteException");
             }
-            
+
             RoxiePacketHeader &header = packet->queryHeader();
             unsigned mySubChannel = topology->queryChannelInfo(header.channel).subChannel();
             // I failed to do the query, but already sent out IBYTI - resend it so someone else can try
@@ -1122,7 +1122,7 @@ public:
                 header.setException(mySubChannel);
                 if (!header.allChannelsFailed() && !localSlave)
                 {
-                    if (logctx.queryTraceLevel() > 1) 
+                    if (logctx.queryTraceLevel() > 1)
                         logctx.CTXLOG("resending packet from slave in case others want to try it");
                     ROQ->sendPacket(packet, logctx);
                 }
@@ -1143,7 +1143,7 @@ public:
             output->putBuffer(ret, len+1, true);
             output->flush();
             E->Release();
-        }   
+        }
         catch (IException *EInE)
         {
             EXCLOG(EInE, "Exception during throwRemoteException");
@@ -1183,12 +1183,12 @@ public:
             return;
         }
         try
-        {   
-            if (logctx.queryTraceLevel() > 8) 
+        {
+            if (logctx.queryTraceLevel() > 8)
             {
                 StringBuffer x;
                 logctx.CTXLOG("IBYTI delay controls : doIbytiDelay=%s numslaves=%u subchnl=%u : %s",
-                    doIbytiDelay?"YES":"NO", 
+                    doIbytiDelay?"YES":"NO",
                     numSlaves, topology->queryChannelInfo(channel).subChannel(),
                     header.toString(x).str());
             }
@@ -1210,8 +1210,8 @@ public:
                         StringBuffer x;
                         logctx.CTXLOG("YES myTurnToDelayIBYTI subchannel=%u delay=%u hash=%u %s", mySubChannel, delay, hdrHashVal, header.toString(x).str());
                     }
-                    
-                    // MORE: if we are dealing with a query that was on channel 0, we may want a longer delay 
+
+                    // MORE: if we are dealing with a query that was on channel 0, we may want a longer delay
                     // (since the theory about duplicated work not mattering when cluster is idle does not hold up)
 
                     if (delay)
@@ -1242,7 +1242,7 @@ public:
                     }
                 }
             }
-            if (abortJob) 
+            if (abortJob)
             {
                 CriticalBlock b(actCrit);
                 busy = false;  // Keep order - before setActivity below
@@ -1308,7 +1308,7 @@ public:
                     maxSlavesActive.store_max(slavesActive);
                     abortJob = false;
                     busy = true;
-                    if (doIbytiDelay) 
+                    if (doIbytiDelay)
                         ibytiSem.reinit(0U); // Make sure sem is is in no-signaled state
                     packet.setown(queue->dequeue());
                     if (packet)
@@ -1426,7 +1426,7 @@ class CallbackEntry : implements IPendingCallback, public CInterface
     bool gotData;
 public:
     IMPLEMENT_IINTERFACE;
-    CallbackEntry(const RoxiePacketHeader &_header, const char *_lfn) : header(_header), lfn(_lfn) 
+    CallbackEntry(const RoxiePacketHeader &_header, const char *_lfn) : header(_header), lfn(_lfn)
     {
         gotData = false;
     }
@@ -1495,7 +1495,7 @@ public:
         loQueue.setHeadRegionSize(newSize);
     }
 
-    virtual void start() 
+    virtual void start()
     {
         loQueue.start();
         hiQueue.start();
@@ -1504,7 +1504,7 @@ public:
 #endif
     }
 
-    virtual void stop() 
+    virtual void stop()
     {
         loQueue.stopAll();
         hiQueue.stopAll();
@@ -1513,8 +1513,8 @@ public:
 #endif
     }
 
-    virtual void join()  
-    { 
+    virtual void join()
+    {
         loQueue.join();
         hiQueue.join();
 #ifdef ROXIE_SLA_LOGIC
@@ -1569,7 +1569,7 @@ protected:
             if (c.matches(header, lfn))
             {
                 if (traceLevel > 10)
-                    DBGLOG("callback return matched a waiting query"); 
+                    DBGLOG("callback return matched a waiting query");
                 c.doFileCallback(len, data, header.retries==QUERY_ABORTED);
             }
         }
@@ -1594,7 +1594,7 @@ class RoxieThrottledPacketSender : public Thread
     public:
         IMPLEMENT_IINTERFACE;
         int             errorCode() const { return 0; }
-        StringBuffer &  errorMessage(StringBuffer &str) const { return str.append("Stopped"); }     
+        StringBuffer &  errorMessage(StringBuffer &str) const { return str.append("Stopped"); }
         MessageAudience errorAudience() const { return MSGAUD_user; }
     };
 
@@ -1680,7 +1680,7 @@ public:
                 StringBuffer s;
                 logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
             }
-            break; 
+            break;
         case 0:
             if (logctx.queryTraceLevel() > 8)
             {
@@ -1758,7 +1758,7 @@ public:
                 break;
             default:
                 logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
-                break; 
+                break;
             case 0:
                 if (logctx.queryTraceLevel() > 8)
                     logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
@@ -1779,7 +1779,7 @@ public:
     {
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendIbyti");
         RoxiePacketHeader ibytiHeader(header, header.activityId & ROXIE_PRIORITY_MASK, subChannel);
-    
+
         if (logctx.queryTraceLevel() > 8)
         {
             StringBuffer s; logctx.CTXLOG("Sending IBYTI packet %s", ibytiHeader.toString(s).str());
@@ -1883,7 +1883,7 @@ public:
             DBGLOG("doIBYTI %s from %s", s1.str(), s.str());
             DBGLOG("header.retries=%x header.getSubChannelMask(header.channel)=%x", header.retries, header.getSubChannelMask(mySubChannel));
         }
-        
+
         if (header.retries == QUERY_ABORTED)
         {
             abortRunning(header, queue, false, preActivity);
@@ -1891,7 +1891,7 @@ public:
 
             if (traceLevel > 10)
             {
-                StringBuffer s; 
+                StringBuffer s;
                 DBGLOG("Abort activity %s", header.toString(s).str());
             }
         }
@@ -1913,7 +1913,7 @@ public:
                 {
                     if (traceLevel > 10)
                     {
-                        StringBuffer s; 
+                        StringBuffer s;
                         DBGLOG("Removed activity from Q : %s", header.toString(s).str());
                     }
                     ibytiPacketsWorked++;
@@ -1923,10 +1923,10 @@ public:
                 {
                     if (preActivity)
                         ibytiPacketsWorked++;
-                    else 
+                    else
                         ibytiPacketsHalfWorked++;
                     return;
-                }               
+                }
                 if (traceLevel > 10)
                     DBGLOG("doIBYTI packet was too late");
                 ibytiPacketsTooLate++; // meaning either I started and reserve the right to finish, or I finished already
@@ -1959,7 +1959,7 @@ public:
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
             if (traceLevel > 10)
             {
-                StringBuffer s; 
+                StringBuffer s;
                 DBGLOG("ROXIE_CALLBACK %s", header.toString(s).str());
             }
             doFileCallback(packet);
@@ -1988,10 +1988,10 @@ public:
 
                 // If it's a retry, look it up against already running, or output stream, or input queue
                 // if found, send an IBYTI and discard retry request
-                
+
                 if (!mySubchannel)
                     retriesReceivedPrm++;
-                else  
+                else
                     retriesReceivedSec++;
                 bool alreadyRunning = false;
                 Owned<IPooledThreadIterator> wi = queue.running();
@@ -2003,7 +2003,7 @@ public:
                         alreadyRunning = true;
                         if (!mySubchannel)
                             retriesIgnoredPrm++;
-                        else 
+                        else
                             retriesIgnoredSec++;
                         ROQ->sendIbyti(header, logctx, mySubchannel);
                         if (logctx.queryTraceLevel() > 10)
@@ -2012,13 +2012,13 @@ public:
                         }
                         break;
                     }
-                } 
+                }
                 if (!alreadyRunning && checkCompleted && ROQ->replyPending(header))
                 {
                     alreadyRunning = true;
                     if (!mySubchannel)
                         retriesIgnoredPrm++;
-                    else 
+                    else
                         retriesIgnoredSec++;
                     ROQ->sendIbyti(header, logctx, mySubchannel);
                     if (logctx.queryTraceLevel() > 10)
@@ -2035,14 +2035,14 @@ public:
                     queue.enqueueUnique(packet.getClear(), mySubchannel);
                 }
             }
-            else // first time (not a retry). 
+            else // first time (not a retry).
                 queue.enqueue(packet.getClear());
         }
     }
 
     int run()
     {
-        if (traceLevel) 
+        if (traceLevel)
             DBGLOG("RoxieSocketQueueManager::run() starting: doIbytiDelay=%s minIbytiDelay=%u initIbytiDelay=%u",
                     doIbytiDelay?"YES":"NO", minIbytiDelay, initIbytiDelay);
 
@@ -2082,7 +2082,7 @@ public:
                     // MORE: Maybe we should utilize IException::errorCode - not just text ??
                     if (E->errorCode()==JSOCKERR_timeout_expired)
                         E->Release();
-                    else if (roxiemem::memPoolExhausted()) 
+                    else if (roxiemem::memPoolExhausted())
                     {
                         //MORE: I think this should probably be based on the error code instead.
 
@@ -2090,7 +2090,7 @@ public:
                         E->Release();
                         MilliSleep(1000); // Give a chance for mem free
                     }
-                    else 
+                    else
                     {
                         EXCLOG(E, "Exception reading or processing multicast msg");
                         E->Release();
@@ -2103,7 +2103,7 @@ public:
                             openMulticastSocket();
                         }
                     }
-                
+
                 }
                 else
                 {
@@ -2115,14 +2115,14 @@ public:
         return 0;
     }
 
-    void start() 
+    void start()
     {
         RoxieReceiverBase::start();
         running = true;
-        readThread.start(); 
+        readThread.start();
     }
 
-    void stop() 
+    void stop()
     {
         if (running)
         {
@@ -2132,8 +2132,8 @@ public:
         RoxieReceiverBase::stop();
     }
 
-    void join()  
-    { 
+    void join()
+    {
         readThread.join();
         RoxieReceiverBase::join();
     }
@@ -2343,7 +2343,7 @@ public:
     CLocalMessageCollator(IRowManager *_rowManager, ruid_t _ruid);
     ~CLocalMessageCollator();
 
-    virtual ruid_t queryRUID() const 
+    virtual ruid_t queryRUID() const
     {
         return id;
     }
@@ -2434,7 +2434,7 @@ void LocalMessagePacker::flush()
     // otherwise Roxie server is no longer interested and we can simply discard
 }
 
-CLocalMessageCollator::CLocalMessageCollator(IRowManager *_rowManager, ruid_t _ruid) 
+CLocalMessageCollator::CLocalMessageCollator(IRowManager *_rowManager, ruid_t _ruid)
     : rowManager(_rowManager), id(_ruid)
 {
     totalBytesReceived = 0;
@@ -2462,7 +2462,7 @@ public:
     {
         receiveManager.setown(new RoxieLocalReceiveManager);
     }
-        
+
     virtual void sendPacket(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx) override
     {
         RoxiePacketHeader &header = packet->queryHeader();
@@ -2471,7 +2471,7 @@ public:
         {
             if (traceLevel > 5)
             {
-                StringBuffer s; 
+                StringBuffer s;
                 DBGLOG("ROXIE_CALLBACK %s", header.toString(s).str());
             }
             doFileCallback(packet);
@@ -2691,7 +2691,7 @@ IPacketDiscarder *createPacketDiscarder()
 // Reply as soon as receive, or put it on the queue like other messages?
 // Reply for every channel, or just once for every slave?
 // Should I send on channel 0 or round-robin the channels?
-// My gut feeling is that knowing what channels are responding is useful so should reply on every unsuspended channel, 
+// My gut feeling is that knowing what channels are responding is useful so should reply on every unsuspended channel,
 // and that the delay caused by queuing system is an interesting part of what we want to measure (though nice to know minimum possible too)
 
 unsigned pingInterval = 60;

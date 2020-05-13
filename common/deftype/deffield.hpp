@@ -39,7 +39,7 @@ typedef IArrayOf<IDefRecordElement> IDefRecordElementArray;
 
 //fields of type record/dataset have queryChild(0) as the dataset
 //ifblocks have queryChild(0) as the condition field, queryChild(1) as the child record
-//unnamed records (used for inheritance) are already expanded inline 
+//unnamed records (used for inheritance) are already expanded inline
 //records are not commoned up - even if the same structure is used with two names.  This ensures each field has a unique IDefRecordElement
 //Whether a field needs biasing is determined by the numKeyedFields() and the number of root fields
 

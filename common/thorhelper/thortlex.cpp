@@ -132,10 +132,10 @@ unsigned MultiLexer::next(position_t pos, GrammarSymbolArray & symbols)
     return symbols.ordinality();
 }
 
-void MultiLexer::setDocument(size32_t len, const void * _start)     
-{ 
-    state.start = (const byte *)_start; 
-    state.end = state.start + len; 
+void MultiLexer::setDocument(size32_t len, const void * _start)
+{
+    state.start = (const byte *)_start;
+    state.end = state.start + len;
 }
 
 #if 0

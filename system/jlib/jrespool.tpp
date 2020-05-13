@@ -39,7 +39,7 @@ public:
         numresources = 0;
         resources = NULL;
     }
-    
+
     CResourcePool(unsigned size,IResourceFactory<T>* fac): factory(fac)
     {
         numresources = size;
@@ -48,17 +48,17 @@ public:
 
     ~CResourcePool()
     {
-        for (unsigned i=0;i<numresources;i++) 
+        for (unsigned i=0;i<numresources;i++)
             ::Release(resources[i]);
         free(resources);
     }
 
     void init(unsigned size,IResourceFactory<T>* fac)
     {
-        CriticalBlock b(crit); 
+        CriticalBlock b(crit);
         if(resources)
         {
-            for (unsigned i=0;i<numresources;i++) 
+            for (unsigned i=0;i<numresources;i++)
                 ::Release(resources[i]);
             free(resources);
         }
@@ -68,14 +68,14 @@ public:
     }
 
     T * get(long timeout=0)
-    {   
+    {
         const long interval=1000;
 
         for(;;)
         {
             {
-                CriticalBlock b(crit); 
-                for (unsigned i=0;i<numresources;i++) 
+                CriticalBlock b(crit);
+                for (unsigned i=0;i<numresources;i++)
                 {
                     T * &it = resources[i];
                     if(it == NULL)
@@ -105,7 +105,7 @@ public:
     {
         sem.signal();
     }
-    
+
 protected:
     CriticalSection crit;
     Semaphore sem;

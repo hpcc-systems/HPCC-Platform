@@ -313,7 +313,7 @@ public:
                             break;
                     }
 
-                    if (finishedLooping || 
+                    if (finishedLooping ||
                         ((flags & IHThorLoopArg::LFfiltered) && !helper->sendToLoop(loopCounter, ret)))
                     {
                         dataLinkIncrement();
@@ -1054,7 +1054,7 @@ public:
 
         if (ok)
         {
-            RtlDynamicRowBuilder ret(allocator);    
+            RtlDynamicRowBuilder ret(allocator);
             do {
                 unsigned thisSize = helper->transform(ret);
                 if (thisSize)
@@ -1110,7 +1110,7 @@ public:
         if (eos)
             return NULL;
         eos = true;
-        RtlDynamicRowBuilder ret(queryRowAllocator());  
+        RtlDynamicRowBuilder ret(queryRowAllocator());
         size32_t sz = helper->clearAggregate(ret);
         helper->processRows(ret);
         dataLinkIncrement();
@@ -1249,9 +1249,9 @@ public:
 
                 ok = helper->first(lastInput);
             }
-            
+
             nextOutput.ensureRow();
-            do 
+            do
             {
                 size32_t thisSize = helper->transform(nextOutput);
                 if (thisSize)
@@ -1361,9 +1361,9 @@ public:
         graphId = _graphId;
     }
 
-    virtual bool isGrouped() 
-    { 
-        return grouped; 
+    virtual bool isGrouped()
+    {
+        return grouped;
     }
 
     virtual void ready()

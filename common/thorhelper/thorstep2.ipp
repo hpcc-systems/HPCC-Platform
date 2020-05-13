@@ -63,7 +63,7 @@ public:
 
     inline void set(unsigned _field, unsigned __int64 _distance) { field = _field; distance = _distance; }
     inline void set(const SkipDistance & other) { field = other.field; distance = other.distance; }
-    
+
 public:
     unsigned __int64 distance;
     unsigned field;
@@ -157,7 +157,7 @@ public:
     //interface IHThorInput
     void afterProcessing();
     void beforeProcessing();
-    
+
     const void * next();
     const void * nextGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra);
     //Once it reorders the inputs dynamically, the following will be better

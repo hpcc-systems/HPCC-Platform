@@ -68,7 +68,7 @@
   1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5).
   1999-05-03 lpd Original version.
  */
-// Following added by Gavin 
+// Following added by Gavin
 #include "platform.h"               // GH modified
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 0
@@ -417,7 +417,7 @@ void md5_string(const char* inpstring, int inplen, StringBuffer& outstring)
     md5_init(&context);
     md5_append(&context, (const unsigned char *)inpstring, inplen);
     md5_finish(&context,digest);
-    
+
     for (int i = 0; i < 16; i++)
     {
         sprintf((char *)digitstr,"%02x", digest[i]);
@@ -425,7 +425,7 @@ void md5_string(const char* inpstring, int inplen, StringBuffer& outstring)
         digeststr[i*2+1]=digitstr[1];
     }
     digeststr[32]='\0';
-    
+
     outstring.append(digeststr);
 }
 

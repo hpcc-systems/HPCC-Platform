@@ -41,12 +41,12 @@ public:
     //---------------------------------------------------------------------------
     //  CEnvironmentDeploymentEngine
     //---------------------------------------------------------------------------
-    CEnvironmentDeploymentEngine(IConstEnvironment &environment, IDeploymentCallback& callback, 
+    CEnvironmentDeploymentEngine(IConstEnvironment &environment, IDeploymentCallback& callback,
         IPropertyTree* pSelectedComponents)
-        : m_environment(environment), 
-        m_transform(NULL), 
+        : m_environment(environment),
+        m_transform(NULL),
         m_abort(false),
-        m_espModuleCount(0), 
+        m_espModuleCount(0),
         m_tempFileCount(0),
         m_bLinuxDeployment(false),
         m_bInteractiveMode(true)
@@ -57,13 +57,13 @@ public:
     if (pSelectedComponents)
     {
       initXML(pSelectedComponents);
-        
+
           Owned<IPropertyTreeIterator> it = pSelectedComponents->getElements("*");
           ForEach(*it)
           {
               IPropertyTree* pComponent = &it->query();
               IDeploymentEngine* pEngine = addProcess(pComponent->queryName(), pComponent->queryProp("@name"));
-            
+
               Owned<IPropertyTreeIterator> iter = pComponent->getElements("*");
               if (iter->first())
               {
@@ -74,7 +74,7 @@ public:
                       const char* tagName  = pChild->queryName();
                       const char* instName = pChild->queryProp("@name");
                       pEngine->addInstance(tagName, instName);
-                    
+
                       //determine if this is linux deployment
                       if (!m_bLinuxDeployment)
                       {
@@ -87,7 +87,7 @@ public:
               }
               else if (!m_bLinuxDeployment)//another previously added engine already does not have linux instance
               {
-                  //some components like thor and hole clusters don't show their instances in the 
+                  //some components like thor and hole clusters don't show their instances in the
                   //deployment wizard so detect if they have any linux instance.
                   const IArrayOf<IPropertyTree>& instances = pEngine->getInstances();
                   if (instances.ordinality() > 0)
@@ -104,7 +104,7 @@ public:
         EnumerateNetworkConnections();
 #endif
     }
-    
+
     //---------------------------------------------------------------------------
     //  ~CEnvironmentDeploymentEngine
     //---------------------------------------------------------------------------
@@ -119,18 +119,18 @@ public:
             if (!DeleteFile(m_tempFiles.item(i)))
                 WARNLOG("Couldn't delete file %s", m_tempFiles.item(i));
         }
-        
+
         count = m_tempDirs.length();
         for (i = 0; i < count; i++)
             deleteRecursive(m_tempDirs.item(i));
-        
+
         m_processes.kill(); // must do this before destroying deplyCallback and deployLog
         m_pDeployLog.clear(); // this causes the log file to be written
         m_pCallback.clear();
-        
+
         termXML();
     }
-    
+
     void deleteRecursive(const char* path)
     {
         Owned<IFile> pDir = createIFile(path);
@@ -140,21 +140,21 @@ public:
             {
                 Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
                 ForEach(*it)
-                {               
+                {
                     StringBuffer name;
                     it->getName(name);
-                    
+
                     StringBuffer childPath(path);
                     childPath.append(PATHSEPCHAR);
                     childPath.append(name);
-                    
+
                     deleteRecursive(childPath.str());
                 }
             }
             pDir->remove();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  addProcess
     //---------------------------------------------------------------------------
@@ -164,14 +164,14 @@ public:
         assertex(processName);
         StringBuffer xpath;
         xpath.appendf("Software/%s[@name='%s']", processType, processName);
-        
+
         Owned<IPropertyTree> tree = &m_environment.getPTree();
         IPropertyTree* pComponent = tree->queryPropTree(xpath.str());
         if (!pComponent)
             throw MakeStringException(0, "%s with name %s was not found!", processType, processName);
-        
+
         IDeploymentEngine* deployEngine;
-        
+
         if (strcmp(processType, "DaliServerProcess")==0)
             deployEngine = new CDaliDeploymentEngine(*this, *m_pCallback, *pComponent);
         else if (strcmp(processType, "ThorCluster")==0)
@@ -182,13 +182,13 @@ public:
             deployEngine = new CEspDeploymentEngine(*this, *m_pCallback, *pComponent);
         else
             deployEngine = new CDeploymentEngine(*this, *m_pCallback, *pComponent, "Instance", true);
-        
+
         assertex(deployEngine);
         deployEngine->setXsl(m_processor, m_transform);
         m_processes.append(*deployEngine); // array releases members when destroyed
         return deployEngine;
     }
-    
+
     //---------------------------------------------------------------------------
     //  setSshAccount
     //---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ public:
         m_sSshUserid   = userid;
         m_sSshPassword = password;
     }
-    
+
     //---------------------------------------------------------------------------
     //  isLinuxDeployment
     //---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ public:
     {
         return m_bLinuxDeployment;
     }
-    
+
     //---------------------------------------------------------------------------
     //  start
     //---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ public:
             m_processes.item(idx).start();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  stop
     //---------------------------------------------------------------------------
@@ -227,7 +227,7 @@ public:
             m_processes.item(idx).stop();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  stripXsltMessage
     //---------------------------------------------------------------------------
@@ -238,15 +238,15 @@ public:
         const int len =sizeof("[ElemMessageTerminateException: ")-1;
         if (!strncmp(msg, pattern, len))
             msg.remove(0, len);
-        
+
         //remove the excessive info about XSLT context when this was thrown
         const char* begin = msg.str();
         const char* end   = strstr(begin, "(file:");
-        
+
         if (end)
             msg.setLength(end-begin);
     }
-    
+
     //---------------------------------------------------------------------------
     //  check
     //---------------------------------------------------------------------------
@@ -254,23 +254,23 @@ public:
     {
         if (m_pCallback->getAbortStatus())
             throw MakeStringException(0, "User abort");
-        
+
         bool valid = false;
         m_nValidationErrors = 0;
-        
+
         StringBuffer outputXml;
-        
+
         Owned<IXslFunction>  externalFunction;
         externalFunction.setown(m_transform->createExternalFunction("validationMessage", validationMessageFromXSLT));
         m_transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction.get(), true);
         m_transform->loadXslFromFile(m_validateAllXsl.str());
         m_transform->setUserData(this);
-        
+
         try
         {
             m_transform->transform( outputXml );
             m_transform->closeResultTarget();
-            
+
             m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "%s", m_transform->getMessages());
 
             if (!m_nValidationErrors)//this may get filled in by the external function
@@ -302,19 +302,19 @@ public:
             m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Preliminary validation failed!");
             while ( !m_pCallback->processException(NULL, NULL, NULL, NULL, errors, "Preliminary validation failed!", NULL) )
                 ;
-            valid = true; //ignore validation errors                
+            valid = true; //ignore validation errors
         }
 
         if (valid)
         {
             ForEachItemIn(idx, m_processes)
                 m_processes.item(idx).check();
-            
+
             m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL);
         }
     }
-    
-    
+
+
     //---------------------------------------------------------------------------
     //  compare
     //---------------------------------------------------------------------------
@@ -325,7 +325,7 @@ public:
             m_processes.item(idx).compare(mode);
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  deploy
     //---------------------------------------------------------------------------
@@ -340,7 +340,7 @@ public:
             }
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  deploy
     //---------------------------------------------------------------------------
@@ -355,7 +355,7 @@ public:
             if (bStart)
                 start();
             break;
-            
+
         case DEBACKUP_COPY:
             backupDirs();
             if (bStop)
@@ -364,7 +364,7 @@ public:
             if (bStart)
                 start();
             break;
-            
+
         case DEBACKUP_RENAME:
             deploy(flags, true);
             if (bStop)
@@ -373,12 +373,12 @@ public:
             if (bStart)
                 start();
             break;
-            
+
         default:
             assertex(false);
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  renameDirs
     //---------------------------------------------------------------------------
@@ -389,7 +389,7 @@ public:
             m_processes.item(idx).renameDirs();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  backupDirs
     //---------------------------------------------------------------------------
@@ -400,7 +400,7 @@ public:
             m_processes.item(idx).backupDirs();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  abort
     //---------------------------------------------------------------------------
@@ -412,7 +412,7 @@ public:
             m_processes.item(idx).abort();
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  archive
     //---------------------------------------------------------------------------
@@ -424,22 +424,22 @@ public:
             m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Aborted!");
             throw MakeStringException(0, "User abort");
         }
-        
+
         m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Archiving environment data to %s...", filename);
         Owned<IPropertyTree> tree = &m_environment.getPTree();
         StringBuffer xml;
         toXML(tree, xml);
-        Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Archive File", NULL, NULL, NULL, NULL, 
+        Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Archive File", NULL, NULL, NULL, NULL,
             filename, "", "", "", false);
         task->createFile(xml.str());
         m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL);
         if (task->getAbort())
             throw MakeStringException(0, "User abort");
-        
+
         Owned<IFile> pFile = createIFile(filename);
         pFile->setReadOnly(true);
     }
-    
+
     //---------------------------------------------------------------------------
     //  setLog
     //---------------------------------------------------------------------------
@@ -448,7 +448,7 @@ public:
         if (!filename || !*filename) return;
         m_pDeployLog.setown(createDeployLog(*m_pCallback, filename, envname));
     }
-    
+
     //---------------------------------------------------------------------------
     //  initXML
     //---------------------------------------------------------------------------
@@ -456,28 +456,28 @@ public:
     {
         if (m_abort)
             throw MakeStringException(0, "User abort");
-        
+
         m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Loading environment...");
         m_processor.setown(getXslProcessor());
         m_transform.setown(m_processor->createXslTransform());
-        
+
         //decrypt external function is no longer used by any xslt
         //
         //m_externalFunction.setown(m_transform->createExternalFunction("decrypt", decrypt));
         //m_transform->setExternalFunction(SEISINT_NAMESPACE, m_externalFunction.get(), true);
-        
+
         Owned<IPropertyTree> tree = &m_environment.getPTree();
-        
+
         IPropertyTree* pDeploy = tree->queryPropTree("DeployComponents");
         if (pDeploy)
             tree->removeTree(pDeploy);
         pDeploy = tree->addPropTree("DeployComponents", createPTreeFromIPT(pSelectedComponents));
-        
+
         StringBuffer xml;
         toXML(tree, xml);
-        
+
         tree->removeTree(pDeploy);
-        
+
         if (m_transform->setXmlSource(xml.str(), xml.length()) != 0)
             throw MakeStringException(0, "Invalid environment XML string");
     }
@@ -493,15 +493,15 @@ public:
         m_transform.clear();
         m_processor.clear();
     }
-    
+
     //---------------------------------------------------------------------------
     //  incrementTempFileCount
     //---------------------------------------------------------------------------
-    virtual int incrementTempFileCount() 
+    virtual int incrementTempFileCount()
     {
         return ++m_tempFileCount;
     }
-    
+
     //---------------------------------------------------------------------------
     //  incrementEspModuleCount
     //---------------------------------------------------------------------------
@@ -509,7 +509,7 @@ public:
     {
         return ++m_espModuleCount;
     }
-    
+
     //---------------------------------------------------------------------------
     //  validationMessageFromXSLT
     //---------------------------------------------------------------------------
@@ -529,7 +529,7 @@ public:
             pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, "%s", in);
             return;
         }
-        
+
         const char* msgType  = sArray.item(0);
         const char* compType = sArray.item(1);
         const char* compName = sArray.item(2);
@@ -537,7 +537,7 @@ public:
 
         if (compType && !*compType)
             compType = NULL;
-        
+
         if (compName && !*compName)
             compName = NULL;
 
@@ -561,10 +561,10 @@ public:
         try
         {
             if (pCallback)
-                pCallback->printStatus( statusType, 
-                compType, 
-                compName, 
-                NULL, 
+                pCallback->printStatus( statusType,
+                compType,
+                compName,
+                NULL,
                 "%s", msg);
         }
         catch (IException* e)
@@ -580,7 +580,7 @@ public:
             pCallback->printStatus(STATUS_ERROR, NULL, NULL, NULL, "Unknown exception!");
         }
     }
-    
+
     //---------------------------------------------------------------------------
     //  getCallback
     //---------------------------------------------------------------------------
@@ -588,7 +588,7 @@ public:
     {
         return *m_pCallback;
     }
-    
+
     //---------------------------------------------------------------------------
     //  setInteractiveMode
     //---------------------------------------------------------------------------
@@ -596,13 +596,13 @@ public:
     {
         m_bInteractiveMode = bSet;
     }
-    
+
     //---------------------------------------------------------------------------
     //  getEnvironment
     //---------------------------------------------------------------------------
-    IConstEnvironment& getEnvironment() const 
-    { 
-        return m_environment; 
+    IConstEnvironment& getEnvironment() const
+    {
+        return m_environment;
     }
 
     //---------------------------------------------------------------------------
@@ -660,7 +660,7 @@ public:
             StringAttrAdaptor adaptor(netAddress);
             machine->getNetAddress(adaptor);
             if (!netAddress.get() || !*netAddress.get())
-                throw MakeStringException(-1, 
+                throw MakeStringException(-1,
                 "The computer '%s' used for deployment folder does not have any network address defined!", hostName);
 
             StringBuffer uncPath(PATHSEPSTR PATHSEPSTR);
@@ -670,7 +670,7 @@ public:
             uncPath.append( localPath );//note that the path ends with PATHSEPCHAR
             uncPath.append( tail );
             uncPath.append( ext );
-            
+
             m_sDeployToFolder.set( uncPath.str() );
 
             getAccountInfo(hostName, m_sDeployToUser, m_sDeployToPswd);
@@ -742,7 +742,7 @@ public:
             if (machine->getOS() == MachineOsW2K)
             {
                 domain->getName(StringBufferAdaptor(x));
-                if (x.length()) 
+                if (x.length())
                     x.append(PATHSEPCHAR);
             }
 
@@ -769,7 +769,7 @@ public:
             if (machine->getOS() == MachineOsW2K)
             {
                 domain->getName(StringBufferAdaptor(x));
-                if (x.length()) 
+                if (x.length())
                     x.append(PATHSEPCHAR);
             }
 
@@ -849,7 +849,7 @@ public:
                     if (lpnr[i].lpRemoteName)
                     {
                         // make a valid UNC path to connect to and see if we are not already connected
-                        if (CDeploymentEngine::stripTrailingDirsFromUNCPath(lpnr[i].lpRemoteName, networkPath.clear()) && 
+                        if (CDeploymentEngine::stripTrailingDirsFromUNCPath(lpnr[i].lpRemoteName, networkPath.clear()) &&
                             m_persistentConnections.find( networkPath.str() ) == m_persistentConnections.end())
                         {
                             //::MessageBox(NULL, networkPath.str(), lpnr[i].lpRemoteName, MB_OK);
@@ -869,7 +869,7 @@ public:
 
         dwResult = WNetCloseEnum(hEnum); // end the enumeration
         if (dwResult != NO_ERROR)
-        { 
+        {
             NetErrorHandler(dwResult);
             return false;
         }
@@ -918,10 +918,10 @@ public:
     //---------------------------------------------------------------------------
     //  CConfigGenMgr
     //---------------------------------------------------------------------------
-  CConfigGenMgr(IConstEnvironment& environment, IDeploymentCallback& callback, 
+  CConfigGenMgr(IConstEnvironment& environment, IDeploymentCallback& callback,
     IPropertyTree* pSelectedComponents, const char* inputDir, const char* outputDir, const char* compName, const char* compType, const char* ipAddr)
     : CEnvironmentDeploymentEngine(environment, callback, NULL),
-    m_inDir(inputDir), 
+    m_inDir(inputDir),
     m_outDir(outputDir),
     m_compName(compName),
     m_compType(compType),
@@ -975,7 +975,7 @@ public:
         }
         else if (!m_bLinuxDeployment)//another previously added engine already does not have linux instance
         {
-          //some components like thor and hole clusters don't show their instances in the 
+          //some components like thor and hole clusters don't show their instances in the
           //deployment wizard so detect if they have any linux instance.
           const IArrayOf<IPropertyTree>& instances = pEngine->getInstances();
           if (instances.ordinality() > 0)
@@ -1053,7 +1053,7 @@ private:
 //---------------------------------------------------------------------------
 // Factory functions
 //---------------------------------------------------------------------------
-IEnvDeploymentEngine* createEnvDeploymentEngine(IConstEnvironment& environment, 
+IEnvDeploymentEngine* createEnvDeploymentEngine(IConstEnvironment& environment,
                                                                 IDeploymentCallback& callback,
                                                                 IPropertyTree* pSelectedComponents)
 {
@@ -1071,12 +1071,12 @@ IEnvDeploymentEngine* createEnvDeploymentEngine(IConstEnvironment& environment,
     }
 }
 
-IEnvDeploymentEngine* createConfigGenMgr(IConstEnvironment& env, 
+IEnvDeploymentEngine* createConfigGenMgr(IConstEnvironment& env,
                                          IDeploymentCallback& callback,
                                          IPropertyTree* pSelectedComponents,
                                          const char* inputDir,
                                          const char* outputDir,
-                                         const char* compName, 
+                                         const char* compName,
                                          const char* compType,
                                          const char* ipAddr)
 {
@@ -1126,12 +1126,12 @@ bool matchDeployAddress(const char *searchIP, const char *envIP)
  * roxie, thor, or eclserver.  We then check it against the unique list made from topology.
  * If the the unique list also has the name of the software component, we process it.
  * Otherwise we skip it and move on to the next component.*/
-IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName, 
+IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
                             const char* compType, const char* ipAddr, bool listall)
 {
   Owned<IPropertyTreeIterator> pClusterIter = pEnvRoot->getElements("Software/Topology/*");
   StringArray pTopologyComponents;
- 
+
   ForEach(*pClusterIter)
   {
     IPropertyTree * pCluster = &pClusterIter->query();
@@ -1188,7 +1188,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
       const char* deployable = pEnvRoot->queryProp(sXPath.str());
 
       //either the @deployable does not exist or it is not one of 'no', 'false' or '0'
-      if (!deployable || 
+      if (!deployable ||
         (strcmp(deployable, "no") != 0 && strcmp(deployable, "false") != 0 && strcmp(deployable, "0") != 0))
       {
         IPropertyTree* pSelComp = NULL;
@@ -1213,7 +1213,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
               throw MakeStringException(-1,"XPATH: %s is invalid.\n(Did you configure the Hardware?)", sXPath.str());
 
             netAddr = pComputer->queryProp("@netAddress");
-            if (matchDeployAddress(ipAddr, netAddr) || 
+            if (matchDeployAddress(ipAddr, netAddr) ||
                 (!ipAddr && netAddr && *netAddr))
             {
               if (!bAdded)
@@ -1240,7 +1240,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
               }
             }
           }
-          else if (matchDeployAddress(ipAddr, netAddr) || 
+          else if (matchDeployAddress(ipAddr, netAddr) ||
                    (!ipAddr && netAddr && *netAddr))
           {
             if (!bAdded)
@@ -1309,7 +1309,7 @@ void stripNetAddr(const char* dir, StringBuffer& destpath, StringBuffer& destip,
         destip.clear().append(strchr(dir + 2, '\\') - (dir + 2), dir + 2);
         destpath.clear().append(strchr(dir + 2, '\\'));
     }
-    
+
     if (makeLinux)
         destpath.replace('\\', '/');
 }

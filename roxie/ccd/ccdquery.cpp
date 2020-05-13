@@ -68,8 +68,8 @@ unsigned ActivityArray::recursiveFindActivityIndex(unsigned id)
 }
 
 //----------------------------------------------------------------------------------------------
-// Class CQueryDll maps dlls into loadable workunits, complete with caching to ensure that a refresh of the QuerySet 
-// can avoid reloading dlls, and that the same CQueryDll (and the objects it owns) can be shared between server and 
+// Class CQueryDll maps dlls into loadable workunits, complete with caching to ensure that a refresh of the QuerySet
+// can avoid reloading dlls, and that the same CQueryDll (and the objects it owns) can be shared between server and
 // multiple slave channels
 //----------------------------------------------------------------------------------------------
 
@@ -98,7 +98,7 @@ public:
     virtual void beforeDispose()
     {
         CriticalBlock b(dllCacheLock);
-        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
+        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table.
         // So only remove from hash table if what we find there matches the item that is being deleted.
         CQueryDll *goer = dllCache.getValue(dllName);
         if (goer == this)
@@ -489,7 +489,7 @@ void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
 //----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
 // package context into an object that can quickly create a the query context that executes a specific
-// instance of a Roxie query. 
+// instance of a Roxie query.
 // Caching is used to ensure that only queries that are affected by a package change need to be reloaded.
 // Derived classes handle the differences between slave and server side factories
 //----------------------------------------------------------------------------------------------
@@ -592,7 +592,7 @@ protected:
         case TAKxmlread:
         case TAKjsonread:
         case TAKdiskread:
-        {       
+        {
             if (node.getPropBool("att[@name='_isSpill']/@value", false) || node.getPropBool("att[@name='_isSpillGlobal']/@value", false))
                 return createRoxieServerSpillReadActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
             else
@@ -1104,7 +1104,7 @@ public:
 
     virtual void beforeDispose()
     {
-        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
+        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table.
         // So only remove from hash table if what we find there matches the item that is being deleted.
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         SpinBlock b(queriesCrit);
@@ -1210,7 +1210,7 @@ public:
             DBGLOG("getQueryHash: %s %" I64F "u", id, hashValue);
         return hashValue;
     }
-    
+
     virtual void load(const IPropertyTree *stateInfo)
     {
         IConstWorkUnit *wu = dll->queryWorkUnit();
@@ -1436,11 +1436,11 @@ public:
     {
         return id;
     }
-    virtual bool isQueryLibrary() const 
+    virtual bool isQueryLibrary() const
     {
-        return libraryInterfaceHash != 0; 
+        return libraryInterfaceHash != 0;
     }
-    virtual unsigned getQueryLibraryInterfaceHash() const 
+    virtual unsigned getQueryLibraryInterfaceHash() const
     {
         return libraryInterfaceHash;
     }
@@ -1463,7 +1463,7 @@ public:
     {
         return options;
     }
-    virtual ILoadedDllEntry *queryDll() const 
+    virtual ILoadedDllEntry *queryDll() const
     {
         assertex(dll);
         return dll->queryDll();

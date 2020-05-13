@@ -37,7 +37,7 @@ public:
     virtual int compare(const void * mem);
     virtual ITypeInfo *getType();
     virtual ITypeInfo *queryType() const;
-    virtual double getRealValue();  
+    virtual double getRealValue();
     virtual type_t getTypeCode();
     virtual size32_t getSize();
     virtual void * getUCharStringValue(unsigned len, void * out) { UNIMPLEMENTED; return out; }
@@ -69,9 +69,9 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue();
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -79,7 +79,7 @@ public:
 // serializable
     virtual void serialize(MemoryBuffer &tgt);
     virtual void deserialize(MemoryBuffer &src);
-}; 
+};
 
 class MemoryValue : public CValue
 {
@@ -89,9 +89,9 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue() { return 0; };
-    virtual void pushDecimalValue();    
+    virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
     virtual int rangeCompare(ITypeInfo * targetType);
@@ -105,7 +105,7 @@ protected:
 
 protected:
     MemoryAttr val;
-}; 
+};
 
 class StringValue : public MemoryValue
 {
@@ -119,12 +119,12 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue();
     virtual void pushDecimalValue();
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual const char *getStringValue(StringBuffer &);
     virtual const char *getUTF8Value(StringBuffer & out);
-}; 
+};
 
 class UnicodeValue : public MemoryValue
 {
@@ -139,14 +139,14 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue();
     virtual void pushDecimalValue();
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual const char *getStringValue(StringBuffer &);
     virtual void * getUCharStringValue(unsigned len, void * out);
     virtual const char *getUTF8Value(StringBuffer & out);
     virtual const char *getCodepageValue(StringBuffer & out, char const * codepage);
-}; 
+};
 
 IValue * createUnicodeValue(UChar const * text, size32_t len, ITypeInfo * t);
 
@@ -155,7 +155,7 @@ class UnicodeAttr
 public:
     UnicodeAttr() : text(0) {}
     ~UnicodeAttr() { free(text); }
-    
+
     operator UChar const * () const { return text; }
     UChar const * get(void) const { return text; }
     size32_t length() const { return text ? rtlUnicodeStrlen(text) : 0; }
@@ -198,7 +198,7 @@ public:
 // serializable
     virtual void serialize(MemoryBuffer & tgt);
     virtual void deserialize(MemoryBuffer & src);
-}; 
+};
 
 IValue * createVarUnicodeValue(UChar const * text, size32_t len, ITypeInfo * t);
 
@@ -216,14 +216,14 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue();
     virtual void pushDecimalValue();
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual const char *getStringValue(StringBuffer &);
     virtual void * getUCharStringValue(unsigned len, void * out);
     virtual const char *getUTF8Value(StringBuffer & out);
     virtual const char *getCodepageValue(StringBuffer & out, char const * codepage);
-}; 
+};
 
 class DataValue : public MemoryValue
 {
@@ -235,12 +235,12 @@ public:
     virtual const char *generateECL(StringBuffer &s);
     virtual IValue * castTo(ITypeInfo * type);
 
-    virtual bool getBoolValue();    
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual const char *getStringValue(StringBuffer &);
 protected:
     void generateHex(StringBuffer &out);
 
-}; 
+};
 
 class QStringValue : public MemoryValue
 {
@@ -255,14 +255,14 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
+    virtual bool getBoolValue();
     virtual __int64 getIntValue();
-    virtual void pushDecimalValue();    
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual void pushDecimalValue();
+    virtual const char *getStringValue(StringBuffer &);
 protected:
     void generateHex(StringBuffer &out);
 
-}; 
+};
 
 class CharValue : public CValue
 {
@@ -279,9 +279,9 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
-    virtual __int64 getIntValue() { return 0; };    
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual __int64 getIntValue() { return 0; };
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -290,7 +290,7 @@ public:
     virtual void serialize(MemoryBuffer &tgt);
     virtual void deserialize(MemoryBuffer &src);
 
-}; 
+};
 
 class IntValue : public CValue
 {
@@ -308,9 +308,9 @@ public:
     virtual IValue * castTo(ITypeInfo * type);
     virtual int compare(IValue * other);
 
-    virtual bool getBoolValue();    
-    virtual __int64 getIntValue();  
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual __int64 getIntValue();
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -322,7 +322,7 @@ public:
 protected:
     IValue * castViaString(ITypeInfo * t);
     byte * getAddressValue();
-}; 
+};
 
 class PackedIntValue : public CValue
 {
@@ -349,7 +349,7 @@ public:
 // serializable
     virtual void serialize(MemoryBuffer &tgt)               { value->serialize(tgt); }
     virtual void deserialize(MemoryBuffer &src)             { value->deserialize(src); }
-}; 
+};
 
 class BitfieldValue : public IntValue
 {
@@ -376,10 +376,10 @@ public:
     virtual IValue * castTo(ITypeInfo * type);
     virtual int compare(IValue * other);
 
-    virtual bool getBoolValue();    
-    virtual __int64 getIntValue();  
-    virtual double getRealValue();  
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual __int64 getIntValue();
+    virtual double getRealValue();
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -389,7 +389,7 @@ public:
     virtual void deserialize(MemoryBuffer &src);
     virtual bool isValid() const { return rtlIsValidReal(sizeof(val), &val); }
 
-}; 
+};
 
 class DecimalValue : public CValue
 {
@@ -409,10 +409,10 @@ public:
     virtual IValue * castTo(ITypeInfo * type);
     virtual int compare(IValue * other);
 
-    virtual bool getBoolValue();    
-    virtual __int64 getIntValue();  
-    virtual double getRealValue();  
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual __int64 getIntValue();
+    virtual double getRealValue();
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -430,7 +430,7 @@ public:
 
 // implementing IValue
     virtual IValue * castTo(ITypeInfo * type);
-}; 
+};
 
 class BoolValue : public CValue
 {
@@ -439,7 +439,7 @@ private:
 
 public:
     BoolValue(bool v) : CValue(makeBoolType()), val(v)
-    {   
+    {
     }
 
     static BoolValue *trueconst;
@@ -454,9 +454,9 @@ public:
     virtual int compare(IValue * other);
     virtual int compare(const void * mem);
 
-    virtual bool getBoolValue();    
-    virtual __int64 getIntValue();  
-    virtual const char *getStringValue(StringBuffer &); 
+    virtual bool getBoolValue();
+    virtual __int64 getIntValue();
+    virtual const char *getStringValue(StringBuffer &);
     virtual void pushDecimalValue();
     virtual void toMem(void * ptr);
     virtual unsigned getHash(unsigned initval);
@@ -469,6 +469,6 @@ public:
 
     static BoolValue *getTrue();
     static BoolValue *getFalse();
-}; 
+};
 
 #endif

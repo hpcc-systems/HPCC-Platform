@@ -16,13 +16,13 @@
 ############################################################################## */
 
 #include "platform.h"
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#include <process.h> 
-#include <windows.h> 
-#include <tchar.h> 
+#include <process.h>
+#include <windows.h>
+#include <tchar.h>
 
 #endif
 
@@ -62,12 +62,12 @@ BOOL read_key(const char * name,LPBYTE val, DWORD len)
   return res;
 }
 
-char * unscr(char * s) { 
+char * unscr(char * s) {
     if (s) {
         int j=0;
         while (s[j])
         {
-            if (s[j]!=0x55) s[j] ^=0x55; 
+            if (s[j]!=0x55) s[j] ^=0x55;
             j++;
         }
     }
@@ -85,7 +85,7 @@ static HANDLE server_user=0;
 static bool drive_maped=false;
 
 void unmap_drive()
-{ 
+{
   if (server_user&&drive_maped)
   { logfile("unmap\r\n");
     ImpersonateLoggedOnUser(server_user);
@@ -101,16 +101,16 @@ void logonu(HANDLE & server_user,char * user,char * password, int & error_code) 
     char usr[100],srv[100];
     char *us=user,*sr=0;
     item(usr,sizeof(usr),user,"\\\n\t",1,FALSE);
-    if (usr[0])  { 
+    if (usr[0])  {
         item(srv,sizeof(srv),user,"\\\n\t",0,FALSE);
         us=usr; sr=srv;
     }
     if (!LogonUser(us,sr,password,LOGON32_LOGON_INTERACTIVE,LOGON32_PROVIDER_DEFAULT,&server_user)) {
         error_code=GetLastError();
-        if (sr) 
+        if (sr)
             logfile("LogonUser failed %s %s %u \r\n",us,sr,error_code);
-        else 
-            logfile("LogonUser failed %s %u \r\n",us,error_code);   
+        else
+            logfile("LogonUser failed %s %u \r\n",us,error_code);
         server_user=NULL;
     }
 }
@@ -140,8 +140,8 @@ void do_map_drive(int & error_code) {
                 if (!bs) *finger=0;
                 finger++;
             }
-            
-            logfile("map %s\r\n",share);            
+
+            logfile("map %s\r\n",share);
             char user[256]=" ;103<;01",password[256]=" ;103<;01";
             read_key("01",(unsigned char *)user,sizeof(user));
             read_key("02",(unsigned char *)password,sizeof(password));
@@ -154,13 +154,13 @@ void do_map_drive(int & error_code) {
                 logfile("WNetAddConnection2 failed %i %s\r\n",ec,share);
             }
             drive_maped=true;
-        } 
+        }
         else {
             error_code=267L;
             logfile("directory not defined\r\n");
         }
         RevertToSelf();
-    }   
+    }
 }
 
 #endif
@@ -203,11 +203,11 @@ int newagent::set_map_dir(char * dir)
 
 
 int newagent::alive(int x)
-{ return  x+1; 
+{ return  x+1;
 }
 
 
- 
+
 int newagent::start_process(const char *command,int & error_code,const char * local_dir,const char * user,const char * password) {
     error_code=0;
 #ifdef _WIN32
@@ -229,7 +229,7 @@ int newagent::start_process(const char *command,int & error_code,const char * lo
     if (local_dir&&*local_dir) {
         strcpy(c_dir,local_dir);
     }
-    else {    
+    else {
         if (!is_debug_session&&read_key("03",(unsigned char *)current_dir,sizeof(current_dir))) {
             char * finger=current_dir;
             int bs=4;
@@ -238,15 +238,15 @@ int newagent::start_process(const char *command,int & error_code,const char * lo
                 finger++;
             }
             if (*finger) sprintf(c_dir,maped_drive"\\%s",finger); else sprintf(c_dir,maped_drive"\\");
-        } 
-        else 
+        }
+        else
             strcpy(c_dir,".");
-        
+
     }
     if (is_debug_session) {
         ok=(bool)CreateProcess(NULL,(char*)command,NULL,NULL,TRUE,NORMAL_PRIORITY_CLASS,NULL,c_dir,&si,&process);
         if (!ok) error_code=GetLastError();
-    } 
+    }
     else {
         if (!local_dir&&!drive_maped) do_map_drive(error_code);
         if(!error_code) {
@@ -276,8 +276,8 @@ int newagent::start_process(const char *command,int & error_code,const char * lo
                                 logfile("restore current dirctory failed %s\r\n",saved_dir);
                                 error_code=GetLastError();
                             }
-                        } 
-                    }             
+                        }
+                    }
                     RevertToSelf();
                 }
             }
@@ -292,11 +292,11 @@ int newagent::start_process(const char *command,int & error_code,const char * lo
         logfile("Process failed: %s error(%i) %s\r\n",command,error_code,c_dir);
     }
     if (other_user) CloseHandle(other_user);
-    if (ok) 
+    if (ok)
         return (int)res;
     else
         return 0;
-    
+
 #else
     //  if (is_debug_session)
     {
@@ -325,7 +325,7 @@ int newagent::stop_process(int process)
 #else
     kill(process, 9); // JCSMOE : both these may leak resources, no?
 #endif
-  return 0; 
+  return 0;
 }
 
 

@@ -86,7 +86,7 @@
 #define _MAX_ROUNDS      14
 #define MAX_IV_SIZE      16
 
-// We assume that unsigned int is 32 bits long.... 
+// We assume that unsigned int is 32 bits long....
 typedef unsigned char  UINT8;
 typedef unsigned int   UINT32;
 typedef unsigned short UINT16;
@@ -102,7 +102,7 @@ typedef unsigned short UINT16;
 #define RIJNDAEL_CORRUPTED_DATA -7
 
 class Rijndael
-{   
+{
 public:
     enum Direction { Encrypt , Decrypt };
     enum Mode { ECB , CBC , CFB1 };
@@ -173,27 +173,27 @@ protected:
     void encrypt(const UINT8 a[16], UINT8 b[16]);
     void decrypt(const UINT8 a[16], UINT8 b[16]);
 };
-    
+
 
 
 
 static const UINT8 S[256]=
 {
-     99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118, 
-    202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192, 
-    183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21, 
-      4, 199,  35, 195,  24, 150,   5, 154,   7,  18, 128, 226, 235,  39, 178, 117, 
-      9, 131,  44,  26,  27, 110,  90, 160,  82,  59, 214, 179,  41, 227,  47, 132, 
-     83, 209,   0, 237,  32, 252, 177,  91, 106, 203, 190,  57,  74,  76,  88, 207, 
-    208, 239, 170, 251,  67,  77,  51, 133,  69, 249,   2, 127,  80,  60, 159, 168, 
-     81, 163,  64, 143, 146, 157,  56, 245, 188, 182, 218,  33,  16, 255, 243, 210, 
-    205,  12,  19, 236,  95, 151,  68,  23, 196, 167, 126,  61, 100,  93,  25, 115, 
-     96, 129,  79, 220,  34,  42, 144, 136,  70, 238, 184,  20, 222,  94,  11, 219, 
-    224,  50,  58,  10,  73,   6,  36,  92, 194, 211, 172,  98, 145, 149, 228, 121, 
-    231, 200,  55, 109, 141, 213,  78, 169, 108,  86, 244, 234, 101, 122, 174,   8, 
-    186, 120,  37,  46,  28, 166, 180, 198, 232, 221, 116,  31,  75, 189, 139, 138, 
-    112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158, 
-    225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223, 
+     99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118,
+    202, 130, 201, 125, 250,  89,  71, 240, 173, 212, 162, 175, 156, 164, 114, 192,
+    183, 253, 147,  38,  54,  63, 247, 204,  52, 165, 229, 241, 113, 216,  49,  21,
+      4, 199,  35, 195,  24, 150,   5, 154,   7,  18, 128, 226, 235,  39, 178, 117,
+      9, 131,  44,  26,  27, 110,  90, 160,  82,  59, 214, 179,  41, 227,  47, 132,
+     83, 209,   0, 237,  32, 252, 177,  91, 106, 203, 190,  57,  74,  76,  88, 207,
+    208, 239, 170, 251,  67,  77,  51, 133,  69, 249,   2, 127,  80,  60, 159, 168,
+     81, 163,  64, 143, 146, 157,  56, 245, 188, 182, 218,  33,  16, 255, 243, 210,
+    205,  12,  19, 236,  95, 151,  68,  23, 196, 167, 126,  61, 100,  93,  25, 115,
+     96, 129,  79, 220,  34,  42, 144, 136,  70, 238, 184,  20, 222,  94,  11, 219,
+    224,  50,  58,  10,  73,   6,  36,  92, 194, 211, 172,  98, 145, 149, 228, 121,
+    231, 200,  55, 109, 141, 213,  78, 169, 108,  86, 244, 234, 101, 122, 174,   8,
+    186, 120,  37,  46,  28, 166, 180, 198, 232, 221, 116,  31,  75, 189, 139, 138,
+    112,  62, 181, 102,  72,   3, 246,  14,  97,  53,  87, 185, 134, 193,  29, 158,
+    225, 248, 152,  17, 105, 217, 142, 148, 155,  30, 135, 233, 206,  85,  40, 223,
     140, 161, 137,  13, 191, 230,  66, 104,  65, 153,  45,  15, 176,  84, 187,  22
 };
 
@@ -265,7 +265,7 @@ static const UINT8 T1[256][4]=
     {0x82,0x41,0x41,0xc3}, {0x29,0x99,0x99,0xb0}, {0x5a,0x2d,0x2d,0x77}, {0x1e,0x0f,0x0f,0x11},
     {0x7b,0xb0,0xb0,0xcb}, {0xa8,0x54,0x54,0xfc}, {0x6d,0xbb,0xbb,0xd6}, {0x2c,0x16,0x16,0x3a}
 };
-    
+
 static const UINT8 T2[256][4]=
 {
     {0xa5,0xc6,0x63,0x63}, {0x84,0xf8,0x7c,0x7c}, {0x99,0xee,0x77,0x77}, {0x8d,0xf6,0x7b,0x7b},
@@ -877,7 +877,7 @@ static const UINT8 U1[256][4]=
     {0xa7,0x79,0xb4,0x92}, {0xa9,0x70,0xb9,0x99}, {0xbb,0x6b,0xae,0x84}, {0xb5,0x62,0xa3,0x8f},
     {0x9f,0x5d,0x80,0xbe}, {0x91,0x54,0x8d,0xb5}, {0x83,0x4f,0x9a,0xa8}, {0x8d,0x46,0x97,0xa3}
 };
-    
+
 static const UINT8 U2[256][4]=
 {
     {0x00,0x00,0x00,0x00}, {0x0b,0x0e,0x09,0x0d}, {0x16,0x1c,0x12,0x1a}, {0x1d,0x12,0x1b,0x17},
@@ -1083,7 +1083,7 @@ static const UINT8 U4[256][4]=
 };
 
 static UINT32 rcon[30]=
-{ 
+{
     0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
     0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
     0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc,
@@ -1164,7 +1164,7 @@ int Rijndael::init(Mode mode,Direction dir,const UINT8 * key,KeyLength keyLen,UI
 
     UINT8 keyMatrix[_MAX_KEY_COLUMNS][4];
 
-    for(UINT32 i = 0;i < uKeyLenInBytes;i++)keyMatrix[i >> 2][i & 3] = key[i]; 
+    for(UINT32 i = 0;i < uKeyLenInBytes;i++)keyMatrix[i >> 2][i & 3] = key[i];
 
     keySched(keyMatrix);
 
@@ -1186,9 +1186,9 @@ int Rijndael::blockEncrypt(const UINT8 *input,int inputLen,UINT8 *outBuffer)
     if(input == 0 || inputLen <= 0)return 0;
 
     numBlocks = inputLen/128;
-    
+
     switch(m_mode){
-        case ECB: 
+        case ECB:
             for(i = numBlocks;i > 0;i--)
             {
                 encrypt(input,outBuffer);
@@ -1215,8 +1215,8 @@ int Rijndael::blockEncrypt(const UINT8 *input,int inputLen,UINT8 *outBuffer)
             }
         break;
         case CFB1:
-#if STRICT_ALIGN 
-            memcpy(iv,m_initVector,16); 
+#if STRICT_ALIGN
+            memcpy(iv,m_initVector,16);
 #else  /* !STRICT_ALIGN */
             *((UINT32*)iv[0]) = *((UINT32*)(m_initVector   ));
             *((UINT32*)iv[1]) = *((UINT32*)(m_initVector + 4));
@@ -1256,7 +1256,7 @@ int Rijndael::blockEncrypt(const UINT8 *input,int inputLen,UINT8 *outBuffer)
             return -1;
         break;
     }
-    
+
     return 128 * numBlocks;
 }
 
@@ -1274,7 +1274,7 @@ int Rijndael::padEncrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
 
     switch(m_mode)
     {
-        case ECB: 
+        case ECB:
             for(i = numBlocks; i > 0; i--)
             {
                 encrypt(input, outBuffer);
@@ -1314,10 +1314,10 @@ int Rijndael::padEncrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
             return -1;
         break;
     }
-    
+
     return 16*(numBlocks + 1);
 }
-    
+
 int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
 {
     int i, k, numBlocks;
@@ -1332,7 +1332,7 @@ int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
 
     switch(m_mode)
     {
-        case ECB: 
+        case ECB:
             for (i = numBlocks; i > 0; i--)
             {
                 decrypt(input,outBuffer);
@@ -1341,8 +1341,8 @@ int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
             }
         break;
         case CBC:
-#if STRICT_ALIGN 
-            memcpy(iv,m_initVector,16); 
+#if STRICT_ALIGN
+            memcpy(iv,m_initVector,16);
 #else
             *((UINT32*)iv[0]) = *((UINT32*)(m_initVector  ));
             *((UINT32*)iv[1]) = *((UINT32*)(m_initVector+ 4));
@@ -1370,8 +1370,8 @@ int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
             }
             break;
         case CFB1:
-#if STRICT_ALIGN 
-            memcpy(iv, m_initVector, 16); 
+#if STRICT_ALIGN
+            memcpy(iv, m_initVector, 16);
 #else
             *((UINT32*)iv[0]) = *((UINT32*)(m_initVector));
             *((UINT32*)iv[1]) = *((UINT32*)(m_initVector+ 4));
@@ -1411,7 +1411,7 @@ int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
             return -1;
         break;
     }
-    
+
     return 128*numBlocks;
 }
 
@@ -1447,7 +1447,7 @@ int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
                 if(block[i] != padLen)return RIJNDAEL_CORRUPTED_DATA;
             }
             memcpy(outBuffer, block, 16 - padLen);
-        break;  
+        break;
         case CBC:
             memcpy(iv, m_initVector, 16);
             /* all blocks but last */
@@ -1477,12 +1477,12 @@ int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
             }
             memcpy(outBuffer, block, 16 - padLen);
             break;
-        
+
         default:
             return -1;
         break;
     }
-    
+
     return 16*numBlocks - padLen;
 }
 
@@ -1526,7 +1526,7 @@ void Rijndael::keySched(UINT8 key[_MAX_KEY_COLUMNS][4])
             t = 0;
         }
     }
-        
+
     while(r <= m_uRounds)
     {
         tempKey[0][0] ^= S[tempKey[uKeyColumns-1][1]];
@@ -1567,7 +1567,7 @@ void Rijndael::keySched(UINT8 key[_MAX_KEY_COLUMNS][4])
                 t = 0;
             }
         }
-    }       
+    }
 }
 
 void Rijndael::keyEncToDec()
@@ -1586,7 +1586,7 @@ void Rijndael::keyEncToDec()
         w = m_expandedKey[r][3];
         *((UINT32*)w) = *((UINT32*)U1[w[0]]) ^ *((UINT32*)U2[w[1]]) ^ *((UINT32*)U3[w[2]]) ^ *((UINT32*)U4[w[3]]);
     }
-}   
+}
 
 void Rijndael::encrypt(const UINT8 a[16], UINT8 b[16])
 {
@@ -1599,19 +1599,19 @@ void Rijndael::encrypt(const UINT8 a[16], UINT8 b[16])
     *((UINT32*)temp[3]) = *((UINT32*)(a+12)) ^ *((UINT32*)m_expandedKey[0][3]);
     *((UINT32*)(b    )) = *((UINT32*)T1[temp[0][0]])
                         ^ *((UINT32*)T2[temp[1][1]])
-                        ^ *((UINT32*)T3[temp[2][2]]) 
+                        ^ *((UINT32*)T3[temp[2][2]])
                         ^ *((UINT32*)T4[temp[3][3]]);
     *((UINT32*)(b + 4)) = *((UINT32*)T1[temp[1][0]])
                         ^ *((UINT32*)T2[temp[2][1]])
-                        ^ *((UINT32*)T3[temp[3][2]]) 
+                        ^ *((UINT32*)T3[temp[3][2]])
                         ^ *((UINT32*)T4[temp[0][3]]);
     *((UINT32*)(b + 8)) = *((UINT32*)T1[temp[2][0]])
                         ^ *((UINT32*)T2[temp[3][1]])
-                        ^ *((UINT32*)T3[temp[0][2]]) 
+                        ^ *((UINT32*)T3[temp[0][2]])
                         ^ *((UINT32*)T4[temp[1][3]]);
     *((UINT32*)(b +12)) = *((UINT32*)T1[temp[3][0]])
                         ^ *((UINT32*)T2[temp[0][1]])
-                        ^ *((UINT32*)T3[temp[1][2]]) 
+                        ^ *((UINT32*)T3[temp[1][2]])
                         ^ *((UINT32*)T4[temp[2][3]]);
     for(r = 1; r < m_uRounds-1; r++)
     {
@@ -1622,19 +1622,19 @@ void Rijndael::encrypt(const UINT8 a[16], UINT8 b[16])
 
         *((UINT32*)(b    )) = *((UINT32*)T1[temp[0][0]])
                             ^ *((UINT32*)T2[temp[1][1]])
-                            ^ *((UINT32*)T3[temp[2][2]]) 
+                            ^ *((UINT32*)T3[temp[2][2]])
                             ^ *((UINT32*)T4[temp[3][3]]);
         *((UINT32*)(b + 4)) = *((UINT32*)T1[temp[1][0]])
                             ^ *((UINT32*)T2[temp[2][1]])
-                            ^ *((UINT32*)T3[temp[3][2]]) 
+                            ^ *((UINT32*)T3[temp[3][2]])
                             ^ *((UINT32*)T4[temp[0][3]]);
         *((UINT32*)(b + 8)) = *((UINT32*)T1[temp[2][0]])
                             ^ *((UINT32*)T2[temp[3][1]])
-                            ^ *((UINT32*)T3[temp[0][2]]) 
+                            ^ *((UINT32*)T3[temp[0][2]])
                             ^ *((UINT32*)T4[temp[1][3]]);
         *((UINT32*)(b +12)) = *((UINT32*)T1[temp[3][0]])
                             ^ *((UINT32*)T2[temp[0][1]])
-                            ^ *((UINT32*)T3[temp[1][2]]) 
+                            ^ *((UINT32*)T3[temp[1][2]])
                             ^ *((UINT32*)T4[temp[2][3]]);
     }
     *((UINT32*)temp[0]) = *((UINT32*)(b   )) ^ *((UINT32*)m_expandedKey[m_uRounds-1][0]);
@@ -1667,7 +1667,7 @@ void Rijndael::decrypt(const UINT8 a[16], UINT8 b[16])
 {
     int r;
     UINT8 temp[4][4];
-    
+
     *((UINT32*)temp[0]) = *((UINT32*)(a   )) ^ *((UINT32*)m_expandedKey[m_uRounds][0]);
     *((UINT32*)temp[1]) = *((UINT32*)(a+ 4)) ^ *((UINT32*)m_expandedKey[m_uRounds][1]);
     *((UINT32*)temp[2]) = *((UINT32*)(a+ 8)) ^ *((UINT32*)m_expandedKey[m_uRounds][2]);
@@ -1675,19 +1675,19 @@ void Rijndael::decrypt(const UINT8 a[16], UINT8 b[16])
 
     *((UINT32*)(b   )) = *((UINT32*)T5[temp[0][0]])
            ^ *((UINT32*)T6[temp[3][1]])
-           ^ *((UINT32*)T7[temp[2][2]]) 
+           ^ *((UINT32*)T7[temp[2][2]])
            ^ *((UINT32*)T8[temp[1][3]]);
     *((UINT32*)(b+ 4)) = *((UINT32*)T5[temp[1][0]])
            ^ *((UINT32*)T6[temp[0][1]])
-           ^ *((UINT32*)T7[temp[3][2]]) 
+           ^ *((UINT32*)T7[temp[3][2]])
            ^ *((UINT32*)T8[temp[2][3]]);
     *((UINT32*)(b+ 8)) = *((UINT32*)T5[temp[2][0]])
            ^ *((UINT32*)T6[temp[1][1]])
-           ^ *((UINT32*)T7[temp[0][2]]) 
+           ^ *((UINT32*)T7[temp[0][2]])
            ^ *((UINT32*)T8[temp[3][3]]);
     *((UINT32*)(b+12)) = *((UINT32*)T5[temp[3][0]])
            ^ *((UINT32*)T6[temp[2][1]])
-           ^ *((UINT32*)T7[temp[1][2]]) 
+           ^ *((UINT32*)T7[temp[1][2]])
            ^ *((UINT32*)T8[temp[0][3]]);
     for(r = m_uRounds-1; r > 1; r--)
     {
@@ -1697,22 +1697,22 @@ void Rijndael::decrypt(const UINT8 a[16], UINT8 b[16])
         *((UINT32*)temp[3]) = *((UINT32*)(b+12)) ^ *((UINT32*)m_expandedKey[r][3]);
         *((UINT32*)(b   )) = *((UINT32*)T5[temp[0][0]])
            ^ *((UINT32*)T6[temp[3][1]])
-           ^ *((UINT32*)T7[temp[2][2]]) 
+           ^ *((UINT32*)T7[temp[2][2]])
            ^ *((UINT32*)T8[temp[1][3]]);
         *((UINT32*)(b+ 4)) = *((UINT32*)T5[temp[1][0]])
            ^ *((UINT32*)T6[temp[0][1]])
-           ^ *((UINT32*)T7[temp[3][2]]) 
+           ^ *((UINT32*)T7[temp[3][2]])
            ^ *((UINT32*)T8[temp[2][3]]);
         *((UINT32*)(b+ 8)) = *((UINT32*)T5[temp[2][0]])
            ^ *((UINT32*)T6[temp[1][1]])
-           ^ *((UINT32*)T7[temp[0][2]]) 
+           ^ *((UINT32*)T7[temp[0][2]])
            ^ *((UINT32*)T8[temp[3][3]]);
         *((UINT32*)(b+12)) = *((UINT32*)T5[temp[3][0]])
            ^ *((UINT32*)T6[temp[2][1]])
-           ^ *((UINT32*)T7[temp[1][2]]) 
+           ^ *((UINT32*)T7[temp[1][2]])
            ^ *((UINT32*)T8[temp[0][3]]);
     }
- 
+
     *((UINT32*)temp[0]) = *((UINT32*)(b   )) ^ *((UINT32*)m_expandedKey[1][0]);
     *((UINT32*)temp[1]) = *((UINT32*)(b+ 4)) ^ *((UINT32*)m_expandedKey[1][1]);
     *((UINT32*)temp[2]) = *((UINT32*)(b+ 8)) ^ *((UINT32*)m_expandedKey[1][2]);
@@ -1743,7 +1743,7 @@ void Rijndael::decrypt(const UINT8 a[16], UINT8 b[16])
 // JLIB stuff starts here -- ADF
 //-----------------------------------------------------------------------------
 
-const char *aesErrorText[] = 
+const char *aesErrorText[] =
 {
     "Success",
     "Unsupported Mode",
@@ -1779,14 +1779,14 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size
 {
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
-    
+
     rin.init(Rijndael::CBC, Rijndael::Encrypt, (const UINT8 *)key, keyType);
     size32_t truncInLen = (size32_t)inlen; //MORE: Modify the padEncrypt function
     int len = rin.padEncrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen + 16));
 
     if(len >= 0)
         output.setLength(len);
-    else 
+    else
         throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
     return output;
 }
@@ -1795,14 +1795,14 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
 {
     Rijndael rin;
     Rijndael::KeyLength keyType = getAesKeyType(keylen);
-    
+
     rin.init(Rijndael::CBC, Rijndael::Decrypt, (const UINT8 *)key, keyType);
     size32_t truncInLen = (size32_t)inlen;
     int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen));
 
     if(len >= 0)
         output.setLength(len);
-    else 
+    else
         throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
     return output;
 }

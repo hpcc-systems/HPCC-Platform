@@ -111,7 +111,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         void getFileMasks(StringBuffer &dirMask, StringBuffer &fileMask)
         {
             //The fromDT and toDT are the filters which defines a search range.
-            //The afterWU (beforeWU) defines paging within the search range. 
+            //The afterWU (beforeWU) defines paging within the search range.
             //For the first page, a user may define the fromDT and/or toDT without afterWU or beforeWU.
             StringBuffer from, to;
             if (!isEmptyString(fromDTDefinedByBeforeOrAfterWU) && (fromDT.isEmpty() || (strcmp(fromDTDefinedByBeforeOrAfterWU, fromDT.str()) > 0)))
@@ -587,7 +587,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             Owned<IRemoteConnection> conn = getSDSConnection(isWild ? nullptr : mask.str());
             if (!conn)
                 return;
-    
+
             if (countBackward ? !descendingReq : descendingReq)
                 getOnlineWUsDescending(conn);
             else
@@ -634,7 +634,7 @@ public:
     unsigned numprotected;
     unsigned numnulltimes;
 
-    CBranchArchiver(IPropertyTree *archprops,const char *_branchname,const char *_branchxpath,unsigned deflimit,unsigned definterval,unsigned defcutoff, bool &_stopped) 
+    CBranchArchiver(IPropertyTree *archprops,const char *_branchname,const char *_branchxpath,unsigned deflimit,unsigned definterval,unsigned defcutoff, bool &_stopped)
         : branchname(_branchname),branchxpath(_branchxpath), stopped(_stopped)
     {
 #ifdef _DEBUG
@@ -672,7 +672,7 @@ public:
 
     void run(IRemoteConnection *_conn)
     {
-        if (!_conn) 
+        if (!_conn)
             return;
         conn = _conn;
         cutoff.setNow();
@@ -708,7 +708,7 @@ public:
                 count++;
                 if (item->qualifies())  // archive
                     branches.append(*item.getClear());
-                else if (item->qualifiesBackup()) 
+                else if (item->qualifiesBackup())
                     tobackup.append(*item.getClear());
             }
             else
@@ -737,7 +737,7 @@ public:
                 bool added;
                 toarchive.bAdd(val,compareBranch,added);
                 if (added)
-                    item.getClear();    
+                    item.getClear();
                 if (toarchive.ordinality()>num) {
                     Owned<IBranchItem> itemp = &toarchive.popGet();
                     if (itemp->qualifiesBackup())
@@ -776,7 +776,7 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
     if (!dfuwuid||!*dfuwuid)
         return false;
 #ifdef TESTING
-    bool del = false; 
+    bool del = false;
 #else
     bool del = true;
 #endif
@@ -792,7 +792,7 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
         StringBuffer xpath("DFU/WorkUnits/");
         xpath.append(dfuwuid);
         try {
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, 5*60*1000);  
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, 5*60*1000);
             if (conn) {
                 toXML(conn->queryRoot(), buf, 0, XML_Format|XML_SortTags);
                 Owned<IFileIO> fileio = file->open(IFOcreate);
@@ -801,7 +801,7 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
                     if (del)
                         conn->close(true);
                     res.append("OK");
-                    return true; 
+                    return true;
                 }
             }
         }
@@ -833,11 +833,11 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
             e->errorMessage(res);
             res.append(' ');
             e->Release();
-        }   
+        }
         if (wu) {
             try {
 #ifdef TESTING
-                del = false; 
+                del = false;
 #endif
                 StringBuffer ldspath("Archive/WorkUnits");
                 splitWUIDpath(wuid,ldspath);
@@ -930,7 +930,7 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
                 Owned<IPropertyTree> pt = createPTree(*fileio);
                 StringBuffer buf;
                 StringBuffer xpath("DFU/WorkUnits");
-                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);  
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);
                 if (conn) {
                     IPropertyTree *root = conn->queryRoot();
                     if (!root->hasProp(wuid)) {
@@ -949,7 +949,7 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
         e->Release();
     }
     res.append("FAILED");
-    return false; 
+    return false;
 }
 
 
@@ -972,7 +972,7 @@ class CWorkUnitArchiver: public CBranchArchiver
         }
     public:
         IMPLEMENT_IINTERFACE;
-        cWUBranchItem(CWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff,CDateTime &_backup,unsigned retryinterval) 
+        cWUBranchItem(CWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff,CDateTime &_backup,unsigned retryinterval)
             : wuid(e.queryName()), cutoff(_cutoff), backupcutoff(_backup)
         {
             parent = _parent;
@@ -996,8 +996,8 @@ class CWorkUnitArchiver: public CBranchArchiver
                     if (now.compareDate(dt)>0)
                         iserr = false;
                 }
-                else 
-                    iserr = false; // old 
+                else
+                    iserr = false; // old
                 if (!iserr)
                     e.setPropBool("@archiveError", false);
 #ifdef _DEBUG
@@ -1030,16 +1030,16 @@ class CWorkUnitArchiver: public CBranchArchiver
 #endif
         }
         virtual ~cWUBranchItem() {}
-        bool isempty() { 
-            bool ret = (wuid[0]!='W')||iserr; 
+        bool isempty() {
+            bool ret = (wuid[0]!='W')||iserr;
 #ifdef _DEBUG
             if (ret)
                 PROGLOG("IGNORING %s %s",wuid.get(),iserr?"err":"");
 #endif
-            return ret; 
+            return ret;
         }
-        bool qualifies() 
-        { 
+        bool qualifies()
+        {
             if (isprotected)
                 parent->numprotected++;
             else if (time.isNull())
@@ -1047,11 +1047,11 @@ class CWorkUnitArchiver: public CBranchArchiver
             else if (cutoff.isNull()||(time.compare(cutoff)>=0))
                 parent->numlater++;
             return !isprotected&&!time.isNull()&&!cutoff.isNull()&&(time.compare(cutoff)<0);
-        }   
-        bool qualifiesBackup() 
-        { 
+        }
+        bool qualifiesBackup()
+        {
             return !time.isNull()&&!backupcutoff.isNull()&&(time.compare(backupcutoff)<0);
-        }   
+        }
 
         virtual int compare(IBranchItem &to)
         {  // time assumed setup by qualifies
@@ -1077,7 +1077,7 @@ public:
     {
         return new cWUBranchItem(this,e,cutoff,backupcutoff,props->getPropInt("@retryinterval",7));
     }
-    
+
     CWorkUnitArchiver(IPropertyTree *archprops,unsigned definterval,bool &_stopped)
         : CBranchArchiver(archprops,"WorkUnits","WorkUnits/*",DEFAULT_WORKUNIT_LIMIT,definterval,DEFAULT_WORKUNIT_CUTOFF,_stopped)
     {
@@ -1092,13 +1092,13 @@ public:
     {
         StringBuffer s;
         if (doArchiveWorkUnit(wufactory,wuid,s,!keepResultFiles,del,time)) {
-            if (s.length()) 
+            if (s.length())
                 PROGLOG("%s",s.str());
             return true;
         }
 #ifndef TESTING
         try {
-            Owned<IRemoteConnection> wuconn = querySDS().connect("/WorkUnits", myProcessSession(), 0, 5*60*1000);  
+            Owned<IRemoteConnection> wuconn = querySDS().connect("/WorkUnits", myProcessSession(), 0, 5*60*1000);
             if (wuconn) {
                 IPropertyTree * tree = wuconn->queryRoot()->queryPropTree(wuid);
                 if (tree) {
@@ -1144,7 +1144,7 @@ protected:
         }
     public:
         IMPLEMENT_IINTERFACE;
-        cDFUWUBranchItem(CDFUWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff) 
+        cDFUWUBranchItem(CDFUWorkUnitArchiver *_parent,IPropertyTree &e,CDateTime &_cutoff)
             : wuid(e.queryName()), cutoff(_cutoff)
         {
             parent = _parent;
@@ -1154,8 +1154,8 @@ protected:
         }
         virtual ~cDFUWUBranchItem() {}
         bool isempty() { return (wuid[0]!='D')||iserr; }
-        bool qualifies() 
-        { 
+        bool qualifies()
+        {
             if (isprotected)
                 return false;
             if (isprotected)
@@ -1165,11 +1165,11 @@ protected:
             else if (cutoff.isNull()||(time.compare(cutoff)>=0))
                 parent->numlater++;
             return !time.isNull()&&(getTime().compare(cutoff)<0);
-        }   
-        bool qualifiesBackup() 
-        { 
+        }
+        bool qualifiesBackup()
+        {
             return false;
-        }   
+        }
 
         virtual int compare(IBranchItem &to)
         {  // time assumed setup by qualifies
@@ -1197,7 +1197,7 @@ public:
     {
         return new cDFUWUBranchItem(this,e,cutoff);
     }
-    
+
     CDFUWorkUnitArchiver(IPropertyTree *archprops,unsigned definterval,bool &_stopped)
         : CBranchArchiver(archprops,"DFUworkunits","DFU/WorkUnits/*",DEFAULT_DFUWORKUNIT_LIMIT,DEFAULT_DFUWORKUNIT_CUTOFF,definterval,_stopped)
     {
@@ -1245,7 +1245,7 @@ class CDFUrecoveryArchiver: public CBranchArchiver
         }
     public:
         IMPLEMENT_IINTERFACE;
-        cDRBranchItem(CDFUrecoveryArchiver *_parent,IPropertyTree &e, CDateTime &_cutoff) 
+        cDRBranchItem(CDFUrecoveryArchiver *_parent,IPropertyTree &e, CDateTime &_cutoff)
             : tree(&e), cutoff(_cutoff)
         {
             parent = _parent;
@@ -1253,14 +1253,14 @@ class CDFUrecoveryArchiver: public CBranchArchiver
         }
         virtual ~cDRBranchItem() {}
         bool isempty() { return false; }
-        bool qualifies() 
-        { 
+        bool qualifies()
+        {
             return (getTime().compare(cutoff)<0)&&timeset;
-        }   
-        bool qualifiesBackup() 
-        { 
+        }
+        bool qualifiesBackup()
+        {
             return false;
-        }   
+        }
 
         virtual int compare(IBranchItem &to)
         {  // time assumed setup by qualifies
@@ -1287,7 +1287,7 @@ public:
     {
         return new cDRBranchItem(this,e,cutoff);
     }
-    
+
     CDFUrecoveryArchiver(IPropertyTree *archprops,unsigned definterval,bool &_stopped)
         : CBranchArchiver(archprops,"DFUrecovery","DFU/RECOVERY/job",DEFAULT_DFURECOVERY_LIMIT,definterval,DEFAULT_DFURECOVERY_CUTOFF,_stopped)
     {
@@ -1340,14 +1340,14 @@ public:
     {
         return NULL;    // not used
     }
-    
+
     CCachedWorkUnitRemover(IPropertyTree *archprops,unsigned definterval,bool &_stopped)
         : CBranchArchiver(archprops,"CachedWorkUnits","",DEFAULT_CACHEDWORKUNIT_LIMIT,definterval,0,_stopped)
     {
         PROGLOG("CLEANUP: Cached WorkUnits: limit=%d",limit);
     }
 
-    virtual void action()   // overriding default action 
+    virtual void action()   // overriding default action
     {
         // check limit exceeded
         PROGLOG("CLEANUP: Scanning CachedWorkUnits");
@@ -1369,10 +1369,10 @@ public:
             const char * xpath = branchlist.item(i).text.get();
             PROGLOG("REMOVE CachedWorkUnit: Removing %s",xpath);
             unsigned start1=msTick();
-#ifndef TESTING         
+#ifndef TESTING
             try {
                 {
-                    Owned<IRemoteConnection> delconn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ | RTM_DELETE_ON_DISCONNECT, 5*60*1000);  
+                    Owned<IRemoteConnection> delconn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ | RTM_DELETE_ON_DISCONNECT, 5*60*1000);
                 }
             }
             catch (IException *e) {
@@ -1396,7 +1396,7 @@ public:
 
 
 class CSashaArchiverServer: public ISashaServer, public Thread
-{  
+{
 
     bool stopped;
     Semaphore stopsem;
@@ -1421,7 +1421,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -1435,7 +1435,7 @@ public:
     {
         if (!stopped&&archiver.ready()) {
             if (!conn.get()) {
-                conn.setown(querySDS().connect("/", myProcessSession(), 0, 5*60*1000));  
+                conn.setown(querySDS().connect("/", myProcessSession(), 0, 5*60*1000));
             }
             archiver.run(conn);
         }
@@ -1516,24 +1516,24 @@ bool processArchiverCommand(ISashaCommand *cmd)
                     ret.clear();
                     if (cmd->getAction()!=SCA_RESTORE) {
                         if (cmd->getDFU())
-                            doArchiveDfuWorkUnit(wuid,ret); 
+                            doArchiveDfuWorkUnit(wuid,ret);
                         else
                             doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,NULL);
                     }
-                    else  if (cmd->getDFU()) 
-                        doRestoreDfuWorkUnit(wuid,ret); 
+                    else  if (cmd->getDFU())
+                        doRestoreDfuWorkUnit(wuid,ret);
                     else
-                        doRestoreWorkUnit(wufactory,wuid,ret); 
+                        doRestoreWorkUnit(wufactory,wuid,ret);
                     if (ret.length())
                         cmd->addId(ret.str());  // should be result probably but keep bwd compatible
                     PROGLOG("%s",ret.str());
                 }
             }
             break;
-        case SCA_LIST: 
-        case SCA_GET: 
-        case SCA_WORKUNIT_SERVICES_GET: 
-        case SCA_LISTDT: 
+        case SCA_LIST:
+        case SCA_GET:
+        case SCA_WORKUNIT_SERVICES_GET:
+        case SCA_LISTDT:
             {
                 if (n) {
                     for (i=0;i<n;i++)

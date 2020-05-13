@@ -31,7 +31,7 @@ class CWUWrapper : public CInterface
 {
 public:
     CWUWrapper() {}
-    CWUWrapper(const char* wuid, IEspContext &context): 
+    CWUWrapper(const char* wuid, IEspContext &context):
         factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, context.querySecManager(), context.queryUser()))
     {
         if(!wu)
@@ -53,7 +53,7 @@ public:
 
     operator IConstWorkUnit* () { return wu.get(); }
     IConstWorkUnit* operator->() { return wu.get(); }
-    
+
     void clear()
     {
         wu.clear();

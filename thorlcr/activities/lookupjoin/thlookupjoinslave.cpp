@@ -786,7 +786,7 @@ public:
 
 struct HtEntry { rowidx_t index, count; };
 
-/* 
+/*
     These activities load the RHS into a table, therefore
     the right hand stream -should- contain the fewer records
 
@@ -3351,8 +3351,8 @@ public:
 };
 
 
-CActivityBase *createLookupJoinSlave(CGraphElementBase *container) 
-{ 
+CActivityBase *createLookupJoinSlave(CGraphElementBase *container)
+{
     IHThorHashJoinArg *helper = (IHThorHashJoinArg *)container->queryHelper();
     if (CLookupManyJoinSlaveActivity::needDedup(helper))
         return new CLookupJoinSlaveActivity(container);

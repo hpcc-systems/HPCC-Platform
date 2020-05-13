@@ -57,11 +57,11 @@ union RealUnion
 //===========================================================================
 
 static const double powerOfTen[] = {1e0, 1e1, 1e2, 1e3, 1e4,
-                       1e5, 1e6, 1e7, 1e8, 1e9, 
+                       1e5, 1e6, 1e7, 1e8, 1e9,
                        1e10, 1e11, 1e12, 1e13, 1e14,
-                       1e15, 1e16, 1e17, 1e18, 1e19, 
+                       1e15, 1e16, 1e17, 1e18, 1e19,
                        1e20, 1e21, 1e22, 1e23, 1e24,
-                       1e25, 1e26, 1e27, 1e28, 1e29, 
+                       1e25, 1e26, 1e27, 1e28, 1e29,
                        1e30, 1e31, 1e32 };
 
 static const unsigned __int64 maxUIntValue[]  =   { I64C(0), I64C(0xFF), I64C(0xFFFF), I64C(0xFFFFFF), I64C(0xFFFFFFFF), I64C(0xFFFFFFFFFF), I64C(0xFFFFFFFFFFFF), I64C(0xFFFFFFFFFFFFFF), U64C(0xFFFFFFFFFFFFFFFF) };
@@ -262,7 +262,7 @@ void VarStringValue::toMem(void *target)
     if(typeLen > 0) {
         if (copyLen >= typeLen)
             copyLen = typeLen - 1;
-    
+
         memcpy(target, val.get(), copyLen);
         memset_iflen((char *)target+copyLen, 0, (typeLen-copyLen));
     }
@@ -938,7 +938,7 @@ __int64 VarUnicodeValue::getIntValue()
 const char * VarUnicodeValue::getStringValue(StringBuffer & out)
 {
     return getCodepageValue(out, "US-ASCII");
-}   
+}
 
 void * VarUnicodeValue::getUCharStringValue(unsigned len, void * out)
 {
@@ -1493,7 +1493,7 @@ const char *CharValue::generateCPP(StringBuffer &out, CompilerType compiler)
             if ((val >= ' ') && (val <= 126))
                 out.append('\'').append(val).append('\'');
             else
-                out.append((int)val); 
+                out.append((int)val);
             break;
     }
     return out.str();
@@ -1675,7 +1675,7 @@ void IntValue::toMem(void *target)
 {
     size32_t size = type->getSize();
     const byte * data = getAddressValue();
-    
+
     if (type->isSwappedEndian())
         _cpyrevn(target, data, size);
     else
@@ -1969,7 +1969,7 @@ IValue *EnumValue::castTo(ITypeInfo * t)
 
     CEnumeratedTypeInfo * et = (CEnumeratedTypeInfo *) type;
     IValue *ret = et->queryValue((int) val);
-    if (ret) 
+    if (ret)
         return ret->castTo(t);
 
     // cope better with unknown index
@@ -2524,7 +2524,7 @@ IValue * addValues(IValue * left, IValue * right)
 {
     IValue * ret;
     ITypeInfo * pnt = getPromotedAddSubType(left->queryType(), right->queryType());
-    
+
     switch(pnt->getTypeCode())
     {
     case type_int:
@@ -2559,14 +2559,14 @@ IValue * addValues(IValue * left, IValue * right)
                                         res->Release();                 \
                                         res = tmp;                      \
                                     }                                   \
-                                    return res;                         
+                                    return res;
 
 
 IValue * subtractValues(IValue * left, IValue * right)
 {
     IValue * ret;
     ITypeInfo * pnt = getPromotedAddSubType(left->queryType(), right->queryType());
-    
+
     switch(pnt->getTypeCode())
     {
     case type_int:
@@ -2597,7 +2597,7 @@ IValue * multiplyValues(IValue * left, IValue * right)
 {
     IValue * ret;
     ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
-    
+
     switch(pnt->getTypeCode())
     {
     case type_int:
@@ -2688,7 +2688,7 @@ IValue * divideValues(IValue * left, IValue * right, byte dbz)
 IValue * modulusValues(IValue * left, IValue * right, byte dbz)
 {
     Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
-    
+
     //Use a cast to a boolean as a shortcut for testing against zero
     if (!right->getBoolValue())
     {
@@ -2705,7 +2705,7 @@ IValue * modulusValues(IValue * left, IValue * right, byte dbz)
     case type_int:
     case type_swapint:
     case type_packedint:
-    {   
+    {
         __int64 lv = left->getIntValue();
         __int64 rv = right->getIntValue();
         __int64 res = 0;
@@ -2786,7 +2786,7 @@ IValue * negateValue(IValue * v)
             __uint64 value = - (__uint64)v->getIntValue(); // avoid undefined behaviour if value = int_min
             return createTruncIntValue((__int64)value, v->getType());
         }
-    case type_real:     
+    case type_real:
         return createRealValue(-(v->getRealValue()), v->getSize());
     case type_decimal:
         {
@@ -3145,14 +3145,14 @@ IValue * trimStringValue(IValue * v, char typecode, bool whitespace)
 }
 
 //---------------------------------------------------------------------
-void getStringFromIValue(StringBuffer & s, IValue* val) 
+void getStringFromIValue(StringBuffer & s, IValue* val)
 {
     Owned<ITypeInfo> tp  = getStringType(val->queryType());
     Owned<IValue> sv = val->castTo(tp);
     sv->getStringValue(s);
 }
 
-void getStringFromIValue(unsigned & len, char* & str, IValue* val) 
+void getStringFromIValue(unsigned & len, char* & str, IValue* val)
 {
     StringBuffer s;
     getStringFromIValue(s, val);

@@ -47,7 +47,7 @@ interface IFvDataSourceMetaData : extends IInterface
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const = 0;
     virtual IFvDataSource * createChildDataSource(unsigned column, unsigned len, const void * data) = 0;
     virtual unsigned numKeyedColumns() const = 0;
-    
+
     inline bool isVirtual(unsigned column) const { return queryFieldFlags(column) == FVFFvirtual; }
     virtual const char *queryXmlTag(unsigned column) const = 0;
     virtual const char *queryXmlTag() const = 0;

@@ -44,7 +44,7 @@ interface ISashaCommand: extends IInterface
     virtual const char *queryState() = 0;
     virtual void setState(const char *val) = 0;
     virtual const char *queryOwner() = 0;
-    virtual void setOwner(const char *val) = 0;         
+    virtual void setOwner(const char *val) = 0;
     virtual const char *queryCluster() = 0;
     virtual void setCluster(const char *val) = 0;
     virtual const char *queryJobName() = 0;
@@ -66,7 +66,7 @@ interface ISashaCommand: extends IInterface
     virtual bool getResult(unsigned i, StringBuffer &res) = 0;
     virtual bool addResult(const char *res) = 0;
     virtual bool resultsOverflowed() = 0;
-    virtual void setXslt(const char *xslt) = 0;     
+    virtual void setXslt(const char *xslt) = 0;
 
     virtual bool send(INode *node,unsigned timeout=0) = 0;
     virtual bool accept(unsigned timeout) = 0;

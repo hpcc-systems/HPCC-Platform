@@ -27,7 +27,7 @@
 #include "jptree.ipp"
 
 #include "dasds.ipp"
-  
+
 class CClientSDSManager;
 class CClientRemoteTree;
 class CRemoteConnection : public CConnectionBase, public CTrackChanges, implements IRemoteConnection
@@ -144,12 +144,12 @@ public:
     }
 
     virtual void abort() // called when server closes
-    { 
+    {
         // JCS TBD?
     }
 
     virtual bool aborted() // called when server closes
-    { 
+    {
         return false;
     }
 
@@ -209,11 +209,11 @@ public:
         return data;
     }
     virtual void abort() // called when server closes
-    { 
+    {
         // JCS TBD?
     }
     virtual bool aborted() // called when server closes
-    { 
+    {
         return false;
     }
 };

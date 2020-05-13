@@ -270,9 +270,9 @@ static __int64 getIntFromSwapInt(ITypeInfo & type, const void * cur, bool isMapp
 
 //---------------------------------------------------------------------------
 
-CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath) 
-{ 
-    meta = _meta; 
+CResultSetMetaData::CResultSetMetaData(IFvDataSourceMetaData * _meta, bool _useXPath)
+{
+    meta = _meta;
     fixedSize = true;
     alwaysUseXPath = _useXPath;
     unsigned max = meta ? meta->numColumns() : 0;
@@ -554,7 +554,7 @@ static bool findSize(int size, IntArray &sizes)
 unsigned CResultSetMetaData::queryColumnIndex(unsigned firstField, const char * fieldName) const
 {
     //  DonKeep track of record depth, so we don't select fields from nested records..
-    unsigned recordDepth = 0;       
+    unsigned recordDepth = 0;
     unsigned max = columns.ordinality();
     for (unsigned idx =firstField; idx < max; idx++)
     {
@@ -724,16 +724,16 @@ CResultSetCursor * CResultSetBase::doCreateCursor()
 
 //---------------------------------------------------------------------------
 
-CResultSet::CResultSet(IFvDataSource * _dataSource, bool _useXPath) : meta(_dataSource->queryMetaData(), _useXPath) 
-{ 
-    dataSource.set(_dataSource); 
+CResultSet::CResultSet(IFvDataSource * _dataSource, bool _useXPath) : meta(_dataSource->queryMetaData(), _useXPath)
+{
+    dataSource.set(_dataSource);
     if (dataSource->isIndex())
         calcMappedFields();
 }
 
 IExtendedNewResultSet * CResultSet::cloneForFilter()
-{ 
-    Owned<IFvDataSource> clonedDataSource = dataSource->cloneForFilter(); 
+{
+    Owned<IFvDataSource> clonedDataSource = dataSource->cloneForFilter();
     if (clonedDataSource)
         return new CResultSet(clonedDataSource, meta.alwaysUseXPath);
     return NULL;
@@ -858,8 +858,8 @@ bool CResultSet::isMappedIndexField(unsigned columnIndex)
 //---------------------------------------------------------------------------
 
 CResultSetCursor::CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet) : meta(_meta)
-{ 
-    init(_resultSet); 
+{
+    init(_resultSet);
     absolute(BEFORE_FIRST_ROW);
 }
 
@@ -872,7 +872,7 @@ CResultSetCursor::~CResultSetCursor()
 
 void CResultSetCursor::init(IExtendedNewResultSet * _resultSet)
 {
-    resultSet.set(_resultSet); 
+    resultSet.set(_resultSet);
     offsets = new unsigned[meta.getColumnCount()+1];
     if (meta.isFixedSize())
         meta.calcFieldOffsets(NULL, offsets);
@@ -1446,9 +1446,9 @@ IStringVal & IndirectResultSetCursor::getXmlRow(IStringVal & ret)
     return queryBase()->getXmlRow(ret);
 }
 
-bool IndirectResultSetCursor::absolute(__int64 row) 
-{ 
-    return queryBase()->absolute(row); 
+bool IndirectResultSetCursor::absolute(__int64 row)
+{
+    return queryBase()->absolute(row);
 }
 bool IndirectResultSetCursor::first()
 {

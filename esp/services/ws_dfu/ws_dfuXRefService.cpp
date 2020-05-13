@@ -147,7 +147,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
                     appendReplyMessage(fmt==ESPSerializationJSON, returnStr, nullptr,
                         "Error(s) removing physical part %s\n%s", file, err.str());
             }
-            else 
+            else
             {   // DeleteLogical:
                 // Note we don't want to physically delete 'lost' files - this will end up with orphans on next time round but that is safer
                 if (fileNode->RemoveLogical(file, userDesc, cluster, err))
@@ -163,7 +163,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
         resp.setDFUXRefArrayActionResult(returnStr);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -238,7 +238,7 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
         resp.setDFUXRefLostFilesQueryResult(buf);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -266,7 +266,7 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
         resp.setDFUXRefFoundFilesQueryResult(buf);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -293,7 +293,7 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
         resp.setDFUXRefOrphanFilesQueryResult(buf);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -316,7 +316,7 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
         resp.setDFUXRefMessagesQueryResult(buf);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -337,7 +337,7 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
         resp.setRedirectUrl(StringBuffer("/WsDFUXRef/DFUXRefDirectories?Cluster=").append(req.getCluster()));
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -372,7 +372,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
         resp.setDFUXRefDirectoriesQueryResult(buf);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -452,7 +452,7 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
         resp.setDFUXRefActionResult(returnStr);
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -477,7 +477,7 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
         resp.setDFUXRefBuildCancelResult(returnStr.str());
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -551,7 +551,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
             resp.setDFUXRefListResult(toXML(xrefNodeTree, buf).str());
     }
     catch(IException *e)
-    {   
+    {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
     return true;

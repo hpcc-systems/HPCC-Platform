@@ -68,17 +68,17 @@ protected:
     {
         return streq(((IPropertyTree *)e)->queryName(), (const char *)fp);
     }
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(IPropertyTree, constcharptr);
 
     inline unsigned count() const { return SuperHashTableOf<IPropertyTree, constcharptr>::count(); }
 
     ChildMap() : SuperHashTableOf<IPropertyTree, constcharptr>(4)
-    { 
+    {
     }
-    ~ChildMap() 
-    { 
+    ~ChildMap()
+    {
         _releaseAll();
     }
     virtual unsigned numChildren();
@@ -187,8 +187,8 @@ class jlib_decl CPTValue : implements IPTArrayValue, private MemoryAttr
 {
 public:
     CPTValue(MemoryBuffer &src)
-    { 
-        deserialize(src); 
+    {
+        deserialize(src);
     }
     CPTValue(size32_t size, const void *data, bool binary=false, bool raw=false, bool compressed=false);
 
@@ -919,13 +919,13 @@ public:
         else
             nodeCreator = new CDefaultNodeCreator(flags);
         if (_root)
-        { 
+        {
             root = LINK(_root);
             rootProvided = true;
         }
         else
         {
-            root = NULL;    
+            root = NULL;
             rootProvided = false;
         }
         reset();
@@ -978,7 +978,7 @@ public:
         else
             currentNode->setProp(NULL, (const char *)value);
         unsigned c = ptreeStack.ordinality();
-        if (c==1 && !noRoot && currentNode != root) 
+        if (c==1 && !noRoot && currentNode != root)
             ::Release(currentNode);
         ptreeStack.pop();
         currentNode = (c>1) ? &ptreeStack.tos() : NULL;

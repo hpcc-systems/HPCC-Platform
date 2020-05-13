@@ -1716,7 +1716,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
             file->removeTree(child);
         }
     }
-    
+
 }
 
 
@@ -1983,7 +1983,7 @@ class CTimedCache
         /* The items are ordered, such that oldest items are at the start.
         This method scans through from oldest to newest until the current
         item's "due" time has not expired. It then removes all up to that
-        point, i.e. those that have expired, and returns the timing 
+        point, i.e. those that have expired, and returns the timing
         difference between now and the next due time. */
         unsigned expired = 0;
         unsigned res = (unsigned)-1;
@@ -3009,11 +3009,11 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
             reload = true;
         }
         unsigned pause = 1000*(30+getRandom()%60);
-        if (timeoutms!=INFINITE) 
+        if (timeoutms!=INFINITE)
             if (pause>timeoutms/2)
                 pause = timeoutms/2;
         Sleep(pause);
-        if (timeoutms!=INFINITE) 
+        if (timeoutms!=INFINITE)
             timeoutms -= pause;
     }
 }
@@ -3036,9 +3036,9 @@ public:
     {
         return lfn.get();
     }
-    IDistributedFile * queryDistributedFile() 
-    { 
-        return dfile.get(); 
+    IDistributedFile * queryDistributedFile()
+    {
+        return dfile.get();
     }
 
     bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write, bool isPrivilegedUser)
@@ -3051,7 +3051,7 @@ public:
         if (!onlydfs)
         {
             bool gotlocal = true;
-            if (isAbsolutePath(fname)||(stdIoHandle(fname)>=0)) 
+            if (isAbsolutePath(fname)||(stdIoHandle(fname)>=0))
                 localpath.set(fname);
             else if (!strstr(fname,"::"))
             {
@@ -3123,7 +3123,7 @@ public:
                 return NULL;
             }
         }
-        else 
+        else
             splitDirTail(localpath,dir);
         fileDesc->setDefaultDir(dir.str());
         RemoteFilename rfn;
@@ -3147,7 +3147,7 @@ public:
 
     virtual unsigned numParts()
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->numParts();
         return 1;
     }
@@ -3155,11 +3155,11 @@ public:
 
     unsigned numPartCopies(unsigned partnum)
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->queryPart(partnum).numCopies();
         return 1;
     }
-    
+
     IFile *getPartFile(unsigned partnum,unsigned copy)
     {
         RemoteFilename rfn;
@@ -3167,10 +3167,10 @@ public:
             return createIFile(getPartFilename(rfn,partnum,copy));
         return NULL;
     }
-    
+
     RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy)
     {
-        if (dfile.get()) 
+        if (dfile.get())
             dfile->queryPart(partnum).getFilename(rfn,copy);
         else if (localpath.isEmpty())
             lfn.getExternalFilename(rfn);
@@ -3182,11 +3182,11 @@ public:
     StringBuffer &getPartFilename(StringBuffer &path, unsigned partnum,unsigned copy)
     {
         RemoteFilename rfn;
-        if (dfile.get()) 
+        if (dfile.get())
             dfile->queryPart(partnum).getFilename(rfn,copy);
         else if (localpath.isEmpty())
             lfn.getExternalFilename(rfn);
-        else 
+        else
             path.append(localpath);
         if (rfn.isLocal())
             rfn.getLocalPath(path);
@@ -3197,7 +3197,7 @@ public:
 
     bool getPartCrc(unsigned partnum, unsigned &crc)
     {
-        if (dfile.get())  
+        if (dfile.get())
             return dfile->queryPart(partnum).getCrc(crc);
         Owned<IFile> file = getPartFile(0,0);
         if (file.get()) {
@@ -3209,7 +3209,7 @@ public:
 
     offset_t getPartFileSize(unsigned partnum)
     {
-        if (dfile.get()) 
+        if (dfile.get())
             return dfile->queryPart(partnum).getFileSize(true,false);
         Owned<IFile> file = getPartFile(0,0);
         if (file.get())

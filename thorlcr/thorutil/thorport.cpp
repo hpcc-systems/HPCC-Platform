@@ -22,8 +22,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "jlib.hpp"
 #include "jdebug.hpp"
@@ -60,7 +60,7 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
     if (!machineBase) machineBase = THOR_BASESLAVE_PORT;
     return machineBase + getPortOffset(category);
 }
-  
+
 void setMachinePortBase(unsigned short base)
 {
     machineportbase = base;
@@ -88,7 +88,7 @@ unsigned getPortOffset(ThorPortKind category)
         case TPORT_watchdog:
             return WATCHDOGPORT;
         case TPORT_mp:
-            return MPPORT; 
+            return MPPORT;
         case TPORT_debug:
             return DEBUGPORT;
         default:

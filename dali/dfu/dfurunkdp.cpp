@@ -38,7 +38,7 @@ class CDKDPitem : public CInterface
     StringBuffer cmdline;
     bool done;
     bool started;
-    
+
     StringBuffer &getExePath(const char *tail,StringBuffer &ret,StringBuffer &workdir)
     {
         StringBuffer p;
@@ -101,7 +101,7 @@ public:
                 SSHretries,
                 SSHexeprefix);
 
-        if (SSHusername.isEmpty()) 
+        if (SSHusername.isEmpty())
             throw MakeStringException(-1,"No SSH user configured");
         Owned<IFRunSSH> runssh = createFRunSSH();
         StringBuffer cmd(path);
@@ -156,7 +156,7 @@ public:
                     }
                     try {
                         fio.clear();
-                        file->remove(); 
+                        file->remove();
                     }
                     catch (IException *e) {
                         EXCLOG(e,"CDKDPitem::wait(2)");
@@ -168,7 +168,7 @@ public:
                 }
             }
             catch (IException *e) {
-                if (attempt==9) 
+                if (attempt==9)
                     throw e;
                 EXCLOG(e,"CDKDPitem::wait(2)");
                 e->Release();
@@ -186,12 +186,12 @@ static void runKDPNodes(const char *title,CIArrayOf<CDKDPitem> &nodes)
         CDKDPitem &it = nodes.item(i2);
         it.run();
     }
-    // first check running within 15mins 
+    // first check running within 15mins
     bool allstarted = false;
     unsigned start = msTick();
     unsigned nstarted = 0;
     unsigned ndone = 0;
-    while (nstarted<nodes.ordinality()) {   
+    while (nstarted<nodes.ordinality()) {
 #ifdef FULL_TRACE
         PROGLOG("started = %d done = %d",ndone,nstarted);
 #endif
@@ -248,7 +248,7 @@ void doKeyDiff(IFileDescriptor *oldf,IFileDescriptor *newf,IFileDescriptor *patc
         oldf->getFilename(i1,0,rfnold);     // only do primary for first attempt
         RemoteFilename rfnnew;
         newf->getFilename(i1,0,rfnnew);     // only do primary for first attempt
-        SocketEndpoint ep = rfnnew.queryEndpoint();     
+        SocketEndpoint ep = rfnnew.queryEndpoint();
         Owned<CDKDPitem> it = new CDKDPitem();
         RemoteFilename rfnpatch;
         StringBuffer fn;
@@ -272,10 +272,10 @@ void doKeyPatch(IFileDescriptor *oldf,IFileDescriptor *newf,IFileDescriptor *pat
         RemoteFilename rfnold;
         oldf->getFilename(i1,0,rfnold);     // only do primary for first attempt
         RemoteFilename rfnnew;
-        newf->getFilename(i1,0,rfnnew);     
+        newf->getFilename(i1,0,rfnnew);
         RemoteFilename rfnpatch;
-        patchf->getFilename(i1,0,rfnpatch);     
-        SocketEndpoint ep = rfnpatch.queryEndpoint();       
+        patchf->getFilename(i1,0,rfnpatch);
+        SocketEndpoint ep = rfnpatch.queryEndpoint();
         Owned<CDKDPitem> it = new CDKDPitem();
         it->setArgs("run_keypatch",ep,rfnold,rfnnew,rfnpatch);
         patchf->setPart(i1,rfnpatch,NULL);

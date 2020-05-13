@@ -93,7 +93,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
                         doit = true;
                 }
             }
-            
+
             if (doit)
             {
                 OwnedIFile dstIFile = createIFile(item->dst);
@@ -246,7 +246,7 @@ public:
             currentItem.clear();
         }
     }
-    
+
 // ICopyFileProgress
     virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize)
     {

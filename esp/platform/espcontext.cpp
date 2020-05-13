@@ -64,7 +64,7 @@ private:
     Owned<IProperties> xslParameters;
     Owned<IMapInfo>    m_mapinfo;
     StringArray     m_custom_headers;
-    
+
     unsigned options;
 
     SecHandler m_SecurityHandler;
@@ -123,7 +123,7 @@ public:
     virtual void addOptions(unsigned opts){options|=opts;}
     virtual void removeOptions(unsigned opts){opts&=~opts;}
     virtual unsigned queryOptions(){return options;}
-    
+
     // versioning
     virtual double getClientVersion(){return m_clientVer;}
     virtual void setClientVersion(double ver){m_clientVer=ver;}
@@ -139,8 +139,8 @@ public:
     }
     virtual bool isMethodAllowed(double version, const char* optional, const char* security, double maxver, double minver);
 
-    virtual IMapInfo& queryMapInfo() 
-    { 
+    virtual IMapInfo& queryMapInfo()
+    {
         if (!m_mapinfo.get())
             m_mapinfo.setown(createMapInfo());
         return *m_mapinfo.get();
@@ -370,19 +370,19 @@ public:
     {
         m_queryparams.set(Parameters);
     }
-    
+
     virtual void setServAddress(const char * host, short port)
     {
         m_servHost.clear().append(host);
         m_servPort = port;
     }
-    
+
     virtual void getServAddress(StringBuffer & host, short & port)
     {
         host.append(m_servHost);
         port = m_servPort;
     }
-    
+
     virtual void setFeatureAuthMap(IAuthMap * map)
     {
         if(map != NULL)
@@ -391,7 +391,7 @@ public:
             m_SecurityHandler.setFeatureAuthMap(map);
         }
     }
-    
+
     virtual IAuthMap * queryAuthMap()
     {
         return m_feature_authmap.get();
@@ -411,7 +411,7 @@ public:
     {
         return m_SecurityHandler.authorizeSecReqFeatures(features, pmap, NULL);
     }
-    
+
     virtual bool authorizeFeature(const char * pszFeatureUrl, const char* UserID, const char* CompanyID, SecAccessFlags & access)
     {
         SecUserStatus user_status;
@@ -615,7 +615,7 @@ void CEspContext::AuditMessage(AuditType type, const char *filterType, const cha
     msg.appendf("\n\tProcess: esp\n\tService: %s\n\tUser: %s", m_servName.str(), queryUserId());
     if (parms)
         msg.append("\n\t").valist_appendf(parms, args);
-    
+
     va_end(args);
     AUDIT(type, msg.str());
 }
@@ -626,7 +626,7 @@ void CEspContext::AuditMessage(AuditType type, const char *filterType, const cha
     AUDIT(type, msg.str());
 }
 
-bool CEspContext::suppressed(const char* structName, const char* fieldName) 
+bool CEspContext::suppressed(const char* structName, const char* fieldName)
 {
     if (!m_mapinfo)
         return false;
@@ -643,7 +643,7 @@ bool CEspContext::suppressed(const char* structName, const char* fieldName)
         if (ver>=deprver)
             return true;
     }
-    else 
+    else
     {
         double maxver = m_mapinfo->getMaxVersion(structName,fieldName);
         if (maxver>0 && ver>maxver)
@@ -660,7 +660,7 @@ bool CEspContext::suppressed(const char* structName, const char* fieldName)
 bool CEspContext::isMethodAllowed(double version, const char* optional, const char* security, double minver, double maxver)
 {
     if (optional)
-    {       
+    {
         IProperties *props = queryRequestParameters();
         if (props && !props->hasProp(optional))
             return false;
@@ -669,14 +669,14 @@ bool CEspContext::isMethodAllowed(double version, const char* optional, const ch
     if (security)
     {
         SecAccessFlags acc;
-        if (!authorizeFeature(security, acc) || (acc==SecAccess_None)) 
+        if (!authorizeFeature(security, acc) || (acc==SecAccess_None))
             return false;
     }
-            
+
     if (minver>0 && version<minver)
         return false;
 
-    if (maxver>0 && version>maxver) 
+    if (maxver>0 && version>maxver)
         return false;
 
     return true;
@@ -750,11 +750,11 @@ void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* exclude
 {
     bool hasVersion = false, addAmpersand = false;
     int excludes = 0;
-    if (excludeParams) 
+    if (excludeParams)
         while (excludeParams[excludes]) excludes++;
 
     IProperties* props = ctx.queryRequestParameters();
-    if (props) 
+    if (props)
     {
         const char* querystr = props->queryProp("__querystring");
         if (querystr)
@@ -770,31 +770,31 @@ void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* exclude
                     key.set(item, eq-item);
                 else
                     key.set(item);
-    
+
                 bool excluded = false;
                 if (*key.get()=='.')
                     excluded = true;
                 else for (int i=0; i<excludes; i++)
                 {
-                    if (stricmp(excludeParams[i],key.get())==0) 
+                    if (stricmp(excludeParams[i],key.get())==0)
                     {
                         excluded = true;
                         break;
                     }
                 }
-                
-                if (!excluded) 
+
+                if (!excluded)
                 {
-                    if (addAmpersand) 
+                    if (addAmpersand)
                         params.append('&');
                     else
                         addAmpersand = true;
                     params.append(item);
                 }
-                
+
                 if (stricmp(key,"ver_")==0)
                     hasVersion = true;
-            }           
+            }
         }
     }
 

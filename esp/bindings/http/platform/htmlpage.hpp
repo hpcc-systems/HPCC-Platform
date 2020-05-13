@@ -95,7 +95,7 @@ enum HTML_HEADER_SIZE
     H3,
     H4,
     H5,
-    H6 
+    H6
 };
 
 class HTMLPAGE_EXPORT CHtmlHeader : public CHtmlText

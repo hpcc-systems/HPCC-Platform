@@ -192,7 +192,7 @@ void CKeyHdr::write(IFileIOStream *out, CRC32 *crc)
 {
     unsigned nodeSize = hdr.nodeSize;
     MemoryAttr ma;
-    byte *buf = (byte *) ma.allocate(nodeSize); 
+    byte *buf = (byte *) ma.allocate(nodeSize);
     memcpy(buf, &hdr, sizeof(hdr));
     memset(buf+sizeof(hdr), 0xff, nodeSize-sizeof(hdr));
     SwapBigEndian(*(KeyHdr*) buf);
@@ -201,14 +201,14 @@ void CKeyHdr::write(IFileIOStream *out, CRC32 *crc)
         crc->tally(nodeSize, buf);
 }
 
-unsigned int CKeyHdr::getMaxKeyLength() 
+unsigned int CKeyHdr::getMaxKeyLength()
 {
-    return hdr.length; 
+    return hdr.length;
 }
 
-bool CKeyHdr::isVariable() 
+bool CKeyHdr::isVariable()
 {
-    return (hdr.ktype & HTREE_VARSIZE) == HTREE_VARSIZE; 
+    return (hdr.ktype & HTREE_VARSIZE) == HTREE_VARSIZE;
 }
 
 //=========================================================================================================
@@ -243,7 +243,7 @@ CNodeBase::~CNodeBase()
 
 //=========================================================================================================
 
-CWriteNodeBase::CWriteNodeBase(offset_t _fpos, CKeyHdr *_keyHdr) 
+CWriteNodeBase::CWriteNodeBase(offset_t _fpos, CKeyHdr *_keyHdr)
 {
     CNodeBase::load(_keyHdr, _fpos);
     unsigned nodeSize = keyHdr->getNodeSize();
@@ -491,7 +491,7 @@ void CBloomFilterWriteNode::put8(__int64 val)
 
 //=========================================================================================================
 
-CNodeHeader::CNodeHeader() 
+CNodeHeader::CNodeHeader()
 {
 }
 
@@ -617,7 +617,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         if (keyType & COL_PREFIX)
         {
             MTIME_SECTION(queryActiveTimer(), "COL_PREFIX expand");
-            
+
             if (hdr.numKeys) {
                 bool handleVariable = isVariable && isLeaf();
                 KEYRECSIZE_T workRecLen;
@@ -679,7 +679,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
                     }
                     pack1 = *source++;
 #ifdef _DEBUG
-                    assertex(pack1<=workRecLen);            
+                    assertex(pack1<=workRecLen);
 #endif
                     if (handleVariable) {
                         prev = ((char *)keyBufMb.bufferBase())+prevOffset;

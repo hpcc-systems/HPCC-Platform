@@ -96,7 +96,7 @@ private:
     bool _saveTree(LPCSTR fname);
     void setWindowTitle();
     void updateMenuState();
-    void endExpand();   
+    void endExpand();
 
 public:
     CTreeviewDlg(LPCTSTR inFile, CWnd* pParent = NULL);

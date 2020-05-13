@@ -19,7 +19,7 @@ DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
     if (dwReason == DLL_PROCESS_ATTACH)
     {
         TRACE0("ESP_SERVICE_WIZARD.AWX Initializing!\n");
-        
+
         // Extension DLL one-time initialization
         AfxInitExtensionModule(Esp_service_wizardDLL, hInstance);
 

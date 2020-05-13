@@ -55,18 +55,18 @@ namespace sxt {
 
 /**
  * Simpe XML Tokenizer (SXT)
- * 
+ *
  * <p>Advantages:<ul>
  * <li>utility class to simplify creation of XML parsers,
  *     especially suited for pull event model but can support also push
- * <li>minimal memory utilization: does not use memory except for input 
- *    and content buffer (that can grow in size)  
- * <li>fast: all parsing done in one function 
+ * <li>minimal memory utilization: does not use memory except for input
+ *    and content buffer (that can grow in size)
+ * <li>fast: all parsing done in one function
  *       (simple deterministic automata)
  * <li>supports most of XML 1.0 (except validation and external entities)
- * <li>low level: supports on demand parsing of Characters, CDSect, 
+ * <li>low level: supports on demand parsing of Characters, CDSect,
  *      Comments, PIs etc.)
- * <li>parsed content: supports providing on demand  
+ * <li>parsed content: supports providing on demand
  *     parsed content to application (standard entities expanded
  *    all CDATA sections inserted, Comments and PIs removed)
  *    not for attribute values and element content
@@ -85,9 +85,9 @@ namespace sxt {
  *    <strong>but</strong>
  *    whole input is duplicated before parsing and can be used by calling
  *    application (such as xpp) as working buffer up to pos - 1 character
- *    (so it can insert \0 to create null terminated strings). 
+ *    (so it can insert \0 to create null terminated strings).
  *    this buffer is valid until next setInput().
- *     (however it can be tricky!) 
+ *     (however it can be tricky!)
  * </ul>
  *
  * @author Aleksander Slominski [aslom@extreme.indiana.edu]
@@ -148,15 +148,15 @@ namespace sxt {
       if(size > this->bufSize - 1) {
         if(this->buf != NULL)
           delete [] this->buf;
-        this->bufSize = bufEnd + 1;  //NOTE: +1 to give place for '\0' 
-        this->buf = new SXT_CHAR[this->bufSize]; 
+        this->bufSize = bufEnd + 1;  //NOTE: +1 to give place for '\0'
+        this->buf = new SXT_CHAR[this->bufSize];
       }
       memcpy(this->buf, buf_, bufEnd * sizeof(this->buf[0]));
       this->buf[bufEnd] = _MYT('\0');
       if(paramPC && bufSize > pcSize) {
         if(pc != NULL)
           delete [] pc;
-        pc = new SXT_CHAR[bufSize]; 
+        pc = new SXT_CHAR[bufSize];
         pcSize = bufSize;
       }
       //if(SXT_TEST_VALIDATING) for(int i=0; i < bufSize; ++i) pc[i]='X';
@@ -164,7 +164,7 @@ namespace sxt {
 
   /**
    * Set notification of all XML content tokens:
-   * Characters, Comment, CDSect, Doctype, PI, EntityRef, CharRef, 
+   * Characters, Comment, CDSect, Doctype, PI, EntityRef, CharRef,
    * AttValue (tokens for STag, ETag and Attribute are always sent).
    */
   void setNotifyAll(bool enable) {
@@ -217,7 +217,7 @@ namespace sxt {
    * }
    * </pre>
    *
-   * <p>For simplicity it is using few inlined procedures 
+   * <p>For simplicity it is using few inlined procedures
    *   such as readName() or isS().
    *
    */
@@ -231,11 +231,11 @@ namespace sxt {
      while(true) {
        if(reachedEnd) {
           if(state != STATE_FINISH) {
-            if(state != STATE_CONTENT && state != STATE_CONTENT_INIT 
+            if(state != STATE_CONTENT && state != STATE_CONTENT_INIT
                && state != STATE_CONTENT_CONTINUED)
               throw XmlTokenizerException(string(
                 "unexpected end of stream (state=")+to_string(state)+")");
-            if(state == STATE_CONTENT_INIT 
+            if(state == STATE_CONTENT_INIT
               || state == STATE_CONTENT_CONTINUED) {
               if(state == STATE_CONTENT_INIT) {
                 //pcEnd = pcStart = pos - 1;
@@ -243,7 +243,7 @@ namespace sxt {
               }
               posEnd = posStart = pos - 1;
             }
-            state = STATE_FINISH;  
+            state = STATE_FINISH;
             if(paramPC && (pcStart != pcEnd || posEnd != posStart)) {
               parsedContent = (pcEnd != pcStart);
               //if(pcEnd == pcStart) {
@@ -261,7 +261,7 @@ namespace sxt {
               else if(parsedContent)
                 throw XmlTokenizerException(string(
                   "no element content allowed before end of stream"));
-              
+
             }
           }
           state = STATE_FINISHED;
@@ -290,7 +290,7 @@ namespace sxt {
           continue; //ask for more chars --> ch = more();
         }
       }
-       
+
 
        switch(state) {
         case STATE_INIT:
@@ -340,7 +340,7 @@ namespace sxt {
             if(paramPC && (pcStart != pcEnd || (NORMALIZE_LINE_BREAKS && ch == '\r'))
             ) {
               //XXX
-              if(NORMALIZE_LINE_BREAKS && ch == '\r') 
+              if(NORMALIZE_LINE_BREAKS && ch == '\r')
                 pc[pcEnd++] = '\n';
               else
                 pc[pcEnd++] = ch;
@@ -375,11 +375,11 @@ namespace sxt {
                       //&& prevMixInElement && prevMixSeenContent)) {
                       && prevMixInElement)) {
                 return CONTENT;
-              }  
+              }
             }
           }
           // gather parsed content
-          if(paramPC && state != STATE_SCAN_STAG_NAME 
+          if(paramPC && state != STATE_SCAN_STAG_NAME
             && state != STATE_SCAN_ETAG_NAME) {
             // TODO: joinPC()
             if(pcStart == pcEnd && posEnd > posStart) {
@@ -599,7 +599,7 @@ namespace sxt {
             if(paramNotifyAttValue)
               return ATTR_CHARACTERS;
            } else if(ch == '&') {
-            // BUG 36025: content of attr already copied to pc[pcStart...pCEnd] at (P) below, 
+            // BUG 36025: content of attr already copied to pc[pcStart...pCEnd] at (P) below,
             //            however, when pcEnd==pcStart, it is not copied
             //if(paramPC && posEnd > posStart) {
             if(paramPC && posEnd > posStart && pcEnd==pcStart) {
@@ -623,11 +623,11 @@ namespace sxt {
             if(paramPC && (pcStart != pcEnd || (NORMALIZE_LINE_BREAKS && ch == '\r'))
             ) {
               //XXX
-              if(NORMALIZE_LINE_BREAKS && ch == '\r') 
+              if(NORMALIZE_LINE_BREAKS && ch == '\r')
                 pc[pcEnd++] = '\n';
               else
                 pc[pcEnd++] = ch;
-            }            
+            }
           }
           break;
         case STATE_ATTR_VALUE_CONTENT:
@@ -655,7 +655,7 @@ namespace sxt {
             //NOTE: possible optimization: no copying
             //  for "<m:bar><![CDATA[TEST]]></m:bar>"
             // -- very diffucult to do
-            if(paramPC && posEnd > posStart) { 
+            if(paramPC && posEnd > posStart) {
               int len = posEnd - posStart;
               //System.arraycopy(buf, posStart, pc, pcEnd, len);
               memcpy(pc + pcEnd, buf + posStart, len * sizeof(SXT_CHAR)); //FIXME UNICODE
@@ -755,7 +755,7 @@ namespace sxt {
       return os.str();
     }
 
-  
+
     int getLineNumber() const { return posRow; }
     int getColumnNumber() const { return posCol-1; }
 
@@ -773,7 +773,7 @@ namespace sxt {
         backtracking = false;
         //++pos;
         //++posCol;
-        return prevCh;  
+        return prevCh;
       }
       if(pos == bufEnd - 1)
         reachedEnd = true;
@@ -852,7 +852,7 @@ namespace sxt {
     char readName(char ch) {
       posNsColon = -1;
       nsColonCount = 0;
-      if(!(ch >= 'A' && ch <= 'Z') && !(ch >= 'a' && ch <= 'z') 
+      if(!(ch >= 'A' && ch <= 'Z') && !(ch >= 'a' && ch <= 'z')
         && ch != '_' && ch != ':')
           throw XmlTokenizerException("expected name start not ",
             ch, getPosDesc(), getLineNumber(), getColumnNumber());
@@ -892,7 +892,7 @@ namespace sxt {
       return ch;
     }
 
-    friend ostream& operator<<(ostream& output, 
+    friend ostream& operator<<(ostream& output,
      const XmlTokenizer& tokenizer);
 
 
@@ -941,7 +941,7 @@ namespace sxt {
       reset();
     }
 
-    void reset() {  
+    void reset() {
       seenContent = false;
       mixInElement = false;
       bufEnd = 0;
@@ -976,7 +976,7 @@ namespace sxt {
     enum {
      NORMALIZE_LINE_BREAKS = 1
     };
-  
+
 
     /** Parsed Content reporting */
     bool paramPC;
@@ -1048,8 +1048,8 @@ namespace sxt {
   };
 
 
-inline ostream& operator<<(ostream& output, 
-  const XmlTokenizer& tokenizer) 
+inline ostream& operator<<(ostream& output,
+  const XmlTokenizer& tokenizer)
 {
     SXT_STRING ss = tokenizer.to_string(tokenizer.state);
     SXT_STRING s = "XmlTokenizer: current state: "+ss;

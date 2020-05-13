@@ -465,7 +465,7 @@ void CSplitterOutput::start()
 
 // IEngineRowStream
 void CSplitterOutput::stop()
-{ 
+{
     if (stopped)
         return;
     stopped = true;

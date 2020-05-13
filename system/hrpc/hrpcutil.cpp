@@ -68,9 +68,9 @@ void ListenUntilDead(HRPCserver & server, IHRPCtransport * transport, const char
       server.Listen(transport);
       alive=false;
     }
-    catch(IHRPC_Exception *e) 
-    { 
-      switch (e->errorCode()) 
+    catch(IHRPC_Exception *e)
+    {
+      switch (e->errorCode())
       {
       case HRPCERR_lost_connection:
       case HRPCERR_transport_not_open:
@@ -96,9 +96,9 @@ IHRPCtransport * TryMakeServerTransport(unsigned port, const char * errorMessage
   {
     transport = MakeTcpTransport(NULL,port);
   }
-  catch(IHRPC_Exception *e) 
-  { 
-        switch (e->errorCode()) 
+  catch(IHRPC_Exception *e)
+  {
+        switch (e->errorCode())
     {
         case HRPCERR_transport_port_in_use:
     default:
@@ -153,7 +153,7 @@ void MultipleConnect(unsigned n,HRPCmodule **modules,int timeout,bool fast)
     CriticalBlock block(mcsect);
     bool *done = new bool[n];
     unsigned i;
-    for (i=0;i<n;i++) 
+    for (i=0;i<n;i++)
         done[i] = false;
     if (fast) {
         if (FastMultipleConnect(n,modules,done,timeout)) {
@@ -169,7 +169,7 @@ void MultipleConnect(unsigned n,HRPCmodule **modules,int timeout,bool fast)
         int timeout;
     public:
         casyncfor(HRPCmodule **_modules,bool *_done,int _timeout)
-        { 
+        {
             modules = _modules;
             done = _done;
             timeout = _timeout;
@@ -188,7 +188,7 @@ void MultipleConnect(unsigned n,HRPCmodule **modules,int timeout,bool fast)
 void MultipleConnect(unsigned n,HRPCmodule *modules,int timeout,bool fast)
 {
     HRPCmodule **moduleptrs = (HRPCmodule **)malloc(n*sizeof(HRPCmodule *));
-    for (unsigned i=0;i<n;i++) 
+    for (unsigned i=0;i<n;i++)
         moduleptrs[i] = &modules[i];
     MultipleConnect(n,moduleptrs,timeout,fast);
     free(moduleptrs);

@@ -579,7 +579,7 @@ public:
                                 const char *libpkgid = libpkg->locateSuperFile(rf.getLogicalName());
                                 if (libpkgid && !strieq(libpkgid, pkgid))
                                 {
-                                    VStringBuffer msg("For query %s SuperFile %s defined in package %s redefined for library %s in package %s", 
+                                    VStringBuffer msg("For query %s SuperFile %s defined in package %s redefined for library %s in package %s",
                                         queryid, rf.getLogicalName(), pkgid, libpkg->queryId(), libpkgid);
                                     warn.append(msg.str());
                                 }

@@ -168,7 +168,7 @@ inline void checkStackOverflow(unsigned offset)
         throwError1(REGEXERR_MatchFailure, offset);
     }
 }
-        
+
 
 
 //---------------------------------------------------------------------------
@@ -325,10 +325,10 @@ static const char * stateText[] = { "Init", "Follow", "Retry", "Finished", "Repe
 
 #ifdef TRACE_REGEX
 ActiveStage & ActiveStage::setState(unsigned _state)
-{ 
+{
     DBGLOG("%*s[%p]Change state to %s", patternDepth, "", pattern, stateText[_state]);
-    state = _state; 
-    return *this; 
+    state = _state;
+    return *this;
 }
 #endif
 
@@ -432,8 +432,8 @@ RegexMatchAction RegexPattern::matchNext(RegexState & state)
 }
 
 inline RegexMatchAction RegexPattern::pushMatched(RegexState & state)
-{ 
-    pushStage(state).setMatched(); 
+{
+    pushStage(state).setMatched();
     return RegexMatchContinue;
 }
 
@@ -617,7 +617,7 @@ RegexMatchAction RegexBeginTokenPattern::match(RegexState & state)
 RegexMatchAction RegexBeginTokenPattern::beginMatch(RegexState & state)
 {
     ActiveStage & stage = pushStage(state).setMatched();
-    stage.flags |= RFbeginToken; 
+    stage.flags |= RFbeginToken;
     return RegexMatchContinue;
 }
 
@@ -1479,7 +1479,7 @@ void RegexUnicodeSetPattern::toXMLattr(StringBuffer & out, RegexXmlState & state
         out.append(" set=\"");
         ForEachItemIn(idx, from)
         {
-            if (idx) 
+            if (idx)
                 out.append(",");
             out.append(from.item(idx));
             if (from.item(idx) != to.item(idx))
@@ -2168,7 +2168,7 @@ RegexMatchAction RegexRepeatPattern::match(RegexState & state, unsigned curMin, 
         return def->match(state, instance);
 
     const byte * saved = state.cur;
-    if (greedy) 
+    if (greedy)
     {
         RegexMatchAction ret = def->match(state, instance);
         if (ret != RegexMatchBacktrack)
@@ -2377,7 +2377,7 @@ unsigned AsciiDfa::getAccepts(const AsciiDfaState & state, unsigned idx) const
 }
 
 void AsciiDfa::serialize(MemoryBuffer & out)
-{ 
+{
     out.append(numStates).append(numTransitions).append(numAccepts);
     out.append(numStates * sizeof(*states), states);
     out.append(numTransitions * sizeof(*transitions), transitions);
@@ -2620,7 +2620,7 @@ RegexMatchAction RegexAsciiDfaPattern::match(RegexState & state)
 
 
 void RegexAsciiDfaPattern::serializePattern(MemoryBuffer & out)
-{ 
+{
     RegexDfaPattern::serializePattern(out);
     dfa.serialize(out);
     out.append(matchesToken);
@@ -2689,7 +2689,7 @@ RegexMatchAction RegexAsciiDfaPattern::beginMatch(RegexState & state)
     ActiveStage & stage = pushStage(state);
     stage.extra.prevPotentialMatches = prevPotentialMatches;
     if (matchesToken)
-        stage.flags |= RFbeginToken; 
+        stage.flags |= RFbeginToken;
 
     //Only a single match, therefore no need to backtrack.
     if (prevPotentialMatches == potentialMatches.ordinality())
@@ -2781,7 +2781,7 @@ RegexMatchAction RegexUnicodeDfaPattern::beginMatch(RegexState & state)
 
 
 void RegexUnicodeDfaPattern::serializePattern(MemoryBuffer & out)
-{ 
+{
 }
 
 void RegexUnicodeDfaPattern::deserializePattern(MemoryBuffer & in)
@@ -2889,7 +2889,7 @@ RegexMatchAction RegexRepeatAnyPattern::nextAction(ActiveStage & stage, RegexSta
 
 
 void RegexRepeatAnyPattern::serializePattern(MemoryBuffer & out)
-{ 
+{
     RegexPattern::serializePattern(out);
     out.append(low).append(high).append(minimal);
 }
@@ -3295,7 +3295,7 @@ RegexMatchAction RegexDfa::beginMatch(RegexState & state)
             state.pushState(this).setStage(RSretry);
             newState->extra.matches = matches;
         }
-            
+
 
         state.namedAction.append(*end);
     return firstElement->beginMatch(state);
@@ -3313,7 +3313,7 @@ RegexMatchAction RegexDfa::nextAction(ActiveStage & stage, RegexState & state)
 }
 
 */
-    
+
 
 //---------------------------------------------------------------------------
 
@@ -3465,7 +3465,7 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
                 top.end = top.start;
                 matched.extractResults(top, state.start, algo->addedSeparators);
                 NlpMatchWalker walker(&top);
-                
+
                 const void * matchRow = createMatchRow(state, walker);
                 if (matchRow)
                     results.appendOwnResult(matchRow);
@@ -3499,7 +3499,7 @@ const void * RegexParser::createMatchRow(RegexState & state, NlpMatchWalker & wa
         return row.finalizeRowClear(rowSize);
     return NULL;
 }
-    
+
 
 
 bool RegexParser::onMatch(NlpState & _state)
@@ -3562,7 +3562,7 @@ bool RegexParser::onMatch(NlpState & _state)
     {
         result->setown(newRow);
     }
-    
+
     result->score = state.score;
     result->length = length;
     if (algo->matchAction == INlpParseAlgorithm::NlpMatchAll)
@@ -3607,7 +3607,7 @@ States, transition(symbol)->state
 
 Create a set of set-of-nstates Dstates that can be reached from the initial.
 ForEachUnmarkedDState(T)
-    ForEachSymbol(x), 
+    ForEachSymbol(x),
        U = possible states that could be reach after that
        if U not in DStates, add it.
        Save DTrans[T,a] = U
@@ -3618,10 +3618,10 @@ All states that can be reached at all onto a stack
 
 
 regular expressions:
-    *+? have highest 
+    *+? have highest
     then concat
     then
-    
+
     r|(s|t) == (r|s)|t
     (rs)t == r(st)
     r(s|t) == rs|rt
@@ -3637,9 +3637,9 @@ Running a NFA:
     - Solves problem of repeatadly searching, but I don't think it could be used for matching text,
       because no positioning information is maintained.
 
-    - Use an ordered list of next-states which 
+    - Use an ordered list of next-states which
 
-Lazy 
+Lazy
 }}}
 
 

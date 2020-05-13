@@ -27,14 +27,14 @@
 typedef std::vector<std::string> StringStack;
 
 // For array:
-//  - isArray() returns true, 
+//  - isArray() returns true,
 //  - isComplexType() returns false
 //  - getFieldCount() returns 1
 //  - getFieldType(0) returns the item type
 //  - getFieldName(0) returns the item name
 // For simple type:
 //  - getFieldCount() returns 0, and queryFieldType() and queryFieldName() shouldn't be called
-// 
+//
 
 interface XMLLIB_API IXmlAttribute : implements IInterface
 {
@@ -61,9 +61,9 @@ enum XmlSubType
     SubType_Simple_Enumeration,
 
     // Complex Type
-    SubType_Complex_Sequence, 
-    SubType_Complex_All, 
-    SubType_Complex_Choice, 
+    SubType_Complex_Sequence,
+    SubType_Complex_All,
+    SubType_Complex_Choice,
     SubType_Complex_SimpleContent
 };
 
@@ -74,10 +74,10 @@ interface XMLLIB_API IXmlType : implements IInterface
     virtual bool isComplexType() = 0;
     virtual size_t  getFieldCount() = 0;
     virtual IXmlType* queryFieldType(int idx) = 0;
-    virtual const char* queryFieldName(int idx) = 0; 
+    virtual const char* queryFieldName(int idx) = 0;
     virtual bool queryFieldRepeats(int idx) = 0;
 
-    virtual bool isArray() = 0; 
+    virtual bool isArray() = 0;
     virtual XmlSubType getSubType() = 0;
 
     virtual bool hasDefaultValue() = 0;
@@ -85,10 +85,10 @@ interface XMLLIB_API IXmlType : implements IInterface
 
     virtual size_t getAttrCount() = 0;
     virtual IXmlAttribute* queryAttr(int idx) = 0;
-    virtual const char* queryAttrName(int idx) = 0; 
+    virtual const char* queryAttrName(int idx) = 0;
 
     // only defined for simple type
-    virtual void getSampleValue(StringBuffer& out, const char* fieldName) = 0; 
+    virtual void getSampleValue(StringBuffer& out, const char* fieldName) = 0;
 
     // for debug
     virtual void toString(class StringBuffer& s, int indent, StringStack& parent) = 0;
@@ -100,8 +100,8 @@ interface XMLLIB_API IXmlSchema : implements IInterface
     virtual IXmlType* queryTypeByName(const char* name) = 0;
 };
 
-extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromFile(const char* file); 
-extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromString(const char* src); 
-extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromPTree(IPTree* schema); 
+extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromFile(const char* file);
+extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromString(const char* src);
+extern "C" XMLLIB_API IXmlSchema* createXmlSchemaFromPTree(IPTree* schema);
 
 #endif

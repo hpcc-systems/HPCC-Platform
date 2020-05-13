@@ -871,16 +871,16 @@ void SQLListExpression::getExpressionFromColumnName(const char * colname, String
     ForEachItemIn(idx, entries)
     {
        entries.item(idx).getExpressionFromColumnName(colname, paramresult.clear());
-    
+
        if (paramresult.length() == 0)
            return;
-    
+
        if ( idx > 0 )
            paramlist.append(", ");
-    
+
        paramlist.append(paramresult);
     }
-    
+
     if (paramlist.length()>0)
         str.appendf(" [ %s ] ", paramlist.str());
 }

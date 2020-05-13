@@ -225,7 +225,7 @@ protected:
     Linked<IException> originalException;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CThorException(LogMsgAudience _audience,int code, const char *str) 
+    CThorException(LogMsgAudience _audience,int code, const char *str)
         : audience(_audience), errorcode(code), msg(str), action(tea_null), graphId(0), id(0), slave(0), line(0), column(0), severity(SeverityInformation), kind(TAKnone) { };
     CThorException(MemoryBuffer &mb)
     {
@@ -546,7 +546,7 @@ IThorException *MakeGraphException(CGraphBase *graph, IException *e)
 }
 
 #if 0
-void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master) 
+void SetLogName(const char *prefix, const char *logdir, const char *thorname, bool master)
 {
     StringBuffer logname;
     if (logdir && *logdir !='\0')
@@ -610,14 +610,14 @@ public:
     }
     ~CTempNameHandler()
     {
-        if (cleardir) 
+        if (cleardir)
             clearDirs(false);       // don't log as jlog may have closed
     }
-    const char *queryTempDir(bool alt) 
-    { 
-        if (alt&&altallowed) 
+    const char *queryTempDir(bool alt)
+    {
+        if (alt&&altallowed)
             return alttempdir;
-        return tempdir; 
+        return tempdir;
     }
     void setTempDir(unsigned _slaveNum, const char *name, const char *_tempPrefix, bool clear)
     {
@@ -835,7 +835,7 @@ void setupGroups(INode *_masterNode, IGroup *_processGroup, IGroup *_slaveGroup)
 
     nodeComm.setown(createCommunicator(nodeGroup));
 }
-    
+
 void setupCluster(INode *_masterNode, IGroup *_processGroup, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
     IArrayOf<INode> slaveGroupNodes;
@@ -1097,7 +1097,7 @@ StringBuffer &getPartFilename(IPartDescriptor &partDesc, unsigned copy, StringBu
 
 void CFifoFileCache::deleteFile(IFile &ifile)
 {
-    try 
+    try
     {
         if (!ifile.remove())
             FLLOG(MCoperatorWarning, thorJob, "CFifoFileCache: Failed to remove file (missing) : %s", ifile.queryFilename());
@@ -1188,7 +1188,7 @@ public:
 
         for (;;)
         {
-            while (!memDeserializer.eos()) 
+            while (!memDeserializer.eos())
             {
                 RtlDynamicRowBuilder rowBuilder(activity.queryRowAllocator());
                 size32_t sz = activity.queryRowDeserializer()->deserialize(rowBuilder, memDeserializer);
@@ -1242,7 +1242,7 @@ class CRowServer : public CSimpleInterface, implements IThreaded, implements IRo
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag) 
+    CRowServer(CActivityBase *_activity, IRowStream *_seq, ICommunicator &_comm, mptag_t _mpTag)
         : activity(_activity), seq(_seq), comm(_comm), mpTag(_mpTag), threaded("CRowServer")
     {
         fetchBuffSize = DEFAULT_ROWSERVER_BUFF_SIZE;
@@ -1308,8 +1308,8 @@ IEngineRowStream *createUngroupStream(IRowStream *input)
         ~CUngroupStream() { input->Release(); }
         virtual const void *nextRow() override
         {
-            const void *ret = input->nextRow(); 
-            if (ret) 
+            const void *ret = input->nextRow();
+            if (ret)
                 return ret;
             else
                 return input->nextRow();

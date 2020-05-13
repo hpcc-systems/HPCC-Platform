@@ -95,7 +95,7 @@ void CRpcMessage::simple_marshall(StringBuffer& outbuf)
     StringBuffer childrenbuf;
     m_params->simple_serializeChildren(childrenbuf);
     outbuf.append(childrenbuf);
-    
+
     outbuf.append("</").append(m_name.get()).append(">");
 }
 
@@ -130,7 +130,7 @@ void CRpcMessage::marshall(StringBuffer& outbuf, CMimeMultiPart* multipart)
         StringBuffer childrenbuf;
         m_params->serializeChildren(childrenbuf, multipart);
         outbuf.append(childrenbuf);
-        
+
         outbuf.append("</");
         if(m_ns.length() > 0)
         {
@@ -167,7 +167,7 @@ void CRpcMessage::add_attr(const char * path, const char * name, const char * va
             par = par->get_value(name);
         if (par)
         {
-            Owned<IPropertyIterator> piter = attrs.getIterator();       
+            Owned<IPropertyIterator> piter = attrs.getIterator();
             for (piter->first(); piter->isValid(); piter->next())
             {
                 const char *propkey = piter->getPropKey();
@@ -233,7 +233,7 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
     StartTag stag;
     EndTag etag;
 
-    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT) 
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
     {
         if(type == XmlPullParser::END_TAG)
         {
@@ -249,7 +249,7 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
             //DBGLOG("tag qname=%s", qname);
             const char* localname = stag.getLocalName();
             const char* valuetype = stag.getValue("SOAP-ENC:type");
-            
+
             if(strlen(qname) > strlen(localname))
             {
                 const char* semcol = strchr(qname, ':');
@@ -267,12 +267,12 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
                 const char* name = stag.getRawName(i);
                 if (!name)
                     break;
-                childsoapval->add_attribute(name, stag.getValue(i));    
+                childsoapval->add_attribute(name, stag.getValue(i));
             }
 
             unmarshall(xpp, childsoapval, localname);
         }
-        else if(type == XmlPullParser::CONTENT) 
+        else if(type == XmlPullParser::CONTENT)
         {
             const char* value = xpp->readContent();
             soapvalue->set_value(value);
@@ -289,7 +289,7 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
 {
     int type;
 
-    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT) 
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
     {
         if(type == XmlPullParser::END_TAG)
         {
@@ -307,7 +307,7 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
             //DBGLOG("tag qname=%s", qname);
             const char* localname = stag.getLocalName();
             const char* valuetype = stag.getValue("SOAP-ENC:type");
-            
+
             if(strlen(qname) > strlen(localname))
             {
                 const char* semcol = strchr(qname, ':');
@@ -325,7 +325,7 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
                 const char* name = stag.getRawName(i);
                 if (!name)
                     break;
-                childsoapval->add_attribute(name, stag.getValue(i));    
+                childsoapval->add_attribute(name, stag.getValue(i));
             }
 
             const char* href = stag.getValue("href");
@@ -350,10 +350,10 @@ void CRpcMessage::unmarshall(XJXPullParser* xpp, CSoapValue* soapvalue, const ch
                 unmarshall(xpp, childsoapval, localname);
             }
         }
-        else if(type == XmlPullParser::CONTENT) 
+        else if(type == XmlPullParser::CONTENT)
         {
             const char* value = xpp->readContent();
-            soapvalue->set_value(value);        
+            soapvalue->set_value(value);
         }
     }
 }
@@ -408,10 +408,10 @@ void CBody::nextRpcMessage(IRpcMessage* rpcmessage)
             const char* localname = stag.getLocalName();
             rpcmessage->set_name(localname);
 
-            
+
             StringBuffer ns;
             const char* qname = stag.getQName();
-            
+
             if(strlen(qname) > strlen(localname))
             {
                 const char* semcol = strchr(qname, ':');
@@ -421,10 +421,10 @@ void CBody::nextRpcMessage(IRpcMessage* rpcmessage)
                 }
             }
             const char* nsuri = stag.getUri();
-            
+
             rpcmessage->set_ns(ns.str());
             rpcmessage->set_nsuri(nsuri);
-            
+
             //DBGLOG("ns=%s nsuri=%s", ns.str(), nsuri);
             return;
         }
@@ -486,9 +486,9 @@ void CHeader::unmarshall(XJXPullParser* xpp)
     StartTag stag;
     EndTag etag;
 
-    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT) 
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
     {
-        if(type == XmlPullParser::END_TAG) 
+        if(type == XmlPullParser::END_TAG)
         {
             xpp->readEndTag(etag);
             if(!stricmp(etag.getLocalName(), SOAP_HEADER_NAME))
@@ -500,7 +500,7 @@ void CHeader::unmarshall(XJXPullParser* xpp)
             StringBuffer ns;
             const char* qname = stag.getQName();
             const char* localname = stag.getLocalName();
-            
+
             if(strlen(qname) > strlen(localname))
             {
                 const char* semcol = strchr(qname, ':');
@@ -522,7 +522,7 @@ void CEnvelope::unmarshall(XJXPullParser* xpp)
     StartTag stag;
     EndTag etag;
 
-    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT) 
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
     {
         if(type == XmlPullParser::START_TAG) {
             xpp->readStartTag(stag);
@@ -572,7 +572,7 @@ CSoapValue::CSoapValue(CSoapValue* soapvalue)
             CSoapValue& onechild = soapvalue->m_children.item(x);
             m_children.append(*LINK(&onechild));
         }
-        
+
         IProperties* attrs = soapvalue->m_attributes;
         if (attrs)
         {
@@ -746,7 +746,7 @@ CSoapValue* CSoapValue::get_element(const char* path, StringBuffer *attrname)
         }
         nextname = slash + 1;
     }
-    
+
     int n_onechild = 0;
     ForEachItemIn(x, m_children)
     {
@@ -794,7 +794,7 @@ bool CSoapValue::get_value(const char* path, StringBuffer& value)
             sv->setEncodeXml(m_encode_xml);
             sv->serializeContent(value, NULL);
         }
-    }   
+    }
     return (sv != NULL);
 }
 
@@ -965,7 +965,7 @@ bool CSoapValue::get_value(const char* path, IntArray& value)
 }
 
 bool CSoapValue::get_value(const char* path, ShortArray& value)
-{  
+{
     CSoapValue* sv = get_value(path);
     if(sv != NULL)
     {
@@ -983,7 +983,7 @@ bool CSoapValue::get_value(const char* path, ShortArray& value)
 }
 
 bool CSoapValue::get_value(const char* path, Int64Array& value)
-{  
+{
     CSoapValue* sv = get_value(path);
     if(sv != NULL)
     {
@@ -1001,7 +1001,7 @@ bool CSoapValue::get_value(const char* path, Int64Array& value)
 }
 
 bool CSoapValue::get_value(const char* path, BoolArray& value)
-{  
+{
     CSoapValue* sv = get_value(path);
     if(sv != NULL)
     {
@@ -1019,7 +1019,7 @@ bool CSoapValue::get_value(const char* path, BoolArray& value)
 }
 
 bool CSoapValue::get_value(const char* path, FloatArray& value)
-{  
+{
     CSoapValue* sv = get_value(path);
     if(sv != NULL)
     {
@@ -1037,7 +1037,7 @@ bool CSoapValue::get_value(const char* path, FloatArray& value)
 }
 
 bool CSoapValue::get_value(const char* path, DoubleArray& value)
-{  
+{
     CSoapValue* sv = get_value(path);
     if(sv != NULL)
     {
@@ -1167,7 +1167,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
             sv->add_child(child);
             sv = child;
         }
-        Owned<IPropertyIterator> piter = attrs.getIterator();       
+        Owned<IPropertyIterator> piter = attrs.getIterator();
         for (piter->first(); piter->isValid(); piter->next())
         {
             const char *propkey = piter->getPropKey();
@@ -1322,7 +1322,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, StringArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1346,7 +1346,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, IntArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1364,7 +1364,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, ShortArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1382,7 +1382,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, Int64Array& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1400,7 +1400,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, BoolArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1418,7 +1418,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, FloatArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1436,7 +1436,7 @@ void CSoapValue::add_value(const char* path, const char* ns, const char* name, c
     }
 }
 
-void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns, 
+void CSoapValue::add_value(const char* path, const char* ns, const char* name, const char* childns,
                            const char* childname, const char* childtype, DoubleArray& value)
 {
     CSoapValue* sv = ensure(ns, path);
@@ -1502,7 +1502,7 @@ void CSoapValue::serialize(StringBuffer& outbuf, CMimeMultiPart* multipart)
         if(m_type.length() > 0)
         {
             const char* lbracket = strchr(m_type.get(), '[');
-    
+
             const char* type_ns;
             if(!m_is_array_element)
                 type_ns = "SOAP-ENC";
@@ -1536,10 +1536,10 @@ void CSoapValue::serialize(StringBuffer& outbuf, CMimeMultiPart* multipart)
 
         StringBuffer childrenbuf;
         serializeChildren(childrenbuf, multipart);
-        outbuf.append(childrenbuf); 
+        outbuf.append(childrenbuf);
 
         outbuf.append("</");
-    
+
         if(m_ns.length() > 0)
         {
             outbuf.append(m_ns.get());
@@ -1569,7 +1569,7 @@ void CSoapValue::serializeContent(StringBuffer& outbuf, CMimeMultiPart* multipar
 
     StringBuffer childrenbuf;
     serializeChildren(childrenbuf, multipart);
-    outbuf.append(childrenbuf); 
+    outbuf.append(childrenbuf);
 }
 
 
@@ -1604,10 +1604,10 @@ void CSoapValue::simple_serialize(StringBuffer& outbuf)
         if (!allwhite)
             encodeUtf8XML(m_value.str(), outbuf);
     }
-    
+
     StringBuffer childrenbuf;
     simple_serializeChildren(childrenbuf);
     outbuf.append(childrenbuf);
-    
+
     outbuf.append("</").append(m_name.get()).append(">");
 }

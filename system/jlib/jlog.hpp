@@ -660,7 +660,7 @@ interface jlib_decl ILogMsgListener : public IInterface
 
 interface jlib_decl ILogMsgManager : public ILogMsgListener
 {
- public:    
+ public:
     virtual void              enterQueueingMode() = 0;
     virtual void              setQueueBlockingLimit(unsigned lim) = 0;
     virtual void              setQueueDroppingLimit(unsigned lim, unsigned numToDrop) = 0;

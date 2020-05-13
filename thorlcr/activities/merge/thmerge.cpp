@@ -33,7 +33,7 @@ public:
     }
 };
 
-    
+
 //
 // GlobalMergeActivityMaster
 
@@ -56,8 +56,8 @@ public:
     virtual void process()
     {
         ActPrintLog("GlobalMergeActivityMaster::process");
-        CMasterActivity::process();     
-        IHThorMergeArg *helper = (IHThorMergeArg *)queryHelper();   
+        CMasterActivity::process();
+        IHThorMergeArg *helper = (IHThorMergeArg *)queryHelper();
         Owned<IThorRowInterfaces> rowif = createRowInterfaces(helper->queryOutputMeta());
         CThorKeyArray sample(*this, rowif,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
 
@@ -78,7 +78,7 @@ public:
                 ActPrintLog("Merge process, Receiving on tag %d",replyTag);
 #endif
                 rank_t sender;
-                if (!receiveMsg(mb, RANK_ALL, replyTag, &sender)||abortSoon) 
+                if (!receiveMsg(mb, RANK_ALL, replyTag, &sender)||abortSoon)
                     return;
 #ifdef _TRACE
                 ActPrintLog("Merge process, Received sample from %d",sender);
@@ -107,7 +107,7 @@ public:
                 if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
                     break;
             }
-        
+
         }
         catch (IException *e) {
             ActPrintLog(e, "MERGE");
@@ -122,7 +122,7 @@ public:
     }
 };
 
-    
+
 CActivityBase *createMergeActivityMaster(CMasterGraphElement *container)
 {
     if (container->queryLocalOrGrouped())

@@ -125,7 +125,7 @@ protected:
     {
         serializeMPtag(dst, mpTagRPC);
         serializeMPtag(dst, barrierMpTag);
-    }   
+    }
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         CSortBaseActivityMaster::preStart(parentExtractSz, parentExtract);
@@ -167,7 +167,7 @@ protected:
         unsigned __int64 skewThreshold = container.queryJob().getWorkUnitValueInt("overrideSkewThreshold", 0);
         if (!skewThreshold)
         {
-            skewThreshold = helper->getThreshold();         
+            skewThreshold = helper->getThreshold();
             if (!skewThreshold)
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }

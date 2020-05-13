@@ -47,7 +47,7 @@ inline bool isValidAsciiLikeCharacter(unsigned char c) { return ((c < 0x80) || (
 #define _LOG_HIRESCLOCK MSGFIELD_nanoTime
 
 class StringBuffer;
-class ILogIntercept 
+class ILogIntercept
 {
 public:
     virtual void print(const char *fmt)=0;
@@ -121,40 +121,40 @@ extern jlib_decl void _rev(size32_t len, void * ptr);
 #define _WINREVN(l,p)
 #endif
 
-inline  void _cpyrev2(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev2(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[1]=src[0]; tgt[0] = src[1];
 }
-inline  void _cpyrev3(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev3(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[2] = src[0]; tgt[1]=src[1]; tgt[0] = src[2];
 }
-inline  void _cpyrev4(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev4(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[3]=src[0]; tgt[2] = src[1]; tgt[1]=src[2]; tgt[0] = src[3];
 }
-inline  void _cpyrev5(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[4]=src[0]; 
+inline  void _cpyrev5(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
+    tgt[4]=src[0];
     tgt[3]=src[1]; tgt[2] = src[2]; tgt[1]=src[3]; tgt[0] = src[4];
 }
-inline  void _cpyrev6(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[5]=src[0]; tgt[4] = src[1]; 
+inline  void _cpyrev6(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
+    tgt[5]=src[0]; tgt[4] = src[1];
     tgt[3]=src[2]; tgt[2] = src[3]; tgt[1]=src[4]; tgt[0] = src[5];
 }
-inline  void _cpyrev7(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev7(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[6] = src[0]; tgt[5]=src[1]; tgt[4]=src[2];
     tgt[3] = src[3]; tgt[2]=src[4]; tgt[1]=src[5]; tgt[0]=src[6];
 }
-inline  void _cpyrev8(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev8(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[7]=src[0]; tgt[6] = src[1]; tgt[5]=src[2]; tgt[4] = src[3];
     tgt[3]=src[4]; tgt[2] = src[5]; tgt[1]=src[6]; tgt[0] = src[7];
 }
-inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src+len; 
+inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src+len;
     for (;len;len--) {
         *tgt++ = *--src;
     }

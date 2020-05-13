@@ -281,7 +281,7 @@ extern HQL_API bool isTimed(IHqlExpression * expr);
 
 inline bool isInternalEmbedAttr(IAtom *name)
 {
-    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom || 
+    return name == languageAtom || name == projectedAtom || name == streamedAtom || name == _linkCounted_Atom ||
            name == importAtom || name==foldAtom || name==timeAtom || name==_prebind_Atom || name==_precompile_Atom || name==_original_Atom ||
            name == _threadlocal_Atom || name == _singletonEmbedContext_Atom || name == activityAtom || name == localAtom || name == parallelAtom;
 }
@@ -540,7 +540,7 @@ public:
 
 
 #define ForEachChildActivity(idx, expr)  unsigned numOfChildren##idx = getNumActivityArguments(expr); \
-        for (unsigned idx = 0; idx < numOfChildren##idx; idx++) 
+        for (unsigned idx = 0; idx < numOfChildren##idx; idx++)
 
 interface IMaxSizeCallback
 {
@@ -709,8 +709,8 @@ extern HQL_API IHqlExpression * getOnceSequenceNumber();
 
 extern HQL_API IHqlExpression * createOmittedValue();
 inline IHqlExpression * ensureNormalizedDefaultValue(IHqlExpression * expr) { return expr ? expr : createOmittedValue(); }
-inline IHqlExpression * queryDefaultValue(IHqlExpression * expr, unsigned idx) 
-{ 
+inline IHqlExpression * queryDefaultValue(IHqlExpression * expr, unsigned idx)
+{
     if (!expr)
         return NULL;
     IHqlExpression * ret = expr->queryChild(idx);
@@ -729,7 +729,7 @@ extern HQL_API IHqlExpression * patchEclRecordDefinitionFromRecordLayout(IHqlExp
 
 extern HQL_API bool hasNonNullRecord(ITypeInfo * type);
 
-//Mangle the names to make it slightly trickier for someone disassembling the system, 
+//Mangle the names to make it slightly trickier for someone disassembling the system,
 //hardly worth it though... since the jlib aes function call gives it away...
 #define encryptEclAttribute  normalizeEclText
 #define decryptEclAttribute  isAttributeValid

@@ -54,7 +54,7 @@ public:
                 OwnedConstThorRow row(inputStream->ungroupedNextRow());
                 if (!row)
                     break;
-                helper->process(aggy, row);     
+                helper->process(aggy, row);
                 processed++;
             }
             ActPrintLog("DISTRIBUTION: processed %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
@@ -75,11 +75,11 @@ public:
             stop();
             processed |= THORDATALINK_STOPPED;
         }
-    }   
+    }
 };
 
-                    
+
 CActivityBase *createDistributionSlave(CGraphElementBase *container)
-{ 
-    return new CDistributionSlaveActivity(container); 
+{
+    return new CDistributionSlaveActivity(container);
 }

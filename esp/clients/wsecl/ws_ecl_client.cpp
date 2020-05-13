@@ -83,9 +83,9 @@ IClientWsEclResp* CClientWsEclService::search(IClientWsEclRequest* request)
     CClientWsEclRequest* eclrequest = dynamic_cast<CClientWsEclRequest*>(request);
     Owned<CClientWsEclResponse> eclresponse = new CClientWsEclResponse;
     eclresponse->setRequestId(m_reqId);
-    
+
     m_reqId++;
-    
+
     eclrequest->post(m_url, *eclresponse);
 
     return eclresponse.getClear();
@@ -112,7 +112,7 @@ IClientWsEclResp* CClientWsEclService::searchEx(IClientWsEclRequest* request,con
     return eclresponse.getClear();
 }
 
-IClientWsEclResp* CClientWsEclService::sendHttpRequest(IClientWsEclRequest* request, const char* method, const char* URL, 
+IClientWsEclResp* CClientWsEclService::sendHttpRequest(IClientWsEclRequest* request, const char* method, const char* URL,
                                                                                     const char *user, const char *pw, const char *realm,
                                                                                     const char* httpPostVariableName, bool encodeHttpPostBody)
 {
@@ -140,7 +140,7 @@ void CClientWsEclService::searchAsync(IClientWsEclRequest* request, IClientWsEcl
     eclrequest->setEvents(&events);
 
     m_reqId++;
-    
+
     //Released in new thread.
     eclrequest->Link();
     DBGLOG("Starting query thread...");

@@ -19,20 +19,20 @@
 
 #include "mptag.hpp"
 #include "jmutex.hpp"
-#include <jhash.hpp> 
-#include <jarray.hpp> 
+#include <jhash.hpp>
+#include <jarray.hpp>
 #include "jexcept.hpp"
 
 //for later reincluding mptag.hpp so default tags loaded into table
 #undef DEFTAG
 #undef DEFTAGRANGE
 #undef _DEFTAG
-#undef TAGENUM     
-#undef TAGENUMEND  
-#undef DEFSTDTAG 
+#undef TAGENUM
+#undef TAGENUMEND
+#undef DEFSTDTAG
 #define DEFSTDTAG(t, v)
-#define TAGENUM     
-#define TAGENUMEND  
+#define TAGENUM
+#define TAGENUMEND
 #define DEFTAG(x)   associateMPtag(x,#x,0); //tag,tracename,traceid
 #define DEFTAGRANGE(x,r)    associateMPtag(x,#x,0); //tag,tracename,traceid     // MORETBD
 

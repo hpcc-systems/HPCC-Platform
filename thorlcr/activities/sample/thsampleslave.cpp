@@ -53,11 +53,11 @@ public:
             if(!row)    {
                 numToSkip = whichSample ? whichSample - 1 : 0;
                 if(anyThisGroup) {
-                    anyThisGroup = false;           
+                    anyThisGroup = false;
                     break;
                 }
                 row.setown(inputStream->nextRow());
-                if(!row) 
+                if(!row)
                     break;
             }
             if(numToSkip == 0) {

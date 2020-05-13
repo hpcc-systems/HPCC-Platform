@@ -26,15 +26,15 @@ class CDaliDeploymentEngine : public CDeploymentEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-   CDaliDeploymentEngine(IEnvDeploymentEngine& envDepEngine, 
-                         IDeploymentCallback& callback, 
+   CDaliDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
+                         IDeploymentCallback& callback,
                          IPropertyTree& process);
 
 protected:
    virtual void startInstance(IPropertyTree& node, const char* fileName="startup");
    virtual void stopInstance (IPropertyTree& node, const char* fileName="stop"   );
 
-    void _deploy(bool useTempDir);   
+    void _deploy(bool useTempDir);
    void copyInstallFiles(IPropertyTree& instanceNode, const char* destPath);
     virtual const char* setCompare(const char *filename);
     virtual void compareFiles(const char *newFile, const char *oldFile);

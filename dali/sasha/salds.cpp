@@ -26,7 +26,7 @@ class CLargeDataStore: public CInterface, implements ILargeDataStore
             if (ldsprops&&ldsprops->hasProp("@rootdir"))
                 ldsrootdir = ldsprops->queryProp("@rootdir");
             StringBuffer dataPath;
-            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","sasha",serverConfig->queryProp("@name"),dataPath)) 
+            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","sasha",serverConfig->queryProp("@name"),dataPath))
                 ldsrootdir=dataPath.str();
             if (!isAbsolutePath(ldsrootdir)) {
                 char cpath[_MAX_DIR];
@@ -91,7 +91,7 @@ ILargeDataStore &queryLargeDataStore()
 StringBuffer &getLdsPath(const char *relpath, StringBuffer & res)
 {   // server side
     LargeDataStore.getLdsPathRoot(relpath,res);
-    recursiveCreateDirectory(addPathSepChar(res).str());        
+    recursiveCreateDirectory(addPathSepChar(res).str());
     return res;
 }
 

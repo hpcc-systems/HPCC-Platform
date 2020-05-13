@@ -162,7 +162,7 @@ public:
 
     StringBuffer& toString(StringBuffer& s)
     {
-        s.appendf("%s: %s (value: %s, rqr'ed access: %d, type: %s)", m_name.get(), m_description.str(), 
+        s.appendf("%s: %s (value: %s, rqr'ed access: %d, type: %s)", m_name.get(), m_description.str(),
             m_value.str(), m_required_access, resTypeDesc(m_resourcetype));
         return s;
     }

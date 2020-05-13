@@ -929,7 +929,7 @@ bool isSensibleRecord(IHqlExpression * record)
                     break;
                 }
             }
-            
+
             break;
         }
     }
@@ -1065,7 +1065,7 @@ void ImplicitProjectInfo::removeRowsFields(IHqlExpression * expr, IHqlExpression
 
 //------------------------------------------------------------------------
 
-ComplexImplicitProjectInfo::ComplexImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : ImplicitProjectInfo(_original, _kind) 
+ComplexImplicitProjectInfo::ComplexImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : ImplicitProjectInfo(_original, _kind)
 {
 }
 
@@ -1134,13 +1134,13 @@ void ComplexImplicitProjectInfo::trace()
 
     switch (getChildDatasetType(original))
     {
-    case childdataset_none: 
+    case childdataset_none:
     case childdataset_many_noscope:
     case childdataset_many:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
-    case childdataset_dataset_noscope: 
+    case childdataset_dataset_noscope:
     case childdataset_nway_left_right:
         break;
     case childdataset_dataset:
@@ -1152,7 +1152,7 @@ void ComplexImplicitProjectInfo::trace()
     case childdataset_left:
         trace("left", leftFieldsRequired);
         break;
-    case childdataset_leftright: 
+    case childdataset_leftright:
         trace("left", leftFieldsRequired);
         trace("right", rightFieldsRequired);
         break;
@@ -1804,12 +1804,12 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
             IHqlExpression * ds = expr->queryChild(0);
             switch (getChildDatasetType(expr))
             {
-            case childdataset_none: 
+            case childdataset_none:
             case childdataset_many_noscope:
             case childdataset_if:
             case childdataset_case:
             case childdataset_map:
-            case childdataset_dataset_noscope: 
+            case childdataset_dataset_noscope:
                 inheritActiveFields(expr, extra, 0, max);
                 //None of these have any scoped arguments, so no need to remove them
                 break;
@@ -1873,7 +1873,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                     inheritActiveFields(expr, extra, 0, 1);
                     break;
                 }
-            case childdataset_leftright: 
+            case childdataset_leftright:
                 {
                     IHqlExpression * leftDs = expr->queryChild(0);
                     IHqlExpression * rightDs = expr->queryChild(1);
@@ -1948,11 +1948,11 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
 }
 
 
-const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsed(IHqlExpression * expr) 
-{ 
+const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsed(IHqlExpression * expr)
+{
     ImplicitProjectInfo * extra = queryBodyExtra(expr);
 //  gatherFieldsUsed(expr, extra);
-    return extra->querySelectsUsed(); 
+    return extra->querySelectsUsed();
 }
 
 ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * expr)
@@ -3031,7 +3031,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     default:
         throwUnexpected();
     }
-    
+
     return transformed.getClear();
 }
 
@@ -3137,7 +3137,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
                     break;
                 }
             }
-            
+
             if (!anyProjected)
                 extra->setMatchingOutput(&extra->inputs.item(0));
             break;
@@ -3195,10 +3195,10 @@ void ImplicitProjectTransformer::insertProjects(IHqlExpression * expr)
             extra->insertProject = true;
         return;
     }
-        
+
     if (options.insertProjectCostLevel == 0)
         return;
-    
+
     if (extra->queryCostFactor(targetClusterType) < options.insertProjectCostLevel)
         return;
 
@@ -3306,12 +3306,12 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
     IHqlExpression * oldDs = oldExpr->queryChild(0);
     switch (getChildDatasetType(newExpr))
     {
-    case childdataset_none: 
+    case childdataset_none:
     case childdataset_many_noscope:
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
-    case childdataset_dataset_noscope: 
+    case childdataset_dataset_noscope:
         return LINK(newExpr);
         //None of these have any scoped arguments, so no need to remove them
         break;
@@ -3356,7 +3356,7 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
             OwnedHqlExpr oldRight = createSelector(no_right, oldExpr->queryChild(0), selSeq);
             return updateChildSelectors(ds1, oldRight, newRight, 1);
         }
-    case childdataset_leftright: 
+    case childdataset_leftright:
         {
             IHqlExpression * selSeq = querySelSeq(newExpr);
             assertex(selSeq == querySelSeq(oldExpr));
@@ -3429,7 +3429,7 @@ void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs)
     (simpleExpression, scopedExpression, activity) with virtuals to handle differences
 
   - removingChildReferences
-    would need matchesSelector(list, selector) which worked recursively.  
+    would need matchesSelector(list, selector) which worked recursively.
 
   */
 

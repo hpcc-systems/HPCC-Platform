@@ -20,7 +20,7 @@
 
 #include "esp.hpp"
 
-class CEspScrubbedXmlService : public CInterface, 
+class CEspScrubbedXmlService : public CInterface,
    implements IEspSimpleDataService,
     implements IEspSimpleDataRetrievalService,
     implements IEspWebService,
@@ -34,16 +34,16 @@ public:
 
     CEspScrubbedXmlService();
     virtual ~CEspScrubbedXmlService();
-    
+
 //interface IEspService
-   
-   virtual const char* getServiceType() 
+
+   virtual const char* getServiceType()
    {
       return "scrubbed_service";
    }
 
    virtual bool init(const char * name, const char * type, IPropertyTree * cfg, const char * process);
- 
+
 //interface IEspSimpleDataService
     virtual int onSimpleDataRequest(IEspContext &context, IEspSimpleDataRequest &req, IEspSimpleDataResponse &resp);
 

@@ -192,7 +192,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CXslCache()
     {
         m_cachetimeout = XSLT_DEFAULT_CACHETIMEOUT;

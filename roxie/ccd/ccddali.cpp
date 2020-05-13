@@ -857,7 +857,7 @@ public:
     virtual void registerDll(const char * name, const char * kind, const char * dllPath) { throwUnexpected(); }
     virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry) { throwUnexpected(); }
 
-    virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location) 
+    virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location)
     {
         if (location == DllLocationDirectory)
         {
@@ -891,7 +891,7 @@ public:
         }
         return queryDllServer().loadDll(name, location);
     }
-    virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location) 
+    virtual ILoadedDllEntry * loadDllResources(const char * name, DllLocationType location)
     {
         throwUnexpected();
     }

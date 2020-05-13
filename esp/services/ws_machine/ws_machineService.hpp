@@ -64,7 +64,7 @@ struct CField
 
    CField()
       : Value(0), Warn(0), Undefined(0)
-   {      
+   {
    }
     void serialize(StringBuffer& xml) const
     {
@@ -106,7 +106,7 @@ struct CFieldInfo
    double StandardDeviation;
    bool  Hide;
 
-   CFieldInfo() 
+   CFieldInfo()
       : Count(0),
         SumSquaredDeviations(0),
           Mean(0),
@@ -145,7 +145,7 @@ struct CFieldInfo
             {
                 if (isupper(*pch))
                     xml.append(' ');
-                xml.append(*pch++);     
+                xml.append(*pch++);
             }
             xml.append("</Caption>");
             xml.appendf("<Mean>%f</Mean>", Mean);
@@ -187,7 +187,7 @@ public:
    virtual ~CMetricsParam() {}
 
    StringBuffer       m_sAddress;
-   CFieldMap          m_fieldMap; 
+   CFieldMap          m_fieldMap;
 };
 
 class CProcessData : public CInterface
@@ -891,8 +891,8 @@ public:
     virtual ~CWsMachineThreadParam() {}
 
     StringBuffer          m_sAddress;
-    StringBuffer          m_sSecurityString; 
-    StringBuffer          m_sUserName; 
+    StringBuffer          m_sSecurityString;
+    StringBuffer          m_sUserName;
     StringBuffer          m_sPassword;
     Cws_machineEx*        m_pService;
 
@@ -919,7 +919,7 @@ protected:
 
 //the following class implements a worker thread
 //
-class CWsMachineThread : public CInterface, 
+class CWsMachineThread : public CInterface,
                          implements IPooledThread
 {
 public:
@@ -950,7 +950,7 @@ public:
     {
         return true;
     }
-   
+
 private:
     Owned<CWsMachineThreadParam> m_pParam;
 };

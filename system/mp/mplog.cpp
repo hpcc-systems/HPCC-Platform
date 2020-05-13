@@ -343,7 +343,7 @@ void LogMsgFilterReceiverThread::stop()
     {
         done = true;
         queryWorldCommunicator().cancel(parentNode, MPTAG_JLOG_PARENT_TO_CHILD);
-        Sleep(10); // swap 
+        Sleep(10); // swap
         if (!join(1000*60*5))   // should be pretty instant
             WARNLOG("LogMsgFilterReceiverThread::stop timed out");
     }
@@ -616,7 +616,7 @@ ILogMsgListener * startLogMsgListener()
         listener = createLogMsgManager();
     return listener;
 }
-    
+
 void stopLogMsgListener()
 {
     if(listener)

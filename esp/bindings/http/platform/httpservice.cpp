@@ -131,7 +131,7 @@ const char* getSubServiceDesc(sub_service stype)
 
     default: return "invalid-type";
     }
-} 
+}
 
 static bool authenticateOptionalFailed(IEspContext& ctx, IEspHttpBinding* binding)
 {
@@ -216,13 +216,13 @@ int CEspHttpServer::processRequest()
     {
         EspHttpBinding* thebinding = nullptr;
         Owned<IInterface> theBindingHolder; //hold on to the binding in case it gets released in the middle of processing a request
-        
+
         StringBuffer method;
         m_request->getMethod(method);
 
         EspAuthState authState=authUnknown;
         sub_service stype=sub_serv_unknown;
-        
+
         StringBuffer pathEx;
         StringBuffer serviceName;
         StringBuffer methodName;
@@ -335,7 +335,7 @@ int CEspHttpServer::processRequest()
                                     if (!strieq(serviceName, lbind->getServiceName(bindSvcName)))
                                         exactIsSubService = true;
                                 }
-                            }                           
+                            }
                         }
                     }
                 }
@@ -756,7 +756,7 @@ int CEspHttpServer::onGetXslt(CHttpRequest* request, CHttpResponse* response, co
 {
         if (!request || !response || !path)
             return -1;
-        
+
         StringBuffer mimetype, etag, lastModified;
         MemoryBuffer content;
         bool modified = true;
@@ -863,7 +863,7 @@ int CEspHttpServer::onPost()
 }
 
 int CEspHttpServer::onGet()
-{   
+{
     if (m_request && m_request->queryParameters()->hasProp("config_") && m_viewConfig)
     {
         StringBuffer mimetype, etag, lastModified;
@@ -897,7 +897,7 @@ int CEspHttpServer::onGet()
                 srvLink.appendf("/%s", srv.str());
                 if (ver)
                     srvLink.appendf("?ver_=%g", ver);
-                
+
                 list->appendContent(new CHtmlLink(srv.str(), srvLink.str()));
             }
         }
@@ -1199,14 +1199,14 @@ void CEspHttpServer::verifyCookie(EspAuthRequest& authReq, CESPCookieVerificatio
         cookie.verificationDetails.set("ESP cannot verify this cookie. It is one-time use only.");
     }
     else if (strieq(name, SESSION_START_URL_COOKIE))
-    {   
+    {
         //SESSION_START_URL_COOKIE: created as soon as a login process is started and used to redirect at the end of the login process.
-        //After the login process, ESP should remove this cookie if possible. This verify function is designed to verify cookies before 
+        //After the login process, ESP should remove this cookie if possible. This verify function is designed to verify cookies before
         //a login process is started. At that time, any SESSION_START_URL_COOKIE should be invalid.
         cookie.verificationDetails.set("ESP cannot verify this cookie. This cookie is only valid within a login process.");
     }
     else if (strieq(name, SESSION_ID_TEMP_COOKIE))
-    {   
+    {
         //SESSION_ID_TEMP_COOKIE: used for remembering UserID when a user is in AS_PASSWORD_VALID_BUT_EXPIRED state and updating password.
         //It is created before the updatepasswordinput is started. After the update process, ESP should remove this cookie if possible.
         //This verify function is designed to verify cookies before a login process is started. At that time, any SESSION_ID_TEMP_COOKIE

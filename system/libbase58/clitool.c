@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 		}
 	}
-	
+
 	size_t rt;
 	union {
 		uint8_t *b;
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		r.s = argv[optind];
 		rt = strlen(argv[optind]);
 	}
-	
+
 	if (decode)
 	{
 		uint8_t bin[decode];
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 			}
 			else
 				memcpy(cbin, &bin[decode - ssz], ssz);
-			
+
 			if (fwrite(cbin, ssz, 1, stdout) != 1)
 				return 3;
 		}

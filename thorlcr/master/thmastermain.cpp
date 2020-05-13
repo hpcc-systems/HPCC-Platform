@@ -22,11 +22,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <stdio.h> 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
-#include <direct.h> 
+#include <direct.h>
 #endif
 
 #include "build-config.h"
@@ -336,7 +336,7 @@ public:
             e->Release();
         }
         shutdown();
-        return false;   
+        return false;
     }
     void stop()
     {
@@ -425,7 +425,7 @@ CRegistryServer *CRegistryServer::registryServer = NULL;
 
 bool checkClusterRelicateDAFS(IGroup &grp)
 {
-    // check the dafilesrv is running (and right version) 
+    // check the dafilesrv is running (and right version)
     unsigned start = msTick();
     PROGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
@@ -593,7 +593,7 @@ int main( int argc, const char *argv[]  )
 
     setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
     StringBuffer daliServer;
-    if (!globals->getProp("@daliServers", daliServer)) 
+    if (!globals->getProp("@daliServers", daliServer))
     {
         LOG(MCerror, thorJob, "No Dali server list specified in THOR.XML (daliServers=iport,iport...)\n");
         return 0; // no recycle
@@ -616,7 +616,7 @@ int main( int argc, const char *argv[]  )
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
 
-    EnableSEHtoExceptionMapping(); 
+    EnableSEHtoExceptionMapping();
 #ifndef __64BIT__
     // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
@@ -664,15 +664,15 @@ int main( int argc, const char *argv[]  )
                 break;
             }
             catch (IJSOCK_Exception *e)
-            { 
+            {
                 if ((e->errorCode()!=JSOCKERR_port_in_use))
                     throw;
                 FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
-                if (retry++>10) 
+                if (retry++>10)
                     throw;
                 e->Release();
                 LOG(MCdebugProgress, thorJob, "Retrying");
-                Sleep(retry*2000);  
+                Sleep(retry*2000);
             }
         }
 
@@ -703,7 +703,7 @@ int main( int argc, const char *argv[]  )
                 globals->setPropTree("NAS", nasConfig.getLink()); // for use by slaves
             Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
-        
+
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
         globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
@@ -726,10 +726,10 @@ int main( int argc, const char *argv[]  )
             // For ChromeBook with 2GB RAM
             if (maxMem <= 2048)
             {
-                // Decrease max memory to 2/3 
-                maxMem = maxMem * 2 / 3; 
+                // Decrease max memory to 2/3
+                maxMem = maxMem * 2 / 3;
             }
-#endif            
+#endif
 #endif
 #endif
             if (globals->getPropBool("@localThor") && 0 == mmemSize)
@@ -816,7 +816,7 @@ int main( int argc, const char *argv[]  )
         if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
             globals->setProp("@query_so_dir", soDir.str());
         else if (!globals->getProp("@query_so_dir", soDir)) {
-            globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
+            globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR);
             soDir.append(DEFAULT_QUERY_SO_DIR);
         }
         if (isAbsolutePath(soDir.str()))
@@ -831,7 +831,7 @@ int main( int argc, const char *argv[]  )
         globals->setProp("@query_so_dir", soPath.str());
         recursiveCreateDirectory(soPath.str());
 
-        startLogMsgParentReceiver();    
+        startLogMsgParentReceiver();
         connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))
             setDaliServixSocketCaching(true); // speeds up deletes under linux
@@ -958,14 +958,14 @@ int main( int argc, const char *argv[]  )
 #endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         e->Release();
 #ifdef _CONTAINERIZED
         setExitCode(0); // do we ever want to exit with non-zero in K8s world - which prevents job completing
 #endif
-        
+
     }
 
     // cleanup handler to be sure we end

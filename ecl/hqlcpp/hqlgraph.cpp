@@ -577,7 +577,7 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
         {
             if (name)
             {
-                //module and name supplied.  module may be the form <module>.<attr>.  
+                //module and name supplied.  module may be the form <module>.<attr>.
                 //If so, display <module>.<attr> if the name matches the attr, else <module>.<attr>::<name>
                 const char * dot = strrchr(str(module), '.');
                 if (dot)

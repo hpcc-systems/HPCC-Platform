@@ -28,7 +28,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <signal.h>  
+#include <signal.h>
 #include <errno.h>
 #else
 #include <sys/types.h>
@@ -88,18 +88,18 @@ bool CEspProtocolThread::onRequest()
 void CEspProtocolThread::setSocket(ISocket *sock)
 {
     CriticalBlock block(sect);
-    
+
     m_socket.setown(sock);
     //DBGLOG("%s -- serving socket(%d):", this->getServiceName(), sock->OShandle());
-    
+
     char xname[256]={0};
-    
+
     m_socket->name(xname, 256);
     //DBGLOG("... on net address(%s)", xname);
-    
+
     m_socket->peer_name(xname, 256);
     //DBGLOG("... from net address(%s)", xname);
-    
+
     ticksem.signal();
 }
 
@@ -107,14 +107,14 @@ void CEspProtocolThread::setSocket(ISocket *sock)
 void CEspProtocolThread::stop(bool wait)
 {
     terminating = true;
-    
+
     ticksem.signal();
-    
+
     //if (wait)
     //  join();
 }
 
-//Unused code cause Linker warning LNK4089: 
+//Unused code cause Linker warning LNK4089:
 // all references to 'dynamic-link library' discarded by /OPT:REF
 
 #if 0
@@ -126,7 +126,7 @@ bool wait_to_exit(bool can_continue, ISocket* sock, int timeoutsecs)
     int sockid = sock->OShandle();
     fd_set rdfds;
     timeval selecttimeout;
-    
+
     FD_ZERO(&rdfds);
     FD_SET(sockid, &rdfds);
 
@@ -135,7 +135,7 @@ bool wait_to_exit(bool can_continue, ISocket* sock, int timeoutsecs)
 
     int availread = 0;
     int n = select(sockid + 1, &rdfds, NULL, NULL, &selecttimeout);
-    if (n < 0) 
+    if (n < 0)
     {
         if (errno != EINTR) {
             DBGLOG("error selecting in wait_to_exit() error %d\n", errno);
@@ -171,16 +171,16 @@ bool wait_to_exit(bool can_continue, ISocket* sock, int timeoutsecs)
 int CEspProtocolThread::run()
 {
     Link();
-    try 
+    try
     {
-        bool can_continue = false;      
+        bool can_continue = false;
         do
         {
             can_continue = onRequest();
         }
         while (can_continue);
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) in CEspProtocolThread::run while processing request.", e->errorCode(), e->errorMessage(estr).str());

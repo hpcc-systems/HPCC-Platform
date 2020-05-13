@@ -46,14 +46,14 @@ void usage()
 
 Owned<IRemoteAgent> ragent(0);
 
-bool ControlHandler() 
+bool ControlHandler()
 {
     if (ragent)
     {
         ragent->stop();
     }
-    return false; 
-} 
+    return false;
+}
 
 int main(int argc, char** argv)
 {
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
         Owned<IRemoteCommand> rcmd=createRemoteCommand();
         bool nowait=false, network=true;
-        
+
         if (argc<2)
             usage();
 
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 
                 case 'm':
                 {
-                    
+
                     char buf[256];
                     for(ifstream ips(arg+1);ips && ips.getline(buf,sizeof(buf));)
                     {

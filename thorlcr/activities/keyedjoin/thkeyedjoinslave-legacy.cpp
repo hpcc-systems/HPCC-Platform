@@ -431,7 +431,7 @@ public:
         finger->next->prev = head->prev; // set prev of elem after eog to elem before head
         head->prev = NULL; // group extract set head of group to NULL
         CJoinGroup *next = finger->next;
-        finger->next = NULL;       // end of group  
+        finger->next = NULL;       // end of group
         return next;
     }
     void processCompletedGroups(CJoinGroup *jg, IJoinGroupNotify &notify)
@@ -970,7 +970,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             RtlDynamicRowBuilder fetchInRow(owner.fetchInputMetaAllocator);
             byte *fetchInRowPtr = fetchInRow.getSelf();
             memcpy(fetchInRowPtr, &fpos, sizeof(fpos));
-            fetchInRowPtr += sizeof(fpos); 
+            fetchInRowPtr += sizeof(fpos);
             memcpy(fetchInRowPtr, &jg, sizeof(jg));
             fetchInRowPtr += sizeof(jg);
 
@@ -1143,7 +1143,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             if (0 == total)
                                 break;
                             msg.clear();
-                        }                   
+                        }
                     }
                 }
             }
@@ -1303,7 +1303,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             break;
                         }
                     }
-                    
+
                     if (owner.helper->leftCanMatch(row))
                     {
                         owner.helper->extractIndexReadFields(lhs, row);
@@ -1473,7 +1473,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             size32_t lorsz = owner.keyLookupAllocator->queryOutputMeta()->getRecordSize(lookupRow.getSelf());
                             // must be easier way
                             return lookupRow.finalizeRowClear(lorsz);
-                        }                       
+                        }
 
                         currentJG = extractIndexFields(indexReadFieldsRow);
                         //GH: More - reuse of indexReadFieldsRow without finalize means this could be leaking.
@@ -1862,7 +1862,7 @@ public:
         return true;
     }
     virtual void onLimitExceeded() { return; }
-    
+
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -1886,7 +1886,7 @@ public:
         unsigned aS = additionalStats;
         while (aS--) _statsArr.append(0);
         statsArr = _statsArr.getArray();
-        
+
         fixedRecordSize = helper->queryIndexRecordSize()->getFixedSize(); // 0 if variable and unused
         node = queryJobChannel().queryMyRank()-1;
         onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
@@ -2326,7 +2326,7 @@ public:
                 }
                 else
                 {
-                    { 
+                    {
                         CriticalBlock b(onCompleteCrit);
                         doneJG.setown(doneGroups.dequeue());
                     }
@@ -2433,9 +2433,9 @@ friend class CPRowStream;
 friend class CPRowStream::CKeyLookupPoolMember;
 };
 
-CActivityBase *createKeyedJoinSlave(CGraphElementBase *container) 
-{ 
-    return new CKeyedJoinSlave(container); 
+CActivityBase *createKeyedJoinSlave(CGraphElementBase *container)
+{
+    return new CKeyedJoinSlave(container);
 }
 
 } // end of namespace

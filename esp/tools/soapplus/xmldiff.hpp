@@ -29,7 +29,7 @@ class CXmlDiff : public CInterface, implements IInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CXmlDiff(IProperties* globals, const char* left, const char* right, IPropertyTree* cfgtree);
     virtual ~CXmlDiff() {}
     bool compare();

@@ -199,8 +199,8 @@ void checkNode(int f, KeyHdr &h, offset_t thisnode)
     {
         NodeHdr &nodeHdr = *(NodeHdr *) nodeData;
         swap(nodeHdr);
-        if ( nodeHdr.rightSib > h.phyrec || 
-             nodeHdr.leftSib > h.phyrec || 
+        if ( nodeHdr.rightSib > h.phyrec ||
+             nodeHdr.leftSib > h.phyrec ||
              nodeHdr.rightSib % h.nodeSize ||
              nodeHdr.leftSib % h.nodeSize ||
              nodeHdr.keyBytes == 0 ||
@@ -269,8 +269,8 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
         }
         NodeHdr &nodeHdr = *(NodeHdr *) nodeData;
         swap(nodeHdr);
-        if ( nodeHdr.rightSib > h.phyrec || 
-             nodeHdr.leftSib > h.phyrec || 
+        if ( nodeHdr.rightSib > h.phyrec ||
+             nodeHdr.leftSib > h.phyrec ||
              nodeHdr.rightSib % h.nodeSize ||
              nodeHdr.leftSib % h.nodeSize ||
              nodeHdr.keyBytes == 0 ||
@@ -304,7 +304,7 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
                 totalExpandSize += expandSize;
             }
         }
-        else 
+        else
         {
             unsigned nodeKeyLength = h.nodeKeyLength;
             if (nodeKeyLength==(unsigned)-1)
@@ -339,13 +339,13 @@ void usage(int exitCode)
     printf("  -node <hexoffset> only check node at specified offset\n");
     printf("  -noleaf           skip leaf level\n");
     printf("  -quick            just check quick stats\n");
-    
+
     exit(exitCode);
 }
 
 int main(int argc, const char *argv[])
 {
-    if (argc<2) 
+    if (argc<2)
         usage(0);
 
     int arg = 1;
@@ -359,7 +359,7 @@ int main(int argc, const char *argv[])
         {
             ++arg;
             if (arg>=argc)
-                usage(1);           
+                usage(1);
             errorLimit = strtoul(argv[arg], NULL, 10);
             if (!errorLimit)
                 errorLimit = (unsigned) -1;
@@ -368,7 +368,7 @@ int main(int argc, const char *argv[])
         {
             ++arg;
             if (arg>=argc)
-                usage(1);           
+                usage(1);
             nodeAddress = strtoul(argv[arg], NULL, 16);
             checkCRC = true;
         }

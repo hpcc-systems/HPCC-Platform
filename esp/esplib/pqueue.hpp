@@ -46,7 +46,7 @@ public:
     ~WaitQueue()
     {
         stop();
-        synchronized block(*this); 
+        synchronized block(*this);
         while(waiting)
         {
             counter.signal(waiting); // actually need only one and only once
@@ -100,7 +100,7 @@ public:
         synchronized block(*this);
         return stopped;
     }
-    
+
 private:
 
     bool wait(unsigned timeout)
@@ -136,7 +136,7 @@ interface IErrorListener: extends IInterface
 class TaskQueue
 {
 public:
-    TaskQueue(size32_t _maxsize,IErrorListener* _err=0): maxsize(_maxsize), err(_err) 
+    TaskQueue(size32_t _maxsize,IErrorListener* _err=0): maxsize(_maxsize), err(_err)
     {
     }
 
@@ -165,7 +165,7 @@ public:
     {
         queue.stop();
 
-        synchronized block(mworkers); 
+        synchronized block(mworkers);
         for(Workers::iterator it=workers.begin();it!=workers.end();it++)
             (*it)->stop(); // no good if threads did not clean up
     }
@@ -199,7 +199,7 @@ private:
     class WorkerThread: public Thread
     {
     public:
-        WorkerThread(TaskQueue& _tq): tq(_tq), stopped(false) 
+        WorkerThread(TaskQueue& _tq): tq(_tq), stopped(false)
         {
         }
 
@@ -207,7 +207,7 @@ private:
         {
             for(;;)
             {
-                
+
                 try
                 {
                     task.setown(tq.queue.get(1000).get());
@@ -231,7 +231,7 @@ private:
             Release(); // There should be one more
             return 0;
         }
-        
+
 
         bool stop()
         {
@@ -259,7 +259,7 @@ private:
             mworkers.notifyAll();
     }
 
- 
+
     WaitQueue<Linked<ITask> > queue;
 
     size32_t maxsize;

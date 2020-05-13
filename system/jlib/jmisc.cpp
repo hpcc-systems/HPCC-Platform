@@ -45,15 +45,15 @@
                       if (logFile) fprintf(logFile, "%s", s); }
 
 void _rev(size32_t len, void * _ptr)
-{ 
+{
     byte * ptr = (byte *)_ptr;
-    while (len > 1) 
-    { 
-        byte t = *ptr; 
-        *ptr = ptr[--len]; 
-        ptr[len] = t; 
-        len--; 
-        ptr++; 
+    while (len > 1)
+    {
+        byte t = *ptr;
+        *ptr = ptr[--len];
+        ptr[len] = t;
+        len--;
+        ptr++;
     }
 }
 
@@ -142,7 +142,7 @@ public:
                 if (logFile)
                     fprintf(logFile, " TICK=%u ", clock);
             }
-#if defined(_WIN32) 
+#if defined(_WIN32)
             if (detail & _LOG_TID)
             {
                 fprintf(stdlog, "TID=%d ", GetCurrentThreadId());
@@ -266,7 +266,7 @@ jlib_decl void PrintMemoryStatusLog()
        hinfo._pentry = NULL;
        size32_t max=0;
        unsigned fragments=0;
-       while( ( heapstatus = _heapwalk( &hinfo ) ) == _HEAPOK ) { 
+       while( ( heapstatus = _heapwalk( &hinfo ) ) == _HEAPOK ) {
            if (hinfo._useflag != _USEDENTRY) {
                 if (hinfo._size>max)
                     max = hinfo._size;
@@ -309,7 +309,7 @@ FILE *xfopen(const char *path, const char *mode)
             *p = PATHSEPCHAR;
         }
     }
-    if (alt) 
+    if (alt)
         printf("XFOPEN ALTERED FILENAME FROM:%s TO %s\n", path, s);
     FILE *file = ::fopen(s, mode);
     free(s);
@@ -365,12 +365,12 @@ jlib_decl char* readarg(char*& curptr)
     }
     char *ret = cur;
 
-    if (quote) 
+    if (quote)
     {
         while (*cur && *cur!=quote)
             cur++;
     }
-    else 
+    else
     {
         do {
             cur++;
@@ -413,7 +413,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         }
     }
     if (outh) {
-        if (!DuplicateHandle(GetCurrentProcess(),outh,GetCurrentProcess(),&StartupInfo.hStdOutput, 0, TRUE, DUPLICATE_SAME_ACCESS) || 
+        if (!DuplicateHandle(GetCurrentProcess(),outh,GetCurrentProcess(),&StartupInfo.hStdOutput, 0, TRUE, DUPLICATE_SAME_ACCESS) ||
              !DuplicateHandle(GetCurrentProcess(),outh,GetCurrentProcess(),&StartupInfo.hStdError, 0, TRUE, DUPLICATE_SAME_ACCESS))
         {
             OERRLOG("Execution of \"%s\" failed, DuplicateHandle error = %d",command_line, (int)GetLastError());
@@ -437,10 +437,10 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         if (rethandle) {
             *rethandle = (HANDLE)ProcessInformation.hProcess;
             if (wait)
-                CloseHandle(ProcessInformation.hProcess); 
+                CloseHandle(ProcessInformation.hProcess);
         }
         else
-            CloseHandle(ProcessInformation.hProcess); 
+            CloseHandle(ProcessInformation.hProcess);
     }
     else
     {
@@ -460,7 +460,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
 bool wait_program(HANDLE handle,DWORD &runcode,bool block)
 {
     runcode = (DWORD)-1;
-    if ((handle==NULL)||(handle==(HANDLE)-1))  
+    if ((handle==NULL)||(handle==(HANDLE)-1))
         return true; // actually it failed
     int ret = WaitForSingleObject(handle,block?INFINITE:0);
     int err = GetLastError();
@@ -494,9 +494,9 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         *rethandle = 0;
     if(!command_line || !*command_line)
         return false;
-  
+
     pid_t pid = fork();
-    if (pid == 0) 
+    if (pid == 0)
     {
         //Force the child process into its own process group, so we can terminate it and its children.
         if (newProcessGroup)
@@ -518,7 +518,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
         int size = 10;
         char **args;
         char **argptr = args = (char **) malloc(sizeof(args) * size);
-        char **over = argptr+size; 
+        char **over = argptr+size;
 
         char *cl = strdup(command_line);
         char *curptr = cl;
@@ -532,7 +532,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
                 args = (char **) realloc(args, sizeof(args) * size * 2);
                 argptr = args+size;
                 size *= 2;
-                over = args+size; 
+                over = args+size;
             }
             *argptr = readarg(curptr);
         }
@@ -746,17 +746,17 @@ bool notifyOnAbort(ahType type)
 }
 
 #ifdef _WIN32
-BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType ) 
-{ 
-    switch( dwCtrlType ) 
-    { 
-        case CTRL_BREAK_EVENT:  // use Ctrl+C or Ctrl+Break to simulate 
-        case CTRL_C_EVENT:      // SERVICE_CONTROL_STOP in debug mode 
+BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType )
+{
+    switch( dwCtrlType )
+    {
+        case CTRL_BREAK_EVENT:  // use Ctrl+C or Ctrl+Break to simulate
+        case CTRL_C_EVENT:      // SERVICE_CONTROL_STOP in debug mode
         case CTRL_CLOSE_EVENT:
         {
             hadAbortSignal = true;
             bool doExit = notifyOnAbort(ahInterrupt);
-            return !doExit; 
+            return !doExit;
         }
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
@@ -764,22 +764,22 @@ BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType )
             notifyOnAbort(ahTerminate);
             return FALSE;
     }
-    return FALSE; 
-} 
+    return FALSE;
+}
 
-BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType ) 
-{ 
-    switch( dwCtrlType ) 
-    { 
-        case CTRL_BREAK_EVENT:  // use Ctrl+C or Ctrl+Break to simulate 
-        case CTRL_C_EVENT:      // SERVICE_CONTROL_STOP in debug mode 
+BOOL WINAPI ModuleExitHandler ( DWORD dwCtrlType )
+{
+    switch( dwCtrlType )
+    {
+        case CTRL_BREAK_EVENT:  // use Ctrl+C or Ctrl+Break to simulate
+        case CTRL_C_EVENT:      // SERVICE_CONTROL_STOP in debug mode
         case CTRL_CLOSE_EVENT:
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
             ExitModuleObjects();
     }
-    return FALSE; 
-} 
+    return FALSE;
+}
 #elif defined(__linux__) || defined(__APPLE__)
 static void UnixAbortHandler(int signo)
 {
@@ -801,14 +801,14 @@ void queryInstallAbortHandler()
         return;
 
 #if defined(_WIN32)
-    SetConsoleCtrlHandler( WindowsAbortHandler, TRUE ); 
+    SetConsoleCtrlHandler( WindowsAbortHandler, TRUE );
 #elif defined(__linux__) || defined(__APPLE__)
     struct sigaction action;
     sigemptyset(&action.sa_mask);
     action.sa_flags = SA_RESTART;
     action.sa_handler = (void(*)(int))UnixAbortHandler;
     if (sigaction(SIGINT,  &action, NULL) == -1 ||
-        sigaction(SIGQUIT, &action, NULL) == -1 || 
+        sigaction(SIGQUIT, &action, NULL) == -1 ||
         sigaction(SIGTERM, &action, NULL) == -1)
     {
         perror("sigaction in queryInstallAbortHandler failed");
@@ -919,10 +919,10 @@ void throwAbortException()
     throw MakeStringException(JLIBERR_UserAbort, "Operation aborted by user");
 }
 
-void throwExceptionIfAborting() 
-{ 
+void throwExceptionIfAborting()
+{
     if (isAborting())
-        throwAbortException(); 
+        throwAbortException();
 }
 
 //========================================================================================================================

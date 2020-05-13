@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-// If anyone wants to try and understand crcs especially combining them, try reading 
+// If anyone wants to try and understand crcs especially combining them, try reading
 // http://www.repairfaq.org/filipg/LINK/F_LINK_IN.html if you want to stand any chance!
 
 #ifndef __JCRC__
@@ -80,7 +80,7 @@ inline unsigned short chksum16(const void *ptr,size32_t sz)
         sum += *p++;
         sz -= 2;
     }
-    if (sz) 
+    if (sz)
         sum += *(const byte *)p;
     sum = (sum >> 16) + (sum & 0xffff);       // add in carrys
     sum += (sum >> 16);                       // and again

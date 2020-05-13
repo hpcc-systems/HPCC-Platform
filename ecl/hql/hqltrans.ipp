@@ -136,8 +136,8 @@ extern HQL_API bool isTransformTracing();
 class HQL_API HqlTransformerBase
 {
 public:
-    inline HqlTransformerBase(HqlTransformerInfo & _info) : info(_info) 
-    { 
+    inline HqlTransformerBase(HqlTransformerInfo & _info) : info(_info)
+    {
         beginTime();
         try
         {
@@ -153,14 +153,14 @@ public:
             printf(">%d>%s\n", queryCurrentTransformDepth(), info.name);
 #endif
     }
-    inline ~HqlTransformerBase() 
-    { 
+    inline ~HqlTransformerBase()
+    {
 #ifdef ALLOW_TRANSFORM_TRACING
         if (isTransformTracing())
             printf("<%d<%s\n", queryCurrentTransformDepth(), info.name);
 #endif
         noteMemory();
-        unlockTransformMutex(); 
+        unlockTransformMutex();
         endTime();          // must come after unlockTransformMutex
 #ifdef TRANSFORM_STATS
         info.tally(stats);
@@ -171,8 +171,8 @@ public:
     void beginTime();
     void endTime();
     void noteChildTime(cycle_t childTime, bool recursive)
-    { 
-        stats.childTime += childTime; 
+    {
+        stats.childTime += childTime;
         if (recursive)
             stats.recursiveTime += childTime;
     }
@@ -246,7 +246,7 @@ public:
     void transformArray(const HqlExprArray & in, HqlExprArray & out);
 
     inline IHqlExpression * queryAlreadyTransformed(IHqlExpression * expr)
-    { 
+    {
         return static_cast<IHqlExpression *>(expr->queryTransformExtra());
     }
     void setMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
@@ -276,7 +276,7 @@ public:
     DebugDifferenceAnalyser(IIdAtom * _search);
 
     virtual void doAnalyse(IHqlExpression * expr);
-    
+
 protected:
     IHqlExpression * prev;
     IIdAtom * search;
@@ -288,11 +288,11 @@ class HQL_API HqlSectionAnnotator : public QuickHqlTransformer
 {
 public:
     HqlSectionAnnotator(IHqlExpression * section);
-    
+
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr);
 
     void noteInput(IHqlExpression * expr);
-    
+
 protected:
     OwnedHqlExpr sectionAttr;
 };
@@ -329,8 +329,8 @@ public:
     inline void setUnvisited() { lastPass = (byte)-1; }
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
-    void *operator new(size32_t size, void * ptr) { return ptr; }                                                   
-    void *operator new(size32_t size);      // cause a link error if called.    
+    void *operator new(size32_t size, void * ptr) { return ptr; }
+    void *operator new(size32_t size);      // cause a link error if called.
     void operator delete(void *ptr, void * x)   { }
     void operator delete(void *ptr) { }
 #endif
@@ -356,22 +356,22 @@ class HQL_API NewTransformInfo : public ANewTransformInfo
 public:
     NewTransformInfo(IHqlExpression * _original) : ANewTransformInfo(_original) {}
 
-    inline IHqlExpression * inlineQueryTransformed()                
-    { 
+    inline IHqlExpression * inlineQueryTransformed()
+    {
         if (flags & NTFtransformOriginal)
             return original;
         else
-            return transformed; 
+            return transformed;
     }
-    inline IHqlExpression * inlineQueryTransformedSelector()        
+    inline IHqlExpression * inlineQueryTransformedSelector()
     {
         if (flags & NTFselectorOriginal)
             return original;
         else
-            return transformedSelector; 
+            return transformedSelector;
     }
-    inline void inlineSetTransformed(IHqlExpression * expr)     
-    { 
+    inline void inlineSetTransformed(IHqlExpression * expr)
+    {
         if (expr == original)
         {
             flags |= NTFtransformOriginal;
@@ -380,11 +380,11 @@ public:
         else
         {
             flags &= ~NTFtransformOriginal;
-            transformed.set(expr); 
+            transformed.set(expr);
         }
     }
     inline void inlineSetTransformedSelector(IHqlExpression * expr)
-    { 
+    {
         if (expr == original)
         {
             flags |= NTFselectorOriginal;
@@ -393,7 +393,7 @@ public:
         else
         {
             flags = (flags & ~NTFselectorOriginal);
-            transformedSelector.set(expr); 
+            transformedSelector.set(expr);
         }
     }
 
@@ -596,7 +596,7 @@ a) Unless always unconditionally global, the expression tree is first analysed t
 b) When analysing sequential/workflow are not recursed into.  IF actions are recursed, but noted as conditional
 c) There is a new (pure virtual) method transformIndependent() which is called to independently process a sequential branch etc.
 d) Expressions are only hoisted if used unconditionally (or always unconditionally hoisted)
-e) IF() actions are handled by 
+e) IF() actions are handled by
    i) transforming the children - (will hoist if used unconditionally elsewhere)
    ii) recursively calling transformIndependent() on children.
 f) If no unconditional candidates are found when analysing, it should be possible to short-circuit the transform.
@@ -654,7 +654,7 @@ class ConditionalTransformInfo : public NewTransformInfo
     enum { CTFunconditional = 1, CTFfirstunconditional = 2 };
 public:
     ConditionalTransformInfo(IHqlExpression * _original) : NewTransformInfo(_original) { spareByte1 = 0; }
-    
+
     inline bool isUnconditional() const { return (spareByte1 & CTFunconditional) != 0; }
     inline bool isFirstUseUnconditional() const { return (spareByte1 & CTFfirstunconditional) != 0; }
 
@@ -667,7 +667,7 @@ private:
 
 //This allows expressions to be evaluated in a nested context, so that once that nested context is finished
 //all the mapped expressions relating to that nested context are removed, and not commoned up.
-//Useful for processing 
+//Useful for processing
 class HQL_API ConditionalHqlTransformer : public NewHqlTransformer
 {
 public:
@@ -999,7 +999,7 @@ public:
     {
         queryExtra(expr)->setTransformed(transformed, isHidden);
     }
-        
+
     virtual void setTransformedSelector(IHqlExpression * expr, IHqlExpression * transformed)
     {
         queryExtra(expr)->setTransformedSelector(transformed, isHidden);
@@ -1039,15 +1039,15 @@ class HQL_API ScopeInfo : public CInterface
 public:
     ScopeInfo(IHqlExpression * _context) : context(_context) { isWithin = false; }
     inline void clear()                                             { dataset.clear(); left.clear(); right.clear(); }
-    inline void setDataset(IHqlExpression * _dataset, IHqlExpression * transformed)             
+    inline void setDataset(IHqlExpression * _dataset, IHqlExpression * transformed)
                                                                     { dataset.set(_dataset); transformedDataset.set(transformed); }
-    inline void setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * transformed, IHqlExpression * _seq)              
+    inline void setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * transformed, IHqlExpression * _seq)
                                                                     { dataset.set(_dataset); transformedDataset.set(transformed); left.set(_dataset); seq.set(_seq); }
     inline void setLeft(IHqlExpression * _left, IHqlExpression * _seq)
                                                                     { left.set(_left); seq.set(_seq); }
-    inline void setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * _seq) 
+    inline void setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * _seq)
                                                                     { left.set(_left); right.set(_right); seq.set(_seq); }
-    inline void setTopLeftRight(IHqlExpression * _dataset, IHqlExpression * transformed, IHqlExpression * _seq)         
+    inline void setTopLeftRight(IHqlExpression * _dataset, IHqlExpression * transformed, IHqlExpression * _seq)
                                                                     { dataset.set(_dataset); transformedDataset.set(transformed); left.set(_dataset); right.set(_dataset); seq.set(_seq); }
 
     inline bool isEmpty()                                           { return !dataset && !left; }
@@ -1108,15 +1108,15 @@ protected:
     virtual void noteTransformedOnce(IHqlExpression * expr) {}
 
     virtual void clearDataset(bool nested);
-    virtual bool setDataset(IHqlExpression * _dataset, IHqlExpression * _transformed)               
+    virtual bool setDataset(IHqlExpression * _dataset, IHqlExpression * _transformed)
                                                     { assertHasScope(); innerScope->setDataset(_dataset, _transformed); return true; }
-    virtual bool setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * _seq)            
+    virtual bool setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * _seq)
                                                     { assertHasScope(); innerScope->setDatasetLeft(_dataset, _transformed, _seq); return true; }
     virtual bool setLeft(IHqlExpression * _left, IHqlExpression * _seq)
                                                     { assertHasScope(); innerScope->setLeft(_left, _seq); return true; }
-    virtual bool setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * _seq)                       
+    virtual bool setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * _seq)
                                                     { assertHasScope(); innerScope->setLeftRight(_left, _right, _seq); return true; }
-    virtual bool setTopLeftRight(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * _seq)           
+    virtual bool setTopLeftRight(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * _seq)
                                                     { assertHasScope(); innerScope->setTopLeftRight(_dataset, _transformed, _seq); return true; }
 
     virtual void suspendAllScopes(ScopeSuspendInfo & info);
@@ -1238,10 +1238,10 @@ bool containsExternalParameter(IHqlExpression * expr, IHqlExpression * params);
 /*
 
 If something can be transformed more than one way depending on the context then must either
-i) don't call transform() on the children that are dependant, 
+i) don't call transform() on the children that are dependant,
    [loses commoning up when transforming, and should not be done for fields or nything else
     that can be referred to]
-ii) make it dependant on the thing that can change - e.g., 
+ii) make it dependant on the thing that can change - e.g.,
     a) parent dataset
     b) parent table.
     c) containing activity kind.

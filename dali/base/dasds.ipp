@@ -587,7 +587,7 @@ public:
         root->Release();
         matchTree->Release();
     }
-    
+
     StringBuffer &getCurrentPath(StringBuffer &out)
     {
         if (!currentChild) return out;

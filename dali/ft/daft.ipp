@@ -42,14 +42,14 @@ public:
 
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,bool forceget,bool dontsetattr);
-    virtual bool compress(IDistributedFile * file);                                                  
+    virtual bool compress(IDistributedFile * file);
     virtual offset_t getCompressedSize(IDistributedFile * part);
 
 //operations on a file part
     virtual IFile *getIFile(IDistributedFilePart * part, unsigned copy);
     virtual offset_t getSize(IDistributedFilePart * part,bool forceget,bool dontsetattr);
     virtual void replicate(IDistributedFilePart * part, INode *node);
-    virtual bool compress(IDistributedFilePart * part);                                                  
+    virtual bool compress(IDistributedFilePart * part);
     virtual offset_t getCompressedSize(IDistributedFilePart * part);
 };
 

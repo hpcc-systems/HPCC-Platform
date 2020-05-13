@@ -45,7 +45,7 @@ void CRoxieDeploymentEngine::checkInstance(IPropertyTree& node) const
 //  start
 //---------------------------------------------------------------------------
 void CRoxieDeploymentEngine::start()
-{   
+{
     if (m_instances.ordinality() > 0)
     {
       checkAbort();

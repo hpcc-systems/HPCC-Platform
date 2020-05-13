@@ -33,7 +33,7 @@
 
 //===========================================================================
 
-template <class T> 
+template <class T>
 void cloneLinkedArray(T & target, const T & source)
 {
     ForEachItemIn(i, source)
@@ -109,7 +109,7 @@ StringBuffer & TomGuard::getDebugText(StringBuffer & out)
         feature->getName(out).append("=");
     return out;
 }
-    
+
 StringBuffer & TomMaskGuard::getDebugText(StringBuffer & out)
 {
     TomGuard::getDebugText(out);
@@ -271,8 +271,8 @@ bool TomNonTerminalStep::calcFirst(bool isRoot, TomTokenSet & tokens)
 
 //-- Non Terminal
 
-bool TomNonTerminalStep::canBeNull() 
-{ 
+bool TomNonTerminalStep::canBeNull()
+{
     return rule->canBeNull();
 }
 
@@ -284,9 +284,9 @@ StringBuffer & TomNonTerminalStep::getDebugText(StringBuffer & out)
 }
 
 
-unsigned TomNonTerminalStep::getId() 
-{ 
-    return rule->getId(); 
+unsigned TomNonTerminalStep::getId()
+{
+    return rule->getId();
 }
 
 TomProduction * TomNonTerminalStep::queryExpandRules()
@@ -1447,7 +1447,7 @@ void TomitaContext::generateLexer()
 
 //---------------------------------------------------------------------------
 
-inline int compareLRItem(HqlLRItem * left, HqlLRItem * right) 
+inline int compareLRItem(HqlLRItem * left, HqlLRItem * right)
 {
     if (left->production->seq < right->production->seq)
         return -1;
@@ -1461,7 +1461,7 @@ inline int compareLRItem(HqlLRItem * left, HqlLRItem * right)
 }
 
 int compareLRItem(CInterface * const * left, CInterface * const * right)
-{ 
+{
     return compareLRItem((HqlLRItem *)*left, (HqlLRItem *)*right);
 }
 
@@ -1511,9 +1511,9 @@ bool HqlLRItemSet::equals(const HqlLRItemSet & other) const
     return true;
 }
 
-StringBuffer & HqlLRGoto::getDebugText(StringBuffer & out)          
-{ 
-    return out.append(symbol).append("->").append(state->id); 
+StringBuffer & HqlLRGoto::getDebugText(StringBuffer & out)
+{
+    return out.append(symbol).append("->").append(state->id);
 }
 
 void HqlLRState::addItem(TomProduction * production, unsigned idx)
@@ -1556,7 +1556,7 @@ void HqlLRState::buildStateItem(LRTableBuilder & builder, TomProduction * produc
             step->calcFirst(true, tokens);
             ForEachItemIn(idx, tokens)
             {
-                TomToken & cur = tokens.item(idx); 
+                TomToken & cur = tokens.item(idx);
                 HqlLRState * gotoState = queryGoto(cur.getId());
                 assertex(gotoState);
                 builder.addShift(cur.getId(), gotoState->id);
@@ -1631,13 +1631,13 @@ HqlLRState * HqlLRState::queryGoto(token_id id)
 }
 
 
-static inline int compareState(HqlLRState * left, HqlLRState * right) 
-{ 
+static inline int compareState(HqlLRState * left, HqlLRState * right)
+{
     return left->items.compare(right->items);
 }
 
 static int compareState(CInterface * const * left, CInterface * const * right)
-{ 
+{
     return compareState((HqlLRState *)*left, (HqlLRState *)*right);
 }
 
@@ -1737,7 +1737,7 @@ void TomitaContext::calculateStates()
 void TomitaContext::calculateFollowing()
 {
     //first(x) and canBeNull(x) are calculated on request
-    
+
     //Need to be careful about recursion:  keep repeating until no more items added.
     grammarRule->addFollowOwn(*LINK(eofToken));
     for (;;)
@@ -1908,7 +1908,7 @@ bool TomitaContext::isToken(IHqlExpression * expr, bool expandTokens)
         return true;
     }
 }
-        
+
 
 TomRule * TomitaContext::queryDefine(IHqlExpression * defineName)
 {
@@ -1965,7 +1965,7 @@ ToDo:
 * Features
   o Need to process implicit guards and other conditions.
   o Design how feature actuals are represented and bound.
-  o May need guards based on other guards - need to review grammars to see, so can guard a production and also match with others.  
+  o May need guards based on other guards - need to review grammars to see, so can guard a production and also match with others.
     It can be worked around with an intermediate production.
 
 * Give an error if unicode is used with ,parse
@@ -1979,7 +1979,7 @@ ToDo:
   o Non-DFA patterns?
   o Inverse of check length
 * Revisit node packing, and test with the "boy saw the girl" example
-* Reduce number of empty productions e.g., ConnectWord := rule42.  Use a flag to indicate top 
+* Reduce number of empty productions e.g., ConnectWord := rule42.  Use a flag to indicate top
 * Productions: Allow the order of the symbols to be changed in the graph that is generated.
 * Optimizations:
   o Make position a rolling window so no need to copy

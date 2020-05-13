@@ -130,10 +130,10 @@ private:
 class jlib_decl CCronAtSchedule
 {
     // all arrays are in order
-    UnsignedArray minutes;  // 0-59   
-    UnsignedArray hours;    // 0-23   
-    UnsignedArray days;     // 1-31   
-    UnsignedArray months;   // 1-12   
+    UnsignedArray minutes;  // 0-59
+    UnsignedArray hours;    // 0-23
+    UnsignedArray days;     // 1-31
+    UnsignedArray months;   // 1-12
     UnsignedArray dows;     // 0-6    0=sunday, 6=saturday
 
     bool match(UnsignedArray &a,unsigned v,unsigned &next);
@@ -183,12 +183,12 @@ public:
     }
     bool timedout(unsigned *remaining=NULL)
     {
-        if ((int)timeout<0) {       
+        if ((int)timeout<0) {
             if (remaining)
                 *remaining = (unsigned)-1;
             return false;
         }
-        unsigned e = elapsed(); 
+        unsigned e = elapsed();
         if (e>=timeout) {
             if (remaining)
                 *remaining = 0;

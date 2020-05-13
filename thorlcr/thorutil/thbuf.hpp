@@ -45,10 +45,10 @@ interface ISmartRowBuffer: extends IRowStream
 };
 
 class CActivityBase;
-extern graph_decl ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempname, 
-                                                      size32_t buffsize, 
+extern graph_decl ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempname,
+                                                      size32_t buffsize,
                                                       IThorRowInterfaces *rowif
-                                                      ); 
+                                                      );
 
 
 extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity,

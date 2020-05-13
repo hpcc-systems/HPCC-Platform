@@ -108,7 +108,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
     unsigned char c1, c2, c3, c4;
     unsigned char d1, d2, d3, d4;
 
-    int bc = 0; 
+    int bc = 0;
     int estlen = (int)(inlen/4.0*3.0 + 2);
     unsigned char* buf = (unsigned char *) malloc(estlen);
     for(int i = 0; i < inlen; )

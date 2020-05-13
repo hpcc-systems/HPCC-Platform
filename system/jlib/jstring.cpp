@@ -208,7 +208,7 @@ StringBuffer & StringBuffer::append(const char * value)
     if (likely(value))
     {
         size_t SourceLen = strlen(value);
-        
+
         if (likely(SourceLen))
         {
             ensureCapacity(SourceLen);
@@ -301,7 +301,7 @@ StringBuffer & StringBuffer::append(float value)
 StringBuffer & StringBuffer::append(int value)
 {
     char temp[12];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -309,7 +309,7 @@ StringBuffer & StringBuffer::append(int value)
 StringBuffer & StringBuffer::append(unsigned value)
 {
     char temp[12];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -317,7 +317,7 @@ StringBuffer & StringBuffer::append(unsigned value)
 StringBuffer & StringBuffer::appendlong(long value)
 {
     char temp[24];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -325,7 +325,7 @@ StringBuffer & StringBuffer::appendlong(long value)
 StringBuffer & StringBuffer::appendulong(unsigned long value)
 {
     char temp[24];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -333,7 +333,7 @@ StringBuffer & StringBuffer::appendulong(unsigned long value)
 StringBuffer & StringBuffer::append(__int64 value)
 {
     char temp[24];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -341,7 +341,7 @@ StringBuffer & StringBuffer::append(__int64 value)
 StringBuffer & StringBuffer::append(unsigned __int64 value)
 {
     char temp[24];
-    
+
     unsigned written = numtostr(temp, value);
     return append(written, temp);
 }
@@ -349,7 +349,7 @@ StringBuffer & StringBuffer::append(unsigned __int64 value)
 StringBuffer & StringBuffer::append(const String & value)
 {
     size_t SourceLen = value.length();
-    
+
     ensureCapacity(SourceLen);
     value.getChars(0, SourceLen, buffer, curLen);
     curLen += SourceLen;
@@ -372,7 +372,7 @@ StringBuffer & StringBuffer::append(const IStringVal * value)
 StringBuffer & StringBuffer::append(const StringBuffer & value)
 {
     size_t SourceLen = value.length();
-    
+
     ensureCapacity(SourceLen);
     value.getChars(0, SourceLen, buffer + curLen);
     curLen += SourceLen;
@@ -416,7 +416,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *
 {
 #define BUF_SIZE 1024
 #define MAX_BUF_SIZE (1024*1024) // limit buffer size to 1MB when doubling
-    
+
     // handle string that is bigger that BUF_SIZE bytes
     size_t size = (0 == szLimit||szLimit>BUF_SIZE)?BUF_SIZE:szLimit;
     int len;
@@ -447,7 +447,7 @@ StringBuffer & StringBuffer::limited_valist_appendf(size_t szLimit, const char *
             {
                 ensureCapacity(len);
                 // no need for _vsnprintf since the buffer is already made big enough
-                vsprintf(buffer+curLen,format,args2); 
+                vsprintf(buffer+curLen,format,args2);
             }
         }
     }
@@ -657,7 +657,7 @@ StringBuffer & StringBuffer::insert(size_t offset, char value)
 StringBuffer & StringBuffer::insert(size_t offset, const char * value)
 {
     if (!value) return *this;
-    
+
     size_t len = strlen(value);
     if (likely(len))
     {
@@ -690,7 +690,7 @@ StringBuffer & StringBuffer::insert(size_t offset, int value)
 StringBuffer & StringBuffer::insert(size_t offset, unsigned value)
 {
     char temp[12];
-    
+
     numtostr(temp, value);
     return insert(offset, temp);
 }
@@ -707,7 +707,7 @@ StringBuffer & StringBuffer::insert(size_t offset, long value)
 StringBuffer & StringBuffer::insert(size_t offset, __int64 value)
 {
     char temp[24];
-    
+
     numtostr(temp, value);
     return insert(offset, temp);
 }
@@ -715,7 +715,7 @@ StringBuffer & StringBuffer::insert(size_t offset, __int64 value)
 StringBuffer & StringBuffer::insert(size_t offset, const String & value)
 {
     size_t len = value.length();
-    
+
     _insert(offset, len);
     value.getChars(0, len, buffer, offset);
     return *this;
@@ -724,7 +724,7 @@ StringBuffer & StringBuffer::insert(size_t offset, const String & value)
 StringBuffer & StringBuffer::insert(size_t offset, const StringBuffer & value)
 {
     size_t len = value.length();
-    
+
     _insert(offset, len);
     value.getChars(0, len, buffer+offset);
     return *this;
@@ -745,7 +745,7 @@ StringBuffer & StringBuffer::insert(size_t offset, const IStringVal * value)
 
 StringBuffer & StringBuffer::newline()
 {
-    return append("\n"); 
+    return append("\n");
 }
 
 StringBuffer & StringBuffer::pad(size_t count)
@@ -782,15 +782,15 @@ StringBuffer & StringBuffer::trimLeft()
     if (curLen==0)
         return *this;
 
-    buffer[curLen] = 0; 
+    buffer[curLen] = 0;
     for(p = buffer;isspace(*p);p++)
-        ; 
+        ;
     if (p!=buffer)
     {
         curLen -= p-buffer;
         memmove(buffer,p,curLen);
     }
-        
+
     return *this;
 }
 
@@ -808,7 +808,7 @@ StringBuffer &StringBuffer::reverse()
 {
     size_t max = curLen/2;
     char * end = buffer + curLen;
-    
+
     size_t idx;
     for (idx = 0; idx < max; idx++)
     {
@@ -817,7 +817,7 @@ StringBuffer &StringBuffer::reverse()
         buffer[idx] = *end;
         *end = temp;
     }
-    
+
     return *this;
 }
 
@@ -1251,7 +1251,7 @@ String * String::toLowerCase() const
 {
     String *ret = new String();
     size32_t l = length();
-    if (l) 
+    if (l)
     {
         ret->text = (char *)malloc(l+1);
         for (unsigned i = 0; i < l; i++)
@@ -1271,7 +1271,7 @@ String * String::toUpperCase() const
 {
     String *ret = new String();
     size32_t l = length();
-    if (l) 
+    if (l)
     {
         ret->text = (char *)malloc(l+1);
         for (unsigned i = 0; i < l; i++)
@@ -1330,7 +1330,7 @@ String & String::valueOf(long value)
   StringBuffer temp;
   return temp.append(value).toString();
 }
-#endif 
+#endif
 
 
 //------------------------------------------------
@@ -1557,12 +1557,12 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
             case '"':
                 if (isCpp)
                     out.append("\\");
-                out.append(c); 
+                out.append(c);
                 break;
             case '\'':
                 if (!isCpp)
                     out.append("\\");
-                out.append(c); 
+                out.append(c);
                 break;
             case '\\': out.append("\\\\"); break;
             case '?':
@@ -1583,7 +1583,7 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
                 if (isUtf8 || ((c >= ' ') && (c <= 126)))
                     out.append(c);
                 else
-                    out.appendf("\\%03o", c); 
+                    out.appendf("\\%03o", c);
                 break;
         }
         if (addBreak && (insertBreak || (allowBreak && src-startLine >= maxBreakPos)))
@@ -1633,40 +1633,40 @@ StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const ch
 
 
 void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps)
-{  
+{
     bool isSeparator[256];
-    
+
     memset(isSeparator,0,sizeof(isSeparator));
     unsigned char * finger = (unsigned char *)sep;
     while (*finger !=0)
         isSeparator[*finger++] = true;
     isSeparator[0]=true;
-    
+
     finger = (unsigned char *)src;
     unsigned char next;
     for (;;)
-    { 
+    {
         while (isSeparator[(next = *finger)])
-        { 
+        {
             if (next == 0) return;
             finger++;
         }
-        
+
         if (whichItem == 0)
-        { 
+        {
             while (!isSeparator[(next = *finger)])
-            { 
+            {
                 if (caps)
                     next = toupper(next);
                 res.append(next);
                 finger++;
             }
             return;
-        } 
+        }
 
-        while (!isSeparator[*finger]) 
+        while (!isSeparator[*finger])
             finger++;
-            
+
         whichItem--;
     }
 }
@@ -1674,17 +1674,17 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
 
 int utf8CharLen(unsigned char ch)
 {
-    //return 1 if this is an ascii character, 
+    //return 1 if this is an ascii character,
     //or 0 if its not a valid utf-8 character
     if (ch < 128)
         return 1;
     if (ch < 192)
         return 0;
-    
+
     unsigned char len = 1;
     for (unsigned char lead = ch << 1; (lead & 0x80); lead <<=1)
         len++;
-    
+
     return len;
 }
 
@@ -1750,7 +1750,7 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
                 ret.append("&#xe0").appendhex(*x, true).append(';'); // HACK
             else if (utf8)
             {
-                unsigned chlen = utf8CharLen((const unsigned char *)x);     
+                unsigned chlen = utf8CharLen((const unsigned char *)x);
                 if (chlen==0)
                     ret.append("&#").append((unsigned int)*(unsigned char *) x).append(';');
                 else
@@ -1827,11 +1827,11 @@ void encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned len, bool
             }
             else if (utf8)
             {
-                int chlen = utf8CharLen((const unsigned char *)x);      
+                int chlen = utf8CharLen((const unsigned char *)x);
                 if (chlen==0)
                 {
                     writeStringToStream(out, "&#");
-                    char tmp[12];           
+                    char tmp[12];
                     unsigned written = numtostr(tmp, *(unsigned char *)x);
                     out.write(written, tmp);
                     writeCharToStream(out, ';');
@@ -1850,7 +1850,7 @@ void encodeXML(const char *x, IIOStream &out, unsigned flags, unsigned len, bool
             else
             {
                 writeStringToStream(out, "&#");
-                char tmp[12];           
+                char tmp[12];
                 unsigned written = numtostr(tmp, *(unsigned char *)x);
                 out.write(written, tmp);
                 writeCharToStream(out, ';');
@@ -2578,7 +2578,7 @@ unsigned matchString(const char * search, const char * const * strings)
 
 char *j_strtok_r(char *str, const char *delim, char **saveptr)
 {
-    if (!str) 
+    if (!str)
         str = *saveptr;
     char c;
     for (;;) {
@@ -2595,13 +2595,13 @@ char *j_strtok_r(char *str, const char *delim, char **saveptr)
     do {
         c = *(++str);
     } while (c&&!strchr(delim,c));
-    if (c) 
+    if (c)
         *(str++) = 0;
     *saveptr = str;
-    return ret; 
+    return ret;
 }
 
-int j_memicmp (const void *s1, const void *s2, size32_t len) 
+int j_memicmp (const void *s1, const void *s2, size32_t len)
 {
     const byte *b1 = (const byte *)s1;
     const byte *b2 = (const byte *)s2;

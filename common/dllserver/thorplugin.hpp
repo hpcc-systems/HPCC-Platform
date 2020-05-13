@@ -78,7 +78,7 @@ class DLLSERVER_API SafePluginMap : public CInterface
     CriticalSection crit;
     bool trace;
 public:
-    SafePluginMap(IPluginContextEx * _pluginCtx, bool _trace) 
+    SafePluginMap(IPluginContextEx * _pluginCtx, bool _trace)
     : pluginCtx(_pluginCtx), map(true), trace(_trace)
     {
         assertex(pluginCtx);

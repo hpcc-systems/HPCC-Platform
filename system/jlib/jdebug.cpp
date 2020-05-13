@@ -82,21 +82,21 @@ PU (%) is the percentage CPU in use (unchanged from previously).
 
 MU (%) is what percentage of total (all processes) memory is in use
 (ram + swap) or in 32 bit is the percentage of 3GB (address space)
-used (whichever larger). 
+used (whichever larger).
 
 MAL is total memory in use (i.e malloced and not freed ) by this
-process  (= MMP+SBK) 
+process  (= MMP+SBK)
 
 MMP is the sum of memory mapped (large) blocks in use by this process
 (which will be  returned to OS when freed).
 
 SBK is the sbrk'ed memory i.e. smaller blocks allocated from the
 arena. (note this memory is unlikely to be returned to OS while the
-process is still running). 
+process is still running).
 
 TOT (K) is an indication of the memory footprint of the process.
 This is the 'arena' size (which is how much reserved by sbrk) plus the
-mmap memory size (MMP). 
+mmap memory size (MMP).
 
 RAM (K) is how much real memory is in use by all processes - it is
 the same as what would be reported by the 'free' command after the
@@ -139,27 +139,27 @@ inline offset_t readHexNum(const char *&s)
     for (;;) {
         switch (*s) {
             case '0':
-            case '1': 
-            case '2': 
-            case '3': 
+            case '1':
+            case '2':
+            case '3':
             case '4':
-            case '5': 
-            case '6': 
-            case '7': 
+            case '5':
+            case '6':
+            case '7':
             case '8':
-            case '9': ret = ret*16+(*s-'0'); 
+            case '9': ret = ret*16+(*s-'0');
                  break;
-            case 'A': 
-            case 'B': 
-            case 'C': 
-            case 'D': 
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
             case 'E':
             case 'F': ret = ret*16+(*s-'A'+10);
                  break;
-            case 'a': 
-            case 'b': 
-            case 'c': 
-            case 'd': 
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
             case 'e':
             case 'f': ret = ret*16+(*s-'a'+10);
                  break;
@@ -177,15 +177,15 @@ inline offset_t readDecNum(const char *&s)
     for (;;) {
         switch (*s) {
             case '0':
-            case '1': 
-            case '2': 
-            case '3': 
+            case '1':
+            case '2':
+            case '3':
             case '4':
-            case '5': 
-            case '6': 
-            case '7': 
+            case '5':
+            case '6':
+            case '7':
             case '8':
-            case '9': ret = ret*10+(*s-'0'); 
+            case '9': ret = ret*10+(*s-'0');
                  break;
         default:
             return ret;
@@ -198,22 +198,22 @@ inline offset_t readDecNum(const char *&s)
 
 #if defined(_WIN32)
 
-static __int64 numCyclesNTicks; 
+static __int64 numCyclesNTicks;
 static __int64 ticksPerSec;
 static __int64 numScaleTicks;
 static bool useRDTSC = _USE_RDTSC;
-static double cycleToNanoScale; 
+static double cycleToNanoScale;
 
 static void calibrate_timing()
 {
 #ifndef _AMD64_
-    if (useRDTSC) 
+    if (useRDTSC)
     {
         unsigned long r;
-        __asm { 
-             mov eax, 1 ;  
-             cpuid ; 
-             mov r, edx 
+        __asm {
+             mov eax, 1 ;
+             cpuid ;
+             mov r, edx
         }
         if ((r&0x10)==0)
             useRDTSC = false;
@@ -308,7 +308,7 @@ void calibrate_timing()
 #if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
         unsigned long eax;
-        unsigned long ebx; 
+        unsigned long ebx;
         unsigned long ecx;
         unsigned long edx;
 #if defined(_ARCH_X86_64_)
@@ -316,10 +316,10 @@ void calibrate_timing()
 
 #else
 // NB PIC code and ebx usage don't mix well
-        asm volatile("pushl %%ebx      \n\t" 
+        asm volatile("pushl %%ebx      \n\t"
                      "cpuid            \n\t"
-                     "movl %%ebx, %1   \n\t" 
-                     "popl %%ebx       \n\t" 
+                     "movl %%ebx, %1   \n\t"
+                     "popl %%ebx       \n\t"
                      : "=a"(eax), "=r"(ebx), "=c"(ecx), "=d"(edx)
                  : "a"(1)
                  : "cc");
@@ -375,14 +375,14 @@ cycle_t jlib_decl get_cycles_now()
     if (!use_gettimeofday) {
         timespec tm;
         if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
-            return ((cycle_t)tm.tv_sec)*1000000000L+(tm.tv_nsec);   
+            return ((cycle_t)tm.tv_sec)*1000000000L+(tm.tv_nsec);
         use_gettimeofday = true;
         fprintf(stderr,"clock_gettime CLOCK_MONOTONIC returns %d",errno);   // don't use PROGLOG
     }
 #endif
     struct timeval tm;
     gettimeofday(&tm,NULL);
-    return ((cycle_t)tm.tv_sec)*1000000000L+(cycle_t)tm.tv_usec*1000L; 
+    return ((cycle_t)tm.tv_sec)*1000000000L+(cycle_t)tm.tv_usec*1000L;
 }
 #endif
 
@@ -464,7 +464,7 @@ MTimeSection::~MTimeSection()
         display_time(scope, end_time-start_time);
 }
 
-class TimeSectionInfo : public MappingBase 
+class TimeSectionInfo : public MappingBase
 {
 public:
     TimeSectionInfo(const char * _scope, __int64 _cycles) : scope(_scope), totalcycles(_cycles), maxcycles(_cycles), count(1) {};
@@ -499,11 +499,11 @@ class DefaultTimeReporter : implements ITimeReporter, public CInterface
     }
 public:
     IMPLEMENT_IINTERFACE
-    DefaultTimeReporter() 
+    DefaultTimeReporter()
     {
         sections = new StringMapOf<TimeSectionInfo>(true);
     }
-    ~DefaultTimeReporter() 
+    ~DefaultTimeReporter()
     {
 //      printTimings();                     // Must explicitly call printTimings - no automatic print (too late here!)
         delete sections;
@@ -722,7 +722,7 @@ struct KERNEL_USER_TIMES {
     __int64 ExitTime;
     __int64 KernelTime;
     __int64 UserTime;
-    //__int64 EllapsedTime; 
+    //__int64 EllapsedTime;
 };
 
 
@@ -1031,12 +1031,12 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
         DBGLOG("RegQueryValueEx() failed to get CPU speed - errorCode=%d", lRet);
         RegCloseKey(hKey);
     }
-    else 
+    else
     {
         CPUSpeed = keyValue;
         RegCloseKey(hKey);
     }
-    
+
 
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
@@ -1206,9 +1206,9 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
     const char *bufptr;
     while ((bufptr = fgets(line, 1000, cpufp)) != NULL)
     {
-        if (strncmp(cpuNumTag, bufptr, strlen(cpuNumTag))==0) 
+        if (strncmp(cpuNumTag, bufptr, strlen(cpuNumTag))==0)
             numCPUs++;
-        else if (strncmp(cpuSpeedTag, bufptr, strlen(cpuSpeedTag))==0) 
+        else if (strncmp(cpuSpeedTag, bufptr, strlen(cpuSpeedTag))==0)
             CPUSpeed = (unsigned)strtol(bufptr+strlen(cpuSpeedTag), &tail, 10);
     }
 
@@ -1263,7 +1263,7 @@ static unsigned evalAffinityCpus()
 
 // Note - values are returned in Kb
 
-static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigned &swaptotal,unsigned &swapinuse) 
+static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigned &swaptotal,unsigned &swapinuse)
 {
 #ifdef __APPLE__
     active = 0;
@@ -1311,24 +1311,24 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
     unsigned swapcached = 0;
     unsigned cached = 0;
     while (bufptr&&i) {
-        if (*bufptr =='\n') 
+        if (*bufptr =='\n')
             bufptr++;
         i--;
-        if (strncmp("MemTotal:", bufptr, 9)==0) 
+        if (strncmp("MemTotal:", bufptr, 9)==0)
             total = (unsigned)strtol(bufptr+9, &tail, 10);
-        else if (strncmp("SwapTotal:", bufptr, 10)==0) 
+        else if (strncmp("SwapTotal:", bufptr, 10)==0)
             swaptotal = (unsigned)strtol(bufptr+10, &tail, 10);
-        else if (strncmp("MemFree:", bufptr, 8)==0) 
+        else if (strncmp("MemFree:", bufptr, 8)==0)
             free = (unsigned)strtol(bufptr+8, &tail, 10);
-        else if (strncmp("Active:", bufptr, 7)==0) 
+        else if (strncmp("Active:", bufptr, 7)==0)
             active = (unsigned)strtol(bufptr+7, &tail, 10);
-        else if (strncmp("SwapFree:", bufptr, 9)==0) 
+        else if (strncmp("SwapFree:", bufptr, 9)==0)
             swapfree = (unsigned)strtol(bufptr+9, &tail, 10);
-        else if (strncmp("Cached:", bufptr, 7)==0) 
+        else if (strncmp("Cached:", bufptr, 7)==0)
             cached = (unsigned)strtol(bufptr+7, &tail, 10);
-        else if (strncmp("SwapCached:", bufptr, 11)==0) 
+        else if (strncmp("SwapCached:", bufptr, 11)==0)
             swapcached = (unsigned)strtol(bufptr+11, &tail, 10);
-        else 
+        else
             i++;
         bufptr = strchr(bufptr, '\n');
     }
@@ -1337,7 +1337,7 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
 #endif
 }
 
-class CInt64fix 
+class CInt64fix
 {
     __int64 val;
 public:
@@ -1345,10 +1345,10 @@ public:
     {
         val = 0;
     }
-    void set(int v) 
+    void set(int v)
     {
         __int64 ret = (unsigned)v;
-        while (val-ret>0x80000000LL) 
+        while (val-ret>0x80000000LL)
             ret += 0x100000000LL;
         val = ret;
     }
@@ -1358,7 +1358,7 @@ public:
         return val;
     }
 };
-    
+
 
 
 void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
@@ -1384,10 +1384,10 @@ void getMemStats(StringBuffer &out, unsigned &memused, unsigned &memtot)
         muval = 100; // !
 
 
-    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK", 
+    out.appendf("MU=%3u%% MAL=%" I64F "d MMP=%" I64F "d SBK=%" I64F "d TOT=%uK RAM=%uK SWP=%uK",
         muval, total, mmapmem, sbrkmem, (unsigned)(virttot/1024), mu, su);
 #ifdef _USE_MALLOC_HOOK
-    if (totalMem) 
+    if (totalMem)
         out.appendf(" TM=%" I64F "d",totalMem);
 #endif
     memused = mu+su;
@@ -1622,7 +1622,7 @@ struct CProcInfo: extends CInterface
             return false;
 
         active = true;
-        if (first) 
+        if (first)
             first = false;
         else {
             delta.system = info.time.system-prev.system;
@@ -1684,7 +1684,7 @@ public:
         tot_time = 0;
         ForEachItemInRev(i3,processes) {
             CProcInfo &pi = processes.item(i3);
-            if (pi.active) 
+            if (pi.active)
                 tot_time += pi.delta.system+pi.delta.user;
             else
                 processes.remove(i3);
@@ -1717,7 +1717,7 @@ public:
     {
         if (pc>90) {
             scan();
-            if (busy) 
+            if (busy)
                 print(3,str); // print top 3
             else
                 busy = true;
@@ -2253,7 +2253,7 @@ class CExtendedStats  // Disk network and cpu stats
     }
 
 
-    inline double perSec(double v,double deltams) 
+    inline double perSec(double v,double deltams)
     {
         return 1000.0*v/deltams;
     }
@@ -2946,7 +2946,7 @@ void getProcessTime(UserSystemTime_t & result)
 
 void getSystemTraceInfo(StringBuffer &str, PerfMonMode mode)
 {
-    if (!MemoryUsageReporter) 
+    if (!MemoryUsageReporter)
         MemoryUsageReporter = new CMemoryUsageReporter(1000, mode, 0, false);
     MemoryUsageReporter->getSystemTraceInfo(str, mode);
 }
@@ -3027,7 +3027,7 @@ void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char
     // MORE: Find win32 call for NIC speed
 
 #else  // linux
-    unsigned memUsed, memActive, memSwap, memSwapUsed; 
+    unsigned memUsed, memActive, memSwap, memSwapUsed;
     getMemUsage(memUsed, memActive, hdwInfo.totalMemory, memSwap, memSwapUsed);
     hdwInfo.totalMemory /= 1024; // in MB
 
@@ -3055,12 +3055,12 @@ void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char
 //===========================================================================
 
 
-enum SegTypes { 
+enum SegTypes {
         segtype_free,         //
         segtype_heap,         // rw-p named [heap]
         segtype_data,         // rw-p unnamed
         segtype_guard,        // ---p unnamed/named
-        segtype_stack,        // rwxp 
+        segtype_stack,        // rwxp
         segtype_qlibcode,     // r-xp  named */lib200
         segtype_qlibdata,     // rw-p  named */lib200
         segtype_libcode,      // r-xp  named *
@@ -3079,7 +3079,7 @@ struct SegTypeRec
 
 
 
-const char *PROCMAPHEADER = 
+const char *PROCMAPHEADER =
     "FREE,NFREE,MAXFREE,HEAP,STACK,NSTACKS,DATA,NDATA,MAXDATA,LIBDATA,QUERYDATA,MAXQUERYDATA,LIBCODE,QUERYCODE,MAXQLIBCODE";
 
 
@@ -3643,7 +3643,7 @@ void printAllocationSummary()
     {
         _CrtMemBlockHeader * display = locations[i2];
         //char tempBuffer[16];
-        //unsigned len = dumpMemory(sizeof(tempBuffer), tempBuffer, display->nDataSize, 
+        //unsigned len = dumpMemory(sizeof(tempBuffer), tempBuffer, display->nDataSize,
 
         PROGLOG("%s(%d) %d:%d {%ld} = %d", display->szFileName ? display->szFileName : "<unknown>", display->nLine, display->nDataSize, counts[i2], display->lRequest, display->nDataSize * counts[i2]);
     }
@@ -3982,7 +3982,7 @@ class UserMetricMsgHandler : public CInterface, implements ILogMsgHandler, imple
     Owned<ILogMsgFilter> regexFilter;
 public:
     virtual void Link(void) const { CInterface::Link(); }
-    virtual bool Release(void) const    
+    virtual bool Release(void) const
     {
         if (CInterface::Release())
             return true;

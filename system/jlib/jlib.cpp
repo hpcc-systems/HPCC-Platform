@@ -104,7 +104,7 @@ void InitTable::exit(SoContext ctx)
         }
     }
 }
-    
+
 int InitTable::sortFuncDescending(const InitializerType * i1, const InitializerType * i2)
 {
     int ret = i2->modpriority - i1->modpriority;
@@ -233,7 +233,7 @@ void test()
 
   CInterface * temp = new CInterface;
   map.setValue("gavin", temp);
-  
+
   temp->Link();
   map.setValue("richard", temp);
 

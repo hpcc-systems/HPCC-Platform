@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-// wshelpers.hpp: 
+// wshelpers.hpp:
 //
 //////////////////////////////////////////////////////////////////////
 #pragma warning( disable : 4786)
@@ -58,14 +58,14 @@ struct XML
     const char* s;
 };
 
-inline StringBuffer& operator<<(StringBuffer& buf, const XML& f) 
-{ 
+inline StringBuffer& operator<<(StringBuffer& buf, const XML& f)
+{
     encodeUtf8XML(f.s,buf);
-    return buf; 
+    return buf;
 }
 
-inline StringBuffer& operator<<(StringBuffer& buf, const comma& c) 
-{ 
+inline StringBuffer& operator<<(StringBuffer& buf, const comma& c)
+{
     return c.val>=0 ? buildComma(buf, c.val) : buf;
 }
 
@@ -75,8 +75,8 @@ struct JScript
     const char* s;
 };
 
-inline StringBuffer& operator<<(StringBuffer& buf, const JScript& j) 
-{ 
+inline StringBuffer& operator<<(StringBuffer& buf, const JScript& j)
+{
     StringBuffer script;
     appendStringAsCPP(script,strlen(j.s),j.s,false);
     buf<<XML(script.str());

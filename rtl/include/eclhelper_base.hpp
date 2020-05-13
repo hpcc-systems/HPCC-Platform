@@ -468,7 +468,7 @@ class ECLRTL_API CThorKeyedJoinArg : public CThorArgOf<IHThorKeyedJoinArg>
     virtual IOutputMetaData * queryDiskRecordSize() override;
     virtual IOutputMetaData * queryProjectedDiskRecordSize() override;
     virtual unsigned __int64 extractPosition(const void * _right) override;
-    
+
     // For the data going to the indexRead remote activity:
     virtual bool leftCanMatch(const void * inputRow) override;
     virtual bool indexReadMatch(const void * indexRow, const void * inputRow, IBlobProvider * blobs) override;

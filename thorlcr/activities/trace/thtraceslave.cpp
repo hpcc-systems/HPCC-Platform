@@ -115,11 +115,11 @@ public:
         return ret.getClear();
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector)
-    { 
+    {
         return input->gatherConjunctions(collector);
     }
     virtual void resetEOF()
-    { 
+    {
         inputStream->resetEOF();
     }
     virtual bool isGrouped() const override { return input->isGrouped(); }

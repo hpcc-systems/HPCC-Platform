@@ -25,11 +25,11 @@ class CEspProtocolThread: public Thread
 {
 protected:
    bool terminating;
-    
+
    CriticalSection sect;
-    
+
    Semaphore ticksem;
-    
+
    Owned<ISocket> m_socket;
 
    StringAttr m_name;
@@ -38,7 +38,7 @@ protected:
     bool keepAlive = false;
 public:
     IMPLEMENT_IINTERFACE;
-    
+
    CEspProtocolThread(const char *name = "Unknown service type");
    CEspProtocolThread(ISocket *sock, const char *name = "Unknown service type");
 
@@ -46,7 +46,7 @@ public:
    virtual void start();
    void setSocket(ISocket *sock);
     void stop(bool wait);
-   
+
    virtual const char *getServiceName();
    virtual bool onRequest();
 };

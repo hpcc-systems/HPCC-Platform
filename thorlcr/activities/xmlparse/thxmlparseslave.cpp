@@ -105,8 +105,8 @@ public:
                             RtlDynamicRowBuilder row(allocator);
                             size32_t sizeGot;
                             try { sizeGot = helper->transform(row, nxt, lastMatch); }
-                            catch (IException *e) 
-                            { 
+                            catch (IException *e)
+                            {
                                 ActPrintLog(e, "In helper->transform()");
                                 throw;
                             }

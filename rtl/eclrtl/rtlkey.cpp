@@ -139,10 +139,10 @@ bool CKeySegmentMonitor::increment(void *bufptr) const
 }
 
 void CKeySegmentMonitor::setHigh(void *bufptr) const
-{ 
+{
     // NOTE - effectively whenever this is called we are treating the segmonitor as if it was a wild one
     char *ptr = ((char *) bufptr) + offset;
-    memset(ptr, 0xff, size); 
+    memset(ptr, 0xff, size);
 }
 
 
@@ -152,7 +152,7 @@ CWildKeySegmentMonitor::CWildKeySegmentMonitor(unsigned _fieldIdx, unsigned _off
 }
 
 bool CWildKeySegmentMonitor::matchesBuffer(const void *keyval) const
-{ 
+{
     return true;
 }
 
@@ -162,15 +162,15 @@ int CWildKeySegmentMonitor::docompare(const void *l, const void *r) const
 }
 
 void CWildKeySegmentMonitor::setLow(void *bufptr) const
-{ 
+{
     char *ptr = ((char *) bufptr) + offset;
-    memset(ptr, 0, size); 
+    memset(ptr, 0, size);
 }
 
 void CWildKeySegmentMonitor::endRange(void *bufptr) const
-{ 
+{
     char *ptr = ((char *) bufptr) + offset;
-    memset(ptr, 0xff, size); 
+    memset(ptr, 0xff, size);
 }
 
 CSetKeySegmentMonitor::CSetKeySegmentMonitor(bool _optional, IStringSet *_set, unsigned _fieldIdx, unsigned _offset, unsigned _size)
@@ -582,15 +582,15 @@ public:
     virtual IStringSet *intersectSet(IStringSet *);
     virtual const char *describe(StringBuffer &ret);
     virtual bool isEmptySet() const { return transitions.length()==0; }
-    virtual bool isFullSet() const 
-    { 
-        return transitions.length()==2 && 
+    virtual bool isFullSet() const
+    {
+        return transitions.length()==2 &&
             isLowVal(transitions.item(0).getValue()) &&
             isHighVal(transitions.item(1).getValue());
     }
     virtual bool isSingleValue() const
     {
-        return transitions.length()==2 && 
+        return transitions.length()==2 &&
             memcmp(transitions.item(0).getValue(), transitions.item(1).getValue(), size) == 0;
     }
 
@@ -665,7 +665,7 @@ protected:
             unsigned diff = p2[size] - p1[size];
             if (diff)
             {
-                if (!mult) 
+                if (!mult)
                     return (unsigned) -1;
                 else
                     ret += diff * mult;
@@ -797,7 +797,7 @@ protected:
             unsigned diff = p2[i] - p1[i];
             if (diff)
             {
-                if (!mult) 
+                if (!mult)
                     return (unsigned) -1;
                 else
                     ret += diff * mult;
@@ -1039,7 +1039,7 @@ void CStringSet::addRange(const void *loval, const void *hival)
             ITransition &t = transitions.item(idx-1);
             if(!t.getState())
             {
-                if (oneless(t.getValue(), loval)) 
+                if (oneless(t.getValue(), loval))
                     transitions.remove(--idx);
                 else
                     addTransitionAt(loval, true, idx++);
@@ -1176,8 +1176,8 @@ bool CStringSet::inRange(const void *val, unsigned &nextTransition) const
     int b = transitions.ordinality();
     if (!b)
     {
-        nextTransition = (unsigned) -1; 
-        return false; 
+        nextTransition = (unsigned) -1;
+        return false;
     }
     else if (b >= 4)
     {
@@ -1347,7 +1347,7 @@ IStringSet *CStringSet::intersectSet(IStringSet *other)
 
 ITransition *CStringSet::queryTransition(unsigned int idx)
 {
-    if (transitions.isItem(idx)) 
+    if (transitions.isItem(idx))
     {
         ITransition *t = &transitions.item(idx);
         return t;
@@ -1439,7 +1439,7 @@ public:
 };
 */
 
-class SegmentMonitorTest : public CppUnit::TestFixture  
+class SegmentMonitorTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( SegmentMonitorTest  );
         CPPUNIT_TEST(testOptional);
@@ -1472,7 +1472,7 @@ protected:
         IKeySegmentMonitorArray segments;
         segments.append(*LINK(wild0_20));
         segments.append(*LINK(opt20_10));
-        
+
         CPPUNIT_ASSERT(segments.ordinality() == 1);
         CPPUNIT_ASSERT(segments.item(0).isWild());
         CPPUNIT_ASSERT(segments.item(0).getOffset() == 0);

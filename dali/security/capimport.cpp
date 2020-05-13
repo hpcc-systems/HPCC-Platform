@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     if (argc<3)
     {
         unsigned err=importDaliCapabilityXML_basic(argv[1]);
-        if (err) 
+        if (err)
             printf("Dali Capability Import FAILED: error(%d)\n",err);
         else
             printf("Dali Capability Import succeeded");
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     SocketEndpointArray epa;
     epa.append(ep);
 
-    Owned<IGroup> group = createIGroup(epa); 
+    Owned<IGroup> group = createIGroup(epa);
     if (!initClientProcess(group))
     {
         Sleep(1000);

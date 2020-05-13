@@ -122,10 +122,10 @@ bool ViewHelper::doit(FILE * fp)
             ForEachItemIn(res_ind, results)
             {
                 IConstECLResult* result = &results.item(res_ind);
-                
+
                 if(!result)
                     continue;
-                
+
                 const char* value = result->getValue();
                 if(value != NULL && stricmp(value, "[undefined]") == 0)
                     continue;
@@ -169,7 +169,7 @@ bool ViewHelper::doit(FILE * fp)
                         const MemoryBuffer& resultbuf = res_resp->getResult();
                         count = res_resp->getCount();
                         total = (int)res_resp->getTotal();
-                        
+
                         if(format)
                         {
                             format->setStartRowNumber(curpos);
@@ -180,12 +180,12 @@ bool ViewHelper::doit(FILE * fp)
                             // This should never happen
                             fprintf(fp, "%s", resultbuf.toByteArray());
                         }
-                        
+
                         curpos += count;
                     }
                     while (count > 0 && curpos < total - 1);
                 }
-                
+
                 if(format)
                     format->printFooter(fp);
             }

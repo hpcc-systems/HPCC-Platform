@@ -59,7 +59,7 @@ inline void traceWait(const char *name, T &sem,unsigned interval=60*1000)
 #define MINCOMPRESSEDROWSIZE 16
 #define MAXCOMPRESSEDROWSIZE  0x2000
 
-#define MPBLOCKTIMEOUT (1000*60*15)             
+#define MPBLOCKTIMEOUT (1000*60*15)
 
 
 class CWriteIntercept : public CSimpleInterface
@@ -172,7 +172,7 @@ public:
         interval = _interval;
         idx = 0;
         overflowsize = 0;
-        fixedsize = 0;      
+        fixedsize = 0;
         lastofs = 0;
     }
     ~CWriteIntercept()
@@ -628,11 +628,11 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     {
         try
         {
-            ActPrintLog(activity, "Creating SortSlaveServer on tag %d MP",mpTagRPC);    
+            ActPrintLog(activity, "Creating SortSlaveServer on tag %d MP",mpTagRPC);
             while(SortSlaveMP::marshall(*this,clusterComm,mpTagRPC)&&!stopping)
                ;
             stopping = true;
-            ActPrintLog(activity, "Exiting SortSlaveServer on tag %d",mpTagRPC);    
+            ActPrintLog(activity, "Exiting SortSlaveServer on tag %d",mpTagRPC);
         }
         catch (IJSOCK_Exception *e)
         {
@@ -890,7 +890,7 @@ public:
                 if (p1==(unsigned)-1)
                     p1 = 0;
                 unsigned p2 = BinChop(high.query(i), true, true, CMPFN_NORMAL);
-                if (p2>=rowArray.ordinality()) 
+                if (p2>=rowArray.ordinality())
                     p2 = rowArray.ordinality()-1;
                 if (p1<=p2)
                 {
@@ -1111,7 +1111,7 @@ public:
         ActPrintLog(activity, "Close");
         try {
             if (transferserver)
-                transferserver->subjoin(); // need to have finished merge threads 
+                transferserver->subjoin(); // need to have finished merge threads
         }
         catch (IException *e) {
             EXCLOG(e,"CThorSorter");
@@ -1144,7 +1144,7 @@ public:
     {
         if (intercept)
         {
-            offset_t startofs;  
+            offset_t startofs;
             size32_t rd = intercept->readOverflowPos(sstart, 1, &startofs, true);
             assertex(rd==sizeof(startofs));
             return intercept->getStream(startofs, snum);

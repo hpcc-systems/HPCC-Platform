@@ -37,8 +37,8 @@ protected:
         {
             counter -= denominator;
             return true;
-        }       
-        return false;   
+        }
+        return false;
     }
     void setInitialCounter(rowcount_t prevRecCount)
     {
@@ -62,7 +62,7 @@ protected:
         else
             abortSoon = true;
 #if THOR_TRACE_LEVEL >= 5
-        ActPrintLog("ENTH: init - Numerator = %" RCPF "d, Denominator = %" RCPF "d", numerator, denominator);   
+        ActPrintLog("ENTH: init - Numerator = %" RCPF "d, Denominator = %" RCPF "d", numerator, denominator);
         ActPrintLog("%s: Initial value of counter %" RCPF "d", actStr.str(), counter);
 #endif
     }
@@ -163,7 +163,7 @@ public:
                 return row.getClear();
             }
         }
-        return NULL;        
+        return NULL;
     }
     virtual void abort()
     {
@@ -214,7 +214,7 @@ class CEnthSlaveActivity : public BaseEnthActivity
 
 public:
     CEnthSlaveActivity(CGraphElementBase *container) : BaseEnthActivity(container)
-    { 
+    {
         actStr.append("ENTH");
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
@@ -252,10 +252,10 @@ public:
             if (wanted())
             {
                 dataLinkIncrement();
-                return row.getClear();          
+                return row.getClear();
             }
         }
-        return NULL;        
+        return NULL;
     }
     virtual void stop()
     {
@@ -281,13 +281,13 @@ public:
 };
 
 
-CActivityBase *createLocalEnthSlave(CGraphElementBase *container) 
-{ 
-    return new CLocalEnthSlaveActivity(container); 
+CActivityBase *createLocalEnthSlave(CGraphElementBase *container)
+{
+    return new CLocalEnthSlaveActivity(container);
 }
 
-CActivityBase *createEnthSlave(CGraphElementBase *container) 
-{ 
+CActivityBase *createEnthSlave(CGraphElementBase *container)
+{
     return new CEnthSlaveActivity(container);
 }
 

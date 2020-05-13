@@ -203,9 +203,9 @@ bool isCompare3Valued(ITypeInfo * type)
     return false;
 }
 
-bool storePointerInArray(ITypeInfo * type) 
-{ 
-    return type->isReference() && isTypePassedByAddress(type); 
+bool storePointerInArray(ITypeInfo * type)
+{
+    return type->isReference() && isTypePassedByAddress(type);
 }
 
 //---------------------------------------------------------------------------
@@ -239,9 +239,9 @@ ITypeInfo * makeRowReferenceType(IHqlExpression * ds)
     return rowType;
 }
 
-ITypeInfo * makeRowReferenceType(const CHqlBoundExpr & bound) 
-{ 
-    return makeRowReferenceType(bound.expr); 
+ITypeInfo * makeRowReferenceType(const CHqlBoundExpr & bound)
+{
+    return makeRowReferenceType(bound.expr);
 }
 
 IHqlExpression * addMemberSelector(IHqlExpression * expr, IHqlExpression * selector)

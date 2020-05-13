@@ -149,7 +149,7 @@ bool Semaphore::tryWait()
 void Semaphore::wait()
 {
     pthread_mutex_lock(&mx);
-    if (--count<0) 
+    if (--count<0)
         pthread_cond_wait(&cond, &mx);
     pthread_mutex_unlock(&mx);
 }
@@ -191,7 +191,7 @@ void Semaphore::signal()
 }
 
 void Semaphore::signal(unsigned n)
-{   
+{
     pthread_mutex_lock(&mx);
     while ((count<0)&&n) {
         count++;

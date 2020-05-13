@@ -330,7 +330,7 @@ protected:
     }
 
     virtual bool matchesFindParam(const void * _element, const void * _key, unsigned fphash) const
-    { 
+    {
         const CHqlExpression * element = static_cast<const CHqlExpression *>(_element);
         const CHqlExpression * key = static_cast<const CHqlExpression *>(_key);
         return (element->queryHash() == fphash) && element->equals(*key);
@@ -597,7 +597,7 @@ static IHqlExpression * doCreateSelectExpr(HqlExprArray & args);
 
 //createSourcePath actually uses a kept hash table at the moment, because the source filename is stored in
 //each attribute in the grammar, and the large number of links/releases have a noticeable effect (5%).
-//To release on demand sourcePaths should become an AtomTable, The link in the calls below should be deleted, 
+//To release on demand sourcePaths should become an AtomTable, The link in the calls below should be deleted,
 //and sourcePath in ECLlocation needs to become linked.
 ISourcePath * createSourcePath(const char *value)
 {
@@ -1438,7 +1438,7 @@ const char *getOpString(node_operator op)
     case no_ln: return "LN";
     case no_sin: return "SIN";
     case no_cos: return "COS";
-    case no_tan: return "TAN";  
+    case no_tan: return "TAN";
     case no_asin: return "ASIN";
     case no_acos: return "ACOS";
     case no_atan: return "ATAN";
@@ -1493,8 +1493,8 @@ const char *getOpString(node_operator op)
     case no_existsgroup: return "EXISTS";
     case no_select: return ".";
     case no_table: return "DATASET";
-    case no_temptable: return "<temptable>"; 
-    case no_workunit_dataset: return "<workunit_dataset>"; 
+    case no_temptable: return "<temptable>";
+    case no_workunit_dataset: return "<workunit_dataset>";
     case no_scope: return "MODULE";
     case no_remotescope: return "<scope>";
     case no_mergedscope: return "<scope>";
@@ -1538,7 +1538,7 @@ const char *getOpString(node_operator op)
     case no_evaluate: return "EVALUATE";
     case no_cast: return "CAST";
     case no_implicitcast: return "<implicit-cast>";
-    case no_external: return "<external>"; 
+    case no_external: return "<external>";
     case no_externalcall: return "<external call>";
     case no_macro: return "<macro>";
     case no_failure: return "FAILURE";
@@ -1692,7 +1692,7 @@ const char *getOpString(node_operator op)
     case no_filepos: return "no_filepos";
     case no_file_logicalname: return "no_file_logicalname";
     case no_alias_project: return "no_alias_project";
-    case no_alias_scope: return "no_alias_scope";   
+    case no_alias_scope: return "no_alias_scope";
     case no_sequential: return "SEQUENTIAL";
     case no_parallel: return "PARALLEL";
     case no_actionlist: return "no_actionlist";
@@ -1793,9 +1793,9 @@ const char *getOpString(node_operator op)
     case no_soapaction_ds: return "SOAPCALL";
     case no_quantile: return "QUANTILE";
     case no_newsoapaction_ds: return "SOAPCALL";
-    case no_temprow: return "ROW"; 
-    case no_projectrow: return "ROW"; 
-    case no_createrow: return "ROW"; 
+    case no_temprow: return "ROW";
+    case no_projectrow: return "ROW";
+    case no_createrow: return "ROW";
     case no_activerow: return "<ActiveRow>";
     case no_newrow: return "<NewRow>";
     case no_catch: return "CATCH";
@@ -1817,7 +1817,7 @@ const char *getOpString(node_operator op)
     case no_matchattr: return "no_matchattr";
     case no_pat_production: return "no_pat_production";
     case no_guard: return "no_guard";
-    case no_datasetfromrow: return "DATASET"; 
+    case no_datasetfromrow: return "DATASET";
     case no_assertconstant: return "no_assertconstant";
     case no_clustersize: return "no_clustersize";
     case no_compound_disknormalize: return "no_compound_disknormalize";
@@ -2111,7 +2111,7 @@ bool checkConstant(node_operator op)
         return false;
     // following are currently not implemented in the const folder - can enable if they are.
     case no_global:
-    case no_rank: 
+    case no_rank:
     case no_ranked:
     case no_typetransfer:
     case no_hash:
@@ -2834,21 +2834,21 @@ unsigned getNumChildTables(IHqlExpression * dataset)
 #ifdef _DEBUG
     switch (getChildDatasetType(dataset))
     {
-    case childdataset_none: 
+    case childdataset_none:
     case childdataset_nway_left_right:
-        assertex(num==0); 
+        assertex(num==0);
         break;
-    case childdataset_dataset: 
-    case childdataset_datasetleft: 
-    case childdataset_left: 
+    case childdataset_dataset:
+    case childdataset_datasetleft:
+    case childdataset_left:
     case childdataset_same_left_right:
     case childdataset_top_left_right:
-    case childdataset_dataset_noscope: 
-        assertex(num==1); 
+    case childdataset_dataset_noscope:
+        assertex(num==1);
         break;
     case childdataset_leftright:
         if (dataset->getOperator() != no_aggregate)
-            assertex(num==2); 
+            assertex(num==2);
         break;
     case childdataset_many_noscope:
     case childdataset_many:
@@ -2856,10 +2856,10 @@ unsigned getNumChildTables(IHqlExpression * dataset)
     case childdataset_if:
     case childdataset_case:
     case childdataset_map:
-        assertex(num==0); 
+        assertex(num==0);
         break;
     case childdataset_evaluate:
-        assertex(num==1); 
+        assertex(num==1);
         break;
     default:
         UNIMPLEMENTED;
@@ -3219,7 +3219,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_newparse:
     case no_newsoapcall:            // 4 because input(2) gets transformed.
     case no_soapcall_ds:
-        return expr->queryChild(4); 
+        return expr->queryChild(4);
     case no_newsoapcall_ds:
         return expr->queryChild(5);
     default:
@@ -5315,7 +5315,7 @@ inline void addActiveTable(HqlExprCopyArray & array, IHqlExpression * ds)
     ds = queryDatasetCursor(ds);
 
 //  This test is valid once the tree is normalized, but now this can be called on a parse tree.
-//  assertex(ds == ds->queryNormalizedSelector());          
+//  assertex(ds == ds->queryNormalizedSelector());
     node_operator dsOp = ds->getOperator();
     if (dsOp != no_self && dsOp != no_selfref)
         addUniqueTable(array, ds->queryNormalizedSelector());
@@ -5564,7 +5564,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
     unsigned max = numChildren();
     switch (getChildDatasetType(this))
     {
-    case childdataset_none: 
+    case childdataset_none:
         cacheChildrenTablesUsed(used, 0, max);
         break;
     case childdataset_many_noscope:
@@ -5640,7 +5640,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             break;
         }
     case childdataset_left:
-        { 
+        {
             cacheChildrenTablesUsed(used, 1, max);
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
@@ -5684,7 +5684,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             cacheChildrenTablesUsed(used, 0, 1);
             break;
         }
-    case childdataset_leftright: 
+    case childdataset_leftright:
         {
             cacheChildrenTablesUsed(used, 2, max);
 
@@ -5885,7 +5885,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
 {
     if (!(infoFlags & HEFgatheredNew))
     {
-        //NB: This is not thread safe!  Should be protected with a cs 
+        //NB: This is not thread safe!  Should be protected with a cs
         //but actually want it to be more efficient than that - don't want to call a cs at each level.
         //So need an ensureCached() function surrounding it that is cs protected.
 
@@ -6175,7 +6175,7 @@ CHqlConstant::CHqlConstant(IValue *_val) : CHqlRealExpression(no_constant)
     infoFlags |= (HEFhasunadorned|HEFgatheredNew);
 }
 
-CHqlConstant *CHqlConstant::makeConstant(IValue *_val) 
+CHqlConstant *CHqlConstant::makeConstant(IValue *_val)
 {
     CHqlConstant *e = new CHqlConstant(_val);
     return (CHqlConstant *) e->closeExpr();
@@ -6328,12 +6328,12 @@ void CHqlField::sethash()
 
 //==============================================================================================================
 
-CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperands) 
+CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperands)
 : CHqlExpressionWithType(op, type, _ownedOperands)
 {
     switch (op)
     {
-    case no_select: 
+    case no_select:
         normalized.setown(calcNormalizedSelector());
         break;
     }
@@ -6585,7 +6585,7 @@ IHqlDataset *CHqlDataset::queryTable()
 
 //==============================================================================================================
 
-CHqlDataset::CHqlDataset(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
+CHqlDataset::CHqlDataset(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands)
 : CHqlExpressionWithType(_op, _type, _ownedOperands)
 {
     infoFlags &= ~(HEFfunctionOfGroupAggregate|HEFassertkeyed); // parent dataset should never have keyed attribute
@@ -6619,8 +6619,8 @@ bool CHqlDataset::equals(const IHqlExpression & r) const
 /* If a dataset is derived from a base dataset ds, and satisfying:
     1) It does not change the structure of ds
     2) It does not change any field value of a record (e.g. anything that is related to a transform)
-   Then ds is the parent dataset of the derived dataset. 
-   
+   Then ds is the parent dataset of the derived dataset.
+
    Note that the derived dataset can:
     1) has fewer records than ds (by filter, selection, sampling etc)
     2) has different order for records (by sorting)
@@ -6653,7 +6653,7 @@ void CHqlDataset::cacheParent()
     case no_assertsorted:
     case no_assertgrouped:
     case no_assertdistributed:
-    // grouping: can only select fields in groupby - which is checked in checkGrouping() 
+    // grouping: can only select fields in groupby - which is checked in checkGrouping()
     case no_group:
     case no_cogroup:
     case no_grouped:
@@ -6894,8 +6894,8 @@ size32_t CHqlRecord::getSize()
     return getMinRecordSize(this);
 }
 
-unsigned CHqlRecord::getAlignment() 
-{ 
+unsigned CHqlRecord::getAlignment()
+{
     if (!thisAlignment)
     {
         unsigned numFields = numChildren();
@@ -6911,7 +6911,7 @@ unsigned CHqlRecord::getAlignment()
             }
         }
     }
-    return thisAlignment; 
+    return thisAlignment;
 }
 
 IHqlExpression *CHqlRecord::addOperand(IHqlExpression *field)
@@ -7068,13 +7068,13 @@ bool CHqlAnnotation::equals(const IHqlExpression & other) const
     return true;
 }
 
-unsigned CHqlAnnotation::getInfoFlags() const 
-{ 
+unsigned CHqlAnnotation::getInfoFlags() const
+{
     return body->getInfoFlags();
 }
 
-unsigned CHqlAnnotation::getInfoFlags2() const 
-{ 
+unsigned CHqlAnnotation::getInfoFlags2() const
+{
     return body->getInfoFlags2();
 }
 
@@ -7198,7 +7198,7 @@ IHqlExpression * CHqlAnnotation::addOperand(IHqlExpression * expr)
     return body->addOperand(expr);
 }
 
-bool CHqlAnnotation::isFullyBound() const 
+bool CHqlAnnotation::isFullyBound() const
 {
     return body->isFullyBound();
 }
@@ -7218,12 +7218,12 @@ IHqlExpression * CHqlAnnotation::queryNormalizedSelector()
     return body->queryNormalizedSelector();
 }
 
-IHqlExpression * CHqlAnnotation::queryExternalDefinition() const 
+IHqlExpression * CHqlAnnotation::queryExternalDefinition() const
 {
     return body->queryExternalDefinition();
 }
 
-IHqlExpression * CHqlAnnotation::queryFunctionDefinition() const 
+IHqlExpression * CHqlAnnotation::queryFunctionDefinition() const
 {
     return body->queryFunctionDefinition();
 }
@@ -7253,7 +7253,7 @@ IInterface * CHqlAnnotation::queryUnknownExtra()
     return body->queryUnknownExtra();
 }
 
-IValue * CHqlAnnotation::queryValue() const 
+IValue * CHqlAnnotation::queryValue() const
 {
     return body->queryValue();
 }
@@ -7303,7 +7303,7 @@ int CHqlAnnotation::getStartLine() const
     return body->getStartLine();
 }
 
-IAtom * CHqlAnnotation::queryName() const 
+IAtom * CHqlAnnotation::queryName() const
 {
     return body->queryName();
 }
@@ -8172,7 +8172,7 @@ CHqlScope::CHqlScope(IHqlScope* scope)
     initContainer();
 }
 
-CHqlScope::CHqlScope(node_operator _op) 
+CHqlScope::CHqlScope(node_operator _op)
 : CHqlExpressionWithType(_op, NULL)
 {
     id = NULL;
@@ -8257,7 +8257,7 @@ void CHqlScope::sethash()
     SymbolTableIterator iter(symbols);
     HqlExprCopyArray sortedSymbols;
     sortedSymbols.ensure(symbols.count());
-    for (iter.first(); iter.isValid(); iter.next()) 
+    for (iter.first(); iter.isValid(); iter.next())
     {
         IHqlExpression *cur = symbols.mapToValue(&iter.query());
         sortedSymbols.append(*cur);
@@ -8314,7 +8314,7 @@ bool functionBodyUsesContext(IHqlExpression * body)
     }
 }
 
-IHqlExpression* getFunctionBodyAttribute(IHqlExpression* body, IAtom* atom) 
+IHqlExpression* getFunctionBodyAttribute(IHqlExpression* body, IAtom* atom)
 {
     switch (body->getOperator())
     {
@@ -8487,8 +8487,8 @@ IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFla
     OwnedHqlExpr ret = symbols.getLinkedValue(lower(searchName));
 
     if (!ret)
-        return NULL; 
-    
+        return NULL;
+
     if (!(ret->isExported() || (lookupFlags & LSFsharedOK)))
         return NULL;
 
@@ -8509,7 +8509,7 @@ int CHqlScope::getPropInt(IAtom * a, int def) const
 }
 
 bool CHqlScope::getProp(IAtom * a, StringBuffer &ret) const
-{ 
+{
     return false;
 }
 
@@ -8728,7 +8728,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
 
     OwnedHqlExpr ret = CHqlScope::lookupSymbol(searchName, LSFsharedOK|lookupFlags, ctx);
     if(!ret || !ret->hasText())
-    { 
+    {
         OwnedHqlExpr symbol = repositoryLoadSymbol(searchName);
         if(!symbol)
             return NULL;
@@ -8844,7 +8844,7 @@ int CHqlRemoteScope::getPropInt(IAtom * a, int def) const
 }
 
 bool CHqlRemoteScope::getProp(IAtom * a, StringBuffer &ret) const
-{ 
+{
     return (props != NULL && props->getProp(str(a), ret));
 }
 
@@ -8903,7 +8903,7 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scopeExpr, HqlLookupCo
 
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx)
 {
-    scope->ensureSymbolsDefined(ctx); 
+    scope->ensureSymbolsDefined(ctx);
 
     data->setProp("@name", scope->queryFullName());
     unsigned access = scope->getPropInt(accessAtom, 3);
@@ -9232,7 +9232,7 @@ IHqlExpression *CHqlLibraryInstance::lookupSymbol(IIdAtom * searchName, unsigned
     //Not sure about following:
     if ((lookupFlags & LSFignoreBase))
         return ret.getClear();
-    
+
     return createDelayedReference(no_libraryselect, this, ret, lookupFlags, ctx);
 }
 
@@ -9343,7 +9343,7 @@ class VirtualSymbolReplacer : public QuickHqlTransformer
 public:
     VirtualSymbolReplacer(HqlTransformerInfo & _info, IErrorReceiver * _errors, IHqlExpression * _searchModule)
     : QuickHqlTransformer(_info, _errors)
-    { 
+    {
         visited.setown(createAttribute(alreadyVisitedAtom));
         searchModule = _searchModule;
     }
@@ -9961,7 +9961,7 @@ CHqlForwardScope::CHqlForwardScope(IHqlScope * _parentScope, HqlGramCtx * _paren
 {
     //Need to register this foward reference otherwise circular reference means it will never get deleted.
     parseCtx.addForwardReference(parentScope, this);
-    op = no_forwardscope; 
+    op = no_forwardscope;
     assertex(parentScope);
     //Until we've resolved the contents we have no idea if it is fully bound!
     if (parentCtx->hasAnyActiveParameters())
@@ -10030,7 +10030,7 @@ IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lo
 }
 
 IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
-{ 
+{
     if (!resolvedAll)
     {
         //Generally we should have a lookup context passed in so the archive is updated correctly
@@ -10071,18 +10071,18 @@ void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * mod
 
 
 //==============================================================================================================
-CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescope) 
-{   
+CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescope)
+{
     CHqlContextScope* scope = QUERYINTERFACE(_scope, CHqlContextScope);
     assertex(scope);
     SymbolTableIterator it(scope->defined);
-    
+
     //StringBuffer debug("   Context:");
     for(it.first();it.isValid();it.next())
     {
-        IMapping* name = &it.query();       
+        IMapping* name = &it.query();
         IHqlExpression * value = scope->defined.mapToValue(name);
-        
+
         if(value)
         {
             IIdAtom * valueId = value->queryId();
@@ -10190,8 +10190,8 @@ CHqlScopeParameter::CHqlScopeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
-bool CHqlScopeParameter::assignableFrom(ITypeInfo * source) 
-{ 
+bool CHqlScopeParameter::assignableFrom(ITypeInfo * source)
+{
     return type->assignableFrom(source);
 }
 
@@ -10216,7 +10216,7 @@ IHqlExpression *CHqlScopeParameter::clone(HqlExprArray &newkids)
 
 IHqlScope * CHqlScopeParameter::clone(HqlExprArray & children, HqlExprArray & symbols)
 {
-    throwUnexpected(); 
+    throwUnexpected();
 }
 
 void CHqlScopeParameter::sethash()
@@ -10409,7 +10409,7 @@ ITypeInfo *CHqlVariable::getType()
     return type;
 }
 
-CHqlVariable *CHqlVariable::makeVariable(node_operator op, const char * name, ITypeInfo * type) 
+CHqlVariable *CHqlVariable::makeVariable(node_operator op, const char * name, ITypeInfo * type)
 {
     CHqlVariable *e = new CHqlVariable(op, name, type);
     return (CHqlVariable *) e->closeExpr();
@@ -10478,7 +10478,7 @@ IHqlExpression *CHqlAttribute::clone(HqlExprArray & args)
 StringBuffer &CHqlAttribute::toString(StringBuffer &ret)
 {
     ret.append(name);
-    
+
     unsigned kids = numChildren();
     if (kids)
     {
@@ -10683,7 +10683,7 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
     }
 
     infoFlags |= impureFlags;
-    
+
     if (body->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
         infoFlags |= HEFaction;
 
@@ -10882,14 +10882,14 @@ CHqlAlienType::CHqlAlienType(IIdAtom * _id, IHqlScope *_scope, IHqlExpression * 
 
     IHqlExpression * load = queryLoadFunction();
     IHqlExpression * store = queryStoreFunction();
-    
+
     assertex(load->getOperator() == no_funcdef && load->queryChild(1)->numChildren()==1);
     assertex(store->getOperator() == no_funcdef && store->queryChild(1)->numChildren()==1);
 
     IHqlExpression * loadParam = load->queryChild(1)->queryChild(0);
     logical= load->queryType()->queryChildType();
     physical = loadParam->queryType();
-    
+
 }
 #ifdef _MSC_VER
 #pragma warning( pop )
@@ -10928,8 +10928,8 @@ void CHqlAlienType::sethash()
     setInitialHash(0);
 }
 
-unsigned CHqlAlienType::getCardinality()            
-{ 
+unsigned CHqlAlienType::getCardinality()
+{
     //MORE?
     unsigned pcard = physical->getCardinality();
     unsigned lcard = logical->getCardinality();
@@ -11018,9 +11018,9 @@ IHqlExpression *CHqlAlienType::lookupSymbol(IIdAtom * searchName)
     return scope->lookupSymbol(searchName, LSFpublic, ctx);
 }
 
-size32_t CHqlAlienType::getSize() 
-{ 
-    return physical->getSize(); 
+size32_t CHqlAlienType::getSize()
+{
+    return physical->getSize();
     //return getMaxSize();      // would this be better?, and should the value be cached?
 }
 
@@ -11096,9 +11096,9 @@ extern IHqlExpression *createEnumType(ITypeInfo * _type, IHqlScope *_scope)
 
 //==============================================================================================================
 
-void CHqlTemplateFunctionContext::sethash() 
-{ 
-    CHqlExpression::sethash(); 
+void CHqlTemplateFunctionContext::sethash()
+{
+    CHqlExpression::sethash();
     HASHFIELD(context);
 }
 
@@ -11598,7 +11598,7 @@ inline bool isExternalMethodDefinition(IHqlExpression * funcdef)
     if (funcdef->getOperator() == no_funcdef)
     {
         IHqlExpression * body = funcdef->queryChild(0);
-        if ((body->getOperator() == no_external) && 
+        if ((body->getOperator() == no_external) &&
             (body->hasAttribute(methodAtom) || body->hasAttribute(omethodAtom)))
             return true;
     }
@@ -11647,12 +11647,12 @@ inline IHqlExpression * createCallExpression(IHqlExpression * funcdef, HqlExprAr
 
 struct CallExpansionContext
 {
-    CallExpansionContext() 
-    { 
-        errors = NULL; 
-        functionCache = NULL; 
-        expandNestedCalls = true; 
-        forceOutOfLineExpansion = false; 
+    CallExpansionContext()
+    {
+        errors = NULL;
+        functionCache = NULL;
+        expandNestedCalls = true;
+        forceOutOfLineExpansion = false;
     }
 
     inline bool expandFunction(IHqlExpression * funcdef)
@@ -11692,7 +11692,7 @@ class ParameterBindTransformer : public QuickHqlTransformer
 {
 public:
     ParameterBindTransformer(CallExpansionContext & _ctx, IHqlExpression * _call)
-    : QuickHqlTransformer(parameterBindTransformerInfo, _ctx.errors), 
+    : QuickHqlTransformer(parameterBindTransformerInfo, _ctx.errors),
       ctx(_ctx), call(_call)
     {
         depth = 0;
@@ -12030,8 +12030,8 @@ static HqlTransformerInfo callExpandTransformerInfo("CallExpandTransformer");
 class CallExpandTransformer : public QuickHqlTransformer
 {
 public:
-    CallExpandTransformer(CallExpansionContext & _ctx) 
-    : QuickHqlTransformer(callExpandTransformerInfo, _ctx.errors), 
+    CallExpandTransformer(CallExpansionContext & _ctx)
+    : QuickHqlTransformer(callExpandTransformerInfo, _ctx.errors),
       ctx(_ctx)
     {
     }
@@ -12576,7 +12576,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
         break;
     case no_if:
         type = args.item(1).getType();
-        //can be null if the 
+        //can be null if the
         if (!type)
             type = args.item(2).getType();
         break;
@@ -12831,7 +12831,7 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*LINK(cachedContextAttribute));
     if (functionBodyIsActivity(body))
         attrs.append(*createAttribute(activityAtom));
-    
+
     IHqlExpression* passParamAttr = getFunctionBodyAttribute(body, passParameterMetaAtom);
     if (getBoolAttributeValue(passParamAttr))
         attrs.append(*createAttribute(passParameterMetaAtom));
@@ -13215,7 +13215,7 @@ bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, const HqlExprCopy
     return true;
 }
 
-    
+
 bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, IHqlExpression * expr)
 {
     HqlExprCopyArray scopesUsed;
@@ -13751,7 +13751,7 @@ static IHqlExpression * doAttachWorkflowOwn(IHqlExpression * value, IHqlExpressi
     {
         if (value->isDataset())
             return createDataset(no_colon, value, LINK(workflow));
-        
+
         if (value->queryType()->getTypeCode() == type_row)
             return createRow(no_colon, value, LINK(workflow));
 
@@ -13759,7 +13759,7 @@ static IHqlExpression * doAttachWorkflowOwn(IHqlExpression * value, IHqlExpressi
             return createDictionary(no_colon, value, LINK(workflow));
     }
 
-    //If a string value is stored, its type is a string of unknown length 
+    //If a string value is stored, its type is a string of unknown length
     //(because a different length string might be stored...)
     Linked<ITypeInfo> type = value->queryType();
 #ifdef STORED_CAN_CHANGE_LENGTH
@@ -13782,7 +13782,7 @@ static IHqlExpression * doAttachWorkflowOwn(IHqlExpression * value, IHqlExpressi
 
 void processSectionPseudoWorkflow(SharedHqlExpr & expr, IHqlExpression * workflow, const HqlExprCopyArray * allActiveParameters)
 {
-    //Section attributes are implemented by adding a sectionAnnotation to all datasets within a section that aren't 
+    //Section attributes are implemented by adding a sectionAnnotation to all datasets within a section that aren't
     //included in the list of active parameters, or the datasets provided as parameters to the section
     HqlSectionAnnotator annotator(workflow);
     if (allActiveParameters)
@@ -14296,7 +14296,7 @@ static IHqlExpression * applyInstantEclLimit(IHqlExpression * expr, unsigned lim
         args.append(*createUniqueId());
         return expr->clone(args);
     }
-    
+
     if (expr->isDataset())
     {
         if (limit && (expr->getOperator() != no_choosen))
@@ -14414,8 +14414,8 @@ unsigned queryCurrentTransformDepth()
     return state->curTransformDepth;
 }
 
-IInterface * CHqlExpression::queryTransformExtra() 
-{ 
+IInterface * CHqlExpression::queryTransformExtra()
+{
     const TransformTrackingInfo * state = &transformExtraState[threadActiveExtraIndex];
     const transformdepth_t curTransformDepth = state->curTransformDepth;
     const unsigned extraIndex = threadActiveExtraIndex-1;
@@ -14424,12 +14424,12 @@ IInterface * CHqlExpression::queryTransformExtra()
 #endif
     assertex(curTransformDepth);
     if (TRANSFORM_DEPTH(transformDepth[extraIndex]) == curTransformDepth)
-        return transformExtra[extraIndex]; 
+        return transformExtra[extraIndex];
     return NULL;
 }
 
 void CHqlExpression::resetTransformExtra(IInterface * x, unsigned depth)
-{ 
+{
     const unsigned extraIndex = threadActiveExtraIndex-1;
 #if NUM_PARALLEL_TRANSFORMS == 1
     assertex(extraIndex == 0);
@@ -14475,7 +14475,7 @@ void CHqlExpression::resetTransformExtra(IInterface * x, unsigned depth)
 
 
 void CHqlExpression::doSetTransformExtra(IInterface * x, unsigned depthMask)
-{ 
+{
 #ifdef GATHER_LINK_STATS
     numSetExtra++;
     if (x == this)
@@ -14523,7 +14523,7 @@ void CHqlExpression::doSetTransformExtra(IInterface * x, unsigned depthMask)
 
 
 void CHqlExpression::setTransformExtra(IInterface * x)
-{ 
+{
     unsigned depthMask;
     if (x != this)
     {
@@ -14537,13 +14537,13 @@ void CHqlExpression::setTransformExtra(IInterface * x)
 
 
 void CHqlExpression::setTransformExtraOwned(IInterface * x)
-{ 
+{
     DO_SET_TRANSFORM_EXTRA(x, 0);
 }
 
 
 void CHqlExpression::setTransformExtraUnlinked(IInterface * x)
-{ 
+{
     DO_SET_TRANSFORM_EXTRA(x, TRANSFORM_DEPTH_NOLINK);
 }
 
@@ -14670,7 +14670,7 @@ HQL_API StringBuffer& getFriendlyTypeStr(ITypeInfo* type, StringBuffer& s)
 {
     if (!type)
         return s.append("<unknown>");
-    
+
     switch(type->getTypeCode())
     {
     case type_int:
@@ -14688,7 +14688,7 @@ HQL_API StringBuffer& getFriendlyTypeStr(ITypeInfo* type, StringBuffer& s)
     case type_data:
         s.append("Data");
         break;
-    
+
     case type_set:
         {
             s.append("Set of ");
@@ -15878,7 +15878,7 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
 }
 
 bool isContextDependent(IHqlExpression * expr, bool ignoreFailures, bool ignoreGraph)
-{ 
+{
     unsigned flags = expr->getInfoFlags();
     unsigned mask = HEFcontextDependent;
     if (ignoreFailures)
@@ -15899,7 +15899,7 @@ bool isPureCanSkip(IHqlExpression * expr)
 
 bool hasSideEffects(IHqlExpression * expr)
 {
-    return (expr->getInfoFlags() & (HEFthrowscalar|HEFthrowds)) != 0; 
+    return (expr->getInfoFlags() & (HEFthrowscalar|HEFthrowds)) != 0;
 }
 
 bool isPureVirtual(IHqlExpression * expr)
@@ -16391,7 +16391,7 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
     case no_maxgroup:       newop = no_max; numArgs = 1; break;
     case no_sumgroup:       newop = no_sum; numArgs = 1; break;
     case no_existsgroup:    newop = no_exists; break;
-    default: 
+    default:
         return NULL;
     }
 
@@ -16639,7 +16639,7 @@ ITypeInfo * createRecordType(IHqlExpression * record)
         return LINK(record->queryRecordType());
     if (record->queryBody(true) == record)
         return record->getType();
-    return makeOriginalModifier(record->getType(), LINK(record)); 
+    return makeOriginalModifier(record->getType(), LINK(record));
 }
 
 
@@ -16679,7 +16679,7 @@ ITypeInfo * getSumAggType(ITypeInfo * argType)
         return makeRealType(8);
     case type_decimal:
         {
-            //A guess is to add 12 more digits 
+            //A guess is to add 12 more digits
             unsigned oldDigits = argType->getDigits();
             if (oldDigits == UNKNOWN_LENGTH)
                 return LINK(argType);
@@ -16751,12 +16751,12 @@ bool isUpdatedConditionally(IHqlExpression * expr)
     return (updateAttr && !updateAttr->queryAttribute(alwaysAtom));
 }
 
-ITypeInfo * getTypedefType(IHqlExpression * expr) 
-{ 
+ITypeInfo * getTypedefType(IHqlExpression * expr)
+{
     //Don't create annotate with a typedef modifier if it doesn't add any information - e.g., maxlength
     if ((expr->getOperator() == no_typedef) && (expr->numChildren() == 0))
         return expr->getType();
-    return makeOriginalModifier(expr->getType(), LINK(expr)); 
+    return makeOriginalModifier(expr->getType(), LINK(expr));
 }
 
 void extendAdd(SharedHqlExpr & value, IHqlExpression * expr)
@@ -16888,7 +16888,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     }
     else
     {
-        HqlScopeArray scopes;   
+        HqlScopeArray scopes;
         getRootScopes(scopes, dataServer, ctx);
         ForEachItemIn(i, scopes)
         {
@@ -17033,7 +17033,7 @@ List of changes:
 
 4) Add a HEF2workflow instead of HEF2sandbox, and use for define, globalscope, and workflow optimizations.
 
-5) How can I remove the need for temporary classes if no transformations occur?  
+5) How can I remove the need for temporary classes if no transformations occur?
    E.g., if createTransform() returns same, set extra to expr instead of the appropriate new class.
    More complicated, but would save lots of allocations, linking etc..  How would this be handled without too much pain?
 

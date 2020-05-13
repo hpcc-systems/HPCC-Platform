@@ -25,7 +25,7 @@
 
 typedef bool (*priorityGreaterFunction)(const void * left, const void * right);
 
-template <class BASE, bool ALLOWNULLS> 
+template <class BASE, bool ALLOWNULLS>
 class QueueOf
 {
     typedef QueueOf<BASE, ALLOWNULLS> SELF;
@@ -64,18 +64,18 @@ public:
     }
     inline BASE *head() const { return num?ptrs[headp]:NULL; }
     inline BASE *tail() const { return num?ptrs[tailp]:NULL; }
-    inline BASE *item(unsigned idx) const { 
+    inline BASE *item(unsigned idx) const {
         if (idx>=num)
             return NULL;
         idx+=headp;
         if (idx>=max)
             idx-=max;
-        return ptrs[idx]; 
+        return ptrs[idx];
     }
     inline void enqueue(BASE *e)
     {
         if (ALLOWNULLS || e) {
-            if (num==max) 
+            if (num==max)
                 expand();
             if (num==0) {
                 headp = 0;
@@ -93,7 +93,7 @@ public:
     void enqueueHead(BASE *e)
     {
         if (ALLOWNULLS || e) {
-            if (num==max) 
+            if (num==max)
                 expand();
             if (num==0) {
                 headp = 0;
@@ -116,7 +116,7 @@ public:
             else if (i>=num)
                 enqueue(e);
             else {
-                if (num==max) 
+                if (num==max)
                     expand();
                 i += headp;
                 if (i>=max)
@@ -179,7 +179,7 @@ public:
             return dequeue();
         if (i>=num)
             return NULL;
-        if (i+1==num) 
+        if (i+1==num)
             return dequeueTail();
         i += headp;
         if (i>=max)
@@ -205,7 +205,7 @@ public:
         idx+=headp;
         if (idx>=max)
             idx-=max;
-        ptrs[idx] = v; 
+        ptrs[idx] = v;
     }
     BASE * query(unsigned idx)
     {
@@ -215,7 +215,7 @@ public:
             idx-=max;
         return ptrs[idx];
     }
-    unsigned find(BASE *e) 
+    unsigned find(BASE *e)
     {   // simple linear search
         if (num!=0) {
             if (e==ptrs[tailp])
@@ -243,7 +243,7 @@ public:
     inline unsigned ordinality() const { return num; }
 };
 
-template <class BASE, bool ALLOWNULLS> 
+template <class BASE, bool ALLOWNULLS>
 class SafeQueueOf : private QueueOf<BASE, ALLOWNULLS>
 {
     typedef SafeQueueOf<BASE, ALLOWNULLS> SELF;
@@ -275,7 +275,7 @@ public:
 };
 
 
-template <class BASE, bool ALLOWNULLS> 
+template <class BASE, bool ALLOWNULLS>
 class SimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
 {
     typedef SimpleInterThreadQueueOf<BASE, ALLOWNULLS> SELF;
@@ -288,12 +288,12 @@ protected:
     unsigned limit;
 
 
-    bool qwait(Semaphore &sem,unsigned &waiting,unsigned timeout,unsigned &start) 
-    { 
+    bool qwait(Semaphore &sem,unsigned &waiting,unsigned timeout,unsigned &start)
+    {
         // in crit block
         unsigned remaining;
         if (timeout) {
-            if (timeout==INFINITE) 
+            if (timeout==INFINITE)
                 remaining = timeout;
             else
             {
@@ -308,7 +308,7 @@ protected:
                     remaining = (timeout-elapsed);
                 }
             }
-        }   
+        }
         else
             return false;
         waiting++;
@@ -331,23 +331,23 @@ protected:
     {
         if (ALLOWNULLS) {
             if (SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality()) {
-                ret = tail?SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeueTail():SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeue(); 
+                ret = tail?SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeueTail():SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeue();
                 return true;
-            }   
+            }
             return false;
         }
-        ret = tail?SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeueTail():SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeue(); 
+        ret = tail?SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeueTail():SafeQueueOf<BASE, ALLOWNULLS>::unsafedequeue();
         return ret!=NULL;
     }
 
 public:
-    SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
+    SimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
     {
         limit = 0; // no limit
         reset();
     }
 
-    ~SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
+    ~SimpleInterThreadQueueOf<BASE, ALLOWNULLS>()
     {
         stop();
     }
@@ -359,50 +359,16 @@ public:
         stopped = false;
     }
 
-    bool enqueue(BASE *e,unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit);    
-        if (limit) {
-            unsigned start=0;
-            while (limit<=SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality()) 
-                if (stopped||!qwait(deqwaitsem,deqwaiting,timeout,start))
-                    return false;
-        }
-        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueue(e); 
-        if (enqwaiting) {
-            enqwaitsem.signal(enqwaiting);
-            enqwaiting = 0;
-        }
-        return true;
-    }
-
-    bool enqueueHead(BASE *e,unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit);    
-        if (limit) {
-            unsigned start=0;
-            while (limit<=SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality()) 
-                if (stopped||!qwait(deqwaitsem,deqwaiting,timeout,start))
-                    return false;
-        }
-        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueueHead(e); 
-        if (enqwaiting) {
-            enqwaitsem.signal(enqwaiting);
-            enqwaiting = 0;
-        }
-        return true;
-    }
-
-    bool enqueue(BASE *e,priorityGreaterFunction p,unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit);    
+    bool enqueue(BASE *e,unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
         if (limit) {
             unsigned start=0;
             while (limit<=SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality())
                 if (stopped||!qwait(deqwaitsem,deqwaiting,timeout,start))
                     return false;
         }
-        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueue(e,p); 
+        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueue(e);
         if (enqwaiting) {
             enqwaitsem.signal(enqwaiting);
             enqwaiting = 0;
@@ -410,9 +376,43 @@ public:
         return true;
     }
 
-    BASE *dequeue(unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit); 
+    bool enqueueHead(BASE *e,unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
+        if (limit) {
+            unsigned start=0;
+            while (limit<=SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality())
+                if (stopped||!qwait(deqwaitsem,deqwaiting,timeout,start))
+                    return false;
+        }
+        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueueHead(e);
+        if (enqwaiting) {
+            enqwaitsem.signal(enqwaiting);
+            enqwaiting = 0;
+        }
+        return true;
+    }
+
+    bool enqueue(BASE *e,priorityGreaterFunction p,unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
+        if (limit) {
+            unsigned start=0;
+            while (limit<=SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality())
+                if (stopped||!qwait(deqwaitsem,deqwaiting,timeout,start))
+                    return false;
+        }
+        SafeQueueOf<BASE, ALLOWNULLS>::unsafeenqueue(e,p);
+        if (enqwaiting) {
+            enqwaitsem.signal(enqwaiting);
+            enqwaiting = 0;
+        }
+        return true;
+    }
+
+    BASE *dequeue(unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
         unsigned start=0;
         while (!stopped) {
             BASE *ret;
@@ -429,12 +429,12 @@ public:
         return NULL;
     }
 
-    BASE *dequeueTail(unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit); 
+    BASE *dequeueTail(unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
         unsigned start=0;
         while (!stopped) {
-            BASE *ret; 
+            BASE *ret;
             if (get(ret,true)) {
                 if (deqwaiting) {
                     deqwaitsem.signal(deqwaiting);
@@ -464,7 +464,7 @@ public:
 
     bool waitMaxOrdinality(unsigned max,unsigned timeout)
     {
-        CriticalBlock b(SELF::crit); 
+        CriticalBlock b(SELF::crit);
         unsigned start=0;
         while (!stopped) {
             if (SafeQueueOf<BASE, ALLOWNULLS>::unsafeordinality()<=max)
@@ -480,7 +480,7 @@ public:
 
     void stop() // stops all waiting operations
     {
-        CriticalBlock b(SELF::crit); 
+        CriticalBlock b(SELF::crit);
         do {
             stopped = true;
             if (enqwaiting) {
@@ -492,21 +492,21 @@ public:
                 deqwaiting = 0;
             }
             {
-                CriticalUnblock ub(SELF::crit); 
+                CriticalUnblock ub(SELF::crit);
                 Sleep(10);      // bit of a kludge
             }
         } while (enqwaiting||deqwaiting);
     }
 };
 
-template <class BASE, class OWNER, bool ALLOWNULLS> 
+template <class BASE, class OWNER, bool ALLOWNULLS>
 class CallbackInterThreadQueueOf : public SimpleInterThreadQueueOf<BASE, ALLOWNULLS>
 {
     typedef CallbackInterThreadQueueOf<BASE, OWNER, ALLOWNULLS> SELF;
 public:
-    BASE * dequeueAndNotify(OWNER * owner, unsigned timeout=INFINITE) 
-    { 
-        CriticalBlock b(SELF::crit); 
+    BASE * dequeueAndNotify(OWNER * owner, unsigned timeout=INFINITE)
+    {
+        CriticalBlock b(SELF::crit);
         unsigned start=0;
         while (!SELF::stopped) {
             BASE *ret;
@@ -544,7 +544,7 @@ public:
                                     for (unsigned x = 0; x< numItems##x; ++x)
 
 #define ForEachQueueItemInRev(x,y)  unsigned x = (y).ordinality();              \
-                                    while (x--) 
+                                    while (x--)
 
 
 #endif

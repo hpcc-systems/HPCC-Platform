@@ -35,10 +35,10 @@ class CDiskWriteSlaveActivity : public CDiskWriteSlaveActivityBase
 protected:
     virtual void write()
     {
-        ActPrintLog("%s",grouped?"Grouped":"Ungrouped");            
+        ActPrintLog("%s",grouped?"Grouped":"Ungrouped");
 
         while(!abortSoon)
-        {       
+        {
             OwnedConstThorRow r = inputStream->nextRow();
             if (!r.get()) {
                 if (grouped) {
@@ -98,7 +98,7 @@ protected:
         while(!abortSoon)
         {
             OwnedConstThorRow r(inputStream->ungroupedNextRow());
-            if (!r) 
+            if (!r)
                 break;
 
             csvOutput.beginLine();

@@ -30,8 +30,8 @@
 void showFIOErr(LPCSTR fname, bool open)
 {
     char msg[384], lastErrTxt[256];
-    if(GetLastError())  
-        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, lastErrTxt, sizeof(lastErrTxt), NULL);   
+    if(GetLastError())
+        FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0, lastErrTxt, sizeof(lastErrTxt), NULL);
     else
         lastErrTxt[0] = NULL;
 
@@ -81,13 +81,13 @@ void toEp(SocketEndpoint & ep, LPCSTR epTxt)
 {
     char * tmp = static_cast <char *> (alloca(strlen(epTxt) + 1));
     strcpy(tmp, epTxt);
-    for(int i = strlen(tmp); i >= 0; i--)       
+    for(int i = strlen(tmp); i >= 0; i--)
     {
         if(*(tmp + i) == ':')
-        {   
+        {
             ep.port = atoi(tmp + i + 1);
             *(tmp + i) = 0;
-            ep.ipset(tmp);              
+            ep.ipset(tmp);
             break;
         }
     }

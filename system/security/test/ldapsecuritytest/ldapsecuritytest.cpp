@@ -58,8 +58,8 @@ void inputpassword(const char* prompt, StringBuffer& passwd)
         {
             printf("\b \b");
             if (num_entries)
-            { 
-                num_entries--; 
+            {
+                num_entries--;
             }
             continue;
         }
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 
     InitModuleObjects();
 
-    const char *action = NULL, *configfile = NULL, *username = NULL, *passwd = NULL, 
+    const char *action = NULL, *configfile = NULL, *username = NULL, *passwd = NULL,
         *resource = NULL, *resourcetype = NULL, *newpasswd = NULL, *firstname = NULL, *lastname=NULL;
 
     bool stress = false;
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
         printf("You have to specify the config file");
         return -1;
     }
-    
+
     try
     {
         Owned<IPropertyTree> cfg = createPTreeFromXMLFile(configfile);
@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
             else
             {
                 CPermissionCheckThread** thrds = new CPermissionCheckThread*[numthrds];
-                for(int i = 0; i < numthrds; i++)   
+                for(int i = 0; i < numthrds; i++)
                     thrds[i] = new CPermissionCheckThread(secmgr, username, passwd, resource, rtype, numrounds);
                 for(int j = 0; j < numthrds; j++)
                     thrds[j]->start();
@@ -381,7 +381,7 @@ int main(int argc, char* argv[])
             if(ok)
                 printf("user password changed\n");
             else
-                printf("user password not changed\n");          
+                printf("user password not changed\n");
         }
 #endif
     }

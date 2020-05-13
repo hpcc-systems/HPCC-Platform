@@ -59,7 +59,7 @@
 #define REFUSE_STALE_CONNECTION
 
 
-#define MP_PROTOCOL_VERSION    0x102                   
+#define MP_PROTOCOL_VERSION    0x102
 #define MP_PROTOCOL_VERSIONV6   0x202                   // extended for IPV6
 
 // These should really be configurable
@@ -102,7 +102,7 @@ struct SocketEndpointV4
         if (val.getNetAddress(sizeof(ip),&ip)!=sizeof(ip))
             IPV6_NOT_IMPLEMENTED();
     }
-    void get(SocketEndpoint &val)   
+    void get(SocketEndpoint &val)
     {
         val.setNetAddress(sizeof(ip),&ip);
         val.port = port;
@@ -115,7 +115,7 @@ struct SocketEndpointV4
     }
 };
 
-class PacketHeader // standard packet header - no virtuals 
+class PacketHeader // standard packet header - no virtuals
 {
 public:
     static unsigned nextseq;
@@ -182,7 +182,7 @@ unsigned PacketHeader::nextseq=0;
 unsigned PacketHeader::lasttick=0;
 
 
-#define MINIMUMPACKETSIZE       sizeof(PacketHeader) 
+#define MINIMUMPACKETSIZE       sizeof(PacketHeader)
 #define MAXDATAPERPACKET        50000
 
 struct MultiPacketHeader
@@ -207,19 +207,19 @@ struct MultiPacketHeader
 };
 
 
-// 
+//
 
 class DECL_EXCEPTION CMPException: public IMP_Exception, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMPException(MessagePassingError err,const SocketEndpoint &ep) : error(err), endpoint(ep) 
+    CMPException(MessagePassingError err,const SocketEndpoint &ep) : error(err), endpoint(ep)
     {
     }
 
     StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
+    {
         StringBuffer tmp;
         switch (error) {
         case MPERR_ok:                          str.append("OK"); break;
@@ -233,9 +233,9 @@ public:
         return str;
     }
     int             errorCode() const { return error; }
-    MessageAudience errorAudience() const 
-    { 
-        return MSGAUD_user; 
+    MessageAudience errorAudience() const
+    {
+        return MSGAUD_user;
     }
     virtual const SocketEndpoint &queryEndpoint() const { return endpoint; }
 private:
@@ -312,7 +312,7 @@ public:
                     break;
                 }
             }
-            if (b->getReplyTag() != TAG_CANCEL) 
+            if (b->getReplyTag() != TAG_CANCEL)
                 break;
             if (iter++==10) {
                 delete b;
@@ -523,10 +523,10 @@ public:
     void addConnectionMonitor(IConnectionMonitor *monitor);
     void removeConnectionMonitor(IConnectionMonitor *monitor);
     void notifyClosed(SocketEndpoint &ep, bool trace);
-    StringBuffer &getReceiveQueueDetails(StringBuffer &buf) 
+    StringBuffer &getReceiveQueueDetails(StringBuffer &buf)
     {
         return receiveq.getReceiveQueueDetails(buf);
-    }   
+    }
     void removeChannel(CMPChannel *c) { if (c) removeExact(c); }
 protected:
     void onAdd(void *);
@@ -600,7 +600,7 @@ class CMPNotifyClosedThread: public Thread
     IArrayOf<IConnectionMonitor> connectionmonitors;
     CriticalSection conmonsect;
     SimpleInterThreadQueueOf<INode, false> workq;
-    bool stopping;  
+    bool stopping;
     CMPServer *parent;
     CriticalSection stopsect;
 public:
@@ -640,7 +640,7 @@ public:
                 if (node->endpoint().isNull())
                     break;
                 SocketEndpoint ep = node->endpoint();
-                parent->getReceiveQ().notifyClosed(ep); 
+                parent->getReceiveQ().notifyClosed(ep);
                 IArrayOf<IConnectionMonitor> toclose;
                 {
                     CriticalBlock block(conmonsect);
@@ -790,9 +790,9 @@ protected: friend class CMPServer;
     SocketEndpoint remoteep;
     SocketEndpoint localep;         // who the other end thinks I am
 protected: friend class CMPPacketReader;
-    unsigned lastxfer;  
+    unsigned lastxfer;
 #ifdef _FULLTRACE
-    unsigned startxfer; 
+    unsigned startxfer;
     unsigned numiter;
 #endif
 
@@ -1147,7 +1147,7 @@ public:
                 LOG(MCdebugInfo(100), unknownJob, "MP Warning: WritePacket unexpected NULL socket");
                 return false;
             }
-            dest->write_multiple(n,bufs,sizes);  
+            dest->write_multiple(n,bufs,sizes);
             lastxfer = msTick();
 #ifdef _FULLTRACE
             LOG(MCdebugInfo(100), unknownJob, "WritePacket(timewaiting=%d,timesending=%d)",t2-t1,lastxfer-t2);
@@ -1182,14 +1182,14 @@ public:
                 return connect(tm);
             if (closed||!channelsock)
                 return false;
-            if ((msTick()-lastxfer)<VERIFY_DELAY) 
+            if ((msTick()-lastxfer)<VERIFY_DELAY)
                 return true;
         }
         StringBuffer ep;
-        remoteep.getUrlStr(ep); 
+        remoteep.getUrlStr(ep);
         for (;;) {
             CTimeMon pingtm(1000*60);
-            if (sendPing(pingtm)) 
+            if (sendPing(pingtm))
                 break;
             {
                 CriticalBlock block(connectsect);
@@ -1203,7 +1203,7 @@ public:
             }
             LOG(MCdebugInfo(100), unknownJob, "MP: verify, ping failed to %s, retrying",ep.str());
             unsigned remaining;
-            if (!pingtm.timedout(&remaining)&&remaining) 
+            if (!pingtm.timedout(&remaining)&&remaining)
                 Sleep(remaining);
         }
         return true;
@@ -1219,7 +1219,7 @@ public:
         bool socketfailed = false;
         {
             CriticalBlock block(connectsect);
-            if (!channelsock) 
+            if (!channelsock)
                 return;
             lastxfer = msTick();
             closed = true;
@@ -1251,7 +1251,7 @@ public:
             try {
                 s->Release();
             }
-            catch (IException *) { 
+            catch (IException *) {
                 // ignore
             }
         }
@@ -1265,7 +1265,7 @@ public:
             try {
                 s->close();
             }
-            catch (IException *) { 
+            catch (IException *) {
                 socketfailed = true; // ignore if the socket has been closed
             }
             s->Release();
@@ -1326,7 +1326,7 @@ class PingPacketHandler // TAG_SYS_PING
 public:
     void handle(CMPChannel *channel,bool identifyself)
     {
-        channel->sendPingReply(CONFIRM_TIMEOUT,identifyself); 
+        channel->sendPingReply(CONFIRM_TIMEOUT,identifyself);
     }
     bool send(CMPChannel *channel,PacketHeader &hdr,CTimeMon &tm)
     {
@@ -1389,7 +1389,7 @@ public:
     }
     CMessageBuffer *handle(CMessageBuffer * msg)
     {
-        if (!msg) 
+        if (!msg)
             return NULL;
         CriticalBlock block(sect);
         MultiPacketHeader mhdr;
@@ -1409,7 +1409,7 @@ public:
                 return NULL;
             }
             recv = new CMultiPacketReceiver;
-            recv->msg = new CMessageBuffer();           
+            recv->msg = new CMessageBuffer();
             recv->msg->init(msg->getSender(),mhdr.tag,msg->getReplyTag());
             recv->ptr = (byte *)recv->msg->reserveTruncate(mhdr.total);
             recv->sender = msg->getSender();
@@ -1453,7 +1453,7 @@ public:
         outhdr = hdr;
         outhdr.tag = TAG_SYS_MULTI;
         MultiPacketHeader mhdr;
-        mhdr.total = hdr.size-sizeof(hdr);      
+        mhdr.total = hdr.size-sizeof(hdr);
         mhdr.numparts = (mhdr.total+MAXDATAPERPACKET-1)/MAXDATAPERPACKET;
         mhdr.size = mhdr.total/mhdr.numparts;
         mhdr.tag = hdr.tag;
@@ -1462,7 +1462,7 @@ public:
         const byte *p = (const byte *)mb.toByteArray();
         unsigned i=0;
         for (;;) {
-            if (i+1==mhdr.numparts) 
+            if (i+1==mhdr.numparts)
                 mhdr.size = mhdr.total-mhdr.ofs;
 #ifdef _FULLTRACE
             LOG(MCdebugInfo(100), unknownJob, "MP: multi-send block=%d, num blocks=%d, ofs=%d, size=%d",i,mhdr.numparts,mhdr.ofs,mhdr.size);
@@ -1544,9 +1544,9 @@ public:
         if (!parent)
             return false;
         try {
-            // try and mop up all data on socket 
-            
-            size32_t sizeavail = sock->avail_read(); 
+            // try and mop up all data on socket
+
+            size32_t sizeavail = sock->avail_read();
             if (sizeavail==0) {
                 // graceful close
                 Linked<CMPChannel> pc;
@@ -1557,7 +1557,7 @@ public:
                         parent = NULL;
                     }
                 }
-                if (pc) 
+                if (pc)
                 {
 #ifdef _TRACELINKCLOSED
                     LOG(MCdebugInfo(100), unknownJob, "CMPPacketReader::notifySelected() about to close socket, mode = 0x%x", selected);
@@ -1595,7 +1595,7 @@ public:
                         throw e;
                     }
                     if (sizeavail<=sizeof(hdr))
-                        sizeavail = sock->avail_read(); 
+                        sizeavail = sock->avail_read();
                     else
                         sizeavail -= sizeof(hdr);
 #ifdef _FULLTRACE
@@ -1608,7 +1608,7 @@ public:
                     activeptr = (byte *)activemsg->reserveTruncate(remaining);
                     hdr.setMessageFields(*activemsg);
                 }
-                
+
                 size32_t toread = sizeavail;
                 if (toread>remaining)
                     toread = remaining;
@@ -1629,20 +1629,20 @@ public:
                              activemsg = parent->queryServer().multipackethandler->handle(activemsg); // activemsg in/out
                              break;
                         case TAG_SYS_PING:
-                             parent->queryServer().pingpackethandler->handle(parent,false); //,activemsg); 
+                             parent->queryServer().pingpackethandler->handle(parent,false); //,activemsg);
                              delete activemsg;
                              activemsg = NULL;
                              break;
                         case TAG_SYS_PING_REPLY:
-                             parent->queryServer().pingreplypackethandler->handle(parent); 
+                             parent->queryServer().pingreplypackethandler->handle(parent);
                              delete activemsg;
                              activemsg = NULL;
                              break;
                         case TAG_SYS_BCAST:
-                             activemsg = parent->queryServer().broadcastpackethandler->handle(activemsg); 
+                             activemsg = parent->queryServer().broadcastpackethandler->handle(activemsg);
                              break;
                         case TAG_SYS_FORWARD:
-                             activemsg = parent->queryServer().forwardpackethandler->handle(activemsg); 
+                             activemsg = parent->queryServer().forwardpackethandler->handle(activemsg);
                              break;
                         default:
                              parent->queryServer().userpackethandler->handle(activemsg); // takes ownership
@@ -1718,7 +1718,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         ~attachdTor() { atomic_dec(&attchk); }
     } attachChk (attachchk);
 
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
     PROGLOG("MP: attachSocket on entry, ismaster = %d, confirm = %p, channelsock = %p, addrval = %" I64F "u", ismaster, confirm, channelsock, addrval);
 #endif
 
@@ -1733,7 +1733,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
 
     CriticalBlock block(connectsect);
 
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
     PROGLOG("MP: attachSocket got connectsect, channelsock = %p", channelsock);
 #endif
 
@@ -1793,13 +1793,13 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
     reader->init(this);
     channelsock = LINK(newsock);
 
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
     PROGLOG("MP: attachSocket before select add");
 #endif
 
     parent->querySelectHandler().add(channelsock,SELECTMODE_READ,reader);
 
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
     PROGLOG("MP: attachSocket after select add");
 #endif
 
@@ -1810,7 +1810,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
 }
 
 bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon &tm, bool reply)
-{   
+{
     // note must not adjust mb
     assertex(tag!=TAG_NULL);
     assertex(tm.timeout);
@@ -1865,8 +1865,8 @@ bool CMPChannel::send(MemoryBuffer &mb, mptag_t tag, mptag_t replytag, CTimeMon 
             multitag = _multitag;
         }
 
-        ~Cpostcondition() 
-        { 
+        ~Cpostcondition()
+        {
             if (multitag)
                 *multitag = TAG_NULL;
             if (sendwaiting)
@@ -1895,7 +1895,7 @@ bool CMPChannel::sendPing(CTimeMon &tm)
     try {
         ret = parent->pingpackethandler->send(this,hdr,tm)&&!tm.timedout(&remaining);
     }
-    catch (IException *e) {         
+    catch (IException *e) {
         FLLOG(MCoperatorWarning, unknownJob, e,"MP ping(1)");
         e->Release();
     }
@@ -1925,7 +1925,7 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
     try {
         ret = parent->pingreplypackethandler->send(this,hdr,mb,mon);
     }
-    catch (IException *e) {         
+    catch (IException *e) {
         FLLOG(MCoperatorWarning, unknownJob, e,"MP ping reply(1)");
         e->Release();
         ret = false;
@@ -1933,7 +1933,7 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
     sendmutex.unlock();
     return ret;
 }
-    
+
 // --------------------------------------------------------
 CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
     : Thread("MP Connection Thread")
@@ -1997,7 +1997,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
         if (!listensock)
             throw lastErr.getClear();
     }
-    else 
+    else
         listensock = NULL;  // delay create till running
     parent->setPort(port);
 #ifdef _TRACE
@@ -2009,7 +2009,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
 void CMPConnectThread::checkSelfDestruct(void *p,size32_t sz)
 {
     byte *b = (byte *)p;
-    while (sz--) 
+    while (sz--)
         if (*(b++)!=0xff)
             return;
     // Panic!
@@ -2029,15 +2029,15 @@ void CMPConnectThread::checkSelfDestruct(void *p,size32_t sz)
     PROGLOG("MP self destruct exit");
     queryLogMsgManager()->flushQueue(10*1000);
 #ifdef _WIN32
-    ForEachItemIn(i,childprocesslist) 
+    ForEachItemIn(i,childprocesslist)
         TerminateProcess((HANDLE)childprocesslist.item(i), 1);
     TerminateProcess(GetCurrentProcess(), 1);
 #else
-    ForEachItemIn(i,childprocesslist) 
+    ForEachItemIn(i,childprocesslist)
         ::kill((HANDLE)childprocesslist.item(i), SIGTERM);
     ::kill(getpid(), SIGTERM);
 #endif
-    _exit(1);   
+    _exit(1);
 
 }
 
@@ -2061,7 +2061,7 @@ int CMPConnectThread::run()
         try
         {
             sock=listensock->accept(true, &peerEp);
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
             StringBuffer s;
             SocketEndpoint ep1;
             if (sock)
@@ -2185,7 +2185,7 @@ int CMPConnectThread::run()
                     sock->Release();
                     continue;
                 }
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
                 StringBuffer tmp1;
                 _remoteep.getUrlStr(tmp1);
                 tmp1.append(' ');
@@ -2196,7 +2196,7 @@ int CMPConnectThread::run()
                 Owned<CMPChannel> channel = parent->lookup(_remoteep);
                 if (!channel->attachSocket(sock,_remoteep,hostep,false,&rd,addrval))
                 {
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
                     PROGLOG("MP Connect Thread: lookup failed");
 #endif
                 }
@@ -2208,7 +2208,7 @@ int CMPConnectThread::run()
                     LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread: connected to %s",_remoteep.getUrlStr(str1).str());
 #endif
                 }
-#ifdef _FULLTRACE       
+#ifdef _FULLTRACE
                 PROGLOG("MP: Connect Thread: after write");
 #endif
             }
@@ -2269,9 +2269,9 @@ public:
         return cur!=NULL;
     }
 
-    CMPChannel &query() 
-    { 
-        return *cur; 
+    CMPChannel &query()
+    {
+        return *cur;
     }
 
 };
@@ -2349,7 +2349,7 @@ CMPServer::~CMPServer()
     notifyclosedthread->stop();
     notifyclosedthread->Release();
     connectthread->Release();
-    
+
     delete pingpackethandler;
     delete pingreplypackethandler;
     delete forwardpackethandler;
@@ -2445,7 +2445,7 @@ void CMPServer::flush(mptag_t tag)
         }
     } nfy(tag);
     unsigned count = receiveq.flush(nfy);
-    if (count) 
+    if (count)
         PROGLOG("CMPServer::flush(%d) discarded %u buffers",(int)tag,count);
 }
 
@@ -2470,12 +2470,12 @@ unsigned CMPServer::probe(const SocketEndpoint *ep, mptag_t tag,CTimeMon &tm,Soc
         mptag_t tag;
         bool cancel;
         unsigned count;
-        Cnfy(const SocketEndpoint *_ep,mptag_t _tag,SocketEndpoint &_sender) : sender(_sender) 
-        { 
-            ep = _ep; 
-            tag = _tag; 
-            cancel = false; 
-            aborted = false; 
+        Cnfy(const SocketEndpoint *_ep,mptag_t _tag,SocketEndpoint &_sender) : sender(_sender)
+        {
+            ep = _ep;
+            tag = _tag;
+            cancel = false;
+            aborted = false;
             count = 0;
         }
         bool notify(CMessageBuffer *msg)
@@ -2521,7 +2521,7 @@ void CMPServer::start()
 
 void CMPServer::stop()
 {
-    selecthandler->stop(true); 
+    selecthandler->stop(true);
     connectthread->stop();
     CMPChannel *c = NULL;
     for (;;) {
@@ -2554,13 +2554,13 @@ void CMPServer::onAdd(void *)
 
 void CMPServer::onRemove(void *e)
 {
-    CMPChannel &elem=*(CMPChannel *)e;      
+    CMPChannel &elem=*(CMPChannel *)e;
     elem.Release();
 }
 
 unsigned CMPServer::getHashFromElement(const void *e) const
 {
-    const CMPChannel &elem=*(const CMPChannel *)e;      
+    const CMPChannel &elem=*(const CMPChannel *)e;
     return elem.remoteep.hash(0);
 }
 
@@ -2571,7 +2571,7 @@ unsigned CMPServer::getHashFromFindParam(const void *fp) const
 
 const void * CMPServer::getFindParam(const void *p) const
 {
-    const CMPChannel &elem=*(const CMPChannel *)p;      
+    const CMPChannel &elem=*(const CMPChannel *)p;
     return &elem.remoteep;
 }
 
@@ -2721,13 +2721,13 @@ public:
         CTimeMon tm(timeout);
         unsigned ret = parent->probe(src?&src->endpoint():NULL,tag,tm,res);
         if (ret!=0) {
-            if (sender) 
+            if (sender)
                 *sender = createINode(res);
             return ret;
         }
         return 0;
     }
-    
+
     bool recv(CMessageBuffer &mbuf, INode *src, mptag_t tag, INode **sender=NULL, unsigned timeout=MP_WAIT_FOREVER)
     {
         if (sender)
@@ -2837,7 +2837,7 @@ public:
 
 
     bool send (CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout)
-    { 
+    {
         // send does not corrupt mbuf
         if (dstrank==RANK_NULL)
             return false;
@@ -2957,12 +2957,12 @@ public:
         Semaphore sem;
         sem.signal(getAffinityCpus());
         std::atomic<bool> abort{false};
-        
+
         auto verifyConnWithConnect = [&](unsigned rank, unsigned timeout)
         {
             CTimeMon tm(timeout);
             Owned<CMPChannel> channel = getChannel(rank);
-            return channel->verifyConnection(tm, true);    
+            return channel->verifyConnection(tm, true);
         };
 
         auto verifyConnWithoutConnect = [&](unsigned rank, unsigned timeout)
@@ -3097,7 +3097,7 @@ public:
             }
         }
     }
-    
+
     void flush(mptag_t tag)
     {
         parent->flush(tag);
@@ -3143,7 +3143,7 @@ public:
             }
             return false;
         }
-            
+
         CTimeMon tm(timeout);
         Owned<CMPChannel> channel = parent->lookup(mbuf.getSender());
         unsigned remaining;
@@ -3182,7 +3182,7 @@ public:
     {
         outer = _outer;
         parent = _parent;
-        group = LINK(_group); 
+        group = LINK(_group);
         myrank = group->rank(parent->queryMyNode());
     }
     ~CCommunicator()
@@ -3373,6 +3373,6 @@ void registerSelfDestructChildProcess(HANDLE handle)
 void unregisterSelfDestructChildProcess(HANDLE handle)
 {
     CriticalBlock block(childprocesssect);
-    if (handle!=(HANDLE)-1) 
+    if (handle!=(HANDLE)-1)
         childprocesslist.zap((unsigned)handle);
 }

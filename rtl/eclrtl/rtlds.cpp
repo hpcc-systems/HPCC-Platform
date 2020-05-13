@@ -225,7 +225,7 @@ void RtlLimitedVariableDatasetBuilder::flushDataset()
 //---------------------------------------------------------------------------
 
 const byte * * rtlRowsAttr::linkrows() const
-{ 
+{
     if (rows)
         rtlLinkRowset(rows);
     return rows;
@@ -309,8 +309,8 @@ byte * RtlStaticRowBuilder::ensureCapacity(size32_t required, const char * field
     return NULL;
 }
 
-byte * RtlStaticRowBuilder::createSelf() 
-{ 
+byte * RtlStaticRowBuilder::createSelf()
+{
     throwUnexpected();
 }
 
@@ -432,7 +432,7 @@ void RtlLinkedDatasetBuilder::cloneRow(size32_t len, const void * row)
 
     byte * self = builder.ensureCapacity(len, NULL);
     memcpy(self, row, len);
-    
+
     IOutputMetaData * meta = rowAllocator->queryOutputMeta();
     if (meta->getMetaFlags() & MDFneeddestruct)
     {
@@ -467,8 +467,8 @@ void RtlLinkedDatasetBuilder::finalizeRow(size32_t rowSize)
 }
 
 const byte * * RtlLinkedDatasetBuilder::linkrows()
-{ 
-    finalizeRows(); 
+{
+    finalizeRows();
     return rtlLinkRowset(rowset);
 }
 
@@ -1802,7 +1802,7 @@ bool RtlCompoundIterator::first(unsigned level)
         return (cur != NULL);
     }
 
-    if (!first(level-1)) 
+    if (!first(level-1))
         return false;
 
     for (;;)
@@ -1833,7 +1833,7 @@ bool RtlCompoundIterator::next(unsigned level)
 
     for (;;)
     {
-        if (!next(level-1)) 
+        if (!next(level-1))
             return false;
 
         const byte * cur = curIter->first();

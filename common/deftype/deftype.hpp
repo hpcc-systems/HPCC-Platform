@@ -297,7 +297,7 @@ inline ITypeInfo * stripFunctionType(ITypeInfo * type)
         return type->queryChildType();
     return type;
 }
- 
+
 typedef Linked<ITypeInfo> TypeInfoAttr;
 typedef Owned<ITypeInfo> OwnedITypeInfo;
 typedef IArrayOf<ITypeInfo> TypeInfoArray;

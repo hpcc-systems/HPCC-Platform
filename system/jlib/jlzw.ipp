@@ -25,7 +25,7 @@
 
 #define LZW_HASH_TABLE_SIZE  0xc000 // 48K
 
-class jlib_decl LZWDictionary 
+class jlib_decl LZWDictionary
 {
 public:
     LZWDictionary();
@@ -171,7 +171,7 @@ public:
             prime(rec);
         else
         {
-            if (remaining<maxCompressedRecSize) 
+            if (remaining<maxCompressedRecSize)
                 flush();
             size32_t compSz = DiffCompress(rec, bufPtr, (void*)previous, recSize);
             bufPtr += compSz;
@@ -191,7 +191,7 @@ public:
         }
         while (n--)
         {
-            if (remaining<maxCompressedRecSize) 
+            if (remaining<maxCompressedRecSize)
                 flush();
             // NB: previous maintained by DiffCompress
             size32_t compSz = DiffCompress(rec, bufPtr, (void*)previous, recSize);

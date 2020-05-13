@@ -45,7 +45,7 @@ public:
     inline void *       mem() const         { return ptr; }
     void                set(size_t _len, const void * _ptr);
     void                setOwn(size_t _len, void * _ptr);
-    
+
     static int          compare(const MemoryAttr & m1, const MemoryAttr & m2);
 
     inline void *       bufferBase() const { return ptr; } // like get except non-const
@@ -128,7 +128,7 @@ public:
     MemoryBuffer(size_t len, const void * buffer);
     MemoryBuffer(MemoryBuffer & value) = delete;
     inline ~MemoryBuffer() { kill(); }
-    
+
     MemoryBuffer &  rewrite(size32_t pos = 0);
     MemoryBuffer &  append(char value);
     MemoryBuffer &  append(unsigned char value);
@@ -180,7 +180,7 @@ public:
     void            writeDirect(size32_t pos,size32_t len,const void *buf);         // NB does not extend buffer
     void            writeEndianDirect(size32_t pos,size32_t len,const void *buf);   // NB does not extend buffer
     inline size32_t         getPos() { return readPos; };                               // read ptr
-    
+
     inline MemoryBuffer &  clear() { curLen = 0; readPos = 0; return *this; }
 
     inline bool     needSwapEndian() { return swapEndian; }
@@ -227,7 +227,7 @@ private:
     MemoryBuffer & _remove(unsigned start, unsigned len);
     MemoryBuffer & _reverse();
     const char* _str();
-    
+
     mutable char *  buffer;
     size32_t  curLen;
     size32_t  maxLen;
@@ -460,7 +460,7 @@ public:
 
     void setChunkGranularity(size32_t sz)
     {
-        if (sz&&(chunkmin>sz)) 
+        if (sz&&(chunkmin>sz))
             chunkmin -= (chunkmin%sz);
     }
 
@@ -494,7 +494,7 @@ class CLargeMemorySequentialReader
     {
         if (!left) {
             ptr = allocator.next(pos,left);
-            if (!left) 
+            if (!left)
                 return NULL;
         }
         max = left;
@@ -555,7 +555,7 @@ public:
     CFixedSizeAllocator(size32_t _allocsize,size32_t _chunksize=0x100000);
     virtual ~CFixedSizeAllocator();
     void init(size32_t _allocsize,size32_t _chunksize=0x100000);
-    void kill(); 
+    void kill();
     void *alloc();
     void dealloc(void *blk);
     void stats(size32_t &sizealloc, size32_t &sizeunused);

@@ -239,7 +239,7 @@ bool SizeStruct::isWorthCommoning() const
 
 /* In param: _column is not linked */
 CMemberInfo::CMemberInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column)
-{ 
+{
     container = _container;
     prior = _prior;
     column.set(_column);
@@ -830,7 +830,7 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
                         combined = true;
                 }
             }
-            
+
             if (!combined)
             {
                 IHqlStmt * stmt = ctx.addExpr(call);
@@ -906,14 +906,14 @@ IHqlExpression * CMemberInfo::getColumnRef(HqlCppTranslator & translator, BuildC
 }
 
 IHqlExpression * CMemberInfo::getCondition(BuildCtx & ctx)
-{ 
+{
     if (container)
-        return container->getCondition(ctx); 
+        return container->getCondition(ctx);
     return NULL;
 }
 
 IHqlExpression * CMemberInfo::getConditionSelect(HqlCppTranslator & translator, BuildCtx & ctx, BoundRow * row)
-{ 
+{
     OwnedHqlExpr cond = getCondition(ctx);
     cond.setown(row->bindToRow(cond, queryRootSelf()));
 
@@ -1003,9 +1003,9 @@ bool CMemberInfo::isPayloadField() const
 }
 
 bool CMemberInfo::isConditional()
-{ 
+{
     if (container)
-        return container->isConditional(); 
+        return container->isConditional();
     return false;
 }
 
@@ -1025,9 +1025,9 @@ ITypeInfo * CMemberInfo::queryType() const
     return column->queryType();
 }
 
-bool CMemberInfo::requiresTemp()                                                                                                    
-{ 
-    return isConditional(); 
+bool CMemberInfo::requiresTemp()
+{
+    return isConditional();
 }
 
 void CMemberInfo::setOffset(bool _hasVarOffset)
@@ -1048,7 +1048,7 @@ AColumnInfo * CMemberInfo::lookupColumn(IHqlExpression * search)
 
 //---------------------------------------------------------------------------
 /* In param: _column is NOT linked */
-CContainerInfo::CContainerInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column) : 
+CContainerInfo::CContainerInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column) :
     CMemberInfo(_container, _prior, _column)
 {
     fixedSize = true;
@@ -1056,10 +1056,10 @@ CContainerInfo::CContainerInfo(CContainerInfo * _container, CMemberInfo * _prior
 }
 
 
-void CContainerInfo::addChild(CMemberInfo * child)      
-{ 
+void CContainerInfo::addChild(CMemberInfo * child)
+{
     isOffsetCached = false;
-    children.append(*LINK(child)); 
+    children.append(*LINK(child));
     registerChild(child);
 }
 
@@ -1278,9 +1278,9 @@ bool CContainerInfo::isConditional()
     return false;
 }
 
-void CContainerInfo::registerChild(CMemberInfo * child) 
-{ 
-    container->registerChild(child); 
+void CContainerInfo::registerChild(CMemberInfo * child)
+{
+    container->registerChild(child);
 }
 
 
@@ -1292,7 +1292,7 @@ CRecordInfo::CRecordInfo(CContainerInfo * _container, CMemberInfo * _prior, IHql
     useAccessClass = false;
 }
 
-void CRecordInfo::buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)     
+void CRecordInfo::buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)
 {
     CHqlBoundExpr temp;
     buildExpr(translator, ctx, selector, temp);
@@ -1345,8 +1345,8 @@ AColumnInfo * CRecordInfo::lookupColumn(IHqlExpression * search)
     return map.find(search);
 }
 
-void CRecordInfo::registerChild(CMemberInfo * child)    
-{ 
+void CRecordInfo::registerChild(CMemberInfo * child)
+{
     map.replaceOwn(*child);
 }
 
@@ -1360,7 +1360,7 @@ CIfBlockInfo::CIfBlockInfo(CContainerInfo * _container, CMemberInfo * _prior, IH
     alwaysPresent = (condition->queryValue() && condition->queryValue()->getBoolValue());
 }
 
-void CIfBlockInfo::buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)        
+void CIfBlockInfo::buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target)
 {
     throwUnexpected();
 }
@@ -2178,7 +2178,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
     else if (bound.expr->queryType()->getTypeCode() == type_varstring)
     {
         args.append(*target.getLink());
-        args.append(*translator.getElementPointer(bound.expr));     
+        args.append(*translator.getElementPointer(bound.expr));
         translator.callProcedure(ctx, strcpyId, args);
     }
     else
@@ -2212,7 +2212,7 @@ IHqlExpression * CAlienColumnInfo::doBuildSizeOfUnbound(HqlCppTranslator & trans
     ITypeInfo * type = queryType();
     IHqlAlienTypeInfo * alien = queryAlienType(type);
     unsigned size = alien->getPhysicalTypeSize();
-    
+
     if (size != UNKNOWN_LENGTH)
         return getSizetConstant(size);
 
@@ -2253,7 +2253,7 @@ IHqlExpression * CAlienColumnInfo::buildSizeOfUnbound(HqlCppTranslator & transla
 void CAlienColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr unboundSize = doBuildSizeOfUnbound(translator, ctx, selector, helper);
-        
+
     CHqlBoundExpr boundSize;
     if (unboundSize->isConstant())
         translator.buildSimpleExpr(ctx, unboundSize, boundSize);
@@ -2375,7 +2375,7 @@ void CAlienColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, 
 {
     BoundRow * cursor = selector->queryRootRow();
     ITypeInfo * columnType = queryType();
-    
+
     IHqlAlienTypeInfo * alien = queryAlienType(columnType);
     IHqlExpression * setFunction = alien->queryStoreFunction();
     HqlExprArray args;
@@ -2472,7 +2472,7 @@ IReferenceSelector * CBitfieldContainerInfo::getSelector(BuildCtx & ctx, IRefere
     return LINK(parentSelector);
 }
 
-void CBitfieldContainerInfo::noteLastBitfield() 
+void CBitfieldContainerInfo::noteLastBitfield()
 {
     if (children.ordinality())
         children.tos().noteLastBitfield();
@@ -2553,7 +2553,7 @@ unsigned CBitfieldInfo::queryBitfieldPackSize() const
 
 
 void CBitfieldInfo::setBitOffset(unsigned _bitOffset)
-{ 
+{
     bitOffset = _bitOffset;
 }
 
@@ -2561,7 +2561,7 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 {
     ITypeInfo * columnType = queryType();
     ITypeInfo * storageType = queryStorageType();
-    
+
     OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, storageType, 0);
     IHqlExpression * columnRef = convertAddressToValue(address, storageType);
 
@@ -2943,7 +2943,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     StringBuffer prefix;
     if (container)
         container->getContainerXPath(prefix);
-    
+
     StringBuffer s;
     StringBuffer fieldTag, rowTag, iterTag;
     extractXmlName(fieldTag, &rowTag, NULL, expr, "Row", true);
@@ -2989,7 +2989,7 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
     StringBuffer prefix;
     if (container)
         container->getContainerXPath(prefix);
-    
+
     ITypeInfo * elementType = expr->queryType()->queryChildType();
     StringBuffer s;
     StringBuffer fieldTag, itemTag, valueTag, iterTag, fullFieldPath;
@@ -3108,11 +3108,11 @@ inline int doAlign(unsigned value, unsigned align) { return (value + align-1) & 
 
 ColumnToOffsetMap::ColumnToOffsetMap(IHqlExpression * _key, IHqlExpression * _record, unsigned _id, unsigned _packing, unsigned _maxRecordSize, bool _translateVirtuals, bool _useAccessClass)
 : id(_id), key(_key), root(NULL, NULL, _record)
-{ 
+{
     record = _record;
     prior = NULL;
-    maxAlign = _packing; 
-    packing = _packing; 
+    maxAlign = _packing;
+    packing = _packing;
     fixedSizeRecord = true;
     translateVirtuals = _translateVirtuals;
     defaultMaxRecordSize = _maxRecordSize;
@@ -3669,8 +3669,8 @@ IHqlExpression * BoundRow::getMappedSelector(BuildCtx & ctx, IReferenceSelector 
     return NULL;
 }
 
-IHqlExpression * BoundRow::getFinalFixedSizeExpr()      
-{ 
+IHqlExpression * BoundRow::getFinalFixedSizeExpr()
+{
     return getSizetConstant(columnMap->getTotalFixedSize());
 }
 
@@ -3704,14 +3704,14 @@ IHqlExpression * BoundRow::ensureAccessor(HqlCppTranslator & translator, BuildCt
     return accessor;
 }
 
-AColumnInfo * BoundRow::queryRootColumn()   
-{ 
-    return columnMap->queryRootColumn(); 
+AColumnInfo * BoundRow::queryRootColumn()
+{
+    return columnMap->queryRootColumn();
 }
 
-unsigned BoundRow::getMaxSize()                 
-{ 
-    return columnMap->getMaxSize(); 
+unsigned BoundRow::getMaxSize()
+{
+    return columnMap->getMaxSize();
 }
 
 //---------------------------------------------------------------------------
@@ -3751,7 +3751,7 @@ IHqlExpression * SerializationRow::ensureSerialized(IHqlExpression * path, IHqlE
     ITypeInfo * pathType = path->queryType();
     Owned<ITypeInfo> unqualifiedType = getFullyUnqualifiedType(pathType);
     Owned<ITypeInfo> serializeType = cloneEssentialFieldModifiers(pathType, unqualifiedType);
-    if (colocal && path->isDataset() && 
+    if (colocal && path->isDataset() &&
         (hasLinkedRow(pathType) || hasOutOfLineModifier(pathType)))
         serializeType.setown(setLinkCountedAttr(serializeType, true));
     return addSerializedValue(path, serializeType, colocal, isConditional);

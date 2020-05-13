@@ -261,14 +261,14 @@ bool CStreamMerger::ensureNext(const void * seek, unsigned numFields, bool & was
 }
 
 bool CStreamMerger::ensureNext()
-{ 
+{
     bool isCompleteMatch = true;
-    return ensureNext(NULL, 0, isCompleteMatch, NULL); 
+    return ensureNext(NULL, 0, isCompleteMatch, NULL);
 }
 
 void CStreamMerger::permute()
-{ 
-    permute(NULL, 0, NULL); 
+{
+    permute(NULL, 0, NULL);
 }
 
 bool CStreamMerger::promote(unsigned p)
@@ -712,7 +712,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKdiskcount:              return "Disk Count";
     case TAKdiskgroupaggregate:     return "Disk Grouped Aggregate";
     case TAKdiskexists:             return "Disk Exists";
-    case TAKindexread:              return "Index Read";   
+    case TAKindexread:              return "Index Read";
     case TAKindexnormalize:         return "Index Normalize";
     case TAKindexaggregate:         return "Index Aggregate";
     case TAKindexcount:             return "Index Count";
@@ -876,7 +876,7 @@ extern bool isActivitySink(ThorActivityKind kind)
 {
     switch (kind)
     {
-    case TAKdiskwrite: 
+    case TAKdiskwrite:
     case TAKworkunitwrite:
     case TAKapply:
     case TAKremoteresult:
@@ -940,7 +940,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IEngineRowAllocator * queryRowAllocator()
         {
             if (allocatorlock.lock()) {
-                if (!allocator&&meta) 
+                if (!allocator&&meta)
                     allocator.setown(context->getRowAllocatorEx(meta, actid, heapFlags));
                 allocatorlock.unlock();
             }
@@ -949,7 +949,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IOutputRowSerializer * queryRowSerializer()
         {
             if (serializerlock.lock()) {
-                if (!serializer&&meta) 
+                if (!serializer&&meta)
                     serializer.setown(meta->createDiskSerializer(context,actid));
                 serializerlock.unlock();
             }
@@ -958,13 +958,13 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, unsig
         IOutputRowDeserializer * queryRowDeserializer()
         {
             if (deserializerlock.lock()) {
-                if (!deserializer&&meta) 
+                if (!deserializer&&meta)
                     deserializer.setown(meta->createDiskDeserializer(context,actid));
                 deserializerlock.unlock();
             }
             return deserializer;
         }
-        IOutputMetaData *queryRowMetaData() 
+        IOutputMetaData *queryRowMetaData()
         {
             return meta;
         }
@@ -1020,7 +1020,7 @@ protected:
             crc.tally(sz,buf);
         }
     } crccb;
-    
+
     inline bool fieldFilterMatch(const void * buffer)
     {
         if (actualFilter.numFilterFields())
@@ -1422,7 +1422,7 @@ class CRowStreamWriter : private IRowSerializerTarget, implements IExtRowWriter,
     static unsigned wrnum;
 #endif
 
-    void flushBuffer(bool final) 
+    void flushBuffer(bool final)
     {
         try
         {
@@ -1599,7 +1599,7 @@ public:
     void endNested(size32_t pos)
     {
         size32_t sz = bufpos+extbuf.length()-(pos + sizeof(size32_t));
-        size32_t wr = sizeof(size32_t); 
+        size32_t wr = sizeof(size32_t);
         byte *out = (byte *)&sz;
         if (pos<ROW_WRITER_BUFFERSIZE) {
             size32_t space = ROW_WRITER_BUFFERSIZE-pos;
@@ -1677,7 +1677,7 @@ class CDiskMerger : implements IDiskMerger, public CInterface
     StringAttr tempnamebase;
     Linked<IRowLinkCounter> linker;
     Linked<IRowInterfaces> rowInterfaces;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1739,9 +1739,9 @@ public:
         for (i=0;i<numstrms;i++) {
             strms[i] = createRowStream(&tempfiles.item(i), rowInterfaces);
         }
-        if (numstrms==1) 
+        if (numstrms==1)
             return LINK(strms[0]);
-        if (icompare) 
+        if (icompare)
             return createRowStreamMerger(numstrms, strms, icompare, partdedup, linker);
         return createConcatRowStream(numstrms,strms);
     }
@@ -1758,7 +1758,7 @@ public:
             ++count;
         }
         return count;
-    }    
+    }
 };
 
 IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *linker, const char *tempnamebase)

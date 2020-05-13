@@ -142,7 +142,7 @@ public:
         }
 
         // YMA: there'll be a leak here, but it's ok.
-        CEspTerminator* terminator = new CEspTerminator;  
+        CEspTerminator* terminator = new CEspTerminator;
         terminator->start();
 
         m_exiting=true;

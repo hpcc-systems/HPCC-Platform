@@ -24,7 +24,7 @@
 #define da_decl DECL_IMPORT
 #endif
 
-typedef DALI_UID SubscriptionId; // allocated by queryCoven().getUniqueId() 
+typedef DALI_UID SubscriptionId; // allocated by queryCoven().getUniqueId()
 
 
 

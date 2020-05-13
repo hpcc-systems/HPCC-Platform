@@ -35,7 +35,7 @@ public:
     virtual IHqlExpression * replaceWithNullRow(IHqlExpression * expr) = 0;
     virtual IHqlExpression * replaceWithNullRowDs(IHqlExpression * expr) = 0;
     // only for use on something that has been expanded as a child, a transform() isn't used to help stop calling transform on result of folding.
-    virtual IHqlExpression * transformExpanded(IHqlExpression * expr) = 0;              
+    virtual IHqlExpression * transformExpanded(IHqlExpression * expr) = 0;
 
 protected:
     IHqlExpression * queryOptimizeAggregateInline(IHqlExpression * expr, __int64 numRows);
@@ -107,7 +107,7 @@ private:
     virtual IHqlExpression * replaceWithNull(IHqlExpression * expr);
     virtual IHqlExpression * replaceWithNullRow(IHqlExpression * expr);
     virtual IHqlExpression * replaceWithNullRowDs(IHqlExpression * expr);
-    virtual IHqlExpression * transformExpanded(IHqlExpression * expr);              
+    virtual IHqlExpression * transformExpanded(IHqlExpression * expr);
 
 protected:
     IErrorReceiver & errorProcessor;

@@ -50,8 +50,8 @@ CAuthorDlg::CAuthorDlg(CWnd* pParent /*=NULL*/)
     m_user = _T("");
     //}}AFX_DATA_INIT
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-    
-    
+
+
     m_service = AfxGetApp()->GetProfileString("defaults", "service_name", "MyService");
     m_user = AfxGetApp()->GetProfileString("defaults", "user_name", "jsmith");
     m_password = AfxGetApp()->GetProfileString("defaults", "password", "password");
@@ -104,12 +104,12 @@ BOOL CAuthorDlg::OnInitDialog()
 
     SetIcon(m_hIcon, TRUE);         // Set big icon
     SetIcon(m_hIcon, FALSE);        // Set small icon
-    
+
     return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 
-void CAuthorDlg::OnPaint() 
+void CAuthorDlg::OnPaint()
 {
     if (IsIconic())
     {
@@ -119,7 +119,7 @@ void CAuthorDlg::OnPaint()
 
         CRect rect;
         GetClientRect(&rect);
-        
+
         int x = (rect.Width() - GetSystemMetrics(SM_CXICON) + 1) / 2;
         int y = (rect.Height() - GetSystemMetrics(SM_CYICON) + 1) / 2;
 
@@ -137,10 +137,10 @@ HCURSOR CAuthorDlg::OnQueryDragIcon()
     return (HCURSOR) m_hIcon;
 }
 
-void CAuthorDlg::OnBtnBuildFeatureSet() 
+void CAuthorDlg::OnBtnBuildFeatureSet()
 {
     UpdateData();
-    
+
     m_sec_resources.set(m_sec_mgr->createResourceList(NULL));
 
     if (m_sec_resources)
@@ -167,7 +167,7 @@ void CAuthorDlg::OnBtnBuildFeatureSet()
 
 }
 
-void CAuthorDlg::OnBtnCreateUser() 
+void CAuthorDlg::OnBtnCreateUser()
 {
     UpdateData();
 
@@ -180,15 +180,15 @@ void CAuthorDlg::OnBtnCreateUser()
 }
 
 
-void CAuthorDlg::OnBtnCreateSecMgr() 
+void CAuthorDlg::OnBtnCreateSecMgr()
 {
     UpdateData();
-    
+
     m_sec_mgr.set(createSecManager("secdemo", m_service, NULL));
 }
 
 
-void CAuthorDlg::OnBtnAuthorize() 
+void CAuthorDlg::OnBtnAuthorize()
 {
     UpdateData();
 
@@ -222,7 +222,7 @@ void CAuthorDlg::DisplayPermissions()
 
 
 char *perm_descr[]=
-{  
+{
     " Owner "
     " Read ",
     " Write ",
@@ -235,7 +235,7 @@ unsigned allperms = SecAccess_Full;
 void CAuthorDlg::AddResPermissions(const char *name)
 {
     ISecResource *res = m_sec_resources->getResource(name);
-    
+
     if (res)
     {
         SecAccessFlags flags = res->getAccessFlags();
@@ -257,7 +257,7 @@ void CAuthorDlg::AddResPermissions(const char *name)
 
                 index++;
             }
-    
+
             m_permissions += "\r\n";
         }
     }

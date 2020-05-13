@@ -30,7 +30,7 @@ using std::string;
 // CEspDeploymentEngine
 //---------------------------------------------------------------------------
 CEspDeploymentEngine::CEspDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
-                                           IDeploymentCallback& callback, 
+                                           IDeploymentCallback& callback,
                                            IPropertyTree& process)
  : CDeploymentEngine(envDepEngine, callback, process, "./Instance")
 {
@@ -56,7 +56,7 @@ void CEspDeploymentEngine::check()
             throw MakeStringException(0, "Process %s references unknown service %s", m_name.get(), service);
       }
       else
-         throw MakeStringException(-1, "The ESP binding %s for ESP %s has missing service information!", 
+         throw MakeStringException(-1, "The ESP binding %s for ESP %s has missing service information!",
                                    pBinding->queryProp("@name"), m_name.get());
    }
 
@@ -96,7 +96,7 @@ int CEspDeploymentEngine::determineInstallFiles(IPropertyTree& node, CInstallFil
     m_pCallback->printStatus(STATUS_NORMAL, NULL, NULL, NULL, "Merging file lists for ESP server and its bound service(s) ...");
 
    const char* myBuild = m_process.queryProp("@build");
-   //process bindings for this esp process and add files for each service used by 
+   //process bindings for this esp process and add files for each service used by
    //each binding before adding files for this esp process
    Owned<IPropertyTreeIterator> iBinding = m_process.getElements("EspBinding");
    ForEach(*iBinding)
@@ -112,7 +112,7 @@ int CEspDeploymentEngine::determineInstallFiles(IPropertyTree& node, CInstallFil
 
       const char* pszBuild = pService->queryProp("@build");
       if (!pszBuild || 0 != strcmp(pszBuild, myBuild))
-         throw MakeStringException(0, "ESP service '%s' used by ESP process '%s'\n has a different build (%s) to its ESP process!", 
+         throw MakeStringException(0, "ESP service '%s' used by ESP process '%s'\n has a different build (%s) to its ESP process!",
                                    szService, m_name.get(), pszBuild);
 
          // Get plugin file list from the plugin process
@@ -126,7 +126,7 @@ int CEspDeploymentEngine::determineInstallFiles(IPropertyTree& node, CInstallFil
 //---------------------------------------------------------------------------
 //  processCustomMethod
 //---------------------------------------------------------------------------
-void CEspDeploymentEngine::processCustomMethod(const char *method, const char *source, const char *outputFile, 
+void CEspDeploymentEngine::processCustomMethod(const char *method, const char *source, const char *outputFile,
                                                const char *instanceName, EnvMachineOS os)
 {
    if (!stricmp(method, "ssl_certificate"))
@@ -148,20 +148,20 @@ void CEspDeploymentEngine::processCustomMethod(const char *method, const char *s
 // xslTransform
 //---------------------------------------------------------------------------
 void CEspDeploymentEngine::xslTransform(
-        const char *xslFilePath,  const char *outputFilePath, 
+        const char *xslFilePath,  const char *outputFilePath,
         const char* instanceName, EnvMachineOS os/*=MachineOsUnknown*/,
         const char* processName/*=NULL*/,
         bool isEspModuleOrPlugin/*=false*/)
 {
    m_createIni = false;
-   
+
    // Skip if not processing config files
 
    checkAbort();
    if (!m_compare)
       ensurePath(outputFilePath);
 
-   if (m_compare) 
+   if (m_compare)
       outputFilePath = setCompare(outputFilePath);
 
    if (instanceName)
@@ -193,15 +193,15 @@ void CEspDeploymentEngine::xslTransform(
             const char* srcDaliAddress = envDepEngine.getSourceDaliAddress();
 
           m_transform->setParameter("espServiceName", "''");
-          m_transform->setParameter("serviceFilesList", StringBuffer("'").append(serviceXsltOutputFiles.str()).append("'").str());         
-          m_transform->setParameter("deployedFromDali", StringBuffer("'").append(srcDaliAddress).append("'").str());         
+          m_transform->setParameter("serviceFilesList", StringBuffer("'").append(serviceXsltOutputFiles.str()).append("'").str());
+          m_transform->setParameter("deployedFromDali", StringBuffer("'").append(srcDaliAddress).append("'").str());
       }
    }
 
    if (m_deployFlags & DEFLAGS_CONFIGFILES) //are we processing config files?
    {
-      Owned<IDeployTask> task = 
-         createDeployTask(*m_pCallback, "XSL Transform", m_process.queryName(), m_name.get(), 
+      Owned<IDeployTask> task =
+         createDeployTask(*m_pCallback, "XSL Transform", m_process.queryName(), m_name.get(),
                            instanceName, xslFilePath, outputFilePath, m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),
                            m_useSSHIfDefined, os, processName);
       m_pCallback->printStatus(task);
@@ -210,14 +210,14 @@ void CEspDeploymentEngine::xslTransform(
       checkAbort(task);
    }
 
-   if (m_compare) 
+   if (m_compare)
       compareFiles(os);
 }
 
 
-void CEspDeploymentEngine::processServiceModules(const char* moduleType, 
+void CEspDeploymentEngine::processServiceModules(const char* moduleType,
                                                  StringBuffer& serviceXsltOutputFiles,
-                                                 const char* instanceName, 
+                                                 const char* instanceName,
                                                  EnvMachineOS os)
 {
    set<string> serviceNamesProcessed;
@@ -240,7 +240,7 @@ void CEspDeploymentEngine::processServiceModules(const char* moduleType,
          const char* source = installFile.getSrcPath().c_str();
             std::string dest   = installFile.getDestPath().c_str();
 
-         //our base class method CDeploymentEngine::determineInstallFiles() encoded 
+         //our base class method CDeploymentEngine::determineInstallFiles() encoded
          //dest is of the format <destpath>+<service name> so extract both of the parts
          //
             std::string::size_type pos = dest.find_last_of('+');
@@ -258,9 +258,9 @@ void CEspDeploymentEngine::processServiceModules(const char* moduleType,
             if (m_deployFlags & DEFLAGS_CONFIGFILES)
             {
                //each esp_service_module for a given service name is expected to produce necessary
-               //and sufficient information for itself (EspService node) and all its EspBindings 
+               //and sufficient information for itself (EspService node) and all its EspBindings
                //(we may have multiple bindings for the same service i.e. EspService[@name='xyz']).
-               //Therefore, we only need to process one instance of EspService exactly once. 
+               //Therefore, we only need to process one instance of EspService exactly once.
                if (serviceNamesProcessed.find(serviceName) != serviceNamesProcessed.end())
                   continue;
 

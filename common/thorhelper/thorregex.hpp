@@ -44,7 +44,7 @@
 #define RCCany                              (RegexSpecialCharacterClass|12)
 #define RCCutf8lead                         (RegexSpecialCharacterClass|13)
 #define RCCutf8follow                       (RegexSpecialCharacterClass|14)
-                
+
 #define PATTERN_UNLIMITED_LENGTH            ((unsigned)-1)
 
 

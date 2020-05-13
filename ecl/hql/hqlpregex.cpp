@@ -58,14 +58,14 @@ private:
 };
 
 void HqlRegexParser::illegal()
-{ 
+{
     throwError(HQLERR_IllegalRegexPattern);
 }
 
 void HqlRegexParser::advance()
-{ 
-    if (cur >= end) 
-        illegal(); 
+{
+    if (cur >= end)
+        illegal();
     switch (type)
     {
     case type_unicode:
@@ -81,20 +81,20 @@ void HqlRegexParser::advance()
 }
 
 unsigned HqlRegexParser::next() const
-{ 
-    if (cur != end) 
+{
+    if (cur != end)
     {
         switch (type)
         {
         case type_unicode:
-            return *(const UChar *)cur; 
+            return *(const UChar *)cur;
         case type_utf8:
-            return rtlUtf8Char(cur); 
+            return rtlUtf8Char(cur);
         default:
-            return *cur; 
+            return *cur;
         }
     }
-    return PatEOF; 
+    return PatEOF;
 }
 
 unsigned HqlRegexParser::readNumber()
@@ -212,7 +212,7 @@ IHqlExpression * HqlRegexParser::parse2()
                 node_operator op = no_none;
                 switch (next())
                 {
-                case '=': 
+                case '=':
                     op = no_pat_before_y;
                     break;
                 case '!':
@@ -223,8 +223,8 @@ IHqlExpression * HqlRegexParser::parse2()
                     advance();
                     switch (next())
                     {
-                    case '=': 
-                        op = no_pat_after_y; 
+                    case '=':
+                        op = no_pat_after_y;
                         break;
                     case '!':
                         op = no_pat_after_y;

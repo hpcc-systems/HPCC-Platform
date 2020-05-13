@@ -39,7 +39,7 @@ struct Param1
     FARPROC GenerateConsoleCtrlEvent;
     FARPROC Sleep;
     FARPROC Exit;
-    DWORD   ctrlC; 
+    DWORD   ctrlC;
 };
 
 #pragma code_seg(".eclfunc")
@@ -53,13 +53,13 @@ static DWORD _declspec(naked) WINAPI ExitProc(LPVOID param)
         sub     esp, __LOCAL_SIZE
 
         mov     esi,[param]
-        
+
         push    SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX
-        call    [esi]Param1.SetErrorMode 
+        call    [esi]Param1.SetErrorMode
 
         push    0
         push    CTRL_BREAK_EVENT
-        call    [esi]Param1.GenerateConsoleCtrlEvent 
+        call    [esi]Param1.GenerateConsoleCtrlEvent
 
         push    [esi]Param1.ctrlC
         call    [esi]Param1.Sleep
@@ -84,7 +84,7 @@ static DWORD WINAPI ExitProc(LPVOID param)
 
 
 class ProcessKillList: public ProcessList
-{ 
+{
 public:
     ProcessKillList(): ProcessList(SYNCHRONIZE|PROCESS_QUERY_INFORMATION|PROCESS_TERMINATE)
     {
@@ -103,23 +103,23 @@ public:
     void kill(ProcessPid &pid,DWORD mysession)
     {
         if (_killchildren) {
-            HANDLE hProcessSnap = hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
+            HANDLE hProcessSnap = hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
             if (hProcessSnap != INVALID_HANDLE_VALUE) {
                 PROCESSENTRY32 pe32;
                 memset(&pe32,0,sizeof(pe32));
-                pe32.dwSize = sizeof(PROCESSENTRY32); 
-                if (Process32First(hProcessSnap, &pe32)) { 
+                pe32.dwSize = sizeof(PROCESSENTRY32);
+                if (Process32First(hProcessSnap, &pe32)) {
                     do {
                         if (pe32.th32ParentProcessID==pid.GetPid()) {
                             ProcessPid childpid(pe32.th32ProcessID,access);
                             printf("child: ");
                             kill(childpid,mysession);
                         }
-                    } while (Process32Next(hProcessSnap, &pe32)); 
+                    } while (Process32Next(hProcessSnap, &pe32));
                 }
-                CloseHandle (hProcessSnap); 
+                CloseHandle (hProcessSnap);
             }
-            else 
+            else
                 printf("Could not take process snapshot, no children killed\n");
         }
 
@@ -131,7 +131,7 @@ public:
             printf("exited with code %d\n",exit);
         }
         else
-        { 
+        {
             if(pid.GetSession()!=mysession)
             {
                 printf("different session (%d) - ",pid.GetSession());
@@ -177,7 +177,7 @@ public:
         {
             kill(*it,session);
         }
-        
+
     }
 
     void superuser()
@@ -253,7 +253,7 @@ protected:
             Error::perror();
         }
     }
- 
+
     bool _restart;
     bool _other;
     bool _killchildren;
@@ -263,7 +263,7 @@ protected:
 
 void usage()
 {
-    printf("pskill pid - kills a pid\n" 
+    printf("pskill pid - kills a pid\n"
            "pskill [-sr] [-ttimeout] [-ctimeout] filename1 filename2 ... - kills instances of named processes\n"
            "    -t      Time in seconds to wait for the process to exit, default is 2 seconds.\n"
            "    -c      Send Ctr-C signal first, the process has <timeout> seconds to exit.\n"
@@ -340,7 +340,7 @@ int main(int argc, char** argv)
         if(!procs.isEmpty())
             procs.kill();
 
-    }   
+    }
     catch(Error& e)
     {
         printf(e.GetMessage());

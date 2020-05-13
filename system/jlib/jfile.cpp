@@ -67,7 +67,7 @@
                                             // this should not be enabled in WindowRemoteDirectory used
 
 #ifdef _DEBUG
-#define ASSERTEX(e) assertex(e); 
+#define ASSERTEX(e) assertex(e);
 #else
 #define ASSERTEX(e)
 #endif
@@ -194,7 +194,7 @@ bool checkFileExists(const char * filename)
 {
 #ifdef _WIN32
     for (unsigned i=0;i<10;i++) {
-        DWORD ret = (DWORD)GetFileAttributes(filename); 
+        DWORD ret = (DWORD)GetFileAttributes(filename);
         if (ret!=(DWORD)-1)
             return true;
         DWORD err = GetLastError();
@@ -258,7 +258,7 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
         }
 #endif
     }
-    else  
+    else
         filename.getRemotePath(name);
     return name;
 }
@@ -309,10 +309,10 @@ bool WindowsCreateDirectory(const char * path)
         }
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
-            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
+            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME)))
             return false;
         //PROGLOG("Retrying(%d) WindowsCreateDirectory %s, err=%d",retry,filename,err);
-        Sleep(retry*100); 
+        Sleep(retry*100);
     }
     return false;
 }
@@ -560,7 +560,7 @@ static bool setShareLock(int fd,IFSHmode share)
         else
             fl.l_type = F_UNLCK;
         fl.l_whence = SEEK_SET;
-        fl.l_pid    = getpid(); 
+        fl.l_pid    = getpid();
         if (fcntl(fd, F_SETLK, &fl) != -1)
             return true;
     } while (errno==EINTR);
@@ -593,14 +593,14 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
     switch (sharemode) {
     case (IFSHfull|IFSHread):
     case IFSHfull:
-        share |= FILE_SHARE_WRITE; 
+        share |= FILE_SHARE_WRITE;
         // fall through
     case IFSHread:
         share |= FILE_SHARE_READ;
     }
     DWORD fflags = async?FILE_FLAG_OVERLAPPED:0;
     if (async&&(mode==IFOread))
-        fflags |= FILE_FLAG_SEQUENTIAL_SCAN; 
+        fflags |= FILE_FLAG_SEQUENTIAL_SCAN;
     switch (mode) {
     case IFOcreate:
         handle = CreateFile(filename, GENERIC_WRITE, share, NULL, CREATE_ALWAYS, fflags, NULL);
@@ -619,7 +619,7 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
         break;
     }
     if (handle == NULLFILE)
-    {   
+    {
         DWORD err = GetLastError();
         if ((IFOread!=mode) || ((err!=ERROR_FILE_NOT_FOUND) && (err!=ERROR_PATH_NOT_FOUND)))
             throw makeOsExceptionV(err,"CFile::open %s (%x, %x)", filename.get(), mode, share);
@@ -682,7 +682,7 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
 
 IFileIO * CFile::open(IFOmode mode,IFEflags extraFlags)
 {
-    // we may want mode dependant defaults later 
+    // we may want mode dependant defaults later
     return openShared(mode,(IFSHmode)(flags&(IFSHfull|IFSHread)),extraFlags);
 }
 
@@ -720,10 +720,10 @@ bool CFile::remove()
             break;
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
-            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
+            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME)))
             throw makeOsExceptionV(err, "CFile::remove %s", filename.get());
         //PROGLOG("Retrying(%d) DeleteFile %s, err=%d",retry,filename,err);
-        Sleep(retry*100); 
+        Sleep(retry*100);
     }
     return false;
 #else
@@ -743,14 +743,14 @@ bool CFile::remove()
 
 void CFile::rename(const char *newname)
 {
-    // now hopefully newname is just file tail 
-    // however we do allow full paths and extract tail, warning if the directory appears to mismatch 
+    // now hopefully newname is just file tail
+    // however we do allow full paths and extract tail, warning if the directory appears to mismatch
     StringBuffer path;
     splitDirTail(filename,path);
     StringBuffer newdir;
     const char *tail = splitDirTail(newname,newdir);
     if (path.length()&&newdir.length()) {
-        if (strcmp(newdir.str(),path.str())!=0) 
+        if (strcmp(newdir.str(),path.str())!=0)
             IWARNLOG("CFile::rename '%s' to '%s' : directory mismatch",filename.get(),newname);
     }
     const char *dst = path.append(tail);
@@ -760,7 +760,7 @@ void CFile::rename(const char *newname)
         if (rfn.isLocal())
             dst = rfn.getLocalPath(path.clear()).str();
     }
-    if (-1 == ::rename(filename, dst)) 
+    if (-1 == ::rename(filename, dst))
         throw makeErrnoExceptionV("CFile::rename(%s, %s)", filename.get(),dst);
     filename.set(path);
 }
@@ -784,9 +784,9 @@ void CFile::move(const char *newname)
         DWORD err = GetLastError();
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
-            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
+            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME)))
             throw makeOsExceptionV(err, "CFile::move(%s, %s)", filename.get(), newname);
-        Sleep(retry*100); 
+        Sleep(retry*100);
     }
 #else
     int ret=::rename(filename.get(),newname);
@@ -798,15 +798,15 @@ void CFile::move(const char *newname)
 
 #ifdef _WIN32
 DWORD CALLBACK fastCopyProgressRoutine(
-  LARGE_INTEGER TotalFileSize,          
-  LARGE_INTEGER TotalBytesTransferred,  
-  LARGE_INTEGER StreamSize,             
-  LARGE_INTEGER StreamBytesTransferred, 
-  DWORD dwStreamNumber,                 
-  DWORD dwCallbackReason,               
-  HANDLE hSourceFile,                  
-  HANDLE hDestinationFile,              
-  LPVOID lpData                        
+  LARGE_INTEGER TotalFileSize,
+  LARGE_INTEGER TotalBytesTransferred,
+  LARGE_INTEGER StreamSize,
+  LARGE_INTEGER StreamBytesTransferred,
+  DWORD dwStreamNumber,
+  DWORD dwCallbackReason,
+  HANDLE hSourceFile,
+  HANDLE hDestinationFile,
+  LPVOID lpData
 )
 {
     if (TotalBytesTransferred.QuadPart<=TotalFileSize.QuadPart)
@@ -840,9 +840,9 @@ bool CFile::fastCopyFile(CFile &target, size32_t buffersize, ICopyFileProgress *
             return false;
         if ((retry++==10)||  // some or all of the following can occur when the domain controller gets busy
                              // retrying improves chance of success
-            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME))) 
+            ((err!=ERROR_NETNAME_DELETED)&&(err!=ERROR_DEV_NOT_EXIST)&&(err!=ERROR_GEN_FAILURE)&&(err!=ERROR_NETWORK_BUSY)&&(err!=ERROR_BAD_NET_NAME)))
             return false;
-        Sleep(retry*100); 
+        Sleep(retry*100);
     }
     return true;
 #else
@@ -880,7 +880,7 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     OwnedIFileIO sourceIO = open(IFOread, srcFlags);
     if (!sourceIO)
         throw MakeStringException(-1, "copySection: source '%s' not found", queryFilename());
-    
+
     offset_t offset = 0;
     offset_t total;
     try
@@ -1108,9 +1108,9 @@ public:
                 (exclusive?LOCKFILE_EXCLUSIVE_LOCK:0)|((timeout==INFINITE)?0:LOCKFILE_FAIL_IMMEDIATELY),
                           0,1,0,&overlapped))
                 break;
-            
+
             DWORD err = ::GetLastError();
-            if (err!=ERROR_LOCK_VIOLATION) 
+            if (err!=ERROR_LOCK_VIOLATION)
                 throw makeOsException(err, "CDiscretionaryFileLock::lock");
 #else
             if (setShareLock(handle,exclusive?IFSHnone:IFSHread))
@@ -1118,8 +1118,8 @@ public:
 #endif
 
             unsigned now = msTick();
-            if (now-start>=timeout) 
-                return false; 
+            if (now-start>=timeout)
+                return false;
             if (interval>timeout-now+start)
                 interval = timeout-now+start;
             Sleep(interval);
@@ -1139,7 +1139,7 @@ public:
 #ifdef _WIN32
             OVERLAPPED overlapped;
             memset(&overlapped,0,sizeof(overlapped));
-            if (!UnlockFileEx(handle,0,1,0,&overlapped)) 
+            if (!UnlockFileEx(handle,0,1,0,&overlapped))
                 throw makeOsException(::GetLastError(), "CDiscretionaryFileLock::unlockhandle");
 #else
             setShareLock(handle,IFSHfull);
@@ -1199,14 +1199,14 @@ static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &sha
         return false;
     StringBuffer ipText(end-start, start);
     machine.ipset(ipText.str());
-    end++;  
+    end++;
     while (*end && !isPathSepChar(*end))
         end++;
     start = filename;
     while (start!=end) {
         if (*start=='/')
             share.append('\\');
-        else 
+        else
             share.append(*start);
         start++;
     }
@@ -1238,7 +1238,7 @@ static bool connectToExternalDrive(const char * const filename)
     if ((err==0)&&(stricmp(username.str(),buf)==0)) {
         // check can access share as well
         for (unsigned i=0;i<10;i++) {
-            DWORD ret = (DWORD)GetFileAttributes(share.str()); 
+            DWORD ret = (DWORD)GetFileAttributes(share.str());
             DWORD err = (ret==(DWORD)-1)?GetLastError():0;
             if (err!=ERROR_IO_INCOMPLETE)
                 break;
@@ -1258,7 +1258,7 @@ static bool connectToExternalDrive(const char * const filename)
                 WNetCancelConnection2(res.lpRemoteName, 0, false);
                 err = WNetAddConnection2(&res, password.str(), username.str(), 0);
             }
-            if (err) 
+            if (err)
                 IERRLOG("WNetAddConnection2(%d): connecting to %s, User: %s",err,res.lpRemoteName,username.str());
         }
         if (err==0)
@@ -1277,7 +1277,7 @@ static void disconnectFromExternalDrive(const char * const filename)
     IpAddress ip;
     if (!parseShare(filename,ip,share))
         return;
-    if (share.length()&&isShareChar(share.charAt(share.length()))) 
+    if (share.length()&&isShareChar(share.charAt(share.length())))
         WNetCancelConnection2((char *)share.str(), 0, 0);
 }
 
@@ -1393,7 +1393,7 @@ public:
         const char *tail = splitDirTail(newname,newdir);
         if ((newname[0]=='\\')&&(newname[1]=='\\')) { // rename to remote
             if (path.length()&&newdir.length()) {
-                if (strcmp(newdir.str(),path.str())!=0) 
+                if (strcmp(newdir.str(),path.str())!=0)
                     IWARNLOG("CWindowsRemoteFile '%s' to '%s' : directory mismatch",filename.get(),newname);
             }
             newname = tail; // just rename using tail
@@ -1612,7 +1612,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             while (len) {
                 size32_t toread = (len>=buffsize)?buffsize:(size32_t)len;
                 size32_t read = fileio->read(pos,toread,buffer);
-                if (read<buffsize) 
+                if (read<buffsize)
                     mb.setLength(mb.length()+read-buffsize);
                 if (read==0)
                     break;
@@ -1653,7 +1653,7 @@ IFileIO * createIFileIO(MemoryBuffer & buffer)
 class jlib_decl CSequentialFileIO : public CFileIO
 {
     offset_t pos;
-    
+
     void checkPos(const char *fn,offset_t _pos)
     {
         if (_pos!=pos)
@@ -1689,7 +1689,7 @@ public:
         pos += ret;
         return ret;
     }
-    
+
     virtual size32_t write(offset_t _pos, size32_t len, const void * data)
     {
         checkPos("write",_pos);
@@ -1831,7 +1831,7 @@ offset_t CFileIO::size()
     pos.LowPart = GetFileSize(file, (unsigned long *)&pos.HighPart);
     if (pos.LowPart==-1) {
         DWORD err = GetLastError();
-        if (err!=0)     
+        if (err!=0)
             throw makeOsException(err,"CFileIO::size");
     }
     return pos.QuadPart;
@@ -1856,7 +1856,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 void CFileIO::setPos(offset_t newPos)
 {
     LARGE_INTEGER tempPos;
-    tempPos.QuadPart = newPos; 
+    tempPos.QuadPart = newPos;
     tempPos.LowPart = SetFilePointer(file, tempPos.LowPart, &tempPos.HighPart, FILE_BEGIN);
 }
 
@@ -2113,7 +2113,7 @@ void CFileAsyncIO::flush()
 offset_t CFileAsyncIO::appendFile(IFile *file,offset_t pos,offset_t len)
 {
     // will implemented if needed
-    UNIMPLEMENTED; 
+    UNIMPLEMENTED;
 }
 
 unsigned __int64 CFileAsyncIO::getStatistic(StatisticKind kind)
@@ -2158,7 +2158,7 @@ public:
             if (parent) {
                 if (GetOverlappedResult(parent->file,&overlapped,&value,wait)==0) {
                     int err = GetLastError();
-                    if (err==ERROR_IO_INCOMPLETE) 
+                    if (err==ERROR_IO_INCOMPLETE)
                         return false;
                     if (err!=ERROR_HANDLE_EOF) {
                         CriticalBlock block(parent->cs);
@@ -2208,7 +2208,7 @@ offset_t CFileAsyncIO::size()
     pos.LowPart = GetFileSize(file, (unsigned long *)&pos.HighPart);
     if (pos.LowPart==-1) {
         DWORD err = GetLastError();
-        if (err!=0)     
+        if (err!=0)
             throw makeOsException(GetLastError(),"CFileAsyncIO::size");
     }
     return pos.QuadPart;
@@ -2233,7 +2233,7 @@ size32_t CFileAsyncIO::write(offset_t pos, size32_t len, const void * data)
 void CFileAsyncIO::setSize(offset_t size)
 {
     LARGE_INTEGER tempPos;
-    tempPos.QuadPart = size; 
+    tempPos.QuadPart = size;
     tempPos.LowPart = SetFilePointer(file, tempPos.LowPart, &tempPos.HighPart, FILE_BEGIN);
     if (!SetEndOfFile(file))
         throw makeOsException(GetLastError(), "CFileIO::setSize");
@@ -2256,7 +2256,7 @@ IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * dat
         }
         else
             throw makeOsException(GetLastError(),"CFileIO::readAsync");
-    }   
+    }
     else {
         res->value = val; // won't need to wait
     }
@@ -2274,7 +2274,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
         CriticalBlock block(cs);
         res->parent = this;
         results.append(*res);
-    }   
+    }
     else {
         res->value = val; // wont need to wait
     }
@@ -2289,7 +2289,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
 class CFileAsyncResult: implements IFileAsyncResult, public CInterface
 {
-protected: 
+protected:
     friend class CFileAsyncIO;
 
     DWORD value;
@@ -2411,7 +2411,7 @@ void CFileAsyncIO::setSize(offset_t pos)
 IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * data)
 {
     CFileAsyncResult *res = new CFileAsyncResult(pos,0);
-    
+
     bzero( &(res->cb), sizeof (struct aiocb));
     res->cb.aio_fildes = file;
     res->cb.aio_offset = pos;
@@ -2789,7 +2789,7 @@ static inline size32_t doread(IFileIOStream * stream,void *dst, size32_t size)
     while (toread)
     {
         int read = stream->read(toread, dst);
-        if (!read) 
+        if (!read)
             return size-toread;
         toread -= read;
         dst = (char *) dst + read;
@@ -2906,7 +2906,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
     if (!buffersize)
         buffersize = DEFAULT_COPY_BLKSIZE;
 #ifdef _WIN32
-    if (!usetmp) { 
+    if (!usetmp) {
         CFile *src = QUERYINTERFACE(source,CFile);
         CFile *dst = QUERYINTERFACE(target,CFile);
         if (src) {
@@ -2945,7 +2945,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
 
     // this is not really needed in windows - if it is we will have to
     // test the file extenstion - .exe, .bat
-    
+
     struct stat info;
     if (stat(source->queryFilename(), &info) == 0)  // cannot fail - exception would have been thrown above
         target->setCreateFlags(info.st_mode&(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH|S_IXUSR|S_IXGRP|S_IXOTH));
@@ -2969,7 +2969,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", dest->queryFilename());
     MemoryAttr mb;
     void * buffer = copyintercept?NULL:mb.allocate(buffersize);
-    
+
     offset_t offset = 0;
     offset_t total = 0;
     Owned<IException> exc;
@@ -3015,23 +3015,23 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         try {
             sourceIO.clear();
         }
-        catch (IException *e) { 
-            EXCLOG(e, "doCopyFile closing source"); 
+        catch (IException *e) {
+            EXCLOG(e, "doCopyFile closing source");
             e->Release();
         }
         try {
             targetIO.clear();
         }
-        catch (IException *e) { 
-            EXCLOG(e, "doCopyFile closing dest"); 
+        catch (IException *e) {
+            EXCLOG(e, "doCopyFile closing dest");
             e->Release();
         }
-        try { 
-            dest->remove(); 
-        } 
-        catch (IException *e) { 
+        try {
+            dest->remove();
+        }
+        catch (IException *e) {
             StringBuffer s;
-            EXCLOG(e, s.clear().append("Removing partial copy file: ").append(dest->queryFilename()).str()); 
+            EXCLOG(e, s.clear().append("Removing partial copy file: ").append(dest->queryFilename()).str());
             e->Release();
         }
         throw exc.getClear();
@@ -3142,7 +3142,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
             queryHostIP().getIpText(UNC);
         UNC.append("\\").append((char)tolower(buf[0])).append(getShareChar()).append(buf+2);
     }
-    else 
+    else
     {
         assertex(buf[0]=='\\' && buf[1]=='\\');
         UNC.append(buf);
@@ -3218,7 +3218,7 @@ bool splitUNCFilename(const char * filename, StringBuffer * machine, StringBuffe
     return true;
 }
 
-/** 
+/**
  *  Ensure the filename has desired extension.
  *  If it has no extension, add the desired extension, return true.
  *  If it has an extension different from the desiredExtension, return false.
@@ -3230,7 +3230,7 @@ bool ensureFileExtension(StringBuffer& filename, const char* desiredExtension)
     char dir[_MAX_DIR];
     char fname[_MAX_FNAME];
     char ext[_MAX_EXT];
-    
+
     _splitpath(filename.str(), drive, dir, fname, ext);
     if (ext[0]==0)
     {
@@ -3251,9 +3251,9 @@ StringBuffer& getFullFileName(StringBuffer& filename, bool noExtension)
     char dir[_MAX_DIR];
     char fname[_MAX_FNAME];
     char ext[_MAX_EXT];
-    
+
     _splitpath(filename.str(), drive, dir, fname, ext);
-    
+
     filename.clear();
     filename.append(drive).append(dir).append(fname);
     if (!noExtension)
@@ -3262,16 +3262,16 @@ StringBuffer& getFullFileName(StringBuffer& filename, bool noExtension)
     return filename;
 }
 
-/* Get the file name only. If noExtension is true, the extension (if any) will be trimmed */ 
+/* Get the file name only. If noExtension is true, the extension (if any) will be trimmed */
 StringBuffer& getFileNameOnly(StringBuffer& filename, bool noExtension)
 {
     char drive[_MAX_DRIVE];
     char dir[_MAX_DIR];
     char fname[_MAX_FNAME];
     char ext[_MAX_EXT];
-    
+
     _splitpath(filename.str(), drive, dir, fname, ext);
-    
+
     filename.clear();
     filename.append(fname);
     if (!noExtension)
@@ -3331,7 +3331,7 @@ public:
     CDirectoryIterator(const char * _path, const char * _mask, bool _sub, bool _includedir)
     {
         StringBuffer tmp;
-        if (!_path || !*_path) 
+        if (!_path || !*_path)
             _path = "." PATHSEPSTR;
         else if (_path[strlen(_path)-1] != PATHSEPCHAR)
             _path = tmp.append(_path).append(PATHSEPCHAR);
@@ -3351,7 +3351,7 @@ public:
     virtual IFile & query() { return *cur; }
     virtual StringBuffer &getName(StringBuffer &buf)=0;
     virtual bool isDir() {  return curisdir; }
-protected:  
+protected:
     Owned<IFile>    cur;
     bool            curisdir;
     StringAttr      path;
@@ -3379,7 +3379,7 @@ class CWindowsDirectoryIterator : public CDirectoryIterator
         if (!match&&!curisdir)
             return false;
         StringBuffer f(path);
-        if (subidx) 
+        if (subidx)
             f.append(subpaths.item(subidx-1).text).append('\\');
         f.append(info.cFileName);
         if (curisdir) {
@@ -3553,8 +3553,8 @@ class CLinuxDirectoryIterator : public CDirectoryIterator
             gotst = (stat(cur->queryFilename(), &st) == 0);
         return gotst;
     }
-    
-    
+
+
 public:
     CLinuxDirectoryIterator(const char * _path, const char * _mask, bool _sub,bool _includedir)
         : CDirectoryIterator(_path,_mask,_sub,_includedir)
@@ -3575,7 +3575,7 @@ public:
             StringBuffer location(path);
             if (subidx)
                 location.append(subpaths.item(subidx-1).text);
-            // not sure if should remove trailing '/'  
+            // not sure if should remove trailing '/'
             handle = ::opendir(location.str());
             // better error handling here?
             if (handle)
@@ -3598,7 +3598,7 @@ public:
     {
         subpaths.kill();
         subidx = 0;
-        if (open()) 
+        if (open())
             return next();
         return false;
     }
@@ -3614,7 +3614,7 @@ public:
                 // need better checking here?
                 if (!entry)
                     break;
-                if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) 
+                if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                     continue;
 
                 bool match = (!mask.length() || WildMatch(entry->d_name, mask, false));
@@ -3623,7 +3623,7 @@ public:
                 bool isunknown = (entry->d_type==DT_UNKNOWN); // to work around xfs bug
                 if (match||curisdir||islnk||isunknown) {
                     StringBuffer f(path);
-                    if (subidx) 
+                    if (subidx)
                         f.append(subpaths.item(subidx-1).text).append('/');
                     f.append(entry->d_name);
                     if (islnk||isunknown) {
@@ -3748,7 +3748,7 @@ public:
         isdir = iter->isDir();
     }
 
-    bool match(byte f) 
+    bool match(byte f)
     {
         return (flags==0)||((f&flags)!=0);
     }
@@ -3776,8 +3776,8 @@ public:
 class CDirectoryDifferenceIterator : public CIArrayOf<CDirEntry>, extends CInterface, implements IDirectoryDifferenceIterator
 {
 
-    
-    
+
+
     static int compare(CInterface * const *_a, CInterface * const *_b)
     {
         CDirEntry *a = *(CDirEntry **)_a;
@@ -3793,7 +3793,7 @@ public:
     {
         mask = IDDIstandard;
         idx = 0;
-        ForEach(*iter) 
+        ForEach(*iter)
             append(*new CDirEntry(iter));
         CIArrayOf<CDirEntry>::sort(compare);
         if (cmp) {  // assumes cmp sorted
@@ -3826,7 +3826,7 @@ public:
                         j++;
                     }
                     else if (c<0) {
-                        b = NULL; 
+                        b = NULL;
                         i++;
                     }
                     else {
@@ -3847,7 +3847,7 @@ public:
                     i++;
                     ni++;
                 }
-            }                   
+            }
         }
     }
     virtual bool first()
@@ -3870,11 +3870,11 @@ public:
         }
         return false;
     }
-    virtual bool isValid()  
+    virtual bool isValid()
     {
         return (idx<ordinality());
     }
-    virtual IFile & query() 
+    virtual IFile & query()
     {
         if (isValid())
             return *item(idx).file;
@@ -3886,7 +3886,7 @@ public:
             buf.append(item(idx).name);
         return buf;
     }
-    virtual bool isDir() 
+    virtual bool isDir()
     {
         if (isValid())
             return item(idx).isdir;
@@ -3911,7 +3911,7 @@ public:
         mask = (byte)_mask;
     }
 
-    virtual unsigned getFlags() 
+    virtual unsigned getFlags()
     {
         if (isValid())
             return item(idx).flags;
@@ -4205,13 +4205,13 @@ extern jlib_decl offset_t getFreeSpace(const char* name)
 
     // from "man statfs the def of f_bavail and f_bsize...
     // mult "free blocks avail to non-superuser" by "optimal transfer block size" to get the available size
-    
+
     freeBytesToCaller = (offset_t)buf.f_bavail * buf.f_bsize;
 #else
     UNIMPLEMENTED;
 #endif
 
-    
+
     return freeBytesToCaller;
 }
 
@@ -4223,16 +4223,16 @@ extern jlib_decl void createHardLink(const char* fileName, const char* existingF
     if (!CreateHardLink(fileName, existingFileName, NULL))
     {
         LPVOID lpMsgBuf;
-        FormatMessage( 
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-            FORMAT_MESSAGE_FROM_SYSTEM | 
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER |
+            FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_IGNORE_INSERTS,
             NULL,
             GetLastError(),
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
             (LPTSTR) &lpMsgBuf,
             0,
-            NULL 
+            NULL
         );
         StringBuffer err;
         err.appendf("Failed to create log alias %s for %s: %s", fileName, existingFileName, lpMsgBuf);
@@ -4287,7 +4287,7 @@ void RemoteFilename::badFilename(const char * filename)
 }
 
 bool RemoteFilename::equals(const RemoteFilename & other) const
-{   
+{
     if (isNull())
         return other.isNull();
     if (other.isNull())
@@ -4375,18 +4375,18 @@ bool RemoteFilename::isUnixPath() const // bit arbitrary
         char c = tailpath[0];
         if (c=='/')
             return true;
-        if (c=='\\') 
+        if (c=='\\')
             return false;
     }
     if (sharehead.length()!=0) {
         char c = sharehead[0];
         if (c=='/')
             return true;
-        if (c=='\\') 
+        if (c=='\\')
             return false;
     }
     if (localhead.length()!=0) {
-        const char *s=localhead;   
+        const char *s=localhead;
         if (*s=='/')
             return true;
         if ((s[1]==':')&&(s[2]=='/'))
@@ -4432,9 +4432,9 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
     ep.getUrlStr(out);
     const char *fn;
     StringBuffer loc;
-    if (sharehead.length()) 
+    if (sharehead.length())
         fn = loc.append(sharehead).append(tailpath).str();
-    else // try and guess from just tail (may likely fail other than for windows) 
+    else // try and guess from just tail (may likely fail other than for windows)
         fn=getLocalPath(loc).str();
     if ((fn[1]==':') && (fn[2]=='/' || fn[2]=='\\')) {  // windows \\d$
         out.append((char)tolower(c)).append(*fn).append(getShareChar());
@@ -4517,7 +4517,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
             }
             if (*filename==PATHSEPCHAR) {
 #ifdef _WIN32
-                if (*dir && (dir[1]==':')) 
+                if (*dir && (dir[1]==':'))
                     dir[2] = 0;
 #endif
                 filename++;
@@ -4544,7 +4544,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
         StringBuffer tmpxlat;
         char sepchar = isunix?'/':'\\';
         char altchar = isunix?'\\':'/';
-        // fix mixed separator path 
+        // fix mixed separator path
         if (strchr(filename,altchar)) {
             while (*filename) {
                 if (*filename==altchar)
@@ -4561,7 +4561,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
                 tail=strchr(filename+1,'/');
                 if (tail) {
                     sharehead.set(filename,tail-filename); // we don't know share so guess same as leading dir
-                    localhead.set(filename,tail-filename); 
+                    localhead.set(filename,tail-filename);
                     filename = tail;
                 }
             }
@@ -4585,8 +4585,8 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
                     localhead.set("c:");
                     sharestr.append("\\c").append(getShareChar());
                 }
-            }   
-                        
+            }
+
             sharehead.set(sharestr);
         }
         tailpath.set(filename);
@@ -4622,7 +4622,7 @@ void RemoteFilename::setRemotePath(const char * _url,const char *localpath)
     }
     else
         ep.setLocalHost(0);
-    if (localpath&&*localpath) 
+    if (localpath&&*localpath)
         setPath(ep,localpath);
     else {
         localhead.clear();
@@ -4631,7 +4631,7 @@ void RemoteFilename::setRemotePath(const char * _url,const char *localpath)
     }
     if (sep&&*url) {
         // url should point to the share now
-        const char *tail=findPathSepChar(url+1); 
+        const char *tail=findPathSepChar(url+1);
         if (tail) { // hopefully must be!
             sharehead.set(url,tail-url);
             url = tail;
@@ -4740,7 +4740,7 @@ void RemoteMultiFilename::append(const char *mpath,const char *defaultdir)
         if (isPathSepChar(*filename)&&isPathSepChar(filename[1]))  // full URL
             rfn.setRemotePath(filename);
         else {
-            if (defaultdir&&!isAbsolutePath(filename)) 
+            if (defaultdir&&!isAbsolutePath(filename))
                 filename = addPathSepChar(fullpath.clear().append(defaultdir)).append(filename).str();
             rfn.setPath(ep,filename);
         }
@@ -4760,9 +4760,9 @@ void RemoteMultiFilename::append(const RemoteFilename &inrfn)
     else if (!rfn.queryIP().ipequals(ep)) {
         StringBuffer path;
         rfn.getRemotePath(path);
-        throw MakeStringException(-1, "Component file IP does not match: %s", path.str());          
+        throw MakeStringException(-1, "Component file IP does not match: %s", path.str());
     }
-    RemoteFilenameArray::append(rfn);           
+    RemoteFilenameArray::append(rfn);
 }
 
 void RemoteMultiFilename::deserialize(MemoryBuffer & in)
@@ -4778,13 +4778,13 @@ void RemoteMultiFilename::deserialize(MemoryBuffer & in)
         byte l;
         in.read(l);
         filename.clear();
-        if (l) 
+        if (l)
             filename.append((size32_t)l,last.str());
         StringAttr s;
         in.read(s);
         filename.append(s);
         rfn.setPath(ep,filename.str());
-        RemoteFilenameArray::append(rfn);           
+        RemoteFilenameArray::append(rfn);
         last.swapWith(filename);
     }
 }
@@ -4829,10 +4829,10 @@ bool RemoteMultiFilename::isWild(unsigned idx) const
     return false;
 }
 
-void RemoteMultiFilename::expandWild() 
+void RemoteMultiFilename::expandWild()
 {
     bool anywild = false;
-    BoolArray iswild; 
+    BoolArray iswild;
     ForEachItem(i1) {
         if (isWild(i1)) {
             anywild = true;
@@ -4854,7 +4854,7 @@ void RemoteMultiFilename::expandWild()
         else
             tmpsz.append(-1);
     }
-    RemoteFilenameArray::kill(); 
+    RemoteFilenameArray::kill();
     sizescache.kill();
     ForEachItemIn(i3,tmpa) {
         RemoteFilename rfn(tmpa.item(i3));
@@ -4937,7 +4937,7 @@ bool RemoteMultiFilename::equals(const RemoteMultiFilename & other)
         return false;
     if (ordinality()!=other.ordinality())
         return false;
-    ForEachItem(i) 
+    ForEachItem(i)
         if (!item(i).equals(other.item(i)))
             return false;
     return true;
@@ -5246,11 +5246,11 @@ const char *splitRelativePath(const char *full,const char *basedir,StringBuffer 
     const char *t = full;
     for (;;) {
         const char *n = findPathSepChar(t);
-        if (!n) 
+        if (!n)
             break;
         t = n+1;
     }
-    if (t!=full) 
+    if (t!=full)
         reldir.append(t-full,full);
     return t;
 }
@@ -5314,7 +5314,7 @@ StringBuffer &removeRelativeMultiPath(const char *full,const char *reldir,String
     ForEachItemIn(i,files) {
         const char *s = files.item(i);
         if (isAbsolutePath(s)) {
-            if (!dir.length()) 
+            if (!dir.length())
                 splitDirTail(s,dir);
         }
         else if (dir.length()) {
@@ -5555,16 +5555,16 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
 }
 
 unsigned sortDirectory( CIArrayOf<CDirectoryEntry> &sortedfiles,
-                        IDirectoryIterator &iter, 
+                        IDirectoryIterator &iter,
                         SortDirectoryMode mode,
                         bool rev,
                         bool includedirs
-                      ) 
+                      )
 {
     sortedfiles.kill();
     StringBuffer name;
     ForEach(iter) {
-        if (!iter.isDir()||includedirs) 
+        if (!iter.isDir()||includedirs)
             sortedfiles.append(*new CDirectoryEntry(iter));
     }
     if (mode!=SD_nosort) {
@@ -5615,7 +5615,7 @@ public:
         return copies;
     }
 
-    
+
     IFile *open()
     {
         StringBuffer locations;
@@ -5685,9 +5685,9 @@ private:
         {
             size32_t left = bufmax-bufpos;
             got = left;
-            if (left>=sz) 
+            if (left>=sz)
                 return buf+bufpos;
-            if (eoinput) 
+            if (eoinput)
                 return left?(buf+bufpos):NULL;
             size32_t reqsz = sz+bufsize;  // NB not sz-left as want some slack
             if (ma.length()<reqsz) {
@@ -5697,11 +5697,11 @@ private:
                 ma.setOwn(reqsz,ma2.detach());
                 buf = (byte *)nb;
             }
-            else 
+            else
                 memmove(buf,buf+bufpos,left);
             bufbase += bufpos;
             size32_t rd = doread(bufbase+left,bufsize,buf+left);
-            if (!rd) 
+            if (!rd)
                 eoinput = true;
             bufmax = rd+left;
             bufpos = 0;
@@ -5753,7 +5753,7 @@ public:
         tally = _tally;
         bufsize = _bufsize;
         if (bufsize==(size32_t)-1)
-            bufsize = DEFAULT_STREAM_BUFFER_SIZE; 
+            bufsize = DEFAULT_STREAM_BUFFER_SIZE;
         if (bufsize<4096)
             bufsize = 4096;
         else
@@ -5861,7 +5861,7 @@ class CFileSerialStream: public CSerialStreamBase
 {
     Linked<IFileIO> fileio;
 
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)
     {
         return fileio->read(pos,max_size,ptr);
     }
@@ -5888,7 +5888,7 @@ class CIoSerialStream: public CSerialStreamBase
     offset_t lastpos;
 
 
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)
     {
         if (lastpos!=pos)
             throw MakeStringException(-1,"CIoSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
@@ -5920,12 +5920,12 @@ class CSocketSerialStream: public CSerialStreamBase
     unsigned timeout;
     offset_t lastpos;
 
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)
     {
         if (lastpos!=pos)
             throw MakeStringException(-1,"CSocketSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
         size32_t size_read;
-        socket->readtms(ptr, 0, max_size, size_read, timeout); 
+        socket->readtms(ptr, 0, max_size, size_read, timeout);
         lastpos = pos+size_read;
         return size_read;
     }
@@ -5952,7 +5952,7 @@ class CSimpleReadSerialStream: public CSerialStreamBase
     Linked<ISimpleReadStream> input;
     offset_t lastpos;
 
-    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)  
+    virtual size32_t rawread(offset_t pos, size32_t max_size, void *ptr)
     {
         if (lastpos!=pos)
             throw MakeStringException(-1,"CSimpleReadSerialStream: non-sequential read (%" I64F "d,%" I64F "d)",lastpos,pos);
@@ -6037,7 +6037,7 @@ public:
         memsize_t left = mmsize-mmofs;
         if (sz>left)
             sz = (size32_t)left;
-        else if (left>=UINT_MAX) 
+        else if (left>=UINT_MAX)
             got = UINT_MAX-1;
         else
             got = (size32_t)left;
@@ -6163,18 +6163,18 @@ ISerialStream *createMemoryBufferSerialStream(MemoryBuffer & buffer, IFileSerial
 class CMemoryMappedFile: implements IMemoryMappedFile, public CInterface
 {
     byte *ptr;            // base
-    offset_t ofs;       
+    offset_t ofs;
     offset_t realofs;    // rounded down to page size
     offset_t filesize;
     memsize_t size;
-    bool writeaccess;          
+    bool writeaccess;
     memsize_t windowsize;
-    
+
     HANDLE hfile;
 #ifdef _WIN32
     static size32_t pagesize;
     HANDLE hmap;
-#endif  
+#endif
 
     Linked<IFile> file;
 
@@ -6260,14 +6260,14 @@ public:
 #endif
         }
     }
-    
+
     byte *nextPtr(const void *p,offset_t skip, memsize_t req, memsize_t &got)
     {
         // for scanning in sequence
-        if (p==NULL) 
+        if (p==NULL)
             p = ptr;
         else if ((p<ptr)||(p>ptr+size))
-            throw MakeStringException(-1,"CMemoryMappedFile::nextPtr - outside map");           
+            throw MakeStringException(-1,"CMemoryMappedFile::nextPtr - outside map");
         memsize_t d = (byte *)p-ptr;
         offset_t o = ofs+d+skip;
         if (o>=filesize) {
@@ -6290,7 +6290,7 @@ public:
             got = (memsize_t)left;
         return (byte *)p+skip;
     }
-        
+
     virtual void reinit(offset_t _ofs, memsize_t _size, bool _writeaccess)
     {
         writeaccess = _writeaccess;
@@ -6316,8 +6316,8 @@ public:
         realofs = pageround(ofs);
         if (_size==(memsize_t)-1) {
             size = (memsize_t)(filesize-_ofs);
-            if (size!=(filesize-_ofs)) 
-                throw MakeStringException(-1,"CMemoryMappedFile::reinit file too big");         
+            if (size!=(filesize-_ofs))
+                throw MakeStringException(-1,"CMemoryMappedFile::reinit file too big");
         }
         else
             size = _size;
@@ -6333,7 +6333,7 @@ public:
                 throw makeOsException(err,"CMemoryMappedFile::reinit");
             }
         }
-        li.QuadPart = realofs; 
+        li.QuadPart = realofs;
         ptr = (byte *) MapViewOfFile(hmap, writeaccess?(FILE_MAP_READ|FILE_MAP_WRITE):FILE_MAP_READ, li.HighPart, li.LowPart, mapsz);
         if (!ptr) {
             DWORD err = GetLastError();
@@ -6364,7 +6364,7 @@ size32_t CMemoryMappedFile::pagesize=0;
 IMemoryMappedFile *CFile::openMemoryMapped(offset_t ofs, memsize_t len, bool write)
 {
     HANDLE hfile = openHandle(write?IFOcreaterw:IFOread, IFSHread, false);
-    if (hfile == NULLFILE) 
+    if (hfile == NULLFILE)
         return NULL;
     return new CMemoryMappedFile(hfile,size(),ofs,len,write);
 }
@@ -6378,7 +6378,7 @@ bool isSpecialPath(const char *path)
     if (isPathSepChar(path[0])&&(path[0]==path[1])) {
         path += 2;
         for (;;) {
-            if (*path=='/') 
+            if (*path=='/')
                 return (path[1]=='>');
             if (!*path||(*path=='\\'))
                 return false;
@@ -6412,7 +6412,7 @@ size32_t SendFile(ISocket *target, IFileIO *fileio,offset_t start,size32_t len)
                 // TransmitFile not in std DLLs so don't bother with
                 off_t ofs = start;
                 ssize_t sent = ::sendfile(sh,fh,&ofs,len);
-                if (sent!=(ssize_t)-1) 
+                if (sent!=(ssize_t)-1)
                     return (size32_t)sent;
                 int err = errno;
                 if ((err!=EINVAL)&&(err!=ENOSYS))
@@ -6449,7 +6449,7 @@ void asyncClose(IFileIO *io)
     static Owned<IWorkQueueThread> adwp = createWorkQueueThread();
     class cWQI: public CInterface,implements IWorkQueueItem
     {
-        Owned<IFileIO> io; 
+        Owned<IFileIO> io;
     public:
         IMPLEMENT_IINTERFACE;
         cWQI(IFileIO *_io)
@@ -6523,7 +6523,7 @@ public:
     virtual void Link(void) const       { CInterface::Link(); }                     \
 
     virtual bool Release(void) const;
-    
+
     unsigned __int64 getStatistic(StatisticKind kind)
     {
         CriticalBlock block(sect);
@@ -6539,13 +6539,13 @@ public:
         Owned<IFileIO> io = open();
         return io->read(pos,len,data);
     }
-    offset_t size() 
+    offset_t size()
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         return io->size();
     }
-    size32_t write(offset_t pos, size32_t len, const void * data) 
+    size32_t write(offset_t pos, size32_t len, const void * data)
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
@@ -6569,7 +6569,7 @@ public:
         Owned<IFileIO> io = open();
         return io->appendFile(file,pos,len);
     }
-    void setSize(offset_t size) 
+    void setSize(offset_t size)
     {
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
@@ -6643,7 +6643,7 @@ public:
         }
     }
 
-    const CCachedFileIO *removeFile(const CCachedFileIO *io) 
+    const CCachedFileIO *removeFile(const CCachedFileIO *io)
     {
         CriticalBlock block(sect);
         ForEachItemIn(idx, cache)
@@ -6659,11 +6659,11 @@ public:
 };
 
 
-bool CCachedFileIO::Release(void) const 
-{ 
+bool CCachedFileIO::Release(void) const
+{
     if (CInterface::Release())
         return true;
-    if (!CInterface::IsShared()) 
+    if (!CInterface::IsShared())
         return owner.removeFile(this)->Release();
     return false;
 }
@@ -6851,7 +6851,7 @@ IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirector
     if (isEmptyString(dirName))
         throw MakeStringException(-1, "Invalid dirName input in getSortedDirectoryIterator()");
 
-    Owned<IFile> dir = createIFile(dirName); 
+    Owned<IFile> dir = createIFile(dirName);
     return getSortedDirectoryIterator(dir, mode, rev, mask, sub, includedirs);
 }
 

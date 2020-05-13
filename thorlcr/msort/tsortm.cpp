@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-// MSort Master           
+// MSort Master
 
 #include "platform.h"
 #include <stdlib.h>
@@ -80,7 +80,7 @@ class CSortNode: public SortSlaveMP
 public:
 
     CSortMaster     &sorter;
-    NODESTATE       state; 
+    NODESTATE       state;
     SocketEndpoint  endpoint;
     unsigned short  mpport;
     mptag_t         mpTagRPC;
@@ -89,15 +89,15 @@ public:
     offset_t        slavesize;
     bool            overflow;
     unsigned        scale;     // num times overflowed
-    
+
     CSortNode(CActivityBase *activity, ICommunicator *comm,rank_t _rank, SocketEndpoint &sep,mptag_t _mpTagRPC, CSortMaster &_sorter)
         : SortSlaveMP(activity), sorter(_sorter)
-    { 
-        endpoint = sep; 
-        mpport = getFixedPort(comm->queryGroup().queryNode(_rank).endpoint().port,TPORT_mp); // this is a bit odd 
+    {
+        endpoint = sep;
+        mpport = getFixedPort(comm->queryGroup().queryNode(_rank).endpoint().port,TPORT_mp); // this is a bit odd
         mpTagRPC = _mpTagRPC;
         state = NS_null;
-        beat=0; 
+        beat=0;
         overflow = false;
         scale = 1;
         numrecs = 0;
@@ -116,7 +116,7 @@ public:
             e->Release();
         }
     }
-    
+
 
 
     bool doConnect(unsigned part,unsigned numnodes)
@@ -161,7 +161,7 @@ class CTimer
 public:
     void start()
     {
-        cstart = msTick();  
+        cstart = msTick();
     }
     void stop(const char *title)
     {
@@ -204,7 +204,7 @@ struct PartitionInfo
     unsigned short  *mpports;
     mptag_t mpTagRPC;
     CThorExpandingRowArray splitkeys;
-    void init() 
+    void init()
     {
         nodes = NULL;
         mpports = NULL;
@@ -229,7 +229,7 @@ struct PartitionInfo
 typedef CopyReferenceArrayOf<CSortNode> NodeArray;
 
 class CSortMaster : public IThorSorterMaster, public CSimpleInterface
-{ 
+{
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CActivityBase *activity;
@@ -291,7 +291,7 @@ public:
             casyncfor(NodeArray &_slaves) : slaves(_slaves) { }
             void Do(unsigned i)
             {
-                CSortNode &slave = slaves.item(i);          
+                CSortNode &slave = slaves.item(i);
                 slave.init();
             }
         private:
@@ -322,7 +322,7 @@ public:
     {
         unsigned left=slaves.ordinality();
         ForEachItemIn(i,slaves) {
-            CSortNode &slave = slaves.item(i);          
+            CSortNode &slave = slaves.item(i);
             if (slave.state !=state)
                 left--;
         }
@@ -330,7 +330,7 @@ public:
         if (left<5) {
             StringBuffer s;
             ForEachItemIn(j,slaves) {
-                CSortNode &slave = slaves.item(j);          
+                CSortNode &slave = slaves.item(j);
                 if (slave.state==state) {
                     s.append(' ');
                     slave.endpoint.getIpText(s);
@@ -391,7 +391,7 @@ public:
         SocketEndpoint *nep=partitioninfo->nodes;
         unsigned short *mpp =partitioninfo->mpports;
         ForEachItemIn(j,slaves) {
-            CSortNode &slave = slaves.item(j);          
+            CSortNode &slave = slaves.item(j);
             *nep = slave.endpoint;
             nep++;
             *mpp = slave.mpport;
@@ -404,7 +404,7 @@ public:
             cosortfilenames = strdup(_cosortfilenames);
         }
         ForEachItemIn(k,slaves) {
-            CSortNode &slave = slaves.item(k);          
+            CSortNode &slave = slaves.item(k);
             slave.StartGather();
         }
         ActPrintLog(activity, "Sort Setup Complete");
@@ -416,7 +416,7 @@ public:
         delete partitioninfo;
         synchronized proc(slavemutex);
         ForEachItemInRev(i,slaves) {
-            CSortNode *slave = &slaves.item(i);         
+            CSortNode *slave = &slaves.item(i);
             slaves.remove(i);
             delete slave;
         }
@@ -461,7 +461,7 @@ public:
     {
         ActPrintLog(activity, "GetNode %u",num);
         if (num<slaves.ordinality()) {
-            CSortNode &slave = slaves.item(num);            
+            CSortNode &slave = slaves.item(num);
             endpoint = slave.endpoint;
             endpoint.port++;    // for socket server
             return true;
@@ -525,7 +525,7 @@ public:
         if (min&&max)
         {
             int cmp=icompare->docompare(min,max);
-            if (cmp==0) 
+            if (cmp==0)
                 ActPrintLog(activity, "Min == Max : All keys equal!");
             else if (cmp>0)
                 ActPrintLog(activity, "ERROR: Min > Max!");
@@ -556,7 +556,7 @@ public:
             partitioninfo->kill();
             return splitMap.getClear();
         }
-        unsigned averagesamples = OVERSAMPLE*numnodes;  
+        unsigned averagesamples = OVERSAMPLE*numnodes;
         rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
         CriticalSection asect;
         CThorExpandingRowArray sample(*activity, keyIf, ers_allow);
@@ -571,7 +571,7 @@ public:
         public:
             casyncfor1(CSortMaster &_owner, NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect)
                 : owner(_owner), slaves(_slaves), sample(_sample), asect(_asect)
-            { 
+            {
                 averagesamples = _averagesamples;
                 averagerecspernode = _averagerecspernode;
             }
@@ -651,7 +651,7 @@ public:
         public:
             casyncfor2(NodeArray &_slaves,size32_t _mdl,const byte *_mdp)
                 : slaves(_slaves)
-            { 
+            {
                 mdl = _mdl;
                 mdp = _mdp;
             }
@@ -672,7 +672,7 @@ public:
         public:
             casyncfor3(NodeArray &_slaves,rowcount_t *_splitmap,unsigned _numnodes,unsigned _numsplits)
                 : slaves(_slaves)
-            { 
+            {
                 splitmap = _splitmap;
                 numnodes = _numnodes;
                 numsplits = _numsplits;
@@ -754,9 +754,9 @@ public:
                     const MemoryBuffer &mbmn;
                     const MemoryBuffer &mbmx;
                 public:
-                    casyncfor(NodeArray &_slaves,const MemoryBuffer &_mbmn,const MemoryBuffer &_mbmx) 
+                    casyncfor(NodeArray &_slaves,const MemoryBuffer &_mbmn,const MemoryBuffer &_mbmx)
                         : slaves(_slaves),mbmn(_mbmn), mbmx(_mbmx)
-                    { 
+                    {
                     }
                     void Do(unsigned i)
                     {
@@ -780,7 +780,7 @@ public:
                 public:
                     casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IThorRowInterfaces *_keyIf)
                         : slaves(_slaves), totmid(_totmid), keyIf(_keyIf)
-                    { 
+                    {
                         nextsem = _nextsem;
                         numsplits = _numsplits;
                     }
@@ -789,7 +789,7 @@ public:
                         CSortNode &slave = slaves.item(i);
                         void *p = NULL;
                         size32_t retlen=0;
-                        if (slave.numrecs!=0) 
+                        if (slave.numrecs!=0)
                             slave.GetMultiMidPointStop(retlen,p);
                         if (i)
                             nextsem[i-1].wait();
@@ -900,17 +900,17 @@ public:
                     unsigned __int64 tot = 0;
                     unsigned __int64 loc = 0;
                     for (j=0;j<numnodes;j++) {
-                        unsigned scale = slaves.item(j).scale; 
+                        unsigned scale = slaves.item(j).scale;
                         unsigned midx = i+j*numnodes;
                         tot += scale*(__int64)splitmap[midx];
                         unsigned __int64 tloc = splitmap[midx];
-                        if (i) 
+                        if (i)
                             tloc -= splitmap[midx-1];
                         loc += tloc*scale;
                     }
                     unsigned __int64 wanted = nodewanted*(i+1); // scaled total assumed >> numnodes
 #ifdef _DEBUG
-                    if (logging) 
+                    if (logging)
                         ActPrintLog(activity, "  wanted = %" CF "d, %stotal = %" CF "d, loc = %" CF "d, locwanted = %" CF "d\n",wanted,(total!=stotal)?"scaled ":"",tot,loc,nodewanted);
 #endif
                     unsigned __int64 error = (loc>nodewanted)?(loc-nodewanted):(nodewanted-loc);
@@ -933,7 +933,7 @@ public:
                     }
                 }
                 if (emin.equal(icompare,newmin)&&emax.equal(icompare,newmax))
-                    break; // reached steady state 
+                    break; // reached steady state
                 if ((maxerror*10000<nodewanted)||((iter>3)&&(maxerror<variancelimit))) // within .01% or within variancelimit
                 {
                     ActPrintLog(activity, "maxerror = %" CF "d, nodewanted = %" CF "d, variancelimit=%" CF "d, estrecsize=%u, maxdeviance=%u",
@@ -942,7 +942,7 @@ public:
                 }
                 emin.transfer(newmin);
                 emax.transfer(newmax);
-            } 
+            }
         }
         catch (IOutOfMemException *e)
         {
@@ -1055,7 +1055,7 @@ public:
         for(i=0;i<numnodes;i++)
         {
             char *e=strchr(s,'|');
-            if (e) 
+            if (e)
                 *e = 0;
             else if (i!=numnodes-1)
                 return;
@@ -1176,7 +1176,7 @@ public:
             return;
         }
 #ifdef USE_SAMPLE_PARTITIONING
-        bool usesampling = true;        
+        bool usesampling = true;
 #endif
         bool useAux = false; // JCSMORE using existing partioning and auxillary rowIf (only used if overflow)
         for (;;)
@@ -1296,13 +1296,13 @@ public:
                     for (i=0;i<numnodes;i++)
                     {
                         CSortNode &slave = slaves.item(i);
-                        if (slave.overflow) 
+                        if (slave.overflow)
                             slave.OverflowAdjustMapStart(numnodes,splitMap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE,useAux);
                     }
                     for (i=0;i<numnodes;i++)
                     {
                         CSortNode &slave = slaves.item(i);
-                        if (slave.overflow) 
+                        if (slave.overflow)
                             slave.AdjustNumRecs(slave.OverflowAdjustMapStop(numnodes,splitMap+i*numnodes));
                     }
                     if (splitMapUpper.get())
@@ -1310,13 +1310,13 @@ public:
                         for (i=0;i<numnodes;i++)
                         {
                             CSortNode &slave = slaves.item(i);
-                            if (slave.overflow) 
+                            if (slave.overflow)
                                 slave.OverflowAdjustMapStart(numnodes,splitMapUpper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER,useAux);
                         }
                         for (i=0;i<numnodes;i++)
                         {
                             CSortNode &slave = slaves.item(i);
-                            if (slave.overflow) 
+                            if (slave.overflow)
                                 slave.OverflowAdjustMapStop(numnodes,splitMapUpper+i*numnodes);
                         }
                     }
@@ -1368,7 +1368,7 @@ public:
 #ifdef USE_SAMPLE_PARTITIONING
                     if (usesampling)
                     {
-                        ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning"); 
+                        ActPrintLog(activity, "Partioning using sampling failed, trying iterative partitioning");
                         usesampling = false;
                         continue;
                     }
@@ -1405,14 +1405,14 @@ public:
         {
             rowcount_t totalrows;
         public:
-            casyncfor1(NodeArray &_slaves,rowcount_t _totalrows) 
-                : slaves(_slaves) 
-            { 
+            casyncfor1(NodeArray &_slaves,rowcount_t _totalrows)
+                : slaves(_slaves)
+            {
                 totalrows = _totalrows;
             }
             void Do(unsigned i)
             {
-                CSortNode &slave = slaves.item(i);      
+                CSortNode &slave = slaves.item(i);
                 slave.StartMiniSort(totalrows);
             }
         private:
@@ -1425,7 +1425,7 @@ public:
 
 CThorExpandingRowArray *CSortMaster::ECFarray;
 ICompare *CSortMaster::ECFcompare;
-CriticalSection CSortMaster::ECFcrit; 
+CriticalSection CSortMaster::ECFcrit;
 
 
 IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity)
@@ -1454,5 +1454,5 @@ void CSortNode::AdjustNumRecs(rowcount_t num)
 
 
 
-        
+
 

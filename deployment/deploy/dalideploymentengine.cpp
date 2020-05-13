@@ -21,7 +21,7 @@
 // CDaliDeploymentEngine
 //---------------------------------------------------------------------------
 CDaliDeploymentEngine::CDaliDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
-                                             IDeploymentCallback& callback, 
+                                             IDeploymentCallback& callback,
                                              IPropertyTree& process)
  : CDeploymentEngine(envDepEngine, callback, process, "Instance")
 {
@@ -32,8 +32,8 @@ CDaliDeploymentEngine::CDaliDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
 //---------------------------------------------------------------------------
 void CDaliDeploymentEngine::startInstance(IPropertyTree& instanceNode, const char* fileName/*="startup"*/)
 {
-   while (!m_pCallback->processException( m_process.queryName(), m_name, m_curInstance, NULL, 
-                                          "You must start a Dali server manually!", 
+   while (!m_pCallback->processException( m_process.queryName(), m_name, m_curInstance, NULL,
+                                          "You must start a Dali server manually!",
                                           "Start Process"));//while retry
 }
 
@@ -42,8 +42,8 @@ void CDaliDeploymentEngine::startInstance(IPropertyTree& instanceNode, const cha
 //---------------------------------------------------------------------------
 void CDaliDeploymentEngine::stopInstance(IPropertyTree& instanceNode, const char* fileName/*="stop"*/)
 {
-   while (!m_pCallback->processException( m_process.queryName(), m_name, m_curInstance, 
-                                          NULL, "You must stop a Dali server manually!", 
+   while (!m_pCallback->processException( m_process.queryName(), m_name, m_curInstance,
+                                          NULL, "You must stop a Dali server manually!",
                                           "Stop Process"));//while retry
 }
 

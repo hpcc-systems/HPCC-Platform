@@ -215,7 +215,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         IpAddress snifferIP;
         CReceiveManager &parent;
         std::atomic<bool> running = { false };
-        
+
         inline void update(const IpAddress &ip, bool busy)
         {
             if (udpTraceLevel > 5)
@@ -243,7 +243,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             }
         }
 
-        ~receive_sniffer() 
+        ~receive_sniffer()
         {
             running = false;
             if (sniffer_socket) sniffer_socket->close();
@@ -251,7 +251,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (sniffer_socket) sniffer_socket->Release();
         }
 
-        virtual int run() 
+        virtual int run()
         {
             DBGLOG("UdpReceiver: sniffer started");
             if (udpSnifferReadThreadPriority)
@@ -262,16 +262,16 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 adjustPriority(1);
 #endif
             }
-            while (running) 
+            while (running)
             {
-                try 
+                try
                 {
                     unsigned int res;
                     sniff_msg msg;
                     sniffer_socket->read(&msg, 1, sizeof(msg), res, 5);
                     update(msg.nodeIp.getNodeAddress(), msg.cmd == sniffType::busy);
                 }
-                catch (IException *e) 
+                catch (IException *e)
                 {
                     if (running && e->errorCode() != JSOCKERR_timeout_expired)
                     {
@@ -281,7 +281,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     }
                     e->Release();
                 }
-                catch (...) 
+                catch (...)
                 {
                     DBGLOG("UdpReceiver: receive_sniffer::run unknown exception port %u", parent.data_port);
                     if (sniffer_socket) {
@@ -304,14 +304,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         }
     };
 
-    class receive_receive_flow : public Thread 
+    class receive_receive_flow : public Thread
     {
         CReceiveManager &parent;
         Owned<ISocket> flow_socket;
         const unsigned flow_port;
         const unsigned maxSlotsPerSender;
         std::atomic<bool> running = { false };
-        
+
         UdpSenderEntry *pendingRequests = nullptr;   // Head of list of people wanting permission to send
         UdpSenderEntry *lastPending = nullptr;       // Tail of list
         UdpSenderEntry *currentRequester = nullptr;  // Who currently has permission to send
@@ -435,18 +435,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         receive_receive_flow(CReceiveManager &_parent, unsigned flow_p, unsigned _maxSlotsPerSender)
         : Thread("UdpLib::receive_receive_flow"), parent(_parent), flow_port(flow_p), maxSlotsPerSender(_maxSlotsPerSender)
         {
-            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
+            if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0)
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
             flow_socket.setown(ISocket::udp_create(flow_port));
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: receive_receive_flow created port=%d sockbuffsize=%d actual %d", flow_port, udpFlowSocketsSize, actualSize);
         }
-        
-        ~receive_receive_flow() 
+
+        ~receive_receive_flow()
         {
             running = false;
-            if (flow_socket) 
+            if (flow_socket)
                 flow_socket->close();
             join();
         }
@@ -554,19 +554,19 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         }
     };
 
-    class receive_data : public Thread 
+    class receive_data : public Thread
     {
         CReceiveManager &parent;
         ISocket *receive_socket;
         std::atomic<bool> running = { false };
         Semaphore started;
-        
+
     public:
         receive_data(CReceiveManager &_parent) : Thread("UdpLib::receive_data"), parent(_parent)
         {
             unsigned ip_buffer = parent.input_queue_size*DATA_PAYLOAD*2;
             if (ip_buffer < udpFlowSocketsSize) ip_buffer = udpFlowSocketsSize;
-            if (check_max_socket_read_buffer(ip_buffer) < 0) 
+            if (check_max_socket_read_buffer(ip_buffer) < 0)
                 throw MakeStringException(ROXIE_UDP_ERROR, "System socket max read buffer is less than %u", ip_buffer);
             receive_socket = ISocket::udp_create(parent.data_port);
             receive_socket->set_receive_buffer_size(ip_buffer);
@@ -581,7 +581,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             Thread::start();
             started.wait();
         }
-        
+
         ~receive_data()
         {
             running = false;
@@ -591,7 +591,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             ::Release(receive_socket);
         }
 
-        virtual int run() 
+        virtual int run()
         {
             DBGLOG("UdpReceiver: receive_data started");
         #ifdef __linux__
@@ -601,9 +601,9 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         #endif
             DataBuffer *b = NULL;
             started.signal();
-            while (running) 
+            while (running)
             {
-                try 
+                try
                 {
                     unsigned int res;
                     b = bufferManager->allocate();
@@ -620,7 +620,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     parent.input_queue->pushOwn(b);
                     b = NULL;
                 }
-                catch (IException *e) 
+                catch (IException *e)
                 {
                     ::Release(b);
                     b = NULL;
@@ -637,7 +637,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     }
                     e->Release();
                 }
-                catch (...) 
+                catch (...)
                 {
                     ::Release(b);
                     b = NULL;
@@ -656,7 +656,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     public:
         CPacketCollator(CReceiveManager &_parent) : Thread("CPacketCollator"), parent(_parent) {}
 
-        virtual int run() 
+        virtual int run()
         {
             DBGLOG("UdpReceiver: CPacketCollator::run");
             parent.collatePackets();
@@ -670,13 +670,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     friend class receive_data;
     friend class ReceiveFlowManager;
     friend class receive_sniffer;
-    
+
     queue_t              *input_queue;
     int                  input_queue_size;
     receive_receive_flow *receive_flow;
     receive_data         *data;
     receive_sniffer      *sniffer;
-    
+
     int                  receive_flow_port;
     int                  data_port;
 
@@ -743,7 +743,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         MilliSleep(15);
     }
 
-    ~CReceiveManager() 
+    ~CReceiveManager()
     {
         running = false;
         input_queue->interrupt();
@@ -754,7 +754,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         delete input_queue;
     }
 
-    virtual void detachCollator(const IMessageCollator *msgColl) 
+    virtual void detachCollator(const IMessageCollator *msgColl)
     {
         ruid_t ruid = msgColl->queryRUID();
         if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
@@ -767,7 +767,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     void collatePackets()
     {
-        while(running) 
+        while(running)
         {
             DataBuffer *dataBuff = input_queue->pop(true);
             collatePacket(dataBuff);
@@ -778,7 +778,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     {
         const UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
 
-        if (udpTraceLevel >= 4) 
+        if (udpTraceLevel >= 4)
         {
             StringBuffer s;
             DBGLOG("UdpReceiver: CPacketCollator - unQed packet - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X len=%d node=%s",
@@ -857,7 +857,7 @@ Thoughts on flow control / streaming:
     - Need to work out how to do GSS - the nextGE info needs to be passed back in the flow control?
     - can't easily recover from slave failures if you already started processing
         - unless you assume that the results from slave are always deterministic and can retry and skip N
-    - potentially ties up a slave thread for a while 
+    - potentially ties up a slave thread for a while
         - do we need to have a larger thread pool but limit how many actually active?
 
 3. Order of work
@@ -876,7 +876,7 @@ creating the segment monitors, creating the various cursors, and serialising the
 
 To add streaming:
     - Need to check for meta availability other than when first received
-        - when ? 
+        - when ?
     - Need to cope with a getNext() blocking without it causing issues
      - perhaps should recode getNext() of variable-size rows first?
 
@@ -922,7 +922,7 @@ Problems found while testing implemetnation:
     (and in kind-of the same way I need to be able to spot complete rows of data even when they span multiple packets.) I think data is really a bit different from the rest -
     you expect it to be continuous and you want the others to interrupt the flow.
 
-    If continuation info was restricted to a "yes/no" (i.e. had to be continued on same node as started on) could have simple "Is there any continuation" bit. Others are sent in their 
+    If continuation info was restricted to a "yes/no" (i.e. had to be continued on same node as started on) could have simple "Is there any continuation" bit. Others are sent in their
     own packets so are a little different. Does that make it harder to recover? Not sure that it does really (just means that the window at which a failure causes a problem starts earlier).
     However it may be an issue tying up slave thread for a while (and do we know when to untie it if the Roxie server abandons/restarts?)
 

@@ -165,7 +165,7 @@ void CThorStreamDeserializerSource::skip(size32_t size)
 {
     in->skip(size);
 }
-    
+
 void CThorStreamDeserializerSource::skipPackedInt()
 {
     throwUnexpected();

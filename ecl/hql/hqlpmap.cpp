@@ -552,7 +552,7 @@ IHqlExpression * NewProjectMapper2::recursiveExpandSelect(IHqlExpression * expr,
         IHqlExpression * expanded = &sources.item(match);
         if ((newDataset == oldParent) || !newDataset)
             return LINK(expanded);
-        return replaceSelector(expanded, oldParent, newDataset); 
+        return replaceSelector(expanded, oldParent, newDataset);
     }
 
     if ((cur->getOperator() != no_select) || !cur->isDatarow())
@@ -707,8 +707,8 @@ IHqlExpression * NewProjectMapper2::expandFields(IHqlExpression * expr, IHqlExpr
     expandCallback = _expandCallback;
     if (!isMappingKnown() && expandCallback)
         expandCallback->onUnknown();
-    return doExpandFields(expr, oldDataset->queryNormalizedSelector(), 
-                                newDataset ? newDataset->queryNormalizedSelector() : NULL, 
+    return doExpandFields(expr, oldDataset->queryNormalizedSelector(),
+                                newDataset ? newDataset->queryNormalizedSelector() : NULL,
                                 oldParent ? oldParent->queryNormalizedSelector() : NULL);
 }
 
@@ -735,8 +735,8 @@ void NewProjectMapper2::expandFields(HqlExprArray & target, const HqlExprArray &
             expandCallback->onUnknown();
         for (; idx < num; idx++)
         {
-            target.append(*doExpandFields(&src.item(idx), oldDataset->queryNormalizedSelector(), 
-                                newDataset ? newDataset->queryNormalizedSelector() : NULL, 
+            target.append(*doExpandFields(&src.item(idx), oldDataset->queryNormalizedSelector(),
+                                newDataset ? newDataset->queryNormalizedSelector() : NULL,
                                 oldParent ? oldParent->queryNormalizedSelector() : NULL));
         }
     }
@@ -869,7 +869,7 @@ IHqlExpression * getParentDatasetSelector(IHqlExpression * ds)
         if (queryNewColumnProvider(ds)->getOperator() == no_transform)
             return createSelector(no_left, ds->queryChild(0), querySelSeq(ds));
         return LINK(ds->queryChild(0)->queryNormalizedSelector());
-    case childdataset_left: 
+    case childdataset_left:
         return createSelector(no_left, ds->queryChild(0), querySelSeq(ds));
     }
 
@@ -1157,7 +1157,7 @@ static HqlTransformerInfo selectorFieldAnalyserInfo("SelectorFieldAnalyser");
 class HQL_API SelectorFieldAnalyser : public NewHqlTransformer
 {
 public:
-    SelectorFieldAnalyser(HqlExprCopyArray & _selects, IHqlExpression * _selector) 
+    SelectorFieldAnalyser(HqlExprCopyArray & _selects, IHqlExpression * _selector)
     : NewHqlTransformer(selectorFieldAnalyserInfo), selects(_selects), selector(_selector)
     {
     }
@@ -1298,7 +1298,7 @@ IHqlExpression * createRecordMappingTransform(node_operator op, IHqlExpression *
 
 IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, IAtom * serializeVariety)
 {
-    if (!expr) 
+    if (!expr)
         return NULL;
 
     assertex(side);

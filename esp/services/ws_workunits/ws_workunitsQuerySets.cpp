@@ -915,7 +915,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     bool reloadFailed = false;
     if (0!=req.getWait() && !req.getNoReload())
         reloadFailed = !reloadCluster(clusterInfo, (unsigned)req.getWait());
-    
+
     resp.setReloadFailed(reloadFailed);
 
     double version = context.getClientVersion();

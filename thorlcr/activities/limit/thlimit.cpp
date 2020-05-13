@@ -54,8 +54,8 @@ public:
         }
         switch (container.getKind())
         {
-            case TAKcreaterowlimit: 
-            case TAKskiplimit: 
+            case TAKcreaterowlimit:
+            case TAKskiplimit:
             {
                 CMessageBuffer mb;
                 mb.append(total);

@@ -81,7 +81,7 @@ public:
                     first = true;
                 }
             }
-            
+
             assertex(sD[nextLevel->tos()].length()); // something must have been added
             n = 0;
             while (n<nextLevel->ordinality()) sD[nextLevel->item(n++)].append(0); // terminator

@@ -142,7 +142,7 @@ int RSAZCryptor::setPublicKey(const char* publickeyBuff)
         throw_error();
     }
 
-    pub_size = RSA_size(pub_rsa);       
+    pub_size = RSA_size(pub_rsa);
 
     generate_key(32, m_sessionkey);
     ZBuffer ekeybuf;
@@ -225,10 +225,10 @@ RSAZCryptor::~RSAZCryptor()
         BIO_free(pub_mem);
 
     if(priv_rsa)
-        RSA_free(priv_rsa); 
+        RSA_free(priv_rsa);
 
     if(pub_rsa)
-        RSA_free(pub_rsa);      
+        RSA_free(pub_rsa);
 
     EVP_cleanup();
 }
@@ -237,7 +237,7 @@ void RSAZCryptor::throw_error()
 {
     char errbuf[512];
     ERR_error_string_n(ERR_get_error(), errbuf, 512);
-    
+
     if(m_trace_level > 0)
         printf("Error: %s\n", errbuf);
 
@@ -270,8 +270,8 @@ int RSAZCryptor::gzipToFile(unsigned in_len, void const *in, const char* tempFil
     return 0;
 }
 
-//a caller should be responsible for releasing memory for 
-//the 'content' after the zipToFile function is called. 
+//a caller should be responsible for releasing memory for
+//the 'content' after the zipToFile function is called.
 int RSAZCryptor::addContentToZIP(unsigned contentLength, void *content, char* fileName,  bool append)
 {
     time_t simple;
@@ -280,8 +280,8 @@ int RSAZCryptor::addContentToZIP(unsigned contentLength, void *content, char* fi
     return addContentToZIP(contentLength, content, fileName, simple, append);
 }
 
-//a caller should be responsible for releasing memory for 
-//the 'content' after the zipToFile function is called. 
+//a caller should be responsible for releasing memory for
+//the 'content' after the zipToFile function is called.
 int RSAZCryptor::addContentToZIP(unsigned contentLength, void *content, char* fileName, time_t fileTM,  bool append)
 {
     if (!append && m_filesToBeZIP)
@@ -313,7 +313,7 @@ int RSAZCryptor::addContentToZIP(unsigned contentLength, void *content, char* fi
         {
             ppFile = ppFile->next_filetozip;
         }
-            
+
         ppFile->next_filetozip = pFile;
     }
     return 0;
@@ -400,11 +400,11 @@ int RSAZCryptor::zipToFile(const char* zipFileName, bool cleanFileListAfterUsed)
 
         zip_fileinfo zi;
         zi.tmz_date.tm_sec = ts->tm_sec;
-        zi.tmz_date.tm_min = ts->tm_min;   
-        zi.tmz_date.tm_hour = ts->tm_hour; 
-        zi.tmz_date.tm_mday = ts->tm_mday;  
+        zi.tmz_date.tm_min = ts->tm_min;
+        zi.tmz_date.tm_hour = ts->tm_hour;
+        zi.tmz_date.tm_mday = ts->tm_mday;
         zi.tmz_date.tm_mon = ts->tm_mon;
-        zi.tmz_date.tm_year = ts->tm_year;  
+        zi.tmz_date.tm_year = ts->tm_year;
 
         zi.dosDate = 0;
         zi.internal_fa = 0;
@@ -574,7 +574,7 @@ int RSAZCryptor::zip(int in_len, unsigned char* in, ZBuffer& outbuf)
     strm.avail_in = in_len;
     strm.next_in = in;
     ZBuffer onebuf(buflen);
-    do 
+    do
     {
         strm.avail_out = buflen;
         strm.next_out = onebuf.buffer();
@@ -590,7 +590,7 @@ int RSAZCryptor::zip(int in_len, unsigned char* in, ZBuffer& outbuf)
         have = buflen - strm.avail_out;
         if(have > 0)
             outbuf.append(have, onebuf.buffer());
-    } 
+    }
     while (strm.avail_out == 0);
 
     (void)deflateEnd(&strm);
@@ -633,7 +633,7 @@ int RSAZCryptor::unzip(int in_len, unsigned char* in, ZBuffer& outbuf)
     ZBuffer onebuf(buflen);
 
     /* run inflate() on input until output buffer not full */
-    do 
+    do
     {
         strm.avail_out = buflen;
         strm.next_out = onebuf.buffer();
@@ -646,7 +646,7 @@ int RSAZCryptor::unzip(int in_len, unsigned char* in, ZBuffer& outbuf)
             return ret;
         }
 
-        switch (ret) 
+        switch (ret)
         {
         case Z_NEED_DICT:
             ret = Z_DATA_ERROR;     /* and fall through */
@@ -669,7 +669,7 @@ int RSAZCryptor::unzip(int in_len, unsigned char* in, ZBuffer& outbuf)
 
     /* clean up and return */
     (void)inflateEnd(&strm);
-    
+
     return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
@@ -707,7 +707,7 @@ ZBuffer& RSAZCryptor::publickey_encrypt(int in_len, unsigned char* in, ZBuffer& 
     result.reserve(resultlen);
     int curpos = 0;
     unsigned char* resultptr = result.buffer();
-    
+
     while(curpos < in_len)
     {
         int cur_inc = (in_len - curpos > inc)?inc:(in_len - curpos);
@@ -797,7 +797,7 @@ int RSAZCryptor::encrypt(int in_len, unsigned char* in, IZBuffer*& session_key, 
 
         return 0;
     }
-    
+
     if(m_trace_level > 10)
         printf("Info: encrypt input: \n%s\n", in);
 
@@ -892,7 +892,7 @@ IZBuffer* RSAZCryptor::decrypt(int key_len, unsigned char* keybuf, int in_len, u
 
     ZBuffer* outbuf = new ZBuffer();
     int ret = unzip(buf.length(), buf.buffer(), *outbuf);
-    
+
     if(ret != Z_OK || outbuf->length() <= 0)
         return NULL;
 
@@ -911,7 +911,7 @@ IZBuffer* RSAZCryptor::decrypt(unsigned char* keybuf, unsigned char* inbuf)
     {
         if(m_trace_level > 0)
             printf("Warning: Please specify key and input for decryption.\n");
-        
+
         return NULL;
     }
 
@@ -946,10 +946,10 @@ ZBuffer* ZKeyCache::getCachedKey(RSAZCryptor* zc, int elen, unsigned char* ekey)
 
         if(cur_ekey->equal(elen, ekey))
             return entry->getKey();
-        
+
         if(entry->getTimestamp() < m_cache[oldest]->getTimestamp())
             oldest = ind;
-        
+
         ind = (ind+1) % ZKEYCACHESIZE;
     }
     while(ind != start);

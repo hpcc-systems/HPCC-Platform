@@ -459,7 +459,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             }
             break;
             case FN_SingleMerge: {
-                replydone = true;   
+                replydone = true;
                 comm->reply(mbout);     // async
                 slave.SingleMerge();
             }
@@ -486,7 +486,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             }
             break;
             case FN_StartMiniSort: {
-                replydone = true;   
+                replydone = true;
                 rowcount_t totalrows;
                 mb.read(totalrows);
                 comm->reply(mbout);     // async
@@ -494,7 +494,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             }
             break;
             case FN_Close: {
-                replydone = true;   
+                replydone = true;
                 comm->reply(mbout);     // async
                 slave.Close();
             }
@@ -505,7 +505,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             break;
             case FN_Disconnect: {
                 comm->reply(mbout);     // async
-                replydone = true;   
+                replydone = true;
                 slave.Disconnect();
             }
             // fall through
@@ -543,5 +543,5 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
 void SortSlaveMP::stopmarshall(ICommunicator *comm,mptag_t tag)
 {
     CMessageBuffer mbuff;
-    comm->cancel(RANK_ALL,tag); 
+    comm->cancel(RANK_ALL,tag);
 }

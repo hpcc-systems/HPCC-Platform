@@ -51,7 +51,7 @@ bool Complete(HANDLE evt,DWORD timeout=INFINITE)
         }
         throw win32::SystemError(L"Wait operation failed");
     }
-    return false; 
+    return false;
 }
 
 void Read(File& file,void* buf,size32_t size)
@@ -63,7 +63,7 @@ void Read(File& file,void* buf,size32_t size)
         count=file.GetResult(&ovl);
     }
 
-    if(count!=size) 
+    if(count!=size)
         throw win32::Error(L"Read %d bytes instead of %d",count,size);
 }
 
@@ -78,7 +78,7 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
     {
         Token utoken;
         if(*cmd.username)
-        { 
+        {
             char *username, *domain;
             if(username=strchr(cmd.username,'\\'))
             {
@@ -90,7 +90,7 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
                 username=cmd.username;
                 domain=NULL;
             }
-             
+
             UserToken ut(username,domain,cmd.password,LOGON32_LOGON_INTERACTIVE);
             if(!ut)
                 throw win32::SystemError(L"Failed to logon user");
@@ -112,9 +112,9 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
         {
             PSECURITY_DESCRIPTOR sd=(PSECURITY_DESCRIPTOR) _alloca(SECURITY_DESCRIPTOR_MIN_LENGTH);
 
-            if(!sd || 
+            if(!sd ||
                 !::InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION) ||
-                !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))       
+                !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))
             {
                 throw win32::SystemError(L"Create security descriptor failed");
             }
@@ -149,7 +149,7 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
         ::GetUserName(username,&namesz);
 
         if(*cmd.username)
-        { 
+        {
             ::RevertToSelf();
         }
         else
@@ -167,13 +167,13 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
             Token imp(token,MAXIMUM_ALLOWED,NULL,impersonationLevel,TokenPrimary);
             if(!imp)
                 throw win32::SystemError(L"Create impersonation token failed");
-    
+
             utoken.set(imp.get());
         }
 
         if(!utoken.SetInfo(TokenSessionId,&session,sizeof(session)))
             throw win32::SystemError(L"Set session");
-        
+
 
         struct UserProfile
         {
@@ -181,15 +181,15 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
             {
                 memset(&profile,0,sizeof(profile));
                 profile.dwSize=sizeof(profile);
-                profile.lpUserName=username; 
+                profile.lpUserName=username;
 
                 if(!::LoadUserProfile(token,&profile))
                     throw win32::SystemError(L"Could not load user profile");
             }
-        
+
             ~UserProfile()
             {
-                ::UnloadUserProfile(token, profile.hProfile); 
+                ::UnloadUserProfile(token, profile.hProfile);
             }
 
             HANDLE token;
@@ -259,7 +259,7 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
                 throw win32::SystemError(L"Create proxy pipe failed");
 
             ::ResumeThread(thread);
-        
+
             Overlapped ovl;
             if(!proxy.Connect(&ovl) && !Complete(ovl,proxytimeout))
                 throw win32::SystemError(L"Proxy did not connect");
@@ -299,7 +299,7 @@ bool ListProcesses(NamedPipe& pipe, CmdMessage& cmd)
     ThreadToken token(TOKEN_ADJUST_PRIVILEGES);
     if(!token.AdjustPrivilege(SE_DEBUG_NAME,true))
         throw win32::SystemError(L"Could not do SE_DEBUG_NAME");
-    
+
     ProcessList procs;
     if(msg.hasPid())
         procs.add(msg.GetPid());
@@ -320,7 +320,7 @@ bool ListProcesses(NamedPipe& pipe, CmdMessage& cmd)
 
 
 void CommunicationPipeThreadProc(void* param)
-{ 
+{
     try
     {
         NamedPipe pipe;
@@ -333,7 +333,7 @@ void CommunicationPipeThreadProc(void* param)
             ExecProcess(pipe,msg);
         else if(stricmp(msg.command,"LIST")==0)
             ListProcesses(pipe,msg);
-        else 
+        else
             throw win32::Error(L"Unknown command %.*s",sizeof(msg.command),msg.command);
     }
     catch(const win32::Error& e)
@@ -352,9 +352,9 @@ extern "C" VOID ServiceStart (DWORD dwArgc, LPTSTR *lpszArgv)
     {
         PSECURITY_DESCRIPTOR sd=(PSECURITY_DESCRIPTOR) _alloca(SECURITY_DESCRIPTOR_MIN_LENGTH);
 
-        if(!sd || 
+        if(!sd ||
            !::InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION) ||
-           !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))       
+           !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))
         {
             throw win32::SystemError(L"Create security descriptor failed");
         }
@@ -403,7 +403,7 @@ extern "C" VOID SelfDestruct()
    TCHAR    buf[MAX_PATH];
    GetModuleFileName(module, buf, MAX_PATH);
    CloseHandle((HANDLE)4);
-    __asm 
+    __asm
     {
       lea     eax, buf
       push    0
@@ -424,9 +424,9 @@ extern "C" VOID ProxyService(int pid,const char* in,const char* out,const char* 
     {
         PSECURITY_DESCRIPTOR sd=(PSECURITY_DESCRIPTOR) _alloca(SECURITY_DESCRIPTOR_MIN_LENGTH);
 
-        if(!sd || 
+        if(!sd ||
             !::InitializeSecurityDescriptor(sd, SECURITY_DESCRIPTOR_REVISION) ||
-            !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))       
+            !::SetSecurityDescriptorDacl(sd, TRUE, NULL, FALSE))
         {
             throw win32::SystemError(L"Create security descriptor failed");
         }
@@ -434,7 +434,7 @@ extern "C" VOID ProxyService(int pid,const char* in,const char* out,const char* 
         SECURITY_ATTRIBUTES sa={sizeof sa, sd, TRUE};
 
         NamedPipe hstdin, hstdout, hstderr;
-            
+
         if(!hstdin.Open(in, PIPE_ACCESS_INBOUND, PIPE_TYPE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,0,0,-1,&sa))
             throw win32::SystemError(L"Create SDTIN pipe failed");
         if(!hstdout.Open(out, PIPE_ACCESS_OUTBOUND, PIPE_TYPE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES,0,0,-1,&sa))

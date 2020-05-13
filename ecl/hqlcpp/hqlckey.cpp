@@ -205,7 +205,7 @@ protected:
 };
 
 KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _expr, bool _canOptimizeTransfer) : translator(_translator)
-{ 
+{
     expr.set(_expr);
     joinSeq.set(querySelSeq(expr));
     hasComplexIndex = false;
@@ -252,7 +252,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     expandedKey.setown(translator.convertToPhysicalIndex(key));
     rawKey.set(queryPhysicalRootTable(expandedKey));
     translator.ensureDiskAccessAllowed(rawKey);
-    canOptimizeTransfer = _canOptimizeTransfer; 
+    canOptimizeTransfer = _canOptimizeTransfer;
     monitors = NULL;
     counter.set(queryAttributeChild(expr, _countProject_Atom, 0));
 
@@ -343,7 +343,7 @@ void KeyedJoinInfo::buildClearRightFunction(BuildCtx & classctx)
         //which differs for biased integers etc.
         MemberFunction func(translator, classctx, "virtual size32_t createDefaultRight(ARowBuilder & crSelf) override");
         translator.ensureRowAllocated(func.ctx, "crSelf");
-        
+
         BoundRow * selfCursor = translator.bindSelf(func.ctx, rawKey, "crSelf");
         IHqlExpression * rawSelf = selfCursor->querySelector();
         RecordSelectIterator rawIter(rawKey->queryRecord(), rawSelf, false);
@@ -496,13 +496,13 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
             func.ctx.addQuotedLiteral("const byte * * rows = (const byte * *) _rows;");
             break;
         }
-    }   
+    }
 
     translator.ensureRowAllocated(func.ctx, "crSelf");
     buildTransformBody(func.ctx, expr->queryChild(3));
 }
 
-//expand references to oldDataset using ds.  
+//expand references to oldDataset using ds.
 //First expand references like a.b using the table definition
 //Then need to expand references to the complete table as a usertable projection.
 //e.g., left.x := l.x + right;
@@ -519,7 +519,7 @@ static IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpre
     case childdataset_dataset:
         mapParent.set(dsParent->queryNormalizedSelector());
         break;
-    case childdataset_left: 
+    case childdataset_left:
         UNIMPLEMENTED;
         //mapParent.setown(createSelector(no_left, dsParent, querySelSeq(ds)));
         break;
@@ -793,7 +793,7 @@ void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExp
                     assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(serializedField)), LINK(value)));
                 }
                 targetTransform.setown(createValue(no_newtransform, makeTransformType(serializedRecord->getType()), assigns));
-                
+
                 OwnedHqlExpr leftSelect = createSelector(no_left, serializedRecord, joinSeq);
                 filter.setown(replaceSelector(newFilter, queryActiveTableSelector(), leftSelect));
                 if (hasExtra)
@@ -1330,7 +1330,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         flags.append("|JFtransformmatchesleft");
     if (info.queryKeyFilename() && !info.queryKeyFilename()->isConstant())
         flags.append("|JFvarindexfilename");
-    if (hasDynamicFilename(info.queryKey()))      
+    if (hasDynamicFilename(info.queryKey()))
         flags.append("|JFdynamicindexfilename");
     if (boundIndexActivity)
         flags.append("|JFindexfromactivity");
@@ -1346,7 +1346,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
             flags.append("|FFdatafileoptional");
         if (!info.queryFileFilename()->isConstant())
             flags.append("|FFvarfilename");
-        if (hasDynamicFilename(info.queryFile()))     
+        if (hasDynamicFilename(info.queryFile()))
             flags.append("|FFdynamicfilename");
         if (isNonConstantAndQueryInvariant(info.queryFileFilename()))
             flags.append("|FFinvariantfilename");
@@ -1441,7 +1441,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     info.processFilter();
 
     Owned<ABoundActivity> boundDataset1 = buildCachedActivity(ctx, left);
-    
+
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKkeyeddistribute, expr, "KeyedDistribute");
     buildActivityFramework(instance);
 

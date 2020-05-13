@@ -22,7 +22,7 @@
 #define HEX_COLUMNS     256     // only break records if > this value...
 extern SCMStringBuffer resultName;
 
-const char* formatxsl = 
+const char* formatxsl =
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 "<xsl:stylesheet version=\"1.0\" "
 "   xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" "
@@ -227,7 +227,7 @@ void TextFormatType::printBody(FILE* fp, int len, char* txt)
     transform->setParameter("recordSeparator", valbuf.clear().append("'").append(getRecordSeparator()).append("'").str());
     transform->setParameter("startRowNumber", valbuf.clear().append(getStartRowNumber()).str());
     StringBuffer buf;
-    
+
     transform->transform(buf);
     fprintf(fp, "%s", buf.str());
 }

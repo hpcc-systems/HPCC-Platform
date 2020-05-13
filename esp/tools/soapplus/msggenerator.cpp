@@ -73,7 +73,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
     {
         throw MakeStringException(-1, "please provide the path of wsdl");
     }
-    
+
     m_path.append(path);
 
     if(strnicmp(path, "http:", 5) == 0 || strnicmp(path, "https:", 6) == 0)
@@ -138,7 +138,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
                     const char* input = m_schemaTree->queryProp(xpath.str());
                     if(!input || !*input)
                         throw MakeStringException(-1, "can't find input message for method %s", name);
-            
+
                     if(strncmp(input, "tns:", 4) == 0)
                         input += 4;
 
@@ -160,7 +160,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
                     const char* output = m_schemaTree->queryProp(xpath.str());
                     if(!output || !*output)
                         throw MakeStringException(-1, "can't find output message for method %s", name);
-            
+
                     if(strncmp(output, "tns:", 4) == 0)
                         output += 4;
 
@@ -191,7 +191,7 @@ MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType s
                     if(name && *name)
                         m_methods.append(name);
                 }
-            }       
+            }
         }
     }
 
@@ -205,7 +205,7 @@ void MessageGenerator::setXsdNamespace()
         s = strstr(m_schema, "=\'http://www.w3.org/2001/XMLSchema\'");
     if (s)
     {
-        const char* start = s; 
+        const char* start = s;
         while (!isspace(*start)) start--;
         start++;
         if (strncmp(start,"xmlns:",6)==0)
@@ -222,10 +222,10 @@ void MessageGenerator::initDefaultValues()
 
     CDateTime now;
     now.setNow();
-    
+
     StringBuffer nowstr;
     now.getString(nowstr, true);
-    
+
     unsigned y, m, d;
     now.getDate(y, m, d, true);
     unsigned h, minute, s, nano;
@@ -280,7 +280,7 @@ void MessageGenerator::initCfgDefValues(const char* method)
     if (m_cfg.get())
     {
         m_cfgDefValues.clear();
-        
+
         // Common
         Owned<IPropertyTreeIterator> fs = m_cfg->getElements("Common/Field");
         for (fs->first(); fs->isValid(); fs->next())
@@ -339,7 +339,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
 
     const char* element = method;
     IPTree* schema = NULL;
-    if(m_schemaType == WSDL) 
+    if(m_schemaType == WSDL)
         schema = m_schemaTree->queryPropTree("types/xsd:schema");
     else
         schema = m_schemaTree;
@@ -352,7 +352,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
         else
             message.appendf("  <%s>", element);
 
-        
+
         Owned<IXmlSchema> s = createXmlSchemaFromPTree(LINK(schema));
 
         if (s.get())
@@ -371,7 +371,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
                     if (strcmp(tmplat->queryName(),element)==0)
                         tmp = tmplat;
                     else
-                        tmp = tmplat->queryPropTree(VStringBuffer("//%s",element)); 
+                        tmp = tmplat->queryPropTree(VStringBuffer("//%s",element));
                     if (tmp)
                         doType(parent,2, element, type, tmp, message);
                     else
@@ -381,7 +381,7 @@ void MessageGenerator::genNonRoxieMessage(const char* method, const char* templa
                     doType(parent,2, element, type, message);
             }
         }
-        
+
         message.appendf("</%s>%s", element, LT);
     }
 
@@ -404,7 +404,7 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
         if (!tmplat.get())
             throw MakeStringException(-1, "can't find Results/Result in input XML");
     }
-    else 
+    else
         root = "Unknown"; // TODO: find out the root?
 
     message.appendf("<!-- <%s> --> %s", root.str(), LT);
@@ -422,7 +422,7 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
             UERRLOG("XmlSchema without name");
             continue;
         }
-        
+
         IPropertyTree* p = ds->queryBranch(VStringBuffer("%s:schema", xsdNs()));
         m_schemaTree.setown(LINK(p));
         IXmlSchema* xs = createXmlSchemaFromPTree(m_schemaTree);
@@ -444,12 +444,12 @@ void MessageGenerator::genRoxieMessage(const char* templatemsg, StringBuffer& me
         if (dsTmplat && dsTmplat->numChildren()>0)
         {
             message.appendf("    <Dataset name=\"%s\">%s", name, LT);
-    
+
             Owned<IPropertyTreeIterator> row = dsTmplat->getElements("Row");
             for (row->first(); row->isValid(); row->next())
             {
                 message.appendf("     <Row>%s", LT);
-    
+
                 StringStack parent;
                 doType(parent,5,"Row",type, &row->query(), message);
 
@@ -487,12 +487,12 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
 
     if(http_tracelevel >= 1)
         fprintf(m_logfile, "Automatically generating message from schema for method \"%s\"%s", method, LT);
-    
+
     initCfgDefValues(method);
 
     if (m_isRoxie)
         genRoxieMessage(templatemsg, message);
-    else 
+    else
         genNonRoxieMessage(method, templatemsg, message);
 
     if (m_gfile.get())
@@ -532,7 +532,7 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
                 Owned<IFileIO> tio = tf->open(IFOcreaterw);
                 tio->write(0, message.length(), message.str());
             }
-            
+
             if(c == 'y' || c == 'Y')
             {
                 StringBuffer cmdline;
@@ -571,7 +571,7 @@ void MessageGenerator::doType(StringStack& parent, int indent, const char* tag, 
         {
             //DBGLOG("Recursive type: %s, ignored", typeName);
         }
-        else 
+        else
         {
             int flds = type->getFieldCount();
             for (int i=0; i<flds; i++)
@@ -597,7 +597,7 @@ void MessageGenerator::doType(StringStack& parent, int indent, const char* tag, 
         {
             //DBGLOG("Recursive type: %s, ignored", typeName);
         }
-        else 
+        else
         {
             const char* itemName = type->queryFieldName(0);
             IXmlType* itemType = type->queryFieldType(0);
@@ -657,7 +657,7 @@ void MessageGenerator::doType(StringStack& parent, int indent, const char* tag, 
         {
             //DBGLOG("Recursive type: %s, ignored", type->queryName());
         }
-        else 
+        else
         {
             int flds = type->getFieldCount();
             for (int i=0; i<flds; i++)

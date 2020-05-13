@@ -1233,7 +1233,7 @@ NullDataSource::NullDataSource(IHqlExpression * _record, bool _isGrouped, unsign
 {
 }
 
-FailureDataSource::FailureDataSource(IHqlExpression * _record, IException * _error, bool _isGrouped, unsigned _keyedSize) 
+FailureDataSource::FailureDataSource(IHqlExpression * _record, IException * _error, bool _isGrouped, unsigned _keyedSize)
 : NullDataSource(_record, _isGrouped, _keyedSize), error(_error)
 {
 }

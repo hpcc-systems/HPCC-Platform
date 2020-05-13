@@ -37,7 +37,7 @@ calculate top 10
 
 //#define TRACE
 #define TRACECONN
-#define TIMEOUT (1000*60*15)        
+#define TIMEOUT (1000*60*15)
 
 #define SERVER_PORT 7077
 
@@ -110,7 +110,7 @@ StringBuffer &getShortNodeName(IGroup* grp,unsigned i,StringBuffer &buf)
                 ipbaselen = 0;
                 break;
             }
-            if ((ipbaselen==2)&&(ip.ip[1]!=ip2.ip[1])) 
+            if ((ipbaselen==2)&&(ip.ip[1]!=ip2.ip[1]))
                 ipbaselen = 1;
         }
     }
@@ -259,7 +259,7 @@ public:
                     err.append(dest);
                     ninfo->sendError(err.str());
                     return false;
-                }   
+                }
                 ninfo->sendbytes[dest] = done;
 #ifdef TRACE
                 DBGLOG("sent %d to %d  done = %" I64F "d",sz,dest+1,done);
@@ -378,7 +378,7 @@ static void deserializeResults(MemoryBuffer &mb,unsigned size,unsigned *recvres,
     size32_t _size;
     mb.read(_size);
     assertex(size==_size);
-    for (unsigned i=0;i<size;i++) 
+    for (unsigned i=0;i<size;i++)
         mb.read(*(recvres++));
     mb.read(total);
 }
@@ -386,10 +386,10 @@ static void deserializeResults(MemoryBuffer &mb,unsigned size,unsigned *recvres,
 
 static void deserializeLoopbackResults(MemoryBuffer &mb,unsigned *res,unsigned *totalres)
 {
-    for (unsigned i=0;i<3;i++) 
+    for (unsigned i=0;i<3;i++)
         mb.read(*(res++));
     if (LOOPBACK_ITER<=100)
-        for (unsigned j=0;j<LOOPBACK_ITER;j++) 
+        for (unsigned j=0;j<LOOPBACK_ITER;j++)
             mb.read(*(totalres++));
 
 }
@@ -554,7 +554,7 @@ void floodtestClient(const char *grpname,unsigned ngb)
     }
     DBGLOG("sending results");
     schannel->put(mb);
-    
+
 }
 
 bool setState(IGroup *grp,const char *str,unsigned i,bool *b)
@@ -563,7 +563,7 @@ bool setState(IGroup *grp,const char *str,unsigned i,bool *b)
     StringBuffer msg(str);
     msg.append(' ');
     getShortNodeName(grp,i,msg);
-    if (i>=grp->ordinality()) 
+    if (i>=grp->ordinality())
         msg.append(": out of range - ERROR");
     else if (b[i])
         msg.append(": already done - ERROR");
@@ -580,7 +580,7 @@ bool setState(IGroup *grp,const char *str,unsigned i,bool *b)
             msg.append(" all done ");
             ret = true;
         }
-        else { 
+        else {
             msg.appendf(" remaining = %d",remaining);
             if (remaining<=5) {
                 msg.append(" (");
@@ -709,7 +709,7 @@ static void addTopTen(StringBuffer &out,IGroup *grp,unsigned *srt,const char *ti
             out.append('-');
         out.append(NL);
         unsigned num=(n<10)?n:10;
-        unsigned j=isbottom?num:n; 
+        unsigned j=isbottom?num:n;
         for (i=0;i<num;i++) {
             j--;
             size32_t start=out.length();
@@ -718,14 +718,14 @@ static void addTopTen(StringBuffer &out,IGroup *grp,unsigned *srt,const char *ti
                 out.append(' ');
             } while (out.length()<start+20);
             double v=((double)(srt[cmp_srtp[j]]))/(1024*1024);
-            out.appendf("%.2fMB/s"NL,v);  
+            out.appendf("%.2fMB/s"NL,v);
         }
         out.append(NL);
     }
     delete [] cmp_srtp;
 }
 
-#define LOOPBACK_TIMEOUT 120000 
+#define LOOPBACK_TIMEOUT 120000
 
 class CLoopbackServer: public Thread
 {
@@ -783,7 +783,7 @@ public:
         comm->reply(mb);
         sem.signal();
     }
-            
+
 
 };
 
@@ -802,11 +802,11 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
     Owned<IQueueChannel> schannel = conn->open("floodqserver");
     MemoryBuffer mb;
     while (cchannel->probe()) {
-        PROGLOG("Deleting floodqclient item from previous run"); 
+        PROGLOG("Deleting floodqclient item from previous run");
         cchannel->get(mb.clear(),0,60*1000);
     }
     while (schannel->probe()) {
-        PROGLOG("Deleting floodqserver item from previous run"); 
+        PROGLOG("Deleting floodqserver item from previous run");
         schannel->get(mb.clear(),0,60*1000);
     }
     if (!runSlaves(group,exename,daliserver,grpname,ngb,fullexe))
@@ -866,7 +866,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
         else if (fn==FLOODTEST_RESULTS) {
             __int64 t;
             if (r<n) {
-                if (loopback) 
+                if (loopback)
                     deserializeLoopbackResults(mb,loopbackres+(r*3),totalres+(r*LOOPBACK_ITER));
                 else {
                     deserializeResults(mb,n,recvres+(n*r),t);
@@ -888,8 +888,8 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
         r = loopbackres;
         for (i=0;i<n;i++) {
             getShortNodeName(group,i,out);
-            for (unsigned j=0;j<3;j++) 
-                out.appendf(",%d",*(r++));  
+            for (unsigned j=0;j<3;j++)
+                out.appendf(",%d",*(r++));
             out.append(NL);
         }
         out.append(NL);
@@ -898,8 +898,8 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
             r = totalres;
             for (i=0;i<n;i++) {
                 getShortNodeName(group,i,out);
-                for (unsigned j=0;j<LOOPBACK_ITER;j++) 
-                    out.appendf(",%d",*(r++));  
+                for (unsigned j=0;j<LOOPBACK_ITER;j++)
+                    out.appendf(",%d",*(r++));
                 out.append(NL);
             }
             out.append(NL);
@@ -917,7 +917,7 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
         unsigned *srt= (unsigned *)calloc(n,sizeof(unsigned));
         r = recvres;
         for (i=0;i<n;i++) {
-            for (j=0;j<n;j++) 
+            for (j=0;j<n;j++)
                 srt[i]+=*(r++);
             srt[i]/=n;
         }
@@ -925,10 +925,10 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
         memset(srt,0,sizeof(unsigned)*n);
         r = recvres;
         for (i=0;i<n;i++) {
-            for (j=0;j<n;j++) 
+            for (j=0;j<n;j++)
                 srt[j]+=*(r++);
         }
-        for (i=0;i<n;i++) 
+        for (i=0;i<n;i++)
             srt[i]/=(n-1);
         addTopTen(out,group,srt,"Fastest Send","Slowest Send");
         out.append(NL"-");
@@ -942,8 +942,8 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
             getShortNodeName(group,i,out);
             for (j=0;j<n;j++) {
                 out.append(',');
-                if (*r) 
-                    out.appendf("%.2f",((double)(*r))/(1024*1024));  
+                if (*r)
+                    out.appendf("%.2f",((double)(*r))/(1024*1024));
                 else
                     out.append('-');
                 r++;
@@ -966,12 +966,12 @@ void floodtestServer(const char *exename,const char *daliserver,const char *grpn
 }
 
 
-    
+
 
 
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 int main(int argc, char* argv[])
-{   
+{
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
     if (argc<4) {
@@ -983,9 +983,9 @@ int main(int argc, char* argv[])
     bool isserver = (argc!=5)||(stricmp(argv[4],"client")!=0);
     attachStandardFileLogMsgMonitor(isserver?"floodtest.log":
 #ifdef _WIN32
-    "c:\\floodtest.log", 
+    "c:\\floodtest.log",
 #else
-    "/c$/floodtest.log", 
+    "/c$/floodtest.log",
 #endif
     NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false);
     queryStderrLogMsgHandler()->setMessageFields(0);
@@ -999,7 +999,7 @@ int main(int argc, char* argv[])
         SocketEndpointArray epa;
         ep.set(argv[1],DALI_SERVER_PORT);
         epa.append(ep);
-        Owned<IGroup> group = createIGroup(epa); 
+        Owned<IGroup> group = createIGroup(epa);
         initClientProcess(group);
         if (isserver) {
             PROGLOG("FLOODTEST server Starting");

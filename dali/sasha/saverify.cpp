@@ -21,7 +21,7 @@
 //#define TESTING
 
 #define DEFAULT_VERIFY_INTERVAL     7 // hours
-#define DEFAULT_VERIFY_CUTOFF       7 // days 
+#define DEFAULT_VERIFY_CUTOFF       7 // days
 #define DEFAULT_VERIFY_MIN_CUTOFF   1 // days
 #define DEFAULT_DAFSMONITOR_INTERVAL 1 // hour
 
@@ -140,13 +140,13 @@ public:
 
     void onRemove(void *e)
     {
-        CIpItem &elem=*(CIpItem *)e;        
+        CIpItem &elem=*(CIpItem *)e;
         elem.Release();
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CIpItem &elem=*(const CIpItem *)e;        
+        const CIpItem &elem=*(const CIpItem *)e;
         return elem.ip.iphash();
     }
 
@@ -157,7 +157,7 @@ public:
 
     const void * getFindParam(const void *p) const
     {
-        const CIpItem &elem=*(const CIpItem *)p;        
+        const CIpItem &elem=*(const CIpItem *)p;
         return &elem.ip;
     }
 
@@ -244,7 +244,7 @@ public:
         unsigned short port = getDaliServixPort();
         try {
             Owned<IDistributedFilePart> testpart = file->getPart(0);
-            SocketEndpoint ep(testpart->queryNode()->endpoint()); 
+            SocketEndpoint ep(testpart->queryNode()->endpoint());
             if (!dafilesrvips.verifyDaliFileServer(ep)) {
                 StringBuffer ips;
                 ep.getIpText(ips);
@@ -277,7 +277,7 @@ public:
                 }
                 RemoteFilename rfn;
                 part->getFilename(rfn,copy);
-                rfn.setPort(port); 
+                rfn.setPort(port);
                 add(rfn,idx,copy,reqcrc);
             }
         }
@@ -361,7 +361,7 @@ public:
 
 
 class CSashaVerifierServer: public ISashaServer, public Thread
-{  
+{
 
     bool stopped;
     Semaphore stopsem;
@@ -386,7 +386,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -448,7 +448,7 @@ public:
                 EXCLOG(e, "VERIFIER");
                 e->Release();
             }
-            
+
             stopsem.wait(60*60*1000*interval);
         }
         return 0;
@@ -458,7 +458,7 @@ public:
 } *sashaVerifierServer = NULL;
 
 class CSashaDaFSMonitorServer: public ISashaServer, public Thread
-{  
+{
 
     bool stopped;
     Semaphore stopsem;
@@ -483,7 +483,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -510,9 +510,9 @@ public:
             unsigned &failurelimit;
             const char *clustername;
         public:
-            casyncfor(SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets, CriticalSection &_sect, unsigned &_failurelimit,const char *_clustername) 
+            casyncfor(SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets, CriticalSection &_sect, unsigned &_failurelimit,const char *_clustername)
                 : eps(_eps), sockets(_sockets), sect(_sect), failurelimit(_failurelimit)
-            { 
+            {
                 clustername = _clustername;
             }
             void Do(unsigned i)
@@ -533,7 +533,7 @@ public:
                         CriticalBlock block(sect);
                         if (failurelimit) {
                             LOG(MCoperatorError, unknownJob,"DAFSMON: dafilesrv on %s cannot be contacted",epstr.str());
-                            if (--failurelimit==0) 
+                            if (--failurelimit==0)
                                 LOG(MCoperatorError, unknownJob,"DAFSMON: monitoring suspended for cluster %s (too many failures)",clustername);
                         }
                     }
@@ -593,7 +593,7 @@ public:
                         ep.port = getDaliServixPort();
                     eps.append(ep);
                 }
-                else 
+                else
                     OWARNLOG("DAFSMON: Cannot resolve %s in cluster list",s);
             }
         }
@@ -603,7 +603,7 @@ public:
             PROGLOG("DAFSMON: Done scanning IPs");
         }
         free(done);
-    
+
     }
 
 

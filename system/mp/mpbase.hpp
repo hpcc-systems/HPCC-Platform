@@ -62,18 +62,18 @@ interface IGroup: extends IInterface
     virtual bool overlaps(const IGroup *grp) const =0;          // true if intersection non-empty
 
 
-    virtual void translate(const IGroup *othergroup, rank_t nranks, const rank_t *otherranks, 
+    virtual void translate(const IGroup *othergroup, rank_t nranks, const rank_t *otherranks,
                            rank_t *resranks )  const =0;        // translate ranks in othergroup to this group ranks
 
     // NB *** all the below do not change the group but return a new group as result ***
-    virtual IGroup *subset(rank_t start,rank_t num) const =0;       // selection    
-    virtual IGroup *subset(const rank_t *order,rank_t num) const =0;// re-ordered selection 
+    virtual IGroup *subset(rank_t start,rank_t num) const =0;       // selection
+    virtual IGroup *subset(const rank_t *order,rank_t num) const =0;// re-ordered selection
     virtual IGroup *combine(const IGroup *) const =0;               // union
     virtual IGroup *diff(const IGroup *) const =0;                  // difference
     virtual IGroup *intersect(const IGroup *) const =0;             // intersection
-    virtual IGroup *add(INode *node) const =0;              // appends a node        
+    virtual IGroup *add(INode *node) const =0;              // appends a node
     virtual IGroup *add(INode *node,unsigned pos) const =0; // inserts a node at pos
-    virtual IGroup *remove(unsigned pos) const =0;              // removes a node        
+    virtual IGroup *remove(unsigned pos) const =0;              // removes a node
     virtual IGroup *swap(rank_t,rank_t) const =0;               // reorder
     virtual IGroup *rotate(int num) const =0;                   // rotate (+ve or -ve)
 
@@ -100,7 +100,7 @@ interface INode: extends IInterface
     virtual const SocketEndpoint &endpoint() const = 0;
     virtual bool equals(const INode *node) const = 0;
     virtual unsigned getHash() const = 0;
-    virtual bool isLocalTo(INode *node) const = 0; // is same machine as node 
+    virtual bool isLocalTo(INode *node) const = 0; // is same machine as node
     virtual bool isHost() const = 0;                // is same machine as running this process
     virtual void serialize(MemoryBuffer &tgt) = 0;
 
@@ -131,14 +131,14 @@ extern mp_decl INode *createINode(const char *name,unsigned short port=0);
 extern mp_decl INode *deserializeINode(MemoryBuffer &src);
 
 extern mp_decl IGroup *createIGroup(rank_t num,INode **);
-extern mp_decl IGroup *createIGroup(rank_t num,const SocketEndpoint *); 
+extern mp_decl IGroup *createIGroup(rank_t num,const SocketEndpoint *);
 extern mp_decl IGroup *createIGroup(SocketEndpointArray &);
 extern mp_decl IGroup *createIGroup(const char *endpointlist,unsigned short defport=0); // takes socketendpointlist or result of toText
 constexpr unsigned defaultGroupResolveTimeout = 10*1000*60;
 extern mp_decl IGroup *createIGroupRetry(const char *endpointlist,unsigned short defport, unsigned timeout = defaultGroupResolveTimeout);
-extern mp_decl IGroup *deserializeIGroup(MemoryBuffer &src); 
+extern mp_decl IGroup *deserializeIGroup(MemoryBuffer &src);
 
-extern mp_decl INode *queryNullNode(); 
+extern mp_decl INode *queryNullNode();
 extern mp_decl INode * queryMyNode();
 extern mp_decl void initMyNode(unsigned short port);
 
@@ -153,7 +153,7 @@ enum MessagePassingError
 {
     MPERR_ok,
     MPERR_connection_failed,            // connection dropped (or could not be made)
-    MPERR_process_not_in_group,         // using an 'inner' communicator when not part of it's group 
+    MPERR_process_not_in_group,         // using an 'inner' communicator when not part of it's group
     MPERR_protocol_version_mismatch,    // incompatible version of MP being used
     MPERR_link_closed                   // raised if other end closed (e.g. aborted) during a specific recv or probe
 };

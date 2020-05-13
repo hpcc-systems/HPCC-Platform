@@ -54,7 +54,7 @@ class CRHRollingCache: extends CInterface
 public:
     ~CRHRollingCache();
     void init(IRowStream *_in, unsigned _max);
-    
+
 #ifdef TRACEROLLING
     void PrintCache();
 #endif
@@ -99,7 +99,7 @@ public:
         unsigned &pos;
     public:
         IMPLEMENT_IINTERFACE;
-        cOut(CRHDualCache *_parent, unsigned &_pos); 
+        cOut(CRHDualCache *_parent, unsigned &_pos);
         const void * nextRow();
     private:
         void stop();

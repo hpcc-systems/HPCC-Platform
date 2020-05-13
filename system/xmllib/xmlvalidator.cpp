@@ -23,7 +23,7 @@
 #include "jlog.hpp"
 
 // platform.h's definition of new collides with xerces
-#undef new 
+#undef new
 
 // xalan has its own definitions and implementations:
 #undef stricmp
@@ -81,11 +81,11 @@ void ParseErrorHandler::appendException(IException* e)
 void ParseErrorHandler::handleSAXParserException(const SAXParseException& e, const char* errorType)
 {
     char systemId[256], publicId[256];
-    
+
     XMLString::transcode(e.getSystemId(),systemId,255);
     XMLString::transcode(e.getPublicId(),publicId,255);
     char* message = XMLString::transcode(e.getMessage());
-   
+
     StringBuffer msg, line,col;
     line.appendlong(e.getLineNumber());
     col.appendlong(e.getColumnNumber());
@@ -98,17 +98,17 @@ void ParseErrorHandler::handleSAXParserException(const SAXParseException& e, con
 
 void ParseErrorHandler::error(const SAXParseException& e)
 {
-    handleSAXParserException(e, "Error");   
+    handleSAXParserException(e, "Error");
 }
 
 void ParseErrorHandler::fatalError(const SAXParseException& e)
 {
-    handleSAXParserException(e, "Fatal error"); 
+    handleSAXParserException(e, "Fatal error");
 }
 
 void ParseErrorHandler::warning(const SAXParseException& e)
 {
-    handleSAXParserException(e, "Warning"); 
+    handleSAXParserException(e, "Warning");
 }
 
 //=============================================================================================
@@ -145,7 +145,7 @@ public:
         XMLString::transcode(publicId,pub,255);
         //DBGLOG("resolveEntity(%s, %s)\n",sys,pub);
 
-        if (strcmp(sys,"_xsd-buffer_")==0)              
+        if (strcmp(sys,"_xsd-buffer_")==0)
         {
             if (m_xsdSrc)
                 delete m_xsdSrc;
@@ -153,7 +153,7 @@ public:
             m_xsdSrc->setCopyBufToStream(false);
             return m_xsdSrc;
         }
-        else if (strcmp(sys,m_xmlEntityName)==0) //|| strcmp(sys,"_xml-buffer_")==0)                
+        else if (strcmp(sys,m_xmlEntityName)==0) //|| strcmp(sys,"_xml-buffer_")==0)
         {
             if (m_xmlSrc)
                 delete m_xmlSrc;
@@ -171,7 +171,7 @@ public:
 
 class CDomXmlValidator : public CInterface, public IXmlValidator
 {
-private:    
+private:
     StringAttr       m_xmlFileName;
     StringAttr       m_xsdFileName;
     StringAttr       m_targetNamespace;
@@ -186,7 +186,7 @@ public:
 
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
- 
+
     virtual int setSchemaSource(const char *pszFileName);
     virtual int setSchemaSource(const char *pszBuffer, unsigned int nSize);
 
@@ -227,7 +227,7 @@ int CDomXmlValidator::setXmlSource(const char* pszFile)
             StringBuffer msg;
             DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
             e->Release();
-            return 0; 
+            return 0;
         }
         m_xmlFileName.set(pszFile);
         return 1;
@@ -236,11 +236,11 @@ int CDomXmlValidator::setXmlSource(const char* pszFile)
     return 0;
 }
 
-int CDomXmlValidator::setXmlSource(const char *pszBuffer, unsigned int nSize) 
-{ 
+int CDomXmlValidator::setXmlSource(const char *pszBuffer, unsigned int nSize)
+{
     m_xmlFileName.set("_xml-buffer_");
-    m_xmlBuf.clear().append(nSize,pszBuffer); 
-    return 0; 
+    m_xmlBuf.clear().append(nSize,pszBuffer);
+    return 0;
 }
 
 int CDomXmlValidator::setSchemaSource(const char* pszFile)
@@ -253,7 +253,7 @@ int CDomXmlValidator::setSchemaSource(const char* pszFile)
             StringBuffer msg;
             DBGLOG("Exception: %s\n", e->errorMessage(msg).str());
             e->Release();
-            return 0; 
+            return 0;
         }
 
         m_xsdFileName.set(pszFile);
@@ -262,11 +262,11 @@ int CDomXmlValidator::setSchemaSource(const char* pszFile)
     return 0;
 }
 
-int CDomXmlValidator::setSchemaSource(const char *pszBuffer, unsigned int nSize) 
-{ 
+int CDomXmlValidator::setSchemaSource(const char *pszBuffer, unsigned int nSize)
+{
     m_xsdFileName.set("_xsd-buffer_");
-    m_xsdBuf.clear().append(nSize,pszBuffer); 
-    return 0; 
+    m_xsdBuf.clear().append(nSize,pszBuffer);
+    return 0;
 }
 
 void CDomXmlValidator::validate()
@@ -292,8 +292,8 @@ void CDomXmlValidator::validate()
 
         //printf("XML Buffer: %s\n", m_xmlBuf.str());
 
-        // Insert namesapce if necessary: 
-        try 
+        // Insert namesapce if necessary:
+        try
         {
             Owned<IPTree> xml = createPTreeFromXMLString(m_xmlBuf);
 
@@ -334,13 +334,13 @@ void CDomXmlValidator::validate()
     EntityResolver* er = new InMemSourceResolver(m_xmlBuf, m_xmlFileName, m_xsdBuf);
     parser->setEntityResolver(er);
 
-    try 
+    try
     {
         XMLCh xml[256];
         XMLString::transcode(m_xmlFileName,xml,255);
 
-        parser->parse(*er->resolveEntity(xml,xml));     
-    } 
+        parser->parse(*er->resolveEntity(xml,xml));
+    }
     catch (IException* ie)
     {
         eh.appendException(ie);
@@ -370,18 +370,18 @@ void CDomXmlValidator::validate()
     if (eh.hasError())
         throw LINK(eh.queryExceptions());
 }
-    
+
 //=============================================================================================
-// DOM Parser 
+// DOM Parser
 
 class CXmlDomParser : public CInterface, public IXmlDomParser
 {
-public: 
+public:
     IMPLEMENT_IINTERFACE;
 
     CXmlDomParser();
     ~CXmlDomParser();
-    
+
     IXmlValidator* createXmlValidator();
 };
 
@@ -403,7 +403,7 @@ IXmlValidator* CXmlDomParser::createXmlValidator()
 }
 
 //=============================================================================================
-// factory  
+// factory
 
 XMLLIB_API IXmlDomParser* getXmlDomParser()
 {

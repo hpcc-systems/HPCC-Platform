@@ -377,7 +377,7 @@ static void emptyScopes()
         dlfn.set(scope.str(),"x");
         dlfn.makeScopeQuery(s.clear(),true);
         Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
-        if (!conn)  
+        if (!conn)
             DBGLOG("Could not connect to '%s' using %s",iter->query(),s.str());
         else {
             if (recursiveCheckEmptyScope(*conn->queryRoot())) {
@@ -461,7 +461,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
         afor.For(group->ordinality(),10,false,true);
     }
     iter.clear();
-    ForEachItemInRev(i,todelete) 
+    ForEachItemInRev(i,todelete)
         t->removeTree((IPropertyTree *)todelete.item(i)); // probably should check succeeded above but next run will correct
     toXML(t,dataStr.clear());
     m_directories->setPropBin("data",dataStr.length(),(void*)dataStr.str());

@@ -70,7 +70,7 @@ class LibraryCallFactoryExtra
 public:
     void calcUnused();
     void set(const LibraryCallFactoryExtra & _other);
-    
+
 public:
     UnsignedArray outputs;
     UnsignedArray unusedOutputs;
@@ -286,10 +286,10 @@ public:
 
 //IThorIndexCallback
     virtual const byte * lookupBlob(unsigned __int64 id) override
-    { 
-        size32_t dummy; 
+    {
+        size32_t dummy;
         cleanupRequired = true;
-        return (byte *) keyManager->loadBlob(id, dummy); 
+        return (byte *) keyManager->loadBlob(id, dummy);
     }
 
 public:
@@ -302,7 +302,7 @@ public:
     {
         if (cleanupRequired && keyManager)
         {
-            keyManager->releaseBlobs(); 
+            keyManager->releaseBlobs();
             cleanupRequired = false;
         }
     }

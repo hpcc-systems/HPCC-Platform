@@ -204,7 +204,7 @@ bool ArgvIterator::matchPathFlag(StringBuffer & option, const char * name)
         option.append(ENVSEPCHAR).append(arg+len);
         return true;
     }
-    
+
     if (hasMore(1))
     {
         //-x Z

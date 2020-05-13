@@ -195,7 +195,7 @@ void CThorKeyArray::serialize(MemoryBuffer &mb)
     DelayedSizeMarker sizeMark(mb);
     IOutputRowSerializer *serializer = haskeyserializer?keyif->queryRowSerializer():rowif->queryRowSerializer();
     CMemoryRowSerializer msz(mb);
-    for (i=0;i<n;i++) 
+    for (i=0;i<n;i++)
         serializer->serialize(msz,(const byte *)keys.query(i));
     sizeMark.write();
 }
@@ -274,7 +274,7 @@ static int keyCompare(const void *a,const void *b)
     return kcthis->keyCompare(*(unsigned*)a,*(unsigned*)b);
 }
 
-void CThorKeyArray::sort() 
+void CThorKeyArray::sort()
 {
     // bit slow, but I have seen worse
     unsigned n = ordinality();
@@ -300,8 +300,8 @@ void CThorKeyArray::sort()
 }
 
 
-void CThorKeyArray::createSortedPartition(unsigned pn) 
-{   
+void CThorKeyArray::createSortedPartition(unsigned pn)
+{
     // reduces to pn-1 keys to split into pn equal parts
     if (pn<=1)
     {
@@ -356,7 +356,7 @@ try {
     {
         unsigned m = a+(b-a)/2;
         cmp = keyRowCompare((unsigned)m,row);
-        if (cmp>0) 
+        if (cmp>0)
             b = m;
         else
         {
@@ -372,7 +372,7 @@ try {
                 while ((m>0)&&(keyCompare(m-1,m)==0))
                     m--;
 #ifdef _TESTING
-                if (m>0) 
+                if (m>0)
                     assertex(keyRowCompare((unsigned)m-1,row)<0);
 #endif
                 if (lt)
@@ -385,14 +385,14 @@ try {
 #ifdef _TESTING
     if (lt)
     {
-        if (a<n) 
+        if (a<n)
             assertex(keyRowCompare((unsigned)a,row)>=0);
         if (a>0)
             assertex(keyRowCompare((unsigned)a-1,row)<0);
     }
     else
     {
-        if (a<n) 
+        if (a<n)
             assertex(keyRowCompare((unsigned)a,row)>0);
         if (a>0)
             assertex(keyRowCompare((unsigned)a-1,row)<=0);
@@ -410,7 +410,7 @@ catch (IException *e)
     {
         s.clear().appendf("k%d:",i);
         const byte *k=(const byte *)queryKey(i);
-        for (unsigned j=0;j<10;j++) 
+        for (unsigned j=0;j<10;j++)
             s.appendf(" %02x",(int)*(k+j));
         PROGLOG("%s",s.str());
     }
@@ -423,7 +423,7 @@ catch (IException *e)
     return a-1;
 }
 
-offset_t CThorKeyArray::findLessEqRowPos(const void * row) 
+offset_t CThorKeyArray::findLessEqRowPos(const void * row)
 {
     int p = binchopPartition(row,false);
     if (p<0)
@@ -433,7 +433,7 @@ offset_t CThorKeyArray::findLessEqRowPos(const void * row)
     return getFixedFilePos(p);
 }
 
-offset_t CThorKeyArray::findLessRowPos(const void * row) 
+offset_t CThorKeyArray::findLessRowPos(const void * row)
 {
     int p = binchopPartition(row,true);
     if (p<0)
@@ -456,7 +456,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
     {
         OwnedConstThorRow row = getRow(i);
         offset_t pos = sample.findLessRowPos(row);
-        if (pos==(offset_t)-1) 
+        if (pos==(offset_t)-1)
             pos = 0;
         // should do bin-chop for fixed length but initially do sequential search
         Owned<IRowStream> s = createRowStreamEx(file, rowif, pos);
@@ -466,7 +466,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
             if (!rowcmp)
                 break;
             int cmp = icompare->docompare(rowcmp,row);
-            if (cmp>=0) 
+            if (cmp>=0)
                 break;
             CSizingSerializer ssz;
             rowif->queryRowSerializer()->serialize(ssz,(const byte *)rowcmp.get());
@@ -482,7 +482,7 @@ const void *CThorKeyArray::getRow(unsigned idx)
 {
     OwnedConstThorRow k;
     k.set(keys.query(idx));
-    if (!keyserializer) 
+    if (!keyserializer)
         return k.getClear();
     RtlDynamicRowBuilder r(rowif->queryRowAllocator());
     size32_t rs;

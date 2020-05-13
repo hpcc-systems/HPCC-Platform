@@ -167,7 +167,7 @@ public:
         while (!abortSoon)
         {
             OwnedConstThorRow row = inputStream->ungroupedNextRow();
-            if (!row) 
+            if (!row)
                 break;
             if (recreate)
                 openPipe(helper->getNameFromRow(row.get()));

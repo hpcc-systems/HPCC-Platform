@@ -123,7 +123,7 @@ public:
             {
                 SocketEndpoint ep;
                 ep.deserialize(queryInitializationData(s));
-                
+
                 imaster->AddSlave(&queryJobChannel().queryJobComm(), s+1,ep,mpTagRPC);
             }
         }
@@ -326,7 +326,7 @@ public:
             }
             catch (IMP_Exception *e)
             {
-                if (e->errorCode()!=MPERR_link_closed) 
+                if (e->errorCode()!=MPERR_link_closed)
                     throw;
                 ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "WARNING: MPERR_link_closed in SortDone");
                 e->Release();

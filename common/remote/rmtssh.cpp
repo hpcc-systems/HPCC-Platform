@@ -82,7 +82,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
                 case 'l': // Node list
                     cmdbuf.append(slavesfile);
                     break;
-                case '%': 
+                case '%':
                     cmdbuf.append('%');
                     break;
                 case 'x': // Next Node
@@ -222,7 +222,7 @@ public:
                     case 'D':
                         if (*parm)
                             workdir.set(parm);
-                        else 
+                        else
                             dryrun = true;
                         break;
                     case 'S':
@@ -283,7 +283,7 @@ public:
         }
     }
 
-    void init(  
+    void init(
                 const char *cmdline,
                 const char *identfilename,
                 const char *username,
@@ -305,7 +305,7 @@ public:
             identityfile.set(exp_result.we_wordv[0]);
             wordfree(&exp_result);
         }
-        else 
+        else
             identityfile.clear();
 #endif
         user.set(username);
@@ -327,7 +327,7 @@ public:
     unsigned pow2(unsigned n)
     {
         unsigned ret=1;
-        while (n--) 
+        while (n--)
             ret *= 2;
         return ret;
     }
@@ -337,7 +337,7 @@ public:
         return n-pow2(log2(n));
     }
 
- 
+
     void exec(unsigned i,unsigned treefrom)
     {
         int retcode=-1;
@@ -418,7 +418,7 @@ public:
                 expandCmd(cmdline,i,treefrom);
                 cmdline.append('"');
             }
-            if (dryrun) 
+            if (dryrun)
                 printf("%s\n",cmdline.str());
             else {
                 Owned<IPipeProcess> pipe = createPipeProcess();
@@ -465,7 +465,7 @@ public:
     {
         if (!treeroot.isEmpty()) {
             // remove from slaves
-            ForEachItemInRev(i,slaves) 
+            ForEachItemInRev(i,slaves)
                 if (strcmp(slaves.item(i),treeroot)==0)
                     slaves.remove(i);
         }
@@ -482,7 +482,7 @@ public:
             {
                 treemode = !parent.treeroot.isEmpty();
                 if (treemode) {
-                    treesem = new Semaphore[parent.slaves.ordinality()+1];  // don't actually use all 
+                    treesem = new Semaphore[parent.slaves.ordinality()+1];  // don't actually use all
                     treesem[0].signal();
                 }
                 else

@@ -48,7 +48,7 @@ public:
     INlpHelper * helper;
     IHThorParseArg * helperArg;
 };
-    
+
 
 struct TomitaParserCallback : public TomitaStateInformation
 {
@@ -117,7 +117,7 @@ public:
 
     mask_feature_t * getMaskDefaults()      { return (mask_feature_t*)defaults; }
     flat_feature_t * getFlatDefaults()      { return (flat_feature_t *)((mask_feature_t*)defaults + numMask); }
-    
+
     byte        numMask;
     byte        numFlat;
     void *      defaults;
@@ -170,7 +170,7 @@ public:
 
 //---------------------------------------------------------------------------
 
-enum 
+enum
 {
     LRVnone,
     LRVfirst,
@@ -222,7 +222,7 @@ public:
     void serialize(MemoryBuffer & out);
 
 protected:
-    unsigned prodId;   
+    unsigned prodId;
     symbol_id ruleId;
     IAtom * ruleName;
     unsigned numSymbols;

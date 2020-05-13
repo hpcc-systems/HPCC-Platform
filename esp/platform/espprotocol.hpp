@@ -71,7 +71,7 @@ public:
 
     unsigned getId()
     {
-        if (sock_) 
+        if (sock_)
             return sock_->OShandle();
         return 0;
     }
@@ -114,7 +114,7 @@ public:
     const StringBuffer &getAppFrameHtml(time_t &modified, const char *inner_url, StringBuffer &html, IEspContext* ctx);
     const StringBuffer &getTitleBarHtml(IEspContext& ctx, bool rawXml);
     const StringBuffer &getNavBarContent(IEspContext &context, StringBuffer &content, StringBuffer &contentType, bool xml);
-    const StringBuffer &getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content, 
+    const StringBuffer &getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content,
                                       StringBuffer &contentType, bool& bVolatile);
     void buildNavTreeXML(IPropertyTree* navtree, StringBuffer& xmlBuf, bool insideFolder = false);
 

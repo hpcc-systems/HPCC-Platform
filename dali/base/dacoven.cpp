@@ -34,7 +34,7 @@ extern void closedownDFS();
 
 #define VERSION_REQUEST_TIMEOUT 30000
 // Unique IDs are allocated in blocks of 64K in clients and blocks of 2^32 in server
-// base is saved in store whenever block exhausted, so replacement coven servers can restart 
+// base is saved in store whenever block exhausted, so replacement coven servers can restart
 
 // server side versioning.
 #define ServerVersion    "3.16"
@@ -49,8 +49,8 @@ static CDaliVersion _ServerVersion;
 
 #define COVEN_SERVER_TIMEOUT (1000*120)
 
-enum MCovenRequestKind { 
-    MCR_UPDATE_DATA_STORE, 
+enum MCovenRequestKind {
+    MCR_UPDATE_DATA_STORE,
     MCR_ALLOC_UNIQUE_IDS,
     MCR_GET_SERVER_ID,
     MCR_GET_COVEN_ID,
@@ -116,9 +116,9 @@ public:
     bool allocUIDs(DALI_UID &uid,unsigned num)
     {
         // called in crit
-        if (uidsremaining<num) 
+        if (uidsremaining<num)
             return false;
-        uid = (DALI_UID)uidnext; 
+        uid = (DALI_UID)uidnext;
         uidnext += num;
         uidsremaining -= num;
         return true;
@@ -135,7 +135,7 @@ public:
                 uidsremaining = num;
             }
         }
-        else if (uids+num==uidnext) {   
+        else if (uids+num==uidnext) {
             uidsremaining += num;
             uidnext = uids;
         }
@@ -162,14 +162,14 @@ class CCovenBase: implements ICoven, public CInterface
     Int64Array      serverIDs;
     DALI_UID        covenid;
 
-protected: 
+protected:
     ICommunicator  *comm;
 
 public:
     static CriticalSection uidcrit;
     static CIArrayOf<CDaliUidAllocator> foreginUidallocators;
     static CDaliUidAllocator localUidAlloctor;
-    
+
     IMPLEMENT_IINTERFACE;
     CCovenBase(IGroup *grp,bool server)
     {
@@ -196,7 +196,7 @@ public:
                 throw MakeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
             StringAttr serverVersion, minClientVersion;
             mb.read(serverVersion);
-            _ServerVersion.set(serverVersion), 
+            _ServerVersion.set(serverVersion),
             mb.read(minClientVersion);
 
             CDaliVersion clientV(ClientVersion), minClientV(minClientVersion);
@@ -220,9 +220,9 @@ public:
         comm->Release();
     }
 
-    unsigned size() 
-    { 
-        return ord; 
+    unsigned size()
+    {
+        return ord;
     }
 
 
@@ -296,7 +296,7 @@ public:
         assertex(comm);
         return comm->verifyAll(duplex, timeout, perConnectionTimeout);
     }
-    
+
     // receive, returns senders rank or false if no message available in time given or cancel called
 
     virtual IGroup &queryGroup()
@@ -369,7 +369,7 @@ class CCovenServer: public CCovenBase
 
 protected:
 
-    void processMessage(CMessageBuffer &mb) 
+    void processMessage(CMessageBuffer &mb)
     {
         ICoven &coven=queryCoven();
         int fn;
@@ -423,7 +423,7 @@ protected:
                 coven.reply(mb);
             }
             break;
-        case MCR_EXIT: 
+        case MCR_EXIT:
             Sleep(10);
             PROGLOG("Stop request received");
             stop();
@@ -439,7 +439,7 @@ protected:
 
 public:
 
-    CCovenServer(IGroup *grp,const char *_storename, const char *_backupname) 
+    CCovenServer(IGroup *grp,const char *_storename, const char *_backupname)
         : CCovenBase(grp,true), storename(_storename), backupname(_backupname)
     {
         myrank = grp->rank();
@@ -452,7 +452,7 @@ public:
                 if (!sendRecv(mb,r,MPTAG_DALI_COVEN_REQUEST, COVEN_SERVER_TIMEOUT)) {
                     StringBuffer str;
                     throw MakeStringException(-1,"Could not connect to %s",grp->queryNode(r).endpoint().getUrlStr(str).str());
-                }   
+                }
                 mergeStore(store,mb,true);
             }
             else if (r>myrank) {
@@ -468,7 +468,7 @@ public:
                     else break;
                 }
                 mergeStore(store,mb,true);
-                reply(mb); 
+                reply(mb);
             }
         }
         writeStore(store);
@@ -575,9 +575,9 @@ public:
         return false; // TBD
     }
 
-    rank_t getPrimary(unsigned ofs) 
+    rank_t getPrimary(unsigned ofs)
     {
-        rank_t r; 
+        rank_t r;
         do {
             r = ofs%size();
         } while (serverIsDown(r));
@@ -626,7 +626,7 @@ public:
             }
             else {
                 unsigned n = UUID_BLOCK_SIZE_FOREIGN;
-                if (n<num) 
+                if (n<num)
                     n = num*2;
                 CMessageBuffer mb;
                 mb.append((int)MCR_ALLOC_UNIQUE_IDS);
@@ -634,7 +634,7 @@ public:
                 Owned<ICommunicator> foreign;
                 ICommunicator *comm = &queryComm();
                 if (!foreignnode.isNull()) {
-                    Owned<IGroup> group = createIGroup(1,&foreignnode); 
+                    Owned<IGroup> group = createIGroup(1,&foreignnode);
                     foreign.setown(createCommunicator(group));
                     comm = foreign.get();
                     primary = 0;
@@ -737,7 +737,7 @@ public:
     {
         return comm->probe(srcrank,tag,sender,timeout);
     }
-    
+
     virtual bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER)
     {
         return comm->recv(mbuf,srcrank,tag,sender,timeout);
@@ -755,7 +755,7 @@ public:
         comm->disconnect(node);
     }
 };
-    
+
 #define CATCH_MPERR_link_closed \
         catch (IMP_Exception *e) \
         {  \
@@ -800,7 +800,7 @@ public:
         CriticalBlock block(uidAllocator->crit);
         while (!uidAllocator->allocUIDs(uid,num)) {
             unsigned n = uidAllocator->getBankSize();
-            if (n<num) 
+            if (n<num)
                 n = num*2;
             DALI_UID next;
             CMessageBuffer mb;
@@ -893,7 +893,7 @@ public:
         }
         CATCH_MPERR_link_closed
     }
-    
+
     virtual bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER)
     {
         assertex(comm);
@@ -918,11 +918,11 @@ public:
         try {
             comm->disconnect(node);
         }
-        catch (IMP_Exception *e) 
-        {  
-            if (e->errorCode()!=MPERR_link_closed) 
-                throw; 
-            e->Release(); 
+        catch (IMP_Exception *e)
+        {
+            if (e->errorCode()!=MPERR_link_closed)
+                throw;
+            e->Release();
         }
     }
 
@@ -993,7 +993,7 @@ bool verifyCovenConnection(unsigned timeout)
 }
 
 void covenMain()
-{ 
+{
     assertex(covenServer);
     covenServer->mainloop();
 }
@@ -1030,14 +1030,14 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
     CriticalBlock block(uidAllocator.crit);
     while (!uidAllocator.allocUIDs(uid,num)) {
         unsigned n = uidAllocator.getBankSize();
-        if (n<num) 
+        if (n<num)
             n = num*2;
         DALI_UID next;
         CMessageBuffer mb;
         mb.append((int)MCR_ALLOC_UNIQUE_IDS);
         mb.append(n);
         Owned<ICommunicator> foreign;
-        Owned<IGroup> group = createIGroup(1,&foreignnode); 
+        Owned<IGroup> group = createIGroup(1,&foreignnode);
         foreign.setown(createCommunicator(group));
         foreign->sendRecv(mb,RANK_RANDOM,MPTAG_DALI_COVEN_REQUEST);
         mb.read(next);

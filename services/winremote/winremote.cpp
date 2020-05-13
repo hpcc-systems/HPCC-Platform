@@ -37,19 +37,19 @@
 #include <algorithm>
 #include <vector>
 
-#include "Lm.h" 
+#include "Lm.h"
 using namespace win32;
 
 class StdOutputStream: public CInterface, implements IRemoteOutput
 {
 public:
     IMPLEMENT_IINTERFACE;
-    virtual void write(const char* ip,const char* data) 
+    virtual void write(const char* ip,const char* data)
     {
         StringBuffer buf(ip);
         buf.append(" > ");
         buf.append(data);
-        
+
         fputs(buf.str(),stdout);
     }
 } stdOut;
@@ -64,12 +64,12 @@ class StdErrorStream: public CInterface, implements IRemoteOutput
 {
 public:
     IMPLEMENT_IINTERFACE;
-    virtual void write(const char* ip,const char* data) 
+    virtual void write(const char* ip,const char* data)
     {
         StringBuffer buf(ip);
         buf.append(" ! ");
         buf.append(data);
-        
+
         fputs(buf.str(),stderr);
     }
 } stdErr;
@@ -83,7 +83,7 @@ class ServiceTask: public CInterface, implements ITask
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ServiceTask(const char* _remote,const char* _user, const char* _pwd): 
+    ServiceTask(const char* _remote,const char* _user, const char* _pwd):
         remote(_remote), user(_user), pwd(_pwd), stopped(false)
     {
     }
@@ -162,7 +162,7 @@ protected:
 
     bool CopySvcExeToRemoteMachine()
     {
-        HMODULE hInstance = ::GetModuleHandle("winremote.dll"); 
+        HMODULE hInstance = ::GetModuleHandle("winremote.dll");
 
         // Find the binary file in resources
         HRSRC hSvcExecutableRes = ::FindResource(hInstance, MAKEINTRESOURCE(IDR_PSEXEC),RT_RCDATA);
@@ -213,7 +213,7 @@ protected:
 
         SC_HANDLE handle;
     };
-    
+
     struct TempService: public ScmHandle
     {
         TempService(SC_HANDLE h): ScmHandle(h) {}
@@ -334,22 +334,22 @@ public:
         command.set(_command);
     }
 
-    virtual void setPriority(int _priority) 
+    virtual void setPriority(int _priority)
     {
         priority=_priority;
     }
-    
-    virtual void setCopyFile(bool overwrite) 
+
+    virtual void setCopyFile(bool overwrite)
     {
         copyFile= overwrite ? 2 : 1;
     }
 
-    virtual void setWorkDirectory(const char * _dir) 
+    virtual void setWorkDirectory(const char * _dir)
     {
         dir.set(_dir);
     }
-    
-    virtual void setSession(int _session) 
+
+    virtual void setSession(int _session)
     {
         session=_session;
     }
@@ -360,7 +360,7 @@ public:
         async=false;
     }
 
-    virtual void setErrorStream(IRemoteOutput * _err) 
+    virtual void setErrorStream(IRemoteOutput * _err)
     {
         err.set(_err);
     }
@@ -369,13 +369,13 @@ public:
     {
         return status;
     }
-    
+
     virtual int getPid() const
     {
         return pid;
     }
 
-    virtual void setNetworkLogon(bool set) 
+    virtual void setNetworkLogon(bool set)
     {
        network=set;
     }
@@ -400,13 +400,13 @@ interface ITaskListener
 class ConnectTask: public ServiceTask
 {
 public:
-    ConnectTask(const char* _remote,const char* _user, const char* _pwd,RemoteCommand* _cmd,ITaskListener* _tl): 
+    ConnectTask(const char* _remote,const char* _user, const char* _pwd,RemoteCommand* _cmd,ITaskListener* _tl):
         ServiceTask(_remote, _user, _pwd), cmd(_cmd), tl(_tl)
     {
     }
 
 protected:
-    virtual void remoteConnected() 
+    virtual void remoteConnected()
     {
         if(cmd->copyFile)
             copy(cmd->command,cmd->copyFile>1);
@@ -433,10 +433,10 @@ protected:
         {
             cmd->pid=ret.pid;
         }
-        else 
+        else
         {
             CHAR buf[MAX_PATH];
-            
+
             File pipeout(cmdmsg.GetStdout(buf,arraysize(buf),remote),GENERIC_READ,0,OPEN_EXISTING,FILE_FLAG_OVERLAPPED);
             if(!pipeout)
                 throw win32::SystemError("Could not connect to STDOUT");
@@ -467,10 +467,10 @@ protected:
         }
     }
 
-    virtual void reportError(int code,const char* error) 
+    virtual void reportError(int code,const char* error)
     {
         if(!cmd) return;
-        
+
         cmd->status=code;
 
         if(cmd->err)
@@ -481,7 +481,7 @@ protected:
 
     void copy(const char* cmd,bool overwrite)
     {
-#ifdef _UNICODE    
+#ifdef _UNICODE
         LPWSTR * wcmd=cmd;
 #else
         size32_t cmdsize=strlen(cmd)+1;
@@ -540,7 +540,7 @@ class OutputTask: public CInterface, implements ITask
 public:
     IMPLEMENT_IINTERFACE;
 
-    OutputTask(const char* _remote,HANDLE _input,IRemoteOutput* _output,IRemoteOutput* _err): 
+    OutputTask(const char* _remote,HANDLE _input,IRemoteOutput* _output,IRemoteOutput* _err):
         remote(_remote), output(_output), err(_err)
     {
         input.set(_input);
@@ -683,7 +683,7 @@ interface IProcessList
 class ListTask: public ServiceTask
 {
 public:
-    ListTask(const char* _remote,const char* _user, const char* _pwd,const char* _path,IProcessList* _pl,IRemoteOutput* _err): 
+    ListTask(const char* _remote,const char* _user, const char* _pwd,const char* _path,IProcessList* _pl,IRemoteOutput* _err):
         ServiceTask(_remote, _user, _pwd), path(_path), pl(_pl), err(_err)
     {
     }
@@ -715,11 +715,11 @@ public:
         }
     }
 
-    virtual void reportError(int code,const char* error) 
+    virtual void reportError(int code,const char* error)
     {
         if(err)
             err->write(remote,error);
-    }   
+    }
 
 
 private:
@@ -733,7 +733,7 @@ class CProcess: public CInterface, implements IRemoteProcess
 public:
     IMPLEMENT_IINTERFACE;
 
-    CProcess(const char* _machine,int _pid,int _parent,int _session,const wchar_t* _app,const wchar_t* _cmd,const wchar_t* _dir): 
+    CProcess(const char* _machine,int _pid,int _parent,int _session,const wchar_t* _app,const wchar_t* _cmd,const wchar_t* _dir):
         remote(_machine), pid(_pid), parent(_parent), session(_session)
     {
         wcstombs(app,_app,arraysize(app));
@@ -817,7 +817,7 @@ public:
     {
     }
 
-    virtual void addMachine(const char * machine, const char * user, const char * pwd) 
+    virtual void addMachine(const char * machine, const char * user, const char * pwd)
     {
         machines.push_back(MachineInfo(machine,user,pwd));
     }
@@ -837,7 +837,7 @@ public:
     virtual IRemoteProcessIterator * getProcessList(const char * path, IRemoteOutput* _err)
     {
         TaskQueue list(20);
-        
+
         CProcessArray* a=new CProcessArray();
         for(Machines it=machines.begin();it!=machines.end();it++)
         {
@@ -853,10 +853,10 @@ public:
         io.stop();
     }
 
-    virtual void wait() 
+    virtual void wait()
     {
-        connect.join();   
-        io.join();   
+        connect.join();
+        io.join();
     }
 
     virtual void startIO(const char* machine,DWORD pid,HANDLE in,IRemoteOutput* out,IRemoteOutput* err)
@@ -866,7 +866,7 @@ public:
 
     struct MachineInfo
     {
-        MachineInfo(const char* _machine,const char* _user,const char* _password): 
+        MachineInfo(const char* _machine,const char* _user,const char* _password):
             machine(_machine), user(_user), password(_password) {}
         StringAttr machine,user,password;
     };

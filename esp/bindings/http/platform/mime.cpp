@@ -184,7 +184,7 @@ CMimeBodyPart* CMimeMultiPart::getRootPart()
     else
     {
         // If the root part is not specified, return the first one.
-        return LINK(&m_parts.item(0));      
+        return LINK(&m_parts.item(0));
     }
 
     return NULL;
@@ -291,7 +291,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, __int64 text_length, c
                 oneword[strlen(oneword) - 1] = '\0';
             if(oneword[strlen(oneword) - 1] == '>')
                 oneword[strlen(oneword) - 1] = '\0';
-        
+
             oneword += strlen("start");
             while(*oneword != '\0' && (*oneword == ' ' || *oneword == '='))
                 oneword++;
@@ -323,7 +323,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, __int64 text_length, c
         next_pos = Utils::getLine(text_length, next_pos, text, oneline_len);
         curline = text + cur_pos;
     }
-    
+
     // Parse all the mime parts
     while(next_pos < text_length)
     {
@@ -420,7 +420,7 @@ void CMimeMultiPart::unserialize(const char* contenttype, __int64 text_length, c
 
         addBodyPart(onepart);
     }
-    
+
 }
 
 void CMimeMultiPart::parseContentType(const char* contenttype)
@@ -468,7 +468,7 @@ void CMimeMultiPart::parseContentType(const char* contenttype)
                 oneword[strlen(oneword) - 1] = '\0';
             if(oneword[strlen(oneword) - 1] == '>')
                 oneword[strlen(oneword) - 1] = '\0';
-        
+
             oneword += strlen("start");
             while(*oneword != '\0' && (*oneword == ' ' || *oneword == '='))
                 oneword++;
@@ -559,7 +559,7 @@ void CMimeMultiPart::readUploadFileName(MemoryBuffer& fileContent, StringBuffer&
         next_pos = Utils::getLine(text_length, next_pos, text, oneline_len);
         curline = text + cur_pos;
     }
-    
+
     // Parse all the mime parts
     while(next_pos < text_length)
     {
@@ -658,6 +658,6 @@ void CMimeMultiPart::readUploadFileName(MemoryBuffer& fileContent, StringBuffer&
             break;
         }
     }
-    
+
     return;
 }

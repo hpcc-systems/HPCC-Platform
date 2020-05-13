@@ -20,8 +20,8 @@
 
 #include "packetstore.hpp"
 
-enum PacketStoreRequestKind 
-{ 
+enum PacketStoreRequestKind
+{
     PSR_GET,
     PSR_LOCK_TRANSACTION,
     PSR_LOCK_TRANSACTION_SECONDARY,
@@ -34,7 +34,7 @@ enum PacketStoreRequestKind
     PSR_EXIT // TBD
 };
 
-enum PacketStoreReturnKind 
+enum PacketStoreReturnKind
 {
     PSRET_OK,
     PSRET_LOCK_TIMEOUT = 1,
@@ -44,7 +44,7 @@ enum PacketStoreReturnKind
 };
 
 #define PRIMARY_SEND_TIMEOUT (5*60*1000)        // 5 mins
-#define PRIMARY_RECEIVE_TIMEOUT (5*60*1000)     // 5 mins   
+#define PRIMARY_RECEIVE_TIMEOUT (5*60*1000)     // 5 mins
 #define SECONDARY_SEND_TIMEOUT (5*60*1000)      // 5 mins
 #define SECONDARY_REPLY_TIMEOUT (1*60*1000)     // 1 min
 #define SECONDARY_CONFIRM_TIMEOUT (1*60*1000)   // 1 min
@@ -91,7 +91,7 @@ public:
     }
 
     MemoryAttr value;
-    
+
 
 };
 
@@ -106,8 +106,8 @@ protected: friend class CDataPacketTransaction;
 public:
 
     CDataPacketStore()
-        : SuperHashTableOf<CDataPacket, const char>() 
-    { 
+        : SuperHashTableOf<CDataPacket, const char>()
+    {
     }
 
     ~CDataPacketStore()
@@ -134,15 +134,15 @@ public:
 
 protected:
 // SuperHashTable definitions
-    virtual void onAdd(void *e) 
-    { 
+    virtual void onAdd(void *e)
+    {
     }
 
-    virtual void onRemove(void *e) 
-    { 
-        CDataPacket &elem=*(CDataPacket *)e;        
+    virtual void onRemove(void *e)
+    {
+        CDataPacket &elem=*(CDataPacket *)e;
         elem.Release();
-        
+
     }
 
     virtual unsigned getHashFromElement(const void *e) const
@@ -174,7 +174,7 @@ class CDataPacketTransaction: extends CInterface
     CIArrayOf<CDataPacket> transaction;
     unsigned ret; // use for storing return
     bool locked;
-    SocketEndpoint sender;      // 
+    SocketEndpoint sender;      //
     unsigned transactionid;     // these globally identify
 
     void dounlock()
@@ -267,7 +267,7 @@ public:
         }
         locked = true;
         return true;
-    }   
+    }
 
     bool lockWrite(unsigned timeout)
     {
@@ -300,7 +300,7 @@ public:
         }
         locked = true;
         return true;
-    }   
+    }
 
     void unlock()       // can unlock either a read or a write lock
     {
@@ -324,7 +324,7 @@ public:
         return ret;
     }
 
-    void putData(MemoryBuffer &buf) 
+    void putData(MemoryBuffer &buf)
     {
         unsigned count=transaction.ordinality();
         unsigned i;
@@ -337,7 +337,7 @@ public:
         }
     }
 
-    void getData(MemoryBuffer &buf) 
+    void getData(MemoryBuffer &buf)
     {
         unsigned count=transaction.ordinality();
         unsigned i;
@@ -374,7 +374,7 @@ public:
 
 
 
-class CPutTransactionQueue 
+class CPutTransactionQueue
 {
     // orphans TBD
     CriticalSection sect;
@@ -387,7 +387,7 @@ class CPutTransactionQueue
     {
         ForEachItemIn(i,queue) {
             CDataPacketTransaction &item = queue.item(i);
-            if (item.testTransactionId(sender,transactionid)) 
+            if (item.testTransactionId(sender,transactionid))
                 return i;
         }
         return NotFound;
@@ -514,7 +514,7 @@ public:
             bool doloop;
             do {
                 doloop=false;
-                    
+
                 switch (*fn) {
                 case PSR_GET: {
                         transaction.setown(new CDataPacketTransaction(store));
@@ -535,7 +535,7 @@ public:
                         transaction->unlock();
                     }
                     break;
-                case PSR_LOCK_TRANSACTION: 
+                case PSR_LOCK_TRANSACTION:
                 case PSR_LOCK_TRANSACTION_SECONDARY: {
                         transaction.setown(new CDataPacketTransaction(store));
                         unsigned timeout;
@@ -569,7 +569,7 @@ public:
                                 *retp = PSRET_LOCK_TIMEOUT;
                             }
                         }
-                        if (*term!=myrank) {            
+                        if (*term!=myrank) {
                             mb.reset();
                             if (!comm->send(mb,(myrank+1)%numservers,MPTAG_PACKET_STORE_REQUEST,SECONDARY_SEND_TIMEOUT)) {
                                 IERRLOG("CPacketStoreServer: Timeout sending secondary put header");
@@ -583,7 +583,7 @@ public:
                     }
                     // no reply
                     return;
-                case PSR_PUT: 
+                case PSR_PUT:
                 case PSR_PUT_SECONDARY: {
                         SocketEndpoint sender;
                         sender.deserialize(mb);
@@ -601,7 +601,7 @@ public:
                         }
                         transaction.setown(p);
                         ret = transaction->getReturn();
-                        if (ret==PSRET_OK) 
+                        if (ret==PSRET_OK)
                             ret = *retp;
                         if ((ret==PSRET_OK)&&transaction->isLocked()) {
                             // do update
@@ -626,10 +626,10 @@ public:
                                 IERRLOG("CPacketStoreServer: Timeout sending secondary put header");
                                 // error recovery TBD
                             }
-                        }                           
+                        }
                         return; // reply either already sent or no reply
                     }
-                }                              
+                }
             } while (doloop);
         }
         catch (IException *e) {
@@ -642,7 +642,7 @@ public:
         }
         comm->reply(mb);
     }
-    
+
 
 };
 
@@ -683,8 +683,8 @@ class CPacketStoreClient: implements IPacketStore, public CInterface
         unsigned i;
         for (i=0;i<count;i++)
             mb.append(id[i]);
-        mb.append(subfn);           
-        mb.append(ret); 
+        mb.append(subfn);
+        mb.append(ret);
         return comm->send(mb,r,MPTAG_PACKET_STORE_REQUEST,PRIMARY_SEND_TIMEOUT);
     }
 
@@ -700,7 +700,7 @@ public:
         myep = queryMyNode()->endpoint();
         nservers = grp->ordinality();
     }
-    
+
     bool put(const char *id, size32_t packetsize, const void *packetdata, unsigned timeout)
     {
         return multiPut(1,&id,&packetsize,&packetdata,timeout);
@@ -807,14 +807,14 @@ public:
                     return true;
                 }
             }
-            return false; 
+            return false;
         }
         catch (IException *e) {
             EXCLOG(e, "CPacketStoreClient::multiPut");
             // error handling TBD
 
         }
-        return false; 
+        return false;
     }
 
     bool remove(const char *id, unsigned timeout)

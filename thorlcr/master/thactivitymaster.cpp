@@ -176,7 +176,7 @@ public:
                 break;
             case TAKdiskgroupaggregate:
                 ret = createDiskGroupAggregateActivityMaster(this);
-                break;  
+                break;
             case TAKindexread:
                 ret = createIndexReadActivityMaster(this);
                 break;
@@ -252,7 +252,7 @@ public:
             case TAKkeyeddistribute:
                 ret = createKeyedDistributeActivityMaster(this);
                 break;
-            case TAKhashdistributemerge: 
+            case TAKhashdistributemerge:
                 ret = createDistributeMergeActivityMaster(this);
                 break;
             case TAKhashdedup:
@@ -421,7 +421,7 @@ void updateActivityResult(IConstWorkUnit &workunit, unsigned helperFlags, unsign
     Owned<IWorkUnit> wu = &workunit.lock();
     Owned<IWUResult> r;
     r.setown(updateWorkUnitResult(wu, logicalFilename, sequence));
-    r->setResultTotalRowCount(recordCount); 
+    r->setResultTotalRowCount(recordCount);
     r->setResultStatus(ResultStatusCalculated);
     if (TDWresult & helperFlags)
         r->setResultFilename(logicalFilename);
@@ -511,7 +511,7 @@ CSlavePartMapping::CSlavePartMapping(const char *_logicalName, IFileDescriptor &
     {
         if (fileWidth>maxWidth && 0 != fileWidth % maxWidth)
             throw MakeThorException(0, "Unimplemented - attempting to read distributed file (%s), on smaller cluster that is not a factor of original", logicalName.get());
-        
+
         for (p=0; p<fileWidth; p++)
         {
             Owned<IPartDescriptor> partDesc = fileDesc->getPart(p);

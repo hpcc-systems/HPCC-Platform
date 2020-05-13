@@ -75,7 +75,7 @@ public:
     void generateType(ITypeInfo * type, const char * name);
 
     void noteLines(size32_t count) { outputLineNum += count; }
-    void setOutput(IFile * out, IIOStream * outStream); 
+    void setOutput(IFile * out, IIOStream * outStream);
 
 protected:
     void flush();

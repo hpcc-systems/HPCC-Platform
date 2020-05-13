@@ -57,7 +57,7 @@ public:
             ep.getUrlStr(epstr);
             LOG(MCdebugProgress, unknownJob, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
         }
-    }   
+    }
 };
 
 

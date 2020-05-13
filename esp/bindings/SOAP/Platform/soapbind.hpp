@@ -157,7 +157,7 @@ public:
     void setUrl(const char *url){url_.clear().append(url);}
     const char * getUrl(){return url_.str();}
 
-    void setProxyAddress(const char *proxy){proxy_.clear().append(proxy);}  
+    void setProxyAddress(const char *proxy){proxy_.clear().append(proxy);}
     const char * getProxyAddress(){return proxy_.str();}
 
     //unorthodox naming to avoid name collisions with generated code

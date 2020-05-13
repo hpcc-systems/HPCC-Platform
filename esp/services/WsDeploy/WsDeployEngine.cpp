@@ -18,7 +18,7 @@
 #include "WsDeployService.hpp"
 #include "WsDeployEngine.hpp"
 
-class CWsGenerateJSFromXsdThread : public CInterface, 
+class CWsGenerateJSFromXsdThread : public CInterface,
   implements IPooledThread
 {
 public:
@@ -140,7 +140,7 @@ m_version(1)
   m_pResponseXml.setown( createPTreeFromXMLString(xml.str()) );
   m_pSelComps = m_pResponseXml->queryPropTree("Components");
 
-  //save a copy of component in request into our internal tree that we maintain and 
+  //save a copy of component in request into our internal tree that we maintain and
   //eventually plan to return as part of the response
   //
   Owned<IPropertyTreeIterator> it = m_pSelComps->getElements("Deploy/Components/Component");
@@ -235,7 +235,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
     m_pEnvDepEngine->check();
 
     // Delete all existing connections
-    //doDisconnects();   
+    //doDisconnects();
 
     unsigned deployMode = DEFLAGS_NONE;
     if (options.getConfigFiles())
@@ -258,7 +258,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
     {
       // Get archive path and environment name
       StringBuffer envName;
-      if (envName.length()==0) 
+      if (envName.length()==0)
         envName = "deploy"; // make sure we have some name
 
       // Create unique name for archive file based on timestamp
@@ -383,7 +383,7 @@ void CWsDeployEngine::deploy()
     m_pEnvDepEngine->check();
 
     // Delete all existing connections
-    //doDisconnects();   
+    //doDisconnects();
 
     unsigned deployMode = DEFLAGS_NONE;
     if (options.getConfigFiles())
@@ -406,7 +406,7 @@ void CWsDeployEngine::deploy()
     {
       // Get archive path and environment name
       StringBuffer envName;
-      if (envName.length()==0) 
+      if (envName.length()==0)
         envName = "deploy"; // make sure we have some name
 
       // Create unique name for archive file based on timestamp
@@ -591,7 +591,7 @@ void CWsDeployEngine::printStatus(IDeployTask* task)
   }
 }
 
-void CWsDeployEngine::printStatus(StatusType type, const char* processType, const char* process, 
+void CWsDeployEngine::printStatus(StatusType type, const char* processType, const char* process,
                                   const char* instance, const char* format/*=NULL*/, ...)
 {
   char buf[1024];
@@ -621,7 +621,7 @@ void CWsDeployEngine::printStatus(StatusType type, const char* processType, cons
 
 
 //the following throws exception on abort, returns true for ignore
-bool CWsDeployEngine::processException(const char* processType, const char* process, const char* instance, 
+bool CWsDeployEngine::processException(const char* processType, const char* process, const char* instance,
                                        IException* e, const char* szMessage/*=NULL*/, const char* szCaption/*=NULL*/,
                                        IDeployTask* pTask /*=NULL*/ )
 {

@@ -39,7 +39,7 @@ int main(int argc, const char *argv[])
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
             runner.addTest( registry.makeTest() );
         }
-        else 
+        else
         {
             for (int name = 2; name < argc; name++)
             {

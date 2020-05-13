@@ -45,7 +45,7 @@ bool doWildMatch(const C * src, unsigned srcLen, unsigned srcIdx, const C * pat,
                     break;
                 patIdx++;
             }
-            
+
             //check for non wildcarded trailing text
             for (;;)
             {
@@ -63,7 +63,7 @@ bool doWildMatch(const C * src, unsigned srcLen, unsigned srcIdx, const C * pat,
                     return true;
             }
             //The remaining pattern must match at least one character
-            while (srcIdx < srcLen) 
+            while (srcIdx < srcLen)
             {
                 if (doWildMatch<C, NORMALIZE_FN, QUERY, ASTERISK>(src, srcLen, srcIdx, pat, patLen, patIdx, doNormalize))
                     return true;

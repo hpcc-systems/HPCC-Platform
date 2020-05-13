@@ -167,7 +167,7 @@ class thorhelper_decl CSVColumnProvider : implements IColumnProvider, public CIn
 public:
     IMPLEMENT_IINTERFACE;
     inline size32_t splitLine(size32_t maxLen, const byte * start) { return csvSplitter.splitLine(maxLen, start); }
-    
+
     virtual void        getData(size32_t & len, void * & text, const char * name) { UNIMPLEMENTED; }
     virtual __int64     getInt(const char * name) { UNIMPLEMENTED; }
     virtual void        getString(size32_t & len, char * & text, const char * name) { UNIMPLEMENTED; }

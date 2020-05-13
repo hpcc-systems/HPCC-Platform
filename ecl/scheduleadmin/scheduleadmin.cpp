@@ -108,7 +108,7 @@ private:
         time.getString(tstr, false);
         printf("%s\n\n", tstr.str());
     }
-    
+
 private:
     Owned<SubscriptionProxy> subsProxy;
     Owned<IScheduleReader> reader;
@@ -231,7 +231,7 @@ public:
 class PushScheduleTask : public CInterface, implements IScheduleTask
 {
 public:
-    PushScheduleTask(char const * _name, char const * _text, const char * _target) 
+    PushScheduleTask(char const * _name, char const * _text, const char * _target)
         : name(_name), text(_text), target(_target) {}
     IMPLEMENT_IINTERFACE;
     virtual void doit()

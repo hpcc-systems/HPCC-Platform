@@ -24,7 +24,7 @@
 //Default cachetimeout 12 hours
 #define XSLT_DEFAULT_CACHETIMEOUT 43200
 
-enum IO_Type 
+enum IO_Type
 {
     IO_TYPE_FILE = 0,
     IO_TYPE_BUFFER = 1

@@ -114,15 +114,15 @@ static const char * EclDefinition =
 "END;\n";
 
 static const char * compatibleVersions[] = {
-    "UNICODELIB 1.1.01 [64d78857c1cecae15bd238cd7767b3c1]", 
-    "UNICODELIB 1.1.01 [e8790fe30d9627997749c3c4839b5957]", 
-    "UNICODELIB 1.1.02", 
-    "UNICODELIB 1.1.03", 
-    "UNICODELIB 1.1.04", 
+    "UNICODELIB 1.1.01 [64d78857c1cecae15bd238cd7767b3c1]",
+    "UNICODELIB 1.1.01 [e8790fe30d9627997749c3c4839b5957]",
+    "UNICODELIB 1.1.02",
+    "UNICODELIB 1.1.03",
+    "UNICODELIB 1.1.04",
     "UNICODELIB 1.1.05",
     NULL };
 
-UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -432,14 +432,14 @@ private:
         if (!capacity_) {
             capacity_ = ustring_.length();
         }
-        ces_ = new uint32_t[capacity_]; 
-        uint32_t ce = 0; 
-        do { 
-            ce = ceIterator->next(status); 
-            if ((length_ == capacity_) || (ce == CollationElementIterator::NULLORDER)) 
+        ces_ = new uint32_t[capacity_];
+        uint32_t ce = 0;
+        do {
+            ce = ceIterator->next(status);
+            if ((length_ == capacity_) || (ce == CollationElementIterator::NULLORDER))
                 break;
             ces_[length_++] = ce;
-        } while (ce != CollationElementIterator::NULLORDER); 
+        } while (ce != CollationElementIterator::NULLORDER);
         delete ceIterator;
         if (U_FAILURE(status)) invalid = true;
     }
@@ -455,10 +455,10 @@ public:
     {
         delete[] ces_;
     }
-  
+
     uint32_t operator[](uint32_t offset)
     {
-        return (offset < length_ )? ces_[offset]:0xffff; 
+        return (offset < length_ )? ces_[offset]:0xffff;
     }
 
     uint32_t length() { return length_;}
@@ -1130,40 +1130,40 @@ UnicodeString getNthWord(RuleBasedBreakIterator& bi, UnicodeString const & sourc
     int32_t start = bi.first();
     while (start != BreakIterator::DONE && n)  {
         int breakType = bi.getRuleStatus();
-        if (breakType != UBRK_WORD_NONE) {        
-            // Exclude spaces, punctuation, and the like. 
+        if (breakType != UBRK_WORD_NONE) {
+            // Exclude spaces, punctuation, and the like.
             //   A status value UBRK_WORD_NONE indicates that the boundary does
-            //   not start a word or number.            
-            //    
+            //   not start a word or number.
+            //
             n--;
             if (!n) {
                 unsigned wordBegining = bi.preceding(start);
                 unsigned wordEnd = bi.next();
                 source.extractBetween(wordBegining, wordEnd, word);
             }
-        } 
+        }
         start = bi.next();
-    }  
-    return word; 
+    }
+    return word;
 }
 
 unsigned doCountWords(RuleBasedBreakIterator& bi, UnicodeString const & source)
 {
     bi.setText(source);
     int32_t start = bi.first();
-    int32_t count = 0; 
+    int32_t count = 0;
     while (start != BreakIterator::DONE)  {
         int breakType = bi.getRuleStatus();
-        if (breakType != UBRK_WORD_NONE) {        
-            // Exclude spaces, punctuation, and the like. 
+        if (breakType != UBRK_WORD_NONE) {
+            // Exclude spaces, punctuation, and the like.
             //   A status value UBRK_WORD_NONE indicates that the boundary does
-            //   not start a word or number.            
-            //    
+            //   not start a word or number.
+            //
             ++count;
-        } 
+        }
         start = bi.next();
-    }  
-    return count; 
+    }
+    return count;
 }
 
 static BreakIterator * createCharacterBreakIterator(const char * localename)
@@ -1795,7 +1795,7 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsi
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleWordCount(unsigned textLen, UChar const * text,  char const * localename)
 {
-    UErrorCode status = U_ZERO_ERROR;  
+    UErrorCode status = U_ZERO_ERROR;
     Locale locale(localename);
     RuleBasedBreakIterator* bi = (RuleBasedBreakIterator*)RuleBasedBreakIterator::createWordInstance(locale, status);
     UnicodeString uText(text, textLen);
@@ -1807,7 +1807,7 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleWordCount(unsigned textLe
 
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen, UChar * & tgt, unsigned textLen, UChar const * text, unsigned n, char const * localename)
 {
-    UErrorCode status = U_ZERO_ERROR;  
+    UErrorCode status = U_ZERO_ERROR;
     Locale locale(localename);
     RuleBasedBreakIterator* bi = (RuleBasedBreakIterator*)RuleBasedBreakIterator::createWordInstance(locale, status);
 

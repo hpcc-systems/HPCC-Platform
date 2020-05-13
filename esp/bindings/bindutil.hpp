@@ -82,7 +82,7 @@ public:
     {
         start_time = get_cycles_now();
     }
-  
+
     ~EspTimeSection()
     {
         if (title)

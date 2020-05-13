@@ -28,7 +28,7 @@
 #include "LzmaDec.h"
 
 static void *SzAlloc(void *, size_t size)
-{ 
+{
     return checked_malloc(size,-1);
 }
 static void SzFree(void *, void *address)
@@ -59,7 +59,7 @@ public:
             if (enc == 0)
                 throw MakeStringException(-1,"LzmaEnc_Create failed");
             LzmaEncProps_Init(&props);
-            if (LzmaEnc_SetProps(enc, &props)!=SZ_OK) 
+            if (LzmaEnc_SetProps(enc, &props)!=SZ_OK)
                 throw MakeStringException(-1,"LzmaEnc_SetProps failed");
         }
         if (inlength+LZMA_PROPS_SIZE+sizeof(size32_t)<1024)
@@ -69,7 +69,7 @@ public:
         *(size32_t *)output = (size32_t)propsize;
         SizeT reslen = inlength-1-propsize-sizeof(size32_t);
         SRes res = LzmaEnc_MemEncode(enc, (byte *)output+propsize+sizeof(size32_t), &reslen, (const byte *)input, inlength, true, NULL, &g_Alloc, &g_Alloc);
-        if (res==SZ_ERROR_OUTPUT_EOF) 
+        if (res==SZ_ERROR_OUTPUT_EOF)
             return (size32_t)-1;
         if (res!=SZ_OK)
             throw MakeStringException(-1,"LzmaEnc_MemEncode failed(%d)",(int)res);
@@ -82,7 +82,7 @@ public:
         SizeT propsize = *(size32_t *)input;
         SizeT inlen = inlength -= sizeof(size32_t)+propsize;
         ELzmaStatus status;
-        SRes res = LzmaDecode((byte *)output, &reslen, (const byte *)input+sizeof(size32_t)+propsize, &inlen, 
+        SRes res = LzmaDecode((byte *)output, &reslen, (const byte *)input+sizeof(size32_t)+propsize, &inlen,
             (byte *)input+sizeof(size32_t), propsize, LZMA_FINISH_END, &status, &g_Alloc);
         if (res!=SZ_OK)
             throw MakeStringException(-1,"LzmaDecode failed(%d)",(int)res);
@@ -104,7 +104,7 @@ void LZMACompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
         sz = len;
         memcpy(cmpData, src, len);
     }
-    else 
+    else
         out.setLength(outbase+sizeof(size32_t)*2+sz);
     cmpSzMarker.write(sz);
 }

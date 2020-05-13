@@ -43,8 +43,8 @@ class RegexMatches : public CInterface, public INlpResultIterator
     enum { MaxCachedResult=100 };
 
 public:
-    RegexMatchInfo * appendOwnResult(const void * _row) 
-    { 
+    RegexMatchInfo * appendOwnResult(const void * _row)
+    {
         RegexMatchInfo * match = new RegexMatchInfo(_row);
         results.append(*match);
         return match;
@@ -53,9 +53,9 @@ public:
     RegexMatchInfo * createMatch();
 
     void reset();
-    virtual bool first() 
-    { 
-        cur = 0; 
+    virtual bool first()
+    {
+        cur = 0;
         return results.isItem(cur);
     }
     virtual bool next()

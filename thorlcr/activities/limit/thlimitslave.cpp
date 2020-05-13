@@ -86,7 +86,7 @@ class CLimitSlaveActivity : public CLimitSlaveActivityBase, public CThorSteppabl
 public:
 
     CLimitSlaveActivity(CGraphElementBase *container) : CLimitSlaveActivityBase(container), CThorSteppable(this) { }
-    
+
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
@@ -142,12 +142,12 @@ public:
         }
         return ret.getClear();
     }
-    bool gatherConjunctions(ISteppedConjunctionCollector &collector) 
-    { 
-        return input->gatherConjunctions(collector); 
+    bool gatherConjunctions(ISteppedConjunctionCollector &collector)
+    {
+        return input->gatherConjunctions(collector);
     }
-    void resetEOF() 
-    { 
+    void resetEOF()
+    {
         //Do not reset the rowLimit
         inputStream->resetEOF();
     }
@@ -191,7 +191,7 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
                 if (!row)
                     break;
                 else
-                    buf->putRow(NULL); 
+                    buf->putRow(NULL);
             }
             buf->putRow(row.getClear());
             if (++count > rowLimit)
@@ -239,7 +239,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (eof) 
+        if (eof)
             return NULL;
         if (!limitChecked)
         {
@@ -262,11 +262,11 @@ public:
                     catch (IException *e)
                     {
                         ActPrintLog(e, "In transformOnLimitExceeded");
-                        throw; 
+                        throw;
                     }
                     catch (CATCHALL)
-                    { 
-                        ActPrintLog("LIMIT: Unknown exception in transformOnLimitExceeded()"); 
+                    {
+                        ActPrintLog("LIMIT: Unknown exception in transformOnLimitExceeded()");
                         throw;
                     }
                 }

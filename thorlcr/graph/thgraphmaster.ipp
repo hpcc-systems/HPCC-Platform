@@ -243,7 +243,7 @@ public:
         CriticalBlock b(wuDirty);
         dirty = true;
     }
-    
+
 // CJobBase impls.
     virtual mptag_t allocateMPTag();
     virtual void freeMPTag(mptag_t tag);

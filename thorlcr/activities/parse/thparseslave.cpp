@@ -109,11 +109,11 @@ public:
             processRecord(curRow.get());
             rowIter->first();
         }
-        
+
         return NULL;
     }
     virtual bool isGrouped() const override
-    { 
+    {
         return queryInput(0)->isGrouped();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override

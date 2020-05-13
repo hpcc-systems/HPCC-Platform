@@ -58,7 +58,7 @@ static bool sortParallel(unsigned &numcpus)
 
 NO_SANITIZE_FUNCTION
 void * binary_add(const void *newitem, const void *base,
-             size32_t nmemb, 
+             size32_t nmemb,
              size32_t width,
              int ( *compare)(const void *_e1, const void *_e2),
              bool * ItemAdded)
@@ -77,7 +77,7 @@ void * binary_add(const void *newitem, const void *base,
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base,
-                                        size32_t nmemb, 
+                                        size32_t nmemb,
                                         sortCompareFunction compare,
                                         bool * ItemAdded)
 {
@@ -98,7 +98,7 @@ extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base,
-                                        size32_t nmemb, 
+                                        size32_t nmemb,
                                         ICompare & compare,
                                         bool * ItemAdded)
 {
@@ -119,7 +119,7 @@ extern jlib_decl void * binary_vec_find(const void *newitem, const void * * base
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           sortCompareFunction compare)
 {
 #define width sizeof(void*)
@@ -137,7 +137,7 @@ extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * ba
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           ICompare const & compare)
 {
 #define width sizeof(void*)
@@ -156,7 +156,7 @@ extern jlib_decl void * binary_vec_insert(const void *newitem, const void * * ba
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * * base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           sortCompareFunction compare)
 {
 #define width sizeof(void*)
@@ -176,7 +176,7 @@ extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void
 
 NO_SANITIZE_FUNCTION
 extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void * * base,
-                                          size32_t nmemb, 
+                                          size32_t nmemb,
                                           ICompare const & compare)
 {
 #define width sizeof(void*)
@@ -195,7 +195,7 @@ extern jlib_decl void * binary_vec_insert_stable(const void *newitem, const void
 
 
 
-typedef void *  ELEMENT;        
+typedef void *  ELEMENT;
 typedef void ** _VECTOR;   // bit messy but allow to be redefined later
 #define VECTOR _VECTOR
 
@@ -324,7 +324,7 @@ public:
         done = false;
         waiting = 0;
         threads = new cThread*[numsubthreads];
-        for (unsigned i=0;i<numsubthreads;i++) 
+        for (unsigned i=0;i<numsubthreads;i++)
             threads[i] = new cThread(this);
     }
 
@@ -337,7 +337,7 @@ public:
 
     void start()
     {
-        for (unsigned i=0;i<numsubthreads;i++) 
+        for (unsigned i=0;i<numsubthreads;i++)
             threads[i]->start();
     }
 
@@ -455,7 +455,7 @@ public:
             SWAP(v1,v2); v1++; v2++; r--;           \
         };                                          \
         r1 = (pb-pa)+s;                             \
-        r2 = n-(pd-pc)+s;                           
+        r2 = n-(pd-pc)+s;
 
 
 class cParQSort: public cParQSortBase
@@ -633,7 +633,7 @@ bool heap_push_down(unsigned p, unsigned num, unsigned * heap, const void ** row
     while(1)
     {
         unsigned c = p*2 + 1;
-        if(c >= num) 
+        if(c >= num)
             return nochange;
         if(c+1 < num)
         {
@@ -679,7 +679,7 @@ bool heap_push_up(unsigned c, unsigned * heap, const void ** rows, ICompare * co
 #include    <string.h>
 #include    <stddef.h>
 #include    <time.h>
-   
+
 #ifdef _WIN32
 #include    <io.h>
 #include    <sys\types.h>
@@ -712,7 +712,7 @@ class CRowStreamMerger
     const void **pending;
     size32_t *recsize;
     unsigned *mergeheap;
-    unsigned activeInputs; 
+    unsigned activeInputs;
     count_t recno;
     const ICompare *icmp;
     bool partdedup;
@@ -747,7 +747,7 @@ class CRowStreamMerger
         while(1)
         {
             unsigned c = p*2 + 1;
-            if(c >= activeInputs) 
+            if(c >= activeInputs)
                 return nochange;
             if(c+1 < activeInputs)
             {
@@ -847,7 +847,7 @@ class CRowStreamMerger
 
     inline count_t num() const { return recno; }
 
-    
+
     inline bool _next()
     {
         if (!activeInputs)
@@ -905,7 +905,7 @@ public:
             mergeheap = (unsigned *)(pending+numstreams);
             for (i=0;i<numstreams;i++) {
                 pending[i] = NULL;
-                if (pullInput(i)) 
+                if (pullInput(i))
                     mergeheap[activeInputs++] = i;
             }
         }
@@ -985,20 +985,20 @@ protected:
         {
             ostreams.ensure(numstreams);
             unsigned n = 0;
-            while (n<numstreams) 
+            while (n<numstreams)
                 ostreams.append(*LINK(_streams[n++]));
             streams = ostreams.getArray();
         }
     } *streamprovider;
 
-    
+
 public:
     CMergeRowStreams(unsigned _numstreams,IRowStream **_instreams,ICompare *_icmp, bool partdedup, IRowLinkCounter *_linkcounter)
     {
         streamprovider = new cProvider(_instreams, _numstreams, _linkcounter);
         merger = new CRowStreamMerger(*streamprovider,_numstreams,_icmp,partdedup);
         eos = _numstreams==0;
-        
+
     }
 
     CMergeRowStreams(unsigned _numstreams,IRowProvider &_provider,ICompare *_icmp, bool partdedup)
@@ -1026,7 +1026,7 @@ public:
         }
     }
 
-    const void *nextRow() 
+    const void *nextRow()
     {
         if (eos)
             return NULL;

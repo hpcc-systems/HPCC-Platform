@@ -63,7 +63,7 @@ public:
         helper = static_cast <IHThorFilterArg *> (queryHelper());
     }
     virtual void start() override
-    {   
+    {
         ActivityTimer s(slaveTimerStats, timeActivities);
         matched = 0;
         if (helper->canMatchAny())
@@ -141,11 +141,11 @@ public:
         return NULL;
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector) override
-    { 
-        return input->gatherConjunctions(collector); 
+    {
+        return input->gatherConjunctions(collector);
     }
     virtual void resetEOF() override
-    { 
+    {
         abortSoon = !helper->canMatchAny();
         anyThisGroup = false;
         inputStream->resetEOF();
@@ -167,14 +167,14 @@ class CFilterProjectSlaveActivity : public CFilterSlaveActivityBase
     rowcount_t recordCount;  // NB local (not really used for global)
     Owned<IEngineRowAllocator> allocator;
 public:
-    CFilterProjectSlaveActivity(CGraphElementBase *container) 
+    CFilterProjectSlaveActivity(CGraphElementBase *container)
         : CFilterSlaveActivityBase(container)
     {
         helper = static_cast <IHThorFilterProjectArg *> (queryHelper());
         allocator.set(queryRowAllocator());
     }
     virtual void start() override
-    {   
+    {
         ActivityTimer s(slaveTimerStats, timeActivities);
         recordCount = 0;
         if (helper->canMatchAny())
@@ -211,14 +211,14 @@ public:
             try {
                 sz = helper->transform(ret, row, ++recordCount);
             }
-            catch (IException *e) 
-            { 
-                ActPrintLog(e, "helper->transform() error"); 
-                throw; 
+            catch (IException *e)
+            {
+                ActPrintLog(e, "helper->transform() error");
+                throw;
             }
             catch (CATCHALL)
-            { 
-                ActPrintLog("FILTERPROJECT: Unknown exception in helper->transform()"); 
+            {
+                ActPrintLog("FILTERPROJECT: Unknown exception in helper->transform()");
                 throw;
             }
             if (sz) {
@@ -255,7 +255,7 @@ public:
         }
     }
     virtual void start() override
-    {   
+    {
         ActivityTimer s(slaveTimerStats, timeActivities);
         if (helper->canMatchAny())
             PARENT::start();
@@ -339,10 +339,10 @@ public:
         }
 
         //Notes from Roxie impl.
-        //Not completely sure about this - it could lead the the start of a group being skipped, 
+        //Not completely sure about this - it could lead the the start of a group being skipped,
         //so the group filter could potentially work on a different group.  If so, we'd need to check the
         //next fields were a subset of the grouping fields - more an issue for the group activity.
-        
+
         //MORE: What do we do with wasCompleteMatch?  something like the following????
 #if 0
         for (;;)
@@ -383,11 +383,11 @@ public:
         return ungroupedNextRow(); // JCSMORE doesn't look right, but as hthor/roxie
     }
     bool gatherConjunctions(ISteppedConjunctionCollector &collector)
-    { 
+    {
         return input->gatherConjunctions(collector);
     }
-    void resetEOF() 
-    { 
+    void resetEOF()
+    {
         abortSoon = false;
         groupStream.clear();
         inputStream->resetEOF();

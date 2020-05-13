@@ -73,7 +73,7 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
         catch (IException *e) {
             EXCLOG(e,"LDAP createDefaultScopes");
             throw;
-        }   
+        }
     }
 
 
@@ -115,7 +115,7 @@ public:
                 catch (IException *e) {
                     EXCLOG(e,"LDAP server");
                     throw;
-                }   
+                }
                 createDefaultScopes();
             }
         }
@@ -124,11 +124,11 @@ public:
 
     SecAccessFlags getPermissions(const char *key,const char *obj,IUserDescriptor *udesc,unsigned auditflags)
     {
-        if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0)) 
+        if (!ldapsecurity||((getLDAPflags()&DLF_ENABLED)==0))
             return SecAccess_Full;
         StringBuffer username;
         StringBuffer password;
-        if (udesc) 
+        if (udesc)
         {
             udesc->getUserName(username);
             udesc->getPassword(password);
@@ -163,16 +163,16 @@ public:
 
             unsigned taken = msTick()-start;
 #ifndef _DEBUG
-            if (taken>100) 
+            if (taken>100)
 #endif
             {
                 PROGLOG("LDAP: getPermissions(%s) scope=%s user=%s returns %d in %d ms",key?key:"NULL",obj?obj:"NULL",username.str(),perm,taken);
             }
             if (auditflags&DALI_LDAP_AUDIT_REPORT) {
                 StringBuffer auditstr;
-                if ((auditflags&DALI_LDAP_READ_WANTED)&&!HASREADPERMISSION(perm)) 
+                if ((auditflags&DALI_LDAP_READ_WANTED)&&!HASREADPERMISSION(perm))
                     auditstr.append("Lookup Access Denied");
-                else if ((auditflags&DALI_LDAP_WRITE_WANTED)&&!HASWRITEPERMISSION(perm)) 
+                else if ((auditflags&DALI_LDAP_WRITE_WANTED)&&!HASWRITEPERMISSION(perm))
                     auditstr.append("Create Access Denied");
                 if (auditstr.length()) {
                     auditstr.append(":\n\tProcess:\tdaserver");
@@ -262,7 +262,7 @@ public:
     {
         return ldapflags;
     }
-    
+
     void setLDAPflags(unsigned flags)
     {
         ldapflags = flags;

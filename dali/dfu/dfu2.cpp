@@ -78,7 +78,7 @@ bool actionOnAbort()
     closedownClientProcess();
     releaseAtoms();
     return true;
-} 
+}
 
 
 int main(int argc, const char *argv[])
@@ -89,9 +89,9 @@ int main(int argc, const char *argv[])
     unsigned i;
     unsigned j=1;
     for (i=1;i<argc;i++) {
-        if ((strlen(argv[i])>12)&&memicmp(argv[i],"DALISERVERS=",12)==0) 
+        if ((strlen(argv[i])>12)&&memicmp(argv[i],"DALISERVERS=",12)==0)
             daliServer.append(strlen(argv[i])-12,argv[i]+12);
-        else 
+        else
             argv[j++] = argv[i];
     }
     argc = j;
@@ -100,14 +100,14 @@ int main(int argc, const char *argv[])
         handleSyntax();
         return argc<2 ? DFUERR_InvalidCommandSyntax : 0;
     }
-    
+
 
     int ret = 0;
 
     try {
         iniFile = createProperties("dfu2.ini",true);
         StringBuffer logFile;
-        if (!iniFile->getProp("LOGFILE", logFile)) 
+        if (!iniFile->getProp("LOGFILE", logFile))
             logFile.append("DFU2.log");
         attachStandardFileLogMsgMonitor(logFile.str(), NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false);
 
@@ -115,15 +115,15 @@ int main(int argc, const char *argv[])
         ILogMsgFilter * userOperator = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_disaster|MSGCLS_error|MSGCLS_warning, userDetail, true);
         ILogMsgFilter * errWarn = getCategoryLogMsgFilter(MSGAUD_operator|MSGAUD_user, MSGCLS_all, TopDetail, true);
         ILogMsgFilter * combinedFilter = getOrLogMsgFilterOwn(userOperator, errWarn);
-        
+
         queryLogMsgManager()->changeMonitorFilterOwn(queryStderrLogMsgHandler(), combinedFilter);
         queryStderrLogMsgHandler()->setMessageFields(0);
 
-        if (!daliServer.length()&&!iniFile->getProp("DALISERVERS", daliServer)) 
+        if (!daliServer.length()&&!iniFile->getProp("DALISERVERS", daliServer))
             throwError(DFUERR_NoDaliServerList);
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(),DALI_SERVER_PORT);
-        initClientProcess(serverGroup, 0, NULL, NULL, MP_WAIT_FOREVER, true);               // so that 
-            
+        initClientProcess(serverGroup, 0, NULL, NULL, MP_WAIT_FOREVER, true);               // so that
+
         DFUcmd cmd = decodeDFUcommand(argv[1]);
         addAbortHandler(actionOnAbort);
 
@@ -140,7 +140,7 @@ int main(int argc, const char *argv[])
             }
         }
         catch(IException *e)
-        { 
+        {
             EXCLOG(e, "DFU Exception: ");
             ret = e->errorCode();
             e->Release();
@@ -149,7 +149,7 @@ int main(int argc, const char *argv[])
             IERRLOG("DFU: %s",s);
         }
     }
-    catch(IException *e){ 
+    catch(IException *e){
         EXCLOG(e, "DFU Exception: ");
         ret = e->errorCode();
         if (e->errorCode() == DFUERR_InvalidCommandSyntax || e->errorCode() == DFUERR_TooFewArguments)
@@ -159,7 +159,7 @@ int main(int argc, const char *argv[])
     catch (const char *s) {
         IERRLOG("DFU: %s",s);
     }
-    
+
     closeEnvironment();
     closedownClientProcess();
     releaseAtoms();

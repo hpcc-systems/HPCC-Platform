@@ -33,7 +33,7 @@ public:
     ISecResourceList* list() {return m_list;}
 };
 
-// Here we're using 2 arrays instead of a hashmap due to the need 
+// Here we're using 2 arrays instead of a hashmap due to the need
 // to find the best matching path prefix.
 class CAuthMap : public CInterface, implements IAuthMap
 {

@@ -24,8 +24,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <malloc.h> 
-#include <tchar.h> 
+#include <malloc.h>
+#include <tchar.h>
 
 
 #ifndef arraysize
@@ -38,16 +38,16 @@ namespace win32
 class Error
 {
 public:
-    Error(LPCTSTR msg,...): code(0) 
+    Error(LPCTSTR msg,...): code(0)
     {
         memset(buf,0,sizeof(buf));
-        
+
         va_list marker;
-        va_start(marker,msg); 
+        va_start(marker,msg);
         _vsntprintf(buf,arraysize(buf)-1,msg,marker);
-        va_end(marker); 
+        va_end(marker);
     }
-    
+
     LPCTSTR GetMessage() const { return buf; }
     DWORD   GetCode() const { return code; }
 
@@ -64,7 +64,7 @@ public:
     }
 
 protected:
-    Error(): code(::GetLastError()) 
+    Error(): code(::GetLastError())
     {
         memset(buf,0,sizeof(buf));
     }
@@ -79,9 +79,9 @@ public:
     SystemError(LPCTSTR msg,...)
     {
         va_list marker;
-        va_start(marker,msg); 
+        va_start(marker,msg);
         _vsntprintf(buf,arraysize(buf)-1,msg,marker);
-        va_end(marker); 
+        va_end(marker);
 
         if(code!=ERROR_SUCCESS)
         {
@@ -113,9 +113,9 @@ template<typename inv> class HandleBase
 public:
     HandleBase(): handle(inv()) {}
 
-    HandleBase(HANDLE h, DWORD access, bool inherit=false, DWORD options=0, HANDLE source=GetCurrentProcess()): handle(inv()) 
+    HandleBase(HANDLE h, DWORD access, bool inherit=false, DWORD options=0, HANDLE source=GetCurrentProcess()): handle(inv())
     {
-        ::DuplicateHandle(source,h,::GetCurrentProcess(),&handle,access,inherit,options); 
+        ::DuplicateHandle(source,h,::GetCurrentProcess(),&handle,access,inherit,options);
     }
 
     ~HandleBase()     { if(isValid()) Close(); }
@@ -124,7 +124,7 @@ public:
     bool operator !()  { return !isValid(); }
 
     void set(HANDLE h)
-    {   
+    {
         if(isValid())
             Close();
         handle=h;
@@ -212,7 +212,7 @@ struct Overlapped:public OVERLAPPED
 
     operator HANDLE()
     {
-        return hEvent; 
+        return hEvent;
     }
 
     DWORD Wait(int timeout=INFINITE,bool alertable=false)
@@ -319,13 +319,13 @@ public:
 
     bool Open(LPCSTR name,DWORD openMode,DWORD pipeMode=PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT,DWORD maxInstances=PIPE_UNLIMITED_INSTANCES, DWORD outBufferSize=0,DWORD inBufferSize=0,DWORD defaultTimeOut=-1,LPSECURITY_ATTRIBUTES sa=NULL)
     {
-        set(::CreateNamedPipeA(name,openMode,pipeMode,maxInstances,outBufferSize,inBufferSize,defaultTimeOut,sa)); 
+        set(::CreateNamedPipeA(name,openMode,pipeMode,maxInstances,outBufferSize,inBufferSize,defaultTimeOut,sa));
         return isValid();
     }
 
     bool Open(LPCWSTR name,DWORD openMode,DWORD pipeMode=PIPE_TYPE_BYTE|PIPE_READMODE_BYTE|PIPE_WAIT,DWORD maxInstances=PIPE_UNLIMITED_INSTANCES, DWORD outBufferSize=0,DWORD inBufferSize=0,DWORD defaultTimeOut=-1,LPSECURITY_ATTRIBUTES sa=NULL)
     {
-        set(::CreateNamedPipeW(name,openMode,pipeMode,maxInstances,outBufferSize,inBufferSize,defaultTimeOut,sa)); 
+        set(::CreateNamedPipeW(name,openMode,pipeMode,maxInstances,outBufferSize,inBufferSize,defaultTimeOut,sa));
         return isValid();
     }
 

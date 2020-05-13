@@ -48,7 +48,7 @@ struct ReplicateFileItem;
 class CReplicateServer;
 
 
-enum ReplicatePartCopyState 
+enum ReplicatePartCopyState
 {
     RPCS_exists,
     RPCS_missing,
@@ -63,7 +63,7 @@ struct ReplicatePartCopyItem: extends CInterface
 {
     Owned<IFile> file;
     RemoteFilename tmpname;
-    ReplicatePartCopyState state;       
+    ReplicatePartCopyState state;
     ReplicatePartCopyItem *from;
     ReplicatePartItem &parent;
 
@@ -75,7 +75,7 @@ struct ReplicatePartCopyItem: extends CInterface
         return !doneCopy(0);
     }
 
-    bool doneCopy(unsigned timeout); 
+    bool doneCopy(unsigned timeout);
 
     void commit(bool rollback)
     {
@@ -98,9 +98,9 @@ struct ReplicatePartCopyItem: extends CInterface
             EXCLOG(e,s.str());
             e->Release();
         }
-        if (tmpfile) { // failed/rollback 
+        if (tmpfile) { // failed/rollback
             try {   // failures don't affect other parts
-                tmpfile->remove();  
+                tmpfile->remove();
             }
             catch (IException *e) {
                 // suppress delete errors on rollback (already reported elsewhere)
@@ -121,19 +121,19 @@ struct ReplicatePartItem: extends CInterface
     {
         unsigned ret = 0;
         UnsignedArray src; // bit OTT when probably only 2 but you never know
-        UnsignedArray dst; 
-        ForEachItemIn(i1,copies) {  
+        UnsignedArray dst;
+        ForEachItemIn(i1,copies) {
             switch(copies.item(i1).state) {
-            case RPCS_exists: 
-                src.append(i1); 
+            case RPCS_exists:
+                src.append(i1);
                 break;
-            case RPCS_missing: 
-                dst.append(i1); 
+            case RPCS_missing:
+                dst.append(i1);
                 break;
             }
         }
         unsigned i3=0;
-        ForEachItemIn(i2,dst) {  
+        ForEachItemIn(i2,dst) {
             ReplicatePartCopyItem &dstcopy = copies.item(dst.item(i2));
             if (i3>=src.ordinality()) {
                 if (i3==0) {
@@ -152,8 +152,8 @@ struct ReplicatePartItem: extends CInterface
     {
         for (;;) {
             bool alldone=true;
-            ForEachItemIn(i1,copies) {  
-                if (!copies.item(i1).doneCopy(1000*60)) 
+            ForEachItemIn(i1,copies) {
+                if (!copies.item(i1).doneCopy(1000*60))
                     alldone = false;
             }
             if (alldone)
@@ -164,7 +164,7 @@ struct ReplicatePartItem: extends CInterface
 
     void commit(bool rollback)
     {
-        ForEachItemIn(i1,copies) {  
+        ForEachItemIn(i1,copies) {
             copies.item(i1).commit(rollback);
         }
     }
@@ -263,7 +263,7 @@ struct ReplicateFileItem: extends CInterface
             UWARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
             return;
         }
-        CDateTime dt;       
+        CDateTime dt;
         dfile->getModificationTime(dt);     // check not modified while queued
         if (!filedt.equals(dt)) {
             dt.getString(filedt.getString(tmp.clear()).append(','));
@@ -336,14 +336,14 @@ struct ReplicateFileItem: extends CInterface
             if (dfile) {
                 CDateTime newfiledt;
                 dfile->getModificationTime(newfiledt);
-                if (filedt.equals(newfiledt)) 
+                if (filedt.equals(newfiledt))
                     abort = false;
                 else {
                     newfiledt.getString(filedt.getString(tmp.clear()).append(','));
                     UWARNLOG(LOGPFX "File %s changed (%s)",lfn,tmp.str());
                 }
             }
-            else 
+            else
                 UWARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
         }
         catch (IException *e) { // actually don't expect (unless maybe dali down or something)
@@ -455,17 +455,17 @@ public:
             PROGLOG(LOGPFX "too many replications active, waiting");
         CriticalBlock block(runningsect);
         ReplicateFileItem &fitem = *new ReplicateFileItem(*this,dlfn,userdesc,filedt);
-        running.append(fitem);  
+        running.append(fitem);
         fitem.start();
     }
 
     void done(ReplicateFileItem *item)
     {
         CriticalBlock block(runningsect);
-        if (running.zap(*item)) 
+        if (running.zap(*item))
             runningsem.signal();
     }
-        
+
     void runServer()
     {
         stopping = false;
@@ -485,7 +485,7 @@ public:
                 byte fn;
                 if (stopping||(mb.length()==0))
                     fn = DRQ_STOP;
-                else 
+                else
                     mb.read(fn);
                 switch (fn) {
                 case DRQ_STOP:

@@ -65,7 +65,7 @@ public:
         if (originalIndexFile->numParts() != newIndexFile->numParts())
             throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", originalName.get(), updatedName.get());
         if (originalIndexFile->querySuperFile() || newIndexFile->querySuperFile())
-            throw MakeActivityException(this, 0, "Diffing super files not supported");  
+            throw MakeActivityException(this, 0, "Diffing super files not supported");
 
         width = originalIndexFile->numParts();
 
@@ -97,14 +97,14 @@ public:
             Owned<IPartDescriptor> newIndexPartDesc = newIndexDesc->getPart(slave);
             newIndexPartDesc->serialize(dst);
             patchDesc->queryPart(slave)->serialize(dst);
-            
+
             if (0 == slave)
             {
                 if (!local)
                 {
                     dst.append(true);
                     Owned<IPartDescriptor> originalTlkPartDesc = originalDesc->getPart(originalDesc->numParts()-1);
-                    originalTlkPartDesc->serialize(dst);                                        
+                    originalTlkPartDesc->serialize(dst);
                     Owned<IPartDescriptor> newIndexTlkPartDesc = newIndexDesc->getPart(newIndexDesc->numParts()-1);
                     newIndexTlkPartDesc->serialize(dst);
                     patchDesc->queryPart(patchDesc->numParts()-1)->serialize(dst);
@@ -125,7 +125,7 @@ public:
             CDateTime modifiedTime(mb);
 
             IPartDescriptor *partDesc = patchDesc->queryPart(slaveIdx);
-            IPropertyTree &props = partDesc->queryProperties();         
+            IPropertyTree &props = partDesc->queryProperties();
             StringBuffer timeStr;
             modifiedTime.getString(timeStr);
             props.setProp("@modified", timeStr.str());

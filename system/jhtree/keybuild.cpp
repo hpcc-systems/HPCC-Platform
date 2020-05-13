@@ -112,7 +112,7 @@ public:
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
-        hdr->length = keyValueSize; 
+        hdr->length = keyValueSize;
         hdr->ktype = flags;
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
@@ -289,7 +289,7 @@ protected:
     }
 
     void flushNode(CWriteNode *node, NodeInfoArray &nodeInfo)
-    {   
+    {
         // Messy code, but I don't have the energy to recode right now.
         if (prevLeafNode != NULL)
         {
@@ -315,7 +315,7 @@ protected:
 
     void buildTree(NodeInfoArray &children)
     {
-        if (children.ordinality() != 1 || levels==0) 
+        if (children.ordinality() != 1 || levels==0)
         {
             // Note that we always create at least 2 levels as various places assume it
             // Also when building keys for Moxie (bias != 0), need parent level due to assumptions in DKC...
@@ -489,7 +489,7 @@ public:
     void newBlobNode()
     {
         if (keyHdr->getHdrStruct()->blobHead == 0)
-            keyHdr->getHdrStruct()->blobHead = nextPos;         
+            keyHdr->getHdrStruct()->blobHead = nextPos;
         CBlobWriteNode *prevBlobNode = activeBlobNode;
         activeBlobNode = new CBlobWriteNode(nextPos, keyHdr);
         nextPos += keyHdr->getNodeSize();

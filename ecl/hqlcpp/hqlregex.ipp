@@ -177,8 +177,8 @@ public:
     HqlRegexExpr * mergeCreateSets();
     HqlRegexExpr * expandRecursion(RegexContext & ctx, HqlNamedRegex * self);
     void gatherConsumeSymbols(SymbolArray & next);
-    unsigned getHash()  
-    { 
+    unsigned getHash()
+    {
         HqlRegexExpr * key = this;
         return hashc((const byte *)&key, sizeof(key), 0);
     }
@@ -210,7 +210,7 @@ protected:
     bool caseSensitive:1;
 };
 
-//MORE: Should move some of the logic to complex + remove the 
+//MORE: Should move some of the logic to complex + remove the
 
 class HqlSimpleRegexExpr : public HqlRegexExpr
 {

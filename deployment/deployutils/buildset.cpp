@@ -41,7 +41,7 @@ static set<string> s_failedConnections;
 //---------------------------------------------------------------------------
 //  getAccountInfo
 //---------------------------------------------------------------------------
-void getAccountInfo(const char* computer, StringAttr& user, StringAttr& pwd, IConstEnvironment* pConstEnv) 
+void getAccountInfo(const char* computer, StringAttr& user, StringAttr& pwd, IConstEnvironment* pConstEnv)
 {
   if (!pConstEnv)
     throw MakeStringException(-1, "No environment is available!");
@@ -64,7 +64,7 @@ void getAccountInfo(const char* computer, StringAttr& user, StringAttr& pwd, ICo
 
   StringBuffer x;
   domain->getName(StringBufferAdaptor(x));
-  if (x.length()) 
+  if (x.length())
     x.append(PATHSEPCHAR);
   domain->getAccountInfo(StringBufferAdaptor(x), StringAttrAdaptor(pwd));
   user.set(x.str());
@@ -131,7 +131,7 @@ IPropertyTree *loadInstallSet(IPropertyTree *pBuild, IPropertyTree *pBuildSet, I
 
   StringBuffer sFilename;
   if (connectBuildSet(pBuild, pBuildSet, sFilename, pConstEnv))
-  { 
+  {
     // Get InstallSet file name from BuildSet node
     const char* szVal = pBuildSet->queryProp(XML_ATTR_INSTALLSET);
     if (szVal && *szVal)
@@ -206,7 +206,7 @@ IPropertyTree *loadSchema(IPropertyTree *pBuild, IPropertyTree *pBuildSet, Strin
     (E->errorMessage(buf).str());
     E->Release();
   }
-  catch(...) 
+  catch(...)
   {
   }
   return pSchema;

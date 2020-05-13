@@ -27,11 +27,11 @@
 IClientWsWorkunits * createWorkunitsClient(IProperties * _globals)
 {
     Owned<IClientWsWorkunits> wuclient = createWsWorkunitsClient();
-    
+
     const char* eclwatch = _globals->queryProp("server");
     if(eclwatch == NULL)
         throw MakeStringException(0, "Server url not defined");
-    
+
     StringBuffer url;
     if(Utils::strncasecmp(eclwatch, "http://", 7) != 0 && Utils::strncasecmp(eclwatch, "https://", 8) != 0)
         url.append("http://");
@@ -59,7 +59,7 @@ IFormatType * createFormatter(IProperties * globals)
     if(globals->hasProp("format"))
     {
         const char * fmt = globals->queryProp("format");
-        
+
         if(!fmt || !*fmt || !stricmp(fmt, "default"))
         {
             format = new DefaultFormatType();

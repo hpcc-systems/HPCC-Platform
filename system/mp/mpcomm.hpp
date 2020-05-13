@@ -33,15 +33,15 @@
 
 interface ICommunicator: extends IInterface
 {
-    virtual bool send (CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout=MP_WAIT_FOREVER) = 0;  
+    virtual bool send (CMessageBuffer &mbuf, rank_t dstrank, mptag_t tag, unsigned timeout=MP_WAIT_FOREVER) = 0;
                             // blocking send (unless MP_ASYNC_SEND used for timeout), NB, mbuf clear on exit
                             // returns false if timedout
 
-    virtual unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=0) = 0; 
+    virtual unsigned probe(rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=0) = 0;
                             //  default non-blocking, check message returns sender if message waiting
                             //  returns 0 if no message available in time given (0 for poll) otherwise number waiting
-    
-    virtual bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER) = 0;    
+
+    virtual bool recv(CMessageBuffer &mbuf, rank_t srcrank, mptag_t tag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER) = 0;
                             // receive, returns senders rank or false if no message available in time given or cancel called
 
     virtual IGroup &queryGroup() = 0;       //  query group for communicator
@@ -63,15 +63,15 @@ interface ICommunicator: extends IInterface
 interface IInterCommunicator: extends IInterface
 // Non-grouped communication
 {
-    virtual bool send (CMessageBuffer &mbuf, INode *dst, mptag_t tag, unsigned timeout=MP_WAIT_FOREVER) = 0;  
+    virtual bool send (CMessageBuffer &mbuf, INode *dst, mptag_t tag, unsigned timeout=MP_WAIT_FOREVER) = 0;
                             // blocking send (unless MP_ASYNC_SEND used for timeout), NB, mbuf clear on exit
                             // returns false if timedout
 
-    virtual unsigned probe(INode *src, mptag_t tag, INode **sender=NULL, unsigned timeout=0) = 0; 
+    virtual unsigned probe(INode *src, mptag_t tag, INode **sender=NULL, unsigned timeout=0) = 0;
                             //  default non-blocking, check message returns sender if message waiting
                             //  returns 0 if no message available or recv cancelled, or number waiting
-    
-    virtual bool recv(CMessageBuffer &mbuf, INode *src, mptag_t tag, INode **sender=NULL, unsigned timeout=MP_WAIT_FOREVER) = 0;    
+
+    virtual bool recv(CMessageBuffer &mbuf, INode *src, mptag_t tag, INode **sender=NULL, unsigned timeout=MP_WAIT_FOREVER) = 0;
                             // receive, returns false if no message available in time given
 
     virtual bool sendRecv(CMessageBuffer &mbuff, INode *dst, mptag_t dsttag, unsigned timeout=MP_WAIT_FOREVER) = 0;
@@ -121,8 +121,8 @@ extern mp_decl void removeMPConnectionMonitor(IConnectionMonitor *monitor);
 extern mp_decl StringBuffer &getReceiveQueueDetails(StringBuffer &buf);
 
 interface IMPProtocol: extends IInterface
-{   
-    virtual void send (CMessageBuffer &mbuf, rank_t dstrank)=0;  
+{
+    virtual void send (CMessageBuffer &mbuf, rank_t dstrank)=0;
     virtual void sendStop (rank_t dstrank)=0;
     virtual bool recv (CMessageBuffer &mbuf, rank_t &sender)=0; // returns false if stopped
     virtual void confirm (CMessageBuffer &mbuf)=0;              // confirms recv

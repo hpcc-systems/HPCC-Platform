@@ -189,7 +189,7 @@ public:
 
 private:
     ICsvToRowTransformer * csvTransformer;
-    CSVSplitter csvSplitter;    
+    CSVSplitter csvSplitter;
 };
 
 
@@ -231,7 +231,7 @@ public:
         {
             if (!ensureNext())
                 return NULL;
-            
+
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned sizeGot = xmlTransformer->transform(rowBuilder, lastMatch, this);
             lastMatch.clear();
@@ -249,7 +249,7 @@ public:
         }
         return lastMatch != NULL;
     }
-            
+
 
 //interface IThorDiskCallback
     virtual unsigned __int64 getFilePosition(const void * row) { return 0; }
@@ -317,9 +317,9 @@ public:
             else
             {
                 const char *path = xmlpath;
-                if (*path == '/') 
+                if (*path == '/')
                     path++;
-                if (strchr(path, '/')) 
+                if (strchr(path, '/'))
                     UNIMPLEMENTED;              // more what do we do with /mydata/row
                 rowTag.append(path);
             }
@@ -334,7 +334,7 @@ public:
                     header.append(hdr);
 
                 OwnedRoxieString ftr(xmlWriterExtra->getFooter());
-                if (ftr == NULL) 
+                if (ftr == NULL)
                     footer.append("</Dataset>\n");
                 else
                     footer.append(ftr);
@@ -343,10 +343,10 @@ public:
         else if (flags & TPFwritecsvtopipe)
         {
             assertex(csvWriterExtra);
-            ICsvParameters * csv = csvWriterExtra->queryCsvParameters(); 
+            ICsvParameters * csv = csvWriterExtra->queryCsvParameters();
             csvWriter.init(csv, false);
             OwnedRoxieString hdr(csv->getHeader());
-            if (hdr) 
+            if (hdr)
             {
                 csvWriter.beginLine();
                 csvWriter.writeHeaderLn(strlen(hdr), hdr);
@@ -354,7 +354,7 @@ public:
             }
 
             OwnedRoxieString ftr(csv->getFooter());
-            if (ftr) 
+            if (ftr)
             {
                 csvWriter.beginLine();
                 csvWriter.writeHeaderLn(strlen(ftr), ftr);//MORE: no writeFooterLn method, is writeHeaderLn ok?

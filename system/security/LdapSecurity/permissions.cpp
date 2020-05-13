@@ -32,21 +32,21 @@
 #define ADS_RIGHT_ACTRL_DS_LIST 0x4
 #define ADS_RIGHT_DS_LIST_OBJECT 0x80
 
-static const unsigned char authenticated_users_sid[] = 
+static const unsigned char authenticated_users_sid[] =
 {
-    '\001', '\001', '\000', '\000', '\000', '\000', '\000', 
+    '\001', '\001', '\000', '\000', '\000', '\000', '\000',
     '\005', '\013', '\000', '\000', '\000'
 };
 
-static const unsigned char everyone_sid[] = 
+static const unsigned char everyone_sid[] =
 {
-    '\001', '\001', '\000', '\000', '\000', '\000', '\000', 
+    '\001', '\001', '\000', '\000', '\000', '\000', '\000',
     '\001', '\000', '\000', '\000', '\000'
 };
 
-static const unsigned char administrators_sid[] = 
+static const unsigned char administrators_sid[] =
 {
-    '\001', '\002', '\000', '\000', '\000', '\000', '\000', '\005', 
+    '\001', '\002', '\000', '\000', '\000', '\000', '\000', '\005',
     '\040', '\000', '\000', '\000', '\040', '\002', '\000', '\000'
 };
 
@@ -242,7 +242,7 @@ void PermissionProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid,
         DWORD dlen = DOMAINLEN;
         SID_NAME_USE nameuse;
         int ret;
-    
+
         sid = (PSID)sidbuf;
         if(m_serverOnSameDomain)
             ret = LookupAccountName(NULL, act_name, sid, &sidlen, domain, &dlen, &nameuse);
@@ -316,7 +316,7 @@ bool PermissionProcessor::retrieveGroupInfo(ISecUser& user, BufferArray& groupsi
     StringArray groups;
     if(m_ldap_client != NULL)
         m_ldap_client->getGroups(username, groups);
-    int numgroups = groups.length(); 
+    int numgroups = groups.length();
     ForEachItemIn(x, groups)
     {
         const char* group = (const char*)groups.item(x);
@@ -446,7 +446,7 @@ bool GetAce (PACL pAcl, DWORD dwAceIndex, void**pAce)
         int curace_size = curace->Header.AceSize;
         ptr += curace_size;
     }
-    
+
     *pAce = (void*)ptr;
 
     return true;
@@ -488,7 +488,7 @@ bool InitializeAcl(PACL pAcl, DWORD nAclLength, DWORD dwAclRevision)
         DBGLOG("InitializeAcl : pAcl is NULL");
         return false;
     }
-    
+
     memset(pAcl, 0xcc, nAclLength);
     pAcl->AclRevision = dwAclRevision;
     pAcl->AclSize = nAclLength;
@@ -670,8 +670,8 @@ bool SetSecurityDescriptorDacl(PSECURITY_DESCRIPTOR pSecurityDescriptor, bool bD
     return true;
 }
 
-bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor, 
-                        PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor, 
+bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
+                        PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
                         DWORD* lpdwBufferLength)
 {
     int sdsize = GetSecurityDescriptorLength(pAbsoluteSecurityDescriptor);
@@ -688,7 +688,7 @@ bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
     pssd->Control = pasd->Control | SE_SELF_RELATIVE;
 
     unsigned char* bptr = (unsigned char*)pSelfRelativeSecurityDescriptor;
-    
+
     DWORD owner_offset = 20;
     int owner_size = 0;
     if(pasd->Owner != NULL)
@@ -697,7 +697,7 @@ bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
         memcpy(bptr + owner_offset, pasd->Owner, owner_size);
         pssd->Owner = owner_offset;
     }
-    else 
+    else
     {
         pssd->Owner = 0;
     }
@@ -729,7 +729,7 @@ bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
     {
         pssd->Sacl = 0;
     }
-    
+
     DWORD dacl_offset = sacl_offset + sacl_size;
     int dacl_size = 0;
     if(pasd->Dacl != NULL)
@@ -748,16 +748,16 @@ bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
     return true;
 }
 
-bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor, 
-                    PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor, 
-                    DWORD* lpdwAbsoluteSecurityDescriptorSize, 
-                    PACL pDacl, 
-                    DWORD* lpdwDaclSize, 
-                    PACL pSacl,  
-                    DWORD* lpdwSaclSize, 
-                    PSID pOwner, 
-                    DWORD* lpdwOwnerSize, 
-                    PSID pPrimaryGroup, 
+bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
+                    PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
+                    DWORD* lpdwAbsoluteSecurityDescriptorSize,
+                    PACL pDacl,
+                    DWORD* lpdwDaclSize,
+                    PACL pSacl,
+                    DWORD* lpdwSaclSize,
+                    PSID pOwner,
+                    DWORD* lpdwOwnerSize,
+                    PSID pPrimaryGroup,
                     DWORD* lpdwPrimaryGroupSize)
 {
     if(pSelfRelativeSecurityDescriptor == NULL)
@@ -765,7 +765,7 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
         DBGLOG("MakeAbsoluteSD : pSelfRelativeSecurityDescriptor is NULL");
         return false;
     }
-    
+
     PISECURITY_DESCRIPTOR_RELATIVE prsd = (PISECURITY_DESCRIPTOR_RELATIVE)pSelfRelativeSecurityDescriptor;
 
     unsigned ok = true;
@@ -838,13 +838,13 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
     {
         return false;
     }
-    
+
     if(pAbsoluteSecurityDescriptor == NULL)
     {
         DBGLOG("MakeAbsoluteSD : pAbsoluteSecurityDescriptor is NULL");
         return false;
     }
-    
+
     PISECURITY_DESCRIPTOR pasd = (PISECURITY_DESCRIPTOR)pAbsoluteSecurityDescriptor;
     pasd->Revision = prsd->Revision;
     pasd->Sbz1 = 0;
@@ -958,7 +958,7 @@ unsigned long GetSecurityDescriptorLength(PSECURITY_DESCRIPTOR pSecurityDescript
         sdsize += ASizeInfo.AclBytesInUse + ASizeInfo.AclBytesFree;
     }
 
-    // Self-relative SD is 16 bytes longer. Make it bigger in-order to be able to create buffer for 
+    // Self-relative SD is 16 bytes longer. Make it bigger in-order to be able to create buffer for
     // Self-Relative SD. This seems to be the way that standard MS function does it.
     sdsize += 16;
 
@@ -1001,7 +1001,7 @@ bool DeleteAce(PACL pAcl, DWORD dwAceIndex)
     }
 
     return true;
-}   
+}
 
 
 
@@ -1052,7 +1052,7 @@ bool PermissionProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescr
 
         SecAccessFlags permission = ldap2sec(granted_access);
         resource.setAccessFlags(permission);
-    }   
+    }
     CloseHandle(usertoken);
 
 #else
@@ -1236,7 +1236,7 @@ bool PermissionProcessor::getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<
             }
         }
     }
-    
+
     return true;
 }
 
@@ -1397,11 +1397,11 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         {
             int error = GetLastError();
             throw MakeStringException(-1, "Error AddAccessAllowedAce - error code = %d", error);
-        }       
+        }
     }
 
     pdacl = pnewdacl;
-    
+
     if(stricmp(action.m_action.str(), "delete") != 0 && action.m_allows != 0)
     {
         DWORD newace_size = sizeof(ACE_HEADER) + sizeof(ACCESS_MASK) + sizeofSid(act_psid);
@@ -1412,18 +1412,18 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         {
             int error = GetLastError();
             throw MakeStringException(-1, "Error AddAccessAllowedAce - error code = %d", error);
-        }       
+        }
     }
 #endif
-    
-    rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false); 
+
+    rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false);
     if(rc == 0)
     {
         int error = GetLastError();
         throw MakeStringException(-1, "Error SetSecurityDescriptorDacl - error code = %d", error);
     }
 
-    CSecurityDescriptor* csd = new CSecurityDescriptor(action.m_rname.str());   
+    CSecurityDescriptor* csd = new CSecurityDescriptor(action.m_rname.str());
     DWORD sdlen = GetSecurityDescriptorLength(psd);
     void* sdbuf = alloca(sdlen);
     MakeSelfRelativeSD(psd, (PSECURITY_DESCRIPTOR)sdbuf, &sdlen);
@@ -1440,7 +1440,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
 
 CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
-    return createDefaultSD(user, resource->getName(), ptype);   
+    return createDefaultSD(user, resource->getName(), ptype);
 }
 
 CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
@@ -1491,7 +1491,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
 
     SetSecurityDescriptorDacl(&sd, TRUE, pacl, FALSE);
 
-    CSecurityDescriptor* csd = new CSecurityDescriptor(name);   
+    CSecurityDescriptor* csd = new CSecurityDescriptor(name);
     DWORD sdlen = GetSecurityDescriptorLength(&sd);
     void* sdbuf = alloca(sdlen);
 
@@ -1512,7 +1512,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
     DWORD sacl_size = 0;
     DWORD owner_size = 0;
     DWORD pgroup_size = 0;
-    
+
     MakeAbsoluteSD(pisd, NULL, &sd_size, NULL, &dacl_size, NULL, &sacl_size, NULL, &owner_size, NULL, &pgroup_size);
 
     unsigned char* sd_buf = (unsigned char*)alloca(sd_size+1);
@@ -1563,7 +1563,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
             int error = GetLastError();
             throw MakeStringException(-1, "Error SetEntriesInAcl - error code = %d", error);
         }
-        rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false); 
+        rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false);
 #else
         DWORD newace_size = sizeof(ACE_HEADER) + sizeof(ACCESS_MASK) + sizeofSid(user_psid);
         DWORD new_dacl_size = dacl_size + newace_size;
@@ -1573,8 +1573,8 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
         {
             int error = GetLastError();
             throw MakeStringException(-1, "Error AddAccessAllowedAce - error code = %d", error);
-        }       
-        rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false); 
+        }
+        rc = SetSecurityDescriptorDacl(psd, true, pnewdacl, false);
 #endif
         if(rc == 0)
         {
@@ -1582,8 +1582,8 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
             throw MakeStringException(-1, "Error SetSecurityDescriptorDacl - error code = %d", error);
         }
     }
-    
-    CSecurityDescriptor* csd = new CSecurityDescriptor(resource->getName());    
+
+    CSecurityDescriptor* csd = new CSecurityDescriptor(resource->getName());
     DWORD sdlen = GetSecurityDescriptorLength(psd);
     void* sdbuf = alloca(sdlen);
     MakeSelfRelativeSD(psd, (PSECURITY_DESCRIPTOR)sdbuf, &sdlen);
@@ -1603,7 +1603,7 @@ CSecurityDescriptor::CSecurityDescriptor(const char* name)
 {
     if(name == NULL || name[0] == '\0')
         throw MakeStringException(-1, "name can't be empty for CSecurityDescriptor");
-    
+
     const char* resourcename = name;
     if(resourcename[0] == '/')
         resourcename = resourcename + 1;

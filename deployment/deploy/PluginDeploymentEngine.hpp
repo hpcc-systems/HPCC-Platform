@@ -27,19 +27,19 @@ class CPluginDeploymentEngine : public CDeploymentEngine
 {
 public:
     IMPLEMENT_IINTERFACE;
-   CPluginDeploymentEngine(IEnvDeploymentEngine& envDepEngine, 
-                           IConstEnvironment& environment, 
-                           IPropertyTree& process, 
+   CPluginDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
+                           IConstEnvironment& environment,
+                           IPropertyTree& process,
                            const char* instanceType=NULL);
 
 protected:
-   virtual int  createInstallFileMap(IPropertyTree& node, const char* destPath, 
+   virtual int  createInstallFileMap(IPropertyTree& node, const char* destPath,
                                      mmapStr2PairStrStr& fileMap) const;
 
    void getPluginDirectory(const char* destPath, StringBuffer& sPluginDest) const;
-   void getDefaultPlugins(StringArray& plugins, StringBuffer& sPluginsPath, 
+   void getDefaultPlugins(StringArray& plugins, StringBuffer& sPluginsPath,
                           const char* destDir) const;
-   void getPlugins(StringArray& plugins, StringBuffer& sPluginsPath, 
+   void getPlugins(StringArray& plugins, StringBuffer& sPluginsPath,
                    const char* pluginDest) const;
 };
 //---------------------------------------------------------------------------

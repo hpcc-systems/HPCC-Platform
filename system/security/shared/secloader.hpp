@@ -97,7 +97,7 @@ public:
         }
         else
             throw MakeStringException(-1, "Security model %s not supported", model_name);
-    }   
+    }
 
     static IAuthMap* loadTheDefaultAuthMap(IPropertyTree* cfg)
     {
@@ -112,7 +112,7 @@ public:
             return xproc(cfg);
         else
             throw MakeStringException(-1, "procedure newDefaultAuthMap of %s can't be loaded", LDAPSECLIB);
-    }   
+    }
 };
 
 #endif

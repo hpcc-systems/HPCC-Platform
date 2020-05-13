@@ -32,15 +32,15 @@ typedef CICopyArrayOf<RegexPattern> RegexPatternCopyArray;
 
 
 //Used for serialization:
-enum ThorRegexKind { ThorRegexNone, 
-       ThorRegexNull, ThorRegexAnyChar, ThorRegexAsciiDFA, ThorRegexUnicodeDFA, 
+enum ThorRegexKind { ThorRegexNone,
+       ThorRegexNull, ThorRegexAnyChar, ThorRegexAsciiDFA, ThorRegexUnicodeDFA,
        ThorRegexAscii, ThorRegexAsciiI, ThorRegexAsciiSet, ThorRegexAsciiISet,
        ThorRegexUnicode, ThorRegexUnicodeI, ThorRegexUnicodeSet, ThorRegexUnicodeISet,
        ThorRegexStart, ThorRegexFinish,
        ThorRegexBeginToken, ThorRegexEndToken,
        ThorRegexBeginSeparator, ThorRegexEndSeparator,
        ThorRegexRepeat,     // used for repeats with counts.
-       ThorRegexBeginCheck, ThorRegexAssertNext, ThorRegexAssertPrev, 
+       ThorRegexBeginCheck, ThorRegexAssertNext, ThorRegexAssertPrev,
        ThorRegexCheckLength,
        ThorRegexCheck,
        ThorRegexValidateAscAsAsc, ThorRegexValidateUniAsAsc, ThorRegexValidateAscAsUni, ThorRegexValidateUniAsUni,
@@ -54,8 +54,8 @@ enum ThorRegexKind { ThorRegexNone,
        ThorRegexRepeatAny,
        ThorRegexMax,
        ThorRegexValidateUtf8AsAsc, ThorRegexValidateUtf8AsUni,
-       ThorRegexUtf8, ThorRegexUtf8I, 
-       
+       ThorRegexUtf8, ThorRegexUtf8I,
+
        //Temporary - not serialized...
        ThorRegexRepeatInstance
 };

@@ -42,7 +42,7 @@ public:
    StringBuffer m_userId;
    StringBuffer m_password;
     StringBuffer m_sConfigAddress;
-   bool m_bWait;        
+   bool m_bWait;
    IEspContext& m_context;
 
     CRemoteExecThreadParam( const char* pszAddress, const char* cmd, bool wait,
@@ -52,7 +52,7 @@ public:
    {
    }
 
-    CRemoteExecThreadParam( const char* pszAddress, const char* pszConfigAddress, const char* cmd, bool wait, 
+    CRemoteExecThreadParam( const char* pszAddress, const char* pszConfigAddress, const char* cmd, bool wait,
                                     Cws_machineEx* pService, IEspContext &context)
                                  : CWsMachineThreadParam(pszAddress, "", "", pService),
                                    m_sCommand(cmd), m_bWait(wait), m_context(context)
@@ -551,7 +551,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
             pResult->setAddress ( address );//can be either IP or name of component
             pResult->setCompType( compType );
             if (version > 1.04)
-            {       
+            {
                 pResult->setName( path );
                 const char* pStr2 = strstr(path, "LexisNexis");
                 if (pStr2)
@@ -568,10 +568,10 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
                         name[pStr1 - pStr2 -11] = 0;
                     }
                     pResult->setName( name );
-                }   
+                }
             }
-            
-            pResult->setOS( atoi(OS) ); 
+
+            pResult->setOS( atoi(OS) );
             pResult->setPath( path );
 
             resultsArray.append(*pResult.getLink());
@@ -599,7 +599,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
             pResult->setAddressOrig ( newAddress.str() );//can be either IP or name of component
             pResult->setAddress ( address );//can be either IP or name of component
             pResult->setCompType( compType );
-            pResult->setOS( atoi(OS) ); 
+            pResult->setOS( atoi(OS) );
             pResult->setPath( path );
 
             resultsArray.append(*pResult.getLink());
@@ -623,7 +623,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
     //
     PooledThreadHandle* pThreadHandle = threadHandles.getArray();
     unsigned i=threadHandles.ordinality();
-    while (i--) 
+    while (i--)
     {
         m_threadPool->join(*pThreadHandle, 30000);//abort after 30 secs in remote possibility that the command blocks
         pThreadHandle++;
@@ -639,7 +639,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
     return true;
 }
 
-bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req, 
+bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req,
                                          IEspStartStopResponse &resp)
 {
     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStop feature not supported.");
@@ -654,7 +654,7 @@ bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req
         doStartStop(context, req.getAddresses(), userName, password, req.getStop(), resp);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -674,7 +674,7 @@ void Cws_machineEx::updatePathInAddress(const char* address, StringBuffer& addrS
         char oldC2 = '$';
         char newC1 = '\\';
         char newC2 = ':';
-        int os = atoi(OS);      
+        int os = atoi(OS);
         if (os == 2) //2: linux
         {
             oldC1 = '\\';
@@ -707,7 +707,7 @@ void Cws_machineEx::updatePathInAddress(const char* address, StringBuffer& addrS
     return;
 }
 
-bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req, 
+bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req,
                                          IEspStartStopBeginResponse &resp)
 {
     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStopBegin feature not supported.");
@@ -746,13 +746,13 @@ bool Cws_machineEx::onStartStopBegin( IEspContext &context, IEspStartStopBeginRe
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
 
-bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req, 
+bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req,
                                          IEspStartStopResponse &resp)
 {
     throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "StartStopDone feature not supported.");
@@ -811,7 +811,7 @@ bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequ
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;

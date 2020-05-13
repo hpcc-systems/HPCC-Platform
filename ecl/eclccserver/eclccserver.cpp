@@ -723,7 +723,7 @@ public:
         return new EclccCompileThread(threadsActive++);
     }
 
-    virtual bool onAbort() 
+    virtual bool onAbort()
     {
         running = false;
         if (queue)

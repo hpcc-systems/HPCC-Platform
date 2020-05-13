@@ -93,7 +93,7 @@ public:
     virtual const char* get_soapaction() {return m_soapaction.get();};
 
     virtual const char * getMessageType() {return "SoapMessage";};
-    virtual StringBuffer& toString(StringBuffer& str) 
+    virtual StringBuffer& toString(StringBuffer& str)
     {
         str.append("TO BE IMPLEMNTED!!!");
         return str;
@@ -132,7 +132,7 @@ protected:
         if (detailNS)
         {
             const char* p = strstr(details,"<Exceptions>");
-            if (p) 
+            if (p)
             {
                 StringBuffer newDetails(details);
                 VStringBuffer nsAttr(" %s", detailNS);
@@ -148,7 +148,7 @@ protected:
 
 public:
     CSoapFault(int code, const char* message)
-    { 
+    {
         AppendDetails(code,message);
     }
 
@@ -156,7 +156,7 @@ public:
     {
         StringBuffer errorStr,details;
         mex->errorMessage(errorStr);
-        mex->serialize(details);            
+        mex->serialize(details);
         AppendDetails(mex->errorCode(),errorStr.str(),mex->source(),detailNS,details.str());
     }
 
@@ -166,9 +166,9 @@ public:
         e->errorMessage(errorStr);
         AppendDetails(e->errorCode(),errorStr.str());
     }
-    
+
     virtual const char* get_text() { return SoapStr.str(); }
-    
+
     virtual int get_text_length() { return SoapStr.length(); }
 };
 
@@ -229,7 +229,7 @@ public:
     CSoapValue(const char* ns, const char* name, const char* type, float value);
     CSoapValue(const char* ns, const char* name, const char* type, bool value);
     virtual ~CSoapValue() { }
-    
+
     void setEncodeXml(bool encode=true){m_encode_xml=encode;}
 
     virtual const char* get_name() {return m_name.get();};
@@ -285,19 +285,19 @@ public:
     virtual void add_value(const char* path, const char* ns, const char* name, const char* type, double value);
     virtual void add_value(const char* path, const char* ns, const char* name, const char* type, float value);
 
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, StringArray& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, ShortArray& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, IntArray& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, Int64Array& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, BoolArray& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, FloatArray& value);
-    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns, 
+    virtual void add_value(const char* path, const char* ns, const char* name, const char* childns,
         const char* childname, const char* childtype, DoubleArray& value);
 
     virtual void add_value(const char* path, const char* ns, const char* name, const char* type, const char* value, IProperties& attrs);
@@ -364,10 +364,10 @@ public:
 
     virtual IEspContext * queryContext(){return m_context;}
     void setContext(IEspContext *value){m_context.set(value);}
-    
+
     virtual void set_ns(const char* ns) {m_ns.set(ns);};
     virtual void set_nsuri(const char* nsuri) {m_nsuri.set(nsuri);};
-    virtual StringBuffer& get_nsuri(StringBuffer& nsuri) 
+    virtual StringBuffer& get_nsuri(StringBuffer& nsuri)
     {
         nsuri.append(m_nsuri.get());
         return nsuri;
@@ -377,7 +377,7 @@ public:
 
     virtual CSoapValue* get_value(const char* path) {return m_params->get_value(path); };
     virtual SoapValueArray* get_valuearray(const char* path) {return m_params->get_valuearray(path); };
-    
+
     virtual bool get_value(const char* path, StringAttr& value){return m_params->get_value(path, value); };
     virtual bool get_value(const char* path, StringBuffer& value){return m_params->get_value(path, value); };
     virtual bool get_value(const char* path, StringBuffer& value, bool bSimpleXml){return m_params->get_value(path, value, bSimpleXml); };
@@ -401,7 +401,7 @@ public:
     virtual bool get_value(const char* path, BoolArray& value) {return m_params->get_value(path, value);};
     virtual bool get_value(const char* path, FloatArray& value) {return m_params->get_value(path, value);};
     virtual bool get_value(const char* path, DoubleArray& value) {return m_params->get_value(path, value);};
-    
+
     virtual void add_value(const char* path, const char* ns, CSoapValue* value)
     {
         m_params->add_value(path, ns, value);
@@ -429,7 +429,7 @@ public:
     virtual void add_value(const char* path, const char* ns, const char* name, const char* type, unsigned long value)
     {
         m_params->add_value(path, ns, name, type, value);
-    } 
+    }
     virtual void add_value(const char* path, const char* ns, const char* name, const char* type, long value)
     {
         m_params->add_value(path, ns, name, type, value);
@@ -458,32 +458,32 @@ public:
     {
         m_params->add_value(path, ns, name, type, value);
     }
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, StringArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, ShortArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, IntArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, Int64Array& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, FloatArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, DoubleArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
-    virtual void add_value(const char* path, const char* ns, const char* name, 
+    virtual void add_value(const char* path, const char* ns, const char* name,
                                     const char* childns, const char* childname, const char* childtype, BoolArray& value)
     { m_params->add_value(path, ns, name, childns, childname, childtype, value); }
 
@@ -538,7 +538,7 @@ public:
     CRpcCall(const char* url) : m_httpReq(nullptr) {m_url.set(url);}
 
    virtual ~CRpcCall(){}
-    
+
     virtual const char* get_url() {return m_url.get();}
     virtual void set_url(const char* url) {m_url.set(url);}
 
@@ -600,7 +600,7 @@ public:
 
     virtual XJXPullParser* get_xpp() {return m_xpp;};
     virtual void set_xpp(XJXPullParser* xpp) {m_xpp = xpp;};
-    
+
     virtual void add_rpcmessage(IRpcMessage* rpcmessage) {
         if(rpcmessage)
         {
@@ -643,7 +643,7 @@ public:
 
     virtual const char * getMessageType() {return "SoapEnvelope";};
 
-    virtual void marshall(CMimeMultiPart* multipart) 
+    virtual void marshall(CMimeMultiPart* multipart)
     {
         CMimeBodyPart* rootpart = new CMimeBodyPart("text/xml", "8bit", "soaproot", "", NULL);
         multipart->setRootPart(rootpart);

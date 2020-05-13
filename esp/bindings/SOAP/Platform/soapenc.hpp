@@ -26,7 +26,7 @@ public:
     static void deserialize(const char* str, StringAttr& val);
     static void deserialize(const char* str, unsigned long& val);
     static void deserialize(const char* str, StringArray& val);
-    
+
     static StringBuffer& serialize(StringBuffer& str, long val);
     static StringBuffer& serialize(StringBuffer& str, StringArray& val);
 };

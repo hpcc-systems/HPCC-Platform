@@ -39,27 +39,27 @@ public:
     ResourcePool()
     {
     }
-    
+
     ResourcePool(unsigned size,IResourceFactory<T>* fac): resources(size), factory(fac)
     {
     }
 
     void init(unsigned size,IResourceFactory<T>* fac)
     {
-        CriticalBlock b(crit); 
+        CriticalBlock b(crit);
         resources.clear();
         resources.resize(size);
         factory.set(fac);
     }
 
     Linked<T> get(long timeout=0)
-    {   
+    {
         const long interval=1000;
 
         for(;;)
         {
             {
-                CriticalBlock b(crit); 
+                CriticalBlock b(crit);
                 typename std::vector<Linked<T> >::iterator it;
                 for(it=resources.begin();it!=resources.end();it++)
                 {
@@ -104,7 +104,7 @@ public:
             return;
 
         {
-        CriticalBlock b(crit); 
+        CriticalBlock b(crit);
         typename std::vector<Linked<T> >::iterator it;
         for(it=resources.begin();it!=resources.end();it++)
         {
@@ -119,7 +119,7 @@ public:
 
     void clearAll()
     {
-        CriticalBlock b(crit); 
+        CriticalBlock b(crit);
         typename std::vector<Linked<T> >::iterator it;
         for(it=resources.begin();it!=resources.end();it++)
         {
@@ -129,7 +129,7 @@ public:
             }
         }
     }
-    
+
 protected:
     CriticalSection crit;
     Semaphore sem;

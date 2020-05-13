@@ -61,7 +61,7 @@ void CWUXMLInfo::buildXmlActiveWuidStatus(const char* ClusterName, IEspECLWorkun
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -95,7 +95,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(IConstWorkUnit &wu, IEspECLWorkunit& wuStructu
             wuStructure.setDescription((wu.getDebugValue("description", buf)).str());
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -119,7 +119,7 @@ bool CWUXMLInfo::buildXmlWuidInfo(const char* wuid, IEspECLWorkunit& wuStructure
             return buildXmlWuidInfo(*wu.get(),wuStructure,bDescription);
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -209,7 +209,7 @@ bool CWUXMLInfo::buildXmlExceptionList(IConstWorkUnit &wu,IPropertyTree& XMLStru
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -282,7 +282,7 @@ bool CWUXMLInfo::buildXmlResultList(IConstWorkUnit &wu,IPropertyTree& XMLStructu
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -328,7 +328,7 @@ bool CWUXMLInfo::buildXmlLogList(IConstWorkUnit &wu,IPropertyTree& XMLStructure)
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());

@@ -21,7 +21,7 @@
 #define ERR_DFU_FIRST             8250
 #define ERR_DFU_LAST              8299
 
-//syntax errors 
+//syntax errors
 #define DFUERR_InvalidCommandSyntax     8250
 #define DFUERR_TooFewArguments          8251
 #define DFUERR_InvalidArgument          8252

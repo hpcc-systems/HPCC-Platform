@@ -52,7 +52,7 @@ interface IJoinHelper: public IRowStream
             IRowStream *strmR,      // not used for self join - must be NULL
             IEngineRowAllocator *allocatorL,
             IEngineRowAllocator *allocatorR,
-            IOutputMetaData * outputmetaL,   // for XML output 
+            IOutputMetaData * outputmetaL,   // for XML output
             IMulticoreIntercept *mcoreintercept=NULL
         )=0;
 

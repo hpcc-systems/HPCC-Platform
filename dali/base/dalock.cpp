@@ -145,13 +145,13 @@ class CLockStateTable: private SuperHashTableOf<CLockState,DistributedLockId>
 
     void onRemove(void *e)
     {
-        CLockState &elem=*(CLockState *)e;      
+        CLockState &elem=*(CLockState *)e;
         elem.Release();
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const CLockState &elem=*(const CLockState *)e;      
+        const CLockState &elem=*(const CLockState *)e;
         DistributedLockId id=elem.id;
         return low(id)^(unsigned)high(id);
     }
@@ -164,7 +164,7 @@ class CLockStateTable: private SuperHashTableOf<CLockState,DistributedLockId>
 
     const void * getFindParam(const void *p) const
     {
-        const CLockState &elem=*(const CLockState *)p;      
+        const CLockState &elem=*(const CLockState *)p;
         return &elem.id;
     }
 
@@ -175,7 +175,7 @@ class CLockStateTable: private SuperHashTableOf<CLockState,DistributedLockId>
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CLockState,DistributedLockId);
 
-public: 
+public:
     CLockStateTable()
     {
     }
@@ -194,7 +194,7 @@ public:
             if (!s) {
                 s = new CLockState(id);
                 add(*s);
-            }           
+            }
         }
         return s->lock(owner,excl,timeout);
     }
@@ -212,8 +212,8 @@ public:
 
 
 
-enum MLockRequestKind { 
-    MLR_ALLOC_LOCK_ID, 
+enum MLockRequestKind {
+    MLR_ALLOC_LOCK_ID,
     MLR_FREE_LOCK_ID,
     MLR_PRIMARY_LOCK_REQUEST,
     MLR_SECONDARY_LOCK_REQUEST,
@@ -229,7 +229,7 @@ class CLockRequestServer: public Thread
     bool stopped;
     IDistributedLockManager &manager;
 public:
-    CLockRequestServer(IDistributedLockManager &_manager) 
+    CLockRequestServer(IDistributedLockManager &_manager)
         : Thread("Lock Manager, CLockRequestServer"), manager(_manager)
     {
         stopped = true;
@@ -455,7 +455,7 @@ public:
         return lockstates.lock(id,owner,exclusive,timeout);
     }
 
-            
+
     void localUnlock(DistributedLockId id,SessionId owner)
     {
         lockstates.unlock(id,owner);
@@ -482,7 +482,7 @@ public:
         return true;
     }
 
-            
+
     void unlock(DistributedLockId id,SessionId owner)
     {
         rank_t myrank = coven.getServerRank();
@@ -491,7 +491,7 @@ public:
         if (myrank==ownerrank) {
             localUnlock(id,owner);
         }
-        else 
+        else
             remoteUnlock(ownerrank,id,owner);
         // all others should succeed quickly
         ForEachOtherNodeInGroup(r,coven.queryComm().queryGroup()) {

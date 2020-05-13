@@ -103,7 +103,7 @@ void showMessage(const char * text)
     }
 }
 
-void sendFile(const char * filename, ISocket * socket) 
+void sendFile(const char * filename, ISocket * socket)
 {
     FILE *in = fopen(filename, "rb");
     unsigned size = 0;
@@ -135,7 +135,7 @@ void sendFile(const char * filename, ISocket * socket)
 
 #define CHUNK_SIZE 152*2000
 
-void sendFileChunk(const char * filename, offset_t offset, ISocket * socket) 
+void sendFileChunk(const char * filename, offset_t offset, ISocket * socket)
 {
     FILE *in = fopen(filename, "rb");
     unsigned size = 0;
@@ -217,7 +217,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
             else
             {
                 socket->read(&len, sizeof(len));
-                _WINREV(len);                    
+                _WINREV(len);
             }
         }
         catch(IException * e)
@@ -312,7 +312,7 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
                     break;
             }
             else if (readBlocked)
-                socket->receive_block(t, len); 
+                socket->receive_block(t, len);
             else
                 socket->read(t, len);
         }
@@ -671,7 +671,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     size32_t sendlen = len;
     if (persistConnections)
         sendlen |= 0x80000000;
-    _WINREV(sendlen);                    
+    _WINREV(sendlen);
 
     try
     {
@@ -696,7 +696,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
                 {
                     len = fread(buffer, 1, sizeof(buffer), in);
                     sendlen = len;
-                    _WINREV(sendlen);                    
+                    _WINREV(sendlen);
                     socket->write(&sendlen, sizeof(sendlen));
                     if (!len)
                         break;
@@ -716,7 +716,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
 
     if (abortEarly)
         return 0;
-            
+
     // back-end does some processing.....
 
     StringBuffer result;
@@ -835,11 +835,11 @@ void usage(int exitCode)
     printf("  -cascade  cascade query (to all roxie nodes)\n");
     printf("  -lock     locked cascade query (to all roxie nodes)\n");
     printf("  -x        raw send\n");
-    
+
     exit(exitCode);
 }
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
     InitModuleObjects();
 
@@ -937,7 +937,7 @@ int main(int argc, char **argv)
         {
             ++arg;
             if (arg>=argc)
-                usage(1);           
+                usage(1);
             maxLineSize = atoi(argv[arg]);
             ++arg;
         }
@@ -989,7 +989,7 @@ int main(int argc, char **argv)
         {
             ++arg;
             if (arg>=argc)
-                usage(1);           
+                usage(1);
             repeats = atoi(argv[arg]);
             ++arg;
         }
@@ -1215,7 +1215,7 @@ int main(int argc, char **argv)
     {
         fclose(trace);
     }
-    
+
 #ifdef _DEBUG
     releaseAtoms();
 #endif

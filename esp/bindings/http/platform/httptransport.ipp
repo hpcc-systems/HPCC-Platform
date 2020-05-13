@@ -91,7 +91,7 @@ protected:
     int parseOneHeader(char* oneline);
     virtual void parseCookieHeader(char* cookiestr);
     virtual int parseFirstLine(char* oneline);
-    int readContent();  
+    int readContent();
     int readContentTillSocketClosed();
     virtual void addParameter(const char* paramname, const char *value);
     virtual void addAttachment(const char* name, StringBuffer& value);
@@ -101,7 +101,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CHttpMessage(ISocket& socket);
     virtual ~CHttpMessage();
 
@@ -233,17 +233,17 @@ public:
                 m_multipart->unserialize(m_content_type.get(), m_content_length, m_content.str());
                 return m_multipart.get();
             }
-        }   
+        }
     }
     virtual bool isTextMessage()
     {
-        if ((m_content_type.length() > 0) && 
-            (Utils::strncasecmp(m_content_type.get(), "text", 4) == 0 
-             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_SOAP, strlen(HTTP_TYPE_SOAP)) == 0 
-             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_MULTIPART_RELATED, strlen(HTTP_TYPE_MULTIPART_RELATED)) == 0 
-             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_MULTIPART_FORMDATA, strlen(HTTP_TYPE_MULTIPART_FORMDATA)) == 0 
-             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_FORM_ENCODED, strlen(HTTP_TYPE_FORM_ENCODED)) == 0 
-             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_SVG_XML, strlen(HTTP_TYPE_SVG_XML)) == 0 
+        if ((m_content_type.length() > 0) &&
+            (Utils::strncasecmp(m_content_type.get(), "text", 4) == 0
+             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_SOAP, strlen(HTTP_TYPE_SOAP)) == 0
+             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_MULTIPART_RELATED, strlen(HTTP_TYPE_MULTIPART_RELATED)) == 0
+             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_MULTIPART_FORMDATA, strlen(HTTP_TYPE_MULTIPART_FORMDATA)) == 0
+             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_FORM_ENCODED, strlen(HTTP_TYPE_FORM_ENCODED)) == 0
+             || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_SVG_XML, strlen(HTTP_TYPE_SVG_XML)) == 0
              || Utils::strncasecmp(m_content_type.get(), HTTP_TYPE_JAVASCRIPT, strlen(HTTP_TYPE_JAVASCRIPT)) == 0))
         {
             return true;
@@ -330,23 +330,23 @@ private:
     inline bool checkPersistentEligible();
 
 public:
-    
+
 
     CHttpRequest(ISocket& socket);
     virtual ~CHttpRequest();
-    
+
     virtual void setMethod(const char* method);
     virtual StringBuffer& getMethod(StringBuffer& method);
     virtual const char *queryMethod(){return m_httpMethod.str();}
 
     virtual const char* queryServiceName() { return m_espServiceName.str(); }
     virtual const char* queryServiceMethod() { return m_espMethodName.str(); }
-    
+
     virtual void parseQueryString(const char* querystr);
 
     virtual void parseEspPathInfo();
     virtual void getEspPathInfo(sub_service &sstype, StringBuffer *pathEx=NULL, StringBuffer *service=NULL, StringBuffer *method=NULL, bool makeupper=true);
-    
+
     virtual void getBasicAuthorization(StringBuffer& userid, StringBuffer& password,StringBuffer& Realm);
     virtual void getBasicRealm(StringBuffer& realm);
     virtual int getPeerPort();

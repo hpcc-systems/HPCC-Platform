@@ -375,10 +375,10 @@ class AndLogMsgFilter : public CLogMsgFilter
 public:
     AndLogMsgFilter(ILogMsgFilter * _arg1, ILogMsgFilter * _arg2) : arg1(_arg1), arg2(_arg2) {}
     AndLogMsgFilter(MemoryBuffer & in) { arg1.setown(getDeserializedLogMsgFilter(in)); arg2.setown(getDeserializedLogMsgFilter(in)); }
-    AndLogMsgFilter(IPropertyTree * tree) 
-    { 
+    AndLogMsgFilter(IPropertyTree * tree)
+    {
         Owned <IPropertyTreeIterator> iter = tree->getElements("filter");
-        ForEach(*iter) 
+        ForEach(*iter)
         {
             ILogMsgFilter *filter = getLogMsgFilterFromPTree(&(iter->query()));
             if (!arg1.get())
@@ -408,10 +408,10 @@ class OrLogMsgFilter : public CLogMsgFilter
 public:
     OrLogMsgFilter(ILogMsgFilter * _arg1, ILogMsgFilter * _arg2) : arg1(_arg1), arg2(_arg2) {}
     OrLogMsgFilter(MemoryBuffer & in) { arg1.setown(getDeserializedLogMsgFilter(in)); arg2.setown(getDeserializedLogMsgFilter(in)); }
-    OrLogMsgFilter(IPropertyTree * tree) 
-    { 
+    OrLogMsgFilter(IPropertyTree * tree)
+    {
         Owned <IPropertyTreeIterator> iter = tree->getElements("filter");
-        ForEach(*iter) 
+        ForEach(*iter)
         {
             ILogMsgFilter *filter = getLogMsgFilterFromPTree(&(iter->query()));
             if (!arg1.get())
@@ -446,7 +446,7 @@ public:
         yes.setown(getDeserializedLogMsgFilter(in));
         no.setown(getDeserializedLogMsgFilter(in));
     }
-    SwitchLogMsgFilter(IPropertyTree * tree) 
+    SwitchLogMsgFilter(IPropertyTree * tree)
     {
         cond.setown(getLogMsgFilterFromPTree(tree->queryPropTree("filter[1]")));
         yes.setown(getLogMsgFilterFromPTree(tree->queryPropTree("filter[2]")));
@@ -550,7 +550,7 @@ public:
     void                      enable();
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
-                
+
 protected:
     FILE *                    handle;
     unsigned                  messageFields;

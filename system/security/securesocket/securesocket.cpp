@@ -28,7 +28,7 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <signal.h>  
+#include <signal.h>
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -43,7 +43,7 @@
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #ifndef _WIN32
-//x509.h includes evp.h, which in turn includes des.h which defines 
+//x509.h includes evp.h, which in turn includes des.h which defines
 //crypt() that throws different exception than in unistd.h
 //(this causes build break on linux) so exclude it
 #define crypt DONT_DEFINE_CRYPT
@@ -187,7 +187,7 @@ public:
 
     //
     // This method is called to check whether a socket is ready to write (i.e. some free buffer space)
-    // 
+    //
     virtual int wait_write(unsigned timeout)
     {
         throw MakeStringException(-1, "CSecureSocket::wait_write: not implemented");
@@ -212,7 +212,7 @@ public:
 
     // set 'linger' time - time close will linger so that outstanding unsent data will be transmited
     //
-    virtual void set_linger(int lingersecs)  
+    virtual void set_linger(int lingersecs)
     {
         m_socket->set_linger(lingersecs);
     }
@@ -277,35 +277,35 @@ public:
         throw MakeStringException(-1, "CSecureSocket::set_return_addr: not implemented");
     }
 
-    // Block functions 
+    // Block functions
 
     virtual void  set_block_mode (             // must be called before block operations
                             unsigned flags,    // BF_* flags (must match receive_block)
                           size32_t recsize=0,  // record size (required for rec compression)
                             unsigned timeout=0 // timeout in msecs (0 for no timeout)
-                  ) 
+                  )
     {
         throw MakeStringException(-1, "CSecureSocket::set_block_mode: not implemented");
     }
 
 
 
-    virtual bool  send_block( 
-                            const void *blk,   // data to send 
+    virtual bool  send_block(
+                            const void *blk,   // data to send
                             size32_t sz          // size to send (0 for eof)
                   )
     {
         throw MakeStringException(-1, "CSecureSocket::send_block: not implemented");
     }
 
-    virtual size32_t receive_block_size ()     // get size of next block (always must call receive_block after) 
+    virtual size32_t receive_block_size ()     // get size of next block (always must call receive_block after)
     {
         throw MakeStringException(-1, "CSecureSocket::receive_block_size: not implemented");
     }
 
     virtual size32_t receive_block(
-                            void *blk,         // receive pointer 
-                            size32_t sz          // max size to read (0 for sync eof) 
+                            void *blk,         // receive pointer
+                            size32_t sz          // max size to read (0 for sync eof)
                                                // if less than block size truncates block
                   )
     {
@@ -314,7 +314,7 @@ public:
 
     virtual void  close()
     {
-        m_socket->close();  
+        m_socket->close();
     }
 
     virtual unsigned OShandle()              // for internal use
@@ -488,11 +488,11 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
                 unsigned char        *data;
                 STACK_OF(CONF_VALUE) *val;
                 CONF_VALUE           *nval;
-#if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
+#if (OPENSSL_VERSION_NUMBER > 0x00909000L)
                 const X509V3_EXT_METHOD    *meth;
 #else
                 X509V3_EXT_METHOD    *meth;
-#endif 
+#endif
                 void                 *ext_str = NULL;
 
                 if (!(meth = X509V3_EXT_get(ext)))
@@ -504,13 +504,13 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
                 data = X509_EXTENSION_get_data(ext)->data;
                 auto length = X509_EXTENSION_get_data(ext)->length;
 #endif
-#if (OPENSSL_VERSION_NUMBER > 0x00908000L) 
+#if (OPENSSL_VERSION_NUMBER > 0x00908000L)
                 if (meth->it)
                     ext_str = ASN1_item_d2i(NULL, (const unsigned char **)&data, length,
                         ASN1_ITEM_ptr(meth->it));
                 else
                     ext_str = meth->d2i(NULL, (const unsigned char **) &data, length);
-#elif (OPENSSL_VERSION_NUMBER > 0x00907000L)     
+#elif (OPENSSL_VERSION_NUMBER > 0x00907000L)
                 if (meth->it)
                     ext_str = ASN1_item_d2i(NULL, (unsigned char **)&data, length,
                         ASN1_ITEM_ptr(meth->it));
@@ -525,7 +525,7 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
                     nval = sk_CONF_VALUE_value(val, j);
                     if (!strcmp(nval->name, "DNS"))
                     {
-                        cn.append(nval->value);                     
+                        cn.append(nval->value);
                         found = 1;
                         break;
                     }
@@ -586,7 +586,7 @@ bool CSecureSocket::verify_cert(X509* cert)
             return false;
         }
     }
-    
+
     if (m_peers->contains("anyone") || m_peers->contains(cn.str()))
     {
         DBGLOG("%s among trusted peers", cn.str());
@@ -640,9 +640,9 @@ int CSecureSocket::secure_accept(int logLevel)
     if(m_verify)
     {
         bool verified = false;
-        // Get client's certificate (note: beware of dynamic allocation) - opt 
+        // Get client's certificate (note: beware of dynamic allocation) - opt
         X509* client_cert = SSL_get_peer_certificate (m_ssl);
-        if (client_cert != NULL) 
+        if (client_cert != NULL)
         {
             // We could do all sorts of certificate verification stuff here before
             // deallocating the certificate.
@@ -661,7 +661,7 @@ int CSecureSocket::secure_accept(int logLevel)
 
 int CSecureSocket::secure_connect(int logLevel)
 {
-    int err = SSL_connect (m_ssl);                     
+    int err = SSL_connect (m_ssl);
     if(err <= 0)
     {
         int ret = SSL_get_error(m_ssl, err);
@@ -670,7 +670,7 @@ int CSecureSocket::secure_connect(int logLevel)
         DBGLOG("SSL_connect error - %s, SSL_get_error=%d, error - %d", errbuf,ret, err);
         throw MakeStringException(-1, "SSL_connect failed: %s", errbuf);
     }
-    
+
 
     // Currently only do fake verify - simply logging the subject and issuer
     // The verify parameter makes it possible for the application to verify only
@@ -679,7 +679,7 @@ int CSecureSocket::secure_connect(int logLevel)
     {
         // Following two steps are optional and not required for
         // data exchange to be successful.
-        
+
         // Get the cipher - opt
         if (logLevel)
             DBGLOG("SSL connection using %s\n", SSL_get_cipher (m_ssl));
@@ -693,7 +693,7 @@ int CSecureSocket::secure_connect(int logLevel)
             // deallocating the certificate.
             verified = verify_cert(server_cert);
 
-            X509_free (server_cert);    
+            X509_free (server_cert);
         }
 
         if(!verified)
@@ -715,7 +715,7 @@ int CSecureSocket::logPollError(unsigned revents, const char *rwstr)
 
 //
 // This method is called to check whether a socket has data ready
-// 
+//
 int CSecureSocket::wait_read(unsigned timeoutms)
 {
     int pending = SSL_pending(m_ssl);
@@ -765,10 +765,10 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
         if (timeout != WAIT_FOREVER) {
             rc = wait_read(timeleft);
             if (rc < 0) {
-                THROWSECURESOCKETEXCEPTION("wait_read error"); 
+                THROWSECURESOCKETEXCEPTION("wait_read error");
             }
             if (rc == 0) {
-                THROWSECURESOCKETEXCEPTION("timeout expired"); 
+                THROWSECURESOCKETEXCEPTION("timeout expired");
             }
             timeleft = socketTimeRemaining(useSeconds, start, timeout);
         }
@@ -824,11 +824,11 @@ int verify_callback(int ok, X509_STORE_CTX *store)
     {
         X509 *cert = X509_STORE_CTX_get_current_cert(store);
         int err = X509_STORE_CTX_get_error(store);
-        
+
         char issuer[256], subject[256];
         X509_NAME_oneline(X509_get_issuer_name(cert), issuer, 256);
         X509_NAME_oneline(X509_get_subject_name(cert), subject, 256);
-        
+
         if(accept_selfsigned && (stricmp(issuer, subject) == 0))
         {
             DBGLOG("accepting selfsigned certificate, subject=%s", subject);
@@ -861,11 +861,11 @@ class CSecureSocketContext : implements ISecureSocketContext, public CInterface
 {
 private:
     SSL_CTX*    m_ctx;
-#if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
+#if (OPENSSL_VERSION_NUMBER > 0x00909000L)
     const SSL_METHOD* m_meth;
 #else
     SSL_METHOD* m_meth;
-#endif 
+#endif
 
     bool m_verify;
     bool m_address_match;
@@ -944,7 +944,7 @@ public:
         {
             throw MakeStringException(-1, "Private key does not match the certificate public key");
         }
-        
+
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
@@ -1009,7 +1009,7 @@ public:
                 throw MakeStringException(-1, "Private key does not match the certificate public key");
             }
         }
-    
+
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
 
         m_verify = config->getPropBool("verify/@enable");
@@ -1104,20 +1104,20 @@ private:
     {
         int nid;
         X509_NAME_ENTRY *ent;
-        
+
         if ((nid = OBJ_txt2nid ((char*)name)) == NID_undef)
             throw MakeStringException(-1, "Error finding NID for %s\n", name);
-        
+
         if (!(ent = X509_NAME_ENTRY_create_by_NID(NULL, nid, MBSTRING_ASC, (unsigned char*)value, -1)))
             throw MakeStringException(-1, "Error creating Name entry from NID");
-        
+
         if (X509_NAME_add_entry (subj, ent, -1, 0) != 1)
             throw MakeStringException(-1, "Error adding entry to subject");
     }
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CRsaCertificate()
     {
         m_days = 365;
@@ -1181,7 +1181,7 @@ public:
             throw MakeStringException(-1, "passphrase not set.");
         if(m_days <= 0)
             throw MakeStringException(-1, "The number of days should be a positive integer");
-        
+
         if(m_c.length() == 0)
             m_c.set("US");
 
@@ -1330,7 +1330,7 @@ public:
             throw MakeStringException(-1, "passphrase not set.");
         if(m_days <= 0)
             throw MakeStringException(-1, "The number of days should be a positive integer");
-        
+
         if(m_c.length() == 0)
             m_c.set("US");
 
@@ -1459,7 +1459,7 @@ public:
             throw MakeStringException(-1, "Common Name (server's hostname or IP address) not set for certificate");
         if(m_passphrase.length() == 0)
             throw MakeStringException(-1, "passphrase not set.");
-        
+
         if(m_c.length() == 0)
             m_c.set("US");
 
@@ -1551,7 +1551,7 @@ public:
         BIO_free(reqmem);
         EVP_PKEY_free (pkey);
         X509_REQ_free (req);
-        return 0;   
+        return 0;
     }
 };
 
@@ -1606,7 +1606,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
             server_securesocket_context.setown(new securesocket::CSecureSocketContext(config, sockettype));
         return server_securesocket_context.getLink();
     }
-}       
+}
 
 SECURESOCKET_API ICertificate *createCertificate()
 {
@@ -1626,7 +1626,7 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 
     OpenSSL_add_all_algorithms ();
     ERR_load_crypto_strings ();
-    
+
     BIO *bio_err;
     bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
@@ -1683,7 +1683,7 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
         digest = EVP_sha1 ();
     else
         throw MakeStringException(-1, "Error checking public key for a valid digest");
-    
+
     if (!(X509_sign (cert, CApkey, digest)))
         throw MakeStringException(-1, "Error signing certificate");
 

@@ -58,7 +58,7 @@ public:
         if (serversock)
             serversock->Release();
         free(hostname);
-        
+
     }
     virtual void Transmit(HRPCbuffer &c) // assume packet header at head
     {
@@ -70,9 +70,9 @@ public:
         size32_t sz = c.len(); // length left
         h->size = sz;
         h->winrev();
-        // 
+        //
         try {
-            datasock->write(h,len); 
+            datasock->write(h,len);
         }
         catch (IJSOCK_Exception *e) {
             int hrpcerr;
@@ -89,7 +89,7 @@ public:
             try {
                 Disconnect();
             }
-            catch (IJSOCK_Exception *e2) {  // ignore fails 
+            catch (IJSOCK_Exception *e2) {  // ignore fails
                 e2->Release();
             }
             THROWHRPCEXCEPTIONEXC(hrpcerr,e);
@@ -97,7 +97,7 @@ public:
         }
         c.readptr(sz);
     }
-    
+
     int readdata(void *p,size32_t sz,int timeo=-1)
     {
         if (!datasock) {
@@ -455,7 +455,7 @@ public:
         connecttimeout = timeout?timeout:(1000*60*60*24);
 
     }
-    
+
     virtual Mutex &Sync()
     {
         return mx;
@@ -549,4 +549,4 @@ IHRPCtransport *MakeServerTcpTransport(SocketEndpoint &endpoint, int listenqsize
 
 
 
-  
+

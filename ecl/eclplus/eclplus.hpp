@@ -25,7 +25,7 @@
 
 #define SDS_TIMEOUT 10000
 
-enum Commands 
+enum Commands
 {
     list        = 0,
     dump        = 1,

@@ -95,7 +95,7 @@ unsigned int Utils::hash (const char *str, unsigned int len)
       4484, 4484, 4484, 4484, 4484, 4484, 4484, 4484, 4484, 4484,
       4484, 4484, 4484, 4484, 4484, 4484
     };
-    
+
     unsigned int result = len;
     for(int i = len - 1; i >= 0; i--)
     {
@@ -197,12 +197,12 @@ void Utils::parseNVPair(const char* nv, StringBuffer& name, StringBuffer& value)
 
     if(nlen <= 0)
         return;
-    
+
     if(ptr != NULL && *ptr != '\0')
         vptr = ptr + 1;
     while(vptr != NULL && *vptr == ' ')
         vptr++;
-    
+
     while(nlen > 0 && nptr[nlen - 1] == ' ')
         nlen--;
     if(nlen > 0)
@@ -296,13 +296,13 @@ int Utils::strncasecmp(const char* s1, const char* s2, size32_t n)
     if(s1isnull || s2isnull)
         return s1isnull - s2isnull;
 
-    if (n != 0) 
+    if (n != 0)
     {
         const unsigned char *cm = charmap,
                 *us1 = (const unsigned char *)s1,
                 *us2 = (const unsigned char *)s2;
 
-        do 
+        do
         {
             if (cm[*us1] != cm[*us2++])
                 return (cm[*us1] - cm[*--us2]);
@@ -327,7 +327,7 @@ const char *Utils::stristr(const char *haystack, const char *needle)
     return NULL;
 }
 
-int Utils::strcasecmp(const char* s1, const char* s2) 
+int Utils::strcasecmp(const char* s1, const char* s2)
 {
     bool s1isnull = (s1 == NULL);
     bool s2isnull = (s2 == NULL);
@@ -563,7 +563,7 @@ void Utils::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserN
 
     char* hostptr;
     char *username = NULL;
-    char* atsign = strchr(buf, '@'); 
+    char* atsign = strchr(buf, '@');
     if(atsign)
     {
         username = buf + protlen;
@@ -607,10 +607,10 @@ void Utils::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserN
 
     path.append("/");
     if(pathptr)
-        path.append(pathptr);   
+        path.append(pathptr);
 
     if(param)
-        path.append(param); 
+        path.append(param);
 }
 
 

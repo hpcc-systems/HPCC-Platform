@@ -98,7 +98,7 @@ public:
     void setZero();
 
 #ifdef DECIMAL_OVERLOAD
-    template <byte length, byte precision> 
+    template <byte length, byte precision>
     Decimal(const decimal<length, precision> & x)   { setDecimal(length, precision, &x); }
     inline Decimal(int value)                               { setInt(value); }
     inline Decimal(unsigned value)                          { setUInt(value); }
@@ -132,7 +132,7 @@ private:
     Decimal & incLSD();
 
 protected:
-    enum { 
+    enum {
         maxDigits=MAX_DECIMAL_DIGITS,             // Total buffer size (integer+decimal)
         maxPrecision=MAX_DECIMAL_PRECISION,       // Size of decimal part
         maxIntegerDigits=MAX_DECIMAL_LEADING,     // Size of integer part

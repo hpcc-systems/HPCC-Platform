@@ -35,7 +35,7 @@
 #ifdef MY_TRACE_HASH
 int my_search_tot = 0;
 int my_search_num = 0;
-#endif 
+#endif
 
 //-- SuperHashTable ---------------------------------------------------
 SuperHashTable::SuperHashTable(void)
@@ -108,7 +108,7 @@ void SuperHashTable::dumpStats() const
                (int) (search_tot/search_num), search_tot, search_num, search_max);
 #endif
 }
- 
+
 #ifdef TRACE_HASH
 void SuperHashTable::note_searchlen(int len) const
 {
@@ -426,8 +426,8 @@ void SuperHashTable::doDeleteElement(unsigned v)
     tablecount--;
 }
 
-unsigned SuperHashTable::getTableLimit(unsigned max)        
-{ 
+unsigned SuperHashTable::getTableLimit(unsigned max)
+{
     return (max * 3) / 4;
 }
 
@@ -545,7 +545,7 @@ void *SuperHashTable::addOrFind(void * donor)
         table[vm] = donor;
         onAdd(donor);
         return donor;
-    } 
+    }
     return et;
 }
 

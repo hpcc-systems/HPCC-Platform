@@ -72,8 +72,8 @@ class jlib_decl AtomBase : public CInterfaceOf<IAtom>
 {
 public:
     AtomBase(const void * k) : hash(0)
-    { 
-        key = strdup((const char *)k); 
+    {
+        key = strdup((const char *)k);
     }
     ~AtomBase()               { free(key); }
 
@@ -109,7 +109,7 @@ class jlib_decl LowerCaseAtom : public Atom
 {
   public:
     LowerCaseAtom(const void * k) : Atom(k)
-    { 
+    {
         for (byte * cur = (byte *)key; *cur; cur++)
             *cur = (byte)tolower(*cur);
     }
@@ -215,7 +215,7 @@ class jlib_decl KeptAtomTable : public KeptHashTableOf<Atom, 0U>
     KeptAtomTable() : KeptHashTableOf<Atom, 0U>(false) {};
     KeptAtomTable(bool _ignorecase) : KeptHashTableOf<Atom, 0U>(_ignorecase) {};
     inline IAtom * addAtom(const char *name)
-    { 
+    {
         return (IAtom *) create(name);
     };
 };
@@ -225,7 +225,7 @@ class jlib_decl KeptLowerCaseAtomTable : public KeptHashTableOf<LowerCaseAtom, 0
   public:
     KeptLowerCaseAtomTable() : KeptHashTableOf<LowerCaseAtom, 0U>(true) {};
     inline IAtom * addAtom(const char *name)
-    { 
+    {
         return (IAtom *) create(name);
     };
 };

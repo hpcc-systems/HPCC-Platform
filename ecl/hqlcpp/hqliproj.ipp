@@ -47,7 +47,7 @@ enum ProjectExprKind
     SinkActivity,                       // a sink, but that doesn't necessarily use all input fields.
     CreateRecordSourceActivity,         // a source activity containing a transform i.e., inline table
     CreateNonEmptyRecordSourceActivity, // as above but can't handle empty output record
-    ComplexNonActivity,                 
+    ComplexNonActivity,
     AnyTypeActivity,                    // can be created any type.
 };
 
@@ -259,9 +259,9 @@ public:
     }
     inline ProjectExprKind activityKind() const { return visited ? (ProjectExprKind)kind : NonActivity; }
 
-    inline void preventOptimization() 
-    { 
-        canOptimize = false; 
+    inline void preventOptimization()
+    {
+        canOptimize = false;
     }
 
     inline bool okToOptimize() const { return canOptimize && visited; }
@@ -322,7 +322,7 @@ public:
     HqlExprArray * queryOutputFields();
 
     unsigned queryCostFactor(ClusterType clusterType);
-    
+
 
 protected:
     void trace(const char * label, const UsedFieldSet & fields);
@@ -356,9 +356,9 @@ public:
 
 protected:
     inline ImplicitProjectInfo * queryBodyExtra(IHqlExpression * expr)  { return (ImplicitProjectInfo *)queryTransformExtra(expr->queryBody()); }
-    inline ComplexImplicitProjectInfo * queryBodyComplexExtra(IHqlExpression * expr)    
-    { 
-        ComplexImplicitProjectInfo * extra = queryBodyExtra(expr)->queryComplexInfo(); 
+    inline ComplexImplicitProjectInfo * queryBodyComplexExtra(IHqlExpression * expr)
+    {
+        ComplexImplicitProjectInfo * extra = queryBodyExtra(expr)->queryComplexInfo();
         assertex(extra);
         return extra;
     }

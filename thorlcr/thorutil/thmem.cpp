@@ -43,7 +43,7 @@
 
 #undef ALLOCATE
 #undef CLONE
-#undef MEMACTIVITYTRACESTRING 
+#undef MEMACTIVITYTRACESTRING
 
 
 #include "thbuf.hpp"
@@ -56,8 +56,8 @@
 #define ASSERTEX(c)
 #endif
 
-static memsize_t MTthreshold=0; 
-static CriticalSection MTcritsect;  // held when blocked 
+static memsize_t MTthreshold=0;
+static CriticalSection MTcritsect;  // held when blocked
 static Owned<ILargeMemLimitNotify> MTthresholdnotify;
 static bool MTlocked = false;
 
@@ -2163,7 +2163,7 @@ class cMultiThorResourceMutex: public CSimpleInterface, implements ILargeMemLimi
         {
         }
 
-        int run() 
+        int run()
         {
             parent.run();
             return 0;
@@ -2194,7 +2194,7 @@ public:
     ~cMultiThorResourceMutex()
     {
         stopping = true;
-        if (thread) 
+        if (thread)
             stop();
     }
 
@@ -2211,11 +2211,11 @@ public:
                     byte req;
                     mbuf.read(req);
                     if (req==1) {
-                        if (mutex) 
+                        if (mutex)
                             mutex->enter();
                     }
                     else if (req==0) {
-                        if (mutex) 
+                        if (mutex)
                             mutex->leave();
                     }
                     nodeComm->reply(mbuf,1000*60*5);
@@ -2231,7 +2231,7 @@ public:
     {
         PROGLOG("cMultiThorResourceMutex::stop enter");
         stopping = true;
-        if (mutex) 
+        if (mutex)
             mutex->kill();
         try {
             nodeComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
@@ -2249,7 +2249,7 @@ public:
     {
         if (stopping)
             return true;
-        if (mutex) 
+        if (mutex)
             return mutex->enter();
         if (stopping)
             return false;
@@ -2579,8 +2579,8 @@ public:
     virtual size32_t getMinRecordSize() const { return extraSz + sizeof(const void *); }
     virtual size32_t getFixedSize() const { return extraSz + sizeof(const void *); }
     virtual const RtlTypeInfo * queryTypeInfo() const { return nullptr; }
-    virtual void toXML(const byte * self, IXmlWriter & out) 
-    { 
+    virtual void toXML(const byte * self, IXmlWriter & out)
+    {
          // ignoring xml'ing extra
         //GH: I think this is what it should do
         childMeta->toXML(*(const byte **)(self+extraSz), out);
@@ -2625,10 +2625,10 @@ public:
         return LINK(internalDeserializer);
     }
     virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}
-    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) 
+    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
         //GH: I think this is what it should do, please check
-        visitor.visitRow(*(const byte **)(self+extraSz)); 
+        visitor.visitRow(*(const byte **)(self+extraSz));
     }
     virtual IOutputMetaData * queryChildMeta(unsigned i)
     {

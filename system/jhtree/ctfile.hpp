@@ -113,7 +113,7 @@ struct jhtree_decl NodeHdr
 
     bool isValid(unsigned nodeSize)
     {
-        return 
+        return
             (rightSib % nodeSize == 0) &&
             (leftSib % nodeSize == 0) &&
             (unusedMemNumber==0) &&
@@ -141,9 +141,9 @@ public:
 
     unsigned int getMaxKeyLength();
     bool isVariable();
-    inline unsigned int getNodeKeyLength() 
+    inline unsigned int getNodeKeyLength()
     {
-        return hdr.nodeKeyLength != -1 ? hdr.nodeKeyLength : getMaxKeyLength(); 
+        return hdr.nodeKeyLength != -1 ? hdr.nodeKeyLength : getMaxKeyLength();
     }
     inline bool hasPayload()
     {
@@ -240,7 +240,7 @@ public:
     unsigned __int64 getSequence(unsigned int num) const;
 };
 
-class CJHVarTreeNode : public CJHTreeNode 
+class CJHVarTreeNode : public CJHTreeNode
 {
     const char **recArray;
 

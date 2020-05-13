@@ -43,7 +43,7 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         anyThisGroup = false;
-        eogNext = false;    
+        eogNext = false;
         count = 0;
         RtlDynamicRowBuilder r(queryRowAllocator());
         size32_t sz = helper->createDefault(r);
@@ -54,7 +54,7 @@ public:
         ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;) {
             if(abortSoon)
-                break;          
+                break;
             if(eogNext) {
                 eogNext = false;
                 count = 0;
@@ -63,7 +63,7 @@ public:
                     break;
                 }
             }
-            
+
             OwnedConstThorRow row = inputStream->nextRow();
             if (!row)   {
                 count = 0;
@@ -95,8 +95,8 @@ public:
         calcMetaInfoSize(info, queryInput(0));
     }
     virtual bool isGrouped() const override
-    { 
-        return true; 
+    {
+        return true;
     }
 };
 
@@ -127,18 +127,18 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         RtlDynamicRowBuilder r(rightAllocator);
-        size32_t sz = helper->createInitialRight(r);  
+        size32_t sz = helper->createInitialRight(r);
         firstright.setown(r.finalizeRowClear(sz));
         anyThisGroup = false;
         count = 0;
-        eogNext = false;    
+        eogNext = false;
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
         for (;;) {
             if(abortSoon)
-                break;          
+                break;
             if(eogNext) {
                 eogNext = false;
                 count = 0;
@@ -179,8 +179,8 @@ public:
         calcMetaInfoSize(info, queryInput(0));
     }
     virtual bool isGrouped() const override
-    { 
-        return true; 
+    {
+        return true;
     }
 };
 

@@ -41,11 +41,11 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
     {
         throw MakeStringException(-1, "Unknown service type %s", type);
     }
-    
+
     return NULL;
 }
-   
-   
+
+
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
     if (strcmp(type, "ws_eclSoapBinding")==0)

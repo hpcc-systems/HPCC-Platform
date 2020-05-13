@@ -46,7 +46,7 @@ time_t getThreadCreateTime()
 CResPermissionsCache::~CResPermissionsCache()
 {
     MapResAccess::const_iterator i;
-    MapResAccess::const_iterator iEnd = m_resAccessMap.end(); 
+    MapResAccess::const_iterator iEnd = m_resAccessMap.end();
 
     for (i = m_resAccessMap.begin(); i != iEnd; i++)
     {
@@ -55,7 +55,7 @@ CResPermissionsCache::~CResPermissionsCache()
         {
             ptr->Release();
         }
-    }   
+    }
 }
 
 //called from within a ReadLockBlock
@@ -147,7 +147,7 @@ void CResPermissionsCache::add( IArrayOf<ISecResource>& resources )
             time_t oldtstamp = resParamCacheEntry.first;
 
 
-            //there may be multiple resources associated with the same timestamp 
+            //there may be multiple resources associated with the same timestamp
             //in the multimap so find this entry
             //
             MapTimeStamp::iterator itL = m_timestampMap.lower_bound( oldtstamp );
@@ -262,7 +262,7 @@ int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resou
     //Lookup all user/resources
     int nFound;
     ReadLockBlock readLock(m_resPermCacheRWLock);
-    MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId ); 
+    MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( userId );
     if (i != m_resPermissionsMap.end())
     {
         CResPermissionsCache* pResPermissionsCache = (*i).second;
@@ -286,7 +286,7 @@ void CPermissionsCache::add( ISecUser& sec_user, IArrayOf<ISecResource>& resourc
 {
     const char* user = sec_user.getName();
     WriteLockBlock writeLock(m_resPermCacheRWLock);
-    MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( user ); 
+    MapResPermissionsCache::const_iterator i = m_resPermissionsMap.find( user );
     CResPermissionsCache* pResPermissionsCache;
 
     if (i == m_resPermissionsMap.end())
@@ -316,7 +316,7 @@ void CPermissionsCache::removePermissions( ISecUser& sec_user)
         DBGLOG("CACHE: CPermissionsCache Removing permissions for user %s", user);
 #endif
         WriteLockBlock writeLock(m_resPermCacheRWLock);
-        m_resPermissionsMap.erase(user); 
+        m_resPermissionsMap.erase(user);
     }
 }
 
@@ -324,7 +324,7 @@ void CPermissionsCache::remove(SecResourceType rtype, const char* resourcename)
 {
     MapResPermissionsCache::const_iterator i;
     WriteLockBlock writeLock(m_resPermCacheRWLock);
-    MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end(); 
+    MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
 
     for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
     {
@@ -424,11 +424,11 @@ void CPermissionsCache::add(ISecUser& sec_user)
 {
     if(!isCacheEnabled())
         return;
-    
+
     const char* username = sec_user.getName();
     if(!username || !*username)
         return;
-    
+
     WriteLockBlock writeLock(m_userCacheRWLock );
     MapUserCache::iterator it = m_userCache.find(username);
     CachedUser* user = NULL;

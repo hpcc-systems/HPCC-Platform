@@ -144,11 +144,11 @@ class DllLocation : implements IDllLocation, public CInterface
 {
     StringAttr cacheRoot;
 public:
-    DllLocation(IPropertyTree * _entryRoot, IPropertyTree * _locationRoot, const char *_cacheRoot) 
+    DllLocation(IPropertyTree * _entryRoot, IPropertyTree * _locationRoot, const char *_cacheRoot)
         : cacheRoot(_cacheRoot)
-    { 
-        entryRoot.set(_entryRoot); 
-        locationRoot.set(_locationRoot); 
+    {
+        entryRoot.set(_entryRoot);
+        locationRoot.set(_locationRoot);
     }
     IMPLEMENT_IINTERFACE
 
@@ -225,10 +225,10 @@ class LocationIterator : public TreeIteratorWrapper
 {
     StringAttr cacheRoot;
 public:
-    LocationIterator(IPropertyTree * _dllEntry, IPropertyTreeIterator * _iter, const char *_cacheRoot) 
+    LocationIterator(IPropertyTree * _dllEntry, IPropertyTreeIterator * _iter, const char *_cacheRoot)
         : TreeIteratorWrapper(_iter), cacheRoot(_cacheRoot)
     {
-        dllEntry.set(_dllEntry); 
+        dllEntry.set(_dllEntry);
     }
 
     virtual bool first()
@@ -366,7 +366,7 @@ void DllEntry::remove(bool removeFiles, bool removeDirectory)
     {
         Owned<IIterator> iter = createLocationIterator();
         // a bit nasty, but don't remove the directory for the first location, since this is where things are created in the first place.
-        bool isFirst = true;                
+        bool isFirst = true;
         ForEach(*iter)
         {
             try
@@ -396,10 +396,10 @@ void DllEntry::remove(bool removeFiles, bool removeDirectory)
 class DllIterator : public TreeIteratorWrapper
 {
 public:
-    DllIterator(IPropertyTree * _root, IPropertyTreeIterator * _iter, const char *_cacheRoot) 
+    DllIterator(IPropertyTree * _root, IPropertyTreeIterator * _iter, const char *_cacheRoot)
         : TreeIteratorWrapper(_iter), cacheRoot(_cacheRoot)
-    { 
-        root.set(_root); 
+    {
+        root.set(_root);
     }
 
     virtual bool first()
@@ -516,7 +516,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         ForEach(*iter)
         {
             IPropertyTree & cur = iter->query();
-            if ((stricmp(cur.queryProp("@ip"),ipText.str()) == 0) && 
+            if ((stricmp(cur.queryProp("@ip"),ipText.str()) == 0) &&
                 (stricmp(cur.queryProp("@dll"),dllText.str()) == 0))
                 return;
         }

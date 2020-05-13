@@ -17,10 +17,10 @@ class aBSTR
     BSTR val_;
     bool isDirty;
 public:
-    
+
     aBSTR(BSTR val=0) : val_(val), isDirty(false) {}
     aBSTR(CString &val) : isDirty(false) {val_=val.AllocSysString();}
-    aBSTR(LPCSTR val) : isDirty(false) 
+    aBSTR(LPCSTR val) : isDirty(false)
     {
         if (val)
         {
@@ -46,7 +46,7 @@ public:
 void CEsp_simple_clientAppWiz::InitCustomAppWiz()
 {
     m_pChooser = new CDialogChooser;
-    
+
     // There are no steps in this custom AppWizard.
     SetNumberOfSteps(1);
 
@@ -59,7 +59,7 @@ void CEsp_simple_clientAppWiz::InitCustomAppWiz()
     // Get value of $$root$$ (already set by AppWizard)
     CString strRoot;
     m_Dictionary.Lookup(_T("root"), strRoot);
-    
+
     // Set value of $$Doc$$, $$DOC$$
     CString strDoc = strRoot.Left(6);
     m_Dictionary[_T("Doc")] = strDoc;
@@ -107,8 +107,8 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
 {
     COleVariant resVar;
     COleVariant paramVar;
-    
-    CString projName = m_Dictionary["root"]; 
+
+    CString projName = m_Dictionary["root"];
 
     CString relPath = m_Dictionary["ESP_RELATIVE_PATH"];
     CString relBsPath = m_Dictionary["ESP_RELATIVE_PATH"];
@@ -117,7 +117,7 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
     CString relRootPath = m_Dictionary["ESP_RELATIVE_ROOT_PATH"];
     CString relBsRootPath = m_Dictionary["ESP_RELATIVE_ROOT_PATH"];
     relBsRootPath.Replace('/','\\');
-    
+
     CString scmPath = m_Dictionary["ESP_SCM_PATH"];
     CString scmFile = m_Dictionary["ESP_SCM_FILE"];
 
@@ -125,28 +125,28 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
         pProject->AddFile(aBSTR(scmFile), resVar);
 
     CString strAddFilePath;
-    strAddFilePath.Format("%s\\esp\\clients\\edwin.cpp", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\esp\\clients\\edwin.cpp", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\bin\\release\\jlib.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\bin\\release\\jlib.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\bin\\release\\ldap.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\bin\\release\\ldap.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\bin\\release\\commonsecurity.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\bin\\release\\commonsecurity.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\bin\\release\\soaplib.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\bin\\release\\soaplib.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\system\\openssl\\out32dll\\ssleay32.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\system\\openssl\\out32dll\\ssleay32.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
 
-    strAddFilePath.Format("%s\\system\\openssl\\out32dll\\libeay32.lib", (LPCSTR)relBsRootPath); 
+    strAddFilePath.Format("%s\\system\\openssl\\out32dll\\libeay32.lib", (LPCSTR)relBsRootPath);
     pProject->AddFile(aBSTR(strAddFilePath), resVar);
-    
-    
+
+
     IConfigurations *pConfigs = NULL;
     pProject->get_Configurations(&pConfigs);
 
@@ -154,7 +154,7 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
     {
         long ccount=0;
         pConfigs->get_Count(&ccount);
-    
+
         aBSTR clEXE("cl.exe");
         aBSTR linkEXE("link.exe");
 
@@ -178,66 +178,66 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
 
                 CString strBuild = isDebug ? "debug" : "release";
 
-                
+
                 CString strSetting;
 
-                strSetting.Format("/pdb:\"%s\\bin\\%s/%s.pdb\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName); 
+                strSetting.Format("/pdb:\"%s\\bin\\%s/%s.pdb\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName);
                 pConfig->AddToolSettings(linkEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/map:\"%s\\bin\\%s\\maps\\%s.map\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName); 
+                strSetting.Format("/map:\"%s\\bin\\%s\\maps\\%s.map\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName);
                 pConfig->AddToolSettings(linkEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/out:\"%s\\bin\\%s/%s.dll\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName); 
+                strSetting.Format("/out:\"%s\\bin\\%s/%s.dll\"", (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName);
                 pConfig->AddToolSettings(linkEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/implib:\"%s\\obj\\%s/%s.lib\"",     (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName); 
+                strSetting.Format("/implib:\"%s\\obj\\%s/%s.lib\"",     (LPCSTR)relBsRootPath, (LPCSTR)strBuild, (LPCSTR)projName);
                 pConfig->AddToolSettings(linkEXE, aBSTR(strSetting), resVar);
 
                 pConfig->AddToolSettings(clEXE, aBSTR((isDebug) ? "/MDd" : "/MD"), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, ""); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/security/securesocket"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/security/securesocket");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/security/scm"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/security/scm");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/openssl/inc32"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/openssl/inc32");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "clients"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "clients");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "bindings"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "bindings");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "services"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "services");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "bindings/soap/xpp"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "bindings/soap/xpp");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "scm"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "scm");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "platform"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "platform");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/jlib"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/jlib");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/scm"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/scm");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
-                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/include"); 
+                strSetting.Format("/I \"%s/%s\"", (LPCSTR)relPath, "../system/include");
                 pConfig->AddToolSettings(clEXE, aBSTR(strSetting), resVar);
 
                 pConfig->Release();
             }
         }
-    
+
         pConfigs->Release();
     }
 }

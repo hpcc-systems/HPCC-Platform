@@ -16,7 +16,7 @@
 ############################################################################## */
 
 
-// JLIB LZW compression class 
+// JLIB LZW compression class
 #include "platform.h"
 #include "jmisc.hpp"
 #include "jlib.hpp"
@@ -55,7 +55,7 @@ typedef __int64 lbucket_t;
 #ifdef _DEBUG
 #define ASSERT(a) assertex(a)
 #else
-#define ASSERT(a) 
+#define ASSERT(a)
 #endif
 
 LZWDictionary::LZWDictionary()
@@ -495,7 +495,7 @@ void CLZWExpander::expand(void *buf)
         }
         else if (newcode == BUMP_CODE) {
             bool eodict = !dict.bumpbits();
-            if (eodict) 
+            if (eodict)
                 dict.initdict();
             inbytes = innext;
             inbits = inbytes+8;
@@ -508,7 +508,7 @@ void CLZWExpander::expand(void *buf)
             }
             continue;
         }
-        else 
+        else
             ch = newcode;
         while (ch > 255) {
             *(sp++) = dict.dictchar[ch];
@@ -528,7 +528,7 @@ void CLZWExpander::expand(void *buf)
 }
 
 
-// encoding  
+// encoding
 //    0              =   0
 //    10             =   1
 //    1100           =   2
@@ -625,7 +625,7 @@ RLE
 
 size32_t RLECompress(void *dst,const void *src,size32_t size) // maximum will write is 2+size
 {
-    
+
     if (size==0)
         return 0;
     byte *out=(byte *)dst;
@@ -644,10 +644,10 @@ size32_t RLECompress(void *dst,const void *src,size32_t size) // maximum will wr
                         *(out++) = 0xd0+cnt;
                     else {
                         *(out++) = 0xd0;
-                        if (out==outmax) 
+                        if (out==outmax)
                             goto Fail;
                         *(out++) = cnt-15;
-                    }   
+                    }
                     return (size32_t)(out-(byte *)dst);
                 }
                 c = *(in++);
@@ -656,11 +656,11 @@ size32_t RLECompress(void *dst,const void *src,size32_t size) // maximum will wr
                 *(out++) = 0xd0+cnt;
             else {
                 *(out++) = 0xd0;
-                if (out==outmax) 
+                if (out==outmax)
                     break;  // fail
                 *(out++) = cnt-15;
-            }   
-            if (out==outmax) 
+            }
+            if (out==outmax)
                 break;
         }
         if ((c<0xd0)||(c>=0xe0))
@@ -700,7 +700,7 @@ size32_t RLEExpand(void *dst,const void *src,size32_t expsize)
     }
     byte pc = 0;
     for (;;) {
-        if ((c<0xd0)||(c>=0xe0)) 
+        if ((c<0xd0)||(c>=0xe0))
             *(out++) = c;
         else {
             c -= 0xd0;
@@ -760,7 +760,7 @@ void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
             return;
         }
     }
-    
+
     // all or don't compress
     out.setWritePos(originalLength);
     appendToBuffer(out, len, src);
@@ -820,21 +820,21 @@ void decompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
   // also need at least 2 bytes same before stops difference block
 
   thus                 AAAAAA...AAAAAA  [ len 500 ]
-  followed by          ADADAD...ADADAD  
-  will be saved as     1,255,ADADA..ADADA,0,244,ADADA..ADADA -> 503 bytes 
-   
+  followed by          ADADAD...ADADAD
+  will be saved as     1,255,ADADA..ADADA,0,244,ADADA..ADADA -> 503 bytes
+
   and                  AAAAAA...AAAAAA  [ len 500 ]
-  followed by          AADDAA...AADDAA  
+  followed by          AADDAA...AADDAA
   will be saved as     2,2,DD,2,2,DD...2,2,DD,2              -> 499 bytes
 
   and                  AAAAAA...AAAAAA  [ len 500 ]
-  followed by          AAAAAA...AAAAAA  
-  will be saved as     255,245                               -> 2 bytes 
+  followed by          AAAAAA...AAAAAA
+  will be saved as     255,245                               -> 2 bytes
 
   and                  AAAAAA...AAAAAA  [ len 500 ]
-  followed by          ZZZZZZ...ZZZZZZ  
+  followed by          ZZZZZZ...ZZZZZZ
   will be saves as     0,255,ZZ..ZZ,0,245,ZZ..ZZ             -> 504 bytes
-    
+
   // maximum size is of a row is bounded by: rowsize+((rowsize+254)/255)*2;
 
 */
@@ -881,7 +881,7 @@ Loop:
             s++;
             b++;
             if (*s==*b) {
-                if ((rs>1)&&(s[1]==b[1])) {     // slower but slightly better compression 
+                if ((rs>1)&&(s[1]==b[1])) {     // slower but slightly better compression
                     *dcnt=(unsigned char)cnt;
                     cnt = 0;
                     goto Loop;
@@ -900,7 +900,7 @@ Loop:
 }
 
 size32_t DiffCompress2(const void *src,void *dst,const void *prev,size32_t rs)
-{   
+{
     // doesn't update prev
     const unsigned char *s=(const unsigned char *)src;
     unsigned char *d=(unsigned char *)dst;
@@ -939,7 +939,7 @@ Loop:
             s++;
             b++;
             if (*s==*b) {
-                if ((rs>1)&&(s[1]==b[1])) {     // slower but slightly better compression 
+                if ((rs>1)&&(s[1]==b[1])) {     // slower but slightly better compression
                     *dcnt=(unsigned char)cnt;
                     cnt = 0;
                     goto Loop;
@@ -1130,7 +1130,7 @@ public:
         for (;;) {
             switch (state) {
             case S_pre_repeat:
-                if (!rs) 
+                if (!rs)
                     return (size32_t)(d-(byte *)dst);
                 cnt = 0;
                 size32_t c;
@@ -1196,7 +1196,7 @@ public:
         for (;;) {
             switch (state) {
             case S_pre_repeat:
-                if (!rs) 
+                if (!rs)
                     return sz?1:0;
                 cnt = 0;
                 size32_t c;
@@ -1280,7 +1280,7 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     size32_t recsize;       // assumed fixed length rows
     // assumes a transaction is a record
     MemoryBuffer transbuf;
-    size32_t maxrecsize;  // maximum size diff compress 
+    size32_t maxrecsize;  // maximum size diff compress
     unsigned char *prev;
 
     void initCommon()
@@ -1482,7 +1482,7 @@ public:
             bufalloc = outlen;
             outbuf = (unsigned char *)malloc(bufalloc);
         }
-        if (outlen<recsize) 
+        if (outlen<recsize)
             throw MakeStringException(-1,"CRDiffExpander: invalid buffer format");
         unsigned char *out=outbuf;
         memcpy(out,in,recsize);
@@ -1491,7 +1491,7 @@ public:
         in += recsize;
         size_t remaining = outlen-recsize;
         while (remaining) {
-            if (remaining<recsize) 
+            if (remaining<recsize)
                 throw MakeStringException(-2,"CRDiffExpander: invalid buffer format");
             size32_t sz = DiffExpand(in,out,prev,recsize);
             in += sz;
@@ -1502,7 +1502,7 @@ public:
     }
 
 
-    
+
     virtual void *bufptr() { return outbuf;}
     virtual size32_t   buflen() { return outlen;}
 };
@@ -1581,7 +1581,7 @@ public:
         outBufStart = 0;
         outBufMb = NULL;
     }
-        
+
     ~CRandRDiffCompressor()
     {
         if (bufalloc)
@@ -1664,7 +1664,7 @@ public:
                 diffbuf.setLength(sz+compsize);
             }
         }
-        else 
+        else
             firstrec.append(buflen,buf);
         return buflen;
     }
@@ -1729,7 +1729,7 @@ public:
     {
     }
 
-    bool init(const void *blk,bool copy) 
+    bool init(const void *blk,bool copy)
     {
         // if copy then use new block with first row at end
         header=(const RRDheader *)blk;
@@ -1750,7 +1750,7 @@ public:
         RLEExpand(firstrow,(const byte *)header+header->rowofs[0],recsize);
         if (copy)
             header = headercopy;
-        return true; 
+        return true;
     }
 
 
@@ -1759,9 +1759,9 @@ public:
     {
         if (idx>=numrows)
             return false;
-        if (idx) 
+        if (idx)
             DiffExpand(rowptr(idx),target,firstrow,recsize);
-        else 
+        else
             memcpy(target, firstrow, recsize);
         return true;
     }
@@ -1770,9 +1770,9 @@ public:
     {
         if ((idx>=numrows)||(ofs>=recsize))
             return 0;
-        if (sz>recsize-ofs) 
+        if (sz>recsize-ofs)
             sz = recsize-ofs;
-        if (idx==0) 
+        if (idx==0)
             memcpy(target,firstrow+ofs,sz);
         else if ((ofs==0)&&(sz>=recsize))
             DiffExpand(rowptr(idx),target,firstrow,recsize);
@@ -1788,9 +1788,9 @@ public:
     {
         if ((idx>=numrows)||(ofs>=recsize))
             return -1;
-        if (sz>=recsize-ofs) 
+        if (sz>=recsize-ofs)
             sz = recsize-ofs;
-        if (idx==0) 
+        if (idx==0)
             return memcmp(target,firstrow+ofs,sz);
         CDiffExpand exp;
         exp.init(rowptr(idx),firstrow,recsize);
@@ -1837,7 +1837,7 @@ static const __int64 LZ4COMPRESSEDFILEFLAG = I64C(0xc1200e0b71321c73);
 
 struct CompressedFileTrailer
 {
-    unsigned        datacrc;            
+    unsigned        datacrc;
     offset_t        expandedSize;
     offset_t        indexPos;       // end of blocks
     size32_t        blockSize;
@@ -1863,22 +1863,22 @@ struct CompressedFileTrailer
 
     void setDetails(IPropertyTree &tree)
     {
-        tree.setPropInt("@datacrc",datacrc);        
+        tree.setPropInt("@datacrc",datacrc);
         tree.setPropInt64("@expandedSize",expandedSize);
         tree.setPropInt64("@indexPos",indexPos);
         tree.setPropInt("@blockSize",blockSize);
         tree.setPropInt("@recordSize",recordSize);      // 0 is lzw or fastlz or lz4
         tree.setPropInt64("@compressedType",compressedType);
         tree.setPropInt("@method",method());
-        tree.setPropInt("@crc",crc);                
-        tree.setPropInt("@numblocks",(unsigned)((indexPos+blockSize-1)/blockSize));             
+        tree.setPropInt("@crc",crc);
+        tree.setPropInt("@numblocks",(unsigned)((indexPos+blockSize-1)/blockSize));
     }
 };
 
 // backward compatibility - will remove at some point
 struct WinCompressedFileTrailer
 {
-    unsigned        datacrc;            
+    unsigned        datacrc;
     unsigned        filler1;
     offset_t        expandedSize;
     offset_t        indexPos;       // end of blocks
@@ -1915,7 +1915,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
     Linked<IFileIO> fileio;
     Linked<IMemoryMappedFile> mmfile;
     CompressedFileTrailer trailer;
-    unsigned curblocknum;           
+    unsigned curblocknum;
     offset_t curblockpos;           // logical pos (reading only)
     MemoryBuffer curblockbuf;       // expanded buffer when reading
     MemoryAttr compblk;
@@ -1926,7 +1926,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
     ICFmode mode;
     CriticalSection crit;
     MemoryBuffer overflow;          // where partial row written
-    MemoryAttr prevrowbuf; 
+    MemoryAttr prevrowbuf;
     bool setcrc;
     bool writeException;
     Owned<ICompressor> compressor;
@@ -1949,7 +1949,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
                 b = m+1;
                 a = b;
             }
-            else if (dif>0) 
+            else if (dif>0)
                 a = m+1;
             else
                 b = m;
@@ -1970,7 +1970,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         assertex(p<=trailer.indexPos);
         if (trailer.indexPos-p<(offset_t)toread)
             toread = (size32_t)(trailer.indexPos-p);
-        if (!toread) 
+        if (!toread)
             return;
         if (fileio) {
             MemoryAttr comp;
@@ -1984,18 +1984,18 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
             expand(mmfile->base()+(memsize_t)p,curblockbuf,expsize);
         }
     }
-    void checkedwrite(offset_t pos, size32_t len, const void * data) 
+    void checkedwrite(offset_t pos, size32_t len, const void * data)
     {
         size32_t ret = fileio->write(pos,len,data);
         if (ret!=len)
-            throw MakeStringException(DISK_FULL_EXCEPTION_CODE,"CCompressedFile::checkedwrite");        
-        if (setcrc) 
+            throw MakeStringException(DISK_FULL_EXCEPTION_CODE,"CCompressedFile::checkedwrite");
+        if (setcrc)
             trailer.crc = crc32((const char *)data,len,trailer.crc);
 
     }
 
     void flush()
-    {   
+    {
         try
         {
             curblocknum++;
@@ -2069,7 +2069,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         }
         else {
             size32_t len = DiffCompress(src,compblkptr+compblklen,prevrowbuf.bufferBase(),rs);
-            if (compblklen+len>trailer.blockSize) 
+            if (compblklen+len>trailer.blockSize)
                 ret = false;
             else
                 compblklen += len;
@@ -2099,7 +2099,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
                 src += left;
             }
             while (len>=rs) {
-                if (!compressrow(src,rs))   
+                if (!compressrow(src,rs))
                     return (size32_t)(src-(const byte *)expbuf);
                 len -= rs;
                 src += rs;
@@ -2205,13 +2205,13 @@ public:
         }
     }
 
-    virtual offset_t size()                                             
-    { 
+    virtual offset_t size()
+    {
         CriticalBlock block(crit);
         return trailer.expandedSize;
     }
 
-    virtual size32_t read(offset_t pos, size32_t len, void * data)          
+    virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
         CriticalBlock block(crit);
         assertex(mode==ICFread);
@@ -2235,7 +2235,7 @@ public:
         }
         return ret;
     }
-    size32_t write(offset_t pos, size32_t len, const void * data)   
+    size32_t write(offset_t pos, size32_t len, const void * data)
     {
         CriticalBlock block(crit);
         assertex(mode!=ICFread);
@@ -2419,7 +2419,7 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
             }
         }
         Owned<IFileIO> fileio = file->open(IFOread, extraFlags);
-        if (fileio) 
+        if (fileio)
             return createCompressedFileReader(fileio,expander);
     }
     return NULL;
@@ -2492,7 +2492,7 @@ ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bo
         if (append&&!file->exists())
             append = false;
         Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate, extraFlags);
-        if (fileio) 
+        if (fileio)
             return createCompressedFileWriter(fileio,recordsize,_setcrc,compressor,_compMethod);
     }
     return NULL;
@@ -2616,7 +2616,7 @@ public:
         const byte *p = (const byte *)blk;
         size32_t l = *(const size32_t *)p;
         aesDecrypt(key.get(),key.length(),p+sizeof(size32_t),l,compbuf);
-        return exp->init(compbuf.bufferBase());         
+        return exp->init(compbuf.bufferBase());
     }
 
     void   expand(void *target)
@@ -2650,7 +2650,7 @@ IExpander *createAESExpander(const void *key, unsigned keylen)
 
 inline void padKey32(byte *keyout,size32_t len, const byte *key)
 {
-    if (len==0) 
+    if (len==0)
         memset(keyout,0xcc,32);
     else if (len<=32) {
         for (unsigned i=0;i<32;i++)
@@ -2659,7 +2659,7 @@ inline void padKey32(byte *keyout,size32_t len, const byte *key)
     else {
         memcpy(keyout,key,32);
         // xor excess rotated
-        for (unsigned i=32;i<len;i++) 
+        for (unsigned i=32;i<len;i++)
             keyout[i%32] ^= ROTATE_LEFT(key[i],(i/8)%8);
     }
 }
@@ -2906,7 +2906,7 @@ jlib_decl void testDiffComp(unsigned amount)
     }
 
     { MTIME_SECTION(defaultTimer, "Comp read async std");
-        
+
         Owned<IFile> iFile = createIFile("test.out");
         Owned<IFileAsyncIO> iFileIO = iFile->openAsync(IFOread);
         Owned<IFileIOStream> iFileIOStream = createBufferedAsyncIOStream(iFileIO);
@@ -2925,7 +2925,7 @@ jlib_decl void testDiffComp(unsigned amount)
     }
 
     { MTIME_SECTION(defaultTimer, "Comp read async");
-        
+
         Owned<IReadSeqVar> in = createRowCompReadSeq("test.out", 0, sz, -1, true);
 
         count_t a = 0;

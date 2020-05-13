@@ -310,7 +310,7 @@ void WsEclWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
 //  if (!res.isResultScalar())
 //  {
         StringBufferAdaptor s(schema);
-        
+
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
         Owned<IResultSetMetaData> meta = resultSetFactory->createResultSetMeta(&res);
         meta->getXmlXPathSchema(s, true);
@@ -344,7 +344,7 @@ void WsEclWuInfo::updateSchemaCache()
 
         Owned<IConstWUResultIterator> results = &wu->getResults();
         addOutputSchemas(schemacache, results, "Result");
-        
+
         schemacache.append("</SCHEMA>");
     }
 }
@@ -360,7 +360,7 @@ IPropertyTreeIterator *WsEclWuInfo::getInputSchemas()
     if (!xsds)
     {
         updateSchemaCache();
-        if (schemacache.length())   
+        if (schemacache.length())
             xsds.setown(createPTreeFromXMLString(schemacache.str()));
     }
 
@@ -372,7 +372,7 @@ IPropertyTreeIterator *WsEclWuInfo::getResultSchemas()
     if (!xsds)
     {
         updateSchemaCache();
-        if (schemacache.length())   
+        if (schemacache.length())
             xsds.setown(createPTreeFromXMLString(schemacache.str()));
     }
 

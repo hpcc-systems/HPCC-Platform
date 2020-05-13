@@ -114,9 +114,9 @@ public:
     virtual bool isScalar()                     { return true; }
     virtual unsigned getCrc();
 
-    virtual void serialize(MemoryBuffer &tgt)   
-    { 
-        CTypeInfo::serialize(tgt); 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
+        CTypeInfo::serialize(tgt);
         tgt.append(length);
         if (collation)
         {
@@ -212,9 +212,9 @@ public:
     using CStringTypeInfo::castFrom;
     virtual IValue * castFrom(size32_t len, const char * text);
 
-    virtual void serialize(MemoryBuffer &tgt)   
-    { 
-        CTypeInfo::serialize(tgt); 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
+        CTypeInfo::serialize(tgt);
         tgt.append(length);
     }
 };
@@ -247,9 +247,9 @@ public:
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual const char *queryTypeName()         { return "var char"; } // ???
-    virtual void serialize(MemoryBuffer &tgt)   
-    { 
-        CTypeInfo::serialize(tgt); 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
+        CTypeInfo::serialize(tgt);
         tgt.append(getStringLen());
     }
 protected:
@@ -268,7 +268,7 @@ public:
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
     virtual IValue * castFrom(size32_t len, const char * text);
     virtual StringBuffer &getECLType(StringBuffer & out);
-    virtual const char *queryTypeName()         { return "char"; } 
+    virtual const char *queryTypeName()         { return "char"; }
     virtual bool isInteger()                 { return false; };
     virtual bool isScalar()                     { return true; }
 
@@ -356,7 +356,7 @@ public:
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual unsigned getPrecision() { return (prec == UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : prec; };
     virtual unsigned getDigits()    { return (digits == UNKNOWN_DIGITS) ? UNKNOWN_LENGTH : digits; };
-    virtual unsigned getStringLen(); 
+    virtual unsigned getStringLen();
     virtual unsigned getBitSize();
     virtual bool isSigned()         { return typeIsSigned; }
     virtual bool isScalar()                     { return true; }
@@ -376,10 +376,10 @@ private:
     ITypeInfo * storeType;
 public:
     CBitfieldTypeInfo(int _length, ITypeInfo * _storeType);
-    
+
     /* fix memory leak */
     ~CBitfieldTypeInfo() { ::Release(promoted); ::Release(storeType); }
-    
+
     virtual bool assignableFrom(ITypeInfo *t2);
     using CTypeInfo::castFrom;
     virtual IValue * castFrom(bool isSignedValue, __int64 value);
@@ -565,7 +565,7 @@ public:
     CBasedTypeInfo(ITypeInfo *_basetype, int _size) : CHashedTypeInfo(_size), basetype(_basetype) {}
 
     using CHashedTypeInfo::castFrom;
-    virtual IValue * castFrom(bool isSignedValue, __int64 value)    { assertThrow(false); return NULL; } 
+    virtual IValue * castFrom(bool isSignedValue, __int64 value)    { assertThrow(false); return NULL; }
     virtual IValue * castFrom(size32_t len, const char * text) { assertThrow(false); return NULL; }
     virtual bool isInteger() { return false; }
     virtual ITypeInfo * queryChildType();
@@ -673,10 +673,10 @@ public:
     virtual type_t getTypeCode() const                      { return type_transform; }
     virtual bool isScalar()                                 { return false; }
     virtual const char *queryTypeName()                     { return "transform"; }
-    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName()); 
-                                                              if (basetype) 
-                                                                  { out.append(" of "); queryChildType()->getECLType(out); } 
-                                                              return out; 
+    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName());
+                                                              if (basetype)
+                                                                  { out.append(" of "); queryChildType()->getECLType(out); }
+                                                              return out;
                                                             }
     virtual bool assignableFrom(ITypeInfo *t2);
 };
@@ -689,10 +689,10 @@ public:
     virtual type_t getTypeCode() const                      { return type_sortlist; }
     virtual bool isScalar()                                 { return false; }
     virtual const char *queryTypeName()                     { return "sortlist"; }
-    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName()); 
-                                                              if (basetype) 
-                                                                  { out.append(" of "); queryChildType()->getECLType(out); } 
-                                                              return out; 
+    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName());
+                                                              if (basetype)
+                                                                  { out.append(" of "); queryChildType()->getECLType(out); }
+                                                              return out;
                                                             }
     virtual bool assignableFrom(ITypeInfo *t2);
 };
@@ -706,10 +706,10 @@ public:
     virtual bool isScalar()                                 { return false; }
     virtual size32_t getSize()                              { return basetype ? basetype->getSize() : UNKNOWN_LENGTH; }
     virtual const char *queryTypeName()                     { return "row"; }
-    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName()); 
-                                                              if (basetype) 
-                                                                  { out.append(" of "); queryChildType()->getECLType(out); } 
-                                                              return out; 
+    virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName());
+                                                              if (basetype)
+                                                                  { out.append(" of "); queryChildType()->getECLType(out); }
+                                                              return out;
                                                             }
     virtual bool assignableFrom(ITypeInfo *t2);
 };
@@ -804,7 +804,7 @@ public:
 class CPointerTypeInfo : public CBasedTypeInfo
 {
 public:
-    CPointerTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, sizeof(void *)) 
+    CPointerTypeInfo(ITypeInfo * _basetype) : CBasedTypeInfo(_basetype, sizeof(void *))
     { // loose format for debug
     }
 
@@ -827,9 +827,9 @@ public:
     virtual bool isScalar()                     { return false; }
     virtual const char *queryTypeName()         { return "array"; }
 
-    virtual void serialize(MemoryBuffer &tgt)   
-    { 
-        CTypeInfo::serialize(tgt); 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
+        CTypeInfo::serialize(tgt);
         tgt.append(length);
         serializeType(tgt, basetype);
     }
@@ -890,10 +890,10 @@ public:
 class CIndirectTypeInfo : public CHashedTypeInfo
 {
 public:
-    CIndirectTypeInfo(ITypeInfo * _baseType) : CHashedTypeInfo(0), baseType(_baseType)    
+    CIndirectTypeInfo(ITypeInfo * _baseType) : CHashedTypeInfo(0), baseType(_baseType)
     { // loose format for debug: so that we can set conditional breakpoint
     }
-    
+
     ~CIndirectTypeInfo()         { baseType->Release(); }
 
     virtual type_t getTypeCode() const                                  { return baseType->getTypeCode(); }
@@ -936,7 +936,7 @@ class CModifierTypeInfo : public CIndirectTypeInfo
 {
 public:
     CModifierTypeInfo(ITypeInfo * _baseType, typemod_t _kind, IInterface * _extra) : CIndirectTypeInfo(_baseType) { kind = _kind; extra.setown(_extra); }
-    
+
     virtual bool isReference()                                      { if (kind == typemod_ref) return true; return baseType->isReference(); }
     virtual typemod_t queryModifier()                               { return kind; }
     virtual IInterface * queryModifierExtra()                       { return extra; }
@@ -974,8 +974,8 @@ public:
     virtual unsigned char queryFillChar()               { return fillChar; }
     virtual char const * queryCodepageName()            { return str(codepage); }
 
-    virtual void serialize(MemoryBuffer &tgt) 
-    { 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
         tgt.append(str(name));
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
@@ -996,8 +996,8 @@ public:
     virtual IAtom * queryName()                           { return name; }
     virtual ICharsetInfo * getCharset();
 
-    virtual void serialize(MemoryBuffer &tgt) 
-    { 
+    virtual void serialize(MemoryBuffer &tgt)
+    {
         tgt.append(str(name));
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
@@ -1072,7 +1072,7 @@ public:
 
     //hash compare is much quicker, so did it first.
     virtual bool matchesFindParam(const void * et1, const void * et2, unsigned fphash) const
-    { 
+    {
         const CHashedTypeInfo * element = static_cast<const CHashedTypeInfo *>(et1);
         const CHashedTypeInfo * key = static_cast<const CHashedTypeInfo *>(et2);
         return (element->getHash() == fphash) && element->equals(*key);

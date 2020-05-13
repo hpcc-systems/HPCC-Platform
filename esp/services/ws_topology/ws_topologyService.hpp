@@ -114,7 +114,7 @@ private:
                                          const char* fileType, StringBuffer& returnbuf, IEspTpLogFileResponse &resp);
     void readTpLogFile(IEspContext &context,const char* fileName, const char* fileType, IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);
 
-    void loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
+    void loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue,
                                     bool& bThresholdIsPercentage);
 
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);

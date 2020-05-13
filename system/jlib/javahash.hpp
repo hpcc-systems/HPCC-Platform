@@ -45,17 +45,17 @@ private:
     virtual void onAdd(void *next) override;
     virtual void onRemove(void *) override;
     virtual unsigned getHashFromElement(const void * et) const override
-    { 
-        return static_cast<const ELEMENT *>(et)->getHash(); 
+    {
+        return static_cast<const ELEMENT *>(et)->getHash();
     }
     virtual unsigned getHashFromFindParam(const void * et) const override
-    { 
-        return static_cast<const ELEMENT *>(et)->getHash(); 
+    {
+        return static_cast<const ELEMENT *>(et)->getHash();
     }
     virtual const void * getFindParam(const void * et) const override { return et; }
     virtual bool matchesFindParam(const void * et, const void * key, unsigned fphash __attribute__((unused))) const override
-    { 
-        return static_cast<const ELEMENT *>(et)->equals(*static_cast<const ELEMENT *>(key)); 
+    {
+        return static_cast<const ELEMENT *>(et)->equals(*static_cast<const ELEMENT *>(key));
     }
 
   public:
@@ -83,7 +83,7 @@ private:
 template <class ELEMENT>
 class JavaHashIteratorOf : public SuperHashIteratorOf<ELEMENT>
 {
-    typedef JavaHashIteratorOf<ELEMENT> _SELF;  
+    typedef JavaHashIteratorOf<ELEMENT> _SELF;
   public:
     JavaHashIteratorOf(JavaHashTableOf<ELEMENT> & _table, bool linkTable=true)
         : SuperHashIteratorOf<ELEMENT>(_table, linkTable) {}

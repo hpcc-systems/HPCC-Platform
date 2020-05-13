@@ -43,8 +43,8 @@
 #include "roxiehelper.hpp"
 
 //-------------------------------------------------------------------------------------------
-// class CRoxiePluginCtx - provide the environments for plugins loaded by roxie. 
-// Base class handles making sure memory allocation comes from the right heap. 
+// class CRoxiePluginCtx - provide the environments for plugins loaded by roxie.
+// Base class handles making sure memory allocation comes from the right heap.
 // implement get/set properties to allow plugin configuration information to be retrieved from Roxie topology file
 //-------------------------------------------------------------------------------------------
 
@@ -69,8 +69,8 @@ SafePluginMap *plugins;
 // and then 0 or more (max 1 for subfiles, no limit for subkeys) _fileName or _indexFileName will have been added. This translation will not take place
 // if the files resolve to single file/key, or if we are using new embedded wu system
 
-// Basic mode of operation therefore is to get the original name, see if it can be resolved by package into a list of subfiles, and if not, use 
-// iterator on the xgmml node to get the list. 
+// Basic mode of operation therefore is to get the original name, see if it can be resolved by package into a list of subfiles, and if not, use
+// iterator on the xgmml node to get the list.
 
 // These two helper functions will return the original filenames placed in the XGMML by the codegen, regardless of how/if roxieconfig resolved them
 
@@ -253,7 +253,7 @@ public:
             subFiles.append(sub);
         }
     }
-    virtual unsigned numSubFiles() const 
+    virtual unsigned numSubFiles() const
     {
         return subFiles.length();
     }
@@ -288,11 +288,11 @@ public:
 
 //-------------------------------------------------------------------------------------------
 // class CRoxiePackage - provide the environment in which file names and query options are interpreted
-// by a roxie query. 
-// File names are resolved into IResolvedFile objects. A cache is used to ensure that the IResolvedFile is 
+// by a roxie query.
+// File names are resolved into IResolvedFile objects. A cache is used to ensure that the IResolvedFile is
 // shared wherever possible.
 // Effective environment is precomputed in mergedEnvironment for efficient recall by queries
-// Packages are described using XML files - see documentation for details. 
+// Packages are described using XML files - see documentation for details.
 //-------------------------------------------------------------------------------------------
 
 /**
@@ -362,7 +362,7 @@ public:
         CriticalBlock b(cacheLock);
         if (traceLevel > 9)
             DBGLOG("removeCache %s", file->queryFileName());
-        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
+        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table.
         // So only remove from hash table if what we find there matches the item that is being deleted.
         IResolvedFile *goer = files.getValue(file->queryFileName());
         if (goer == file)
@@ -534,7 +534,7 @@ protected:
 
     IResolvedFile *lookupFile(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool isPrivilegedUser) const
     {
-        // Order of resolution: 
+        // Order of resolution:
         // 1. Files named in package
         // 2. Files named in bases
 
@@ -668,7 +668,7 @@ public:
         hash = newhash;
     }
 
-    virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
+    virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const
     {
         StringBuffer xpath;
         xpath.append("SuperFile[@id='").append(queryNodeFileName(graphNode, getActivityKind(graphNode))).append("']");
@@ -910,7 +910,7 @@ MODULE_EXIT()
 // as well as controlling their lifespan
 //================================================================================================
 
-class CRoxieQuerySetManager : public CInterface, implements IRoxieQuerySetManager 
+class CRoxieQuerySetManager : public CInterface, implements IRoxieQuerySetManager
 {
 protected:
     MapStringToMyClass<IQueryFactory> queries;
@@ -1213,7 +1213,7 @@ private:
 class CRoxieDebugSessionManager : implements IRoxieDebugSessionManager, public CInterface
 {
 protected:
-    ReadWriteLock debugLock; 
+    ReadWriteLock debugLock;
     MapStringToMyClass<IDebuggerContext> debuggerContexts;
 
 public:
@@ -1835,7 +1835,7 @@ public:
     void requestReload(bool signal, bool force)
     {
         if (force)
-            forcePending = true;    
+            forcePending = true;
         if (signal)
             atomic_inc(&autoSignalsPending);
         atomic_inc(&autoPending);
@@ -2207,7 +2207,7 @@ private:
             else
                 unknown = true;
             break;
-            
+
         case 'F':
             if (stricmp(queryName, "control:fieldTranslationEnabled")==0)
             {
@@ -2388,7 +2388,7 @@ private:
                 setNodeCacheMem(nodeCacheMB * 0x100000);
             }
             else if (stricmp(queryName, "control:numFilesToProcess")==0)
-            { 
+            {
                 int numFiles = queryFileCache().numFilesToCopy();
                 reply.appendf("<FilesToProcess value='%d'/>", numFiles);
             }

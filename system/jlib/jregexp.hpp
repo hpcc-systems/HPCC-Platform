@@ -31,7 +31,7 @@ class RECOMP;
 
 #define RE_ALL      UINT_MAX
 
-// WARNING - this is not threadsafe - it is up to the caller to ensure that a RegExpr is accessed from only one thread at a time 
+// WARNING - this is not threadsafe - it is up to the caller to ensure that a RegExpr is accessed from only one thread at a time
 // that INCLUDES the simple find() method
 
 class jlib_decl RegExpr
@@ -128,5 +128,5 @@ protected:
 
 void jlib_decl addActionList(StringMatcher & matcher, const char * text, unsigned action, unsigned * maxElementLength = NULL);
 
-#endif 
+#endif
 

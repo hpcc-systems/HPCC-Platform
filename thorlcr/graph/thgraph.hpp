@@ -1140,9 +1140,9 @@ public:
     __declspec(noreturn) void processAndThrowOwnedException(IException * e) __attribute__((noreturn));
 
 // IThorRowInterfaces
-    virtual IEngineRowAllocator * queryRowAllocator();  
-    virtual IOutputRowSerializer * queryRowSerializer(); 
-    virtual IOutputRowDeserializer * queryRowDeserializer(); 
+    virtual IEngineRowAllocator * queryRowAllocator();
+    virtual IOutputRowSerializer * queryRowSerializer();
+    virtual IOutputRowDeserializer * queryRowDeserializer();
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
     virtual unsigned queryActivityId() const { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }

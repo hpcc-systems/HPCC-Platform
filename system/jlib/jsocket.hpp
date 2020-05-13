@@ -41,7 +41,7 @@
 #endif
 
 enum JSOCKET_ERROR_CODES {
-        JSOCKERR_ok                    = 0, 
+        JSOCKERR_ok                    = 0,
         JSOCKERR_not_opened            = -1,    // accept,name,peer_name,read,write
         JSOCKERR_bad_address           = -2,    // connect
         JSOCKERR_connection_failed     = -3,    // connect
@@ -60,7 +60,7 @@ enum JSOCKET_ERROR_CODES {
 // Block operation flags
 #define BF_ASYNC_TRANSFER       0 // send_block sends immediately (default)
 #define BF_SYNC_TRANSFER_PULL   1 // send_block waits until receiver ready (i.e. receives first)
-#define BF_LZW_COMPRESS         2   // compress using LZW compression   
+#define BF_LZW_COMPRESS         2   // compress using LZW compression
 #define BF_REC_COMPRESS         4 // compress using record difference compression
 #define BF_RELIABLE_TRANSFER    8 // retries on socket failure
 #define BF_SYNC_TRANSFER_PUSH   16 // send_block pushes that has data (i.e. sends first)
@@ -81,21 +81,21 @@ public:
     IpAddress() = default;
     IpAddress(const IpAddress& other)                   { ipset(other); }
     explicit IpAddress(const char *text)                { ipset(text); }
-    
-    bool ipset(const char *text);                       // sets to NULL if fails or text=NULL   
+
+    bool ipset(const char *text);                       // sets to NULL if fails or text=NULL
     void ipset(const IpAddress& other)                  { memcpy(&netaddr,&other.netaddr,sizeof(netaddr)); }
-    bool ipequals(const IpAddress & other) const;       
-    int  ipcompare(const IpAddress & other) const;      // depreciated 
+    bool ipequals(const IpAddress & other) const;
+    int  ipcompare(const IpAddress & other) const;      // depreciated
     unsigned iphash(unsigned prev=0) const;
     unsigned fasthash() const;
     bool isNull() const;                                // is null
     bool isHost() const;                                // is primary host NIC ip
     bool isLoopBack() const;                            // is loopback (localhost: 127.0.0.1 or ::1)
-    bool isLocal() const;                               // matches local interface 
+    bool isLocal() const;                               // matches local interface
     bool isIp4() const;
     StringBuffer &getIpText(StringBuffer & out) const;
-    void ipserialize(MemoryBuffer & out) const;         
-    void ipdeserialize(MemoryBuffer & in);          
+    void ipserialize(MemoryBuffer & out) const;
+    void ipdeserialize(MemoryBuffer & in);
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
     bool ipincrement(unsigned count,byte minoctet=0,byte maxoctet=255,unsigned short minipv6piece=0,unsigned maxipv6piece=0xffff);
     unsigned ipsetrange( const char *text); // e.g. 10.173.72.1-65  ('-' may be omitted)
@@ -123,19 +123,19 @@ struct IpComparator
 };
 
 class jlib_decl IpAddressArray : public StructArrayOf<IpAddress>
-{ 
+{
 public:
     StringBuffer &getText(StringBuffer &text);
     void fromText(const char *s,unsigned defport);
 };
 
-                                         
+
 extern jlib_decl IpAddress & queryHostIP();
 extern jlib_decl IpAddress & queryLocalIP();
 extern jlib_decl const char * GetCachedHostName();
 inline StringBuffer & GetHostName(StringBuffer &str) { return str.append(GetCachedHostName()); }
 extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
-extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
+extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);
 
 class jlib_decl SocketEndpoint : extends IpAddress
 {
@@ -143,7 +143,7 @@ public:
     SocketEndpoint() = default;
     SocketEndpoint(const char *name,unsigned short _port=0)     { set(name,_port); };
     SocketEndpoint(unsigned short _port)                        { setLocalHost(_port); };
-    SocketEndpoint(unsigned short _port, const IpAddress & _ip) { set(_port,_ip); };          
+    SocketEndpoint(unsigned short _port, const IpAddress & _ip) { set(_port,_ip); };
     SocketEndpoint(const SocketEndpoint &other) = default;
 
     void deserialize(MemoryBuffer & in);
@@ -167,14 +167,14 @@ public:
     bool operator != (const SocketEndpoint &other) const { return !equals(other); }
 
     unsigned hash(unsigned prev) const;
-    
+
     unsigned short port = 0;
     // Ensure that all the bytes in the data structure are initialised to avoid complains from valgrind when it is written to a socket
     unsigned short portPadding = 0;
 };
 
 class jlib_decl SocketEndpointArray : public StructArrayOf<SocketEndpoint>
-{ 
+{
 public:
     StringBuffer &getText(StringBuffer &text);
     bool fromName(const char *name, unsigned defport);
@@ -222,19 +222,19 @@ public:
 
 
     static ISocket*  connect( const SocketEndpoint &ep );
-    // general connect 
+    // general connect
 
 
     static ISocket*  connect_timeout( const SocketEndpoint &ep , unsigned timeout);
     // connect where should must take longer than timeout (in ms) to connect
 
-    
+
     static ISocket*  connect_wait( const SocketEndpoint &ep, unsigned timems);
     // connect where should try connecting for *at least* time specified
     // (e.g. if don't know that server listening yet)
     // if 0 specified for time then does single (blocking) connect try
-    
-    
+
+
     // Create client socket connected to a UDP server socket
     //
     static ISocket*  udp_connect( unsigned short port, char const* host);
@@ -298,12 +298,12 @@ public:
 
     //
     // This method is called to check whether a socket has data ready
-    // 
+    //
     virtual int wait_read(unsigned timeout) = 0;
 
     //
     // This method is called to check whether a socket is ready to write (i.e. some free buffer space)
-    // 
+    //
     virtual int wait_write(unsigned timeout) = 0;
 
     //
@@ -319,7 +319,7 @@ public:
 
     // set 'linger' time - time close will linger so that outstanding unsent data will be transmitted
     //
-    virtual void set_linger(int lingersecs) = 0;  
+    virtual void set_linger(int lingersecs) = 0;
 
 
     //
@@ -354,26 +354,26 @@ public:
 
     virtual void set_return_addr(int port,const char *name) = 0; // used for UDP servers only
 
-    // Block functions 
+    // Block functions
 
     virtual void  set_block_mode (             // must be called before block operations
                             unsigned flags,    // BF_* flags (must match receive_block)
                           size32_t recsize=0,  // record size (required for rec compression)
                             unsigned timeoutms=0 // timeout in milisecs (0 for no timeout)
-                  )=0; 
+                  )=0;
 
 
 
-    virtual bool  send_block( 
-                            const void *blk,   // data to send 
+    virtual bool  send_block(
+                            const void *blk,   // data to send
                             size32_t sz          // size to send (0 for eof)
                   )=0;
 
-    virtual size32_t receive_block_size ()=0;      // get size of next block (always must call receive_block after) 
+    virtual size32_t receive_block_size ()=0;      // get size of next block (always must call receive_block after)
 
     virtual size32_t receive_block(
-                            void *blk,         // receive pointer 
-                            size32_t sz          // max size to read (0 for sync eof) 
+                            void *blk,         // receive pointer
+                            size32_t sz          // max size to read (0 for sync eof)
                                                // if less than block size truncates block
                   )=0;
 
@@ -469,7 +469,7 @@ protected:
     unsigned lastPort;
 };
 
-class jlib_decl SocketListParser 
+class jlib_decl SocketListParser
 // This class depreciated - new code should use SocketEndpointArray::fromText and getText
 {
 public:
@@ -503,12 +503,12 @@ struct JSocketStatistics
     unsigned activesockets;
     unsigned numblockrecvs;
     unsigned numblocksends;
-    __int64  blockrecvsize; 
-    __int64  blocksendsize; 
-    unsigned blockrecvtime;     // not including initial handshake  
-    unsigned blocksendtime; 
-    unsigned longestblocksend; 
-    unsigned longestblocksize; 
+    __int64  blockrecvsize;
+    __int64  blocksendsize;
+    unsigned blockrecvtime;     // not including initial handshake
+    unsigned blocksendtime;
+    unsigned longestblocksend;
+    unsigned longestblocksize;
 };
 
 extern jlib_decl void getSocketStatistics(JSocketStatistics &stats);
@@ -553,8 +553,8 @@ extern jlib_decl bool catchReadBuffer(ISocket * socket, MemoryBuffer & buffer, u
 extern jlib_decl bool catchWriteBuffer(ISocket * socket, MemoryBuffer & buffer);
 
 
-// utility interface for simple conversations 
-// conversation is always between two ends, 
+// utility interface for simple conversations
+// conversation is always between two ends,
 // at any given time one end must be receiving and other sending (though these may swap during the conversation)
 interface IConversation: extends IInterface
 {
@@ -569,11 +569,11 @@ interface IConversation: extends IInterface
 
 extern jlib_decl IConversation *createSingletonSocketConnection(unsigned short port,SocketEndpoint *ep=NULL);
 // the end that listens may omit ep
-// this function does not connect so raises no socket exceptions 
+// this function does not connect so raises no socket exceptions
 
 
 
-// interface for reading from multiple sockets using the BF_SYNC_TRANSFER_PUSH protocol 
+// interface for reading from multiple sockets using the BF_SYNC_TRANSFER_PUSH protocol
 interface ISocketBufferReader: extends IInterface
 {
 public:

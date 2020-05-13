@@ -88,7 +88,7 @@ static void setProgress(IPropertyTree &node, const char *name, unsigned __int64 
 }
 
 
-class TransformCallback : public CInterface, implements IThorIndexCallback 
+class TransformCallback : public CInterface, implements IThorIndexCallback
 {
 public:
     TransformCallback() { keyManager = NULL; };
@@ -96,9 +96,9 @@ public:
 
 //IThorIndexCallback
     virtual const byte * lookupBlob(unsigned __int64 id) override
-    { 
-        size32_t dummy; 
-        return (byte *) keyManager->loadBlob(id, dummy); 
+    {
+        size32_t dummy;
+        return (byte *) keyManager->loadBlob(id, dummy);
     }
 
 public:
@@ -111,7 +111,7 @@ public:
     void finishedRow()
     {
         if (keyManager)
-            keyManager->releaseBlobs(); 
+            keyManager->releaseBlobs();
     }
 
 protected:
@@ -244,7 +244,7 @@ public:
     //interface IHThorInput
     virtual bool isGrouped()                { return false; }
     virtual const char *getFileName()       { return NULL; }
-    virtual bool outputToFile(const char *) { return false; } 
+    virtual bool outputToFile(const char *) { return false; }
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
     virtual void updateProgress(IStatisticGatherer &progress) const
@@ -428,9 +428,9 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
 }
 
 void CHThorIndexReadActivityBase::stop()
-{ 
-    killPart(); 
-    CHThorActivityBase::stop(); 
+{
+    killPart();
+    CHThorActivityBase::stop();
 }
 
 bool CHThorIndexReadActivityBase::doPreopenLimit(unsigned __int64 limit)
@@ -616,8 +616,8 @@ void CHThorIndexReadActivityBase::initManager(IKeyManager *manager, bool isTlk)
     manager->reset();
 }
 
-void CHThorIndexReadActivityBase::initPart()                                    
-{ 
+void CHThorIndexReadActivityBase::initPart()
+{
     assertex(!keyIndex->isTopLevelKey());
     klManager.setown(createLocalKeyManager(eclKeySize.queryRecordAccessor(true), keyIndex, NULL, helper.hasNewSegmentMonitors(), false));
     initManager(klManager, false);
@@ -683,7 +683,7 @@ bool CHThorIndexReadActivityBase::doNextSuper()
 {
     do
     {
-        clearTlk(); 
+        clearTlk();
         df.set(&superIterator->query());
         unsigned numParts = df->numParts();
         if (numParts==1)
@@ -907,7 +907,7 @@ bool CHThorIndexReadActivity::nextPart()
 }
 
 void CHThorIndexReadActivity::initPart()
-{ 
+{
     CHThorIndexReadActivityBase::initPart();
 }
 
@@ -1558,7 +1558,7 @@ public:
     //interface IHThorInput
     virtual void ready();
     virtual const void *nextRow();
-    virtual bool needsAllocator() const { return true; }        
+    virtual bool needsAllocator() const { return true; }
     virtual void processRow(const void * next);
 
 protected:
@@ -1608,7 +1608,7 @@ void CHThorIndexGroupAggregateActivity::gather()
             if (!nextPart())
                 return;
         }
-                
+
         agent.reportProgress(NULL);
         try
         {
@@ -1820,9 +1820,9 @@ protected:
     ISourceRowPrefetcher * prefetcher;
 public:
     FetchPartHandlerBase(offset_t _base, offset_t _size, bool _blockcompressed, MemoryAttr &_encryptionkey, unsigned _activityId, CachedOutputMetaData const & _outputMeta, ISourceRowPrefetcher * _prefetcher, IEngineRowAllocator *_rowAllocator)
-        : blockcompressed(_blockcompressed), 
-          encryptionkey(_encryptionkey), 
-          activityId(_activityId), 
+        : blockcompressed(_blockcompressed),
+          encryptionkey(_encryptionkey),
+          activityId(_activityId),
           outputMeta(_outputMeta),
           prefetcher(_prefetcher),
           rowAllocator(_rowAllocator)
@@ -1877,7 +1877,7 @@ public:
                     else
                         expectedSize = props.getPropInt64("@size", -1);
                     if(thissize != expectedSize && expectedSize != -1)
-                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", ifile->queryFilename(), expectedSize, thissize); 
+                        throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", ifile->queryFilename(), expectedSize, thissize);
                     if(blockcompressed)
                         rawFile.setown(createCompressedFileReader(ifile,eexp));
                     else
@@ -1999,7 +1999,7 @@ protected:
             }
         }
         if (partsize==-1)
-            throw MakeStringException(0, "Unable to determine size of filepart"); 
+            throw MakeStringException(0, "Unable to determine size of filepart");
         return partsize;
     }
 
@@ -2137,9 +2137,9 @@ public:
 
     virtual void fetchAll() = 0;
 
-    virtual void ready()        
-    { 
-        CHThorActivityBase::ready(); 
+    virtual void ready()
+    {
+        CHThorActivityBase::ready();
         started = false;
         stopped = false;
         aborting = false;
@@ -2163,7 +2163,7 @@ public:
         clearQueue();
         waitForThreads();
         avail.reinit(0);
-        CHThorActivityBase::stop(); 
+        CHThorActivityBase::stop();
     }
 
     virtual const void * getRow() = 0;
@@ -2174,7 +2174,7 @@ public:
     //interface IHThorInput
     virtual bool isGrouped()                { return false; }
     virtual const char *getFileName()       { return NULL; }
-    virtual bool outputToFile(const char *) { return false; } 
+    virtual bool outputToFile(const char *) { return false; }
     virtual IOutputMetaData * queryOutputMeta() const { return CHThorActivityBase::outputMeta; }
 
 protected:
@@ -2237,7 +2237,7 @@ public:
     }
 
     virtual void initParts(IDistributedFile * f) = 0;
-    
+
     virtual void stopParts() = 0;
 
     virtual void onLimitExceeded() = 0;
@@ -2408,7 +2408,7 @@ protected:
     Owned<IOutputMetaData> actualDiskMeta;
     Owned<const IDynamicTransform> translator;
 private:
-    PartHandlerThreadFactory<FetchRequest> threadFactory;   
+    PartHandlerThreadFactory<FetchRequest> threadFactory;
     Owned<DistributedFileFetchHandler<SimpleFetchPartHandlerBase, const void *, FetchRequest> > parts;
     offset_t pendingSeq, signalSeq, dequeuedSeq;
     QueueOf<const void *, true> pending;
@@ -2583,7 +2583,7 @@ public:
             buff.append("Skipping OPT fetch of nonexistent file ").append(lfn);
             agent.addWuExceptionEx(buff.str(), WRN_SkipMissingOptFile, SeverityInformation, MSGAUD_user, "hthor");
         }
-            
+
         csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
     }
 
@@ -2638,7 +2638,7 @@ public:
     }
 
 protected:
-    CSVSplitter csvSplitter;    
+    CSVSplitter csvSplitter;
     CriticalSection transformCrit;
     IHThorCsvFetchArg & helper;
 };
@@ -2748,7 +2748,7 @@ public:
                 setRow(rowBuilder.finalizeRowClear(thisSize), fetch->seq);
             }
             else
-            {   
+            {
                 setRow(NULL, fetch->seq);
             }
         }
@@ -2866,7 +2866,7 @@ public:
         unsigned ms;
         unsigned idx;
     } matches;
-    
+
     CJoinGroup *prev;  // Doubly-linked list to allow us to keep track of ones that are still in use
     CJoinGroup *next;
 
@@ -3217,7 +3217,7 @@ public:
             IDistributedFile & f = keyFiles.item(idx);
             IDistributedFilePart &tlk = tlks.item(idx);
             Owned<IKeyIndex> index = openKeyFile(tlk);
-            //Owned<IRecordLayoutTranslator> 
+            //Owned<IRecordLayoutTranslator>
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
             Owned<IKeyManager> manager = createLocalKeyManager(owner.queryIndexRecord(), index, NULL, owner.hasNewSegmentMonitors(), false);
@@ -3405,11 +3405,11 @@ public:
     virtual IDistributedFilePart * queryPart() { return part; }
 
 private:
-    virtual void openPart() 
-    { 
-        FetchPartHandlerBase::openPart(); 
+    virtual void openPart()
+    {
+        FetchPartHandlerBase::openPart();
     }
-    
+
     virtual void doRequest(KeyedJoinFetchRequest * _fetch)
     {
         Owned<KeyedJoinFetchRequest> fetch(_fetch);
@@ -3425,7 +3425,7 @@ private:
 
 class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements IJoinProcessor, public IKeyedJoinFetchHandlerCallback, public IFetchHandlerFactory<KeyedJoinFetchPartHandler>
 {
-    PartHandlerThreadFactory<FetchRequest> threadFactory;   
+    PartHandlerThreadFactory<FetchRequest> threadFactory;
     Owned<DistributedFileFetchHandler<KeyedJoinFetchPartHandler, MatchSet *, KeyedJoinFetchRequest> > parts;
     IHThorKeyedJoinArg &helper;
     Owned<IKeyLookupHandler> lookup;
@@ -3490,9 +3490,9 @@ public:
 
     virtual bool hasNewSegmentMonitors() { return helper.hasNewSegmentMonitors(); }
 
-    virtual void ready()        
-    { 
-        CHThorThreadedActivityBase::ready(); 
+    virtual void ready()
+    {
+        CHThorThreadedActivityBase::ready();
 
         preserveOrder = ((helper.getJoinFlags() & JFreorderable) == 0);
         preserveGroups = helper.queryOutputMeta()->isGrouped();
@@ -3539,7 +3539,7 @@ public:
         fetch.getFileEncryptKey(kl,k);
         MemoryAttr encryptionkey;
         encryptionkey.setOwn(kl,k);
-        Owned<IEngineRowAllocator> inputRowAllocator;   
+        Owned<IEngineRowAllocator> inputRowAllocator;
         if (needsDiskRead)
         {
             inputRowAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
@@ -3554,7 +3554,7 @@ public:
             parts->stopThread();
     }
 
-    virtual bool isGrouped() { return preserveGroups; } 
+    virtual bool isGrouped() { return preserveGroups; }
 
     virtual void waitForThreads()
     {
@@ -3611,7 +3611,7 @@ public:
             {
                 if (eogSeen)
                     break;
-                else 
+                else
                     eogSeen = true;
                 pool->endGroup();
             }
@@ -3665,7 +3665,7 @@ public:
             }
             else
             {
-                RtlDynamicRowBuilder extractBuilder(queryRightRowAllocator()); 
+                RtlDynamicRowBuilder extractBuilder(queryRightRowAllocator());
                 size32_t size = helper.extractJoinFields(extractBuilder, row, NULL);
                 void * ret = (void *) extractBuilder.finalizeRowClear(size);
                 fetch->ms->setPendingRightMatch(fetch->seq, ret);
@@ -3849,8 +3849,8 @@ public:
                     }
                 case TAKkeyeddenormalize:
                     {
-                        LinkRoxieRow(left);     
-                        addRow((void *) left ); 
+                        LinkRoxieRow(left);
+                        addRow((void *) left );
                         added++;
                         break;
                     }
@@ -3963,7 +3963,7 @@ public:
                             LinkRoxieRow(row);
                             extractedRows.append(row);
                         } while(jg->matches.next());
-                    
+
                     size32_t transformedSize;
                     try
                     {
@@ -4083,7 +4083,7 @@ public:
                     ms->incRightMatchCount();
                 else
                 {
-                    RtlDynamicRowBuilder rowBuilder(queryRightRowAllocator()); 
+                    RtlDynamicRowBuilder rowBuilder(queryRightRowAllocator());
                     size32_t size = helper.extractJoinFields(rowBuilder, rhs, &adapter);
                     void * ret = (void *)rowBuilder.finalizeRowClear(size);
                     ms->addRightMatch(ret);

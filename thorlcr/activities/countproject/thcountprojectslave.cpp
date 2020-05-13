@@ -66,7 +66,7 @@ public:
             OwnedConstThorRow row(inputStream->nextRow());
             if (!row)
             {
-                if (anyThisGroup) 
+                if (anyThisGroup)
                     break;
                 row.setown(inputStream->nextRow());
                 if (!row)
@@ -84,7 +84,7 @@ public:
         }
         count = 0;
         anyThisGroup = false;
-        return NULL;        
+        return NULL;
     }
     virtual bool isGrouped() const override { return queryInput(0)->isGrouped(); }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
@@ -145,7 +145,7 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
 public:
     CountProjectActivity(CGraphElementBase *container) : BaseCountProjectActivity(container)
     {
-    }   
+    }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
         PARENT::init(data, slaveData);
@@ -194,7 +194,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (first) 
+        if (first)
         {
             first = false;
             prevRecCount = count = getPrevCount();
@@ -203,7 +203,7 @@ public:
         while (!abortSoon)
         {
             OwnedConstThorRow row(inputStream->nextRow()); // NB: lookahead ensures ungrouped
-            if (!row) 
+            if (!row)
                 break;
             RtlDynamicRowBuilder ret(queryRowAllocator());
             size32_t sizeGot = helper->transform(ret, row, ++count);

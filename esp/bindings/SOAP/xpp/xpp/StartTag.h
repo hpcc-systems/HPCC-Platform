@@ -23,7 +23,7 @@
 #include <sxt/XmlTokenizer.h>
 /**
  * Encapsulate XML STag and EmptyElement
- * 
+ *
  *
  * @author Aleksander Slominski [aslom@extreme.indiana.edu]
  */
@@ -46,8 +46,8 @@ namespace xpp {
       attArr = NULL;
     }
 
-    void clear () { 
-      reset(); 
+    void clear () {
+      reset();
     }
 
     /** @return DO NOT DEALLOCATE RETURN VALUE! */
@@ -101,25 +101,25 @@ namespace xpp {
       }
     }
 
-    /** 
-     * always return "CDATA" 
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     * always return "CDATA"
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getType (const SXT_CHAR* /*qName_*/) const {
       return _MYT("CDATA");
     }
-    
-    /** 
-     * always return "CDATA" 
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+
+    /**
+     * always return "CDATA"
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getType (const SXT_STRING* /*uri_*/, const SXT_CHAR* /*localName_*/) const {
       return _MYT("CDATA");
     }
 
-    /** 
-     *  
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     *
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getValue (const SXT_CHAR* uri_, const SXT_CHAR* localName_) const {
       for(int i = 0; i < attEnd; ++i) {
@@ -132,9 +132,9 @@ namespace xpp {
       return NULL;
     }
 
-    /** 
-     *  
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     *
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getValue (const SXT_CHAR* qName_) const {
       for(int i = 0; i < attEnd; ++i) {
@@ -147,18 +147,18 @@ namespace xpp {
     }
 
     const SXT_STRING toString() const {
-      SXT_STRING buf = SXT_STRING("StartTag={");    
+      SXT_STRING buf = SXT_STRING("StartTag={");
       buf = buf + " '" + qName + "'";
       if(SXT_STRING(_MYT("")) != uri) {
         buf = buf + "('" + uri +"','" + localName + "') ";
-      }      
+      }
       if(attEnd > 0) {
-        buf += " attArr=[ ";    
+        buf += " attArr=[ ";
         for(int i = 0; i < attEnd; ++i) {
           SXT_STRING s = attArr[i].toString();
-          buf += s + " ";    
+          buf += s + " ";
         }
-        buf += " ]";    
+        buf += " ]";
       }
       buf += " }";
       return buf;
@@ -167,7 +167,7 @@ namespace xpp {
   private:
 
   // ==== utility method
-  
+
   void ensureCapacity(int size) {
     int newSize = 2 * size;
     if(newSize == 0)
@@ -189,7 +189,7 @@ namespace xpp {
       attSize = newSize;
     }
   }
-      
+
     void init() {
       uri = NULL;
       localName = NULL;
@@ -201,21 +201,21 @@ namespace xpp {
     void reset() {
       attEnd = 0;
     }
-    
+
     // ===== internals
-               
+
   protected:
-    
-    friend ostream& operator<<(ostream& output, 
+
+    friend ostream& operator<<(ostream& output,
       const StartTag& startTag);
-          
+
 
     const SXT_CHAR *uri;
     const SXT_CHAR *localName;
     const SXT_CHAR *qName;
     SXT_STRING nameBuf;
 
-    class Attribute { 
+    class Attribute {
       friend class XmlPullParser;
       friend class CXJXPullParser;
       friend class StartTag;
@@ -259,7 +259,7 @@ namespace xpp {
       SXT_STRING prefix;
       bool prefixValid;
       SXT_STRING value;
-      
+
     };
 
     int attEnd;
@@ -267,8 +267,8 @@ namespace xpp {
     Attribute* attArr;
   };
 
-inline ostream& operator<<(ostream& output, 
-  const StartTag& startTag) 
+inline ostream& operator<<(ostream& output,
+  const StartTag& startTag)
 {
   const SXT_STRING s = startTag.toString();
   output << s << endl;

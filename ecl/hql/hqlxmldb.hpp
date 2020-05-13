@@ -28,7 +28,7 @@
 /**
  * Iterator interface
  */
-class StringBuffer; 
+class StringBuffer;
 
 interface IXmlScope : public IInterface
 {
@@ -50,22 +50,22 @@ interface IEclRepository;
     IIterator*  sub##Itr = scope->getScopes(#sub, false); \
     ForEach(*sub##Itr) \
     { \
-        IXmlScope* sub = (IXmlScope*)&sub##Itr->query(); 
+        IXmlScope* sub = (IXmlScope*)&sub##Itr->query();
 
 #define EndHashFor(sub) \
     } \
-    sub##Itr->Release(); 
+    sub##Itr->Release();
 
 /* variable name can not be defaulted to the subscope name */
 #define HashForEx(sub,name,scope)  \
     IIterator*  sub##Itr = scope->getScopes(name, false); \
     ForEach(*sub##Itr) \
     { \
-        IXmlScope* sub = (IXmlScope*)&sub##Itr->query(); 
+        IXmlScope* sub = (IXmlScope*)&sub##Itr->query();
 
 #define EndHashForEx(sub) \
     } \
-    sub##Itr->Release(); 
+    sub##Itr->Release();
 
 //-----------------------------------------------------------------------------
 // Prototypes

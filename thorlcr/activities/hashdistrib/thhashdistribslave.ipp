@@ -36,8 +36,8 @@ interface IHashDistributor : extends IInterface
 interface IStopInput;
 IHashDistributor *createHashDistributor(
     CActivityBase *activity,
-    ICommunicator &comm, 
-    mptag_t tag, 
+    ICommunicator &comm,
+    mptag_t tag,
     bool dedup,
     bool isAll,
     IStopInput *istop, const char *id=NULL); // id optional, used for tracing to identify which distributor if >1 in activity

@@ -49,7 +49,7 @@ public:
     //
     virtual int setXmlSource(const char *pszFileName) = 0;
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize) = 0;
- 
+
     // setXslSource - specifies the source of the XSLT "script" to use
     //
     virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath) = 0;
@@ -59,10 +59,10 @@ public:
 
     // setResultTarget - Specifies where the post transform data is to be placed
     // must be set before calling parameterless variety of transform
-    virtual int setResultTarget(const char *pszFileName) = 0; 
+    virtual int setResultTarget(const char *pszFileName) = 0;
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize) = 0;
     virtual int closeResultTarget() = 0;
- 
+
     // setParameter - for adding value pair parameters
     //    szExpression == "" is empty parameter
     //    szExpression == NULL removes any existing parameter with the given name
@@ -84,7 +84,7 @@ public:
     virtual int setIncludeHandler(IIncludeHandler* handler) = 0;
 
     // createExternalFunction - create a simple external function that processes text (a convenient way to define external functions)
-    // 
+    //
     virtual IXslFunction* createExternalFunction( const char* pszNameSpace, void (*fn)(StringBuffer& out, const char* pszIn, IXslTransform*)) = 0;
 
     // setExternalFunction - add an external function that can be called from within the XSLT
@@ -103,7 +103,7 @@ public:
     virtual const char* getMessages() const = 0;
 
     //Allow the caller to set necessary info that can be used to identify it.
-    //This is typically useful in [static] external functions, which can use 
+    //This is typically useful in [static] external functions, which can use
     //this info to work with caller/context.
     //
     virtual void setUserData(void*) = 0;
@@ -113,7 +113,7 @@ public:
 interface XMLLIB_API IXslProcessor : public IInterface
 {
     virtual IXslTransform *createXslTransform(IPropertyTree *cfg = nullptr) = 0;
- 
+
     // execute - runs the transformation placing the results in the specified output location
     //
     virtual int execute(IXslTransform *pITransform) = 0;

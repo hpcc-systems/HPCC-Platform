@@ -1,6 +1,6 @@
 
 
-// CSocketSelectThread error 10038  
+// CSocketSelectThread error 10038
 
 #include <platform.h>
 #include <jlib.hpp>
@@ -114,9 +114,9 @@ class TimedCriticalBlock
 {
     CriticalSection &crit;
 public:
-    TimedCriticalBlock(CriticalSection &c,CSectionTimer &stim) 
-        : crit(c)       
-    { 
+    TimedCriticalBlock(CriticalSection &c,CSectionTimer &stim)
+        : crit(c)
+    {
         TimedBlock block(stim);  crit.enter();
     }
     ~TimedCriticalBlock()                       { crit.leave(); }
@@ -179,7 +179,7 @@ void StreamTest(IGroup *group,ICommunicator *comm)
 
 
 void Test1(IGroup *group,ICommunicator *comm)
-{ 
+{
     PROGLOG("test1");
     CMessageBuffer mb;
     if (group->rank()==0)
@@ -332,7 +332,7 @@ void Test6(IGroup *group,ICommunicator *comm)
 }
 
 void Test7(IGroup *group,ICommunicator *comm)
-{ 
+{
     PROGLOG("test7");
     CMessageBuffer mb;
     if (group->rank()==0)
@@ -356,7 +356,7 @@ void Test7(IGroup *group,ICommunicator *comm)
 // #define MAXBUFFERSIZE 0x100000
 #define MAXBUFFERSIZE 0x10000
 struct CRandomBuffer
-{   
+{
     size32_t size;
     char buffer[MAXBUFFERSIZE];
     unsigned crc;
@@ -382,7 +382,7 @@ struct CRandomBuffer
         }
         crc = crc32(&buffer[0],size,0);
     }
-    bool check() 
+    bool check()
     {
         int errs = 50;
         if (crc!=crc32(buffer,size,0))
@@ -450,7 +450,7 @@ void MultiTest(ICommunicator *_comm)
                 {
                     mb.clear();
                     rank_t rr;
-                    if (!comm->recv(mb,RANK_ALL,MPTAG_TEST,&rr)) 
+                    if (!comm->recv(mb,RANK_ALL,MPTAG_TEST,&rr))
                         break;
                     PROGLOG("MPTEST: MultiTest server Received from %u, len = %u",rr, mb.length());
                     StringBuffer str;
@@ -488,7 +488,7 @@ void MultiTest(ICommunicator *_comm)
     } server(_comm);
 
     Owned<ICommunicator> comm;
-    comm.set(_comm); 
+    comm.set(_comm);
 
     server.start();
 
@@ -501,15 +501,15 @@ void MultiTest(ICommunicator *_comm)
     rank_t *t = targets;
     rank_t i;
 
-    for (i=0;i<nr;i++) 
+    for (i=0;i<nr;i++)
         if (i!=r)
-            for (unsigned j=0;j<N;j++) 
+            for (unsigned j=0;j<N;j++)
                 *(t++) = i;
 
     unsigned k=n;
     while (k>1)
     {
-        i = getRandom()%k;  // NB n is correct here 
+        i = getRandom()%k;  // NB n is correct here
         k--;
         unsigned t = targets[i];
         targets[i] = targets[k];
@@ -532,7 +532,7 @@ void MultiTest(ICommunicator *_comm)
 
             PROGLOG("MPTEST: Multitest client Sending to %u, length=%u", targets[n], mb.length());
 
-            if (!comm->sendRecv(mb,targets[n],MPTAG_TEST)) 
+            if (!comm->sendRecv(mb,targets[n],MPTAG_TEST))
                 break;
 
             // Sleep((n+1)*2000);

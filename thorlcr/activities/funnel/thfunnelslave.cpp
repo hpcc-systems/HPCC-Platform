@@ -129,7 +129,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     Linked<IOutputRowSerializer> serializer;
 
     void push(const void *row)
-    {   
+    {
         CriticalBlock b2(fullCrit); // exclusivity for totSize / full
         if (stopped)
         {
@@ -463,7 +463,7 @@ class CombineSlaveActivity : public CSlaveActivity
     CThorExpandingRowArray rows;
 
 public:
-    CombineSlaveActivity(CGraphElementBase *_container) 
+    CombineSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), rows(*this, this)
     {
         grouped = container.queryGrouped();
@@ -528,7 +528,7 @@ public:
                 rows.kill();
                 throw MakeActivityException(this, -1, "mismatched input row count for Combine");
             }
-            if (eog) 
+            if (eog)
                 break;
             RtlDynamicRowBuilder row(queryRowAllocator());
             size32_t sizeGot = helper->transform(row, rows.ordinality(), rows.getRowArray());
@@ -719,11 +719,11 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (eoi) 
-            return NULL; 
-        if (eogNext) { 
-            eogNext = false; 
-            return NULL; 
+        if (eoi)
+            return NULL;
+        if (eogNext) {
+            eogNext = false;
+            return NULL;
         }
         for (;;)
         {
@@ -838,13 +838,13 @@ public:
         return ret.getClear();
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector)
-    { 
+    {
         if (!selectedStream)
             return false;
         return selectedInput->gatherConjunctions(collector);
     }
     virtual void resetEOF()
-    { 
+    {
         if (selectedStream)
             selectedStream->resetEOF();
     }

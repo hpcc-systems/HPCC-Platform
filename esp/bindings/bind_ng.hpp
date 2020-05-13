@@ -28,7 +28,7 @@ class CEspNgContext  : implements IEspContext, public CInterface
 protected:
     StringBuffer xuserid;
     StringBuffer xpw;
-    
+
     Owned<ISecUser> secuser;
     Owned<ISecManager> secmgr;
     Owned<ISecResourceList> reslist;
@@ -55,18 +55,18 @@ public:
     void setUserID(const char * userid){xuserid.clear().append(userid);}
     StringBuffer & getUserID(StringBuffer & userid){return userid.clear().append(xuserid);}
     const char * queryUserId(){return xuserid.str();}
-    
+
     void setPassword(const char * password){xpw.clear().append(password);}
     virtual StringBuffer & getPassword(StringBuffer & password){return password.clear().append(xpw);}
     const char * queryPassword(){return xpw.str();}
-    
+
     void setRealm(const char * realm){}
     StringBuffer & getRealm(StringBuffer & realm){return realm.clear();}
     const char * queryRealm(){return "";}
-    
+
     void setUser(ISecUser * user){secuser.setown(user);}
     ISecUser * queryUser(){return secuser.get();}
-    
+
     virtual void setResources(ISecResourceList* rlist)
     {
         m_resources.setown(rlist);
@@ -83,19 +83,19 @@ public:
 
     void setContextPath(const char * path){contextPath.clear().append(path);}
     const char * getContextPath(){return contextPath.str();}
-    
+
     void setBindingValue(void * value){bindvalue=value;}
     void * getBindingValue(){return bindvalue;}
-    
+
     void setServiceValue(void * value){servvalue=value;}
     void * getServiceValue(){return servvalue;}
-    
+
     void setToBeAuthenticated(bool val){}
     bool toBeAuthenticated(){return false;}
-    
+
     void setPeer(const char * peer){xpeer.clear().append(peer);}
     StringBuffer & getPeer(StringBuffer & peer){return peer.clear().append(xpeer);}
-    
+
     void setFeatureAuthMap(IAuthMap * map){authMap.setown(map);}
     IAuthMap * queryAuthMap(){return authMap.get();}
 
@@ -161,7 +161,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    EspNgStringParameter() : maxlen((unsigned)-1), nil(true) {} // TO Bob: shouldn't it be 0, instead -1 
+    EspNgStringParameter() : maxlen((unsigned)-1), nil(true) {} // TO Bob: shouldn't it be 0, instead -1
     EspNgStringParameter(const char *tagname, unsigned maxlen) : name(tagname), maxlen(maxlen), nil(true) {}
 
     const char * queryName(){return name.str();};
@@ -222,7 +222,7 @@ public:
         Owned<IEspNgParameterIterator> reqparms = getParameterIterator();
         for(reqparms->first(); reqparms->isValid(); reqparms->next())
         {
-            
+
             IEspNgParameter *parm=reqparms->query();
             encodedStr.clear();
             if(parm->queryValue())

@@ -33,7 +33,7 @@ interface ISortSlaveMP
     virtual void MultiMergeBetween(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints)=0; /* async */
     virtual void SingleMerge()=0; /* async */
     virtual bool FirstRowOfFile(const char *filename,size32_t &rowbuffsize, byte * &rowbuf)=0;
-    virtual void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf)=0;              
+    virtual void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf)=0;
     virtual void StartMiniSort(rowcount_t _totalrows)=0; /* async */
     virtual void Close()=0; /* async */
     virtual void CloseWait()=0;
@@ -70,7 +70,7 @@ public:
     void MultiMergeBetween(rowcount_t globalCount, unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints); /* async */
     void SingleMerge(); /* async */
     bool FirstRowOfFile(const char *filename,size32_t &rowbuffsize, byte * &rowbuf);
-    void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf);                
+    void GetMultiNthRow(unsigned numsplits,size32_t &mkeybuffsize, void * &mkeybuf);
     virtual void StartMiniSort(rowcount_t totalrows); /* async */
     void Close(); /* async */
     void CloseWait();

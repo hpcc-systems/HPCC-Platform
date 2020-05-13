@@ -661,10 +661,10 @@ TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__
 TIMELIB_API __int64 TIMELIB_CALL tlStringToSeconds(size32_t lenS, const char* s, const char* fmtin, bool is_local_time)
 {
     struct tm       timeInfo;
-    
+
     memset(&timeInfo, 0, sizeof(timeInfo));
     timeInfo.tm_isdst = -1;
-    
+
     if (simple_strptime(lenS, s, fmtin, &timeInfo))
     {
         return static_cast<__int64>(tlMKTime(&timeInfo, is_local_time));

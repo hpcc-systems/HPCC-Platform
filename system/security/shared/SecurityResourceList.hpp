@@ -83,7 +83,7 @@ public:
         return true;
     }
 
-    
+
     ISecResource* addResource(const char * name)
     {
         if(!name || !*name)
@@ -91,7 +91,7 @@ public:
 
         ISecResource* resource = m_rmap[name];
         if(resource == NULL)
-        {   
+        {
             resource = new CSecurityResource(name);
             m_rlist.append(*resource);
             m_rmap[name].set(resource);
@@ -116,7 +116,7 @@ public:
         }
         else
             resource->Release();
-                    
+
     }
 
     bool addCustomResource(const char * name, const char * config)

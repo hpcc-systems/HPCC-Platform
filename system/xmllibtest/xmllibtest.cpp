@@ -52,14 +52,14 @@ void parseCommandLineOptions(int argc, char** argv);
 //--------------------------------------------------------------------------------
 // main
 
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
     parseCommandLineOptions(argc, argv);
-    if (gDoHelp) 
+    if (gDoHelp)
         usage();
-    
+
     InitModuleObjects();
-    
+
     switch(gTestType)
     {
     case Type_XsltTransform:
@@ -68,17 +68,17 @@ int main(int argc, char** argv)
         else
             doTransform();
         break;
-        
+
     case Type_XmlValidation:
         doXmlValidation();
         break;
-        
+
     default: usage();
         break;
     }
-    
+
     delete[] gArgv;
-    
+
     ExitModuleObjects();
     releaseAtoms();
 
@@ -99,14 +99,14 @@ void usage()
     puts("  -p=port: the port the socket output to [default: 9000]");
     puts("  -b: validating through string buffer");
     puts("If no parameter is given, a default transform is done.");
-    
+
     exit(1);
 }
 
 void parseCommandLineOptions(int argc, char** argv)
 {
     gArgc = argc;
-    
+
     int i;
     for (i=1;i<argc;i++)
     {
@@ -131,17 +131,17 @@ void parseCommandLineOptions(int argc, char** argv)
                 gTargetNamespace = argv[i]+4;
             else if (!strcmp(argv[i],"-b"))
                 gByStringBuffer = true;
-            
+
             // unknown
             else {
                 fprintf(stderr, "Unknown options: %s\n", argv[i]);
                 exit(1);
-            }               
-            
+            }
+
             gArgc--; // remove the option for the arg list
         }
     }
-    
+
     gArgv = new char*[gArgc];
     int idx = 0;
     for (i=0; i<argc; i++)
@@ -149,7 +149,7 @@ void parseCommandLineOptions(int argc, char** argv)
         if (argv[i][0] != '-')
             gArgv[idx++] = argv[i];
     }
-    
+
     assert(gArgc==idx);
 }
 
@@ -159,19 +159,19 @@ class CIncludeHandler : public CInterface, implements IIncludeHandler
 {
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     virtual bool getInclude(const char* includename, MemoryBuffer& includebuf, bool& pathOnly)
     {
         pathOnly = false;
         printf("includename=%s\n", includename);
-        
+
         /*
         struct tm *curtime;
         time_t aclock;
         time( &aclock );
-        curtime = localtime( &aclock );  
+        curtime = localtime( &aclock );
         */
-        
+
         StringBuffer incbuf;
         if(strstr(includename, "foo.xsl") != NULL)
         {
@@ -189,7 +189,7 @@ public:
                 );
             incbuf.append("</xsl:template>").append("</xsl:stylesheet>");
         }
-        
+
         includebuf.append(incbuf.str());
         return true;
     }
@@ -229,14 +229,14 @@ class XsltThread : public Thread
 private:
     int argc;
     char** argv;
-    
+
 public:
     XsltThread(int _argc, char** _argv)
     {
         argc = _argc;
         argv = _argv;
     }
-    
+
     int run()
     {
         doTransform();
@@ -247,7 +247,7 @@ public:
 void doTransformUseThead()
 {
     const int NUMTHREADS = 1;
-    
+
     XsltThread* t1s[NUMTHREADS];
     XsltThread* t2s[NUMTHREADS];
     XsltThread* t3s[NUMTHREADS];
@@ -264,7 +264,7 @@ void doTransformUseThead()
         t2s[i]->start();
         t3s[i]->start();
     }
-    
+
     for(i = 0; i < NUMTHREADS; i++)
     {
         t1s[i]->join();
@@ -287,7 +287,7 @@ void doTransform()
     //Owned<IXslProcessor> processor2 = getXslProcessor2();
     Owned<IXslFunction> externalFunction1;
     Owned<IXslFunction> externalFunction2;
-    
+
     if(gArgc == 3)
     {
         StringBuffer xmlbuf, xslbuf;
@@ -300,35 +300,35 @@ void doTransform()
             e->Release();
             return;
         }
-        
+
         //for(int i = 0; i < 500; i++)
         {
             Owned<IXslTransform> transform = processor->createXslTransform();
             externalFunction1.setown(transform->createExternalFunction("getString", getString));
             transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction1.get(), true);
-            
+
             externalFunction2.setown(transform->createExternalFunction("setString", setString));
             transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction2.get(), true);
             //transform->setXslSource(xslbuf.str(), xslbuf.length());
             //transform->setXmlSource(xmlbuf.str(), xmlbuf.length());
             transform->setXmlSource(gArgv[1]);
             transform->loadXslFromFile(gArgv[2]);
-            try 
+            try
             {
                 if (gStreamingBySocket)
                 {
                     SocketEndpoint ep(gHost, gPort);
                     ISocket* s = ISocket::connect(ep);
                     transform->transform(s);
-                } 
-                else 
+                }
+                else
                 {
                     StringBuffer buf;
                     transform->transform(buf);
                     printf("%s\n", buf.str());
                 }
             }
-            catch (IException* e) 
+            catch (IException* e)
             {
                 StringBuffer msg;
                 ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
@@ -336,27 +336,27 @@ void doTransform()
             }
         }
     }
-    else if(gArgc == 4) 
+    else if(gArgc == 4)
     {
         //for(int i = 0; i < 500; i++)
         {
             Owned<IXslTransform> transform = processor->createXslTransform();
             externalFunction1.setown(transform->createExternalFunction("getString", getString));
             transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction1.get(), true);
-            
+
             externalFunction2.setown(transform->createExternalFunction("setString", setString));
-            
+
             transform->setExternalFunction(SEISINT_NAMESPACE, externalFunction2.get(), true);
             transform->setXmlSource(gArgv[1]);
             transform->loadXslFromFile(gArgv[2]);
             transform->setResultTarget(gArgv[3]);
-            
-            try 
+
+            try
             {
                 if (processor->execute(transform) < 0)
                     puts(transform->getLastError());
-            } 
-            catch (IException* e) 
+            }
+            catch (IException* e)
             {
                 StringBuffer msg;
                 ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
@@ -371,11 +371,11 @@ void doTransform()
         }
         */
     }
-    else 
+    else
     {
-        const char* const  theInputDocument = 
+        const char* const  theInputDocument =
             "<?xml version='1.0' encoding='ISO-8859-1'?><root><doc>Hello world!</doc><emphasis>important</emphasis><italics>interesting</italics></root>";
-        
+
         const char* const  theStylesheet =
             "<?xml version='1.0'?>"
             "<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>"
@@ -387,7 +387,7 @@ void doTransform()
             "</xsl:template>"
             "<xsl:include href='foo.xsl'/>"
             "</xsl:stylesheet>";
-        
+
         //for(int i = 0; i < 1; i++)
         {
             Owned<IXslTransform> transform = processor->createXslTransform();
@@ -395,22 +395,22 @@ void doTransform()
             transform->setIncludeHandler(new CIncludeHandler);
             // Attention - the callback getXsl is called everytime the following function is called -
             transform->setXslSource(theStylesheet, strlen(theStylesheet), "foobartest", ".");
-            
+
             StringBuffer buf;
-            
+
             printf("transforming ....\n");
-            
-            try 
+
+            try
             {
                 transform->transform(buf);
-            } 
-            catch (IException* e) 
+            }
+            catch (IException* e)
             {
                 StringBuffer msg;
                 ERRLOG("Exception caught: %s", e->errorMessage(msg).str());
                 e->Release();
             }
-            
+
             printf("result=\n%s\n\n", buf.str());
             printf("lastError=\n%s\n\n", transform->getLastError());
         }
@@ -439,12 +439,12 @@ void doXmlValidation()
     printf("Validating XML %s against %s...\n", gArgv[1], gArgv[2]);
     Owned<IXmlDomParser> p = getXmlDomParser();
     Owned<IXmlValidator> v = p->createXmlValidator();
-    
+
     if (!gByStringBuffer)
     {
-        if (!v->setXmlSource(gArgv[1])) 
+        if (!v->setXmlSource(gArgv[1]))
             return;
-        if (!v->setSchemaSource(gArgv[2])) 
+        if (!v->setSchemaSource(gArgv[2]))
             return;
     }
     else
@@ -458,10 +458,10 @@ void doXmlValidation()
         else
             return;
     }
-    
+
     if (gTargetNamespace)
         v->setTargetNamespace(gTargetNamespace);
-    
+
     try {
         v->validate();
     } catch (IMultiException* me) {
@@ -471,7 +471,7 @@ void doXmlValidation()
             StringBuffer msg;
             IException& e = es.item(i);
             printf("Error %d: %s\n", i, e.errorMessage(msg).str());
-        }       
+        }
         me->Release();
     }
 }

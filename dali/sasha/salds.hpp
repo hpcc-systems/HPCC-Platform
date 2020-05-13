@@ -13,7 +13,7 @@ interface ILdsConnection: extends IInterface
     virtual bool exists()=0;
     virtual bool remove()=0;
     virtual IFile &queryFile()=0;
-    virtual offset_t size()=0;                          
+    virtual offset_t size()=0;
     virtual bool get(MemoryBuffer &mb)=0;
     virtual bool get(size32_t sz,void *data,offset_t ofs=0)=0;
     virtual void put(const MemoryBuffer &mb)=0;

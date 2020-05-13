@@ -452,8 +452,8 @@ DsEnumerateDomainTrustsA (
 
 
 //
-// Only define this API if the caller has #included the pre-requisite 
-// ntlsa.h or ntsecapi.h  
+// Only define this API if the caller has #included the pre-requisite
+// ntlsa.h or ntsecapi.h
 //
 
 #if defined(_NTLSA_) || defined(_NTSECAPI_)

@@ -37,23 +37,23 @@ const static SmartStepExtra unknownFrequencyTermStepExtra(SSEFreturnMismatches, 
 
 It is REALLY important that we pick the best input for skipping on, and there are a few issues:
 
-a) We don't want occasional jumps in a more signficant join componet - e.g., part / source from (part, source, doc)  
+a) We don't want occasional jumps in a more signficant join componet - e.g., part / source from (part, source, doc)
    to pick an otherwise infrequent term
 b) Ordering within the data (e.g., by state) can mean that one input may occasionally skip a long way
 c) It is really important to know what the best input is - because we want to post filter that input as heavily as possible
-d) It hardly matters which other input is chosen in combination with the best input, because they are all likely to end up 
+d) It hardly matters which other input is chosen in combination with the best input, because they are all likely to end up
    (i) not matching unless they are highly correlated
    (ii) not skipping anything in the least frequent index.
 e) Spending a little bit of time working out the best input will pay dividends
 
-So the latest approach is as follows: 
+So the latest approach is as follows:
 
 1) Use the median skip distance from the last 3 values - that should prevent insignficant join components skewing the results
 
 2) Make sure all inputs have been read at least 3 times before we allow the best input to be post filtered.
 
 3) Iterate through each of the other less significant inputs in turn, so that if the best input changes, or we got it wrong, or an input
-   occasionally skips a long way (e.g. state) it will get corrected/used. 
+   occasionally skips a long way (e.g. state) it will get corrected/used.
 
   */
 int compareInitialInputOrder(CInterface * const * _left, CInterface * const * _right)
@@ -190,8 +190,8 @@ void OrderedInput::updateSequentialDistance(const void * seek, const void * next
         }
 #ifdef TRACE_JOIN_OPTIMIZATION
         if (medianDistance.compare(distances[median]) != 0)
-            DBGLOG("Median for input %d changed from %d:%" I64F "d to %d:%" I64F "d", 
-                    originalIndex, medianDistance.field, medianDistance.distance, 
+            DBGLOG("Median for input %d changed from %d:%" I64F "d to %d:%" I64F "d",
+                    originalIndex, medianDistance.field, medianDistance.distance,
                                    distances[median].field, distances[median].distance);
 #endif
         medianDistance.set(distances[median]);
@@ -358,7 +358,7 @@ void CSteppedConjunctionOptimizer::beforeProcessing()
     maxOptimizeInput = numPriorityInputs + numOptimizeInputs;
 
     associateRemoteInputs(orderedInputs, numPriorityInputs);
-    
+
     //MORE: If some inputs have known priority, and other remote inputs don't, then we could consider
     //      connecting the unknown inputs to the last known inputs.
     ForEachItemIn(i4, joins)
@@ -432,7 +432,7 @@ const void * CSteppedConjunctionOptimizer::nextGE(const void * seek, unsigned nu
 
     if (!findCandidates(seek, numFields))
         return NULL;
-    //MORE: If isCompleteMatch is provided, and seek row doesn't match returned, then shouldn't do complex join processing. 
+    //MORE: If isCompleteMatch is provided, and seek row doesn't match returned, then shouldn't do complex join processing.
     return next();
 }
 
@@ -701,18 +701,18 @@ unsigned CSteppedConjunctionOptimizer::nextToMatch() const
 }
 
 
-bool CSteppedConjunctionOptimizer::worthCombining() 
-{ 
+bool CSteppedConjunctionOptimizer::worthCombining()
+{
     unsigned flags = helper.getJoinFlags();
     if (flags & MJFneveroptimize)
         return false;
     if (flags & MJFalwaysoptimize)
         return true;
-    return joins.ordinality() > 1 || 
+    return joins.ordinality() > 1 ||
            inputs.ordinality() > 2 ||
            inputHasPostfilter ||
-           (numPriorityInputs > 0) || 
-           inputIsDistributed; 
+           (numPriorityInputs > 0) ||
+           inputIsDistributed;
 }
 
 
@@ -723,7 +723,7 @@ bool CSteppedConjunctionOptimizer::worthCombining()
   a) cost = total # if skipping index reads.  (possibly different values for within block, and random)
   b) benefit = total # of docs skipped (between requested and received records)
   c) would need some kind of running average.
-  
+
   The following is an outline of the approach:
 
   *) The root conjunction walks its children to get a list of all conjunction inputs, and a separate list of conjunctions.
@@ -746,9 +746,9 @@ bool CSteppedConjunctionOptimizer::worthCombining()
   *) You could also do this initial conjunction processing for the proximity as well (it would further restrict by segment).  However you may end
      up having to save and restore the equality restriction on the inputs, and it is unlikely to gain much.
 
-  
-  **** Does the failure to expand M of N's inputs cause problems?  May want an option to return after the first failed input I guess.  
-  Could effectively be managed by creating I(0)..I(m-1) pseudo inputs, where input I(i) ensures there are i+1 matches.  
+
+  **** Does the failure to expand M of N's inputs cause problems?  May want an option to return after the first failed input I guess.
+  Could effectively be managed by creating I(0)..I(m-1) pseudo inputs, where input I(i) ensures there are i+1 matches.
   Internally the M of N would optimize its input order.
   - initial version doesn't bother.
 
@@ -791,7 +791,7 @@ bool CSteppedConjunctionOptimizer::worthCombining()
                 lhs->peekLT(lowR);?
             else
                 lhs=->
-            
+
 
 
 

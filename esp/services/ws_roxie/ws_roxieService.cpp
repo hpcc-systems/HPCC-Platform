@@ -29,7 +29,7 @@
 void writeFile(const char * path, const char * txt)
 {
     std::ofstream outFile(path);
-    outFile << txt; 
+    outFile << txt;
 }
 
 const char * const rcXmlFile = "rc.xml";
@@ -37,7 +37,7 @@ const char * const rcXmlFile = "rc.xml";
 void CRoxieEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     StringBuffer xpath;
-    
+
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DaliServers", process, service);
     cfg->getProp(xpath.str(), daliServers_);
 
@@ -121,7 +121,7 @@ bool CRoxieEx::onGetQueryList(IEspContext &context, IEspGetQueryListRequest &req
 
 bool CRoxieEx::onAddQuery(IEspContext &context, IEspAddQueryRequest &req, IEspAddQueryResponse &resp)
 {
-    Owned<IAttributeMetaDataResolver> attrResolver =  createEclAttributeResolver(eclServer_.str()); 
+    Owned<IAttributeMetaDataResolver> attrResolver =  createEclAttributeResolver(eclServer_.str());
     const char * module = "Doxie";
 
     StringArray items, infos;

@@ -38,7 +38,7 @@ class TTestDFS : public CPPUNIT_NS::TestFixture
     CPPUNIT_TEST_SUITE(TTestDFS);
       CPPUNIT_TEST(testDFS);
     CPPUNIT_TEST_SUITE_END();
-    
+
     INamedGroupStore *dfsgroup;
     IDistributedFileDirectory *dfsdir;
 
@@ -73,9 +73,9 @@ class TTestDFS : public CPPUNIT_NS::TestFixture
 
 
 
-    
+
 public:
-    void setUp() 
+    void setUp()
     {
         dfsgroup = &queryNamedGroupStore();
         dfsdir = &queryDistributedFileDirectory();
@@ -87,7 +87,7 @@ public:
             EXCLOG(e,"TTestDFS::setUp");
         }
     }
-    void tearDown() 
+    void tearDown()
     {
         try {
             //removeFiles();
@@ -97,11 +97,11 @@ public:
             EXCLOG(e,"TTestDFS::tearDown");
         }
 
-    } 
-    
+    }
+
 protected:
-    void testDFS() 
-    { 
+    void testDFS()
+    {
         dfsgroup->add(DFSUTGROUP "1", { "192.168.1.1" }, true);
         std::vector<std::string> hosts;
         unsigned n;
@@ -144,8 +144,8 @@ protected:
             SocketEndpoint ep(s.str());
             epa.append(ep);
         }
-        grp.setown(createIGroup(epa)); 
-        CPPUNIT_ASSERT(dfsgroup->find(grp, s.clear()));     
+        grp.setown(createIGroup(epa));
+        CPPUNIT_ASSERT(dfsgroup->find(grp, s.clear()));
         CPPUNIT_ASSERT(strcmp(DFSUTGROUP "400b",s.str())==0);
         epa.kill();
         grp.clear();
@@ -198,8 +198,8 @@ protected:
             rfn.getRemotePath(s.clear());
             CPPUNIT_ASSERT(stricmp(s.str(),t.str())==0);
         }
-        
-        // now create a simple multi part file with one extra part (e.g. tlk) 
+
+        // now create a simple multi part file with one extra part (e.g. tlk)
         fdesc.setown(createFileDescriptor());
         grp.setown(dfsgroup->lookup(DFSUTGROUP "7"));
         fdesc->setDefaultDir("/c$/thordata/" DFSUTDIR);

@@ -324,7 +324,7 @@ private:
         } while((latest - progressCount) >= progressFrequency);
         progressCallback->handle(latest);
     }
-    
+
 private:
     Owned<IFile> keyFile;
     Owned<IFileIO> keyFileIO;
@@ -369,19 +369,19 @@ public:
         PROGLOG("variableWidth = %s",isvar?"true":"false");
         PROGLOG("quickCompressed = %s",reader.isQuickCompressed()?"true":"false");
 #endif
-        
+
     }
 
     const void *nextRow()
     {
-        if (!reader.get(buffer)) 
+        if (!reader.get(buffer))
             return NULL;
         void *ret = malloc(buffer.serializeRowSize());
         buffer.serialize(ret);
         return ret;
-    }       
+    }
 
-    
+
     void stop()
     {
     }
@@ -400,8 +400,8 @@ public:
     CKeyWriter()
     {
     }
-        
-    void init (char const * filename, bool overwrite, size32_t _keyedsize, size32_t _rowsize, bool variableWidth, bool quickCompressed, unsigned nodeSize) 
+
+    void init (char const * filename, bool overwrite, size32_t _keyedsize, size32_t _rowsize, bool variableWidth, bool quickCompressed, unsigned nodeSize)
     {
         keyedsize = _keyedsize;
         rowsize = _rowsize;
@@ -675,8 +675,8 @@ public:
     static KeyDiffVersion const minPatchVersionForDiff;
 
     CKeyDiff() {}
-    CKeyDiff(char const * oldIndex, char const * newIndex, char const * newTLK) 
-        : header(version, minPatchVersionForDiff, oldIndex, newIndex, newTLK) 
+    CKeyDiff(char const * oldIndex, char const * newIndex, char const * newTLK)
+        : header(version, minPatchVersionForDiff, oldIndex, newIndex, newTLK)
     {
     }
 
@@ -720,7 +720,7 @@ private:
 class CWritableKeyDiff : public CKeyDiff
 {
 public:
-    CWritableKeyDiff(char const * filename, bool overwrite, char const * oldIndex, char const * newIndex, char const * newTLK, unsigned _compmode) 
+    CWritableKeyDiff(char const * filename, bool overwrite, char const * oldIndex, char const * newIndex, char const * newTLK, unsigned _compmode)
         : CKeyDiff(oldIndex, newIndex, newTLK)
     {
         file.setown(createIFile(filename));
@@ -865,7 +865,7 @@ private:
 class CReadableKeyDiff : public CKeyDiff
 {
 public:
-    CReadableKeyDiff(char const * filename) 
+    CReadableKeyDiff(char const * filename)
         : patch(filename), eof(false), insize(0), lastSkipCount(0)
     {
         file.setown(createIFile(filename));
@@ -1022,12 +1022,12 @@ private:
             else
                 buf = (byte *)compma.bufferBase();
             stream->read(rdsize, buf);
-            if (fastlz) 
+            if (fastlz)
                 LZMADecompressToBuffer(inbuff,buf);
             else {
                 Owned<IExpander> expander = createLZWExpander();
                 size32_t expsize = expander->init(buf);
-                if(expsize != insize) 
+                if(expsize != insize)
                     throw MakeStringException(0, "LZW compression/expansion error");
                 expander->expand(inbuff.reserve(insize));
             }
@@ -1071,7 +1071,7 @@ public:
         diffoldcurr = (char *)malloc(diffsize);
         diffoldprev = (char *)malloc(diffsize);
     }
-                                                                                                                   
+
     ~CKeyDiffGenerator()
     {
         free(diffnewprev);
@@ -1433,7 +1433,7 @@ private:
         while(count--)
         {
             oldcurr.swap(oldprev);
-            if(!oldInput->get(oldcurr)) 
+            if(!oldInput->get(oldcurr))
             {
                 oldcurr.clear();
                 return false;

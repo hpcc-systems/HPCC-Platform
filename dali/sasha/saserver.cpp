@@ -70,7 +70,7 @@ static void AddServers()
     servers.append(*createSashaXrefServer());
     servers.append(*createSashaDaFSMonitorServer());
     servers.append(*createSashaQMonitorServer());
-    servers.append(*createSashaFileExpiryServer()); 
+    servers.append(*createSashaFileExpiryServer());
     // add new servers here
 }
 
@@ -125,7 +125,7 @@ void stopSashaServer(const char *eps,unsigned short port)
         ep.set(eps,port);
     else
         ep.setLocalHost(port);
-    
+
     Owned<INode> node = createINode(ep);
     IInterCommunicator & comm=queryWorldCommunicator();
     Owned<ISashaCommand> cmd = createSashaCommand();
@@ -135,7 +135,7 @@ void stopSashaServer(const char *eps,unsigned short port)
         return;
     }
     PROGLOG("Sasha Server being stopped");
-    cmd->send(node,1000*60);    
+    cmd->send(node,1000*60);
     while (queryWorldCommunicator().verifyConnection(node,500)) {
         PROGLOG("Waiting for Sasha Server to stop....");
         Sleep(2000);
@@ -168,15 +168,15 @@ public:
                 PROGLOG("Request to stop received");
             }
         }
-        else if (cmd->getAction()==SCA_GETVERSION) 
+        else if (cmd->getAction()==SCA_GETVERSION)
             cmd->addId(SASHAVERSION); // should be a result probably but keep bwd compatible
         else if (cmd->getAction()==SCA_COALESCE_SUSPEND)
             suspendCoalescingServer();
         else if (cmd->getAction()==SCA_COALESCE_RESUME)
             resumeCoalescingServer();
-        else if (cmd->getAction()==SCA_XREF) 
+        else if (cmd->getAction()==SCA_XREF)
             processXRefRequest(cmd);
-        else if (!processArchiverCommand(cmd)) 
+        else if (!processArchiverCommand(cmd))
             OWARNLOG("Command %d not handled",cmd->getAction());
         if (cmd->getAction()==SCA_WORKUNIT_SERVICES_GET)
             cmd->WUSreply();
@@ -184,12 +184,12 @@ public:
             cmd->reply();
     }
     virtual bool stop() override
-    { 
-        return true; 
+    {
+        return true;
     }
     virtual bool canReuse() const override
-    { 
-        return false; 
+    {
+        return false;
     }
 };
 
@@ -340,7 +340,7 @@ int main(int argc, const char* argv[])
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
         }
-            
+
         if (stop) {
             stopSashaServer((argc>2)?argv[2]:"",DEFAULT_SASHA_PORT);
         }
@@ -375,7 +375,7 @@ int main(int argc, const char* argv[])
                 {
                     CThreaded threaded;
                 public:
-                    CStopThread() : threaded("CStopThread") { threaded.init(this); } 
+                    CStopThread() : threaded("CStopThread") { threaded.init(this); }
                     ~CStopThread() { threaded.join(); }
                     virtual void threadmain() override
                     {
@@ -403,7 +403,7 @@ int main(int argc, const char* argv[])
             SashaServerStatus = NULL;
         }
     }
-    catch(IException *e){ 
+    catch(IException *e){
         EXCLOG(e, "Sasha Server Exception: ");
         stopPerformanceMonitor();
         e->Release();
@@ -432,4 +432,4 @@ int main(int argc, const char* argv[])
 }
 
 
-    
+

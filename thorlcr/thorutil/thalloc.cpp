@@ -56,7 +56,7 @@ public:
     virtual int errorCode() const { return TE_RowCrc; }
 
     virtual StringBuffer & errorMessage(StringBuffer & str) const
-    { 
+    {
         return str.appendf("Row CRC error at address %p",ptr);
     }
     MessageAudience errorAudience() const { return MSGAUD_operator; }   // indicates memory corruption

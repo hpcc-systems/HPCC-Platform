@@ -39,11 +39,11 @@ public:
     const char *s_save; // save text after find
     const char *s_savestr[NSUBEXP];
     size32_t      s_savelen[NSUBEXP];
-    char start;     
-    char anch;      
-    char *must;     
-    size32_t mlen;      
-    char *program;  
+    char start;
+    char anch;
+    char *must;
+    size32_t mlen;
+    char *program;
     const char *parse;      /* Input-scan pointer. */
     int npar;       /* {} count. */
     char *code;     /* Code-emit pointer. */
@@ -1437,9 +1437,9 @@ static bool WildMatchNreplace ( const char *src, int srclen, int srcidx,
                     wildlen.append(srclen-srcidx);
                     return true;
                 }
-                wild.append(srcidx);    
+                wild.append(srcidx);
                 wildlen.append(0);              // placemarker
-                if (pat[patidx] != '*') 
+                if (pat[patidx] != '*')
                     break;
                 patidx++; // someone being silly!
             }
@@ -1480,15 +1480,15 @@ bool jlib_decl WildMatchReplace(const char *src, const char *pat, const char *re
                 out.append(c);
                 break;
             }
-            if (c2=='$') 
+            if (c2=='$')
                 out.append(c);
             else {
                 unsigned idx = c2-'0';
-                if (idx==0) 
+                if (idx==0)
                     out.append(src);
                 else if ((idx<=9)&&(idx<=wild.ordinality()))
                     out.append(wildlen.item(idx-1),src+wild.item(idx-1));
-                else 
+                else
                     out.append(c).append(c2);
             }
         }

@@ -28,8 +28,8 @@ public:
     IMPLEMENT_IINTERFACE;
     CThorConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
                          IDeploymentCallback& callback,
-                         IPropertyTree& process, 
-                         const char* inputDir="", 
+                         IPropertyTree& process,
+                         const char* inputDir="",
                          const char* outputDir="");
 
 protected:

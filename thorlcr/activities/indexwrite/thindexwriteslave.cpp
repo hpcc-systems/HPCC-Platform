@@ -169,7 +169,7 @@ public:
             flags |= HTREE_VARSIZE;
         if (isTlk)
             flags |= HTREE_TOPLEVEL_KEY;
-        buildUserMetadata(metadata);                
+        buildUserMetadata(metadata);
         buildLayoutMetadata(metadata);
         // NOTE - if you add any more flags here, be sure to update checkReservedMetadataName
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
@@ -226,10 +226,10 @@ public:
             abortSoon = true;
             e.setown(MakeActivityException(this, 0, "INDEXWRITE: Error closing file: %s - unknown exception", partFname.str()));
         }
-        try 
-        { 
+        try
+        {
             metadata.clear();
-            builder.clear(); 
+            builder.clear();
         }
         catch (IException *_e)
         {

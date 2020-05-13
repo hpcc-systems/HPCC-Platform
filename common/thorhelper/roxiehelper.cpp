@@ -64,7 +64,7 @@ void OwnedRowArray::replace(const void * row, aindex_t pos)
 CRHRollingCacheElem::CRHRollingCacheElem()
 {
     row = NULL;
-    cmp = INT_MIN; 
+    cmp = INT_MIN;
 }
 CRHRollingCacheElem::~CRHRollingCacheElem()
 {
@@ -83,10 +83,10 @@ void CRHRollingCacheElem::set(const void *_row)
 CRHRollingCache::~CRHRollingCache()
 {
     while (cache.ordinality())
-    {  
-        CRHRollingCacheElem *e = cache.dequeue();  
-        delete e;  
-    }  
+    {
+        CRHRollingCacheElem *e = cache.dequeue();
+        delete e;
+    }
 }
 
 void CRHRollingCache::init(IRowStream *_in, unsigned _max)
@@ -163,7 +163,7 @@ void CRHRollingCache::advance()
 
 //=========================================================================================
 
-//CRHDualCache copied from THOR, and modified to get input from IInputBase instead 
+//CRHDualCache copied from THOR, and modified to get input from IInputBase instead
 //of IReadSeqVar and to manage rows as OwnedRoxieRow types
 CRHDualCache::CRHDualCache()
 {
@@ -176,12 +176,12 @@ CRHDualCache::~CRHDualCache()
     ::Release(strm1);
     ::Release(strm2);
     for (;;)
-    {  
-        CRHRollingCacheElem *e = cache.dequeue();  
-        if (!e)  
-            break;  
-        delete e;  
-    }  
+    {
+        CRHRollingCacheElem *e = cache.dequeue();
+        if (!e)
+            break;
+        delete e;
+    }
 }
 
 void CRHDualCache::init(IRowStream * _in)
@@ -205,7 +205,7 @@ void CRHDualCache::PrintCache()
         {
             DBGLOG("DC=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-BASE:%d,posL=%d,posR=%d %s", base, posL,posR, eos?"EOS":"");
         }
-        
+
         DBGLOG("%c%d: %s",(i==cache.ordinality()/2)?'>':' ',i,e?(const char *)e->row:"-----");
         if (i == cache.ordinality()-1)
             DBGLOG("DC=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -250,7 +250,7 @@ bool CRHDualCache::get(unsigned n, CRHRollingCacheElem *&out)
     return true;
 }
 
-CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos) 
+CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos)
 : pos(_pos)
 {
     parent = _parent;
@@ -296,22 +296,22 @@ void CRHLimitedCompareHelper::init( unsigned _atmost,
 bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
 {
     // this could be improved!
-    
+
     // first move 'mid' forwards until mid>=left
     int low = 0;
     for (;;)
     {
         CRHRollingCacheElem * r = cache->mid(0);
         if (!r)
-            break; // hit eos              
+            break; // hit eos
         int c = cmp->docompare(left,r->row);
-        if (c == 0) 
+        if (c == 0)
         {
             r->cmp = limitedcmp->docompare(left,r->row);
-            if (r->cmp <= 0) 
+            if (r->cmp <= 0)
                 break;
         }
-        else if (c < 0) 
+        else if (c < 0)
         {
             r->cmp = -1;
             break;
@@ -327,51 +327,51 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
     {
         CRHRollingCacheElem * pr = cache->mid(low-1);
         if (!pr)
-            break; // hit start 
+            break; // hit start
         int c = cmp->docompare(left,pr->row);
-        if (c == 0) 
+        if (c == 0)
         {
             pr->cmp = limitedcmp->docompare(left,pr->row);
-            if (pr->cmp==1) 
+            if (pr->cmp==1)
                 break;
         }
-        else 
+        else
         {
-            pr->cmp = 1;  
+            pr->cmp = 1;
             break;
         }
         low--;
     }
     int high = 0;
     if (cache->mid(0)) // check haven't already hit end
-    { 
+    {
         // now scan fwd
         for (;;)
         {
             high++;
             CRHRollingCacheElem * nr = cache->mid(high);
-            if (!nr) 
+            if (!nr)
                 break;
             int c = cmp->docompare(left,nr->row);
-            if (c==0) 
+            if (c==0)
             {
                 nr->cmp = limitedcmp->docompare(left,nr->row);
-                if (nr->cmp==-1) 
+                if (nr->cmp==-1)
                     break;
             }
-            else 
+            else
             {
                 nr->cmp = -1;
                 break;
             }
         }
     }
-    while (high-low>(int)atmost) 
+    while (high-low>(int)atmost)
     {
         int vl = iabs(cache->mid(low)->cmp);
         int vh = iabs(cache->mid(high-1)->cmp);
         int v;
-        if (vl==0) 
+        if (vl==0)
         {
             if (vh==0)  // both ends equal
                 return false;
@@ -386,14 +386,14 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
             low++;
         while ((low<high)&&(iabs(cache->mid(high-1)->cmp)==v))
             high--;
-        if (low>=high) 
+        if (low>=high)
             return true;   // couldn't make group;
     }
-    for (int i=low;i<high;i++) 
+    for (int i=low;i<high;i++)
     {
         CRHRollingCacheElem *r = cache->mid(i);
         LinkRoxieRow(r->row);
-        group.append(r->row);   
+        group.append(r->row);
     }
     return group.ordinality()>0;
 }
@@ -608,7 +608,7 @@ extern IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, c
     return new SortedGroupedInputReader(_input, _groupCompare, _sorter);
 }
 
-//========================================================================================= 
+//=========================================================================================
 
 class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
@@ -1307,8 +1307,8 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
 CSafeSocket::CSafeSocket(ISocket *_sock)
 {
     httpMode = false;
-    sent = 0; 
-    heartbeat = false; 
+    sent = 0;
+    heartbeat = false;
     sock.setown(_sock);
 }
 
@@ -1725,7 +1725,7 @@ bool CSafeSocket::sendHeartBeat(const IContextLogger &logctx)
         rev = (unsigned) time(NULL);
         _WINREV(rev);
         s.append(sizeof(rev), (char *) &rev);
-        
+
         try
         {
             CriticalBlock c(crit);
@@ -1920,7 +1920,7 @@ interface IXmlStreamFlusher;
 
 bool FlushingStringBuffer::needsFlush(bool closing)
 {
-    if (isBlocked || closing) // can't flush unblocked. MORE - may need to break it up though.... 
+    if (isBlocked || closing) // can't flush unblocked. MORE - may need to break it up though....
     {
         size32_t len = s.length() - emptyLength;
         return len > (closing ? 0 : RESULT_FLUSH_THRESHOLD);
@@ -2476,9 +2476,9 @@ void ClusterWriteHandler::setDescriptorParts(IFileDescriptor * desc, char const 
     ClusterPartDiskMapSpec partmap; // will get this from group at some point
     desc->setNumParts(1);
     desc->setPartMask(basename);
-    if (localCluster) 
+    if (localCluster)
         desc->addCluster(localClusterName,localCluster, partmap);
-    ForEachItemIn(idx,remoteNodes) 
+    ForEachItemIn(idx,remoteNodes)
         desc->addCluster(remoteClusters.item(idx),&remoteNodes.item(idx), partmap);
     if (attrs) {
         // need to set part attr
@@ -2486,7 +2486,7 @@ void ClusterWriteHandler::setDescriptorParts(IFileDescriptor * desc, char const 
         IPropertyTree &pprop = partdesc->queryProperties();
         // bit of a kludge (should really set properties *after* creating part rather than passing prop tree in)
         Owned<IAttributeIterator> ai = attrs->getAttributes();
-        ForEach(*ai) 
+        ForEach(*ai)
             pprop.setProp(ai->queryName(),ai->queryValue());
     }
 }
@@ -2596,8 +2596,8 @@ public:
     }
 
     //IOrderedOutputSerializer
-    size32_t fwrite(int seq, const void * data, size32_t size, size32_t count)  
-    { 
+    size32_t fwrite(int seq, const void * data, size32_t size, size32_t count)
+    {
         CriticalBlock c(crit);
         size32_t ret = getResult(seq)->fwrite(data,size, count);
         if (seq == (lastSeqFlushed + 1))
@@ -2605,7 +2605,7 @@ public:
         return ret;
     }
     size32_t printf(int seq, const char *format, ...) __attribute__((format(printf, 3, 4)))
-    { 
+    {
         CriticalBlock c(crit);
         va_list args;
         va_start(args, format);

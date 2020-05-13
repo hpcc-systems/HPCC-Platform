@@ -299,7 +299,7 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
     }
 
     __int64 offset = req.getOffset();
-    bool append = req.getAppend();  
+    bool append = req.getAppend();
     if (append)
     {
         resp.setAppend(true);

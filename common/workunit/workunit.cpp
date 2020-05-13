@@ -2486,7 +2486,7 @@ protected:
 
 // Aggregate costs excluding all hThor costs
 // Note: the only reason that this class is required is that it is not possible to determine the creator
-//       of a scope when iterating with IConstWUScopeIterator.  (When this functionlity becomes available, 
+//       of a scope when iterating with IConstWUScopeIterator.  (When this functionlity becomes available,
 //       consider filtering within aggregateCost and eliminating this class.)
 class CostAggregatorExcludeHThor : public CInterfaceOf<IWuScopeVisitor>
 {
@@ -3909,7 +3909,7 @@ public:
             { return c->getApplicationValue(application, propname, str); }
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const
             { return c->getApplicationValueInt(application, propname, defVal); }
-    virtual IConstWUAppValueIterator & getApplicationValues() const 
+    virtual IConstWUAppValueIterator & getApplicationValues() const
             { return c->getApplicationValues(); }
     virtual bool hasWorkflow() const
             { return c->hasWorkflow(); }
@@ -3951,9 +3951,9 @@ public:
             { return c->getDebugValueReal(propname, defVal); }
     virtual bool getDebugValueBool(const char * propname, bool defVal) const
             { return c->getDebugValueBool(propname, defVal); }
-    virtual IStringIterator & getDebugValues() const 
+    virtual IStringIterator & getDebugValues() const
             { return c->getDebugValues(NULL); }
-    virtual IStringIterator & getDebugValues(const char *prop) const 
+    virtual IStringIterator & getDebugValues(const char *prop) const
             { return c->getDebugValues(prop); }
     virtual unsigned getExceptionCount() const
             { return c->getExceptionCount(); }
@@ -4032,7 +4032,7 @@ public:
     virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override
             { return c->getStatistic(value, scope, kind); }
     virtual IStringVal & getSnapshot(IStringVal & str) const
-            { return c->getSnapshot(str); } 
+            { return c->getSnapshot(str); }
     virtual const char *queryUser() const
             { return c->queryUser(); }
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
@@ -4364,7 +4364,7 @@ class CLocalWUWebServicesInfo : implements IWUWebServicesInfo, public CInterface
     mutable CriticalSection crit;
 
 private:
-    
+
 public:
     IMPLEMENT_IINTERFACE;
     CLocalWUWebServicesInfo(IPropertyTree *p);
@@ -4375,7 +4375,7 @@ public:
     virtual IStringVal& getInfo(const char *name, IStringVal &str) const;
     virtual IStringVal& getText(const char *name, IStringVal &str) const;
     virtual unsigned getWebServicesCRC() const;
- 
+
     virtual void        setModuleName(const char *);
     virtual void        setAttributeName(const char *);
     virtual void        setDefaultName(const char *);
@@ -4442,7 +4442,7 @@ public:
     virtual void        setResultFetchSize(unsigned rows);      // 0 means file-loaded
     virtual void        setResultTotalRowCount(__int64 rows);   // -1 means unknown
     virtual void        setResultRowCount(__int64 rows);
-    virtual void        setResultDataset(const char *ecl, const char *defs);        
+    virtual void        setResultDataset(const char *ecl, const char *defs);
     virtual void        setResultLogicalName(const char *logicalName);
     virtual void        setResultKeyField(const char * name);
     virtual void        setResultRequestedRows(unsigned req);
@@ -4722,7 +4722,7 @@ public:
         PROGLOG("WU removeDll %s", name.get());
         queryDllServer().removeDll(name, true, true); // <name>, removeDlls=true, removeDirectory=true
     }
-};      
+};
 
 class asyncRemoveRemoteFileWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveFile
 {
@@ -6399,9 +6399,9 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
         LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during cleanupAndDelete: ").append(p->queryName()).str());
         E->Release();
     }
-    catch (...) 
-    { 
-        WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName()); 
+    catch (...)
+    {
+        WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName());
     }
 }
 
@@ -6418,7 +6418,7 @@ IJlibDateTime & CLocalWorkUnit::getTimeScheduled(IJlibDateTime &val) const
     p->getProp("@timescheduled",str);
     if(str.length())
         val.setGmtString(str.str());
-    return val; 
+    return val;
 }
 
 bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuffer & extra, IFileIO * fileio)
@@ -6482,7 +6482,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredlle
         {
             if (getState()==WUStateUnknown)
                 setState(WUStateArchived);  // to allow delete
-            cleanupAndDelete(false,deleteOwned);    // no query, may as well delete 
+            cleanupAndDelete(false,deleteOwned);    // no query, may as well delete
         }
         return false;
     }
@@ -6795,12 +6795,12 @@ IStringVal& CLocalWorkUnit::getAllowedClusters(IStringVal &str) const
 }
 
 void CLocalWorkUnit::setAllowAutoQueueSwitch(bool val)
-{ 
+{
     setDebugValueInt("allowautoqueueswitch",val?1:0,true);
 }
-    
+
 bool CLocalWorkUnit::getAllowAutoQueueSwitch() const
-{ 
+{
     CriticalBlock block(crit);
     return getDebugValueBool("allowautoqueueswitch",false);
 }
@@ -6831,7 +6831,7 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
         if (perm<0) {
             if (perm == SecAccess_Unavailable)
                 perm = SecAccess_Full;
-            else 
+            else
                 perm = SecAccess_None;
         }
     }
@@ -6842,10 +6842,10 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
 }
 
 
-void CLocalWorkUnit::setUser(const char * value) 
-{ 
+void CLocalWorkUnit::setUser(const char * value)
+{
     CriticalBlock block(crit);
-    p->setProp("@submitID", value); 
+    p->setProp("@submitID", value);
 }
 
 const char *CLocalWorkUnit::queryUser() const
@@ -6857,8 +6857,8 @@ const char *CLocalWorkUnit::queryUser() const
     return ret;
 }
 
-void CLocalWorkUnit::setWuScope(const char * value) 
-{ 
+void CLocalWorkUnit::setWuScope(const char * value)
+{
     if (value && *value)
     {
         if (checkWuScopeSecAccess(value, secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
@@ -6878,13 +6878,13 @@ const char *CLocalWorkUnit::queryWuScope() const
     return ret;
 }
 
-void CLocalWorkUnit::setPriority(WUPriorityClass cls) 
+void CLocalWorkUnit::setPriority(WUPriorityClass cls)
 {
     CriticalBlock block(crit);
     setEnum(p, "@priorityClass", cls, priorityClasses);
 }
 
-WUPriorityClass CLocalWorkUnit::getPriority() const 
+WUPriorityClass CLocalWorkUnit::getPriority() const
 {
     CriticalBlock block(crit);
     return (WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses);
@@ -6895,7 +6895,7 @@ const char *CLocalWorkUnit::queryPriorityDesc() const
     return getEnumText(getPriority(), priorityClasses);
 }
 
-void CLocalWorkUnit::setState(WUState value) 
+void CLocalWorkUnit::setState(WUState value)
 {
     if (value==WUStateAborted || value==WUStatePaused || value==WUStateCompleted || value==WUStateFailed || value==WUStateSubmitted || value==WUStateWait)
     {
@@ -6935,19 +6935,19 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
     p->setPropInt64("@agentSession", sessionId);
 }
 
-bool CLocalWorkUnit::getIsQueryService() const 
+bool CLocalWorkUnit::getIsQueryService() const
 {
     CriticalBlock block(crit);
     return p->getPropBool("@isQueryService", false);
 }
 
-void CLocalWorkUnit::setIsQueryService(bool value) 
+void CLocalWorkUnit::setIsQueryService(bool value)
 {
     CriticalBlock block(crit);
     p->setPropBool("@isQueryService", value);
 }
 
-void CLocalWorkUnit::checkAgentRunning(WUState & state) 
+void CLocalWorkUnit::checkAgentRunning(WUState & state)
 {
     if (queryDaliServerVersion().compare("2.1")<0)
         return;
@@ -7000,7 +7000,7 @@ void CLocalWorkUnit::checkAgentRunning(WUState & state)
     }
 }
 
-WUState CLocalWorkUnit::getState() const 
+WUState CLocalWorkUnit::getState() const
 {
     CriticalBlock block(crit);
     WUState state = (WUState) getEnum(p, "@state", states);
@@ -7023,7 +7023,7 @@ WUState CLocalWorkUnit::getState() const
     return state;
 }
 
-IStringVal& CLocalWorkUnit::getStateEx(IStringVal & str) const 
+IStringVal& CLocalWorkUnit::getStateEx(IStringVal & str) const
 {
     CriticalBlock block(crit);
     str.set(p->queryProp("@stateEx"));
@@ -7056,13 +7056,13 @@ const char * CLocalWorkUnit::queryStateDesc() const
     }
 }
 
-void CLocalWorkUnit::setAction(WUAction value) 
+void CLocalWorkUnit::setAction(WUAction value)
 {
     CriticalBlock block(crit);
     setEnum(p, "Action", value, actions);
 }
 
-WUAction CLocalWorkUnit::getAction() const 
+WUAction CLocalWorkUnit::getAction() const
 {
     CriticalBlock block(crit);
     return (WUAction) getEnum(p, "Action", actions);
@@ -7089,7 +7089,7 @@ IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *pro
     prop.append(app).append('/').append(propname);
 
     CriticalBlock block(crit);
-    str.set(p->queryProp(prop.str())); 
+    str.set(p->queryProp(prop.str()));
     return str;
 }
 
@@ -7099,7 +7099,7 @@ int CLocalWorkUnit::getApplicationValueInt(const char *app, const char *propname
     prop.append(app).append('/').append(propname);
 
     CriticalBlock block(crit);
-    return p->getPropInt(prop.str(), defVal); 
+    return p->getPropInt(prop.str(), defVal);
 }
 
 IConstWUAppValueIterator& CLocalWorkUnit::getApplicationValues() const
@@ -7118,9 +7118,9 @@ void CLocalWorkUnit::setApplicationValue(const char *app, const char *propname, 
     if (overwrite || !p->hasProp(prop.str()))
     {
         StringBuffer sp;
-        p->setProp(sp.append("Application").str(), ""); 
-        p->setProp(sp.append('/').append(app).str(), ""); 
-        p->setProp(prop.str(), value); 
+        p->setProp(sp.append("Application").str(), "");
+        p->setProp(sp.append('/').append(app).str(), "");
+        p->setProp(prop.str(), value);
     }
 }
 
@@ -7130,16 +7130,16 @@ void CLocalWorkUnit::setApplicationValueInt(const char *app, const char *propnam
     setApplicationValue(app, propname, s, overwrite);
 }
 
-void CLocalWorkUnit::setPriorityLevel(int level) 
+void CLocalWorkUnit::setPriorityLevel(int level)
 {
     CriticalBlock block(crit);
     p->setPropInt("PriorityFlag",  level);
 }
 
-int CLocalWorkUnit::getPriorityLevel() const 
+int CLocalWorkUnit::getPriorityLevel() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("PriorityFlag"); 
+    return p->getPropInt("PriorityFlag");
 }
 
 int calcPriorityValue(const IPropertyTree * p)
@@ -7158,22 +7158,22 @@ int calcPriorityValue(const IPropertyTree * p)
 }
 
 
-int CLocalWorkUnit::getPriorityValue() const 
+int CLocalWorkUnit::getPriorityValue() const
 {
     CriticalBlock block(crit);
     return calcPriorityValue(p);
 }
 
-void CLocalWorkUnit::setRescheduleFlag(bool value) 
+void CLocalWorkUnit::setRescheduleFlag(bool value)
 {
     CriticalBlock block(crit);
-    p->setPropInt("RescheduleFlag", (int) value); 
+    p->setPropInt("RescheduleFlag", (int) value);
 }
 
-bool CLocalWorkUnit::getRescheduleFlag() const 
+bool CLocalWorkUnit::getRescheduleFlag() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("RescheduleFlag") != 0; 
+    return p->getPropInt("RescheduleFlag") != 0;
 }
 
 class NullIStringIterator : implements IStringIterator, public CInterface
@@ -7378,7 +7378,7 @@ bool CLocalWorkUnit::resolveFilePrefix(StringBuffer & prefix, const char * queue
     return false;
 }
 
-IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
+IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const
 {
     StringBuffer prefix;
     CriticalBlock block(crit);
@@ -7395,7 +7395,7 @@ IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const
 }
 
 //Queries
-void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVersion, const char * eclVersion) 
+void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVersion, const char * eclVersion)
 {
     CriticalBlock block(crit);
     p->setPropInt("@codeVersion", codeVersion);
@@ -7403,38 +7403,38 @@ void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVers
     p->setProp("@eclVersion", eclVersion);
 }
 
-unsigned CLocalWorkUnit::getCodeVersion() const 
+unsigned CLocalWorkUnit::getCodeVersion() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("@codeVersion");
 }
 
-unsigned CLocalWorkUnit::getWuidVersion() const 
+unsigned CLocalWorkUnit::getWuidVersion() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("@wuidVersion");
 }
 
-void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const 
+void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
 {
     CriticalBlock block(crit);
     buildVersion.set(p->queryProp("@buildVersion"));
     eclVersion.set(p->queryProp("@eclVersion"));
 }
 
-void CLocalWorkUnit::setCloneable(bool value) 
+void CLocalWorkUnit::setCloneable(bool value)
 {
     CriticalBlock block(crit);
     p->setPropInt("@cloneable", value);
 }
 
-void CLocalWorkUnit::setIsClone(bool value) 
+void CLocalWorkUnit::setIsClone(bool value)
 {
     CriticalBlock block(crit);
     p->setPropInt("@isClone", value);
 }
 
-bool CLocalWorkUnit::getCloneable() const 
+bool CLocalWorkUnit::getCloneable() const
 {
     CriticalBlock block(crit);
     return p->getPropBool("@cloneable", false);
@@ -7495,7 +7495,7 @@ unsigned CLocalWorkUnit::getResultLimit() const
 IStringVal & CLocalWorkUnit::getSnapshot(IStringVal & str) const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("SNAPSHOT")); 
+    str.set(p->queryProp("SNAPSHOT"));
     return str;
 }
 
@@ -7597,8 +7597,8 @@ static void setProp(IPropertyTree * to, const IPropertyTree * from, const char *
 
 static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
 {
-    IPropertyTree * match = from->getBranch(xpath); 
-    if (match) 
+    IPropertyTree * match = from->getBranch(xpath);
+    if (match)
         to->setPropTree(xpath, match);
 }
 
@@ -7630,7 +7630,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
-    pt = fromP->getBranch("Application/LibraryModule"); 
+    pt = fromP->getBranch("Application/LibraryModule");
     if (pt)
     {
         ensurePTree(p, "Application");
@@ -7643,7 +7643,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
         p->setPropTree("Application/prefix", pt);
     }
 
-    pt = fromP->queryBranch("Debug"); 
+    pt = fromP->queryBranch("Debug");
     if (pt)
     {
         IPropertyTree *curDebug = p->queryPropTree("Debug");
@@ -7767,7 +7767,7 @@ IStringVal& CLocalWorkUnit::getDebugValue(const char *propname, IStringVal &str)
     lower.append(propname).toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
-    str.set(p->queryProp(prop.append(lower).str())); 
+    str.set(p->queryProp(prop.append(lower).str()));
     return str;
 }
 
@@ -7798,7 +7798,7 @@ int CLocalWorkUnit::getDebugValueInt(const char *propname, int defVal) const
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
-    return p->getPropInt(prop.str(), defVal); 
+    return p->getPropInt(prop.str(), defVal);
 }
 
 __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal) const
@@ -7828,7 +7828,7 @@ bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
-    return p->getPropBool(prop.str(), defVal); 
+    return p->getPropBool(prop.str(), defVal);
 }
 
 IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
@@ -7897,8 +7897,8 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     if (overwrite || !p->hasProp(prop.str()))
     {
         // MORE - not sure this line should be needed....
-        p->setProp("Debug", ""); 
-        p->setProp(prop.str(), value); 
+        p->setProp("Debug", "");
+        p->setProp(prop.str(), value);
     }
 }
 
@@ -7912,8 +7912,8 @@ void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool over
     if (overwrite || !p->hasProp(prop.str()))
     {
         // MORE - not sure this line should be needed....
-        p->setProp("Debug", ""); 
-        p->setPropInt(prop.str(), value); 
+        p->setProp("Debug", "");
+        p->setPropInt(prop.str(), value);
     }
 }
 
@@ -7921,16 +7921,16 @@ void CLocalWorkUnit::setTracingValue(const char *propname, const char *value)
 {
     CriticalBlock block(crit);
     // MORE - not sure this line should be needed....
-    p->setProp("Tracing", ""); 
+    p->setProp("Tracing", "");
     StringBuffer prop("Tracing/");
-    p->setProp(prop.append(propname).str(), value); 
+    p->setProp(prop.append(propname).str(), value);
 }
 
 void CLocalWorkUnit::setTracingValueInt(const char *propname, int value)
 {
     CriticalBlock block(crit);
     StringBuffer prop("Tracing/");
-    p->setPropInt(prop.append(propname).str(), value); 
+    p->setPropInt(prop.append(propname).str(), value);
 }
 
 void CLocalWorkUnit::setTracingValueInt64(const char *propname, __int64 value)
@@ -7963,7 +7963,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
         if (!s)
             s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>")); // Is this really desirable (the fetchEntire) ?
         s->Link();
-        query.setown(new CLocalWUQuery(s)); 
+        query.setown(new CLocalWUQuery(s));
     }
     return query.getLink();
 }
@@ -8274,7 +8274,7 @@ IWUPlugin* CLocalWorkUnit::updatePluginByName(const char *qname)
     IPropertyTree *pl = p->queryPropTree("Plugins");
     IPropertyTree *s = pl->addPropTree("Plugin");
     s->Link();
-    IWUPlugin* q = new CLocalWUPlugin(s); 
+    IWUPlugin* q = new CLocalWUPlugin(s);
     q->Link();
     plugins.append(*q);
     q->setPluginName(qname);
@@ -8310,7 +8310,7 @@ IWULibrary* CLocalWorkUnit::updateLibraryByName(const char *qname)
     IPropertyTree *pl = p->queryPropTree("Libraries");
     IPropertyTree *s = pl->addPropTree("Library");
     s->Link();
-    IWULibrary* q = new CLocalWULibrary(s); 
+    IWULibrary* q = new CLocalWULibrary(s);
     q->Link();
     libraries.append(*q);
     q->setName(qname);
@@ -8393,7 +8393,7 @@ IWUException* CLocalWorkUnit::createException()
     IPropertyTree *r = p->queryPropTree("Exceptions");
     IPropertyTree *s = r->addPropTree("Exception");
     s->setPropInt("@sequence", exceptions.ordinality());
-    IWUException* q = new CLocalWUException(LINK(s)); 
+    IWUException* q = new CLocalWUException(LINK(s));
     exceptions.append(*LINK(q));
 
     Owned<IJlibDateTime> now = createDateTimeNow();
@@ -8434,7 +8434,7 @@ IWUWebServicesInfo* CLocalWorkUnit::updateWebServicesInfo(bool create)
                 return NULL;
         }
         s->Link();
-        webServicesInfo.setown(new CLocalWUWebServicesInfo(s)); 
+        webServicesInfo.setown(new CLocalWUWebServicesInfo(s));
         webServicesInfoCached = true;
     }
     return webServicesInfo.getLink();
@@ -8533,7 +8533,7 @@ IWUResult* CLocalWorkUnit::createResult()
     IPropertyTree *s = r->addPropTree("Result");
 
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     results.append(*q);
     return q;
@@ -8545,7 +8545,7 @@ IWUResult* CLocalWorkUnit::updateResultByName(const char *qname)
     IConstWUResult *existing = getResultByName(qname);
     if (existing)
         return (IWUResult *) existing;
-    IWUResult* q = createResult(); 
+    IWUResult* q = createResult();
     q->setResultName(qname);
     return q;
 }
@@ -8556,7 +8556,7 @@ IWUResult* CLocalWorkUnit::updateResultBySequence(unsigned seq)
     IConstWUResult *existing = getResultBySequence(seq);
     if (existing)
         return (IWUResult *) existing;
-    IWUResult* q = createResult(); 
+    IWUResult* q = createResult();
     q->setResultSequence(seq);
     return q;
 }
@@ -8702,7 +8702,7 @@ IWUResult* CLocalWorkUnit::updateTemporaryByName(const char *qname)
     IPropertyTree *vars = (temporaries.length()) ? p->queryPropTree("Temporaries") : p->addPropTree("Temporaries");
     IPropertyTree *s = vars->addPropTree("Variable");
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     temporaries.append(*q);
     q->setResultName(qname);
@@ -8721,7 +8721,7 @@ IWUResult* CLocalWorkUnit::updateVariableByName(const char *qname)
     IPropertyTree *vars = p->queryPropTree("Variables");
     IPropertyTree *s = vars->addPropTree("Variable");
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     variables.append(*q);
     q->setResultName(qname);
@@ -8962,27 +8962,27 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
         return false; // this query was not compiled with recordFieldUsage option.
 
     ForEach(*files)
-    {    
+    {
         Owned<IConstWUFileUsage> file = files->get();
 
         StringBuffer filename(file->queryName());
         size32_t length = filename.length();
-        
+
         if (length == 0)
             throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
 
         StringBuffer normalizedFilename;
-        
+
         // Two cases to handle:
         // 1. Filename was known at compile time, and is surrounded in single quotes (i.e. 'filename').
-        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query), 
+        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query),
         //    and is a raw expression WITHOUT surrounding single quotes (i.e. STORED('input_filename')).
         if (isFilenameResolved(filename))
         {
             // filename cannot be empty (i.e. empty single quotes '')
             if (length == 2)
                 throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
-        
+
             // Remove surrounding single quotes
             StringAttr cleanFilename(filename.str()+1, length-2);
 
@@ -9004,7 +9004,7 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
             }
             else
             {
-                normalizedFilename.append(cleanFilename); 
+                normalizedFilename.append(cleanFilename);
             }
         }
         else
@@ -9016,7 +9016,7 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
 
         Owned<IConstWUFieldUsageIterator> fields = file->getFields();
         ForEach(*fields)
-        {    
+        {
             Owned<IConstWUFieldUsage> field = fields->get();
             filenames.append(normalizedFilename.str());
             columnnames.append(field->queryName());
@@ -9223,7 +9223,7 @@ unsigned CLocalWorkUnit::getSourceFileCount() const
         return p->queryPropTree("FilesRead")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getResultCount() const
@@ -9234,7 +9234,7 @@ unsigned CLocalWorkUnit::getResultCount() const
         return p->queryPropTree("Results")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getVariableCount() const
@@ -9245,7 +9245,7 @@ unsigned CLocalWorkUnit::getVariableCount() const
         return p->queryPropTree("Variables")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getApplicationValueCount() const
@@ -9256,7 +9256,7 @@ unsigned CLocalWorkUnit::getApplicationValueCount() const
         return p->queryPropTree("Application")->numChildren();
     }
     return 0;
-    
+
 }
 
 StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const char *name, unsigned indent, bool hidePasswords)
@@ -9725,7 +9725,7 @@ WUQueryType CLocalWUQuery::getQueryType() const
     return (WUQueryType) getEnum(p, "@type", queryTypes);
 }
 
-void CLocalWUQuery::setQueryType(WUQueryType qt) 
+void CLocalWUQuery::setQueryType(WUQueryType qt)
 {
     setEnum(p, "@type", qt, queryTypes);
 }
@@ -9879,7 +9879,7 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
         s->setPropInt("@minActivity", minActivity);
     if (maxActivity)
         s->setPropInt("@maxActivity", maxActivity);
-    IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
+    IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s));
     associated.append(*q);
 }
 
@@ -10251,8 +10251,8 @@ void readRow(StringBuffer &out, MemoryBuffer &in, TypeInfoArray &types, StringAt
                 free(outstr);
                 break;
             }
-        case type_int: 
-        case type_swapint: 
+        case type_int:
+        case type_swapint:
             if (type.isSigned())
             {
                 const unsigned char *raw = (const unsigned char *) in.readDirect(size);
@@ -10547,14 +10547,14 @@ void CLocalWUResult::setResultFormat(WUResultFormat format)
 {
     switch (format)
     {
-    case ResultFormatXml: 
-        p->setProp("@format","xml"); 
+    case ResultFormatXml:
+        p->setProp("@format","xml");
         break;
-    case ResultFormatXmlSet: 
-        p->setProp("@format","xmlSet"); 
+    case ResultFormatXmlSet:
+        p->setProp("@format","xmlSet");
         break;
-    case ResultFormatCsv: 
-        p->setProp("@format","csv"); 
+    case ResultFormatCsv:
+        p->setProp("@format","csv");
         break;
     default:
         p->removeProp("@format");
@@ -10575,13 +10575,13 @@ void CLocalWUResult::addResultRaw(unsigned len, const void *data, WUResultFormat
     const char *formatStr = NULL;
     switch (format)
     {
-    case ResultFormatXml: 
-        formatStr = "xml"; 
+    case ResultFormatXml:
+        formatStr = "xml";
         break;
-    case ResultFormatXmlSet: 
+    case ResultFormatXmlSet:
         formatStr = "xmlSet";
         break;
-    case ResultFormatCsv: 
+    case ResultFormatCsv:
         formatStr = "csv";
         break;
     default:
@@ -11475,7 +11475,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
     assertex(workunit);
     StringAttr clusterName(workunit->queryClusterName());
-    if (!clusterName.length()) 
+    if (!clusterName.length())
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
     workunit->commit();
     workunit.clear();
@@ -11484,7 +11484,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     getClusterEclCCServerQueueName(serverQueue, clusterName);
     assertex(serverQueue.length());
     Owned<IJobQueue> queue = createJobQueue(serverQueue.str());
-    if (!queue.get()) 
+    if (!queue.get())
         throw MakeStringException(WUERR_InvalidQueue, "Could not create workunit queue");
 
     IJobQueueItem *item = createJobQueueItem(wuid);
@@ -11571,7 +11571,7 @@ IConstWorkflowItemIterator* CLocalWorkUnit::getWorkflowItems() const
         assertex(!workflowIterator);
         Owned<IPropertyTree> s = p->getPropTree("Workflow");
         if(s)
-            workflowIterator.setown(createWorkflowItemIterator(s)); 
+            workflowIterator.setown(createWorkflowItemIterator(s));
         workflowIteratorCached = true;
     }
     return workflowIterator.getLink();
@@ -11610,7 +11610,7 @@ IWorkflowItemIterator * CLocalWorkUnit::updateWorkflowItems()
         IPropertyTree * s = p->queryPropTree("Workflow");
         if(!s)
             s = p->addPropTree("Workflow");
-        workflowIterator.setown(createWorkflowItemIterator(s)); 
+        workflowIterator.setown(createWorkflowItemIterator(s));
         workflowIteratorCached = true;
     }
     return workflowIterator.getLink();
@@ -11679,7 +11679,7 @@ void CLocalWorkUnit::schedule()
     ncnameEscape(wuid, xpath);
     bool more;
     do more = root->removeProp(xpath.str()); while(more);
-        
+
     Owned<IConstWorkflowItemIterator> iter = getWorkflowItems();
     Owned<IWorkflowEvent> event;
     Owned<IPropertyTree> branch1, branch2;
@@ -12734,7 +12734,7 @@ IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char *
         else
             throw MakeStringException(WUERR_PackageAlreadyExists, "Package name %s already exists, either delete it or specify overwrite",name);
     }
-    
+
     IPropertyTree *tree = packageRegistry->addPropTree("Package", packageInfo);
     tree->setProp("@id", lcName);
     return tree;
@@ -12790,7 +12790,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
         throw MakeStringException(WUERR_InvalidDll, "Cannot deploy query - no associated dll.");
 
     StringBuffer currentTargetClusterType;
-    queryRegistry->getProp("@targetclustertype", currentTargetClusterType); 
+    queryRegistry->getProp("@targetclustertype", currentTargetClusterType);
 
     SCMStringBuffer targetClusterType;
     workunit->getDebugValue("targetclustertype", targetClusterType);
@@ -12798,7 +12798,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     SCMStringBuffer snapshot;
     workunit->getSnapshot(snapshot);
 
-    if (currentTargetClusterType.length() < 1) 
+    if (currentTargetClusterType.length() < 1)
     {
         queryRegistry->setProp("@targetclustertype", targetClusterType.str());
     }
@@ -12833,7 +12833,7 @@ void activateQuery(IPropertyTree *queryRegistry, WUQueryActivationOptions activa
         {
             if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
                 setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
-            else 
+            else
                 removeNamedQuery(queryRegistry, prevQuery->queryProp("@id"));
         }
     }
@@ -13278,9 +13278,9 @@ bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName
     // check if lingering thor instance is up.
 
     /* If code was dependent on reading a workunit in parallel, the whole area of
-     * workunit locking and reading will need revisiting, because at the moment the 
+     * workunit locking and reading will need revisiting, because at the moment the
      * workunit reading code does not lock at all.
-     * 
+     *
      */
 
     /* NB: forcing a reload here to ensure Debug values are recent.

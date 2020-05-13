@@ -34,7 +34,7 @@
 #include "ws_workunits.hpp"
 
 
-class WUXMLINFO_API CWUXMLInfo : public CInterface  
+class WUXMLINFO_API CWUXMLInfo : public CInterface
 {
     void formatDuration(StringBuffer &ret, unsigned ms);
 public:

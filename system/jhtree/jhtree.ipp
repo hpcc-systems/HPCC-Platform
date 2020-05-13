@@ -100,7 +100,7 @@ protected:
     void init(KeyHdr &hdr, bool isTLK, bool allowPreload);
     void cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK);
     void loadBloomFilters();
-    
+
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -135,7 +135,7 @@ public:
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
     virtual bool needsRowBuffer() const;
- 
+
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
     CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
@@ -160,7 +160,7 @@ class jhtree_decl CDiskKeyIndex : public CKeyIndex
 private:
     Linked<IFileIO> io;
     void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
-    
+
 public:
     CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool _isTLK, bool _allowPreload);
 
@@ -190,10 +190,10 @@ public:
     virtual const char *queryName() const override;
     virtual size32_t getSize();
     virtual size32_t getKeyedSize() const;
-    virtual offset_t getFPos(); 
+    virtual offset_t getFPos();
     virtual void serializeCursorPos(MemoryBuffer &mb);
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
-    virtual unsigned __int64 getSequence(); 
+    virtual unsigned __int64 getSequence();
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual void reset();
     virtual bool lookup(bool exact, KeyStatsCollector &stats) override;

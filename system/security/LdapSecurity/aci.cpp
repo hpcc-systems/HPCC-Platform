@@ -96,7 +96,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CAci(bool _isDeny, int _perm, ACT_TYPE _act_type, const char* _dn)
     {
         m_isDeny = _isDeny;
@@ -167,8 +167,8 @@ public:
                 m_target.append(*curptr);
                 curptr++;
             }
-        }           
-        
+        }
+
         curptr = strstr(acistr, "(version ");
         if(curptr != NULL)
         {
@@ -184,7 +184,7 @@ public:
             }
             if(*curptr != '\0')
                 curptr++;
-            
+
             //name
             while(*curptr != ' ' && *curptr  != '\0')
                 curptr++;
@@ -269,7 +269,7 @@ public:
                     curptr++;
             }
         }
-        
+
         //calculate the secperm
         m_permission = 0;
         ForEachItemIn(y, m_perms)
@@ -397,7 +397,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     COpenLdapAci(bool _isDeny, int _perm, ACT_TYPE _act_type, const char* _dn)
     {
         m_isDeny = _isDeny;
@@ -496,7 +496,7 @@ public:
         if(strncmp(bptr, "group", 5) == 0 || strncmp(bptr, "role", 4) == 0)
             isGroup = true;
 
-        // <subjectDN>      
+        // <subjectDN>
         eptr = strchr(bptr, '#');
         if(eptr == NULL)
             throw MakeStringException(-1, "Invalid OpenLDAPaci format");
@@ -533,7 +533,7 @@ public:
 
     virtual StringBuffer& target()
     {
-        return m_target;        
+        return m_target;
     }
 
     virtual StringArray& userdns()
@@ -563,7 +563,7 @@ public:
             acibuf.appendf("group#%s", m_groupdns.item(0));
         else if(m_userdns.length() > 0)
             acibuf.appendf("access-id#%s", m_userdns.item(0));
-        
+
         return acibuf;
     }
 
@@ -633,7 +633,7 @@ public:
             int bp = ci;
             while(acistr[ci] != '\0' && ci < len)
                 ci++;
-            
+
             if(servertype == IPLANET)
                 m_acilist.append(*(new CAci(acistr+bp)));
             else
@@ -669,7 +669,7 @@ public:
             {
                 IAci& aci = m_acilist.item(x);
                 bool applicable = false;
-                
+
                 // check if target matches the dn of the resource
                 if(aci.target().length() > 0 && (dn == NULL || stricmp(aci.target().str(), dn) != 0))
                     continue;
@@ -686,7 +686,7 @@ public:
                         break;
                     }
                 }
-                
+
                 if(!applicable)
                 {
                     // See if the user belongs to one of the groups
@@ -717,7 +717,7 @@ public:
 
             perms = NewSec2Sec((NewSecAccessFlags)perm);
         }
-        
+
         resource.setAccessFlags(perms);
         return true;
     }
@@ -820,7 +820,7 @@ public:
                         }
                     }
                 }
-                else 
+                else
                 {
                     ForEachItemInRev(j, aci->userdns())
                     {
@@ -886,7 +886,7 @@ public:
 };
 
 /****************************************************************
- *    Class AciProcessor 
+ *    Class AciProcessor
  ****************************************************************/
 
 AciProcessor::AciProcessor(IPropertyTree* cfg)
@@ -917,7 +917,7 @@ bool AciProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>&
 
 CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
-    return createDefaultSD(user, resource->getName(), ptype);   
+    return createDefaultSD(user, resource->getName(), ptype);
 }
 
 StringBuffer& AciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
@@ -1051,7 +1051,7 @@ CSecurityDescriptor* AciProcessor::changePermission(CSecurityDescriptor* initial
 }
 
 /****************************************************************
- *    Class CIPlanetAciProcessor 
+ *    Class CIPlanetAciProcessor
  ****************************************************************/
 
 StringBuffer& CIPlanetAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
@@ -1072,14 +1072,14 @@ StringBuffer& CIPlanetAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer
         aciperm.append(" read");
     if((secperm & SecAccess_Write) == SecAccess_Write)
         aciperm.append(" write");
-    
+
     return aciperm;
 }
 
 CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     CSecurityDescriptor* csd = new CSecurityDescriptor(name);
-    
+
     if(ptype != PT_ADMINISTRATORS_ONLY)
     {
         if(DEFAULT_AUTHENTICATED_USERS_PERMISSION != SecAccess_None)
@@ -1136,7 +1136,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user
 }
 
 /****************************************************************
- *    Class COpenLdapAciProcessor 
+ *    Class COpenLdapAciProcessor
  ****************************************************************/
 
 StringBuffer& COpenLdapAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
@@ -1164,14 +1164,14 @@ StringBuffer& COpenLdapAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffe
             aciperm.append(",");
         aciperm.append("w");
     }
-    
+
     return aciperm;
 }
 
 CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     CSecurityDescriptor* csd = new CSecurityDescriptor(name);
-    
+
     if(ptype != PT_ADMINISTRATORS_ONLY)
     {
         if(DEFAULT_AUTHENTICATED_USERS_PERMISSION != SecAccess_None)

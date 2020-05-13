@@ -71,13 +71,13 @@ static Owned<IRemoteFileServer> server;
 #define DAFS_SERVICE_DISPLAY_NAME "Dali File Server"
 
 
-void LogError( const char *s,DWORD dwError ) 
-{   
-    LPTSTR lpBuffer = NULL;   
+void LogError( const char *s,DWORD dwError )
+{
+    LPTSTR lpBuffer = NULL;
     FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, dwError,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR) &lpBuffer, 0, NULL );   
-    OERRLOG( "%s(%d): %s", s, dwError, lpBuffer );   
+            (LPTSTR) &lpBuffer, 0, NULL );
+    OERRLOG( "%s(%d): %s", s, dwError, lpBuffer );
     LocalFree( lpBuffer );
 }
 
@@ -89,78 +89,78 @@ static class CService *THIS; // singleton instance
 class CService
 {
 
-    SERVICE_STATUS ServiceStatus; 
-    SERVICE_STATUS_HANDLE hStatus; 
+    SERVICE_STATUS ServiceStatus;
+    SERVICE_STATUS_HANDLE hStatus;
 
     // Control handler function
-    void doControlHandler(DWORD request) 
-    { 
-        switch(request) { 
-            case SERVICE_CONTROL_STOP: 
+    void doControlHandler(DWORD request)
+    {
+        switch(request) {
+            case SERVICE_CONTROL_STOP:
                 PROGLOG(DAFS_SERVICE_NAME " Control: stopped");
 
-                ServiceStatus.dwWin32ExitCode = 0; 
-                ServiceStatus.dwCurrentState  = SERVICE_STOPPED; 
+                ServiceStatus.dwWin32ExitCode = 0;
+                ServiceStatus.dwCurrentState  = SERVICE_STOPPED;
                 break;
-            case SERVICE_CONTROL_SHUTDOWN: 
+            case SERVICE_CONTROL_SHUTDOWN:
                 PROGLOG(DAFS_SERVICE_NAME "Control: shutdown");
 
-                ServiceStatus.dwWin32ExitCode = 0; 
-                ServiceStatus.dwCurrentState  = SERVICE_STOPPED; 
+                ServiceStatus.dwWin32ExitCode = 0;
+                ServiceStatus.dwCurrentState  = SERVICE_STOPPED;
                 break;
-            case SERVICE_CONTROL_INTERROGATE:        
+            case SERVICE_CONTROL_INTERROGATE:
                 break;
             default:
                 PROGLOG(DAFS_SERVICE_NAME " Control: %d",request);
                 break;
-        } 
- 
+        }
+
         // Report current status
         SetServiceStatus (hStatus,  &ServiceStatus);
- 
-        return; 
-    } 
+
+        return;
+    }
 
 
-    void doServiceMain(int argc, char** argv) 
-    { 
- 
-        ServiceStatus.dwServiceType        = SERVICE_WIN32; 
-        ServiceStatus.dwCurrentState       = SERVICE_START_PENDING; 
+    void doServiceMain(int argc, char** argv)
+    {
+
+        ServiceStatus.dwServiceType        = SERVICE_WIN32;
+        ServiceStatus.dwCurrentState       = SERVICE_START_PENDING;
         ServiceStatus.dwControlsAccepted   = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN;
-        ServiceStatus.dwWin32ExitCode      = 0; 
-        ServiceStatus.dwServiceSpecificExitCode = 0; 
-        ServiceStatus.dwCheckPoint         = 0; 
-        ServiceStatus.dwWaitHint           = 0; 
- 
-        hStatus = RegisterServiceCtrlHandler(DAFS_SERVICE_NAME, (LPHANDLER_FUNCTION)ControlHandler); 
-        if (hStatus == (SERVICE_STATUS_HANDLE)0)  { 
+        ServiceStatus.dwWin32ExitCode      = 0;
+        ServiceStatus.dwServiceSpecificExitCode = 0;
+        ServiceStatus.dwCheckPoint         = 0;
+        ServiceStatus.dwWaitHint           = 0;
+
+        hStatus = RegisterServiceCtrlHandler(DAFS_SERVICE_NAME, (LPHANDLER_FUNCTION)ControlHandler);
+        if (hStatus == (SERVICE_STATUS_HANDLE)0)  {
             // Registering Control Handler failed
             LogError("RegisterServiceCtrlHandler",GetLastError());
-            return; 
-        }  
-        // Initialize Service 
+            return;
+        }
+        // Initialize Service
         if (!init()) {
             // Initialization failed
-            ServiceStatus.dwCurrentState       = SERVICE_STOPPED; 
-            ServiceStatus.dwWin32ExitCode      = -1; 
-            SetServiceStatus(hStatus, &ServiceStatus); 
-            return; 
-        } 
-        // We report the running status to SCM. 
-        ServiceStatus.dwCurrentState = SERVICE_RUNNING; 
+            ServiceStatus.dwCurrentState       = SERVICE_STOPPED;
+            ServiceStatus.dwWin32ExitCode      = -1;
+            SetServiceStatus(hStatus, &ServiceStatus);
+            return;
+        }
+        // We report the running status to SCM.
+        ServiceStatus.dwCurrentState = SERVICE_RUNNING;
         SetServiceStatus (hStatus, &ServiceStatus);
- 
+
         // The worker loop of a service
         run();
-        return; 
+        return;
     }
 
 
 public:
-    CService() 
-    { 
-        THIS = this;    
+    CService()
+    {
+        THIS = this;
     }
 
 
@@ -181,23 +181,23 @@ public:
     void stop()
     {
 
-        ServiceStatus.dwCurrentState       = SERVICE_STOPPED; 
-        ServiceStatus.dwCheckPoint         = 0; 
-        ServiceStatus.dwWaitHint           = 0; 
-        ServiceStatus.dwWin32ExitCode      = 0; 
-        ServiceStatus.dwServiceSpecificExitCode = 0; 
-        SetServiceStatus(hStatus, &ServiceStatus); 
+        ServiceStatus.dwCurrentState       = SERVICE_STOPPED;
+        ServiceStatus.dwCheckPoint         = 0;
+        ServiceStatus.dwWaitHint           = 0;
+        ServiceStatus.dwWin32ExitCode      = 0;
+        ServiceStatus.dwServiceSpecificExitCode = 0;
+        SetServiceStatus(hStatus, &ServiceStatus);
     }
 
     // Control handler function
-    static void ControlHandler(DWORD request) 
-    { 
+    static void ControlHandler(DWORD request)
+    {
         THIS->doControlHandler(request) ;
-    } 
+    }
 
 
-    static void ServiceMain(int argc, char** argv) 
-    { 
+    static void ServiceMain(int argc, char** argv)
+    {
         THIS->doServiceMain(argc, argv);
     }
 
@@ -205,7 +205,7 @@ public:
 
     virtual bool init() = 0;
     virtual void run() = 0;
-    
+
 
 
 
@@ -213,38 +213,38 @@ public:
 
 
 
-bool installService(const char *servicename,const char *servicedisplayname,const char *dependancies) 
-{ 
+bool installService(const char *servicename,const char *servicedisplayname,const char *dependancies)
+{
     DWORD err = ERROR_SUCCESS;
-    char path[512]; 
+    char path[512];
     if (GetModuleFileName( NULL, path, sizeof(path) )) {
-        SC_HANDLE hSCM = OpenSCManager( NULL, NULL, SC_MANAGER_ALL_ACCESS);  // full access rights 
+        SC_HANDLE hSCM = OpenSCManager( NULL, NULL, SC_MANAGER_ALL_ACCESS);  // full access rights
         if (hSCM) {
-            SC_HANDLE hService = CreateService( 
-                hSCM,                       // SCManager database 
-                servicename,                // name of service 
-                servicedisplayname,         // name to display 
-                SERVICE_ALL_ACCESS,         // desired access 
-                SERVICE_WIN32_OWN_PROCESS,//|SERVICE_INTERACTIVE_PROCESS ,  // service type 
-                SERVICE_AUTO_START,         // start type 
-                SERVICE_ERROR_NORMAL,       // error control type 
-                path,                       // service's binary 
-                NULL,                       // no load ordering group 
-                NULL,                       // no tag identifier 
-                dependancies,               // dependencies 
-                NULL,                       // LocalSystem account 
-                NULL);                      // no password 
+            SC_HANDLE hService = CreateService(
+                hSCM,                       // SCManager database
+                servicename,                // name of service
+                servicedisplayname,         // name to display
+                SERVICE_ALL_ACCESS,         // desired access
+                SERVICE_WIN32_OWN_PROCESS,//|SERVICE_INTERACTIVE_PROCESS ,  // service type
+                SERVICE_AUTO_START,         // start type
+                SERVICE_ERROR_NORMAL,       // error control type
+                path,                       // service's binary
+                NULL,                       // no load ordering group
+                NULL,                       // no tag identifier
+                dependancies,               // dependencies
+                NULL,                       // LocalSystem account
+                NULL);                      // no password
             if (hService) {
-                Sleep(1000); 
+                Sleep(1000);
                 StartService(hService,0,0);
-                CloseServiceHandle(hService); 
+                CloseServiceHandle(hService);
             }
             else
                 err = GetLastError();
         }
         else
             err = GetLastError();
-        CloseServiceHandle(hSCM); 
+        CloseServiceHandle(hSCM);
     }
     else
         err = GetLastError();
@@ -253,60 +253,60 @@ bool installService(const char *servicename,const char *servicedisplayname,const
         return false;
     }
     return true;
-} 
+}
 
 
 
-bool uninstallService(const char *servicename,const char *servicedisplayname) 
-{ 
+bool uninstallService(const char *servicename,const char *servicedisplayname)
+{
     DWORD err = ERROR_SUCCESS;
-    SC_HANDLE hSCM = OpenSCManager( NULL, NULL, SC_MANAGER_ALL_ACCESS);  // full access rights 
+    SC_HANDLE hSCM = OpenSCManager( NULL, NULL, SC_MANAGER_ALL_ACCESS);  // full access rights
     if (hSCM) {
-        SC_HANDLE hService = OpenService(hSCM, servicename, SERVICE_STOP|SERVICE_QUERY_STATUS); 
+        SC_HANDLE hService = OpenService(hSCM, servicename, SERVICE_STOP|SERVICE_QUERY_STATUS);
         if (hService) {
-            // try to stop the service 
+            // try to stop the service
             SERVICE_STATUS ss;
-            if ( ControlService( hService, SERVICE_CONTROL_STOP, &ss ) ) { 
-                PROGLOG("Stopping %s", servicedisplayname); 
-                Sleep( 1000 ); 
+            if ( ControlService( hService, SERVICE_CONTROL_STOP, &ss ) ) {
+                PROGLOG("Stopping %s", servicedisplayname);
+                Sleep( 1000 );
 
-                while( QueryServiceStatus( hService, &ss ) ) { 
-                    if ( ss.dwCurrentState != SERVICE_STOP_PENDING ) 
+                while( QueryServiceStatus( hService, &ss ) ) {
+                    if ( ss.dwCurrentState != SERVICE_STOP_PENDING )
                         break;
-                    Sleep( 1000 ); 
-                } 
+                    Sleep( 1000 );
+                }
 
-                if ( ss.dwCurrentState == SERVICE_STOPPED ) 
-                    PROGLOG("%s Service stopped",servicedisplayname); 
-                else 
-                    OERRLOG("%s failed to stop",servicedisplayname); 
-            } 
-            CloseServiceHandle(hService); 
+                if ( ss.dwCurrentState == SERVICE_STOPPED )
+                    PROGLOG("%s Service stopped",servicedisplayname);
+                else
+                    OERRLOG("%s failed to stop",servicedisplayname);
+            }
+            CloseServiceHandle(hService);
         }
-        hService = OpenService(hSCM, servicename, DELETE); 
+        hService = OpenService(hSCM, servicename, DELETE);
         if (hService) {
-            // now remove the service 
-            if (!DeleteService(hService)) 
+            // now remove the service
+            if (!DeleteService(hService))
                 err = GetLastError();
-            CloseServiceHandle(hService); 
-        } 
-        else 
+            CloseServiceHandle(hService);
+        }
+        else
             err = GetLastError();
-        CloseServiceHandle(hSCM); 
-    } 
-    else 
+        CloseServiceHandle(hSCM);
+    }
+    else
         err = GetLastError();
     if (err!=ERROR_SUCCESS) {
         LogError("Uninstall failed",err);
         return false;
     }
     return true;
-} 
+}
 
 #else
 
 
-void sighandler(int signum, siginfo_t *info, void *extra) 
+void sighandler(int signum, siginfo_t *info, void *extra)
 {
     PROGLOG("Caught signal %d, %p", signum, info?info->si_addr:0);
     if (server)
@@ -327,7 +327,7 @@ int initDaemon()
     sigaction(SIGHUP, &act, NULL);
 
     act.sa_flags = SA_SIGINFO;
-    act.sa_sigaction = &sighandler; 
+    act.sa_sigaction = &sighandler;
     sigaction(SIGTERM, &act, NULL);
     sigaction(SIGINT, &act, NULL);
     return 0;
@@ -336,7 +336,7 @@ int initDaemon()
 #endif
 
 
-int main(int argc,char **argv) 
+int main(int argc,char **argv)
 {
     InitModuleObjects();
 
@@ -655,17 +655,17 @@ int main(int argc,char **argv)
             unsigned dedicatedRowServicePort;
             bool dedicatedRowServiceSSL;
             bool rowServiceOnStdPort;
-            
+
             class cpollthread: public Thread
             {
                 cserv *parent;
             public:
-                cpollthread( cserv *_parent ) 
-                : Thread("CService::cpollthread"), parent(_parent) 
+                cpollthread( cserv *_parent )
+                : Thread("CService::cpollthread"), parent(_parent)
                 {
                 }
-                int run() 
-                { 
+                int run()
+                {
                     while (parent->poll())
                         Sleep(1000);
                     return 1;
@@ -726,7 +726,7 @@ int main(int argc,char **argv)
             void run()
             {
                 // Get params from HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\DaFileSrv\Parameters
-                
+
                 StringBuffer eps;
                 if (listenep.isNull())
                     eps.append(listenep.port);

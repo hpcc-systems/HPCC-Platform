@@ -138,7 +138,7 @@ public:
         Owned<IFile> ifile = createIFile(fileName.str());
         offset_t sz = ifile->size();
         if ((offset_t)-1 != sz)
-            container.queryJob().queryIDiskUsage().increase(sz);        
+            container.queryJob().queryIDiskUsage().increase(sz);
         mb.append(getDataLinkCount()).append(compress?uncompressedBytesWritten:sz).append(sz);
         unsigned crc = compress?~0:fileCRC.get();
         mb.append(crc);
@@ -159,7 +159,7 @@ public:
         uncompressedBytesWritten = 0;
         if (!container.queryJob().queryUseCheckpoints())
             container.queryTempHandler()->registerFile(fileName.str(), container.queryOwner().queryGraphId(), usageCount, true);
-        
+
         open();
         hadrow = false;
     }
@@ -176,7 +176,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (abortSoon) 
+        if (abortSoon)
             return NULL;
 
         OwnedConstThorRow row = grouped?inputStream->nextRow():inputStream->ungroupedNextRow();

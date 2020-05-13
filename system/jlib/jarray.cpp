@@ -93,7 +93,7 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
         throw MakeStringException(0, "Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items",itemSize, newLen);
     }
     void *newhead = realloc(_head, allocSize);
-    if (!newhead) 
+    if (!newhead)
     {
         IERRLOG("Out of memory in Array allocator: itemSize = %d, trying to allocate %d items", itemSize, max);
         throw MakeStringException(0, "Out of memory in Array allocator: itemSize = %d, trying to allocate %d items",itemSize, max);
@@ -151,7 +151,7 @@ void Allocator::_doSwap(aindex_t pos1, aindex_t pos2, size32_t iSize)
     char * head= (char *)_head;
     char * lower = head + pos1 * iSize;
     char * upper = head + pos2 * iSize;
-    
+
     char * temp = (char *)alloca(iSize);
     memcpy(temp, lower, iSize);
     memmove(lower, upper, iSize );

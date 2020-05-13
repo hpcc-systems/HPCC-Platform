@@ -38,7 +38,7 @@ public:
     SuperHashTable(unsigned initsize);
     ~SuperHashTable();
     // Derived class destructor expected to call _releaseAll()
-    
+
     void             reinit(unsigned initsize);
     void             kill(void);
     inline unsigned  count() const { return tablecount; }
@@ -223,7 +223,7 @@ public:
     virtual bool     isValid(void) { return cur != NULL; }
     virtual bool     next(void)
       { if (cur) cur = table.next(cur); return (cur != NULL); }
- 
+
 protected:
     void *           queryPointer() { assertex(cur); return cur; }
 
@@ -321,7 +321,7 @@ public:
     virtual void onRemove(void *et) { ((ET *)et)->Release(); }
 };
 
-// thread safe simple hash table impl. 
+// thread safe simple hash table impl.
 template <class ET, class FP>
 class ThreadSafeSimpleHashTableOf : private SuperHashTable
 {
@@ -372,39 +372,39 @@ public:
         SuperHashTable::releaseAll();
     }
     bool add(ET & et)
-    { 
+    {
         CriticalBlock block(crit);
-        return SuperHashTable::add(&et); 
+        return SuperHashTable::add(&et);
     }
     bool replace(ET & et)
-    { 
+    {
         CriticalBlock block(crit);
-        return SuperHashTable::replace(&et); 
+        return SuperHashTable::replace(&et);
     }
     ET * addOrFind(ET & et)
-    { 
+    {
         CriticalBlock block(crit);
-        return static_cast<ET *>(SuperHashTable::addOrFind(&et)); 
+        return static_cast<ET *>(SuperHashTable::addOrFind(&et));
     }
     ET * find(const FP * fp) const
-    { 
+    {
         CriticalBlock block(crit);
-        return static_cast<ET *>(SuperHashTable::find(fp)); 
+        return static_cast<ET *>(SuperHashTable::find(fp));
     }
     ET * findExact(const ET & et) const
-    { 
+    {
         CriticalBlock block(crit);
-        return static_cast<ET *>(SuperHashTable::findExact(&et)); 
+        return static_cast<ET *>(SuperHashTable::findExact(&et));
     }
     bool remove(const FP * fp)
-    { 
+    {
         CriticalBlock block(crit);
-        return SuperHashTable::remove((const void *)(fp)); 
+        return SuperHashTable::remove((const void *)(fp));
     }
     bool removeExact(ET * et)
-    { 
+    {
         CriticalBlock block(crit);
-        return SuperHashTable::removeExact(et); 
+        return SuperHashTable::removeExact(et);
     }
     unsigned count() const
     {
@@ -487,7 +487,7 @@ public:
     unsigned queryHash() const { return hashValue; }
     unsigned queryReferences() { return linkCount+1; } // 1 implicit
 
-private:        
+private:
     const char *keyPtr() { return ((const char *)this)+sizeof(*this); }
 
     unsigned hashValue;
@@ -592,9 +592,9 @@ public:
 protected:
 // SuperHashTable definitions
     virtual void onAdd(void *e __attribute__((unused))) { }
-    virtual void onRemove(void *e) 
-    { 
-        free(e); 
+    virtual void onRemove(void *e)
+    {
+        free(e);
     }
 
     virtual unsigned getHashFromElement(const void *e) const

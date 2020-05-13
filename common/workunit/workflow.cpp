@@ -542,7 +542,7 @@ private:
     }
 
 public:
-    CCloneWorkflowItemArray(unsigned _capacity) : capacity(_capacity), head(NULL), tail(NULL) 
+    CCloneWorkflowItemArray(unsigned _capacity) : capacity(_capacity), head(NULL), tail(NULL)
     {
         array = _capacity ? new CCloneWorkflowItem[_capacity] : NULL;
     }
@@ -900,8 +900,8 @@ void WorkflowMachine::doExecuteEndWaitItem(IRuntimeWorkflowItem & item)
     scheduledItem.setState(WFStateReqd);
     itemsUnblocked++;
 
-    //Note this would be more efficient implemented more like a state machine 
-    //(with next processing rather than walking from the top down), 
+    //Note this would be more efficient implemented more like a state machine
+    //(with next processing rather than walking from the top down),
     //but that will require some more work.
 }
 

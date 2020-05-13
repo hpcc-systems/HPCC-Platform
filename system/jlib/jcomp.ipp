@@ -41,7 +41,7 @@ public:
     virtual void setDebug(bool _debug);
     virtual void setDebugLibrary(bool _debug);
     virtual void setOnlyCompile(bool _onlyCompile) { onlyCompile = _onlyCompile; }
-    virtual void setCreateExe(bool _createExe); 
+    virtual void setCreateExe(bool _createExe);
     virtual void setOptimizeLevel(unsigned level);
     virtual void setTargetBitLength(unsigned bitlength);
     virtual void setMaxCompileThreads(const unsigned max) { maxCompileThreads = max; }

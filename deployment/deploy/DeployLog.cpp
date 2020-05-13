@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 #include "deploy.hpp"
-#include "jptree.hpp"  
-#include "jstring.hpp"  
+#include "jptree.hpp"
+#include "jstring.hpp"
 #include <time.h>
 #include "jfile.hpp"
 
@@ -66,7 +66,7 @@ public:
 
       CDateTime modifiedTime;
       Owned<IFile> pTargetFile = createIFile(task.getFileSpec(DT_TARGET));
-      
+
       if (pTargetFile->getTime(NULL, &modifiedTime, NULL))
       {
          StringBuffer timestamp;
@@ -139,7 +139,7 @@ private:
 
          // Process directories, but not the "." and ".." directories
          if (iFile.isDirectory() && *dirEntryName != '.')
-         {  
+         {
             // Create prop tree, add to parent, and recurse
             StringBuffer newPath(path);
             newPath.append('\\').append(dirEntryName);
@@ -186,7 +186,7 @@ private:
       StringBuffer xml;
       toXML(m_tree, xml);
 
-      Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Create File", NULL, NULL, NULL, NULL, 
+      Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Create File", NULL, NULL, NULL, NULL,
         m_filename, "", "", "", false);
       task->createFile(xml.str());
 

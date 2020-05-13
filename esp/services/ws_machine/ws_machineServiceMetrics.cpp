@@ -38,31 +38,31 @@ static const char* METRICS_FEATURE_URL = "MetricsAccess";
 static const char* OID = "1.3.6.1.4.1.12723.6.16.1.4.1.2";
 
 // We need to compute standard deviation for metrics information.
-// The classical algorithm to do so requires two passes of data - 
+// The classical algorithm to do so requires two passes of data -
 // first pass to compute mean and the second to compute deviations
 // as follows:
 //
-// SD = SQRT( SUM( (Xi-M)^2 ) / (n-1) ) 
+// SD = SQRT( SUM( (Xi-M)^2 ) / (n-1) )
 //
 // where Xi is X1, X2...Xn and M is their mean.
 //
-// To compute SD in a single pass of data, we use the following algorithm: 
-// We maintain 3 variables (for each field) n (count), M (mean), and SSD (Sum of 
-// squared deviations i.e. SUM((Xi-Mean)^2 ). 
+// To compute SD in a single pass of data, we use the following algorithm:
+// We maintain 3 variables (for each field) n (count), M (mean), and SSD (Sum of
+// squared deviations i.e. SUM((Xi-Mean)^2 ).
 //
-// Begin by setting N=1, M=X1 (first sample), and SSD=0. 
+// Begin by setting N=1, M=X1 (first sample), and SSD=0.
 // For every subsequent sample X, we update these values incrementallyas follows:
-// 
-// N++ 
-// compute deviation, D:=(X-M)/N. This is how much the mean will change with new data. 
-// M += D 
-// SSD += (N-1) * D^2 + (X-M)^2. 
 //
-// We now have the updated mean and sum of squared deviations, SSD. 
-// After all of the data is digested in this way, just calculate variance:=SSD/(n-1) 
-// and standard_deviation := sqrt(variance). 
-// It requires no memory to hold all of the data, only one pass through the data, formula, 
-// and it gives the correct results for a much wider range of data. 
+// N++
+// compute deviation, D:=(X-M)/N. This is how much the mean will change with new data.
+// M += D
+// SSD += (N-1) * D^2 + (X-M)^2.
+//
+// We now have the updated mean and sum of squared deviations, SSD.
+// After all of the data is digested in this way, just calculate variance:=SSD/(n-1)
+// and standard_deviation := sqrt(variance).
+// It requires no memory to hold all of the data, only one pass through the data, formula,
+// and it gives the correct results for a much wider range of data.
 //
 #ifdef OLD
 struct CField
@@ -73,7 +73,7 @@ struct CField
 
    CField()
       : Value(0), Warn(0), Undefined(0)
-   {      
+   {
    }
     void serialize(StringBuffer& xml) const
     {
@@ -113,7 +113,7 @@ struct CFieldInfo
    float StandardDeviation;
    bool  Hide;
 
-   CFieldInfo() 
+   CFieldInfo()
       : Count(0),
         SumSquaredDeviations(0),
           Mean(0),
@@ -148,7 +148,7 @@ struct CFieldInfo
             {
                 if (isupper(*pch))
                     xml.append(' ');
-                xml.append(*pch++);     
+                xml.append(*pch++);
             }
             xml.append("</Caption>");
             xml.appendf("<Mean>%f</Mean>", Mean);
@@ -203,7 +203,7 @@ public:
 
       if (!strncmp(oid, "ibyti", 5))
          oid += 5;
-       
+
       m_fieldMap.insert(pair<const char*, CField*>( oid, pField) );
 
       synchronized block(m_fieldInfoMap.m_mutex);
@@ -250,7 +250,7 @@ public:
    bool                 m_bPostProcessing; //use mean & std deviation to set warnings, etc.
 
    CMetricsThreadParam( const char* pszAddress, const char* pszSecString,
-                        CFieldInfoMap& fieldInfoMap, 
+                        CFieldInfoMap& fieldInfoMap,
                         Cws_machineEx* pService)
       : CWsMachineThreadParam(pszAddress, pszSecString, pService),
         m_fieldInfoMap(fieldInfoMap),
@@ -373,7 +373,7 @@ void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const *
             netAddress.append(addr);
     }
 #endif
-    
+
     return;
 }
 
@@ -386,7 +386,7 @@ void Cws_machineEx::processValue(const char *oid, const char *value, const bool 
   //const char *oid0 = oid;
   //if (!strncmp(oid, "ibyti", 5))
   //   oid += 5;
-   
+
   pField->Hide = !bShow;
 
   myfieldMap.insert(pair<const char*, CField*>( oid, pField) );
@@ -451,7 +451,7 @@ void Cws_machineEx::doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  
 }
 #endif
 
-bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req, 
+bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
                                          IEspMetricsResponse &resp)
 {
     try
@@ -517,9 +517,9 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             IpAddress ip;
             ip.setNetAddress(sizeof(unsigned),lptr++);
             ip.getIpText(ipBuf.clear());
-            
-            CMetricsThreadParam* pThreadReq = 
-                    new CMetricsThreadParam(ipBuf.str(), req.getSecurityString(), 
+
+            CMetricsThreadParam* pThreadReq =
+                    new CMetricsThreadParam(ipBuf.str(), req.getSecurityString(),
                 fieldInfoMap, this);
             threadParamArray.append(*::LINK(pThreadReq));
             pThreadReq->m_threadHandle = m_threadPool->start( pThreadReq );
@@ -533,7 +533,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         CMetricsThreadParam** pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
         unsigned count=threadParamArray.ordinality();
         unsigned i;
-        for (i = 0; i < count; i++, pThreadParam++) 
+        for (i = 0; i < count; i++, pThreadParam++)
             m_threadPool->join((*pThreadParam)->m_threadHandle);
 
         //collect field information for all fields
@@ -552,8 +552,8 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         if (columnsToShow == 0)
         {
             static const char* defaultColumns[] = {
-                "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin", 
-                "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage", 
+                "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin",
+                "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage",
                 "loQueryCount", "retriesNeeded", "slavesActive"
             };
 
@@ -562,7 +562,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             {
                 iInfo = fieldInfoMap.find(defaultColumns[i]);
                 if (iInfo != iInfoEnd)
-                    (*iInfo).second->Hide = 0;          
+                    (*iInfo).second->Hide = 0;
             }
         }
         else
@@ -575,11 +575,11 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             }
 
         //create a separate thread to do post processing i.e. serialize field map
-        //to field array while filling in any absent fields and set warnings for fields 
+        //to field array while filling in any absent fields and set warnings for fields
         //with very high deviation
         //
         pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
-        for (i = 0; i < count; i++, pThreadParam++) 
+        for (i = 0; i < count; i++, pThreadParam++)
         {
             (*pThreadParam)->m_bPostProcessing = true;
             (*pThreadParam)->m_threadHandle = m_threadPool->start( ::LINK(*pThreadParam) );
@@ -591,7 +591,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 
         xml.clear();
         pThreadParam = (CMetricsThreadParam**) threadParamArray.getArray();
-        for (i = 0; i < count; i++, pThreadParam++) 
+        for (i = 0; i < count; i++, pThreadParam++)
         {
             xml.append("<MetricsInfo><Address>");
             xml.append( (*pThreadParam)->m_sAddress );
@@ -665,14 +665,14 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 
                 //const char* name0 = name;
                 //if (!strncmp(name0, "ibyti", 5))
-                //  name0 += 5; 
+                //  name0 += 5;
 
                 bool bShow = false;
                 if (columnsToShow == 0)
                 {
                     static const char* defaultColumns[] = {
-                        "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin", 
-                        "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage", 
+                        "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin",
+                        "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage",
                         "loQueryCount", "retriesNeeded", "slavesActive"
                     };
 
@@ -705,7 +705,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         }
 
         int count=fieldMapArray.ordinality();
-        
+
         //collect field information for all fields
         CFieldInfoMap::iterator iInfo;
         CFieldInfoMap::iterator iInfoEnd = fieldInfoMap.end();
@@ -720,8 +720,8 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         if (columnsToShow == 0)
         {
             static const char* defaultColumns[] = {
-                "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin", 
-                "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage", 
+                "heapBlocksAllocated", "hiQueryActive", "hiQueryAverage", "hiQueryCount", "hiMax", "hiMin",
+                "lastQueryDate", "lastQueryTime", "loMax", "loMin", "loQueryActive", "loQueryAverage",
                 "loQueryCount", "retriesNeeded", "slavesActive"
             };
 
@@ -730,7 +730,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             {
                 iInfo = fieldInfoMap.find(defaultColumns[i]);
                 if (iInfo != iInfoEnd)
-                    (*iInfo).second->Hide = 0;          
+                    (*iInfo).second->Hide = 0;
             }
         }
         else
@@ -743,12 +743,12 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
             }
 
         //create a separate thread to do post processing i.e. serialize field map
-        //to field array while filling in any absent fields and set warnings for fields 
+        //to field array while filling in any absent fields and set warnings for fields
         //with very high deviation
         //
         int i = 0;
         CMetricsParam** pMetricsParam = (CMetricsParam**) fieldMapArray.getArray();
-        for (i = 0; i < count; i++, pMetricsParam++) 
+        for (i = 0; i < count; i++, pMetricsParam++)
         {
             doPostProcessing(fieldInfoMap, (*pMetricsParam)->m_fieldMap);
         }
@@ -759,12 +759,12 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 
         xml.clear();
         pMetricsParam = (CMetricsParam**) fieldMapArray.getArray();
-        for (i = 0; i < count; i++, pMetricsParam++) 
+        for (i = 0; i < count; i++, pMetricsParam++)
          {
             xml.append("<MetricsInfo><Address>");
             xml.append( (*pMetricsParam)->m_sAddress);
             xml.append("</Address>");
-            
+
             (*pMetricsParam)->m_fieldMap.serialize(xml);
             xml.append("</MetricsInfo>");
         }
@@ -788,7 +788,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         resp.setAutoRefresh( req.getAutoRefresh() );//loop back requested auto refresh timeout to output so javascript sets timeout
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -812,41 +812,41 @@ void Cws_machineEx::addIpAddressesToBuffer( void** buffer, unsigned& count, cons
     if (numIPs==0)
         throw MakeStringException(ECLWATCH_INVALID_IP_RANGE, "Invalid IP address range '%s'.", address);
 
-    
+
     //resize the array
     *buffer = realloc(*buffer, sizeof(unsigned) * (count+numIPs));
-    
+
     //insert first address in the array
     bool bAdded;
-    
-    
+
+
     // TBD IPv6
     if (!fromIp.isIp4())
         IPV6_NOT_IMPLEMENTED();
     unsigned ip;
     if (fromIp.getNetAddress(sizeof(ip),&ip)!=sizeof(ip))
         IPV6_NOT_IMPLEMENTED(); // Not quite same exception, but re-use when IPv4 hack fails sanity check
-    unsigned* pos = (unsigned*) binary_add((void*)&ip, *buffer, count, sizeof(ip), 
+    unsigned* pos = (unsigned*) binary_add((void*)&ip, *buffer, count, sizeof(ip),
         compareNumericIp, &bAdded);
-    
+
     //now insert all subsequent addresses, if any, in the address range as contiguous
     //memory assuming the ranges in the buffer don't overlap
     //
     if (bAdded)
     {
         count++;
-        
+
         if (--numIPs > 0)
         {
             //at this point, one element has been inserted at position 'pos' in the buffer
-            //so we need to make room for subsequent elements in the range by pushing the 
+            //so we need to make room for subsequent elements in the range by pushing the
             //existing elements behind the position 'pos' by (numIPs-1) places
             //
             pos++; //points to position after first inserted element
             unsigned index = pos - (unsigned*)*buffer;//index of next item
             unsigned itemsToMove = count - index;
             memmove(pos+numIPs, pos, itemsToMove*sizeof(ip));
-            count += numIPs;  
+            count += numIPs;
             while (numIPs--)
             {
                 fromIp.ipincrement(1);

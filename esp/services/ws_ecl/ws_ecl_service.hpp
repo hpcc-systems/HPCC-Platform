@@ -55,12 +55,12 @@ typedef enum wsEclTypes_
     xsdToken,
     xsdLanguage,
     xsdNMTOKEN,
-    xsdNMTOKENS, 
+    xsdNMTOKENS,
     xsdName,
     xsdNCName,
     xsdID,
     xsdIDREF,
-    xsdIDREFS, 
+    xsdIDREFS,
     xsdENTITY,
     xsdENTITIES,
     xsdInteger,
@@ -188,7 +188,7 @@ private:
     CWsEclService *wsecl;
 
 public:
-    CWsEclBinding(IPropertyTree *cfg, const char *bindname, const char *procname) : 
+    CWsEclBinding(IPropertyTree *cfg, const char *bindname, const char *procname) :
         CHttpSoapBinding(cfg, bindname, procname), wsecl(NULL)
     {
     }
@@ -202,7 +202,7 @@ public:
         wsecl = dynamic_cast<CWsEclService*>(&service);
         CEspBinding::addService(name, host, port, service);
     }
-    
+
     virtual void setXslProcessor(IInterface * xslp){}
     inline IPropertyTree *queryXsltConfig(){return wsecl ? wsecl->xsltConfig : nullptr;}
 

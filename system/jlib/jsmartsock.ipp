@@ -32,7 +32,7 @@ struct SmartSocketEndpoint
 
     SmartSocketEndpoint(const char *_name,unsigned short port=0) : ep(_name, port)
     {
-        if (ep.isNull()) 
+        if (ep.isNull())
             throw MakeStringException(-1,"SmartSocketEndpoint resolution failed for '%s' %d",_name,port);
         StringBuffer ipStr;
         ep.getIpText(ipStr);

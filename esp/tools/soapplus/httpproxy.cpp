@@ -53,7 +53,7 @@ void checkContentLength(StringBuffer& buf)
     {
         clen++;
     }
-    
+
     int len = 0;
     while(*clen && isdigit(*clen))
     {
@@ -92,7 +92,7 @@ void checkContentLength(StringBuffer& buf)
     printf("Actual length of content is %d\n", actual_len);
 }
 
-COneServerHttpProxyThread::COneServerHttpProxyThread(ISocket* client, const char* host, int port, FILE* ofile, 
+COneServerHttpProxyThread::COneServerHttpProxyThread(ISocket* client, const char* host, int port, FILE* ofile,
                                                                       bool use_ssl, ISecureSocketContext* ssctx, const char* url_prefix)
 {
     m_client.set(client);
@@ -117,7 +117,7 @@ int COneServerHttpProxyThread::start()
         Owned<IByteOutputStream> reqstream = createOutputStream(requestbuf);
         bool isRoxie;
         Http::receiveData(m_client, reqstream.get(), false, isRoxie);
-        
+
         if(http_tracelevel >= 10)
             fprintf(m_ofile, "%s%s%s", sepstr, requestbuf.str(), sepstr);
         else if(http_tracelevel >= 5)
@@ -215,7 +215,7 @@ int COneServerHttpProxyThread::start()
             OERRLOG("Can't connect to %s", ep.getUrlStr(urlstr).str());
             return -1;
         }
-        
+
         char newhost[1024];
         sprintf(newhost, "%s:%d", m_host.str(), m_port);
         replaceHeader(requestbuf, "Host", newhost);
@@ -230,7 +230,7 @@ int COneServerHttpProxyThread::start()
         StringBuffer respbuf;
         Owned<IByteOutputStream> respstream = createOutputStream(respbuf);
         Http::receiveData(socket2.get(), respstream.get(), true, isRoxie);
-        
+
         if(http_tracelevel >= 5)
             fprintf(m_ofile, ">>received response from %s:%d:\n", m_host.str(), m_port);
         if(http_tracelevel >= 10)
@@ -295,7 +295,7 @@ public:
                     fprintf(m_ofile, "%s", buf);
                 }
             }
-            else 
+            else
             {
                 m_w->close();
                 break;
@@ -335,10 +335,10 @@ int CHttpProxyThread::run()
 
         bool socketclosed = false;
         int lenread = readline(m_client.get(), oneline, 2048, socketclosed);
-        
+
         if(http_tracelevel >= 10)
             printf("firstline=%s\n", oneline);
-        
+
         if(strncmp(oneline, "CONNECT ", 8) == 0)
         {
             char* curptr = oneline + 8;
@@ -368,11 +368,11 @@ int CHttpProxyThread::run()
             SocketEndpoint ep;
             ep.set(host.str(), port);
             m_remotesocket.setown(ISocket::connect(ep));
-    
+
             const char* resp = "HTTP/1.0 200 Connection established\r\n"
                                 "Proxy-agent: Netscape-Proxy/1.1\r\n\r\n";
             m_client->write(resp, strlen(resp));
-            
+
             m_client->set_nonblock(false);
             m_remotesocket->set_nonblock(false);
             CReadWriteThread t1(m_client.get(), m_remotesocket.get(), m_ofile);
@@ -447,7 +447,7 @@ int CHttpProxyThread::run()
             StringBuffer respbuf;
             Owned<CSocketOutputStream> respstream = new CSocketOutputStream(m_client.get());
             Http::receiveData(m_remotesocket.get(), respstream.get(), true, isRoxie);
-            
+
             if(http_tracelevel >= 5)
                 fprintf(m_ofile, ">>receivd response from %s:%d:\n", hostname, port);
 
@@ -499,9 +499,9 @@ int CHttpProxyThread::readline(ISocket* socket, char* buf, int bufsize, bool& so
                 buf[ptr] = 0;
                 return ptr;
             }
-            
+
             buf[ptr++] = charbuf[0];
-            
+
             if(charbuf[0] == '\r')
             {
                 socket->read(charbuf,0, 1, readlen);
@@ -515,7 +515,7 @@ int CHttpProxyThread::readline(ISocket* socket, char* buf, int bufsize, bool& so
             socket->read(charbuf,0, 1, readlen);
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         if(e->errorCode() != JSOCKERR_graceful_close)
@@ -543,7 +543,7 @@ HttpProxy::HttpProxy(int localport, const char* url, FILE* ofile, const char* ur
     {
         StringBuffer protocol, username, password, portbuf, path;
         Http::SplitURL(url, protocol, username, password, m_host, portbuf, path);
-        
+
         if(protocol.length() > 0 && stricmp(protocol.str(), "HTTPS") == 0)
             m_use_ssl = true;
         else
@@ -566,9 +566,9 @@ HttpProxy::HttpProxy(int localport, const char* url, FILE* ofile, const char* ur
 #else
         throw MakeStringException(-1, "HttpProxy: failure to create SSL socket - OpenSSL not enabled in build");
 #endif
-        }       
+        }
     }
-    
+
     m_ofile = ofile;
 }
 
@@ -589,7 +589,7 @@ HttpProxy::HttpProxy(int localport, const char* host, int port, FILE* ofile, boo
 #else
         throw MakeStringException(-1, "HttpProxy: failure to create SSL socket - OpenSSL not enabled in build");
 #endif
-    }       
+    }
 }
 
 int HttpProxy::start()

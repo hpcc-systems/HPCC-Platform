@@ -76,14 +76,14 @@ interface IDeployTask : extends IInterface
     virtual void setProcessed(bool bProcessed = true) = 0;
     virtual void setCaption(const char* caption) = 0;
     virtual void setFileSpec(int idx, const char* file) = 0;
-    
+
     virtual bool getAbort() const = 0;
     virtual IDeploymentCallback& getCallback() const = 0;
-    
+
     virtual unsigned getFlags() const = 0;
     virtual void setFlags(unsigned)   = 0;
     virtual void setUpdateProgress(bool flag) = 0;
-    
+
     virtual bool createFile(const char* text) = 0;
     virtual bool transformFile(IXslProcessor& processor, IXslTransform& transform, const char* tempPath) = 0;
     virtual bool copyFile(unsigned mode) = 0;
@@ -150,7 +150,7 @@ interface IDeploymentEngine : extends IInterface
 interface IDeploymentCallback : extends IInterface
 {
     virtual void printStatus(IDeployTask* task) = 0;
-    virtual void printStatus(StatusType type, const char* processType, const char* comp, 
+    virtual void printStatus(StatusType type, const char* processType, const char* comp,
         const char* instance, const char* msg=NULL, ...) __attribute__((format(printf, 6, 7))) = 0;
     virtual bool onDisconnect(const char* target) = 0;
     virtual bool getAbortStatus() const = 0;
@@ -158,7 +158,7 @@ interface IDeploymentCallback : extends IInterface
     virtual void setEnvironmentUpdated() = 0;
     virtual void getSshAccountInfo(StringBuffer& userid, StringBuffer& password) const = 0;
     //the following throws exception on abort, returns true for ignore
-    virtual bool processException(const char* processType, const char* process, const char* instance, 
+    virtual bool processException(const char* processType, const char* process, const char* instance,
         IException* e, const char* szMessage=NULL, const char* szCaption=NULL,
         IDeployTask* pTask = NULL ) = 0;
     virtual IEnvDeploymentEngine* getEnvDeploymentEngine() const = 0;
@@ -204,19 +204,19 @@ interface IEnvDeploymentEngine : extends IInterface
 //---------------------------------------------------------------------------
 // Factory functions
 //---------------------------------------------------------------------------
-extern DEPLOY_API IEnvDeploymentEngine* createEnvDeploymentEngine(IConstEnvironment& environment, 
+extern DEPLOY_API IEnvDeploymentEngine* createEnvDeploymentEngine(IConstEnvironment& environment,
                                                                   IDeploymentCallback& callback,
                                                                   IPropertyTree* pSelectedComponents);
-extern DEPLOY_API IDeployTask* createDeployTask(IDeploymentCallback& callback, const char* caption, 
-                                                const char* processType, const char* comp, const char* instance, 
-                                                const char* source, const char* target, 
-                                                const char* sshUser, const char* sshPubKeyFile, 
-                                                const char* sshPubKeyPassphrase, bool useSsh, 
-                                                EnvMachineOS os = MachineOsUnknown, 
+extern DEPLOY_API IDeployTask* createDeployTask(IDeploymentCallback& callback, const char* caption,
+                                                const char* processType, const char* comp, const char* instance,
+                                                const char* source, const char* target,
+                                                const char* sshUser, const char* sshPubKeyFile,
+                                                const char* sshPubKeyPassphrase, bool useSsh,
+                                                EnvMachineOS os = MachineOsUnknown,
                                                 const char* processName=NULL);
 extern DEPLOY_API IDeployLog* createDeployLog(IDeploymentCallback& callback, const char* filename, const char* envFilename);
 extern DEPLOY_API IThreadFactory* createDeployTaskThreadFactory();
-extern DEPLOY_API IEnvDeploymentEngine* createConfigGenMgr(IConstEnvironment& env, 
+extern DEPLOY_API IEnvDeploymentEngine* createConfigGenMgr(IConstEnvironment& env,
                                                            IDeploymentCallback& callback,
                                                            IPropertyTree* pSelectedComponents,
                                                            const char* inputDir,
@@ -225,7 +225,7 @@ extern DEPLOY_API IEnvDeploymentEngine* createConfigGenMgr(IConstEnvironment& en
                                                            const char* compType,
                                                            const char* ipAddr);
 
-extern DEPLOY_API IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, 
+extern DEPLOY_API IPropertyTree* getInstances(const IPropertyTree* pEnvRoot,
                                               const char* compName,
                                               const char* compType,
                                               const char* ipAddr,
@@ -234,7 +234,7 @@ extern DEPLOY_API IPropertyTree* getInstances(const IPropertyTree* pEnvRoot,
 extern DEPLOY_API bool matchDeployAddress(const char* searchIP, const char *envIP);
 
 //---------------------------------------------------------------------------
-// Module globals 
+// Module globals
 //---------------------------------------------------------------------------
 extern const char* findFileExtension(const char* pszPath);
 extern void removeTrailingPathSepChar(char* pszPath);

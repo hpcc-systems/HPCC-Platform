@@ -22,7 +22,7 @@
 
 #define HRPCVERSION 1
 
-//#define _HRPCTRACE 
+//#define _HRPCTRACE
 
 IHRPC_Exception *MakeHRPCexception(int code);
 IHRPC_Exception *MakeHRPCexception(int code,IException *e);
@@ -63,14 +63,14 @@ struct HRPCpacketheader // at the head of all HRPC packets
 
     unsigned char flags;
     unsigned char function; // limit of 256 functions per module (at present)
-    unsigned char version;  
+    unsigned char version;
 
 
-    static HRPCpacketheader* read(HRPCbuffer &b)  
-    { 
-        HRPCpacketheader* r=(HRPCpacketheader*)b.readptr(sizeof(HRPCpacketheader)); 
+    static HRPCpacketheader* read(HRPCbuffer &b)
+    {
+        HRPCpacketheader* r=(HRPCpacketheader*)b.readptr(sizeof(HRPCpacketheader));
         if (r->version!=HRPCVERSION)
-            THROWHRPCEXCEPTION(HRPCERR_mismatched_hrpc_version);        
+            THROWHRPCEXCEPTION(HRPCERR_mismatched_hrpc_version);
         return r;
     }
     static HRPCpacketheader* write(HRPCbuffer &b)
@@ -81,7 +81,7 @@ struct HRPCpacketheader // at the head of all HRPC packets
         return r;
     }
 #if defined(_WIN32) || defined(__linux__)
-    void winrev() 
+    void winrev()
     {
         _rev(size);
     }

@@ -40,7 +40,7 @@ public:
         Owned<IWUResult> r;
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
         r.setown(wu->updateResultBySequence(helper->getSequence()));
-        r->setResultTotalRowCount(recordsProcessed);    
+        r->setResultTotalRowCount(recordsProcessed);
         r->setResultStatus(ResultStatusCalculated);
         r.clear();
         wu.clear();

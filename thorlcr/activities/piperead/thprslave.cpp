@@ -194,7 +194,7 @@ protected:
     bool eof;
 
 public:
-    CPipeReadSlaveActivity(CGraphElementBase *_container) 
+    CPipeReadSlaveActivity(CGraphElementBase *_container)
         : CPipeSlaveBase(_container)
     {
         helper = static_cast <IHThorPipeReadArg *> (queryHelper());
@@ -207,7 +207,7 @@ public:
         appendOutputLinked(this);
     }
     CATCH_NEXTROW()
-    {   
+    {
         ActivityTimer t(slaveTimerStats, timeActivities);
         if (eof || abortSoon)
             return NULL;
@@ -226,7 +226,7 @@ public:
             }
         }
         catch(IException *e) // trying to catch OsException here should we not have a IOSException?
-        {       
+        {
 #ifdef _WIN32
             if (e->errorCode() == ERROR_INVALID_HANDLE || e->errorCode() == ERROR_BROKEN_PIPE) // JCSMORE - this this occurs when pipeProgram closes output when finished with input.
 #else
@@ -238,7 +238,7 @@ public:
                 e->Release();
             }
             else
-                throw;      
+                throw;
         }
         eof = true;
         return NULL;

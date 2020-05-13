@@ -91,7 +91,7 @@ public:
                 throw e.getClear();
             else
                 throw createBarrierAbortException();
-        }   
+        }
         return true;
     }
     virtual void cancel(IException *e) override
@@ -124,7 +124,7 @@ bool CThorInput::isFastThrough() const
 {
     return itdl->queryFromActivity()->isFastThrough();
 }
-// 
+//
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container) : CActivityBase(_container), CEdgeProgress(this)
 {
@@ -1941,11 +1941,11 @@ public:
         }
     }
     virtual IFile *open() override { throwUnexpected(); }
-    RemoteFilenameArray &queryCopies() 
-    { 
-        if(!part.get()) 
+    RemoteFilenameArray &queryCopies()
+    {
+        if(!part.get())
             part.setown(partDesc->getReplicatedFile());
-        return part->queryCopies(); 
+        return part->queryCopies();
     }
 };
 

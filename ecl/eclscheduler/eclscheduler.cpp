@@ -66,7 +66,7 @@ void initSignals()
     signal(SIGALRM, caughtSIGALRM);
 
 #endif
-}   
+}
 
 //=========================================================================================
 
@@ -123,13 +123,13 @@ public:
     }
     void start() { processor->start(); }
     void stop() { processor->stop(); }
-    virtual bool fireException(IException *e) 
-    { 
+    virtual bool fireException(IException *e)
+    {
         StringBuffer msg;
-        OERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release(); 
-        OERRLOG("Scheduler will now terminate"); 
+        OERRLOG("Scheduler error: %d: %s", e->errorCode(), e->errorMessage(msg).str()); e->Release();
+        OERRLOG("Scheduler will now terminate");
         waiter.onAbort();
-        return false; 
+        return false;
     }
 
 private:

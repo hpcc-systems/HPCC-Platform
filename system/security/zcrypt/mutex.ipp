@@ -94,7 +94,7 @@ protected:
         while (count--)
             lock();
     }
-    
+
 private:
     int lockcount;
 };

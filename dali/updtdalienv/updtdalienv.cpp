@@ -42,7 +42,7 @@ static void usage(const char *exe)
 {
     printf("Update dali with environment.xml changes:\n");
     printf("  %s <environment-xml-file> [-i <dali-ip>] [-f]\n", exe);
-    printf("Retrieve directory information:\n"); 
+    printf("Retrieve directory information:\n");
     printf("  %s <environment-xml-file> -d category component instance [-ip ip]\n", exe);
 }
 
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
             }
             filename.append(argv[i]);
         }
-    }       
+    }
 
     Owned<IPropertyTree> env;
     try {

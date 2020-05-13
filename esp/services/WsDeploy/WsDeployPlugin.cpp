@@ -30,7 +30,7 @@
 #ifndef HPCCSYSTEMS_CE
   #define createWsDeployInst createWsDeployEE
 #else
-  #define createWsDeployInst createWsDeployCE 
+  #define createWsDeployInst createWsDeployCE
 #endif
 
 extern CWsDeploySoapBinding* createWsDeploySoapBinding(IPropertyTree *cfg, const char *name, const char *process);

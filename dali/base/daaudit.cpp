@@ -38,7 +38,7 @@
 #pragma warning (disable : 4355)
 #endif
 
-enum MAuditRequestKind { 
+enum MAuditRequestKind {
     MAR_QUERY
 };
 
@@ -68,7 +68,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
     {
         for (;;) {
             char m = *match;
-            if (!m) 
+            if (!m)
                 break;
             match++;
             char c = *row;
@@ -89,7 +89,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
                         return false;
                     m = *(match++);
                     c = *(row++);
-                    if (c=='\n') 
+                    if (c=='\n')
                         return (m==0);
                     if (!m)
                         return (c==',');
@@ -137,7 +137,7 @@ public:
         tostr.setCharAt(DATEEND,' ');
         const char *tomatch = tostr.str();
         CDateTime dt;
-        Owned<IFile> dir = createIFile(auditdir.get()); 
+        Owned<IFile> dir = createIFile(auditdir.get());
         Owned<IDirectoryIterator> files = dir->directoryFiles("DaAudit.*");
         IArrayOf<IFile> filelist;
         StringBuffer fname;
@@ -174,7 +174,7 @@ public:
 Retry:
                 if (lbsize<MAXLINESIZE) {
                     if (!eof) {
-                        if (lbsize&&(p!=buf)) 
+                        if (lbsize&&(p!=buf))
                             memmove(buf,p,lbsize);
                         p = buf;
                         size32_t rd = fio->read(fpos,BUFFSIZE,buf+lbsize);
@@ -216,7 +216,7 @@ Retry:
                 len++;
                 lbsize-=len;
                 p+=len;
-            }   
+            }
         }
         return n;
     }
@@ -242,7 +242,7 @@ public:
     void ready()
     {
     }
-    
+
     void suspend()
     {
     }
@@ -266,7 +266,7 @@ public:
                 mb.clear();
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_AUDIT_REQUEST,NULL)) {
                     processMessage(mb); // not synchronous to ensure queue operations handled in correct order
-                }   
+                }
                 else
                     stopped = true;
             }
@@ -290,7 +290,7 @@ public:
         unsigned ret = 0;
         try {
             switch (fn) {
-            case MAR_QUERY:                     
+            case MAR_QUERY:
                 {
                     CDateTime from;
                     CDateTime to;
@@ -318,7 +318,7 @@ public:
             mb.clear().append(e->errorCode()).append(s.str());
             e->Release();
         }
-        coven.reply(mb); 
+        coven.reply(mb);
 
     }
 
@@ -335,7 +335,7 @@ IDaliServer *createDaliAuditServer(const char *auditdir)
     return new CDaliAuditServer(auditdir);
 }
 
-                        
+
 
 unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *match,StringAttrArray &out,unsigned start, unsigned max)
 {
@@ -345,7 +345,7 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
     to.serialize(mb);
     if (!match||(strcmp(match,"*")==0))
         match = "";
-    bool fixlocal = true; 
+    bool fixlocal = true;
     mb.append(match).append(start).append(max).append(fixlocal);
     queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_AUDIT_REQUEST);
     unsigned ret;
@@ -362,7 +362,7 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
     unsigned l = mb.length()-mb.getPos();
     for (unsigned i=0;i<n;i++) {
         const char *q=p;
-        while (((unsigned)(q-base)<l)&&(*q!='\n')) 
+        while (((unsigned)(q-base)<l)&&(*q!='\n'))
             q++;
         out.append(*new StringAttrItem(p,q-p));
         p = q+1;

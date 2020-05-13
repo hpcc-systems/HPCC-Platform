@@ -24,16 +24,16 @@ class SocketEndpoint;
 
 IHRPCtransport *MakeTcpTransport(   const char *target, // NULL for server, "" if name not yet known
                                     int port,
-                                    int listenqsize=10  // listen queue size for server 
+                                    int listenqsize=10  // listen queue size for server
                                     ) ;
 
 // Alternatives
 IHRPCtransport *MakeClientTcpTransport( SocketEndpoint &endpoint ) ;
-IHRPCtransport *MakeServerTcpTransport( int port,int listenqsize=10 );  
-IHRPCtransport *MakeServerTcpTransport( SocketEndpoint &endpoint,int listenqsize=10 );  
+IHRPCtransport *MakeServerTcpTransport( int port,int listenqsize=10 );
+IHRPCtransport *MakeServerTcpTransport( SocketEndpoint &endpoint,int listenqsize=10 );
 
 bool getTcpTarget(IHRPCtransport *transport,SocketEndpoint &ep);
-                                    
+
 
 
 /* Exceptions raised by MakeTcpTransport
@@ -47,4 +47,4 @@ HRPCERR_transport_port_in_use
 #endif
 
 
-                                  
+

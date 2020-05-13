@@ -36,7 +36,7 @@
 class CXmlAttribute : extends CInterface, implements IXmlAttribute
 {
     StringAttr m_name, m_defValue;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -52,7 +52,7 @@ public:
     bool hasDefaultValue() {  return m_defValue.get()!=NULL; }
     const char* getDefaultValue() { return m_defValue.get(); }
 
-    virtual const char* getSampleValue(StringBuffer& out) 
+    virtual const char* getSampleValue(StringBuffer& out)
     {
         const char* s = getFixedValue();
         if (s)
@@ -72,19 +72,19 @@ class CSimpleType : extends CInterface, implements IXmlType
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSimpleType(const char* name, size_t nAttrs=0, CXmlAttribute** attrs=NULL) 
+    CSimpleType(const char* name, size_t nAttrs=0, CXmlAttribute** attrs=NULL)
         : m_name(name), m_nAttrs(nAttrs), m_attrs(attrs) { }
 
-    virtual ~CSimpleType() 
-    { 
-        if (m_attrs) 
-        { 
+    virtual ~CSimpleType()
+    {
+        if (m_attrs)
+        {
             for (size_t i=0; i<m_nAttrs; i++)
                 m_attrs[i]->Release();
-            delete[] m_attrs; 
-        } 
+            delete[] m_attrs;
+        }
     }
-    
+
     XmlSubType getSubType() { return SubType_Default; }
     bool isArray() {  return false; }
 
@@ -106,11 +106,11 @@ public:
 
     virtual void getSampleValue(StringBuffer& out, const char* fieldName);
 
-    void toString(StringBuffer& s, int indent, StringStack& parent) 
+    void toString(StringBuffer& s, int indent, StringStack& parent)
     {  s.appendf("Simple Type: %s", m_name.get()); }
 };
 
-void CSimpleType::getSampleValue(StringBuffer& out, const char* fieldName) 
+void CSimpleType::getSampleValue(StringBuffer& out, const char* fieldName)
 {
     const char* name = queryName();
 
@@ -213,7 +213,7 @@ const RestrictionFacetType RF_MinLength    = 0x0001;
 const RestrictionFacetType RF_MaxLength    = 0x0002;
 const RestrictionFacetType RF_MinExclusive = 0x0004;
 const RestrictionFacetType RF_MaxExclusive = 0x0008;
-const RestrictionFacetType RF_MinInclusive = 0x0010; 
+const RestrictionFacetType RF_MinInclusive = 0x0010;
 const RestrictionFacetType RF_MaxInclusive = 0x0020;
 const RestrictionFacetType RF_Enumeration  = 0x0040;
 const RestrictionFacetType RF_Pattern      = 0x0080;
@@ -242,7 +242,7 @@ static const char* getFacetName(RestrictionFacetType type)
     }
 }
 
-enum RestrictionWhiteSpace 
+enum RestrictionWhiteSpace
 {
     RF_WS_Preserve,
     RF_WS_Replace,
@@ -259,21 +259,21 @@ union RestrictionFacetValue
 };
 
 struct RestrictionFacet
-{   
+{
     RestrictionFacetType type;
     RestrictionFacetValue value;
     RestrictionFacet(RestrictionFacetType t, RestrictionFacetValue v) : type(t), value(v) { }
 };
 
-class CRestrictionType : extends CSimpleType 
+class CRestrictionType : extends CSimpleType
 {
     IXmlType* m_baseType;
-    int m_types; 
+    int m_types;
     typedef std::vector<RestrictionFacet> FacetArray;
     FacetArray m_facets;
 
 public:
-    CRestrictionType(const char* name, IXmlType* base) 
+    CRestrictionType(const char* name, IXmlType* base)
         : CSimpleType(name), m_baseType(base), m_types(0)
     { }
 
@@ -289,7 +289,7 @@ void CRestrictionType::addFacet(RestrictionFacetType type, RestrictionFacetValue
 {
     if (m_types & type)
         ERRLOG(-1,"Error in CRestrictionType::addFacet: one facet type can only have one value");
-    else 
+    else
     {
         m_types |= type;
         m_facets.push_back(RestrictionFacet(type,value));
@@ -306,8 +306,8 @@ RestrictionFacetValue CRestrictionType::queryFacetValue(RestrictionFacetType typ
                 return it->value;
         }
     }
-    
-    throw MakeStringException(-1,"Error in CRestrictionType::queryFacetValue: unknown facet: %s", getFacetName(type));  
+
+    throw MakeStringException(-1,"Error in CRestrictionType::queryFacetValue: unknown facet: %s", getFacetName(type));
 }
 
 void CRestrictionType::getSampleValue(StringBuffer& out, const char* fieldName)
@@ -354,56 +354,56 @@ void CRestrictionType::getSampleValue(StringBuffer& out, const char* fieldName)
     }
 }
 
-void CRestrictionType::toString(StringBuffer& s, int indent, StringStack& parent) 
-{  
+void CRestrictionType::toString(StringBuffer& s, int indent, StringStack& parent)
+{
     s.appendf("CRestrictionType: %s", m_baseType->queryName());
     for (int i=0; i<m_facets.size(); i++)
     {
         RestrictionFacet& f = m_facets[i];
         switch (f.type)
         {
-        case RF_Length: s.appendf(", length='%d'", f.value.intValue); 
+        case RF_Length: s.appendf(", length='%d'", f.value.intValue);
             break;
-        case RF_MinLength: s.appendf(", minLength='%d'", f.value.intValue); 
+        case RF_MinLength: s.appendf(", minLength='%d'", f.value.intValue);
             break;
-        case RF_MaxLength: s.appendf(", maxLength='%d'", f.value.intValue); 
-            break;
-
-        case RF_TotalDigits: s.appendf(", totalDigits='%d'", f.value.intValue); 
-            break;
-        case RF_FractionDigits: s.appendf(", fractionDigits='%d'", f.value.intValue); 
+        case RF_MaxLength: s.appendf(", maxLength='%d'", f.value.intValue);
             break;
 
-        case RF_MinExclusive: 
-            if (streq(m_baseType->queryName(),"integer"))
-                s.appendf(", minExclusive='%d'", f.value.intValue); 
-            else
-                s.appendf(", minExclusive='%g'", f.value.doubleValue); 
+        case RF_TotalDigits: s.appendf(", totalDigits='%d'", f.value.intValue);
             break;
-        case RF_MaxExclusive:               
-            if (streq(m_baseType->queryName(),"integer"))
-                s.appendf(", maxExclusive='%d'", f.value.intValue); 
-            else
-                s.appendf(", maxExclusive='%g'", f.value.doubleValue); 
+        case RF_FractionDigits: s.appendf(", fractionDigits='%d'", f.value.intValue);
             break;
-        
-        case RF_MinInclusive: 
+
+        case RF_MinExclusive:
             if (streq(m_baseType->queryName(),"integer"))
-                s.appendf(", minInclusive='%d'", f.value.intValue); 
+                s.appendf(", minExclusive='%d'", f.value.intValue);
             else
-                s.appendf(", minInclusive='%g'", f.value.doubleValue); 
+                s.appendf(", minExclusive='%g'", f.value.doubleValue);
             break;
-        case RF_MaxInclusive:               
+        case RF_MaxExclusive:
             if (streq(m_baseType->queryName(),"integer"))
-                s.appendf(", maxInclusive='%d'", f.value.intValue); 
+                s.appendf(", maxExclusive='%d'", f.value.intValue);
             else
-                s.appendf(", maxInclusive='%g'", f.value.doubleValue); 
+                s.appendf(", maxExclusive='%g'", f.value.doubleValue);
+            break;
+
+        case RF_MinInclusive:
+            if (streq(m_baseType->queryName(),"integer"))
+                s.appendf(", minInclusive='%d'", f.value.intValue);
+            else
+                s.appendf(", minInclusive='%g'", f.value.doubleValue);
+            break;
+        case RF_MaxInclusive:
+            if (streq(m_baseType->queryName(),"integer"))
+                s.appendf(", maxInclusive='%d'", f.value.intValue);
+            else
+                s.appendf(", maxInclusive='%g'", f.value.doubleValue);
             break;
 
         case RF_Pattern: s.appendf(", pattern='%s'", f.value.pattern->get());
             break;
 
-        case RF_WhiteSpace: 
+        case RF_WhiteSpace:
             s.appendf(", whiteSpace='%s'", (f.value.whiteSpace==RF_WS_Preserve)?"preserve" : ((f.value.whiteSpace==RF_WS_Replace)?"replace" : "collapse"));
             break;
 
@@ -417,7 +417,7 @@ void CRestrictionType::toString(StringBuffer& s, int indent, StringStack& parent
                     s.append(f.value.enums->item(i));
                 }
                 s.append("}");
-            }               
+            }
             break;
 
         default:
@@ -431,12 +431,12 @@ class CSimpleEnumType : extends CSimpleType
 {
     IXmlType* m_baseType;
     StringArray m_enums;
-public: 
+public:
     CSimpleEnumType(const char* name, IXmlType* base)
         : CSimpleType(name), m_baseType(base)
     { }
 
-    void setEnumValues(int n, const char* values[]) { 
+    void setEnumValues(int n, const char* values[]) {
         for (int i=0;i<n;i++)
             m_enums.append(values[i]);
     }
@@ -461,27 +461,27 @@ protected:
     IXmlAttribute** m_attrs;
     XmlSubType m_subType;
 
-public: 
+public:
     IMPLEMENT_IINTERFACE;
 
     CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs, bool *repeats)
-        : m_name(name), m_subType(subType), m_fldCount(count), m_fldNames(names), 
+        : m_name(name), m_subType(subType), m_fldCount(count), m_fldNames(names),
         m_fldTypes(els), m_nAttrs(nAttrs), m_attrs(attrs), m_fldRepeats(repeats) { }
-    
-    virtual ~CComplexType() 
-    { 
+
+    virtual ~CComplexType()
+    {
         // types are cached, but not linked
         if (m_fldTypes)
             delete[] m_fldTypes;
-        
+
         if (m_fldNames)
         {
             for (int i=0; i<m_fldCount; i++)
-                free(m_fldNames[i]); 
+                free(m_fldNames[i]);
             delete[] m_fldNames;
         }
 
-        if (m_attrs) 
+        if (m_attrs)
         {
             for (int i=0; i<m_nAttrs; i++)
                 m_attrs[i]->Release();
@@ -521,10 +521,10 @@ protected:
     StringAttr m_itemName;
     IXmlType* m_itemType;
 
-public: 
+public:
     IMPLEMENT_IINTERFACE;
 
-    CArrayType(const char* name, const char* itemName, IXmlType* itemType) 
+    CArrayType(const char* name, const char* itemName, IXmlType* itemType)
         : m_name(name), m_itemName(itemName), m_itemType(itemType) { }
 
     const char* queryName() {  return m_name.get(); }
@@ -544,10 +544,10 @@ public:
 
     bool hasDefaultValue() {  assertex(!"N/A"); return false; }
     const char* getDefaultValue() { assertex(!"N/A"); return NULL; }
-    
+
     void getSampleValue(StringBuffer& out, const char* fieldName) { assert(false); }
 
-    void toString(StringBuffer& s, int indent, StringStack& parent); 
+    void toString(StringBuffer& s, int indent, StringStack& parent);
 };
 
 class CXmlSchema : extends CInterface, implements IXmlSchema
@@ -556,7 +556,7 @@ protected:
     Owned<IPTree> m_schema;
     StringAttr    m_xsdNs;
     int           m_unnamedIdx;
-    
+
     void setSchemaNamespace();
     const char* xsdNs() { return m_xsdNs.get(); }
     IXmlType* parseComplexType(IPTree* complexDef);
@@ -567,8 +567,8 @@ protected:
 
     typedef std::map<std::string, IXmlType*> TypeMap;
     TypeMap m_types;
-    void addCache(const char* name, IXmlType* type) 
-    {  
+    void addCache(const char* name, IXmlType* type)
+    {
         if (name)
         {
             m_types[name] = type;
@@ -622,7 +622,7 @@ XMLLIB_API IXmlSchema* createXmlSchemaFromPTree(IPTree* schema)
 //  Implementation
 
 void CComplexType::toString(StringBuffer& s, int indent, StringStack& parent)
-{  
+{
     s.appendf("%s: ComplexType", queryName()?queryName():"<unnamed>");
     if (queryName())
         parent.push_back(queryName());
@@ -645,9 +645,9 @@ void CComplexType::toString(StringBuffer& s, int indent, StringStack& parent)
 }
 
 void CArrayType::toString(StringBuffer& s, int indent, StringStack& parent)
-{ 
-    s.appendf("%s: array of %s: item=%s", queryName()?queryName():"<unnamed>", 
-        m_itemType->queryName()?m_itemType->queryName():"<unnamed>", queryItemName()); 
+{
+    s.appendf("%s: array of %s: item=%s", queryName()?queryName():"<unnamed>",
+        m_itemType->queryName()?m_itemType->queryName():"<unnamed>", queryItemName());
     if (!m_itemType->queryName() || std::find(parent.begin(),parent.end(),m_itemType->queryName()) == parent.end())
     {
         if (queryName())
@@ -661,7 +661,7 @@ void CArrayType::toString(StringBuffer& s, int indent, StringStack& parent)
         s.append('\n').pad(indent+1).appendf("--> see type: %s", m_itemType->queryName());
 }
 
-CXmlSchema::CXmlSchema(const char* schemaSrc) 
+CXmlSchema::CXmlSchema(const char* schemaSrc)
 {
     m_unnamedIdx = 0;
     try {
@@ -670,13 +670,13 @@ CXmlSchema::CXmlSchema(const char* schemaSrc)
     } catch (IException* e) {
         StringBuffer msg;
         fprintf(stderr,"Exception caught: %s", e->errorMessage(msg).str());
-    }   
+    }
 
     if (!m_schema.get())
         m_schema.setown(createPTree("xsd:schema"));
 }
 
-CXmlSchema::CXmlSchema(IPTree* schema) 
+CXmlSchema::CXmlSchema(IPTree* schema)
 {
     m_unnamedIdx = 0;
     m_schema.setown(schema);
@@ -692,7 +692,7 @@ CXmlSchema::~CXmlSchema()
 void CXmlSchema::setSchemaNamespace()
 {
     Owned<IAttributeIterator> attrs = m_schema->getAttributes();
-    
+
     for (attrs->first(); attrs->isValid(); attrs->next())
     {
         if (strcmp(attrs->queryValue(), "http://www.w3.org/2001/XMLSchema") == 0)
@@ -720,7 +720,7 @@ void CXmlSchema::setSchemaNamespace()
 IXmlType* CXmlSchema::getNativeSchemaType(const char* typeName, const char* defValue)
 {
     StringBuffer key(typeName);
-    if (defValue) 
+    if (defValue)
         key.append(':').append(defValue);
     TypeMap::const_iterator it = m_types.find(key.str());
     if (it != m_types.end())
@@ -748,7 +748,7 @@ size_t CXmlSchema::parseAttributes(IPTree* typeDef, IXmlAttribute** &attrs)
             attrs[idx++] = new CXmlAttribute(ats->query().queryProp("@name"));
     }
     return nAttrs;
-}   
+}
 
 IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
 {
@@ -758,9 +758,9 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
 
     // all
     IPTree* sub = complexDef->queryBranch(VStringBuffer("%sall",xsdNs()));
-    if (sub) 
+    if (sub)
         subType = SubType_Complex_All;
-    
+
     // sequence
     if (!sub)
     {
@@ -798,7 +798,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
     if (sub)
     {
         Owned<IPTreeIterator> els = sub->getElements(VStringBuffer("%selement",xsdNs()));
-        
+
         size_t fldCount = 0;
         size_t typelessCount = 0;
         ForEach(*els)
@@ -844,7 +844,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
 
                 // let the first fldType be to the base type
                 IXmlType** types = new IXmlType*[1];
-                const char* base = sub->queryProp(VStringBuffer("%sextension/@base",xsdNs()));              
+                const char* base = sub->queryProp(VStringBuffer("%sextension/@base",xsdNs()));
                 assert(base);
                 if (startsWith(base,xsdNs()))
                     types[0] = getNativeSchemaType(base+strlen(xsdNs()),NULL);
@@ -855,7 +855,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
                     DBGLOG(-1,"Invalid schema: %s", schema.str());
                     throw MakeStringException(-1, "Invalid schema encoutered");
                 }
-                
+
                 CComplexType* typ = new CComplexType(name,subType,fldCount,types,NULL,nAttrs,attrs, NULL);
                 addCache(name,typ);
                 return typ;
@@ -863,7 +863,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
             else if (sub->queryBranch(VStringBuffer("%srestriction", xsdNs())))
             {
                 assert(false);
-            } 
+            }
             else
             {
                 StringBuffer schema;
@@ -888,20 +888,20 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
             for (els->first(); els->isValid(); els->next())
             {
                 IPTree& el = els->query();
-                
+
                 const char* itemName = el.queryProp("@name");
                 const char* typeName = el.queryProp("@type");
                 const char *maxOccurs = el.queryProp("@maxOccurs");
                 IXmlType* type = typeName ? queryTypeByName(typeName,el.queryProp("@default")) : parseTypeDef(&el);
                 if (!type)
                     type = getNativeSchemaType("none", el.queryProp("@default")); //really should be tag only, no content?
-                
+
                 types[fldIdx] = type;
                 names[fldIdx] = strdup(itemName);
                 repeats[fldIdx] = (maxOccurs && streq(maxOccurs, "unbounded"));
                 fldIdx++;
             }
-    
+
             return typ;
         }
     }
@@ -935,7 +935,7 @@ IXmlType* CXmlSchema::parseSimpleType(IPTree* simpleDef)
         CRestrictionType* type = new CRestrictionType(name,baseType);
         addCache(name,type);
         RestrictionFacetValue fv;
-        
+
         if (sub->queryProp(VStringBuffer("%senumeration[1]/@value",xsdNs())))
         {
             Owned<IPTreeIterator> it = sub->getElements(VStringBuffer("%senumeration", xsdNs()));
@@ -974,7 +974,7 @@ IXmlType* CXmlSchema::queryElementType(const char* name)
     VStringBuffer xpath("%selement[@name='%s']", xsdNs(), name);
     IPTree* el = m_schema->queryBranch(xpath);
 
-    // <xsd:element name="xxx" 
+    // <xsd:element name="xxx"
     if (el)
     {
         const char* type = el->queryProp("@type");
@@ -984,7 +984,7 @@ IXmlType* CXmlSchema::queryElementType(const char* name)
             return parseTypeDef(el);
     }
 
-    //TODO: roxie type: 
+    //TODO: roxie type:
     //xpath.setf("%selement[@name=\"Dataset\"]/%scomplexType/%s:sequence/%s:element[@name=\"Row\"]",xsdNs(),xsdNs(),xsdNs(),xsdNs());
 
     return NULL;
@@ -1018,8 +1018,8 @@ IXmlType* CXmlSchema::queryTypeByName(const char* name, const char* defValue)
         return getNativeSchemaType(name+m_xsdNs.length(),defValue);
 
     const char* colon = strchr(name, ':');
-    if (colon) 
-        name = colon+1; // TODO: verify tns: 
+    if (colon)
+        name = colon+1; // TODO: verify tns:
 
     TypeMap::const_iterator it = m_types.find(name);
     if (it != m_types.end())

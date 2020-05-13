@@ -65,7 +65,7 @@ bool processPartitionCommand(ISocket * masterSocket, MemoryBuffer & msg, MemoryB
     unsigned thisHeaderSize;
     unsigned numParts;
     bool compressedInput = false;
-    unsigned compatflags = 0;  
+    unsigned compatflags = 0;
 
     srcFormat.deserialize(msg);
     tgtFormat.deserialize(msg);

@@ -70,10 +70,10 @@ CString GetRelativePathTo(const char *rootPath, const char *fullPath)
         {
             relPath=rootPath;
         }
-            
+
         return relPath;
     }
-    
+
     return rootPath;
 }
 
@@ -85,7 +85,7 @@ BOOL CEspMainWizDlg::OnDismiss()
 {
     if (!UpdateData(TRUE))
         return FALSE;
-    
+
     if (m_service.IsEmpty())
     {
         MessageBox("Service Name required.");
@@ -126,7 +126,7 @@ BOOL CEspMainWizDlg::OnDismiss()
         m_esp_path.Replace('\\', '/');
 
         CString relEspPath=GetRelativePathTo(m_esp_path, fullPath);
-        
+
         CString rootPath;
         CString relRootPath;
 
@@ -161,7 +161,7 @@ END_MESSAGE_MAP()
 
 
 
-void CEspMainWizDlg::OnBrowseScmFile() 
+void CEspMainWizDlg::OnBrowseScmFile()
 {
     UpdateData();
 
@@ -171,21 +171,21 @@ void CEspMainWizDlg::OnBrowseScmFile()
     {
         m_scm_file=scmFileDlg.GetPathName();
     }
-    
+
     UpdateData(FALSE);
 }
 
-void CEspMainWizDlg::OnBrowseEspRoot() 
+void CEspMainWizDlg::OnBrowseEspRoot()
 {
     UpdateData();
 
     CPidl id_root_path(CSIDL_DRIVES);
-    
+
     char browsePath[MAX_PATH]={0};
-    
+
     BROWSEINFO info;
     memset(&info, 0, sizeof(info));
-    
+
     info.hwndOwner = (HWND) *this;
     info.pszDisplayName=browsePath;
     info.lpszTitle="SCM File Path";
@@ -202,7 +202,7 @@ void CEspMainWizDlg::OnBrowseEspRoot()
     UpdateData(FALSE);
 }
 
-BOOL CEspMainWizDlg::OnInitDialog() 
+BOOL CEspMainWizDlg::OnInitDialog()
 {
     CAppWizStepDlg::OnInitDialog();
     return TRUE;
@@ -214,9 +214,9 @@ void CEspMainWizDlg::initWizDlg()
     if (inited==false)
     {
         inited=true;
-        
+
         m_service = espaw.m_Dictionary["Root"];
-        
+
         int nameLen=m_service.GetLength();
 
         if (nameLen)
@@ -224,7 +224,7 @@ void CEspMainWizDlg::initWizDlg()
             m_abbrev = m_service[0];
             for (int item=1;item<nameLen;item++)
             {
-                char x = m_service[item]; 
+                char x = m_service[item];
                 if (x>='A' && x<='Z')
                     m_abbrev+=x;
             }

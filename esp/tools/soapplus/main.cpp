@@ -112,7 +112,7 @@ void doTestSchemaParser(IProperties* globals, const char* url, const char* in_fn
         printf("Error: no schema is specified by -i\n");
         exit(1);
     }
-    
+
     Owned<IXmlSchema> xsd;
 
     bool isRoxie = globals->queryProp("roxie")!=NULL;
@@ -152,7 +152,7 @@ void doTestSchemaParser(IProperties* globals, const char* url, const char* in_fn
 
 
 void createDirectories(const char* outdir, const char* url, bool bClient, bool bServer,
-                       StringBuffer& outpath, StringBuffer& outpath1, StringBuffer& outpath2, 
+                       StringBuffer& outpath, StringBuffer& outpath1, StringBuffer& outpath2,
                        StringBuffer& outpath3, StringBuffer& outpath4, StringBuffer& outpath5)
 {
     Owned<IFile> out;
@@ -236,9 +236,9 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
     }
 }
 
-int processRequest(IProperties* globals, SoapPlusAction action, const char* url, 
-                   const char* in_fname, int port, const char* server_in_fname, 
-                   const char* outdir, bool writeToFiles, const char* proxy_url_prefix, 
+int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
+                   const char* in_fname, int port, const char* server_in_fname,
+                   const char* outdir, bool writeToFiles, const char* proxy_url_prefix,
                    bool isEspLogFile, const char* outfilename)
 {
     if (action == SPA_TestSchemaParser)
@@ -248,7 +248,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
     Owned<IFileIO> fio2 = NULL;
     Owned<IFileIO> fio3 = NULL;
     Owned<IFileIO> fio4 = NULL;
-    
+
     StringBuffer outpath, outpath1, outpath2, outpath3, outpath4, outpath5;
     if (writeToFiles)
     {
@@ -300,7 +300,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                 return -1;
             }
         }
-        
+
         if(infile.get() != NULL && infile->isDirectory())
         {
             Owned<IDirectoryIterator> di = infile->directoryFiles();
@@ -347,10 +347,10 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                         server.join();
                         if(http_tracelevel >= 5)
                             fprintf(logfile, "Server thread finished.\n");
-                    }   
+                    }
                 }
             }
-        }   
+        }
         else
         {
             if(server_infile.get() && server_infile->isDirectory())
@@ -572,7 +572,7 @@ int main(int argc, char** argv)
         {
             i++;
             globals->setProp("alldataset", "1");
-        }       
+        }
         else if(stricmp(argv[i], "-m") == 0)
         {
             i++;
@@ -664,7 +664,7 @@ int main(int argc, char** argv)
                 printf("Please specify min and max milli-seconds with -delay option.\n");
                 return 0;
             }
-            
+
             if(!isNumber(argv[i]) || !isNumber(argv[i+1]))
             {
                 printf("min and max milli-seconds must be positive integers. use -h option for usage.\n");
@@ -690,7 +690,7 @@ int main(int argc, char** argv)
                 printf("Please specify a non-negative number with -difflimit option.\n");
                 return 0;
             }
-            
+
             int difflimit = atoi(argv[i]);
             if(difflimit <= 0)
             {
@@ -793,7 +793,7 @@ int main(int argc, char** argv)
             printf("Please specify url for stress test.\n");
             return 0;
         }
-        
+
         if(writeToFiles)
         {
             printf("For stress test, please don't write the results to files. Remove the -w option and try again.\n");
@@ -820,7 +820,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (globals->getPropBool("autogen") && (!url || !*url) && !globals->hasProp("wsdl") 
+    if (globals->getPropBool("autogen") && (!url || !*url) && !globals->hasProp("wsdl")
         && !globals->hasProp("roxie") && (!xsdpath || !*xsdpath) && !isEspLogFile)
     {
         printf("Please specify url or the path/url of the wsdl if for automatically generation.\n");
@@ -833,7 +833,7 @@ int main(int argc, char** argv)
         if(isStress)
             http_tracelevel = 1;
         else if(writeToFiles)
-            http_tracelevel = 5;        
+            http_tracelevel = 5;
     }
 
     try

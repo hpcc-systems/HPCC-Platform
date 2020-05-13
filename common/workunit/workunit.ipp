@@ -223,14 +223,14 @@ protected:
     Owned<ISecUser> secUser;
 
 protected:
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
     CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser);
     void loadPTree(IPropertyTree *ptree);
     void beforeDispose();
-    
+
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
 
     ISecManager *querySecMgr() { return secMgr.get(); }

@@ -27,7 +27,7 @@
 #pragma warning(disable : 4275 ) // should get link errors if something is wrong...
 #pragma warning(disable : 4251 ) // should get link errors if something is wrong...
 #pragma warning(disable : 4786 ) // identifier was truncated to '255' characters in the debug information
-#pragma warning(disable : 4355 ) // 'this' : used in base member initializer list 
+#pragma warning(disable : 4355 ) // 'this' : used in base member initializer list
 #endif
 
 #include "modinit.h"
@@ -73,7 +73,7 @@ class ArrayIIteratorOf : implements IITER, public CInterface
 protected:
     ArrayIteratorOf <A, C &> iterator;
 
-public: 
+public:
     IMPLEMENT_IINTERFACE;
 
     ArrayIIteratorOf(A &array) : iterator(array)    {   }
@@ -81,7 +81,7 @@ public:
     virtual bool first() { return iterator.first(); }
     virtual bool next() { return iterator.next(); }
     virtual bool isValid() { return iterator.isValid(); }
-    virtual C & query() { return iterator.query(); }    
+    virtual C & query() { return iterator.query(); }
 };
 
 
@@ -95,9 +95,9 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CIArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CIArray::getArray(pos); }
     inline TYPE **detach()                        { return (TYPE **)CIArray::detach(); }
-    inline void append(TYPE& obj)                 { assert(&obj); CIArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CIArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CIArray::add(obj, pos); } 
+    inline void append(TYPE& obj)                 { assert(&obj); CIArray::append(obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); CIArray::appendUniq(obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CIArray::add(obj, pos); }
     inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return CIArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); CIArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return CIArray::zap(obj, nodel); }
@@ -113,9 +113,9 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)CICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)CICopyArray::getArray(pos); }
     inline TYPE **detach()                        { return (TYPE **)CICopyArray::detach(); }
-    inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); } 
+    inline void append(TYPE& obj)                 { assert(&obj); CICopyArray::append(obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); CICopyArray::appendUniq(obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); CICopyArray::add(obj, pos); }
     inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return CICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos)  { assert(&obj); CICopyArray::replace(obj, pos); }
     inline bool zap(TYPE & obj)                   { assert(&obj); return CICopyArray::zap(obj); }
@@ -131,9 +131,9 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)IArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IArray::getArray(pos); }
     inline TYPE **detach()                        { return (TYPE **)IArray::detach(); }
-    inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); } 
+    inline void append(TYPE& obj)                 { assert(&obj); IArray::append(obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); IArray::appendUniq(obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); IArray::add(obj, pos); }
     inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return IArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos, bool nodel=false) { assert(&obj); IArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE & obj, bool nodel=false) { assert(&obj); return IArray::zap(obj, nodel); }
@@ -184,9 +184,9 @@ public:
     inline TYPE & tos(aindex_t num) const         { return (TYPE &)ICopyArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)ICopyArray::getArray(pos); }
     inline TYPE **detach()                        { return (TYPE **)ICopyArray::detach(); }
-    inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); } 
-    inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); } 
-    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); } 
+    inline void append(TYPE& obj)                 { assert(&obj); ICopyArray::append(obj); }
+    inline void appendUniq(TYPE& obj)             { assert(&obj); ICopyArray::appendUniq(obj); }
+    inline void add(TYPE& obj, aindex_t pos)      { assert(&obj); ICopyArray::add(obj, pos); }
     inline NoBool<aindex_t> find(TYPE & obj) const        { assert(&obj); return ICopyArray::find(obj); }
     inline void replace(TYPE &obj, aindex_t pos) { assert(&obj); ICopyArray::replace(obj, pos); }
     inline bool zap(TYPE & obj)                   { assert(&obj); return ICopyArray::zap(obj); }
@@ -202,9 +202,9 @@ public:
     inline TYPE * tos(aindex_t num) const         { return (TYPE *)IPointerArray::tos(num); }
     inline TYPE **getArray(aindex_t pos = 0)      { return (TYPE **)IPointerArray::getArray(pos); }
     inline TYPE **detach()                        { return (TYPE **)IPointerArray::detach(); }
-    inline void append(TYPE * obj)                { IPointerArray::append(obj); } 
-    inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); } 
-    inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); } 
+    inline void append(TYPE * obj)                { IPointerArray::append(obj); }
+    inline void appendUniq(TYPE * obj)            { IPointerArray::appendUniq(obj); }
+    inline void add(TYPE * obj, aindex_t pos)     { IPointerArray::add(obj, pos); }
     inline NoBool<aindex_t> find(TYPE * obj) const        { return IPointerArray::find(obj); }
     inline void replace(TYPE * obj, aindex_t pos, bool nodel=false) { IPointerArray::replace(obj, pos, nodel); }
     inline bool zap(TYPE * obj, bool nodel=false) { return IPointerArray::zap(obj, nodel); }
@@ -370,7 +370,7 @@ public:
     static void glue(_modExit, __LINE__)();         \
     static ModExit glue(modExit, __LINE__)(& glue(_modExit, __LINE__)); \
     static void glue(_modExit, __LINE__)()
-    
+
 
 extern jlib_decl void _InitModuleObjects();
 extern jlib_decl void ExitModuleObjects();

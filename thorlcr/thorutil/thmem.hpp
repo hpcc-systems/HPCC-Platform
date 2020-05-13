@@ -67,12 +67,12 @@ graph_decl void setThorInABox(unsigned num);
 #ifdef TEST_ROW_LINKS
 #define TESTROW(r) if (r) { LinkThorRow(r); ReleaseThorRow(r); }
 #else
-#define TESTROW(r) 
+#define TESTROW(r)
 #endif
 #ifdef PARANOID_TEST_ROW_LINKS
 #define PARANOIDTESTROW(r) if (r) { LinkThorRow(r); ReleaseThorRow(r); }
 #else
-#define PARANOIDTESTROW(r) 
+#define PARANOIDTESTROW(r)
 #endif
 
 
@@ -84,7 +84,7 @@ interface IThorRowInterfaces : extends IRowInterfaces
 extern graph_decl IThorRowInterfaces *createThorRowInterfaces(roxiemem::IRowManager *rowManager, IOutputMetaData *meta, unsigned actId, unsigned heapFlags, ICodeContext *context);
 
 
-class OwnedConstThorRow 
+class OwnedConstThorRow
 {
 public:
     inline OwnedConstThorRow()                              { ptr = NULL; }
@@ -92,8 +92,8 @@ public:
     inline OwnedConstThorRow(const OwnedConstThorRow & other)   { ptr = other.getLink(); }
 
     inline ~OwnedConstThorRow()                             { if (ptr) ReleaseThorRow(ptr); }
-    
-private: 
+
+private:
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
     void operator = (const void * _ptr)          { set(_ptr);  }
     void operator = (const OwnedConstThorRow & other) { set(other.get());  }
@@ -102,37 +102,37 @@ private:
     void setown(const OwnedConstThorRow &other) {  }
 
 public:
-    inline const void * operator -> () const        { PARANOIDTESTROW(ptr); return ptr; } 
-    inline operator const void *() const            { PARANOIDTESTROW(ptr); return ptr; } 
-    
+    inline const void * operator -> () const        { PARANOIDTESTROW(ptr); return ptr; }
+    inline operator const void *() const            { PARANOIDTESTROW(ptr); return ptr; }
+
     inline void clear()                         { const void *temp=ptr; ptr=NULL; ReleaseThorRow(temp); }
     inline const void * get() const             { PARANOIDTESTROW(ptr); return ptr; }
-    inline const void * getClear()              
-    { 
-        const void * ret = ptr; 
-        ptr = NULL; 
+    inline const void * getClear()
+    {
+        const void * ret = ptr;
+        ptr = NULL;
         TESTROW(ret);
-        return ret; 
+        return ret;
     }
     inline const void * getLink() const         { LinkThorRow(ptr); return ptr; }
-    inline void set(const void * _ptr)          
-    { 
+    inline void set(const void * _ptr)
+    {
         const void * temp = ptr;
         if (_ptr)
             LinkThorRow(_ptr);
-        ptr = _ptr; 
+        ptr = _ptr;
         if (temp)
-            ReleaseThorRow(temp); 
+            ReleaseThorRow(temp);
     }
-    inline void setown(const void * _ptr)       
-    { 
+    inline void setown(const void * _ptr)
+    {
         TESTROW(_ptr);
-        const void * temp = ptr; 
-        ptr = _ptr; 
+        const void * temp = ptr;
+        ptr = _ptr;
         if (temp)
-            ReleaseThorRow(temp); 
+            ReleaseThorRow(temp);
     }
-    
+
     inline void set(const OwnedConstThorRow &other) { set(other.get()); }
 
     inline void deserialize(IThorRowInterfaces *rowif, size32_t memsz, const void *mem)
@@ -166,7 +166,7 @@ extern graph_decl IThorAllocator *createThorAllocator(unsigned memLimitMB, unsig
 extern graph_decl IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz);
 extern graph_decl IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz);
 
- 
+
 class CThorRowLinkCounter: public CSimpleInterface, implements IRowLinkCounter
 {
 public:

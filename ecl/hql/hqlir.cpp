@@ -2337,7 +2337,7 @@ namespace EclIR
 {
 
 // These test queries illustrate the kind of output that is expected from the IR generation
-static const char * const testQuery1 = 
+static const char * const testQuery1 =
 "r := RECORD\n"
 "  unsigned id;\n"
 "END;\n"
@@ -2393,7 +2393,7 @@ static const char * const expectedIR1 [] = {
 NULL
 };
 
-class EclIRTests : public CppUnit::TestFixture  
+class EclIRTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( EclIRTests );
         CPPUNIT_TEST(testExprToText);

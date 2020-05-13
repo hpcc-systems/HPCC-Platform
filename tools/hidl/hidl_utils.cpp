@@ -59,7 +59,7 @@ int createFile(const char* src, const char* ext)
     char * path = changeext(src,ext);
     //printf("Target: %s\n", path);
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
-    if (h==-1) 
+    if (h==-1)
     {
         printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
@@ -99,20 +99,20 @@ char * changeext(const char *fn,const char *ext)
     char *p;
     for (p=(char*)(fn+preext-1); p>=fn; p--)
     {
-        if (*p == '.')  
+        if (*p == '.')
         {
             preext = (int)(p-fn);
             break;
         }
     }
-    
+
     //  char *ret=gettail(fn);
     //  size_t l = strlen(ret);
     //  ret = (char *)realloc(ret,l+strlen(ext)+2);
-    
+
     char *ret = (char *)malloc(preext+strlen(ext)+2);
     memcpy(ret, fn, preext);
-    
+
     ret[preext] = '.';
     strcpy(ret+preext+1,ext);
     return ret;
@@ -125,16 +125,16 @@ char * changetail(const char *fn,const char *tail, const char *ext)
     char *p;
     for (p=(char*)(fn+preext-1); p>=fn; p--)
     {
-        if (*p == '.')  
+        if (*p == '.')
         {
             preext = (int)(p-fn);
             break;
         }
     }
-    
+
     char *ret = (char *)malloc(preext+strlen(tail)+strlen(ext)+2);
     memcpy(ret, fn, preext);
-    
+
     ret[preext] = 0;
     strcat(ret,tail);
     strcat(ret,".");
@@ -154,7 +154,7 @@ int createFile(const char* src, const char* tail, const char* ext)
 {
     char * path=changetail(src,tail,ext);
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
-    if (h==-1) 
+    if (h==-1)
     {
         printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
@@ -211,7 +211,7 @@ void StrBuffer::_realloc(size32_t newLen)
         char * newStr;
         if(!newMax || !(newStr=(char *)realloc(buffer, newMax)))
             throw "StrBuffer::_realloc: Failed to realloc memory";
-        
+
         buffer = newStr;
         maxLen = newMax;
     }
@@ -220,7 +220,7 @@ void StrBuffer::_realloc(size32_t newLen)
 StrBuffer & StrBuffer::append(int value)
 {
     char temp[12];
-    
+
     unsigned written = sprintf(temp, "%d", value);
     return append(written, temp);
 }
@@ -228,12 +228,12 @@ StrBuffer & StrBuffer::append(int value)
 StrBuffer & StrBuffer::append(unsigned int value)
 {
     char temp[12];
-    
+
     unsigned written = sprintf(temp, "%u", value);
     return append(written, temp);
 }
 
-StrBuffer & StrBuffer::append(char c) 
+StrBuffer & StrBuffer::append(char c)
 {
     appendf("%c",c);
     return *this;
@@ -251,7 +251,7 @@ StrBuffer & StrBuffer::append(const char * value)
     if (value)
     {
         size32_t SourceLen = (size32_t)::strlen(value);
-        
+
         ensureCapacity(SourceLen);
         memcpy(buffer + curLen, value, SourceLen);
         curLen += SourceLen;
@@ -293,7 +293,7 @@ StrBuffer & StrBuffer::va_append(const char *format, va_list args)
 {
     const int BUF_SIZE = 1024;
     char  buf[BUF_SIZE];
-    
+
     int len = _vsnprintf(buf,sizeof(buf),format,args);
     if (len >= 0)
     {
@@ -303,7 +303,7 @@ StrBuffer & StrBuffer::va_append(const char *format, va_list args)
         {
             ensureCapacity(len);
             // no need for _vsnprintf since the buffer is already made big enough
-            vsprintf(buffer+curLen,format,args); 
+            vsprintf(buffer+curLen,format,args);
             curLen += len;
         }
     }
@@ -319,7 +319,7 @@ StrBuffer & StrBuffer::va_append(const char *format, va_list args)
         append(len, pbuf);
         free(pbuf);
     }
-    
+
     return *this;
 }
 
@@ -432,15 +432,15 @@ void initLeakCheck(bool fullMemoryCheck)
 //  set the states we want to monitor
 //
     int LeakTmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF; 
+    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF;
     LeakTmpFlag    |= _CRTDBG_LEAK_CHECK_DF;
 
     if (fullMemoryCheck)
     {
         LeakTmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
-        LeakTmpFlag |= _CRTDBG_DELAY_FREE_MEM_DF; 
+        LeakTmpFlag |= _CRTDBG_DELAY_FREE_MEM_DF;
     /* This check is not needed since CRT block only exists in debug version */
-    //  LeakTmpFlag |= _CRTDBG_CHECK_CRT_DF; 
+    //  LeakTmpFlag |= _CRTDBG_CHECK_CRT_DF;
     }
     _CrtSetDbgFlag(LeakTmpFlag);
 #endif

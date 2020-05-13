@@ -3,7 +3,7 @@
 
 interface ISashaServer;
 interface ISashaCommand;
-extern ISashaServer *createSashaArchiverServer(); 
+extern ISashaServer *createSashaArchiverServer();
 
 bool processArchiverCommand(ISashaCommand *cmd);
 

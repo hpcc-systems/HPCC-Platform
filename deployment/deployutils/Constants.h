@@ -31,7 +31,7 @@ const char* const DEFAULT_FUNCTIONNAME = "func";
 //---------------------------------------------------------------------------
 //  These must match the component icon bitmap
 //---------------------------------------------------------------------------
-enum COMPONENT_ICON { 
+enum COMPONENT_ICON {
    ICON_UNKNOWN=0,
    ICON_FOLDERCLOSED,
    ICON_FOLDEROPEN,
@@ -93,7 +93,7 @@ const char* const g_szRoxieProcess[] =
 { "", "Farm", "Server", "Slave", "Unknown" };
 
 //---------------------------------------------------------------------------
-// 
+//
 //---------------------------------------------------------------------------
 enum COMPUTER_STATE {
    STATE_UNAVAILABLE=0,

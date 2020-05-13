@@ -26,7 +26,7 @@
     #define LDAPSECURITY_API DECL_EXPORT
 #endif //LDAPSECURITY_EXPORTS
 
-#endif 
+#endif
 
 extern "C" LDAPSECURITY_API ISecManager * newLdapSecManager(const char *serviceName, IPropertyTree &config);
 extern "C" LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config);

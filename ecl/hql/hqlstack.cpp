@@ -55,7 +55,7 @@ FuncCallStack::~FuncCallStack() {
     if(stackbuf) {
         free(stackbuf);
     }
-    
+
     // Free memory used by string/data parameters
     for(int i = 0; i < numToFree; i++) {
         free(toFree[i]);
@@ -72,7 +72,7 @@ unsigned FuncCallStack::align(unsigned size)
     return ((size + boundary - 1) & ~(boundary-1));
 }
 
-unsigned FuncCallStack::getSp(){ 
+unsigned FuncCallStack::getSp(){
     return sp;
 }
 
@@ -80,7 +80,7 @@ char* FuncCallStack::getMem() {
     return stackbuf;
 }
 
-int FuncCallStack::push(unsigned len, const void * data) 
+int FuncCallStack::push(unsigned len, const void * data)
 {
     int incsize = len;
     int inclen = align(incsize);
@@ -112,7 +112,7 @@ int FuncCallStack::push(ITypeInfo* argType, IHqlExpression* curParam)
         }
     }
 
-    switch (argType->getTypeCode()) 
+    switch (argType->getTypeCode())
     {
     case type_string:
     case type_data:

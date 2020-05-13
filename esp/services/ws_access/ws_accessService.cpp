@@ -1213,7 +1213,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                         const char* resourceName = r.getName();
                         const char* bnname = r.getDescription();
                         if (isEmptyString(resourceName))
-                            continue; 
+                            continue;
 
                         try
                         {

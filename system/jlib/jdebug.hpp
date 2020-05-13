@@ -63,7 +63,7 @@ static inline cycle_t getTSC()
     int64_t result;
 #ifdef _ARCH_PPC64
     /*
-        This reads timebase in one 64bit go.  Does *not* include a workaround for the cell (see 
+        This reads timebase in one 64bit go.  Does *not* include a workaround for the cell (see
         http://ozlabs.org/pipermail/linuxppc-dev/2006-October/027052.html)
     */
     __asm__ volatile(
@@ -108,7 +108,7 @@ struct HardwareInfo
     unsigned primFreeSize;   // In GB
     unsigned secDiskSize;    // In GB
     unsigned secFreeSize;    // In GB
-    unsigned NICSpeed;       // 
+    unsigned NICSpeed;       //
 };
 
 struct UserSystemTime_t
@@ -202,22 +202,22 @@ extern jlib_decl ITimeReporter *createStdTimeReporter();
 
 extern jlib_decl unsigned usTick();
 
-class jlib_decl HiresTimer 
+class jlib_decl HiresTimer
 {
 public:
     inline HiresTimer()
     {
         start=usTick();
     }
-    
-    inline void reset() 
-    { 
-        start=usTick(); 
+
+    inline void reset()
+    {
+        start=usTick();
     }
-    
-    inline double get() 
-    { 
-        return (double)(usTick()-start)/1000000; 
+
+    inline double get()
+    {
+        return (double)(usTick()-start)/1000000;
     }
 
 private:
@@ -266,7 +266,7 @@ extern jlib_decl void logLeaks (FILE *logHandle);  // only use predefined file h
 #if !defined(USING_MPATROL) && defined(_DEBUG) && (defined(_WIN32) || defined(WIN32))
 void jlib_decl enableMemLeakChecking(bool enable);
 #else
-#define enableMemLeakChecking(enable) 
+#define enableMemLeakChecking(enable)
 #endif
 
 // Hook to be called by the performance monitor, takes stats for processor, virtual memory, disk, and thread usage

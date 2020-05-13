@@ -34,15 +34,15 @@ class CMessageHandler: public CInterface, public IThreadFactory
     bool hasexceptionhandler;
     char *name;
 public:
-    virtual void Link(void) const       { CInterface::Link(); }                     
-    virtual bool Release(void) const    
-    { 
+    virtual void Link(void) const       { CInterface::Link(); }
+    virtual bool Release(void) const
+    {
         //Note: getLinkCount() is not thread safe
         if (pool&&(CInterface::getLinkCount()==2)) { // circular dependancy
             pool->Release();
             const_cast<CMessageHandler *>(this)->pool = NULL;
         }
-        return CInterface::Release(); 
+        return CInterface::Release();
     }
 
     CMessageHandler(const char *_name,PARENT *_parent,void (PARENT::*_handler)(CMessageBuffer &_mb), IExceptionHandler *exceptionHandler=NULL, unsigned maxthreads=40, unsigned timeoutOnRelease=INFINITE, unsigned lowThreadsDelay=1000)
@@ -89,7 +89,7 @@ public:
         {
             owner = _owner;
         }
-        void init(void *_mb) 
+        void init(void *_mb)
         {
             mb.transferFrom(*(CMessageBuffer *)_mb);
         }
@@ -103,7 +103,7 @@ public:
         }
         virtual bool stop() override
         {
-            return true; 
+            return true;
         }
     };
     IPooledThread *createNew()
@@ -118,7 +118,7 @@ public:
         size32_t l = mb.length();
         if (l>32)
             l = 32;
-        while (l--) 
+        while (l--)
             runname.append(' ').appendhex(*(b++),true);
         pool->start(&mb,runname.str());
     }

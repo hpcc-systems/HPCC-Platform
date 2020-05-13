@@ -69,7 +69,7 @@ public:
 //--------------------------------------------------------------------------
 // stack-free implementation of the regex matcher
 
-enum { 
+enum {
         RSinit,             // initial state - should never stay in this state..
         RSnextfollow,       // ready to process the next following item
         RSretry,            // failed to process following, try to match again.
@@ -131,7 +131,7 @@ typedef StructArrayOf<ActiveStage> ActiveStageArray;
 //---------------------------------------------------------------------------
 
 class RegexState;
-// Used to represent a single match in the regular expression tree.  Also 
+// Used to represent a single match in the regular expression tree.  Also
 class THORHELPER_API RegexMatchState : public CInterface, public MatchState
 {
 public:
@@ -179,7 +179,7 @@ public:
 
     RegexState(const RegexState & _state, INlpMatchedAction * _action, size32_t _len, const void * _text)
     : NlpState(_action, _state.inputFormat, _len, _text), cache(_state.cache)
-    { 
+    {
         implementation = _state.implementation; numMatched = 0; curActiveStage = NotFound; helper = _state.helper;
     }
 
@@ -646,7 +646,7 @@ public:
 
 protected:
     bool prevMatches(RegexState & state);
-    
+
 protected:
     unsigned minSize;
     unsigned maxSize;
@@ -898,8 +898,8 @@ public:
     virtual RegexMatchAction nextAction(ActiveStage & stage, RegexState & state);
     virtual void killStage(ActiveStage & stage, RegexState & state);
 
-    inline RegexMatchAction mapAction(RegexMatchAction action) 
-    { 
+    inline RegexMatchAction mapAction(RegexMatchAction action)
+    {
         if (action == RegexMatchBacktrack)
             return RegexMatchBacktrackToken;
         return action;
@@ -1044,7 +1044,7 @@ protected:
 
 /*
        ThorRegexDFA, ThorRegexIDFA, ThorRegexSet, ThorRegexISet,
-       ThorRegexUnicode, ThorRegexUnicodeI, 
+       ThorRegexUnicode, ThorRegexUnicodeI,
        ThorRegexMax
 */
 

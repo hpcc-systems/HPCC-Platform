@@ -80,13 +80,13 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
     if (hide)
     {
 #ifdef _WIN32
-        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);   
+        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
         DWORD dwInputMode;
-        GetConsoleMode(hStdIn, &dwInputMode);   
+        GetConsoleMode(hStdIn, &dwInputMode);
         SetConsoleMode(hStdIn, dwInputMode & ~ENABLE_LINE_INPUT & ~ENABLE_ECHO_INPUT);
         for (;;)
         {
-            /* read a character from the console input */   
+            /* read a character from the console input */
             char ch;
             DWORD dwRead;
             if (!ReadFile(hStdIn, &ch, sizeof(ch), &dwRead, NULL))
@@ -95,7 +95,7 @@ void promptFor(const char *prompt, const char *prop, bool hide, IProperties * gl
                 break;
             result.append(ch);
         }
-        SetConsoleMode(hStdIn, dwInputMode); 
+        SetConsoleMode(hStdIn, dwInputMode);
 #else
         int fn = fileno(stdin);
 #if defined (__linux__)

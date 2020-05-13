@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-#include <string> 
+#include <string>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -28,7 +28,7 @@ string getFileVector(const char* fileName){
     ifstream textstream(fileName);
     while ( getline(textstream, line) ){
         text.push_back(line + "\n");
-    } 
+    }
     textstream.close();
 
     string alltext;
@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
 
     string bashVars = getFileVector(argv[1]);
     string inFileContents = getFileVector(argv[2]);
-    
+
     string searchString( "###<REPLACE>###" );
     string replaceString( bashVars );
     string::size_type pos = 0;
-    while ( (pos = inFileContents.find(searchString, pos)) != string::npos ) 
+    while ( (pos = inFileContents.find(searchString, pos)) != string::npos )
     {
         inFileContents.replace( pos, searchString.size(), replaceString );
         pos++;

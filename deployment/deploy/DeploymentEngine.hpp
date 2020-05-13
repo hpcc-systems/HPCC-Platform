@@ -40,10 +40,10 @@ interface IXslTransform;
 
 using namespace std;
 
-struct CInstallFile : public CInterface 
+struct CInstallFile : public CInterface
 {
    CInstallFile(const char* method, const char* srcPath, const char* destPath, bool bCacheable=false)
-        : m_method(method), m_srcPath(srcPath), m_destPath(destPath), m_bCacheable(bCacheable), 
+        : m_method(method), m_srcPath(srcPath), m_destPath(destPath), m_bCacheable(bCacheable),
            m_szSrc(0), m_crcSrc(0), m_sizeInitialized(false), m_crcInitialized(false)
     {
     }
@@ -57,27 +57,27 @@ struct CInstallFile : public CInterface
    const string& getSrcPath () const { return m_srcPath; }
    const string& getDestPath() const { return m_destPath;}
    const string& getParams()   const { return m_params;  }//only supported for dynamically added files
-    
+
     // This function could throw exception
-    offset_t getSrcSize()   
-    { 
+    offset_t getSrcSize()
+    {
         if (!m_sizeInitialized)
         {
             m_szSrc = filesize(m_srcPath.c_str());
             m_sizeInitialized = true;
         }
-        return m_szSrc; 
+        return m_szSrc;
     }
-    
+
     // This function could throw exception
     unsigned getSrcCRC()
-    { 
+    {
         if (!m_crcInitialized)
         {
             m_crcSrc = getFileCRC(m_srcPath.c_str());
             m_crcInitialized = true;
         }
-        return m_crcSrc; 
+        return m_crcSrc;
     }
 
     bool  isCacheable()  const { return m_bCacheable;}
@@ -113,7 +113,7 @@ private:
     set<string> m_duplicateSrcFiles;
 };
 
-//define a case insensitive comparator class for std::string to be used for 
+//define a case insensitive comparator class for std::string to be used for
 //implementing a case insensitive multimap below
 
 struct iless_string : std::binary_function<string, string, bool> {
@@ -147,7 +147,7 @@ private:
 
 typedef vector<Linked<CInstallFile> > CInstallFileList;
 
-struct CInstallFiles 
+struct CInstallFiles
 {
 private:
    IDeploymentEngine* m_pDepEngine;
@@ -156,7 +156,7 @@ private:
 
    CInstallFiles(const CInstallFiles&);//disallow compiler from generating copy constructor
 
-public:      
+public:
    CInstallFiles()
    {
         m_pDepEngine = NULL;
@@ -173,7 +173,7 @@ public:
    CInstallFile* addInstallFile(const char* method, const char* srcPath, const char* destPath, bool bCacheable, const char* params)
    {
         LinkedFilePtr pFile = new CInstallFile(method, srcPath, destPath, bCacheable);
-        
+
         if (params)
             pFile->setParams(params);
 
@@ -203,14 +203,14 @@ public:
 //---------------------------------------------------------------------------
 //  CDeploymentEngine
 //---------------------------------------------------------------------------
-class CDeploymentEngine : public CInterface, 
+class CDeploymentEngine : public CInterface,
                           implements IDeploymentEngine,
                           implements IExceptionHandler
 {
 public:
     IMPLEMENT_IINTERFACE;
-   CDeploymentEngine(IEnvDeploymentEngine& envDepEngine, 
-                     IDeploymentCallback& callback, IPropertyTree& process, 
+   CDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
+                     IDeploymentCallback& callback, IPropertyTree& process,
                      const char* instanceType=NULL, bool createIni=false);
     virtual ~CDeploymentEngine();
 
@@ -242,7 +242,7 @@ protected:
    virtual void _deploy(bool useTempDir);
    virtual void xslTransform(const char *xsl, const char *outputFile, const char *instanceName,
         EnvMachineOS os=MachineOsUnknown, const char* processName=NULL,bool isEspModuleOrPlugin=false);
-   virtual void processCustomMethod(const char *method, const char *source, const char *outputFile, 
+   virtual void processCustomMethod(const char *method, const char *source, const char *outputFile,
                                     const char *instanceName, EnvMachineOS os);
 #ifdef _USE_OPENSSL
    virtual void siteCertificate(IPropertyTree& process, const char *instanceName, const char *outputFile);
@@ -284,9 +284,9 @@ protected:
     virtual const char* setCompare(const char *filename);
 
    const CInstallFiles& getInstallFiles() const { return m_installFiles; }
-   virtual bool processInstallFile(IPropertyTree& processNode, const char* instanceName, const char* method, 
-                                   const char* source, const char* dest,  
-                                   EnvMachineOS os, bool bCacheable, 
+   virtual bool processInstallFile(IPropertyTree& processNode, const char* instanceName, const char* method,
+                                   const char* source, const char* dest,
+                                   EnvMachineOS os, bool bCacheable,
                                    const char* params=NULL);
    static void addDeploymentFile(StringBuffer &ret, const char *in, IXslTransform*);
 #ifdef _USE_OPENSSL
@@ -316,7 +316,7 @@ protected:
    IEnvDeploymentEngine&   m_envDepEngine;
    Owned<IXslFunction>     m_externalFunction;
    Owned<IXslFunction>     m_externalFunction2;
-   IConstEnvironment&      m_environment;   
+   IConstEnvironment&      m_environment;
    Owned<IPropertyTree>    m_rootNode;
     IPropertyTree&          m_process;
     IArrayOf<IPropertyTree> m_instances;
@@ -334,7 +334,7 @@ protected:
     enum ThreeState {no, yes, unknown};
     mutable ThreeState m_startable;
     mutable ThreeState m_stoppable;
-    
+
     StringAttr m_name;
     StringAttr m_instanceType;
     StringAttr m_compareOld;

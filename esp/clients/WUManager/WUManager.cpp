@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
         char* delim = strstr(argv[i],":");
         if (delim)
         {
-            if (strstr(argv[i],"UserName")!=0) 
+            if (strstr(argv[i],"UserName")!=0)
                 username.append( delim+1);
             else if (strstr(argv[i],"Password")!=0)
                 password.append(delim+1);
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 
             printf("Processing request....");
             Owned<IClientWUExportResponse> resp =  pServer->WUExport(req);
-        
+
             __int64 _bytesWritten = _fileio->write(0, resp->getExportData().length(), resp->getExportData().toByteArray());
             printf("Write to file %s is complete.", file.str() );
 

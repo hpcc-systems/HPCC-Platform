@@ -64,10 +64,10 @@ static bool getWorkunitResultFilename(CGraphElementBase &container, StringBuffer
         diskFilename.append("~").append(tempFilename.str());
         return true;
     }
-    catch (IException * e) 
+    catch (IException * e)
     {
-        StringBuffer text; 
-        e->errorMessage(text); 
+        StringBuffer text;
+        e->errorMessage(text);
         e->Release();
         throw MakeThorException(TE_FailedToRetrieveWorkunitValue, "Failed to find value %s:%d in workunit %s [%s]", stepname?stepname:"(null)", sequence, wuid?wuid:"(null)", text.str());
     }

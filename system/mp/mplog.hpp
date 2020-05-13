@@ -47,13 +47,13 @@ extern mp_decl void stopLogMsgReceivers();
 
 /*
   Order of operations on start-up and shut-down:
-  
+
   startMPServer(port);
   startLogMsgChildReceiver();           (if manager will have children)
   startLogMsgParentReceiver();          (if manager will have parents)
-  
+
   ...
-  
+
   stopMPServer();
 */
 

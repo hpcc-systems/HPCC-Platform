@@ -30,7 +30,7 @@
 /*=============================================================================================
 Findings:
 - Detect gaps in incoming sequence
-- Implement then test lost packet resending 
+- Implement then test lost packet resending
 - Probably worth special casing self->self comms. (later)
 
 */
@@ -48,7 +48,7 @@ void usage()
         "--maxPacketsPerSender nn\n"
         "--udpQueueSize nn\n"
         "--udpRTSTimeout nn\n"
-        "--udpSnifferEnabled 0|1\n"     
+        "--udpSnifferEnabled 0|1\n"
         "--udpTraceCategories nn\n"
         "--udpTraceLevel nn\n"
         "--dontSendToSelf\n"
@@ -209,7 +209,7 @@ public:
                 if (!lastReport)
                 {
                     start = msTick(); // get first message free....
-                    lastReport = msTick();                  
+                    lastReport = msTick();
                 }
                 // process data here....
                 unsigned headerLength;
@@ -257,7 +257,7 @@ public:
                             UNIMPLEMENTED;
                     }
                 }
-            }   
+            }
             lastReceived = msTick();
             if (lastReport && (lastReceived - lastReport > 10000))
             {
@@ -408,7 +408,7 @@ void rawSendTest()
     }
 }
 
-class SortMaster 
+class SortMaster
 {
     unsigned __int64 receivingMask;
     unsigned __int64 sendingMask;
@@ -505,7 +505,7 @@ public:
                 if (bestScore == -1)
                 {
                     CriticalUnblock b(masterCrit);
-                    Sleep(10); // MORE - should wait until something changes then retry 
+                    Sleep(10); // MORE - should wait until something changes then retry
                 }
                 else
                 {
@@ -563,7 +563,7 @@ public:
         myIdx = -1;
         slavesDone = 0;
     }
-    void init(SortMaster *_master, unsigned _myIdx) 
+    void init(SortMaster *_master, unsigned _myIdx)
     {
         master = _master;
         myIdx = _myIdx;
@@ -612,7 +612,7 @@ void sortSimulator()
     delete[] slaves;
 }
 
-int main(int argc, char * argv[] ) 
+int main(int argc, char * argv[] )
 {
     InitModuleObjects();
     if (argc < 2)
@@ -830,7 +830,7 @@ unsigned packerHdrSize = 32;
 struct PackerInfo packersInfo[MAX_PACKERS];  // list of packers info, if used. each is alist of sizes (msgs).
 unsigned numPackersInfo = 0;
 
-void usage(char *err = NULL) 
+void usage(char *err = NULL)
 {
     if (err) fprintf(stderr, "Usage Error: %s\n", err);
     fprintf(stderr, "Usage: %s [ -send [-destA IP] [-destB IP] ] [-receive]\n", progName);
@@ -872,7 +872,7 @@ void usage(char *err = NULL)
 #define RCV_MODE_BIT 0x02
 
 
-int main(int argc, char * argv[] ) 
+int main(int argc, char * argv[] )
 {
     InitModuleObjects();
     progName = argv[0];
@@ -899,11 +899,11 @@ int main(int argc, char * argv[] )
                 noendwait = true;
             else if(stricmp(argv[i]+1,"destA")==0)
             {
-                if (i+1 < argc) 
+                if (i+1 < argc)
                 {
                     destA = addRoxieNode(argv[++i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing IP address after \"%s\"", argv[i]);
                     usage(errBuff);
@@ -911,11 +911,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"destB")==0)
             {
-                if (i+1 < argc) 
+                if (i+1 < argc)
                 {
                     destB = addRoxieNode(argv[++i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing IP address after \"%s\"", argv[i]);
                     usage(errBuff);
@@ -923,11 +923,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"multiCast")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     multiCast = argv[i];
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing IP address after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -935,11 +935,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"udpTimeout")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     udpRequestToSendTimeout = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -947,11 +947,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"udpMaxTimeouts")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     udpMaxRetryTimedoutReqs = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -959,11 +959,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"udpNumQs")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     udpNumQs = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -971,36 +971,36 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"udpQsPriority")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     udpOutQsPriority = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
                 }
             }
-            
+
             else if(stricmp(argv[i]+1,"packerHdrSize")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     packerHdrSize = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
                 }
-            }   
+            }
             else if(stricmp(argv[i]+1,"numPackers")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     numPackers = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1008,7 +1008,7 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"packer")==0)
             {
-                if (numPackersInfo >= MAX_PACKERS) 
+                if (numPackersInfo >= MAX_PACKERS)
                 {
                     sprintf(errBuff,"Too many packers are listed  - max=%i", MAX_PACKERS);
                     usage(errBuff);
@@ -1018,7 +1018,7 @@ int main(int argc, char * argv[] )
                 packerInfo.numPackets = 0;
                 while ((++i < argc) && (*argv[i] != '-'))
                 {
-                    if (packerInfo.numPackets >= MAX_PACKETS) 
+                    if (packerInfo.numPackets >= MAX_PACKETS)
                     {
                         sprintf(errBuff,"Too many packets in packer - max=%i", MAX_PACKETS);
                         usage(errBuff);
@@ -1026,21 +1026,21 @@ int main(int argc, char * argv[] )
                     packerInfo.packetsSizes[packerInfo.numPackets] = atoi(argv[i]);
                     packerInfo.numPackets++;
                 }
-                if (packerInfo.numPackets == 0) 
+                if (packerInfo.numPackets == 0)
                 {
                     sprintf(errBuff,"Missing packer packets info");
                     usage(errBuff);
                 }
                 --i;
                 numPackersInfo++;
-            }   
+            }
             else if(stricmp(argv[i]+1,"numSizes")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     numSizes = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1048,11 +1048,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"numSends")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     numSends = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1060,11 +1060,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"initSize")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     initSize = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1072,11 +1072,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"sizeMulti")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     sizeMulti = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1084,11 +1084,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"delayPackers")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     delayPackers = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1096,11 +1096,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"getUnpackerTimeout")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     getUnpackerTimeout = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1108,11 +1108,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"thisTrace")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     thisTrace = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1120,11 +1120,11 @@ int main(int argc, char * argv[] )
             }
             else if(stricmp(argv[i]+1,"udpTrace")==0)
             {
-                if (++i < argc) 
+                if (++i < argc)
                 {
                     udpTraceLevel = atoi(argv[i]);
                 }
-                else 
+                else
                 {
                     sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
                     usage(errBuff);
@@ -1146,7 +1146,7 @@ int main(int argc, char * argv[] )
 
     // default is daul mode (send and receive)
     if (!modeType) modeType = SND_MODE_BIT | RCV_MODE_BIT;
-    
+
     IReceiveManager *rcvMgr = NULL;
     IRowManager *rowMgr = NULL;
     IMessageCollator *msgCollA = NULL;
@@ -1154,7 +1154,7 @@ int main(int argc, char * argv[] )
 
     ISendManager *sendMgr = NULL;
 
-    if (modeType & RCV_MODE_BIT) 
+    if (modeType & RCV_MODE_BIT)
     {
         rcvMgr = createReceiveManager(7000, 7001, 7002, 7003, multiCast, 100, 0x7fffffff);
         rowMgr = createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
@@ -1172,7 +1172,7 @@ int main(int argc, char * argv[] )
         Sleep(5000);
 
         char locBuff[100000];
-        for (unsigned packerNum=0; packerNum < numPackers; packerNum++) 
+        for (unsigned packerNum=0; packerNum < numPackers; packerNum++)
         {
             unsigned totalSize = 0;
             char packAHdr[100];
@@ -1192,12 +1192,12 @@ int main(int argc, char * argv[] )
             unsigned buffSize = initSize;
             int pkIx = packerNum;
             int nmSizes = numSizes;
-            if (numPackersInfo) 
+            if (numPackersInfo)
             {
                 if (pkIx >= numPackersInfo)  pkIx %= numPackersInfo;
                 nmSizes = packersInfo[pkIx].numPackets;
             }
-            for (unsigned sizeNum=0; sizeNum < nmSizes; sizeNum++, buffSize *= sizeMulti) 
+            for (unsigned sizeNum=0; sizeNum < nmSizes; sizeNum++, buffSize *= sizeMulti)
             {
                 unsigned nmSends = numSends;
                 if (numPackersInfo)
@@ -1205,9 +1205,9 @@ int main(int argc, char * argv[] )
                     nmSends = 1;
                     buffSize = packersInfo[pkIx].packetsSizes[sizeNum];
                 }
-                for (unsigned sendNum=0; sendNum < nmSends; sendNum++) 
+                for (unsigned sendNum=0; sendNum < nmSends; sendNum++)
                 {
-                    sprintf(locBuff,"size=%i num=%i multi=%i packer=%i hello world", 
+                    sprintf(locBuff,"size=%i num=%i multi=%i packer=%i hello world",
                             buffSize, sendNum, sizeNum, packerNum);
                     if (thisTrace > 1)
                         printf("Sending data : %s\n", locBuff);
@@ -1215,7 +1215,7 @@ int main(int argc, char * argv[] )
                     char *transBuff = (char*) msgPackA->getBuffer(buffSize, false);
                     strncpy(transBuff, locBuff, buffSize);
                     msgPackA->putBuffer(transBuff, buffSize, false);
-                    
+
                     if (msgPackB)
                     {
                         transBuff = (char*) msgPackB->getBuffer(buffSize, false);
@@ -1231,7 +1231,7 @@ int main(int argc, char * argv[] )
             if (thisTrace)
                 printf("Packer %s total data size = %i\n", packAHdr, totalSize);
 
-            if (msgPackB) 
+            if (msgPackB)
             {
                 msgPackB->flush(true);
                 msgPackB->Release();
@@ -1241,26 +1241,26 @@ int main(int argc, char * argv[] )
 
             if (delayPackers) Sleep(delayPackers);
         }
-        
+
         while(!sendMgr->allDone()) Sleep(50);
     }
 
     if (modeType & RCV_MODE_BIT)
     {
-        for (unsigned unpackerNum=0; unpackerNum < numPackers; unpackerNum++) 
+        for (unsigned unpackerNum=0; unpackerNum < numPackers; unpackerNum++)
         {
             bool anyActivity_a;
             bool anyActivity_b;
             IMessageResult *resultA = msgCollA->getNextResult(getUnpackerTimeout, anyActivity_a);
-            if (!resultA) 
+            if (!resultA)
             {
                 printf("timeout waiting on msgCollA->getNextResult(%i,..)\n", getUnpackerTimeout);
             }
             IMessageResult *resultB = NULL;
-            if (msgCollB) 
+            if (msgCollB)
             {
                 resultB = msgCollB->getNextResult(getUnpackerTimeout, anyActivity_b);
-                if (!resultB) 
+                if (!resultB)
                 {
                     printf("timeout waiting on msgCollB->getNextResult(%i,..)\n", getUnpackerTimeout);
                 }
@@ -1280,8 +1280,8 @@ int main(int argc, char * argv[] )
                 if (thisTrace)
                     printf("Got unpacker - hdrLen=%i header \"%s\"\n", len, hdr);
             }
-        
-            if (!resultA && resultB) 
+
+            if (!resultA && resultB)
             {
                 resultA = resultB;
                 resultB = NULL;
@@ -1293,7 +1293,7 @@ int main(int argc, char * argv[] )
 
             unsigned totalSize = 0;
             unsigned buffSize = initSize;
-            if (unpackerNum) 
+            if (unpackerNum)
             {
                 int size;
                 if (thisTrace)
@@ -1301,19 +1301,19 @@ int main(int argc, char * argv[] )
                 void * p= unpackA->getNext(0x0ffffffff,&size);
                 totalSize += size;
             }
-            else 
+            else
             {
                 if (thisTrace)
                     printf("Calling getNext() with diff sizes for packer \"%s\"\n", hdr);
                 buffSize = initSize;
                 int pkIx = unpackerNum;
                 int nmSizes = numSizes;
-                if (numPackersInfo) 
+                if (numPackersInfo)
                 {
                     if (pkIx >= numPackersInfo)  pkIx %= numPackersInfo;
                     nmSizes = packersInfo[pkIx].numPackets;
                 }
-                for (unsigned sizeNum=0; sizeNum < nmSizes; sizeNum++, buffSize *= sizeMulti) 
+                for (unsigned sizeNum=0; sizeNum < nmSizes; sizeNum++, buffSize *= sizeMulti)
                 {
                     unsigned nmSends = numSends;
                     if (numPackersInfo)
@@ -1321,11 +1321,11 @@ int main(int argc, char * argv[] )
                         nmSends = 1;
                         buffSize = packersInfo[pkIx].packetsSizes[sizeNum];
                     }
-                    for (unsigned sendNum=0; sendNum < nmSends; sendNum++) 
+                    for (unsigned sendNum=0; sendNum < nmSends; sendNum++)
                     {
                         int size;
                         void *transBuff= unpackA->getNext(buffSize, &size);
-                        if (!transBuff) 
+                        if (!transBuff)
                         {
                             if (thisTrace > 1)
                                 printf("end of data\n");
@@ -1335,33 +1335,33 @@ int main(int argc, char * argv[] )
                             memcpy(locBuff, transBuff, size);
                             locBuff[size]=0;
                             if (thisTrace > 1)
-                                printf("Received (for size=%i num=%i multi=%i unpacker=%i) data : %s\n", 
+                                printf("Received (for size=%i num=%i multi=%i unpacker=%i) data : %s\n",
                                         buffSize, sendNum, sizeNum, unpackerNum, locBuff);
                         }
                     }
                 }
             }
-            
+
             if (thisTrace)
-                printf("Unpacker %s total data size = %i\n", hdr, totalSize);           
+                printf("Unpacker %s total data size = %i\n", hdr, totalSize);
 
             buffSize=initSize;
             if (thisTrace > 1)
                 printf("Trying to read more than written\n");
             void *transBuff = unpackA->getNext(buffSize);
-            if (!transBuff) 
+            if (!transBuff)
             {
                 if (thisTrace > 1)
                     printf("OK: Could not read more than written\n");
             }
-            else 
+            else
             {
                 memcpy(locBuff, transBuff, buffSize);
                 locBuff[buffSize]=0;
                 printf("WARNING: read more than written: (%s)\n", locBuff);
             }
             printf("\n\n\n");
-            
+
             unpackA->Release();
             if (unpackB) unpackB->Release();
         }
@@ -1369,7 +1369,7 @@ int main(int argc, char * argv[] )
     }
 
 
-    if (msgCollA) 
+    if (msgCollA)
     {
         rcvMgr->detachCollator(msgCollA);
         msgCollA->Release();
@@ -1382,7 +1382,7 @@ int main(int argc, char * argv[] )
     if (sendMgr) sendMgr->Release();
     if (rcvMgr) rcvMgr->Release();
 
-    if (!noendwait) 
+    if (!noendwait)
     {
         printf("\n\nEnter q to terminate program : ");
         scanf("%s", errBuff);

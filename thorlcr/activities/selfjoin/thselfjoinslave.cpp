@@ -41,7 +41,7 @@ private:
     unsigned portbase;
     bool isLocal;
     bool isLightweight;
-    Owned<IRowStream> strm;     
+    Owned<IRowStream> strm;
     ICompare * compare;
     ISortKeySerializer * keyserializer;
     mptag_t mpTagRPC;
@@ -108,13 +108,13 @@ public:
 
     ~SelfJoinSlaveActivity()
     {
-        if(portbase) 
+        if(portbase)
             queryJobChannel().freePort(portbase, NUMSLAVEPORTS);
     }
 
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData) override
-    {       
+    {
         if (!isLocal)
         {
             mpTagRPC = container.queryJobChannel().deserializeMPTag(data);
@@ -127,9 +127,9 @@ public:
         }
         compare = helper->queryCompareLeft();                   // NB not CompareLeftRight
         keyserializer = helper->querySerializeLeft();           // hopefully never need right
-        if(isLightweight) 
+        if(isLightweight)
             ActPrintLog("SELFJOIN: LIGHTWEIGHT");
-        else if(isLocal) 
+        else if(isLocal)
             ActPrintLog("SELFJOIN: LOCAL");
         else
             ActPrintLog("SELFJOIN: GLOBAL");
@@ -211,7 +211,7 @@ public:
         }
         PARENT::stop();
     }
-    
+
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
@@ -229,7 +229,7 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.buffersInput = true; 
+        info.buffersInput = true;
         info.unknownRowsOutput = true;
     }
     virtual void serializeStats(MemoryBuffer &mb) override

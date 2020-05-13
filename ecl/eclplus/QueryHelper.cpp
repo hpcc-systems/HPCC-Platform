@@ -47,7 +47,7 @@ bool QueryHelper::doit(FILE * fp)
         printf("can't create workunit\n");
         return false;
     }
-    
+
     Owned<IClientWUUpdateRequest> ureq = wuclient->createWUUpdateRequest();
     ureq->setWuid(wu->getWuid());
 
@@ -306,7 +306,7 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
         }
     }
     else
-    {       
+    {
         StringBuffer s;
         s.append("Submitted WUID ").append(wuid);
         fprintf(fp, "%s", s.str());
@@ -316,7 +316,7 @@ bool QueryHelper::doSubmitWorkUnit(FILE * fp, const char * wuid, const char* clu
 
 
 bool RerunHelper::doit(FILE * fp)
-{   
+{
     if(!globals->hasProp("wuid"))
     {
         printf("No wuid specified");

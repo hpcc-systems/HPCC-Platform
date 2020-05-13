@@ -53,17 +53,17 @@ enum BreakpointMode
     BreakpointModeGlobal
 };
 
-enum BreakpointActionMode 
-{ 
-    BreakpointActionBreak, 
-    BreakpointActionSkip, 
+enum BreakpointActionMode
+{
+    BreakpointActionBreak,
+    BreakpointActionSkip,
     BreakpointActionLimit,
     BreakpointActionContinue
 };
 
 //==============================================================================================================
 
-interface IRowMatcher : extends IXmlWriter 
+interface IRowMatcher : extends IXmlWriter
 {
     virtual void reset() = 0;
     virtual bool matched() const = 0;
@@ -79,7 +79,7 @@ interface IHistoryRow
     virtual const void *queryRow() const = 0;
     virtual unsigned querySequence() const = 0;
     virtual unsigned queryRowCount() const = 0;
-    
+
     virtual bool wasSkipped() const = 0;
     virtual bool wasLimited() const = 0;
     virtual bool wasEof() const = 0;
@@ -153,7 +153,7 @@ interface IDebugGraphManager : extends IInterface
     virtual void serializeProxyGraphs(MemoryBuffer &buff) = 0;
     virtual void deserializeProxyGraphs(DebugState state, MemoryBuffer &buff, IActivityBase *parentActivity, unsigned channel) = 0;
     virtual void mergeRemoteCounts(IDebuggableContext *into) const = 0;
-    
+
     virtual void setNodeProperty(IActivityBase *node, const char *propName, const char *propValue) = 0;
     virtual DebugActivityRecord *getNodeByActivityBase(IActivityBase *activity) const = 0;
 };
@@ -183,7 +183,7 @@ interface IDebuggerContext : extends IInterface
 {
 // called by debugger
     virtual void debugContinue(IXmlWriter *output, const char *modeString, const char *id) = 0;
-    virtual void addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action, 
+    virtual void addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action,
                                const char *fieldName, const char *condition, const char *value, bool caseSensitive,
                                unsigned hitCount, const char *hitCountMode) = 0;
     virtual void removeBreakpoint(IXmlWriter *output, unsigned removeIdx) = 0;
@@ -200,7 +200,7 @@ interface IDebuggerContext : extends IInterface
     virtual void debugStatus(IXmlWriter *output) const = 0;
     virtual void debugStep(IXmlWriter *output, const char *modeString) = 0;
     virtual void debugPrintVariable(IXmlWriter *output, const char *name, const char *type) const = 0;
-    
+
     // restart? set params?
 
     virtual void debugChanges(IXmlWriter *output, unsigned sequence) const = 0;

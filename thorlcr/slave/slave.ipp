@@ -91,7 +91,7 @@ interface IThorNWayInput
 class CThorNarySlaveActivity : public CSlaveActivity
 {
     typedef CSlaveActivity PARENT;
-    
+
 protected:
     PointerArrayOf<IThorDataLink> expandedInputs;
     PointerArrayOf<IEngineRowStream> expandedStreams;

@@ -37,7 +37,7 @@
 //#define _FULL_TRACE
 #endif
 
-#define DEFAULTTIMEOUT 3600 // 60 minutes 
+#define DEFAULTTIMEOUT 3600 // 60 minutes
 #define CONNECTTIMEOUT 300  // seconds
 
 #ifdef _MSC_VER
@@ -45,13 +45,13 @@
 #endif
 
 
-class CREcheck { 
+class CREcheck {
     bool &busy;
 public:
     CREcheck(bool &_busy) : busy(_busy)
-    { 
-        assertex(!busy); 
-        busy = true; 
+    {
+        assertex(!busy);
+        busy = true;
     }
     ~CREcheck()
     {
@@ -235,7 +235,7 @@ public:
 
     void putRow(const void *row)
     {
-        if (row==NULL) 
+        if (row==NULL)
             stop();
         else if (!stopped) {
             if (initbuf) {
@@ -243,7 +243,7 @@ public:
                 initbuf = false;
             }
             serializer->serialize(rsz,(const byte *)row);
-            if (outbuf.length()>bufsize) 
+            if (outbuf.length()>bufsize)
                 flush();
         }
         ReleaseThorRow(row);

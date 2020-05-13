@@ -75,7 +75,7 @@ ECLRTL_API int   DecCompareDecimal(size32_t bytes, const void * _left, const voi
 ECLRTL_API int   DecCompareUDecimal(size32_t bytes, const void * _left, const void * _right);
 
 // internal
-void                     AddBytes(unsigned dest,unsigned src,unsigned num); 
+void                     AddBytes(unsigned dest,unsigned src,unsigned num);
 ECLRTL_API char  DecClip(void *);
 ECLRTL_API void  DecRoundPos(void *,int by);
 ECLRTL_API void  SetMAccum(unsigned char c);

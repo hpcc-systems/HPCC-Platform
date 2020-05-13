@@ -33,7 +33,7 @@ public:
         atenabled = false;
         if (props->getProp("@at",ats)) {
             bool all = true;
-            for (unsigned i=0;i<ats.length();i++) 
+            for (unsigned i=0;i<ats.length();i++)
                 if (!isspace(ats.charAt(i))&&(ats.charAt(i)!='*'))
                     all = false;
             if (!all) {
@@ -58,7 +58,7 @@ public:
     bool ready()
     {
         CriticalBlock block(sect);
-        if (triggered) 
+        if (triggered)
             triggered = false;
         else {
             if (!mininterval)
@@ -71,9 +71,9 @@ public:
                 time_t now = atnow.getSimple();
                 time_t next = atnext.getSimple();
                 if (now<next) {
-                    if (next-now>30) 
+                    if (next-now>30)
                         return false;
-                    // 
+                    //
                     Sleep((unsigned)(next-now)*1000);
                 }
                 at.next(atnow,atnext,true);

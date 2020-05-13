@@ -265,9 +265,9 @@ bool HqltHql::isSelect(IHqlExpression * expr)
 
 
 void HqltHql::mapDatasetRecord(IHqlExpression * expr)
-{ 
+{
     IHqlExpression * record = expr->queryRecord()->queryBody();
-    mapped.append(*LINK(expr)); 
+    mapped.append(*LINK(expr));
     IInterface * mapping = LINK(record->queryTransformExtra());
     mapSaved.append(mapping);
     if (!mapping && expr->queryName())
@@ -275,7 +275,7 @@ void HqltHql::mapDatasetRecord(IHqlExpression * expr)
 }
 
 void HqltHql::popMapping()
-{ 
+{
     OwnedHqlExpr expr = &mapped.popGet();
     IHqlExpression * record = expr->queryRecord()->queryBody();
     if (record->queryTransformExtra() == expr)
@@ -654,7 +654,7 @@ void HqltHql::createPseudoSymbol(StringBuffer & s, const char * prefix, IHqlExpr
 
         bool wasInsideNewTransform = insideNewTransform;
         insideNewTransform = false;
-        
+
         StringBuffer temp;
         scope.append(NULL);
         temp.append(name);
@@ -671,7 +671,7 @@ void HqltHql::createPseudoSymbol(StringBuffer & s, const char * prefix, IHqlExpr
         scope.pop();
         insideNewTransform = wasInsideNewTransform;
 
-    }   
+    }
 
     s.append(name);
 }
@@ -914,7 +914,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 {
                     bool wasInsideNewTransform = insideNewTransform;
                     insideNewTransform = false;
-                    
+
                     StringBuffer temp;
                     scope.append(NULL);
                     if (expr->isDataset())
@@ -934,7 +934,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     scope.pop();
                     insideNewTransform = wasInsideNewTransform;
                     expr->setTransformExtra(expr);
-                }   
+                }
                 if (expr->isDataset())
                     s.appendf("dataset%012" I64F "x", (__uint64)(memsize_t)expr);
                 else
@@ -1024,14 +1024,14 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 
                 scope.pop();
                 expr->setTransformExtra(expr);
-            }   
+            }
             s.appendf("record%012" I64F "x", (__uint64)(memsize_t)expr);
             return;
         }
 
         unsigned startLength = s.length();
         switch(no)
-        {   
+        {
         case no_none:
             s.append("<NONE>");
             break;
@@ -1043,7 +1043,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 {
                     bool wasInsideNewTransform = insideNewTransform;
                     insideNewTransform = false;
-                    
+
                     StringBuffer temp;
                     scope.append(NULL);
                     temp.appendf("pattern%012" I64F "x := ", (__uint64)(memsize_t)expr);
@@ -1172,7 +1172,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     s.append(")");
                 }
             }
-                
+
             ForEachChild(i1, expr)
             {
                 IHqlExpression *child = queryChild(expr, i1);
@@ -1402,8 +1402,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 
         case no_select:
         {
-            if (!expandProcessed && 
-                    (matchesActiveDataset(child0) || 
+            if (!expandProcessed &&
+                    (matchesActiveDataset(child0) ||
                      (child0->getOperator() == no_self && insideNewTransform) ||
                      (minimalSelectors && !isAlwaysActiveRow(child0)) ||
                      (minimalSelectors && child0->getOperator() == no_activetable))
@@ -1415,7 +1415,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 {
                     OwnedHqlExpr aggregate = convertToSimpleAggregate(expr);
                     if (aggregate)
-                    {   
+                    {
                         toECL(aggregate, s, false, inType);
                         break;
                     }
@@ -1773,7 +1773,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                             if (attr->isAttribute())
                             {
                                 IAtom * name = attr->queryName();
-                                if (name != countAtom && name != sizeofAtom && 
+                                if (name != countAtom && name != sizeofAtom &&
                                     !(isInternalAttribute(attr) && !expandProcessed))
                                 {
                                     if ((name != virtualAtom) || !ignoreVirtualAttrs)
@@ -1783,7 +1783,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                                             s.append('{');
                                             seenAttr = true;
                                         }
-                                        else 
+                                        else
                                             s.append(", ");
                                         toECL(attr, s, false, inType);
                                     }
@@ -1834,7 +1834,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 s.append("FILTER");
             else
                 toECL(child0, s, child0->getPrecedence() < 0, inType);
-            
+
             pushScope(child0);
             for (unsigned idx = 1; idx < kids; idx++)
             {
@@ -1845,7 +1845,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 toECL(child, tmp, false, inType);
             }
             popScope();
-            
+
             if(tmp.length())
                 queryNewline(s.append('(').append(tmp).append(')'));
             break;
@@ -1866,7 +1866,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 toECL(child0, s, child0->getPrecedence() < 0, inType);
                 needComma = true;
             }
-            
+
             pushScope(child0);
             for (unsigned idx = 1; idx < kids; idx++)
             {
@@ -2390,7 +2390,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             if (!xgmmlGraphText)
             {
                 toECL(child0, s, false, inType);
-                
+
                 // Right
                 s.append(", ");
                 toECL(queryJoinRhs(expr), s, false, inType);
@@ -2443,7 +2443,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 toECL(child1, s.append(", "), false, inType);
             s.append(")");
             break;
-        }   
+        }
         case no_evaluate:
             {
                 s.append(getEclOpString(no));
@@ -2587,10 +2587,10 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
                 switch (getIntValue(queryAttributeChild(expr, sequenceAtom, 0)))
                 {
-                case ResultSequencePersist: 
+                case ResultSequencePersist:
                     s.append("PERSIST(");
                     break;
-                case ResultSequenceStored: 
+                case ResultSequenceStored:
                     s.append("STORED(");
                     break;
                 case ResultSequenceInternal:
@@ -2923,7 +2923,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
         //fallthrough
     case type_record:
     case type_row:
-    {   
+    {
         ITypeInfo * original = queryModifier(i, typemod_original);
         IHqlExpression * expr;
         StringBuffer name;
@@ -2992,7 +2992,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
 
         if(tmp.length())
         {
-            s.append(tmp);  
+            s.append(tmp);
         }
         else
         {
@@ -3039,7 +3039,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
             i->getECLType(s);
         break;
     }
-    
+
     return s;
 }
 
@@ -3147,7 +3147,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
     insideNewTransform = false;
     // Start fresh
     name.clear();
-    
+
     StringBuffer tmp;
     StringBuffer exports;
 
@@ -3168,7 +3168,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
         }
 
         if(isExported(expr) || isShared(expr))
-        {   
+        {
             if (isExported(expr))
                 exports.append("EXPORT ");
             else
@@ -3201,7 +3201,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
         //Add the export name before the body is processed to prevent clashing names (e.g., badrecord2.xhql)
         if (exports.length())
             m_export_names.append(*new StringBufferItem(name));
-        
+
         if(funcdef && !expandProcessed)
         {
             if(!wasFunctionDefined || inType)
@@ -3213,7 +3213,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
                     addVisited(expr);
                     addVisited(funcdef);
                     funcdef->setTransformExtra(extra);
-                }       
+                }
 
                 doFunctionDefinition(newdef, funcdef, name.str(), inType);
             }
@@ -3228,8 +3228,8 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             OwnedHqlExpr extra = createId(createIdAtom(name.str()));
             expr->setTransformExtra(extra); // LINKs !
             addVisited(expr);
-        
-            // Special cases 
+
+            // Special cases
             node_operator op = body->getOperator();
             switch(op)
             {
@@ -3255,7 +3255,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
                         isNamed = false;
                 }
 
-                toECL (body, newdef.append(" := "), false, inType, 0, isNamed); 
+                toECL (body, newdef.append(" := "), false, inType, 0, isNamed);
                 break;
             }
 
@@ -3267,7 +3267,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
                 newdef.append(tmp).append(' ');
 
             newdef.append(name.str());
-            toECL (body, newdef.append(" := "), false, false, 0, true); 
+            toECL (body, newdef.append(" := "), false, false, 0, true);
         }
 
 #ifdef SHOW_FUNC_DEFINTION
@@ -3296,7 +3296,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
                         m_definitions.append(m_exports.item(m_export_level));
                         m_exports.item(m_export_level).clear();
                         clearVisited();
-                    }   
+                    }
                 }
             }
         }
@@ -3347,7 +3347,7 @@ void HqltHql::defineCallTarget(IHqlExpression * call, StringBuffer & name)
         {
             if(isExported(call))
             {
-                newdef.append("EXPORT ");           
+                newdef.append("EXPORT ");
             }
             else if(isShared(call))
             {

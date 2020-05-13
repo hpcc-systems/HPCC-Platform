@@ -24,7 +24,7 @@
     #define esp_http_decl DECL_IMPORT
 #endif
 
-#define ENABLE_NEW_SECURITY 
+#define ENABLE_NEW_SECURITY
 //#define DISABLE_NEW_SECURITY
 
 #endif // _ESPHTTP_HPP__

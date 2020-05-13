@@ -2263,11 +2263,11 @@ void RFS_ServerBase::log(const char *fmt, ...)
         time(&tNow);
 
 #ifdef WIN32
-        strftime(timeStamp, 32, "%Y-%m-%d %H:%M:%S ", localtime(&tNow)); 
+        strftime(timeStamp, 32, "%Y-%m-%d %H:%M:%S ", localtime(&tNow));
 #else
         struct tm ltNow;
         localtime_r(&tNow, &ltNow);
-        strftime(timeStamp, 32, "%Y-%m-%d %H:%M:%S ", &ltNow); 
+        strftime(timeStamp, 32, "%Y-%m-%d %H:%M:%S ", &ltNow);
 #endif
         RFS_SimpleString out(timeStamp);
         out.appends(s);

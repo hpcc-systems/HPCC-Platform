@@ -48,7 +48,7 @@ interface IStringSet : public IInterface
     virtual bool isBigEndian() const = 0;
     virtual unsigned numValues() const = 0;
 
-    virtual int memcmp(const void *val1, const void *val2, size32_t size) const = 0; 
+    virtual int memcmp(const void *val1, const void *val2, size32_t size) const = 0;
     virtual bool decrement(void *val) const = 0;
     virtual bool increment(void *val) const = 0;
 };

@@ -86,7 +86,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
             throw MakeStringException(THORHELPER_DEBUG_ERROR, "delete must specify breakpoint index, or all");
         if (stricmp(idx, "all")==0)
             debugContext->removeAllBreakpoints(&out);
-        else 
+        else
         {
             char *ep;
             unsigned bpIdx = strtoul(idx, &ep, 10);
@@ -129,7 +129,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
         const char *idx = query->queryProp("@idx");
         if (!idx || strcmp(idx, "all")==0)
             debugContext->listAllBreakpoints(&out);
-        else 
+        else
         {
             char *ep;
             unsigned  bpIdx = strtoul(idx, &ep, 10);
@@ -179,7 +179,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
     {
         const char *fieldName = query->queryProp("@fieldName");
         const char *condition = query->queryProp("@condition");
-        if (!condition) 
+        if (!condition)
             condition="contains";
         const char *value = query->queryProp("@value");
         bool caseSensitive = query->getPropBool("@caseSensitive", false);
@@ -243,7 +243,7 @@ protected:
     {
         switch (mode)
         {
-            case BreakpointConditionLess: 
+            case BreakpointConditionLess:
                 return (diff < 0);
             case BreakpointConditionLessEqual:
                 return (diff <= 0);
@@ -264,7 +264,7 @@ protected:
     }
 
 public:
-    SimpleFieldSearcher(const char *_searchFieldName, const char *_expression, BreakpointConditionMode _mode, bool _caseSensitive) 
+    SimpleFieldSearcher(const char *_searchFieldName, const char *_expression, BreakpointConditionMode _mode, bool _caseSensitive)
         : searchFieldName(_searchFieldName), expression(_expression), mode(_mode), caseSensitive(_caseSensitive)
     {
         searchString = expression.get();
@@ -284,8 +284,8 @@ public:
             if (stricmp(searchString, "true")==0)
                 boolValueSet = boolValue = true;
             else if (stricmp(searchString, "false")==0)
-            {   
-                boolValueSet = true; boolValue = false; 
+            {
+                boolValueSet = true; boolValue = false;
             }
             else
             {
@@ -306,7 +306,7 @@ public:
                     for (;;)
                     {
                         c = *v++;
-                        if ((c >= '0') && (c <= '9')) 
+                        if ((c >= '0') && (c <= '9'))
                             intValue = intValue * 10 + (c-'0');
                         else
                             break;
@@ -431,14 +431,14 @@ public:
         }
     }
 
-    virtual void outputBool(bool field, const char *fieldname) 
+    virtual void outputBool(bool field, const char *fieldname)
     {
         if (boolValueSet && !matchSeen && checkFieldName(fieldname))
         {
             matchSeen = checkCondition((int) field - (int) boolValue);
         }
     }
-    virtual void outputData(unsigned len, const void *field, const char *fieldname) 
+    virtual void outputData(unsigned len, const void *field, const char *fieldname)
     {
         // MORE
     }
@@ -457,7 +457,7 @@ public:
             matchSeen = checkCondition((field == intValue) ? 0 : ((field > (unsigned __int64) intValue) ? 1 : -1));
         }
     }
-    virtual void outputReal(double field, const char *fieldname) 
+    virtual void outputReal(double field, const char *fieldname)
     {
         // NOTE - "contains" is interpreted as "equals" on numeric fields
         if (realValueSet && !matchSeen && checkFieldName(fieldname))
@@ -466,15 +466,15 @@ public:
         }
     }
 
-    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) 
+    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
     {
         // Searching/breaking on decimal not supported at the moment
     }
-    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) 
+    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
     {
         // Searching/breaking on decimal not supported at the moment
     }
-    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) 
+    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname)
     {
         // Searching/breaking on unicode not supported at the moment
     }
@@ -492,7 +492,7 @@ public:
             matchSeen = checkCondition(rtlCompareQStrQStr(len, field, searchQString.length(), searchQString.toByteArray()));
         }
     }
-    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname)
     {
         // Searching/breaking on unicode not supported at the moment
     }
@@ -505,11 +505,11 @@ public:
     {
         // nothing for now
     }
-    virtual void outputBeginNested(const char *fieldname, bool nestChildren) 
+    virtual void outputBeginNested(const char *fieldname, bool nestChildren)
     {
         // nothing for now
     }
-    virtual void outputEndNested(const char *fieldname) 
+    virtual void outputEndNested(const char *fieldname)
     {
         // nothing for now
     }
@@ -540,7 +540,7 @@ public:
         // This is where you set up Boyer-Moore tables...
     }
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname) && (len >= searchStringLength)) // could swap those last two tests - last is faster but filters less out...
         {
@@ -573,7 +573,7 @@ public:
     {
     }
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname) && (len >= searchStringLength))
         {
@@ -598,7 +598,7 @@ public:
     {
     }
 
-    virtual void outputString(unsigned len, const char *field, const char *fieldname) 
+    virtual void outputString(unsigned len, const char *field, const char *fieldname)
     {
         if (!matchSeen && checkFieldName(fieldname) && (len >= searchStringLength))
         {
@@ -631,7 +631,7 @@ extern IRowMatcher *createRowMatcher(const char *fieldName, BreakpointConditionM
             return new ContainsNoCaseFieldSearcher(fieldName, value);
     case BreakpointConditionStartsWith:
         return new StartsWithFieldSearcher(fieldName, value, caseSensitive);
-    default: 
+    default:
         throwUnexpected();
     }
 }
@@ -833,12 +833,12 @@ BreakpointActionMode CBreakpointInfo::queryAction() const
 
 void CBreakpointInfo::toXML(IXmlWriter *output) const
 {
-    output->outputCString(BreakpointModes[mode], "@mode"); 
-    if (id) output->outputCString(id, "@id"); 
-    output->outputCString(BreakpointActionModes[action], "@action"); 
+    output->outputCString(BreakpointModes[mode], "@mode");
+    if (id) output->outputCString(id, "@id");
+    output->outputCString(BreakpointActionModes[action], "@action");
     if (condition != BreakpointConditionNone)
     {
-        output->outputCString(BreakpointConditionModes[condition], "@condition"); 
+        output->outputCString(BreakpointConditionModes[condition], "@condition");
         if (rowMatcher)
         {
             if (rowMatcher->queryFieldName()) output->outputCString(rowMatcher->queryFieldName(), "@fieldName");
@@ -849,7 +849,7 @@ void CBreakpointInfo::toXML(IXmlWriter *output) const
     if (rowCount)
     {
         output->outputInt(rowCount, sizeof(int), "@rowCount");
-        output->outputCString(BreakpointCountModes[rowCountMode], "@rowCountMode"); 
+        output->outputCString(BreakpointCountModes[rowCountMode], "@rowCountMode");
     }
     ForEachItemIn(edgeIdx, activeEdges)
     {
@@ -869,9 +869,9 @@ DebugActivityRecord::DebugActivityRecord (IActivityBase *_activity, unsigned _it
     totalCycles = 0;
     StringAttrBuilder fullId(idText);
     fullId.append(activity->queryId());
-    if (iteration || channel) 
+    if (iteration || channel)
         fullId.appendf(".%d", iteration);
-    if (channel) 
+    if (channel)
         fullId.appendf("#%d", channel);
 }
 
@@ -901,15 +901,15 @@ void DebugActivityRecord::outputProperties(IXmlWriter *output)
     }
     if (localCycles)
     {
-        output->outputBeginNested("att", false); 
-        output->outputCString("localTime", "@name"); 
+        output->outputBeginNested("att", false);
+        output->outputCString("localTime", "@name");
         output->outputUInt((unsigned) (cycle_to_nanosec(localCycles)/1000), sizeof(unsigned), "@value");
         output->outputEndNested("att");
     }
     if (totalCycles)
     {
-        output->outputBeginNested("att", false); 
-        output->outputCString("totalTime", "@name"); 
+        output->outputBeginNested("att", false);
+        output->outputCString("totalTime", "@name");
         output->outputUInt((unsigned) (cycle_to_nanosec(totalCycles)/1000), sizeof(unsigned), "@value");
         output->outputEndNested("att");
     }
@@ -1123,7 +1123,7 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
             switch (watchState)
             {
             case WatchStateStep:
-                stop = true; 
+                stop = true;
                 break;
             case WatchStateNext:
                 stop = (probe==nextActivity); // MORE - proxy activities need to be compared more carefully
@@ -1133,7 +1133,7 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
                 break;
             case WatchStateGraph:
             case WatchStateContinue:
-                stop = false; 
+                stop = false;
                 break;
             default:
                 throwUnexpected();
@@ -1154,7 +1154,7 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
             break;
         case WatchStateStep:
         case WatchStateNext:
-            stop = true; 
+            stop = true;
             break;
         case WatchStateContinue:
             // stop already set above...
@@ -1262,7 +1262,7 @@ bool CBaseDebugContext::getExecuteSequentially() const
 
 void CBaseDebugContext::checkDelayedBreakpoints(IActivityDebugContext *edge)
 {
-    if (pendingBreakpointsDone) // Don't bother if the graph is still being created.... we can do them all more efficiently. 
+    if (pendingBreakpointsDone) // Don't bother if the graph is still being created.... we can do them all more efficiently.
     {
         // This code is for edges created AFTER the bulk of the graph is created, which missed out on the normal delayed breakpoint setting...
         graphChangeSequence++;
@@ -1359,7 +1359,7 @@ void CBaseServerDebugContext::_listBreakpoint(IXmlWriter *output, IBreakpointInf
     }
 }
 
-void CBaseServerDebugContext::_continue(WatchState watch) 
+void CBaseServerDebugContext::_continue(WatchState watch)
 {
     if (running)
         throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Query already running");
@@ -1461,7 +1461,7 @@ void CBaseServerDebugContext::debugInitialize(const char *id, const char *_query
         detached = true;
     debugId.set(id);
     queryName.set(_queryName);
-    currentState = DebugStateLoading; 
+    currentState = DebugStateLoading;
 }
 
 void CBaseServerDebugContext::debugTerminate()
@@ -1477,7 +1477,7 @@ void CBaseServerDebugContext::debugTerminate()
     }
 }
 
-void CBaseServerDebugContext::addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action, 
+void CBaseServerDebugContext::addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action,
                                const char *fieldName, const char *condition, const char *value, bool caseSensitive,
                                unsigned hitCount, const char *hitCountMode)
 {
@@ -1486,7 +1486,7 @@ void CBaseServerDebugContext::addBreakpoint(IXmlWriter *output, const char *mode
         throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
 
     Owned<IBreakpointInfo> newBreakpoint = _createBreakpoint(modeString, id, action, fieldName, condition, value, caseSensitive, hitCount, hitCountMode);
-    // For breakpoints to be efficient we need to set them in the probe, though because the activity probe may not exist yet, we should also 
+    // For breakpoints to be efficient we need to set them in the probe, though because the activity probe may not exist yet, we should also
     // keep a central list (also makes it easier to do things like list breakpoint info...)
     ForEachItemIn(idx, breakpoints)
     {
@@ -1584,7 +1584,7 @@ void CBaseServerDebugContext::debugContinue(IXmlWriter *output, const char *mode
     }
 }
 
-void CBaseServerDebugContext::debugRun(IXmlWriter *output) 
+void CBaseServerDebugContext::debugRun(IXmlWriter *output)
 {
     CriticalBlock b(debugCrit);
     if (running)
@@ -1601,7 +1601,7 @@ void CBaseServerDebugContext::debugRun(IXmlWriter *output)
     doStandardResult(output);
 }
 
-void CBaseServerDebugContext::debugQuit(IXmlWriter *output) 
+void CBaseServerDebugContext::debugQuit(IXmlWriter *output)
 {
     CriticalBlock b(debugCrit);
     detached = false;
@@ -2029,21 +2029,21 @@ void CBaseDebugGraphManager::outputChildGraph(IXmlWriter *output, unsigned seque
                 }
                 if (node->totalCycles)
                 {
-                    output->outputBeginNested("att", false); 
-                    output->outputCString("totalTime", "@name"); 
+                    output->outputBeginNested("att", false);
+                    output->outputCString("totalTime", "@name");
                     output->outputUInt((unsigned) (cycle_to_nanosec(node->totalCycles)/1000), sizeof(unsigned), "@value");
                     output->outputEndNested("att");
                 }
                 if (node->localCycles)
                 {
-                    output->outputBeginNested("att", false); 
-                    output->outputCString("localTime", "@name"); 
+                    output->outputBeginNested("att", false);
+                    output->outputCString("localTime", "@name");
                     output->outputUInt((unsigned) (cycle_to_nanosec(node->localCycles)/1000), sizeof(unsigned), "@value");
                     output->outputEndNested("att");
                 }
                 node->outputProperties(output);
             }
-            if (!sequence || node->sequence > sequence) 
+            if (!sequence || node->sequence > sequence)
                 output->outputEndNested("node");
             ForEachItemIn(idx, node->childGraphs)
             {
@@ -2069,7 +2069,7 @@ void CBaseDebugGraphManager::outputChildGraph(IXmlWriter *output, unsigned seque
 
 void CBaseDebugGraphManager::Link() const
 {
-    CInterface::Link(); 
+    CInterface::Link();
 }
 bool CBaseDebugGraphManager::Release() const
 {

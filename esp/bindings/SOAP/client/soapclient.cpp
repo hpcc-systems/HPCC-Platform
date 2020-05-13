@@ -96,7 +96,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     {
         if (!req_header)
             req_header = new CHeader;
-        
+
         ForEachItemIn(idx, *headers)
         {
             req_header->addHeaderBlock(&headers->item(idx));

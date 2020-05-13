@@ -90,7 +90,7 @@ int poor_atomic_add_and_read(atomic_t * v, int i)
     return ret;
 }
 
-int poor_atomic_add_exchange(atomic_t * v, int i)       
+int poor_atomic_add_exchange(atomic_t * v, int i)
 {
     ICrit->enter();
     int prev = (*v);

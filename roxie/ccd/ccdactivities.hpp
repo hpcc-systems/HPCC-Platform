@@ -77,7 +77,7 @@ struct KeyedJoinHeader
     CJoinGroup *thisGroup;
     unsigned short partNo;
     char rhsdata[1]; // n actually
-}; 
+};
 
 static inline int KEYEDJOIN_RECORD_SIZE(int dataSize)
 {

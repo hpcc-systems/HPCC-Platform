@@ -48,7 +48,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     theTransformerRegistry = new ViewTransformerRegistry;
     theTransformerRegistry->addTransformer(new ViewFailTransformer);
     theTransformerRegistry->addTransformer(new ViewAddTransformer);
-    
+
     return true;
 }
 MODULE_EXIT()
@@ -363,7 +363,7 @@ void * ViewTransformerRegistry::resolveExternal(IHqlExpression * funcdef)
 ViewFieldTransformer * ViewTransformerRegistry::createTransformer(IHqlExpression * funcdef)
 {
     IHqlExpression *body = funcdef->queryChild(0);
-    if(!body) 
+    if(!body)
         return NULL;
 
     StringBuffer entry;

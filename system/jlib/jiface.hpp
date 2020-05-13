@@ -283,7 +283,7 @@ CLASS::beforeDispose()
         if (cache == this)
             cache = NULL;
     }
-    BASECLASS::beforeDispose(); 
+    BASECLASS::beforeDispose();
 }
 ****/
 

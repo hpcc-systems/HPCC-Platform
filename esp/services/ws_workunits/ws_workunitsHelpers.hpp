@@ -702,7 +702,7 @@ public:
     {
         return true;
     }
-   
+
 private:
     Owned<CGetThorSlaveLogToFileThreadParam> param;
 };

@@ -251,7 +251,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     heapNotifyUnusedEachBlock = false;
 
 #ifdef _WIN32
-    // Not the world's best code but will do 
+    // Not the world's best code but will do
     char *next = (char *) HEAP_ALIGNMENT_SIZE;
     for (;;)
     {
@@ -259,7 +259,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         if (heapBase)
             break;
         next += HEAP_ALIGNMENT_SIZE;
-        if (!next) 
+        if (!next)
         {
             DBGLOG("RoxieMemMgr: VirtualAlloc(size=%u) failed - alignment=%u", HEAP_ALIGNMENT_SIZE, memsize);
             HEAPERROR("RoxieMemMgr: Unable to create heap");
@@ -389,7 +389,7 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     heapHWM = heapBitmapSize;
 
     if (memTraceLevel)
-        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%" I64F "u base=%p alignment=%" I64F "u bitmapSize=%u", 
+        DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%" I64F "u base=%p alignment=%" I64F "u bitmapSize=%u",
                 heapTotalPages, (unsigned __int64) memsize, heapBase, (unsigned __int64) HEAP_ALIGNMENT_SIZE, heapBitmapSize);
 }
 
@@ -520,7 +520,7 @@ IPerfMonHook *createRoxieMemStatsPerfMonHook(IPerfMonHook *chain)
             : chain(_chain)
         {
         }
-        
+
         virtual void processPerfStats(unsigned processorUsage, unsigned memoryUsage, unsigned memoryTotal, unsigned __int64 firstDiskUsage, unsigned __int64 firstDiskTotal, unsigned __int64 secondDiskUsage, unsigned __int64 secondDiskTotal, unsigned threadCount)
         {
             if (chain)
@@ -555,7 +555,7 @@ static StringBuffer &memmap(StringBuffer &stats)
     unsigned freePages = 0;
     unsigned maxBlock = 0;
     unsigned thisBlock = 0;
-    stats.appendf("========== MANAGED HEAP MEMORY MAP (1 free, 0 used) ================="); 
+    stats.appendf("========== MANAGED HEAP MEMORY MAP (1 free, 0 used) =================");
     for (unsigned i = 0; i < heapBitmapSize; i++)
     {
         if (i % 2) stats.appendf("  ");
@@ -1347,7 +1347,7 @@ protected:
     CHeap * const heap;
     memsize_t chunkCapacity;
     std::atomic_uint nextSpace; // guaranteed to be set if it is in the maybeFreeList.
-    
+
     inline unsigned getActivityId(unsigned allocatorId) const
     {
         return getRealActivityId(allocatorId, allocatorCache);
@@ -1909,7 +1909,7 @@ public:
     }
 
 
-    virtual void checkHeap() const 
+    virtual void checkHeap() const
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
@@ -1931,7 +1931,7 @@ public:
         }
     }
 
-    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
+    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
@@ -2271,7 +2271,7 @@ public:
         return rowCount.load(std::memory_order_relaxed) > 1;
     }
 
-    virtual unsigned sizeInPages() 
+    virtual unsigned sizeInPages()
     {
         return _sizeInPages();
     }
@@ -2283,7 +2283,7 @@ public:
 
     void operator delete(void * p)
     {
-        // MORE: Depending on the members/methods of an Object in the delete operator 
+        // MORE: Depending on the members/methods of an Object in the delete operator
         //      is not a good idea, specially if another class derives from it.
         //      This is OK for the time being since no object derive from this
         //      and we provide/control both operators, new and delete.
@@ -2371,13 +2371,13 @@ public:
         return data();
     }
 
-    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
+    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
     {
         logctx.CTXLOG("Block size %" I64F "u was allocated by activity %u and not freed", (unsigned __int64) chunkCapacity, getActivityId(allocatorId));
         leaked--;
     }
 
-    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
+    virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
     {
         map->noteMemUsage(allocatorId, chunkCapacity, 1);
         map->noteHeapUsage(chunkCapacity, RHFpacked, _sizeInPages(), chunkCapacity);
@@ -2438,7 +2438,7 @@ inline Heaplet * blockToHeaplet(unsigned block)
 
 //================================================================================
 //
-struct ActivityEntry 
+struct ActivityEntry
 {
     unsigned allocatorId;
     unsigned allocations;
@@ -4384,7 +4384,7 @@ public:
         minimizeFootprint = false;
         minimizeFootprintCritical = false;
 #ifdef _DEBUG
-        trackMemoryByActivity = true; 
+        trackMemoryByActivity = true;
 #else
         trackMemoryByActivity = false;
 #endif
@@ -4424,7 +4424,7 @@ public:
         {
             DataBuffer *next = dfinger->next;
             if (memTraceLevel >= 2 && dfinger->queryCount()!=1)
-                logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
+                logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p",
                         dfinger->queryCount()-1, dfinger, this);
             dfinger->next = NULL;
             dfinger->mgr = NULL; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
@@ -4777,10 +4777,10 @@ public:
         return ((memsize_t)peakPages)*HEAP_ALIGNMENT_SIZE;
     }
 
-    virtual bool attachDataBuff(DataBuffer *dataBuff) 
+    virtual bool attachDataBuff(DataBuffer *dataBuff)
     {
         if (memTraceLevel >= 4)
-            logctx.CTXLOG("RoxieMemMgr: attachDataBuff() attaching DataBuff to rowMgr - addr=%p dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p", 
+            logctx.CTXLOG("RoxieMemMgr: attachDataBuff() attaching DataBuff to rowMgr - addr=%p dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p",
                     dataBuff, dataBuffs, dataBuffPages, possibleGoers.load(), this);
 
         dataBuff->Link();
@@ -4827,12 +4827,12 @@ public:
         }
         return true;
     }
-    
+
     virtual void noteDataBuffReleased(DataBuffer *dataBuff)
     {
         possibleGoers.fetch_add(1, std::memory_order_release);
         if (memTraceLevel >= 4)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::noteDataBuffReleased dataBuffs=%u dataBuffPages=%u possibleGoers=%u dataBuff=%p rowMgr=%p", 
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::noteDataBuffReleased dataBuffs=%u dataBuffPages=%u possibleGoers=%u dataBuff=%p rowMgr=%p",
                     dataBuffs, dataBuffPages, possibleGoers.load(), dataBuff, this);
     }
 
@@ -5922,7 +5922,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
             chunk = donorHeaplet->allocateChunk();
         dbgassertex(chunk);
     }
-    
+
 gotChunk:
 
     //since a chunk has been allocated from donorHeaplet it cannot be released at this point.
@@ -6200,7 +6200,7 @@ void CPackedChunkingHeap::reportScanProblem(unsigned, unsigned __int64 numScans,
 }
 
 //================================================================================
-// Buffer manager - blocked 
+// Buffer manager - blocked
 
 void DataBuffer::Release()
 {
@@ -6310,7 +6310,7 @@ class CDataBufferManager : implements IDataBufferManager, public CInterface
                     unlink(goer);
                     if (memTraceLevel >= 3)
                         DBGLOG("RoxieMemMgr: DataBufferBottom::allocate() freeing DataBuffers Page - addr=%p", goer);
-                    goer->~DataBufferBottom(); 
+                    goer->~DataBufferBottom();
 #ifdef _DEBUG
                     memset((void *) goer, 0xcc, HEAP_ALIGNMENT_SIZE);
 #endif
@@ -6600,8 +6600,8 @@ extern IDataBufferManager *createDataBufferManager(size32_t size)
 
 extern void setDataAlignmentSize(unsigned size)
 {
-    if (memTraceLevel >= 3) 
-        DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size); 
+    if (memTraceLevel >= 3)
+        DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size);
 
     if ((size == 0) || ((HEAP_ALIGNMENT_SIZE % size) != 0))
         throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "setDataAlignmentSize %u must be a factor of %u", size, (unsigned)HEAP_ALIGNMENT_SIZE);
@@ -6812,7 +6812,7 @@ public:
    virtual ~IStdException() throw() {}
 };
 
-class RoxieMemTests : public CppUnit::TestFixture  
+class RoxieMemTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
         CPPUNIT_TEST(testSetup);
@@ -6889,15 +6889,15 @@ protected:
 
         ASSERT(dataBufferPages.load()==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[1022]->Release(); // release from first page
-        pages[1022] = 0;  
-        pages[2100] = dm.allocate(); // allocate from first page 
+        pages[1022] = 0;
+        pages[2100] = dm.allocate(); // allocate from first page
         //printf("\n----Mid 2 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         ASSERT(dataBufferPages.load(std::memory_order_relaxed)==PAGES(2046 * DATA_ALIGNMENT_SIZE, (HEAP_ALIGNMENT_SIZE- DATA_ALIGNMENT_SIZE)));
         pages[2101] = dm.allocate(); // allocate from a new page (third)
         //printf("\n----Mid 3 DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         // Release all blocks, which releases all pages, except active one
         for (i = 0; i < 3000; i++)
-            if (pages[i]) 
+            if (pages[i])
                 pages[i]->Release();
         //printf("\n----End DataBuffsActive=%d, DataBuffPages=%d ------ \n", dataBuffersActive.load(), dataBufferPages.load());
         dm.allocate()->Release();

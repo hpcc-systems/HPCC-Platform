@@ -19,9 +19,9 @@
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
-#else 
+#else
 typedef unsigned short UChar;
-#endif 
+#endif
 #include "eclhelper.hpp"
 
 #include "jmisc.hpp"
@@ -224,7 +224,7 @@ MODULE_EXIT()
     free(kindArray);
 }
 
-const char *activityKindStr(ThorActivityKind kind) 
+const char *activityKindStr(ThorActivityKind kind)
 {
     const char *ret = kind<TAKlast?kindArray[kind]:NULL;
     if (ret) return ret;

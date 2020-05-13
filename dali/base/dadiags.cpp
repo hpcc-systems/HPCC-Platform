@@ -34,14 +34,14 @@
 #pragma warning (disable : 4355)
 #endif
 
-enum MDiagnosticsRequestKind { 
+enum MDiagnosticsRequestKind {
     MDR_GET_VALUE
 };
 
 
 class CDaliDiagnosticsServer: public IDaliServer, public Thread
 {  // Coven size
-    
+
     bool stopped;
 public:
 
@@ -65,7 +65,7 @@ public:
     void ready()
     {
     }
-    
+
     void suspend()
     {
     }
@@ -90,7 +90,7 @@ public:
                 mb.clear();
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_DIAGNOSTICS_REQUEST,NULL)) {
                     handler.handleMessage(mb);
-                }   
+                }
                 else
                     stopped = true;
             }
@@ -168,13 +168,13 @@ public:
                     params.read(branchpath);
                     Linked<IPropertyTree> sroot = querySDSServer().lockStoreRead();
                     StringBuffer sbuf;
-                    try { 
-                        toXML(sroot->queryPropTree(branchpath),sbuf); 
+                    try {
+                        toXML(sroot->queryPropTree(branchpath),sbuf);
                         DBGLOG("sdssize '%s' = %d",branchpath.get(),sbuf.length());
                     }
-                    catch (...) { 
-                        querySDSServer().unlockStoreRead(); 
-                        throw; 
+                    catch (...) {
+                        querySDSServer().unlockStoreRead();
+                        throw;
                     }
                     querySDSServer().unlockStoreRead();
                     mb.append(sbuf.length());
@@ -267,8 +267,8 @@ public:
             }
             break;
         }
-        coven.reply(mb);            
-    }   
+        coven.reply(mb);
+    }
 
 
     void nodeDown(rank_t rank)

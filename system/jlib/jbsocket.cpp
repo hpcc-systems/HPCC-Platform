@@ -50,14 +50,14 @@ public:
 BufferedSocket::BufferedSocket(ISocket* socket)
 {
     m_timeout = BSOCKET_READ_TIMEOUT;
-    
+
     if(socket == NULL)
     {
         throw MakeStringException(-1, "can't create BufferedSocket from NULL socket");
     }
-    
+
     m_socket = socket;
-    
+
     m_endptr = 0;
     m_curptr = 0;
 };
@@ -80,7 +80,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                 if(m_buf[m_curptr] == '\r') // standard case, \r\n marks a new header line.
                 {
                     m_curptr++;
-                    
+
                     if(keepcrlf)
                         buf[ptr++] = '\r';
 
@@ -111,7 +111,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                                     buf[ptr++] = '\n';
                             }
                         }
-                        
+
                     }
                     break;
                 }
@@ -126,7 +126,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
 
                 buf[ptr++] = m_buf[m_curptr++];
             }
-            
+
             if(foundCRLF)
                 break;
 
@@ -143,7 +143,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
             }
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         int ret = -1;
@@ -161,7 +161,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
                 ret = ptr;
                 break; //these errors should not be trapped as errors, but need to be logged.
             }
-        
+
             //unexpected:
             case JSOCKERR_ok:
             case JSOCKERR_bad_address:           //= -2,    // connect
@@ -188,7 +188,7 @@ int BufferedSocket::readline(char* buf, int maxlen, bool keepcrlf, IMultiExcepti
         IERRLOG("In BufferedSocket::readline() -- Unknown exception reading from socket(%d).", m_socket->OShandle());
         return -1;
     }
-    
+
     buf[ptr] = 0;
     return ptr;
 }
@@ -206,7 +206,7 @@ int BufferedSocket::read(char* buf, int maxlen)
         {
             buf[ptr++] = m_buf[m_curptr++];
         }
-        
+
         if(ptr >= maxlen)
             break;
 
@@ -220,7 +220,7 @@ int BufferedSocket::read(char* buf, int maxlen)
             {
                 m_socket->read(m_buf, 0, BSOCKET_BUFSIZE, readlen, m_timeout);
             }
-            catch (IException *e) 
+            catch (IException *e)
             {
                 StringBuffer estr;
                 int ret = -1;
@@ -244,7 +244,7 @@ int BufferedSocket::read(char* buf, int maxlen)
                         ret = ptr;
                         break;
                     }
-                
+
                     //unexpected:
                     case JSOCKERR_ok:
                     case JSOCKERR_bad_address:           //= -2,    // connect

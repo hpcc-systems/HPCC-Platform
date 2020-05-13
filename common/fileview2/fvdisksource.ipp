@@ -32,7 +32,7 @@ class PhysicalFileInfo
 {
 public:
     PhysicalFileInfo();
-    
+
     void close();
     offset_t getOptimizedOffset(offset_t offset, unsigned copyLength);
     void init(IDistributedFile * _df);
@@ -104,7 +104,7 @@ protected:
     size32_t unitSize;
     size32_t maxRecordSize;
 };
-    
+
 class DirectCsvDiskDataSource  : public PagedDataSource
 {
 public:

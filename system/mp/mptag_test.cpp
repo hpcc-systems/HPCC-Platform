@@ -25,19 +25,19 @@
  ** TEST CASES
  ******************************/
 
-// 1. populate to and beyond maximum limit, free everything, 
+// 1. populate to and beyond maximum limit, free everything,
 void test1()
 {
     int i; const size = 1000; //TAG_DYNAMIC_MAX - TAG_DYNAMIC
     mptag_t a[size];
-    for( i=0;i<(size);i++)  {   
+    for( i=0;i<(size);i++)  {
         a[i]=allocMPtag("hello",123);
-        printf("alloc: %d \n" ,a[i]);   
+        printf("alloc: %d \n" ,a[i]);
     }
     printf("alloc: %d \n" , allocMPtag("hello",123));
     for( i=0;i<size;i++)    {       //free marked 10
         printf("free: %d \n",a[i]);
-        freeMPtag(a[i]);    
+        freeMPtag(a[i]);
     }
 
 }
@@ -46,32 +46,32 @@ void test1()
 void test2()
 {
     mptag_t a[10]; int i; //IMessageTraceFormatter f;
-    printf("**********************ENTER 100 \n"); 
+    printf("**********************ENTER 100 \n");
     for( i=1;i<101;i++) {       //enter 100
-        printf("alloc: %d \n" ,allocMPtag("hello",123));    
+        printf("alloc: %d \n" ,allocMPtag("hello",123));
     }
-    printf("**********************BELOW MARKED FOR REMOVAL \n"); 
+    printf("**********************BELOW MARKED FOR REMOVAL \n");
     for( i=0;i<10;i++)  {       //enter another 10 (marked for removal)
         printf("alloc: %d \n" ,a[i] = allocMPtag("hello",123));
     }
-    printf("**********************ENTER ANOTHER 100 \n"); 
+    printf("**********************ENTER ANOTHER 100 \n");
     for( i=1;i<101;i++) {       //enter 100
-        printf("alloc: %d \n" ,allocMPtag("hello",123));    
+        printf("alloc: %d \n" ,allocMPtag("hello",123));
     }
-    printf("**********************RETRIVE FORMATTER, CALL FORMAT ON MARKED 10\n"); 
+    printf("**********************RETRIVE FORMATTER, CALL FORMAT ON MARKED 10\n");
     MemoryBuffer* m = new MemoryBuffer(); m->append("sdasda");  StringBuffer* s = new StringBuffer("random string");
     for( i=0;i<10;i++)  {       //free marked 10
         CMessageTraceFormatterDefault* f = (CMessageTraceFormatterDefault*) queryFormatter(a[i]);
         printf("format: %s \n",f->format((mptag_t)999, *m, *s));
-    }   
-    printf("**********************FREEING MARKED FOR REMOVAL \n"); 
+    }
+    printf("**********************FREEING MARKED FOR REMOVAL \n");
     for( i=0;i<10;i++)  {       //free marked 10
         printf("free: %d \n",a[i]);
-        freeMPtag(a[i]);    
+        freeMPtag(a[i]);
     }
-    printf("**********************ENTER 100 \n"); 
+    printf("**********************ENTER 100 \n");
     for( i=1;i<101;i++) {       //enter 100
-        printf("alloc: %d \n" ,allocMPtag("hello",123));    
+        printf("alloc: %d \n" ,allocMPtag("hello",123));
     }
     printf("**********************ENDGAME \n");
     a[0] =  allocMPtag("hello",123); //alloc,free,alloc
@@ -89,16 +89,16 @@ void test3(){
     IMessageTraceFormatter* f = new CMessageTraceFormatterDefault("tracename ",101);
     int i; const size = 10; //size must be even
     mptag_t a[size];
-    for( i=0;i<(size);i++)  {   
+    for( i=0;i<(size);i++)  {
         a[i]=allocMPtag(*f);
-        printf("allocF: %d \n" ,a[i]);  
+        printf("allocF: %d \n" ,a[i]);
     }
     f->Release();
 
     IMessageTraceFormatter* f2 = new CMessageTraceFormatterDefault("tracename ",101);
-    for( i=0;i<((size/2)-1);i++)    {   
+    for( i=0;i<((size/2)-1);i++)    {
         associateMPtag(a[i],*f2);
-        printf("a$$ocF: %d \n" ,a[i]);  
+        printf("a$$ocF: %d \n" ,a[i]);
     }
     f2->Release();
 
@@ -127,11 +127,11 @@ int main(int argc, char* argv[])
     printf("\n\n");
     test1();
     printf("\n\n");
-    test2();    
+    test2();
     printf("\n\n");
-    test3();    
+    test3();
     printf("\n\n");
-    test4();    
+    test4();
 
     releaseAtoms();
 

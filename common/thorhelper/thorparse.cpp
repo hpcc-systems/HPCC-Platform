@@ -55,7 +55,7 @@ void serializeBoolArray(MemoryBuffer & out, unsigned len, const bool * values)
 }
 
 //---------------------------------------------------------------------------
-    
+
 NlpState::NlpState(INlpMatchedAction * _action, NlpInputFormat _inputFormat, size32_t len, const void * text)
 {
     matchAction = _action;
@@ -104,7 +104,7 @@ void NlpState::unmarkFinish(const MatchSaveState & save)
 }
 
 //---------------------------------------------------------------------------
-    
+
 NlpMatchPath::NlpMatchPath(const UnsignedArray & _ids, const UnsignedArray & _indices)
 {
     assert(_ids.ordinality() == _indices.ordinality());
@@ -190,16 +190,16 @@ CMatchedResults::~CMatchedResults()
     kill();
 }
 
-bool CMatchedResults::getMatched(unsigned idx)              
-{ 
-    return matched[idx] != &notMatched; 
+bool CMatchedResults::getMatched(unsigned idx)
+{
+    return matched[idx] != &notMatched;
 }
 
-size32_t CMatchedResults::getMatchLength(unsigned idx)          
-{ 
+size32_t CMatchedResults::getMatchLength(unsigned idx)
+{
     const IMatchedElement * cur = matched[idx];
-    const byte * start = cur->queryStartPtr(); 
-    size32_t size = (size32_t)(cur->queryEndPtr() - start); 
+    const byte * start = cur->queryStartPtr();
+    size32_t size = (size32_t)(cur->queryEndPtr() - start);
     size32_t len;
 
     switch (def->inputFormat)
@@ -220,7 +220,7 @@ size32_t CMatchedResults::getMatchLength(unsigned idx)
 }
 
 
-size32_t CMatchedResults::getMatchPosition(unsigned idx)        
+size32_t CMatchedResults::getMatchPosition(unsigned idx)
 {
     IMatchedElement * cur = matched[idx];
     if (cur == &notMatched)
@@ -241,8 +241,8 @@ size32_t CMatchedResults::getMatchPosition(unsigned idx)
 void CMatchedResults::getMatchText(size32_t & outlen, char * & out, unsigned idx)
 {
     const IMatchedElement * cur = matched[idx];
-    const byte * start = cur->queryStartPtr(); 
-    size32_t size = (size32_t)(cur->queryEndPtr() - start); 
+    const byte * start = cur->queryStartPtr();
+    size32_t size = (size32_t)(cur->queryEndPtr() - start);
 
     switch (def->inputFormat)
     {
@@ -339,8 +339,8 @@ void CMatchedResults::kill()
 
 
 IAtom * NlpMatchWalker::queryName()
-{ 
-    return curMatch->queryName(); 
+{
+    return curMatch->queryName();
 }
 
 size32_t NlpMatchWalker::queryMatchSize()

@@ -125,11 +125,11 @@ static const char * EclDefinition =
 "   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : context,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
                                         " const varstring lowwuid='',"
-                                        " const varstring highwuid=''," 
-                                        " const varstring username=''," 
-                                        " const varstring cluster=''," 
+                                        " const varstring highwuid='',"
+                                        " const varstring username='',"
+                                        " const varstring cluster='',"
                                         " const varstring jobname='',"
-                                        " const varstring state=''," 
+                                        " const varstring state='',"
                                         " const varstring priority='',"
                                         " const varstring fileread='',"
                                         " const varstring filewritten='',"
@@ -154,7 +154,7 @@ static const char * EclDefinition =
 #define SDS_LOCK_TIMEOUT (1000*60*5)
 #define SASHA_TIMEOUT (1000*60*10)
 
-WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
@@ -227,10 +227,10 @@ static bool checkScopeAuthorized(IUserDescriptor *user, const char *scopename)
                 perm = SecAccess_Full;
                 securityDisabled = true;
             }
-            else 
+            else
                 perm = SecAccess_None;
         }
-        if (!HASREADPERMISSION(perm)) 
+        if (!HASREADPERMISSION(perm))
             return false;
 
     }
@@ -277,7 +277,7 @@ static StringBuffer &getWUIDonDate(StringBuffer &wuid,unsigned year,unsigned mon
         if (day==0)
             day = d;
     }
-    else if (year<100) 
+    else if (year<100)
         year+=2000;
     wuid.appendf("W%d%02d%02d-%02d%02d00",year,month,day,hour,minute);
     return wuid;
@@ -340,7 +340,7 @@ static const unsigned MAX_FILTERS=20;
 WORKUNITSERVICES_API void wsWorkunitList(
     ICodeContext *ctx,
     size32_t & __lenResult,
-    void * & __result, 
+    void * & __result,
     const char *lowwuid,
     const char *highwuid,
     const char *username,
@@ -362,10 +362,10 @@ WORKUNITSERVICES_API void wsWorkunitList(
         SocketEndpointArray sashaeps;
         getSashaNodes(sashaeps);
         ForEachItemIn(i,sashaeps) {
-            Owned<ISashaCommand> cmd = createSashaCommand();    
-            cmd->setAction(SCA_WORKUNIT_SERVICES_GET);                          
-            cmd->setOnline(false);                              
-            cmd->setArchived(true); 
+            Owned<ISashaCommand> cmd = createSashaCommand();
+            cmd->setAction(SCA_WORKUNIT_SERVICES_GET);
+            cmd->setOnline(false);
+            cmd->setArchived(true);
             cmd->setWUSmode(true);
             if (lowwuid&&*lowwuid)
                 cmd->setAfter(lowwuid);
@@ -494,10 +494,10 @@ WORKUNITSERVICES_API bool wsWorkunitExists(ICodeContext *ctx, const char *wuid, 
         SocketEndpointArray sashaeps;
         getSashaNodes(sashaeps);
         ForEachItemIn(i,sashaeps) {
-            Owned<ISashaCommand> cmd = createSashaCommand();    
-            cmd->setAction(SCA_LIST);                           
-            cmd->setOnline(false);                              
-            cmd->setArchived(true); 
+            Owned<ISashaCommand> cmd = createSashaCommand();
+            cmd->setAction(SCA_LIST);
+            cmd->setOnline(false);
+            cmd->setArchived(true);
             cmd->addId(wuid);
             Owned<INode> sashanode = createINode(sashaeps.item(i));
             if (cmd->send(sashanode,SASHA_TIMEOUT)) {
@@ -630,7 +630,7 @@ WORKUNITSERVICES_API void wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & 
         {
             IPropertyTree &item = sourceFiles->query();
             varAppendMax(mb, 256, item, "@name");
-            fixedAppend(mb, 10, item, "@graph");                
+            fixedAppend(mb, 10, item, "@graph");
             varAppendMax(mb, 64, item, "@cluster");
             mb.append( (unsigned) item.getPropInt("@kind"));
         }
@@ -810,6 +810,6 @@ WORKUNITSERVICES_API bool wsSetWorkunitAppValue( ICodeContext *ctx, const char *
 WORKUNITSERVICES_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 
 WORKUNITSERVICES_API char * WORKUNITSERVICES_CALL fsGetBuildInfo(void)
-{ 
+{
     return CTXSTRDUP(parentCtx, WORKUNITSERVICES_VERSION);
 }

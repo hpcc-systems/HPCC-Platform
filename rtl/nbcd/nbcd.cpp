@@ -596,7 +596,7 @@ size32_t Decimal::getStringLength() const
     int lo, hi;
     clip(lo, hi);
 
-    if (lo > hi) // (lo == hi) && (digits[lo] == 0))        
+    if (lo > hi) // (lo == hi) && (digits[lo] == 0))
         return 1;
     byte top = (hi < zeroDigit) ? zeroDigit-1 : hi;
     byte bottom = (lo > zeroDigit) ? zeroDigit : lo;
@@ -914,22 +914,22 @@ void Decimal::setReal(double value)
     {
         if (lo >= maxDigits)
             return;
-        
+
         finger += (hi - (maxDigits-1));
         hi = maxDigits-1;
     }
-    
+
     if (lo < 0)
     {
         if (hi < 0)
             return;
-        
+
         lo = 0;
     }
-    
+
     msb = hi;
     lsb  = lo;
-    
+
     for ( int i = hi; i >= lo; i-- )
     {
         byte next = *finger++ - '0';

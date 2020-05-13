@@ -16,11 +16,11 @@
 ############################################################################## */
 #include <string>
 #include "deploy.hpp"
-#include "jcrc.hpp"  
+#include "jcrc.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
-#include "jptree.hpp"  
-#include "jstring.hpp"  
+#include "jptree.hpp"
+#include "jstring.hpp"
 #include "jmutex.hpp"
 #include "xslprocessor.hpp"
 
@@ -71,12 +71,12 @@ public:
    //  CDeployTask
    //---------------------------------------------------------------------------
     CDeployTask(IDeploymentCallback& callback,
-               const char* caption, const char* processType, const char* comp, 
-               const char* instance, const char* source, const char* target, 
+               const char* caption, const char* processType, const char* comp,
+               const char* instance, const char* source, const char* target,
                const char* sshUser, const char* sshKeyFile, const char* sshKeyPassphrase,
                bool useSsh, EnvMachineOS os, const char* processName=NULL)
-    : m_caption(caption), m_compName(comp), 
-      m_instanceName(instance), m_processed(false), m_errorCode(0), 
+    : m_caption(caption), m_compName(comp),
+      m_instanceName(instance), m_processed(false), m_errorCode(0),
       m_abort(false), m_dummy(false), m_machineOS(os), m_flags(0),
       m_processType(processType),
       m_processName(processName),
@@ -191,7 +191,7 @@ public:
   {
     return m_sshUser.str();
   }
-  
+
   const char* getSSHKeyFile() const
   {
     return m_sshKeyFile.str();
@@ -205,7 +205,7 @@ public:
   bool checkSSHFileExists(const char* filename) const
   {
     bool flag = false;
-    Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Ensure Path", m_processType, m_compName, 
+    Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Ensure Path", m_processType, m_compName,
       m_instanceName, filename, NULL, m_sshUser.str(), m_sshKeyFile.str(), m_sshKeyPassphrase.str(),
       true, m_machineOS);
 
@@ -242,7 +242,7 @@ public:
    //  getErrorCode
    //---------------------------------------------------------------------------
    DWORD getErrorCode() const
-   { 
+   {
       return m_errorCode;
    }
    //---------------------------------------------------------------------------
@@ -270,14 +270,14 @@ public:
    //  getFlags
    //---------------------------------------------------------------------------
    unsigned getFlags() const
-   { 
+   {
       return m_flags;
    }
    //---------------------------------------------------------------------------
    //  setFlags
    //---------------------------------------------------------------------------
    void setFlags(unsigned flags)
-   { 
+   {
       m_flags = flags;
    }
 
@@ -350,7 +350,7 @@ public:
          transform.setParameter("outputFilePath", StringBuffer("'").append(target).append("'").str());
          transform.setParameter("tempPath", StringBuffer("'").append(tempPath).append("'").str());
 
-         if (m_machineOS == MachineOsLinux) 
+         if (m_machineOS == MachineOsLinux)
            transform.setParameter("isLinuxInstance", "1");//set optional parameter
 
          if (m_instanceName.length())
@@ -383,7 +383,7 @@ public:
               StringBuffer tmpoutbuf;
               transform.transform(tmpoutbuf);
               tmpoutbuf.replaceString("\r\n", "\n");
-             
+
               if (m_useSsh && !m_sshUser.isEmpty() && !m_sshKeyFile.isEmpty())
               {
                 StringBuffer destpath, ip;
@@ -399,7 +399,7 @@ public:
 
               if (!flag)
                 pTargetFile.setown(createIFile(target));
-             
+
               if (pTargetFile->exists() && pTargetFile->isReadOnly())
                 pTargetFile->setReadOnly(false);
               Owned<IFileIO> pTargetFileIO = pTargetFile->openShared(IFOcreate, IFSHfull);
@@ -408,7 +408,7 @@ public:
 
              if (flag)
              {
-               Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy File", 
+               Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Copy File",
                  m_processType, m_compName, m_instanceName, sb.str(), target, m_sshUser.str(),
                  m_sshKeyFile.str(), m_sshKeyPassphrase.str(), true, m_machineOS);
 
@@ -432,8 +432,8 @@ public:
            m_warnings.set(transform.getMessages());
            transform.closeResultTarget();
 #ifdef _WIN32
-           //Samba maps the Windows archive, system, and hidden file attributes to the owner, group, and world 
-           //execute bits of the file respectively.  So if we are deploying to a Linux box then make the file 
+           //Samba maps the Windows archive, system, and hidden file attributes to the owner, group, and world
+           //execute bits of the file respectively.  So if we are deploying to a Linux box then make the file
            //executable by setting its archive bit.
            //
            if (m_machineOS == MachineOsLinux && !m_useSsh && m_sshUser.isEmpty() && m_sshKeyFile.isEmpty())
@@ -519,7 +519,7 @@ public:
      {
        m_warnings.clear();
 
-       if (m_pCallback->getAbortStatus()) 
+       if (m_pCallback->getAbortStatus())
          break;
 
        m_errorCode = 0;
@@ -650,7 +650,7 @@ public:
 
            if (flag && m_updateProgress)
              copyProgress.onProgress(0, dirsize);
-           
+
            stripNetAddr(target, destpath, ip);
            cmdline.appendf("pscp -p -noagent -q %s -i %s -l %s %s \"%s\" %s:%s", flag?"-r":"",
              m_sshKeyFile.str(), m_sshUser.str(), passphr.str(), source, ip.str(), destpath.str());
@@ -674,7 +674,7 @@ public:
              else if (m_updateProgress)
                copyProgress.onProgress(pSrcFile->size(), pSrcFile->size());
 
-             Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Chmod", m_processType, m_compName, m_instanceName, 
+             Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Chmod", m_processType, m_compName, m_instanceName,
                destpath.str(), NULL, m_sshUser.str(), m_sshKeyFile.str(), m_sshKeyPassphrase.str(), true, m_machineOS);
 
              try
@@ -717,7 +717,7 @@ public:
          {
            try
            {
-             //BUG#48891 Handle the exception here to allow the user to retry or ignore. 
+             //BUG#48891 Handle the exception here to allow the user to retry or ignore.
              pDstFile->setReadOnly(false);
              continue;
            }
@@ -733,15 +733,15 @@ public:
        any thread and are shared among threads to coordinate file copying process.
        The first thread that has an error and grabs the mutex pops up the error
        message box to the user.  If the user selects "abort", the global abort flag is
-       set and the thread exits.  Other threads with or without errors check this 
-       abort flag and exit if it is set.  If the user selected "ignore", the thread 
+       set and the thread exits.  Other threads with or without errors check this
+       abort flag and exit if it is set.  If the user selected "ignore", the thread
        simply exits with error condition and other threads operate unaffected.  However,
        if the user selected "retry" then we don't want other pending threads with error
        conditions to keep popping up error messages asking for abort/retry/ignore.  The
-       first thread becomes a "master retry thread" for lack of a better term.  This 
-       thread dominates popping of the message boxes and other threads abide by user's 
+       first thread becomes a "master retry thread" for lack of a better term.  This
+       thread dominates popping of the message boxes and other threads abide by user's
        wishes for the master retry thread.  The idea is that the user should not be asked
-       for every single file copy error since the cause of error in most scenarios could 
+       for every single file copy error since the cause of error in most scenarios could
        simply be of a global nature, for instance, that the target machine is not powered
        on or the target files are locked since the process is already running and needs
        to be stopped.  An event semaphore is used by master retry thread to wake up all
@@ -787,13 +787,13 @@ public:
          else
          {
            //some other thread has an active message box
-           //wait for that thread to signal us after it either successfully retries, 
+           //wait for that thread to signal us after it either successfully retries,
            //or if the user ignores that error or aborts deployment
            //
            s_monitor.wait();
 
            //respect user's wish to retry all queued failed operations
-           rc = m_pCallback->getAbortStatus() ? r_abort : getRetryStatus() ? r_retry : r_ignore;            
+           rc = m_pCallback->getAbortStatus() ? r_abort : getRetryStatus() ? r_retry : r_ignore;
          }
          if (r_retry != rc)
            break;
@@ -805,8 +805,8 @@ public:
          {
            pDstFile->setReadOnly(false);
 #ifdef _WIN32
-           //Samba maps the Windows archive, system, and hidden file attributes to the owner, group, and world 
-           //execute bits of the file respectively.  So if we are deploying to a Linux box then make the file 
+           //Samba maps the Windows archive, system, and hidden file attributes to the owner, group, and world
+           //execute bits of the file respectively.  So if we are deploying to a Linux box then make the file
            //executable by setting its archive bit.
            //
            if (m_machineOS == MachineOsLinux)
@@ -882,9 +882,9 @@ public:
          m_warnings.clear();
          m_errorString.clear();
 
-         try 
+         try
          {
-            if (m_dummy) 
+            if (m_dummy)
                break;
 
             pFile->move(dst);
@@ -916,7 +916,7 @@ public:
       m_warnings.clear();
       m_errorString.clear();
 
-      bool rc = m_dummy || DeleteFile(target)==TRUE; 
+      bool rc = m_dummy || DeleteFile(target)==TRUE;
       m_errorCode = rc ? 0 : (DWORD) -1;
       return rc;
    }
@@ -979,21 +979,21 @@ public:
                if (bDeleteIfFound)
                   msg.append("  Would you like to delete the file and try again?");
 
-                    try 
+                    try
                     {
-                  bool bIgnore = m_pCallback->processException( m_processType.get(), m_compName.get(), m_instanceName.get(), NULL, 
-                                                                                   msg.str(), "File name conflict!", this);                     
+                  bool bIgnore = m_pCallback->processException( m_processType.get(), m_compName.get(), m_instanceName.get(), NULL,
+                                                                                   msg.str(), "File name conflict!", this);
                         if (bIgnore)
                   {
                      m_processed = true;
-                     rc = true; 
+                     rc = true;
                   }
                   else
                   {
                      if (m_pCallback->getAbortStatus())
                      {
                         m_abort = true;
-                        rc = true; 
+                        rc = true;
                      }
                      else
                      {
@@ -1040,7 +1040,7 @@ public:
       m_errorCode = 0;
       m_warnings.clear();
 
-      if (m_dummy) 
+      if (m_dummy)
       {
          m_processed = true;
          return true;
@@ -1220,7 +1220,7 @@ public:
    {
       m_processed = true;
       m_errorCode = 0;
-      
+
       const char* target = getFileSpec(DT_TARGET);
       while (true)
       {
@@ -1228,7 +1228,7 @@ public:
          m_warnings.clear();
          m_errorString.clear();
 
-         if (m_dummy) 
+         if (m_dummy)
                 break;
 
             StringBuffer path(target);
@@ -1257,7 +1257,7 @@ public:
       {
          try
          {
-                if (m_pCallback->getAbortStatus()) 
+                if (m_pCallback->getAbortStatus())
                 {
                     m_errorCode = (DWORD) -1;
                     m_errorString.append("Aborted");
@@ -1267,7 +1267,7 @@ public:
             m_errorCode = 0;
             m_errorString.clear();
 
-            if (m_dummy) 
+            if (m_dummy)
                break;
 
             if (src.isDirectory())
@@ -1319,7 +1319,7 @@ public:
       Owned<IFile> pSrcFile = createIFile(getFileSpec(DT_SOURCE));
       Owned<IFile> pDstFile = createIFile(getFileSpec(DT_TARGET));
       copyRecursive(*pSrcFile, *pDstFile);
-      
+
       return (m_errorCode == 0);
    }
    //---------------------------------------------------------------------------
@@ -1342,7 +1342,7 @@ public:
       if (pchSpace)
          *pchSpace = '\0';// remove command line parameters
 
-      if (m_machineOS == MachineOsLinux) 
+      if (m_machineOS == MachineOsLinux)
       {
          const char* extension = findFileExtension(cmdPath);
          if (extension && (!stricmp(extension, ".bat") || !stricmp(extension, ".exe")))
@@ -1371,10 +1371,10 @@ public:
          if (pch)
             *++pch = '\0';
       }
-#endif 
+#endif
       // Determine if process is remote or local
       if (strlen(cmdPath)>2 && cmdPath[0]=='\\' && cmdPath[1]=='\\')
-      {  
+      {
          // Parse target into computer, dir, and cmd
          char computer[_MAX_PATH];
          strcpy(computer, cmdPath+2);
@@ -1397,7 +1397,7 @@ public:
             char* x = dir;
             while (x = strchr(x, '$')) *x++ = ':';
          }
-      
+
          // Use psexec as default remote control program
 #ifdef _WIN32
          if (m_machineOS != MachineOsLinux)
@@ -1417,33 +1417,33 @@ public:
 
             //replace all '\\' by '/'
             char* x = dir;
-            while (x = strchr(x, '\\')) 
+            while (x = strchr(x, '\\'))
                *x++ = '/';
 
             /* note that if we use plink (cmd line ssh client) for the first time with a computer,
                it generates the following message:
 
-               The server's host key is not cached in the registry. You have no guarantee that the 
+               The server's host key is not cached in the registry. You have no guarantee that the
                server is the computer you think it is.  The server's key fingerprint is:
                1024 aa:bb:cc:dd:ee:ff:gg:hh:ii:jj:kk:ll:mm:nn:oo:pp
                If you trust this host, enter "y" to add the key to
-               PuTTY's cache and carry on connecting.  If you want to carry on connecting just once, 
-               without adding the key to the cache, enter "n".If you do not trust this host, press 
+               PuTTY's cache and carry on connecting.  If you want to carry on connecting just once,
+               without adding the key to the cache, enter "n".If you do not trust this host, press
                Return to abandon the connection.
 
                To get around this, we pipe "n" to plink without using its -batch parameter (since
                that simply aborts the connection attempt).  We need help from cmd.exe to do this though...
             */
 
-            /* fix for bug# 6590: Error when trying to start/stop components from configenv 
+            /* fix for bug# 6590: Error when trying to start/stop components from configenv
 
                if the command being invoked is using cmd.exe and if the configenv has been invoked
                with a UNC path (like \\machine\dir1\...\configenv.exe) then this would fail since
                cmd.exe does not like to invoke commands with UNC names.
                So we cannot use cmd.exe with UNC paths.  Redirecting input file with 'n' does not
-               work either.  So we cannot inhibit the prompt as shown above in this case and the 
+               work either.  So we cannot inhibit the prompt as shown above in this case and the
                user must enter 'y' or 'n' when asked to cache the key.   However, hitting enter
-               aborts the connection with return code 0 with the result that the user is notified 
+               aborts the connection with return code 0 with the result that the user is notified
                that command succeeded since plink returns success even though it aborted the connection.
 
                Find out how configenv was invoked and use the following commands respectively:
@@ -1488,7 +1488,7 @@ public:
 
       bool rc = false;
       const bool bCD = modulePath[0] == '\\' && modulePath[1] == '\\';
-      try 
+      try
       {
          if (bCD)
          {
@@ -1515,7 +1515,7 @@ public:
       if (bCD)
          _chdir(modulePath);
       return rc;
-#else 
+#else
     return true;
 #endif
    }
@@ -1542,7 +1542,7 @@ public:
          m_errorString.clear();
 
          // Launch the process
-         if (m_dummy) 
+         if (m_dummy)
             break;
 
             DeleteFile( tempfile );
@@ -1580,7 +1580,7 @@ public:
             break;
       }
       return (m_errorCode == 0);
-#else 
+#else
     return true;
 #endif
    }
@@ -1761,7 +1761,7 @@ public:
                   }
                }//for
             }
-            else 
+            else
                if( dwResult != ERROR_NO_MORE_ITEMS )
                {
                   GlobalFree( (HGLOBAL) lpnrDrv );
@@ -1775,7 +1775,7 @@ public:
          WNetCloseEnum(hEnum);
       }
 #endif
-   } 
+   }
 
    //---------------------------------------------------------------------------
    //  connectTarget
@@ -1846,7 +1846,7 @@ public:
                      break;
                }
 
-               if (m_pCallback->getAbortStatus()) 
+               if (m_pCallback->getAbortStatus())
                {
                   m_errorCode = (DWORD) -1;
                   m_errorString.append("Aborted");
@@ -1889,13 +1889,13 @@ public:
          m_errorCode = errCode;
          m_errorString.appendf("Error disconnecting from %s: ", getFileSpec(DT_TARGET));
          formatSystemError(m_errorString, m_errorCode);
-         //don't display error since deployment of one component (like esp) may involve 
+         //don't display error since deployment of one component (like esp) may involve
          //deploying multiple others (like esp service modules) and we would get disconnection
          //failures as a result in any case.
       }
-#endif      
+#endif
       return (m_errorCode == 0);
-   }   
+   }
 
    //returns true if the caller needs to ignore or abort error; false to retry
    //
@@ -1911,9 +1911,9 @@ public:
      }
 
       bool rc = true;//ignore
-      try 
+      try
       {
-            rc = m_pCallback->processException( m_processType.get(), m_compName.get(), m_instanceName.get(), NULL, 
+            rc = m_pCallback->processException( m_processType.get(), m_compName.get(), m_instanceName.get(), NULL,
                                                         m_errorString, szTitle, this);
       }
       catch (IException* e)
@@ -2023,14 +2023,14 @@ private:
 /*static*/ bool    CDeployTask::s_retry = false;
 /*static*/ bool    CDeployTask::s_msgBoxActive = false;
 
-//the following class implements a thread that asynchronously 
+//the following class implements a thread that asynchronously
 //copies a given file.  The current implementation of IDeployTask
 //does not seemlessly lend itself to polymorphism since each task
 //type has its own characteristic parameters and the caller must
-//specifically invoke different methods like copyFile based on 
+//specifically invoke different methods like copyFile based on
 //task type.  Ideally, there needs to be only one worker method.
 //
-class CDeployTaskThread : public CInterface, 
+class CDeployTaskThread : public CInterface,
                           implements IDeployTaskThread
 {
 public:
@@ -2078,13 +2078,13 @@ public:
     {
         return true;
     }
-   
+
     virtual IDeployTask* getTask () const     { return m_pTask;     }
     virtual void setTask (IDeployTask* pTask) { m_pTask.set(pTask); }
 
     virtual bool getAbort() const      { return s_abort;   }
     virtual void setAbort(bool bAbort) { s_abort = bAbort; }
-   
+
 private:
     Owned<IDeployTask> m_pTask;
     static bool s_abort;
@@ -2107,14 +2107,14 @@ bool CDeployTaskThread::s_abort = false;
 //---------------------------------------------------------------------------
 //  Factory functions
 //---------------------------------------------------------------------------
-IDeployTask* createDeployTask(IDeploymentCallback& callback, const char* caption, 
-                              const char* processType, const char* comp, 
-                              const char* instance, const char* source, 
-                              const char* target, const char* sshUser, const char* sshKeyFile, 
-                              const char* sshKeyPassphrase, bool useSsh, EnvMachineOS os/* = MachineOsUnknown*/, 
+IDeployTask* createDeployTask(IDeploymentCallback& callback, const char* caption,
+                              const char* processType, const char* comp,
+                              const char* instance, const char* source,
+                              const char* target, const char* sshUser, const char* sshKeyFile,
+                              const char* sshKeyPassphrase, bool useSsh, EnvMachineOS os/* = MachineOsUnknown*/,
                               const char* processName/*=NULL*/)
 {
-   return new CDeployTask(callback, caption, processType, comp, instance, source, target, sshUser, sshKeyFile, 
+   return new CDeployTask(callback, caption, processType, comp, instance, source, target, sshUser, sshKeyFile,
      sshKeyPassphrase, useSsh, os, processName);
 }
 

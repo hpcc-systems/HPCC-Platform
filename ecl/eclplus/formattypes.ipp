@@ -23,7 +23,7 @@
 
 interface CFormatType  : implements IFormatType, public CInterface
 {
-protected: 
+protected:
     int startRowNumber;
 
 public:
@@ -52,7 +52,7 @@ class TextFormatType : public CFormatType
 {
 private:
     IXslProcessor* xslprocessor;
-    
+
 public:
     TextFormatType() { xslprocessor = getXslProcessor();}
     virtual void printBody(FILE* fp, int len, char* txt);

@@ -92,11 +92,11 @@ protected:
 
     //IThorIndexCallback
         virtual const byte *lookupBlob(unsigned __int64 id) override
-        { 
+        {
             size32_t dummy;
             if (!keyManager)
                 throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
-            return (byte *) keyManager->loadBlob(id, dummy); 
+            return (byte *) keyManager->loadBlob(id, dummy);
         }
         void prepareManager(IKeyManager *_keyManager)
         {
@@ -106,7 +106,7 @@ protected:
         void finishedRow()
         {
             if (keyManager)
-                keyManager->releaseBlobs(); 
+                keyManager->releaseBlobs();
         }
         void resetManager()
         {
@@ -482,7 +482,7 @@ public:
             keyedLimitCount = getLocalCount(keyedLimit, true);
     }
 public:
-    CIndexReadSlaveBase(CGraphElementBase *container) 
+    CIndexReadSlaveBase(CGraphElementBase *container)
         : CSlaveActivity(container), callback(*this)
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
@@ -564,7 +564,7 @@ public:
         }
         else
             initialized = true;
-        
+
         unsigned parts;
         data.read(parts);
         if (parts)
@@ -1275,7 +1275,7 @@ public:
             sz = sizeof(unsigned __int64);
         }
         dataLinkIncrement();
-        return result.finalizeRowClear(sz);     
+        return result.finalizeRowClear(sz);
     }
     virtual void stop() override
     {
@@ -1440,7 +1440,7 @@ class CIndexAggregateSlaveActivity : public CIndexReadSlaveBase
     CPartialResultAggregator aggregator;
 
 public:
-    CIndexAggregateSlaveActivity(CGraphElementBase *_container) 
+    CIndexAggregateSlaveActivity(CGraphElementBase *_container)
         : CIndexReadSlaveBase(_container), aggregator(*this)
     {
         helper = (IHThorIndexAggregateArg *)container.queryHelper();
@@ -1510,7 +1510,7 @@ public:
             }
             return nullptr;
         }
-    }  
+    }
 };
 
 CActivityBase *createIndexAggregateSlave(CGraphElementBase *container) { return new CIndexAggregateSlaveActivity(container); }

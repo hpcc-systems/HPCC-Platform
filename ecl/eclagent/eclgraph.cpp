@@ -53,17 +53,17 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKdiskwrite:
     case TAKspillwrite:
         return createDiskWriteActivity(agent, activityId, subgraphId, (IHThorDiskWriteArg &)arg, kind);
-    case TAKsort: 
+    case TAKsort:
         return createGroupSortActivity(agent, activityId, subgraphId, (IHThorSortArg &)arg, kind);
-    case TAKdedup: 
+    case TAKdedup:
         return createGroupDedupActivity(agent, activityId, subgraphId, (IHThorDedupArg &)arg, kind);
-    case TAKfilter: 
+    case TAKfilter:
         return createFilterActivity(agent, activityId, subgraphId, (IHThorFilterArg &)arg, kind);
-    case TAKproject: 
+    case TAKproject:
         return createProjectActivity(agent, activityId, subgraphId, (IHThorProjectArg &)arg, kind);
     case TAKprefetchproject:
         return createPrefetchProjectActivity(agent, activityId, subgraphId, (IHThorPrefetchProjectArg &)arg, kind);
-    case TAKfilterproject : 
+    case TAKfilterproject :
         return createFilterProjectActivity(agent, activityId, subgraphId, (IHThorFilterProjectArg &)arg, kind);
     case TAKrollup:
         return createRollupActivity(agent, activityId, subgraphId, (IHThorRollupArg &)arg, kind);
@@ -189,7 +189,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlfetch:
     case TAKjsonfetch:
         return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind, node);
-    case TAKmerge: 
+    case TAKmerge:
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
     case TAKhttp_rowdataset:
         return createHttpRowCallActivity(agent, activityId, subgraphId, (IHThorHttpCallArg &)arg, kind);
@@ -201,13 +201,13 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createSoapDatasetCallActivity(agent, activityId, subgraphId, (IHThorSoapCallArg &)arg, kind);
     case TAKsoap_datasetaction:
         return createSoapDatasetActionActivity(agent, activityId, subgraphId, (IHThorSoapActionArg &)arg, kind);
-    case TAKchilditerator:          
+    case TAKchilditerator:
         return createChildIteratorActivity(agent, activityId, subgraphId, (IHThorChildIteratorArg &)arg, kind);
     case TAKlinkedrawiterator:
         return createLinkedRawIteratorActivity(agent, activityId, subgraphId, (IHThorLinkedRawIteratorArg &)arg, kind);
-    case TAKrowresult:          
+    case TAKrowresult:
         return createRowResultActivity(agent, activityId, subgraphId, (IHThorRowResultArg &)arg, kind);
-    case TAKdatasetresult:          
+    case TAKdatasetresult:
         return createDatasetResultActivity(agent, activityId, subgraphId, (IHThorDatasetResultArg &)arg, kind);
     case TAKwhen_dataset:
     case TAKwhen_action:
@@ -347,7 +347,7 @@ EclGraphElement::EclGraphElement(EclSubGraph * _subgraph, EclSubGraph * _results
 
 void EclGraphElement::addDependsOn(EclSubGraph & other, EclGraphElement * sourceActivity, int controlId)
 {
-    dependentOn.append(other); 
+    dependentOn.append(other);
     dependentOnActivity.append(*sourceActivity);
     dependentControlId.append(controlId);
 }
@@ -503,13 +503,13 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                                                         input.queryOutput(branchIndexes.item(i2)),  //input
                                                         input.activity.get(),   //Source act
                                                         activity.get(),         //target activity
-                                                        0,//input.id, 
-                                                        0,//id, 
+                                                        0,//input.id,
+                                                        0,//id,
                                                         0);
                         probe = & dynamic_cast<IHThorInput &> (base->queryInput());
                     }
                 }
-                else 
+                else
                 {
                     probe = subgraph->createLegacyProbe(input.queryOutput(branchIndexes.item(i2)),
                                                     input.id,
@@ -673,8 +673,8 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
         case TAKparallel:
             {
                 Owned<IHThorArg> helper = createHelper(agent, subgraph->owner);
-                unsigned numBranches = (kind == TAKsequential) ? 
-                                        ((IHThorSequentialArg *)helper.get())->numBranches() : 
+                unsigned numBranches = (kind == TAKsequential) ?
+                                        ((IHThorSequentialArg *)helper.get())->numBranches() :
                                         ((IHThorParallelArg *)helper.get())->numBranches();
                 for (unsigned branch=1; branch <= numBranches; branch++)
                     executeDependentActions(agent, parentExtract, branch);
@@ -1119,19 +1119,19 @@ EclGraphElement * EclSubGraph::idToActivity(unsigned id)
     return NULL;
 }
 
-void EclSubGraph::reset() 
-{ 
-    executed = false; 
+void EclSubGraph::reset()
+{
+    executed = false;
     ForEachItemIn(i, subgraphs)
         subgraphs.item(i).reset();
 }
 
 //---------------------------------------------------------------------------
 
-void EclAgentQueryLibrary::updateProgress() 
+void EclAgentQueryLibrary::updateProgress()
 {
     if (graph)
-        graph->updateLibraryProgress(); 
+        graph->updateLibraryProgress();
 }
 
 void EclAgentQueryLibrary::destroyGraph()
@@ -1195,7 +1195,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
             {
                 targetGraph = targetActivity->subgraph;
                 targetGraphContext = targetGraph->parentActivityId;
-                if (sourceGraphContext == targetGraphContext) 
+                if (sourceGraphContext == targetGraphContext)
                     break;
 
                 targetActivity = recurseFindActivityFromId(targetGraph, targetGraphContext);
@@ -1573,7 +1573,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         }
     }
     else
-    {        
+    {
         VStringBuffer job("%s-%s", wuid.str(), graphName);
         runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
     }
@@ -1638,7 +1638,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             w->setState(WUStateBlocked);
         }
         unlockWorkUnit();
-            
+
         class cPollThread: public Thread
         {
             Semaphore sem;
@@ -1646,7 +1646,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             IJobQueue *jq;
             IConstWorkUnit *wu;
         public:
-            
+
             bool timedout;
             CTimeMon tm;
             cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
@@ -1692,7 +1692,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
         IJobQueueItem* item = createJobQueueItem(wuid.str());
         item->setOwner(owner.str());
-        item->setPriority(priority);        
+        item->setPriority(priority);
         Owned<IConversation> conversation = jq->initiateConversation(item);
         bool got = conversation.get()!=NULL;
         pollthread.stop();
@@ -1908,7 +1908,7 @@ IThorChildGraph * EclAgent::resolveChildQuery(__int64 subgraphId, IHThorArg * co
 }
 
 IEclGraphResults * EclAgent::resolveLocalQuery(__int64 activityId)
-{ 
+{
     throwUnexpected();
 }
 

@@ -119,8 +119,8 @@ void __cdecl main(int argc, char **argv)
 
    if (!StartServiceCtrlDispatcher(dispatchTable))
       AddToMessageLog(TEXT("StartServiceCtrlDispatcher failed."));
-    
-    SelfDestruct();    
+
+    SelfDestruct();
 }
 
 

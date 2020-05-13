@@ -86,7 +86,7 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -316,7 +316,7 @@ private:
 
 /***************************************************************************
                 CHttpMessage Implementation
-This class implements common functions shared by both CHttpRequest 
+This class implements common functions shared by both CHttpRequest
 and CHttpResponse
 ****************************************************************************/
 
@@ -370,7 +370,7 @@ int CHttpMessage::parseOneHeader(char* oneline)
 
     while(*value == ' ')
         value++;
-    
+
     if(!stricmp(name, "Content-Type"))
     {
         m_content_type.set(value);
@@ -421,7 +421,7 @@ bool CHttpMessage::supportClientXslt()
 
         StringBuffer uastr;
         getHeader("User-Agent", uastr);
-        
+
         char *uagent=strdup(uastr.str());
         char *saveptr;
         char *token = strtok_r(uagent, "();", &saveptr);
@@ -522,7 +522,7 @@ int CHttpMessage::readContent()
         __int64 totallen = m_content_length;
         if(buflen > totallen)
             buflen = (int)totallen;
-        int readlen = 0;    
+        int readlen = 0;
         for(;;)
         {
             readlen = m_bufferedsocket->read(buf, buflen);
@@ -541,7 +541,7 @@ int CHttpMessage::readContent()
             if(buflen > totallen)
                 buflen = (int)totallen;
         }
-        
+
         return 0;
     }
     return 0;
@@ -823,7 +823,7 @@ int CHttpMessage::send()
 
     StringBuffer headers;
     constructHeaderBuffer(headers, true);
-    
+
     int retcode = 0;
 
     // If m_content is empty but m_content_stream is set, the stream will not be logged here.
@@ -845,7 +845,7 @@ int CHttpMessage::send()
         if(m_content_length > 0 && m_content.length() > 0)
             m_socket.write(m_content.str(), m_content.length());
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         setPersistentEligible(false);
         StringBuffer estr;
@@ -880,7 +880,7 @@ int CHttpMessage::send()
                 {
                     m_socket.write(buffer, sizeread);
                 }
-                catch (IException *e) 
+                catch (IException *e)
                 {
                     setPersistentEligible(false);
                     StringBuffer estr;
@@ -913,7 +913,7 @@ int CHttpMessage::startSend()
 {
     StringBuffer sendbuf;
     constructHeaderBuffer(sendbuf, false);
-    
+
     if (getEspLogLevel(queryContext())>LogNormal)
         DBGLOG("Start Sending chunked HTTP message:\n %s", sendbuf.str());
 
@@ -921,7 +921,7 @@ int CHttpMessage::startSend()
     {
         m_socket.write(sendbuf.str(), sendbuf.length());
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         setPersistentEligible(false);
         StringBuffer estr;
@@ -948,7 +948,7 @@ int CHttpMessage::sendChunk(const char *chunk)
     {
         m_socket.write(chunk, strlen(chunk));
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         setPersistentEligible(false);
         StringBuffer estr;
@@ -976,7 +976,7 @@ int CHttpMessage::sendFinalChunk(const char *chunk)
         m_socket.write(chunk, strlen(chunk));
         m_socket.close();
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         setPersistentEligible(false);
         StringBuffer estr;
@@ -1003,7 +1003,7 @@ int CHttpMessage::close()
         m_socket.shutdown();
         m_socket.close();
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         StringBuffer estr;
         IERRLOG("Exception(%d, %s) - CHttpMessage::close(), closing socket.", e->errorCode(), e->errorMessage(estr).str());
@@ -1077,7 +1077,7 @@ StringBuffer& CHttpMessage::getHeader(const char* headername, StringBuffer& head
             break;
         }
     }
-    return headerval;       
+    return headerval;
 }
 
 bool CHttpMessage::hasHeader(const char* headername)
@@ -1178,7 +1178,7 @@ bool CHttpMessage::isJsonMessage()
 bool CHttpMessage::isFormSubmission()
 {
     return ((hasContentType(NULL) && (m_paramCount + m_attachCount) > 0) ||
-        hasContentType(HTTP_TYPE_MULTIPART_FORMDATA) || 
+        hasContentType(HTTP_TYPE_MULTIPART_FORMDATA) ||
         hasContentType(HTTP_TYPE_FORM_ENCODED));
 }
 
@@ -1194,7 +1194,7 @@ void CHttpMessage::enableCompression()
               CHttpRequest Implementation
 *******************************************************************************/
 
-CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket), m_pathIsParsed(false), 
+CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket), m_pathIsParsed(false),
     m_sstype(sub_serv_unknown), m_MaxRequestEntityLength(0)
 {
 };
@@ -1239,7 +1239,7 @@ void CHttpRequest::parseQueryString(const char* querystr)
     {
         while(*ptr != '\0' && *ptr != '=' && *ptr != '&')
             ptr++;
-        
+
         if(*ptr == '\0')
         {
             StringBuffer nameval;
@@ -1354,7 +1354,7 @@ int CHttpRequest::parseFirstLine(char* oneline)
 
     StringBuffer pathbuf;
     curptr = Utils::getWord(curptr, pathbuf);
-    
+
     int len = pathbuf.length();
     char* buff;
     if(len == 0)
@@ -1416,7 +1416,7 @@ void CHttpRequest::parseCookieHeader(char* cookiestr)
     char* curword;
     char* curptr = cookiestr;
     const char* separators = ",;";
-    
+
     curptr = Utils::getWord(curptr, curword, separators);
     StringBuffer name, value;
     Utils::parseNVPair(curword, name, value);
@@ -1489,7 +1489,7 @@ void CHttpRequest::parseEspPathInfo()
             //MORE: With a couple of changes there would be need to clone pathstr
             char *pathstr = strdup(m_httpPath.str());
             char *finger = pathstr;
-            
+
             if (!strnicmp(finger, "http://", 7))
                 finger+=7;
 
@@ -1524,7 +1524,7 @@ void CHttpRequest::parseEspPathInfo()
                             *pathex=0;
                             m_espPathEx.set(pathex+1);
                         }
-                            
+
                         *thumb=0;
                         const char * method = thumb+1;
                         const char *tail = strrchr(method, '.');
@@ -1537,13 +1537,13 @@ void CHttpRequest::parseEspPathInfo()
                         else
                             m_espMethodName.set(method);
                     }
-                    else 
-                        missingTrailSlash = true; 
+                    else
+                        missingTrailSlash = true;
 
                     m_espServiceName.set(finger);
                 }
             }
-            
+
             free(pathstr);
 
             if (m_espMethodName.length())
@@ -1629,21 +1629,21 @@ void CHttpRequest::getEspPathInfo(sub_service &sstype, StringBuffer *pathEx, Str
         method->toUpperCase();
     }
 }
-    
+
 void CHttpRequest::getBasicRealm(StringBuffer& realm)
 {
     StringBuffer authheader;
     getHeader("WWW-Authenticate", authheader);
     if(authheader.length() == 0)
         return;
-    
+
     if(Utils::strncasecmp(authheader.str(), "Basic ", strlen("Basic ")) != 0)
         return;
 
     const char* strt = strchr(authheader.str(), '\"');
     ++strt;
     if (strt)
-    { 
+    {
         const char* end = strchr(strt, '\"');
         if (end)
         {
@@ -1662,7 +1662,7 @@ StringBuffer& CHttpRequest::getPeer(StringBuffer& Peer)
 {
     StringBuffer ForwardIPs;
     getHeader("X-Forwarded-For", ForwardIPs);
-    
+
     if(ForwardIPs.length() != 0)
     {
         //IPs will ne in the form xxx.xxx.xxx.xxx,yyy.yyy.yyy.yyy,zzz.zzz.zzz.zzz
@@ -1695,7 +1695,7 @@ void CHttpRequest::getBasicAuthorization(StringBuffer& userid, StringBuffer& pas
     JBASE64_Decode(authheader.str() + strlen("Basic "), uidpair);
 
     //uidpair formatted as   [domain\]username:password    (domain optional)
-    
+
     //Look for optional domain name separator. Assumes username cannot contain '\'
     const char* pairstr = strchr(uidpair.str(), '\\');
 
@@ -1716,7 +1716,7 @@ void CHttpRequest::getBasicAuthorization(StringBuffer& userid, StringBuffer& pas
         pairstr = uidpair.str();
         getBasicRealm(realm);
     }
-    
+
     const char* colon = strchr(pairstr, ':');
     if(colon == NULL)
     {
@@ -1734,7 +1734,7 @@ int CHttpRequest::receive(IMultiException *me)
 {
     if (CHttpMessage::receive(false, me)==-1)
         return -1;
-    
+
     //if(hasContentType("application/x-www-form-urlencoded"))
     if(hasContentType(HTTP_TYPE_FORM_ENCODED))
     {
@@ -1759,7 +1759,7 @@ int CHttpRequest::receive(IMultiException *me)
                 char* curword = NULL;
                 char* curptr = (char*)cdisp;
                 const char* separators = ";";
-    
+
                 bool isFile = false;
                 StringBuffer filename;
                 while(curptr != NULL && *curptr != 0)
@@ -1849,7 +1849,7 @@ void CHttpRequest::updateContext()
         if (verstr && *verstr)
             m_context->setClientVersion(atof(verstr));
         else
-        { 
+        {
             verstr=strstr(action.str(), "ver_=");
             if (verstr)
                 m_context->setClientVersion(atof(verstr+5));
@@ -1927,7 +1927,7 @@ StringBuffer& CHttpRequest::constructHeaderBuffer(StringBuffer& headerbuf, bool 
         }
         headerbuf.append("\r\n");
     }
-        
+
 
     ForEachItemIn(x, m_headers)
     {
@@ -1977,7 +1977,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
         throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "Bad Request", HTTP_STATUS_BAD_REQUEST);
     m_header.set(oneline);
     parseFirstLine(oneline);
-    
+
     lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN + 1, me);
     while(lenread >= 0 && oneline[0] != '\0')
     {
@@ -2219,7 +2219,7 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
     else
         headerbuf.append(HTTP_STATUS_OK);
     headerbuf.append("\r\n");
-    
+
     headerbuf.append("Content-Type: ");
     if(m_content_type.length() > 0)
         headerbuf.append(m_content_type.get());
@@ -2252,7 +2252,7 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
         const char* oneheader = (const char*)m_headers.item(i);
         headerbuf.append(oneheader).append("\r\n");
     }
-    
+
     if(m_context.get())
     {
         StringArray& customHeaders = m_context->queryCustomHeaders();
@@ -2260,7 +2260,7 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
         {
             const char* oneheader = (const char*)customHeaders.item(j);
             if(oneheader && *oneheader)
-                headerbuf.append(oneheader).append("\r\n"); 
+                headerbuf.append(oneheader).append("\r\n");
         }
     }
 
@@ -2303,7 +2303,7 @@ void CHttpResponse::parseOneCookie(char* cookiestr)
     if(cookiestr == NULL)
         return;
     char* curword;
-    char* curptr = cookiestr;   
+    char* curptr = cookiestr;
 
     CEspCookie* cookie = NULL;
     curptr = Utils::getWord(curptr, curword, ";");
@@ -2341,8 +2341,8 @@ void CHttpResponse::parseOneCookie(char* cookiestr)
             cookie->setComment(value.str());
         else if(stricmp(name.str(), "CommentURL") == 0)
             cookie->setCommentURL(value.str());
-        
-    }   
+
+    }
 }
 
 void CHttpResponse::parseCookieHeader(char* cookiestr)
@@ -2420,7 +2420,7 @@ int CHttpResponse::processHeaders(IMultiException *me)
         {
             lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
         }
-    
+
         // Read the next line, should be the status line.
         lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
         if(lenread <= 0)
@@ -2507,7 +2507,7 @@ int CHttpResponse::receive(IMultiException *me)
     // If it's receiving a response, it's behaving as the client side of this conversation.
     if(m_bufferedsocket.get() != NULL)
         m_bufferedsocket->setReadTimeout(m_timeout);
-    
+
     return CHttpMessage::receive(me);
 }
 
@@ -2516,13 +2516,13 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
     // If it's receiving a response, it's behaving as the client side of this conversation.
     if(m_bufferedsocket.get() != NULL)
         m_bufferedsocket->setReadTimeout(m_timeout);
-    
+
     if (processHeaders(me)==-1)
         return -1;
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response headers processed! content_length = %" I64F "d", m_content_length);
-    
+
     char status_class = '2';
     if(m_status.length() > 0)
         status_class = *(m_status.get());

@@ -32,9 +32,9 @@ public:
     SizeStruct(const SizeStruct & other)                    { fixedSize = other.fixedSize; varMinSize = other.varMinSize; varSize.set(other.varSize); self.set(other.self); }
 
     void add(const SizeStruct & other);
-    inline void addFixed(unsigned delta)                            
-    { 
-        fixedSize += delta; 
+    inline void addFixed(unsigned delta)
+    {
+        fixedSize += delta;
     }
     void addVariableExpr(unsigned _varMinSize, IHqlExpression * expr);
     void addVariable(unsigned _varMinSize, IHqlExpression * expr);
@@ -104,7 +104,7 @@ public:
     virtual bool checkCompatibleIfBlock(HqlExprCopyArray & conditions);
     virtual bool bindOffsetsFromClass(SizeStruct & accessorOffset, bool prevVariableSize);
     virtual void bindSizesFromOffsets(SizeStruct & thisOffset, const SizeStruct & nextOffset);
-    
+
     void addVariableSize(size32_t varMinSize, SizeStruct & size);
     void getXPath(StringBuffer & out);
     StringBuffer & expandSelectPathText(StringBuffer & out, bool isLast) const;
@@ -210,7 +210,7 @@ public:
     void getContainerXPath(StringBuffer & out);
     unsigned nextSeq();
     inline unsigned numChildren() const     { return children.ordinality(); }
-            
+
 public:
     void addChild(CMemberInfo * child);
     void setFixedSize(bool _fixed)          { fixedSize = _fixed; }

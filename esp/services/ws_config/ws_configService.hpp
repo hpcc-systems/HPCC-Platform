@@ -43,7 +43,7 @@ private:
 class Cws_configSoapBindingEx : public Cws_configSoapBinding
 {
 public:
-    Cws_configSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) 
+    Cws_configSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none)
       : Cws_configSoapBinding(cfg, name, process, llevel){}
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)

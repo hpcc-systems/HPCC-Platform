@@ -44,7 +44,7 @@ bool CEspScrubbedXmlService::getHtmlForm(IEspContext &context, const char *path,
 {
     formStr.append
     (
-        
+
         "<br>SSN:<br>"
         "<input type=\"text\" name=\"SSN\">"
         "<br>First Name:<br>"
@@ -150,7 +150,7 @@ int CEspScrubbedXmlService::onSimpleDataRequest(IEspContext &context, IEspSimple
 
     resp.setMessageXML(xmlreq);
     resp.setResultsXML("<Dataset><Row><Apples>111</Apples><Oranges>333</Oranges></Row><Row><Apples>1</Apples><Oranges>12222</Oranges></Row></Dataset>");
-    
+
     return 0;
 }
 
@@ -163,7 +163,7 @@ int CEspScrubbedXmlService::onSimpleDataByRefRequest(IEspContext &context, IEspS
 
     resp.setResultsPath("wuid-10101010");
     resp.setMessageXML(xmlreq);
-    
+
     return 0;
 }
 

@@ -29,8 +29,8 @@
 #include "dacaplib.hpp"
 #include "dasess.hpp"
 
-#define SC_MAC_SZ    6 
-#define SC_CPUSN_SZ  8 
+#define SC_MAC_SZ    6
+#define SC_CPUSN_SZ  8
 #define SC_SYSTEM_SZ 8 // first bytes of given system string
 #define SC_USAGE_SZ  2
 
@@ -185,7 +185,7 @@ public:
             cap.setCpuSN(cpusn);
         byte mac[SC_MAC_SZ];
         if (macstr&&decodeMAC(macstr,mac))
-            cap.setMAC(mac); 
+            cap.setMAC(mac);
         cap.setRole(role);
         addcap(role==DCR_DaliServer?"srv":"add",cap);
     }
@@ -197,7 +197,7 @@ public:
             cap.setCpuSN(cpusn);
         byte mac[SC_MAC_SZ];
         if (macstr&&decodeMAC(macstr,mac))
-            cap.setMAC(mac); 
+            cap.setMAC(mac);
         cap.setRole(role);
         addcap("del",cap);
     }
@@ -212,9 +212,9 @@ public:
     void save(StringBuffer &text)
     {
         root->setProp("@system",sysid.get());
-        crc = crc32((const char *)sysid.get(),sysid.length(),crc);  
+        crc = crc32((const char *)sysid.get(),sysid.length(),crc);
         root->setPropInt64("@update",crc^CRCMASK);
-        toXML(root, text);      
+        toXML(root, text);
     }
     void reset()
     {
@@ -258,7 +258,7 @@ unsigned importDaliCapabilityXML_basic(const char *filename)
         crc = crc32((const char *)sc.queryKey(),FIXED_KEY_SIZE,crc);
     }
     const char *sysid=root->queryProp("@system");
-    crc = crc32(sysid,strlen(sysid),crc);   
+    crc = crc32(sysid,strlen(sysid),crc);
     if (root->getPropInt64("@update")!=(crc^CRCMASK))
         return 71;
     Owned<IPropertyTree>conf;
@@ -270,7 +270,7 @@ unsigned importDaliCapabilityXML_basic(const char *filename)
         e->Release();
         return 72;
     }
-    const char *sysidold = conf->queryProp(DASYSTEM_XPATH); 
+    const char *sysidold = conf->queryProp(DASYSTEM_XPATH);
     bool modified = false;
     if (!sysidold||!*sysidold) {
         conf->setProp(DASYSTEM_XPATH,sysid);

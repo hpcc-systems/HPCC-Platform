@@ -49,7 +49,7 @@ class CCatchSlaveActivity : public CCatchSlaveActivityBase, public CThorSteppabl
     typedef CCatchSlaveActivityBase PARENT;
 
 public:
-    CCatchSlaveActivity(CGraphElementBase *container) 
+    CCatchSlaveActivity(CGraphElementBase *container)
         : CCatchSlaveActivityBase(container), CThorSteppable(this)
     {
     }
@@ -120,12 +120,12 @@ public:
         }
         return NULL;
     }
-    bool gatherConjunctions(ISteppedConjunctionCollector &collector) 
-    { 
-        return input->gatherConjunctions(collector); 
+    bool gatherConjunctions(ISteppedConjunctionCollector &collector)
+    {
+        return input->gatherConjunctions(collector);
     }
-    virtual void resetEOF() 
-    { 
+    virtual void resetEOF()
+    {
         inputStream->resetEOF();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
@@ -246,7 +246,7 @@ public:
                         return NULL;
                     dataLinkIncrement();
                     return row.finalizeRowClear(sz);
-                }               
+                }
                 return NULL;
             }
         }

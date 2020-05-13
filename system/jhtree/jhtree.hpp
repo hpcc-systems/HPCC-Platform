@@ -296,10 +296,10 @@ class KLBlobProviderAdapter : implements IBlobProvider
     IKeyManager *klManager;
 public:
     KLBlobProviderAdapter(IKeyManager *_klManager) : klManager(_klManager) {};
-    ~KLBlobProviderAdapter() 
+    ~KLBlobProviderAdapter()
     {
         if (klManager)
-            klManager->releaseBlobs(); 
+            klManager->releaseBlobs();
     }
     virtual const byte * lookupBlob(unsigned __int64 id) { size32_t dummy; return klManager->loadBlob(id, dummy); }
 };

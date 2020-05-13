@@ -26,7 +26,7 @@ public:
     Cws_configBindingEx(http_soap_log_level level=hsl_none) : Cws_configSoapBinding(level)
     {
     }
-    
+
     Cws_configBindingEx(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level=hsl_none) : Cws_configSoapBinding(cfg, bindname, procname, level)
     {
     }
@@ -34,7 +34,7 @@ public:
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {
         width=200;
-        resizable=true; 
+        resizable=true;
         scroll=true;
     }
 

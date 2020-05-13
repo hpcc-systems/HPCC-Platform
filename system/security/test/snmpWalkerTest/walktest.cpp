@@ -47,6 +47,6 @@ int main (int argc, char** argv)
    ISnmpWalker* pSnmpWalker = createWalker(ip, &callback, "1.3.6.1.4.1.12723.6.16.1.4.1.2", "M0n1T0r");
     printf ("Walk returned %d objects\n\n", pSnmpWalker->walk());
    pSnmpWalker->Release();
-   
+
     return (0);
 }

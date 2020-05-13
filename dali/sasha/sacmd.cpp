@@ -169,7 +169,7 @@ public:
         unsigned n = ids.ordinality();
         mb.append(n);
         unsigned i;
-        for (i=0;i<n;i++) 
+        for (i=0;i<n;i++)
             mb.append(ids.item(i).text);
         mb.append(after);
         mb.append(before);
@@ -186,11 +186,11 @@ public:
         mb.append(resultoverflow);
         n = results.ordinality();
         mb.append(n);
-        for (i=0;i<n;i++) 
+        for (i=0;i<n;i++)
             mb.append(results.item(i).text);
         bool isxslt = xslt&&xslt.length();
         mb.append(isxslt);
-        if (isxslt) 
+        if (isxslt)
             mb.append(xslt);
         mb.append(wuservices);
         if (wuservices) {
@@ -201,7 +201,7 @@ public:
             mb.append(eclcontains);
         }
         mb.append(numdts);
-        for (i=0;i<numdts;i++) 
+        for (i=0;i<numdts;i++)
             dts[i].serialize(mb);
 
         mb.append(sortDescending);
@@ -231,12 +231,12 @@ public:
         ids.kill();
     }
 
-    unsigned numIds() 
-    { 
-        return ids.ordinality(); 
+    unsigned numIds()
+    {
+        return ids.ordinality();
     }
 
-    
+
     bool getId(unsigned i, StringBuffer &id)
     {
         if (i>=numIds())
@@ -363,13 +363,13 @@ public:
     {
         cluster.set(val);
     }
-    
+
     bool getWUSmode()
     {
         return wuservices;
     }
 
-    void setWUSmode(bool val) 
+    void setWUSmode(bool val)
     {
         wuservices = val;
     }
@@ -510,7 +510,7 @@ public:
             }
 #endif
         }
-        if (resultsize&&(resultsize+reslen>MAX_RESULT_SIZE)) 
+        if (resultsize&&(resultsize+reslen>MAX_RESULT_SIZE))
             resultoverflow = true;
         else {
             results.append(*new StringAttrItem(res,reslen));
@@ -527,11 +527,11 @@ public:
         wusbuf.clear();
     }
 
-    unsigned numResults() 
-    { 
-        return results.ordinality(); 
+    unsigned numResults()
+    {
+        return results.ordinality();
     }
-    
+
     bool getResult(unsigned i, StringBuffer &res)
     {
         if (i>=numResults())
@@ -555,7 +555,7 @@ public:
         xslt.set(_xslt);
 #endif
     }
-    
+
     bool getXslt(StringBuffer &_xslt)
     {
         if (!xslt)
@@ -622,7 +622,7 @@ public:
                         }
                     }
                     return true;
-                }   
+                }
                 else
                     break;
             }
@@ -639,7 +639,7 @@ public:
                 EXCLOG(e,"CSashaCommand disconnect");
                 ::Release(e);
             }
-        }; 
+        };
         return false;
     }
 
@@ -648,7 +648,7 @@ public:
         msgbuf.clear();
         if (queryWorldCommunicator().recv(msgbuf,NULL,MPTAG_SASHA_REQUEST,NULL,timeout?timeout:(5*60*1000))&&msgbuf.length()) {
             deserialize(msgbuf);
-            msgbuf.clear();     
+            msgbuf.clear();
             return true;
         }
         return false;
@@ -693,7 +693,7 @@ public:
     byte getWUSresult(MemoryBuffer &mb)
     {
         byte ret = 0;
-        wusbuf.swapWith(mb);    
+        wusbuf.swapWith(mb);
         if (mb.length()==1) {
             mb.read(ret);
             mb.clear();
@@ -719,15 +719,15 @@ ISashaCommand *createSashaCommand()
 
 #if 0
 
-void sashaExample(INode *sashaserver) 
+void sashaExample(INode *sashaserver)
 {
     Owned<ISashaCommand> cmd = createSashaCommand();        // create command
     cmd->setAction(SCA_GET);                                // get WU info
     cmd->setOnline(true);                                       // include online WUs
     cmd->setArchived(true);                                     // include archived WUs
-    cmd->setAfter("200401010000");      
+    cmd->setAfter("200401010000");
     cmd->setBefore("200402010000");                         // jan 2004
-    cmd->setOwner("nigel");         
+    cmd->setOwner("nigel");
     cmd->setState("failed");
     cmd->setXslt(XSLTTEXT);
     if (cmd->send(sashaserver)) {

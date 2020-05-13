@@ -25,7 +25,7 @@ class CApplySlaveActivity : public ProcessSlaveActivity
 public:
     CApplySlaveActivity(CGraphElementBase *_container)
         : ProcessSlaveActivity(_container)
-    { 
+    {
         helper = static_cast <IHThorApplyArg *> (queryHelper());
         setRequireInitData(false);
     }

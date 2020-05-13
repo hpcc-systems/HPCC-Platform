@@ -35,7 +35,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     AciProcessor(IPropertyTree* cfg);
-    
+
     virtual void setLdapClient(ILdapClient* client)
     {
         m_ldap_client = client;
@@ -77,7 +77,7 @@ public:
     {
         m_servertype = OPEN_LDAP;
     }
-    
+
     virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);

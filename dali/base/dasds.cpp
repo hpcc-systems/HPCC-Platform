@@ -110,7 +110,7 @@ enum notifications { notify_delete=1 };
 static const char *notificationStr(notifications n)
 {
     switch (n)
-    { 
+    {
         case notify_delete: return "Notify Delete";
         default: return "UNKNOWN NOTIFY TYPE";
     }
@@ -329,7 +329,7 @@ public:
     ~CFitArray()  { free(ptrs); }
     void reset()
     {
-        if (ptrs) 
+        if (ptrs)
             free(ptrs);
         size = 0;
         ptrs = NULL;
@@ -448,7 +448,7 @@ class CSDSTransactionServer : public Thread, public CTransactionLogTracker
 {
 public:
     CSDSTransactionServer(CCovenSDSManager &_manager);
-    
+
     void stop();
     void processMessage(CMessageBuffer &mb);
     const bool &queryStopped() const { return stopped; }
@@ -538,12 +538,12 @@ public:
         subsid = 0;
         established = false;
     }
-    
+
     ~CServerConnection();
 
     void initPTreePath(PTree &root, PTree &tail)
     {
-        if (&root != &tail) 
+        if (&root != &tail)
         {
             StringBuffer head;
             const char *_tail = splitXPath(xpath, head);
@@ -607,7 +607,7 @@ public:
     void unsubscribeSession()
     {
         if (subsid) {
-            querySessionManager().unsubscribeSession(subsid);   
+            querySessionManager().unsubscribeSession(subsid);
             subsid = 0;
         }
     }
@@ -1398,7 +1398,7 @@ public:
         {
             StringBuffer fname(name);
             backupHandler.removeExt(fname.append(queryExt()).str());
-        }       
+        }
     }
 };
 
@@ -1423,7 +1423,7 @@ public:
         {
             StringBuffer s("Missing external file ");
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str()); 
+            LOG(MCoperatorWarning, unknownJob, e, s.str());
             StringBuffer str("EXTERNAL BINARY FILE: \"");
             str.append(filename.str()).append("\" MISSING");
             CPTValue v(str.length()+1, str.str(), false);
@@ -1459,7 +1459,7 @@ public:
             if (*_name)
                 s.append("in property ").append(_name);
             Owned<IException> e = MakeSDSException(SDSExcpt_MissingExternalFile, "%s", filename.str());
-            LOG(MCoperatorWarning, unknownJob, e, s.str()); 
+            LOG(MCoperatorWarning, unknownJob, e, s.str());
             if (withValue)
             {
                 StringBuffer str("EXTERNAL BINARY FILE: \"");
@@ -1602,7 +1602,7 @@ public:
         {
             StringBuffer fname(name);
             backupHandler.addExt(fname.append(queryExt()).str(), length, out.detach());
-        }       
+        }
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
@@ -1690,7 +1690,7 @@ public:
             toXML(&tree, str);
             unsigned l = str.length();
             backupHandler.addExt(fname.append(queryExt()).str(), l, str.detach());
-        }       
+        }
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
@@ -2418,7 +2418,7 @@ class CServerRemoteTree : public CRemoteTreeBase
             const void *fp = getFindParam(tree);
             IPropertyTree *et = (IPropertyTree *)SuperHashTable::find(vs, fp);
             if (et)
-                removeExact(et);        
+                removeExact(et);
             return ChildMap::set(key, tree);
         }
     };
@@ -2449,8 +2449,8 @@ public:
     {
         CServerRemoteTree_Allocator->dealloc(p);
     }
-#endif  
-    
+#endif
+
     CServerRemoteTree(MemoryBuffer &mb) : CRemoteTreeBase(mb) { init(); }
     CServerRemoteTree(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL)
         : CRemoteTreeBase(name, value, children) { init(); }
@@ -2613,7 +2613,7 @@ public:
 
     virtual void removingElement(IPropertyTree *tree, unsigned pos) override
     {
-        COrphanHandler::setOrphans(*(CServerRemoteTree *)tree, true);       
+        COrphanHandler::setOrphans(*(CServerRemoteTree *)tree, true);
         CRemoteTreeBase::removingElement(tree, pos);
     }
 
@@ -3211,7 +3211,7 @@ class CLock : implements IInterface, public CInterface
     __int64 treeId;
     bool exclusive;
     Linked<CServerRemoteTree> parent, child;
-    
+
 #ifdef _DEBUG
     DebugInfo debugInfo;
 #endif
@@ -3224,7 +3224,7 @@ class CLock : implements IInterface, public CInterface
         {
             IArrayOf<IMapping> entries;
             {
-                CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);    
+                CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
                 HashIterator iter(connectionInfo);
                 ForEach (iter)
                     entries.append(*LINK(&iter.query()));
@@ -3232,7 +3232,7 @@ class CLock : implements IInterface, public CInterface
             ForEachItemIn(e, entries)
             {
                 IMapping &imap = entries.item(e);
-                LockData *lD = connectionInfo.mapToValue(&imap);            
+                LockData *lD = connectionInfo.mapToValue(&imap);
                 Owned<INode> node = querySessionManager().getProcessSessionNode(lD->sessId);
                 if (node)
                 {
@@ -4136,7 +4136,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 unsigned startPos = mb.getPos();
                 mb.read(id);
                 mb.read(timeout);
-                
+
                 Owned<IMultipleConnector> mConnect = deserializeIMultipleConnector(mb);
                 mb.clear();
 
@@ -4358,7 +4358,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                     transactionLog.log("disconnect=%s, data=%s, deleteRoot=%s", disconnect?"true":"false", data?"true":"false", deleteRoot?"true":"false");
                 }
                 Owned<CLCLockBlock> lockBlock;
-                { 
+                {
                     CheckTime block1("DAMP_SDSCMD_DATA.1");
                     if (data || deleteRoot)
                         lockBlock.setown(new CLCLockBlock(manager.dataRWLock, false, readWriteTimeout, __FILE__, __LINE__));
@@ -4473,7 +4473,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 StringAttr matchXPath, sortBy;
                 bool caseinsensitive, ascending;
                 unsigned from, limit;
-                
+
                 mb.read(xpath);
                 mb.read(matchXPath);
                 mb.read(sortBy);
@@ -4554,8 +4554,8 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 throwUnexpected();
         }
     }
-    catch (IException *e)                                       
-    {                                                           
+    catch (IException *e)
+    {
         mb.clear();
         mb.append((int) DAMP_SDSREPLY_ERROR);
         StringBuffer s;
@@ -4572,9 +4572,9 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.append(e->errorCode());
         mb.append(e->errorMessage(s.clear()));
         StringBuffer clientUrl("EXCEPTION in reply to client ");
-        mb.getSender().getUrlStr(clientUrl);                    
-        EXCLOG(e, clientUrl.str(), MSGCLS_warning);             
-        e->Release();                                           
+        mb.getSender().getUrlStr(clientUrl);
+        EXCLOG(e, clientUrl.str(), MSGCLS_warning);
+        e->Release();
     }
     catch (DALI_CATCHALL)
     {
@@ -4588,9 +4588,9 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         mb.getSender().getUrlStr(clientUrl);
         LOG(MCoperatorError, unknownJob, e);
     }
-    try { 
+    try {
         CheckTime block10("DAMP_REQUEST reply");
-        coven.reply(mb); 
+        coven.reply(mb);
     }
     catch (IMP_Exception *e)
     {
@@ -4897,7 +4897,7 @@ public:
         unsigned t = 0;
         lastSaveWriteTransactions = SDSManager->writeTransactions;
         lastWarning = 0;
-    
+
         unsigned lastEdition = iStoreHelper->queryCurrentEdition();
         while (!stopped)
         {
@@ -5062,7 +5062,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
             ForEach (*dIter)
             {
                 for (;;)
-                {   
+                {
                     try { dIter->query().remove(); break; }
                     catch (IException *e)
                     {
@@ -5082,7 +5082,7 @@ class CStoreHelper : implements IStoreHelper, public CInterface
                 path.append(storeInfo->cache);
                 OwnedIFile iFile = createIFile(path.str());
                 for (;;)
-                {   
+                {
                     try { iFile->remove(); break; }
                     catch (IException *e)
                     {
@@ -6168,7 +6168,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
                             if (missN > refN)
                                 break;
                             ++missP;
-                        }   
+                        }
                         // i.e. found in backup, but was listed missing in primary
                         if (found)
                         {
@@ -6579,7 +6579,7 @@ CSubscriberContainerList *CCovenSDSManager::getSubscribers(const char *xpath, CP
 }
 
 inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
-{       
+{
     if (src.getPropInt64(EXT_ATTR))
     {
         MemoryBuffer mb;
@@ -7111,7 +7111,7 @@ void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuff
 
 IPropertyTreeIterator *CCovenSDSManager::getElementsRaw(const char *xpath,INode *remotedali, unsigned timeout)
 {
-    assertex(!remotedali); // only client side 
+    assertex(!remotedali); // only client side
     CHECKEDDALIREADLOCKBLOCK(dataRWLock, readWriteTimeout);
     return root->getElements(xpath);
 }
@@ -7142,7 +7142,7 @@ void CCovenSDSManager::start()
     if (coalesce) coalesce->start();
 }
 
-void CCovenSDSManager::stop() 
+void CCovenSDSManager::stop()
 {
     server.stop();
     PROGLOG("waiting for coalescer to stop");
@@ -7192,7 +7192,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
         {
             try
             {
-                parent = createPropBranch(root, head.str(), true, &created, &createdParent); 
+                parent = createPropBranch(root, head.str(), true, &created, &createdParent);
                 if (created)
                     newNode = true;
             }
@@ -7209,7 +7209,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
             {
                 Owned<IPropertyTreeIterator> iter = parent->getElements(prop);
                 if (iter->first())
-                {           
+                {
                     uProp.append(prop).append('-');
                     unsigned l = uProp.length();
                     unsigned n=1;
@@ -7284,7 +7284,7 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
     ConnectionId connectionId = _connectionId;
     if (!connectionId)
         connectionId = coven.getUniqueId();
-    
+
     CServerConnection *connection = new CServerConnection(*this, connectionId, _xpath, sessionId, mode, timeout, parent, connInfoFlags);
     Owned<LinkingCriticalBlock> b;
     if (!RTM_MODE(mode, RTM_INTERNAL))
@@ -7332,8 +7332,8 @@ CServerConnection *CCovenSDSManager::createConnectionInstance(CRemoteTreeBase *r
             CBranchChange *topChange = branchChange;
             // iterate remaining stack, iterate marking as 'new'
             for (;s<connection->queryPTreePath().ordinality();s++)
-            {   
-                
+            {
+
                 IPropertyTree &tree = connection->queryPTreePath().item(s);
                 IPropertyTree *n = tail->addPropTree(RESERVED_CHANGE_NODE, createPTree());
                 n->setProp("@name", tree.queryName());
@@ -7483,7 +7483,7 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *xpath, Connecti
     __int64 treeId = tree.queryServerId();
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
     lock = lockTable.find(&treeId);
-    
+
     if (!lock)
     {
         IdPath idPath;
@@ -7721,7 +7721,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             stack.popn(additions);
             connection->notify();
             SDSManager->startNotification(*deltaChange, stack, *branchChange);
-            
+
             saveDelta(deltaPath, *deltaChange);
         }
 
@@ -7731,7 +7731,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             locked = true;
             freeExistingLocks.remove(*(CServerRemoteTree *)_tree);
             connectCritBlock.clear();
-        }               
+        }
 
         { CHECKEDCRITICALBLOCK(cTableCrit, fakeCritTimeout);
             connections.replace(*LINK(connection));
@@ -8297,7 +8297,7 @@ public:
                     return subCommitNone;
                 return subCommitBelow; // e.g. change=/a/b/c, subscriber=/a/b
             }
-            else 
+            else
             {
                 if ('\0' == *head)
                     return subCommitAbove; // e.g. change=/a/b, subscriber=/a/b/c - not matched yet, but returning true keeps it from being pruned
@@ -8305,12 +8305,12 @@ public:
         }
     }
 
-    void scan() 
+    void scan()
     {
         xpath.clear();
         stack.toString(xpath);
         if (stack.ordinality() && (rootChanges->tree == &(stack.tos()))) stack.pop();
-        CSubscriberArray pruned; 
+        CSubscriberArray pruned;
         scan(*rootChanges, stack, pruned);
     }
 
@@ -8598,7 +8598,7 @@ void CCovenSDSManager::writeExternal(CServerRemoteTree &tree, bool direct, __int
     tree.removeProp(EXT_ATTR);
     StringBuffer name(EXTERNAL_NAME_PREFIX);
     extHandler->write(name.append(index).str(), tree);
-    tree.setPropInt64(EXT_ATTR, index); 
+    tree.setPropInt64(EXT_ATTR, index);
     extHandler->resetAsExternal(tree);
     // setPropInt64(EXT_ATTR, index); // JCSMORE not necessary
 }
@@ -8622,8 +8622,8 @@ static bool handled = false;
 static CheckedCriticalSection unhandledCrit;
 bool CCovenSDSManager::fireException(IException *e)
 {
-    //This code is rather dodgy (and causes more problems than it solves) 
-    // so ignore unhandled exceptions for the moment! 
+    //This code is rather dodgy (and causes more problems than it solves)
+    // so ignore unhandled exceptions for the moment!
     IERRLOG(e, "Caught unhandled exception!");
     return true;
     { CHECKEDCRITICALBLOCK(unhandledCrit, fakeCritTimeout);

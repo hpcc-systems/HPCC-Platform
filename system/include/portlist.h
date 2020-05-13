@@ -18,14 +18,14 @@
 #ifndef PORTLIST_H
 #define PORTLIST_H
 
-// Main LN HPCC default port list 
+// Main LN HPCC default port list
 // ==============================
 
 #define SNMP_PORT                       161       // standard port for SNMP
 #define SNMP_TRAP_PORT                  162    // standard port for SNMP traps
 
 #define LDAP_PORT                       389
-#define SECURE_LDAP_PORT                636 
+#define SECURE_LDAP_PORT                636
 
 #define PROTOCOLX_DEFAULT_PORT      2001
 
@@ -36,7 +36,7 @@
 #define WATCHDOG_PORT                   5056
 #define MONITOR_PORT                    5057
 #define GEvent_PORT                     5058
-#define HOLE_SOCKET_PORT                5059  
+#define HOLE_SOCKET_PORT                5059
 
 #define FSPLIT_PORT                     5080
 #define BSPAWN_PORT                     5081
@@ -51,7 +51,7 @@
 #define WUJOBQ_BASE_PORT                6700 // ..6999  // overlapped with Thor slaves
 #define WUJOBQ_PORT_NUM                 300
 
-#define DALI_SERVER_PORT                7070 
+#define DALI_SERVER_PORT                7070
 #define DATA_TRANSFER_PORT              7080
 #define DAFILESRV_PORT                  7100 // aka daliservix
 #define MP_START_PORT                   7101 // Default range for MP ports

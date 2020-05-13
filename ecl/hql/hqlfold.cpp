@@ -143,7 +143,7 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
 
     if (uncastValue)
     {
-        //Check whether casting the value to the new type can be represented.  If not then 
+        //Check whether casting the value to the new type can be represented.  If not then
         int rc = castValue->rangeCompare(uncastType);
         if (rc != 0)
         {
@@ -203,14 +203,14 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         return createConstant(true);
     if (createFalseConst)
         return createConstant(false);
-    
+
     if (newNode != no_none)
         return createBoolExpr(newNode, LINK(uncastChild), createConstant(uncastValue.getClear()));
 
     return NULL;
 }
 
-//In castExpr: not linked. Out: linked 
+//In castExpr: not linked. Out: linked
 static IHqlExpression * optimizeCastList(IHqlExpression * castExpr, HqlExprArray & inList, node_operator op)
 {
     assertex(isCast(castExpr));
@@ -336,7 +336,7 @@ static IHqlExpression * optimizeListConstant(node_operator op, IHqlExpression * 
     if ((list->getOperator() != no_list) || !list->isConstant())
         return NULL;
 
-    //I don't really know what this function is trying to do.  I think it is trying to optimize the case where 
+    //I don't really know what this function is trying to do.  I think it is trying to optimize the case where
     //comparing against any of the values in the list will give the same result.
     OwnedIValue nullVal = createNullValue(list->queryType()->queryChildType());
     OwnedIValue result = compareValues(op, nullVal, constVal);
@@ -363,7 +363,7 @@ static bool flattenConstantCase(IHqlExpression * caseExpr, HqlExprArray & consta
         if (!val->queryValue())
             return false;
         constants.append(*LINK(val));
-    }   
+    }
     return true;
 }
 
@@ -426,10 +426,10 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
 
     if ((leftOp == no_all) && rightChild->isConstant())
         return createCompareResult(op, +1);
-    
+
     if ((rightOp == no_all) && leftChild->isConstant())
         return createCompareResult(op, -1);
-    
+
     if (((leftOp == no_sortlist) || (leftOp == no_list)) && ((rightOp == no_sortlist) || (rightOp == no_list)))
         return compareLists(op, leftChild, rightChild);
 
@@ -443,7 +443,7 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
 
     if (op == no_order)
         return NULL;
-    
+
     bool swap = false;
     IHqlExpression * castChild = NULL;
     IHqlExpression * constChild = NULL;
@@ -482,7 +482,7 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
         case no_cast:
         case no_implicitcast:
             castChild = rightChild;
-            constChild = leftChild; 
+            constChild = leftChild;
             break;
         case no_index:
             return optimizeListConstant(getReverseOp(op), rightChild->queryChild(0), leftValue);
@@ -521,7 +521,7 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
         case no_cast:
         case no_implicitcast:
             castChild = leftChild;
-            constChild = rightChild; 
+            constChild = rightChild;
             break;
         case no_index:
             return optimizeListConstant(op, leftChild->queryChild(0), rightValue);
@@ -567,7 +567,7 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
  *       - VARSTRINGN
  *       - REAL
  *       - BOOLEAN
- * NOTE: Tested with the functions in default.StringLib. The 
+ * NOTE: Tested with the functions in default.StringLib. The
  *       functions need to be declared with extern "C".
  *********************************************************/
  //MORE: This function never unloads the plugin dll - this may cause problems in the long run.
@@ -717,10 +717,10 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
     IHqlExpression * funcdef = expr->queryExternalDefinition();
     IHqlExpression *body = funcdef->queryChild(0);
 
-    // create a FuncCallStack to generate a stack used to pass parameters to 
+    // create a FuncCallStack to generate a stack used to pass parameters to
     // the called function
     FuncCallStack fstack(getBoolAttribute(body, passParameterMetaAtom, false), DEFAULTSTACKSIZE);
-    
+
     //if these were allowed to be optional - then the following code would be needed
     if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom))
         fstack.pushPtr(NULL);
@@ -736,7 +736,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
     // Process return value
     ITypeInfo * retType = funcdef->queryType()->queryChildType();
     type_t typecode = retType->getTypeCode();
-    switch (typecode) 
+    switch (typecode)
     {
     case type_varstring:
     case type_varunicode:
@@ -802,7 +802,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
     // process all the parameters passed in
     unsigned numParam = expr->numChildren();
     IHqlExpression * formals = funcdef->queryChild(1);
-    for(unsigned i = 0; i < numParam; i++) 
+    for(unsigned i = 0; i < numParam; i++)
     {
         IHqlExpression * curParam = expr->queryChild(i);            //NB: Already folded...
         IHqlExpression * curArg = formals->queryChild(i);
@@ -856,9 +856,9 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
 #endif
 
     try{
-    // Assembly code that does the dynamic function call. The calling convention is a combination of 
+    // Assembly code that does the dynamic function call. The calling convention is a combination of
     // Pascal and C, that is the parameters are pushed from left to right, the stack goes downward(i.e.,
-    // the stack pointer decreases as you push), and the caller is responsible for restoring the 
+    // the stack pointer decreases as you push), and the caller is responsible for restoring the
     // stack pointer.
 
 // **** Windows ****
@@ -912,7 +912,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
         jmp    finish
     isdouble:
         fstp   QWORD PTR doubleresult
-    finish: 
+    finish:
         ;restore registers that were saved
         pop    ebx
         pop    edx
@@ -931,7 +931,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
 
         __int64 dummy1, dummy3,dummy4;
 
-        void * floatstack = fstack.getFloatMem(); 
+        void * floatstack = fstack.getFloatMem();
         if (floatstack) { // sets xmm0-7
             unsigned * floatSizes = fstack.getFloatSizes();
             __asm__ (
@@ -1008,11 +1008,11 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
                 "movss  56(%%rsi),%%xmm7 \n\t"
 
             ".floatdone: \n\t"
-            : 
+            :
             : "S"(floatstack),"D"(floatSizes)
             : "cc","xmm0","xmm1","xmm2","xmm3","xmm4","xmm5","xmm6","xmm7"
             );
-        }           
+        }
         __asm__ (
             "sub   %%rcx, %%rsp \n\t"
             "mov   %%rsp, %%rdi \n\t"
@@ -1031,7 +1031,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
             : "c"(len),"b"(len-REGPARAMS*REGSIZE),"S"(strbuf),"a"(fh)
             : "cc","r8","r9","xmm0"
             );
-        
+
         // Get real (float/double) return values;
         if(isRealvalue)
         {
@@ -1277,7 +1277,7 @@ IValue * doFoldExternalCall(IHqlExpression* expr, unsigned foldOptions, const ch
 #endif
             tlen = retUCharStar ? rtlUnicodeStrlen((UChar *)tgt) : (size32_t)strlen(tgt);
         }
-        
+
         Linked<ITypeInfo> resultType = retType;
         if (resultType->getSize() == UNKNOWN_LENGTH)
             resultType.setown(getStretchedType(tlen, resultType));
@@ -2012,7 +2012,7 @@ IHqlExpression * foldOrExpr(IHqlExpression * expr, bool fold_x_op_not_x)
             {
                 if (fold_x_op_not_x)
                 {
-                    //Check for x OR NOT x  => always true...  
+                    //Check for x OR NOT x  => always true...
                     //Needs to be done this way because the no_not often gets folded...
                     OwnedHqlExpr inverse = createValue(no_not, makeBoolType(), LINK(transformed));
                     if (transformedArgs.contains(*inverse))
@@ -2083,7 +2083,7 @@ IHqlExpression * foldOrExpr(IHqlExpression * expr, bool fold_x_op_not_x)
     }
 
 #if 0
-    else 
+    else
     {
         // optimize (( BOOL)(a BAND b) ) OR ((bool)(a BAND c) ) to ((bool)(a BAND (b BOR c)) )
         // Lots of work for a very particular special case that happens a lot in DMS
@@ -2194,9 +2194,9 @@ IHqlExpression * applyBinaryFold(IHqlExpression * expr, binaryFoldFunc folder)
     IHqlExpression * leftChild = expr->queryChild(0);
     IHqlExpression * rightChild = expr->queryChild(1);
 
-    IValue * leftValue = leftChild->queryValue(); 
+    IValue * leftValue = leftChild->queryValue();
     IValue * rightValue = rightChild->queryValue();
-    if (leftValue && rightValue) 
+    if (leftValue && rightValue)
     {
         IValue * res = folder(leftValue, rightValue);
         assertex(res);
@@ -2802,7 +2802,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 
                 if ((int) width < 0)
                     width = 0;
-                
+
                 MemoryAttr tempBuffer(width);
                 holeIntFormat(width, (char *)tempBuffer.bufferBase(), value, width, flags);
                 return createConstant(createStringValue((char *)tempBuffer.bufferBase(), width));
@@ -3188,8 +3188,8 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_eq:
     case no_ne:
     case no_lt:
-    case no_le: 
-    case no_gt: 
+    case no_le:
+    case no_gt:
     case no_ge:
     case no_order:
         {
@@ -3249,10 +3249,10 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 {
                     //MORE: Not sure if this is a good idea because it loses commonality between attributes.
                     // (T1)((T2)(X:T3))
-                    // Can remove the cast to T2 if T3->T2 doesn't lose any information, 
+                    // Can remove the cast to T2 if T3->T2 doesn't lose any information,
                     // and if the conversion from T2->T1 produces same results as converting T3->T1
                     // (For the moment only assume this is true if target is numeric)
-                    // could possibly remove if T3-T2 and T2->T1 lose information, but they might 
+                    // could possibly remove if T3-T2 and T2->T1 lose information, but they might
                     // lose different information
                     IHqlExpression * grand = child->queryChild(0);
                     ITypeInfo * g_type = grand->queryType();
@@ -3266,7 +3266,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                             sameResults = true;
                         else if (isStringOrUnicode(e_type) && isStringOrUnicode(c_type) && isStringOrUnicode(g_type))
                             sameResults = true;
-                        
+
                         // Don't allow casts involving data and non-ascii datasets because it can cause ascii conversions to get lost
                         if (castHidesConversion(e_type, c_type, g_type) ||
                             castHidesConversion(c_type, e_type, g_type) ||
@@ -3460,7 +3460,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 HqlExprArray caseResults1;
                 HqlExprArray caseInput2;
                 HqlExprArray newCaseMaps;
-                if (flattenConstantCase(leftExpr, caseResults1, true) && 
+                if (flattenConstantCase(leftExpr, caseResults1, true) &&
                     flattenConstantCase(expr, caseInput2, false))
                 {
                     IHqlExpression * defCase2 = leftExpr->queryChild(leftExpr->numChildren()-1);
@@ -3563,8 +3563,8 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_map:
         {
             assertex(expr->numChildren()>=1);
-            unsigned num = expr->numChildren()-1; 
-            
+            unsigned num = expr->numChildren()-1;
+
             LinkedHqlExpr defaultResult = expr->queryChild(num);
             HqlExprArray args;
             bool allAreIn = true;
@@ -3779,9 +3779,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_externalcall:
-        {   //external function folding. 
+        {   //external function folding.
             IValue * result = foldExternalCall(expr, foldOptions);
-            if (result) 
+            if (result)
                 return createConstant(result);
             break;
         }
@@ -3827,10 +3827,10 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 
             IValue * constValue = child->queryValue();
             IValue* resultstr = NULL;
-            if (constValue) 
+            if (constValue)
                 resultstr = trimStringValue(constValue, typecode, expr->hasAttribute(whitespaceAtom));
 
-            if (resultstr) 
+            if (resultstr)
                 return createConstant(resultstr);
 
             //extending a string won't change the value of trim(x), unless not trimming the rhs
@@ -4067,7 +4067,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                             return createNullExpr(expr);
                         return createConstant(LINK(best));
                     }
-                    
+
                     if (values.ordinality() == 1)
                         return expr->cloneAllAnnotations(&values.item(0));
 
@@ -4136,7 +4136,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         break;
     case no_createset:
         {
-            //If constant folding has caused the argument to be a constant then can convert this to a simple list 
+            //If constant folding has caused the argument to be a constant then can convert this to a simple list
             IHqlExpression * ds = expr->queryChild(0);
             IHqlExpression * value = expr->queryChild(1);
             if (value->isConstant() && hasSingleRow(ds))
@@ -4149,9 +4149,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * dataChild = expr->queryChild(0);
             IHqlExpression * codepageChild = expr->queryChild(1);
-            IValue * dataValue = dataChild->queryValue(); 
+            IValue * dataValue = dataChild->queryValue();
             IValue * codepageValue = codepageChild->queryValue();
-            if(dataValue && codepageValue) 
+            if(dataValue && codepageValue)
             {
                 unsigned unicodeLength;
                 UChar * unicode;
@@ -4168,9 +4168,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * unicodeChild = expr->queryChild(0);
             IHqlExpression * codepageChild = expr->queryChild(1);
-            IValue * unicodeValue = unicodeChild->queryValue(); 
+            IValue * unicodeValue = unicodeChild->queryValue();
             IValue * codepageValue = codepageChild->queryValue();
-            if(unicodeValue && codepageValue) 
+            if(unicodeValue && codepageValue)
             {
                 unsigned dataLength;
                 char * data;
@@ -4223,7 +4223,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 e->Release();
                 return LINK(expr->queryChild(1));
             }
-        }   
+        }
         //maybe we should stop folding of the children.
         break;
     case no_section:
@@ -4300,8 +4300,8 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 
 //---------------------------------------------------------------------------
 
-bool isNullRowDs(IHqlExpression * expr)     
-{ 
+bool isNullRowDs(IHqlExpression * expr)
+{
     return ((expr->getOperator() == no_datasetfromrow) && isNull(expr->queryChild(0)));
 }
 
@@ -4857,7 +4857,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 //      if (isNull(child) || isZero(expr->queryChild(1)))
         if (isNull(child))
             return replaceWithNullRow(child);
-        break;  
+        break;
     case no_select:
         if (isNull(child) && expr->hasAttribute(newAtom))
             return replaceWithNull(expr);
@@ -5125,8 +5125,8 @@ bool exprsReferencesDataset(const HqlExprArray & source, IHqlExpression * exprSe
 class HqlConstantPercolator : public CInterface
 {
 public:
-    HqlConstantPercolator(IHqlExpression *ds = NULL) 
-    { 
+    HqlConstantPercolator(IHqlExpression *ds = NULL)
+    {
         if (ds)
             self.setown(getSelf(ds));
     }
@@ -5368,7 +5368,7 @@ void HqlConstantPercolator::initTransformer(IHqlExpression * selector, ConstantR
 }
 
 IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfolded, IHqlExpression * original)
-{   
+{
     IHqlExpression * nullFolded = foldNullDataset(unfolded);
     if (nullFolded)
         return nullFolded;
@@ -5482,7 +5482,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                         NewProjectMapper2 mapper;
                         mapper.setMapping(queryNewColumnProvider(child));
 
-                        //Iterate all but last 
+                        //Iterate all but last
                         for (unsigned i = args.ordinality(); --i != 0; )
                         {
                             IHqlExpression * cur = &args.item(i);
@@ -5677,7 +5677,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
 #if 0
     //Following are not enabled because they have a strange side-effect of stopping the dataset being hoisted
     //since an inline dataset (which is hoisted) is converted to a no_list, which isn't.
-    //If the key segment monitors for IN were improved then it may be worth 
+    //If the key segment monitors for IN were improved then it may be worth
     case no_createset:
         {
             IHqlExpression * child = expr->queryChild(0);
@@ -5727,7 +5727,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
 #endif
     case no_select:
         {
-            //Don't fold dataset references that are in scope, 
+            //Don't fold dataset references that are in scope,
             //otherwise the dataset will fail to match...
             if (expr->hasAttribute(newAtom))
             {
@@ -5816,7 +5816,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
         no_joined,
 */
     case no_usertable:
-        //These should have been removed by the time we get called, but can very occasionally occur 
+        //These should have been removed by the time we get called, but can very occasionally occur
         //if it is called in the parser (e.g., when folding a filename)
         break;
     case no_selectfields:
@@ -5902,7 +5902,7 @@ CExprFolderTransformer::CExprFolderTransformer(IErrorReceiver & _errorProcessor,
 
 
 IHqlExpression * CExprFolderTransformer::createTransformedAnnotation(IHqlExpression * expr)
-{   
+{
     return CExprFolderTransformer::createTransformed(expr);
 }
 
@@ -6044,7 +6044,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             updated.setown(percolateConstants(updated, child, no_right));
 
             //If any assignments of the form
-            //self.x := left.x then the constant can be percolated from the input, but 
+            //self.x := left.x then the constant can be percolated from the input, but
             //self.x := left.x + 1 would cause invalid results.
             //updated.setown(percolateRollupInvariantConstants(updated, child, no_left));
 
@@ -6106,7 +6106,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     break;
                 }
             case no_selfjoin:
-                rhs = child;    
+                rhs = child;
                 // fallthrough
             case no_join:
                 {
@@ -6232,7 +6232,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             childDatasetType type = getChildDatasetType(expr);
             switch (type)
             {
-            case childdataset_none: 
+            case childdataset_none:
             case childdataset_nway_left_right:
             case childdataset_many_noscope:
             case childdataset_many:
@@ -6245,11 +6245,11 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             case childdataset_dataset:
                 updated.setown(percolateConstants(updated, child, no_none));
                 break;
-            case childdataset_datasetleft: 
+            case childdataset_datasetleft:
                 updated.setown(percolateConstants(updated, child, no_none));
                 updated.setown(percolateConstants(updated, child, no_left));
                 break;
-            case childdataset_left: 
+            case childdataset_left:
                 updated.setown(percolateConstants(updated, child, no_left));
                 break;
             case childdataset_same_left_right:
@@ -6261,7 +6261,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                 updated.setown(percolateConstants(updated, child, no_left));
                 updated.setown(percolateConstants(updated, child, no_right));
                 break;
-            case childdataset_leftright: 
+            case childdataset_leftright:
                 updated.setown(percolateConstants(updated, child, no_left));
                 updated.setown(percolateConstants(updated, expr->queryChild(1), no_right));
                 break;
@@ -6275,7 +6275,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
 }
 
 IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr)
-{   
+{
     if (foldOptions & HFOloseannotations)
         expr = expr->queryBody();
 
@@ -6456,8 +6456,8 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
         {
             switch (op)
             {
-            case no_none: 
-            case no_mapto: 
+            case no_none:
+            case no_mapto:
             case no_negate:
             case no_comma:
             case no_assign:
@@ -6618,7 +6618,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         //if (expr->isDatarow())
         //  exprMapping.setown(HqlConstantPercolator::extractNullMapping(expr->queryRecord()));
         break;
-    case no_rollup:     
+    case no_rollup:
         {
             // transform may or may not be called, so can't just extract constants from the transform.
             // can only mark as constant if the inputDataset and the transform both assign them the same constant value
@@ -6890,7 +6890,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         {
             HqlConstantPercolator filterMappings(expr);
             gatherConstantFilterMappings(filterMappings, expr);
-            
+
             HqlConstantPercolator * inheritedMappings = gatherConstants(expr->queryChild(0));
             if (!filterMappings.empty())
             {

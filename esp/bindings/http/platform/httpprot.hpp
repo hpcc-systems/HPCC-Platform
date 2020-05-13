@@ -92,7 +92,7 @@ private:
     bool m_shouldClose = false;
 public:
     CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL, IPersistentHandler* persistentHandler = NULL);
-    
+
     virtual ~CHttpThread();
     virtual bool onRequest();
 
@@ -113,9 +113,9 @@ public:
 
     virtual void Link(void) const
     {
-        CEspProtocol::Link(); 
+        CEspProtocol::Link();
     }
-    
+
     virtual bool Release(void) const
     {
         return CEspProtocol::Release();

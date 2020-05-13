@@ -75,13 +75,13 @@ public:
 
     void onRemove(void *e)
     {
-        MPNode &elem=*(MPNode *)e;      
+        MPNode &elem=*(MPNode *)e;
         elem.Release();
     }
 
     unsigned getHashFromElement(const void *e) const
     {
-        const MPNode &elem=*(const MPNode *)e;      
+        const MPNode &elem=*(const MPNode *)e;
         return elem.ep.hash(0);
     }
 
@@ -92,7 +92,7 @@ public:
 
     const void * getFindParam(const void *p) const
     {
-        const MPNode &elem=*(const MPNode *)p;      
+        const MPNode &elem=*(const MPNode *)p;
         return &elem.ep;
     }
 
@@ -138,7 +138,7 @@ protected: friend class CNodeIterator;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CGroup(rank_t _count,INode **_nodes=NULL) 
+    CGroup(rank_t _count,INode **_nodes=NULL)
     {
         count = _count;
         myrank = RANK_NULL;
@@ -149,7 +149,7 @@ public:
         }
     }
 
-    CGroup(rank_t _count,const SocketEndpoint *ep) 
+    CGroup(rank_t _count,const SocketEndpoint *ep)
     {
         count = _count;
         myrank = RANK_NULL;
@@ -163,7 +163,7 @@ public:
         }
     }
 
-    CGroup(SocketEndpointArray &epa) 
+    CGroup(SocketEndpointArray &epa)
     {
         count = epa.ordinality();
         myrank = RANK_NULL;
@@ -185,7 +185,7 @@ public:
     }
 
     rank_t ordinality()  const { return count; }
-    rank_t rank(const SocketEndpoint &ep) const 
+    rank_t rank(const SocketEndpoint &ep) const
     {
         rank_t i=count;
         while (i) {
@@ -204,7 +204,7 @@ public:
     rank_t rank(INode *node) const  { return node?rank(node->endpoint()):RANK_NULL; }
     rank_t rank()  const { if (myrank==RANK_NULL) myrank = rank(MyNode); return myrank; }
 
-    GroupRelation compare(const IGroup *grp) const 
+    GroupRelation compare(const IGroup *grp) const
     {
         if (grp) {
             rank_t r1=ordinality();
@@ -229,20 +229,20 @@ public:
                         return GRidentical;
                 }
             }
-            else if (r2>r1) {   
-                for (r=0;r<r1;r++) 
+            else if (r2>r1) {
+                for (r=0;r<r1;r++)
                     if (!nodes[r]->equals(&grp->queryNode(r)))
                         break;
                 if (r==r1)
                     return GRbasesubset;
             }
             else {
-                for (r=0;r<r1;r++) 
+                for (r=0;r<r1;r++)
                     if (!nodes[r]->equals(&grp->queryNode(r%r2)))
                         break;
                 if (r==r1)
                     return GRwrappedsuperset;
-            }                   
+            }
             // the following could be improved
             bool *matched2=(bool *)calloc(r2,sizeof(bool));
             bool anymatched = false;
@@ -285,7 +285,7 @@ public:
         return GRdisjoint;
     }
 
-    bool equals(const IGroup *grp) const 
+    bool equals(const IGroup *grp) const
     {
         if (!grp)
             return false;
@@ -298,7 +298,7 @@ public:
         return true;
     }
 
-    void translate(const IGroup *othergroup, rank_t nranks, const rank_t *otherranks, rank_t *resranks ) const 
+    void translate(const IGroup *othergroup, rank_t nranks, const rank_t *otherranks, rank_t *resranks ) const
     {
         while (nranks) {
             *resranks = rank(&othergroup->queryNode(*otherranks));
@@ -308,7 +308,7 @@ public:
         }
     }
 
-    IGroup *subset(rank_t start,rank_t num) const 
+    IGroup *subset(rank_t start,rank_t num) const
     {
         CGroup *newgrp = new CGroup(num);
         while (num) {
@@ -318,7 +318,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *subset(const rank_t *order,rank_t num) const 
+    virtual IGroup *subset(const rank_t *order,rank_t num) const
     {
         CGroup *newgrp = new CGroup(num);
         for( rank_t i=0; i<num; i++ ) {
@@ -328,7 +328,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *combine(const IGroup *grp) const 
+    virtual IGroup *combine(const IGroup *grp) const
     {
         rank_t g2ord = grp->ordinality();
         rank_t j = 0;
@@ -349,14 +349,14 @@ public:
         return newgrp;
     }
 
-    bool isMember(INode *node) const 
+    bool isMember(INode *node) const
     {
         if (!node)
             return false;
         return rank(node->endpoint())!=RANK_NULL;
     }
 
-    bool isMember() const 
+    bool isMember() const
     {
         assertex(MyNode);
         return rank()!=RANK_NULL;
@@ -375,7 +375,7 @@ public:
 
     unsigned distance(const IGroup *grp) const
     {
-        if (!grp) 
+        if (!grp)
             return (unsigned)-1;
         unsigned c2 = grp->ordinality();
         if (c2<count)
@@ -400,7 +400,7 @@ public:
 
 
 
-    IGroup *diff(const IGroup *g) const 
+    IGroup *diff(const IGroup *g) const
     {
         PointerArray toadd;
         ForEachNodeInGroup(i,*this) {
@@ -434,7 +434,7 @@ public:
     }
 
 
-    IGroup *intersect(const IGroup *g) const 
+    IGroup *intersect(const IGroup *g) const
     {
         PointerArray toadd;
         ForEachNodeInGroup(i,*this) {
@@ -451,7 +451,7 @@ public:
         return newgrp;
     }
 
-    IGroup *swap(rank_t r1,rank_t r2) const 
+    IGroup *swap(rank_t r1,rank_t r2) const
     {
         CGroup *newgrp = new CGroup(count);
         rank_t i;
@@ -466,7 +466,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *add(INode *node) const 
+    virtual IGroup *add(INode *node) const
     {
         CGroup *newgrp = new CGroup(count+1);
         rank_t i;
@@ -477,7 +477,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *add(INode *node,unsigned pos) const 
+    virtual IGroup *add(INode *node,unsigned pos) const
     {
         CGroup *newgrp = new CGroup(count+1);
         unsigned j = 0;
@@ -490,7 +490,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *remove(unsigned pos) const 
+    virtual IGroup *remove(unsigned pos) const
     {
         assertex(pos<count);
         CGroup *newgrp = new CGroup(count-1);
@@ -502,7 +502,7 @@ public:
         return newgrp;
     }
 
-    virtual IGroup *rotate(int num) const 
+    virtual IGroup *rotate(int num) const
     {
         CGroup *newgrp = new CGroup(count);
         bool neg = false;
@@ -526,18 +526,18 @@ public:
 
     INodeIterator *getIterator(rank_t start=0,rank_t num=RANK_NULL) const ;
 
-    INode &queryNode(rank_t r) const 
+    INode &queryNode(rank_t r) const
     {
         assertex(r<count);
         return *nodes[r];
     }
-    INode *getNode(rank_t r) const 
+    INode *getNode(rank_t r) const
     {
         assertex(r<count);
         return LINK(nodes[r]);
     }
 
-    StringBuffer &getText(StringBuffer &text) const 
+    StringBuffer &getText(StringBuffer &text) const
     {
         if (!count)
             return text;
@@ -552,7 +552,7 @@ public:
         return epa.getText(text);
     }
 
-    static IGroup *fromText(const char *s,unsigned defport) 
+    static IGroup *fromText(const char *s,unsigned defport)
     {
         SocketEndpointArray epa;
         epa.fromText(s,defport);
@@ -564,19 +564,19 @@ public:
         throw MakeStringException(0, "Invalid group %s (all nodes null)", s);
     }
 
-    void serialize(MemoryBuffer &tgt) const 
+    void serialize(MemoryBuffer &tgt) const
     {
         tgt.append(count);
         for (rank_t i=0; i<count; i++)
             nodes[i]->serialize(tgt);
     }
-    static CGroup *deserialize(MemoryBuffer &src) 
+    static CGroup *deserialize(MemoryBuffer &src)
     {
         CGroup *ret = new CGroup(0);
         src.read(ret->count);
         if (ret->count) {
             ret->nodes = ret->count?(INode **)malloc(ret->count*sizeof(INode *)):NULL;
-            for (rank_t i=0; i<ret->count; i++) 
+            for (rank_t i=0; i<ret->count; i++)
                 ret->nodes[i] = MPNode::deserialize(src);
         }
         return ret;
@@ -584,7 +584,7 @@ public:
 
     void getSocketEndpoints(SocketEndpointArray &sea) const
     {
-        for (rank_t i=0; i<count; i++) 
+        for (rank_t i=0; i<count; i++)
             sea.append((SocketEndpoint &)nodes[i]->endpoint());
     }
 
@@ -690,7 +690,7 @@ IGroup *createIGroup(const char *endpointlist,unsigned short defport)
                 break;
             }
             if (*s==',') {
-                while (isspace(*s)) 
+                while (isspace(*s))
                     s++;
                 if ((*s=='=')||(*s=='*')) {
                     oldform = true;
@@ -776,7 +776,7 @@ void setNodeCaching(bool on)
         if (!NodeCache)
             NodeCache = new MPNodeCache();
     }
-    else { 
+    else {
         MPNodeCache *nc = NodeCache;
         NodeCache = NULL;
         delete nc;

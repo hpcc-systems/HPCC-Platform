@@ -350,7 +350,7 @@ public:
 //---------------------------------------------------------------------------
 
 CActivityBase *createSoapRowCallSlave(CGraphElementBase *container)
-{ 
+{
     return new CWscRowCallSlaveActivity(container);
 }
 

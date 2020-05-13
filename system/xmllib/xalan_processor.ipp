@@ -100,7 +100,7 @@ public:
         return 0;
     }
 
-    InputSource* resolveEntity (const XMLCh* const publicId, 
+    InputSource* resolveEntity (const XMLCh* const publicId,
                                         const XMLCh* const systemId)
     {
         if(m_includehandler.get() == NULL)
@@ -165,7 +165,7 @@ private:
     StringBuffer m_xsltext;
     XalanCompiledStylesheet* m_CompiledStylesheet;
     Owned<MemSourceResolver>  m_sourceResolver;
-    
+
     StringArray m_includes;
     StringAttr m_cacheId;
 
@@ -255,16 +255,16 @@ public:
     virtual void compile()
     {
         if(m_CompiledStylesheet == NULL)
-        {   
+        {
             if((m_sourcetype == IO_TYPE_FILE && m_filename.length() == 0) || (m_sourcetype == IO_TYPE_BUFFER && m_xsltext.length() == 0))
                 throw MakeStringException(-1, "XslSource::getStylesheet() - xsl source not set");
-            
+
             m_includes.popAll();
-            
+
             try
             {
                 if(m_sourcetype == IO_TYPE_FILE)
-                {               
+                {
                     XSLTInputSource xslinput(m_filename.get());
                     m_XalanTransformer.compileStylesheet((const XSLTInputSource&)xslinput, (const XalanCompiledStylesheet*&)m_CompiledStylesheet);
                 }
@@ -272,7 +272,7 @@ public:
                 {
                     std::istringstream theXSLStream(m_xsltext.str());
                     XSLTInputSource xslinput(&theXSLStream);
-                    
+
                     StringBuffer baseurl(URLPREFIX);
                     if (m_rootpath)
                         baseurl.append(m_rootpath.get());
@@ -302,9 +302,9 @@ public:
         }
     }
 
-    bool isCompiled() const 
-    { 
-        return m_CompiledStylesheet != NULL; 
+    bool isCompiled() const
+    {
+        return m_CompiledStylesheet != NULL;
     }
 
     virtual IO_Type getType()
@@ -338,7 +338,7 @@ public:
         {
             m_sourceResolver.setown(new MemSourceResolver(&m_includes));
         }
-        
+
         m_sourceResolver->setHandler(handler);
         m_XalanTransformer.setEntityResolver(m_sourceResolver.get());
 
@@ -368,7 +368,7 @@ typedef void TextFunctionType(StringBuffer& out, const char* pszIn, IXslTransfor
 
 class CExternalFunction : public Function
 {
-public:    
+public:
     CExternalFunction(TextFunctionType* fn, IXslTransform* pTransform)
     {
         m_userFunction = fn;
@@ -447,11 +447,11 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    //Xalan is implemented to take ownership of any assigned external functions 
+    //Xalan is implemented to take ownership of any assigned external functions
     //and destroys them on exit.
     //
     //This constructor takes ownership of the pointer passed in as param
-    //and destroys the object unless it is assigned to an XSL transformation, in 
+    //and destroys the object unless it is assigned to an XSL transformation, in
     //which case, the XSL transformation object destroys this function object.
     //
     CXslFunction(const char* name, Function* pFunction)
@@ -476,9 +476,9 @@ public:
             delete m_pFunction;
     }
 
-    virtual Function* get() const 
-    { 
-        return m_pFunction; 
+    virtual Function* get() const
+    {
+        return m_pFunction;
     }
 
     virtual const char* getName() const
@@ -491,8 +491,8 @@ public:
         return m_bAssigned;
     }
 
-    virtual void setAssigned(bool bAssigned) 
-    { 
+    virtual void setAssigned(bool bAssigned)
+    {
         m_bAssigned = bAssigned;
     }
 };
@@ -569,13 +569,13 @@ public:
     {
         return m_sMessages.str();
     }
-    virtual void setUserData(void* userData) 
-    { 
-        m_pUserData = userData; 
+    virtual void setUserData(void* userData)
+    {
+        m_pUserData = userData;
     }
     virtual void* getUserData() const
-    { 
-        return m_pUserData; 
+    {
+        return m_pUserData;
     }
 };
 

@@ -139,7 +139,7 @@ void XmlDatasetColumnProvider::getDataX(size32_t & len, void * & target, const c
 }
 
 void XmlDatasetColumnProvider::getDataRaw(size32_t len, void * target, const char * name)
-{ 
+{
     const char *hexPairSequence = row->queryProp(name);
     if (!hexPairSequence)
         memset(target, 0, len);
@@ -153,7 +153,7 @@ void XmlDatasetColumnProvider::getDataRaw(size32_t len, void * target, const cha
 }
 
 void XmlDatasetColumnProvider::getDataRawX(size32_t & len, void * & target, const char * name)
-{ 
+{
     const char *hexPairSequence = row->queryProp(name);
     if (!hexPairSequence)
     {
@@ -163,7 +163,7 @@ void XmlDatasetColumnProvider::getDataRawX(size32_t & len, void * & target, cons
     }
     len = (size32_t)strlen(hexPairSequence);
     target = malloc(len);
-    memcpy(target, hexPairSequence, len);   
+    memcpy(target, hexPairSequence, len);
 }
 
 void XmlDatasetColumnProvider::getQString(size32_t len, char * target, const char * name)
@@ -390,7 +390,7 @@ void XmlSetColumnProvider::getDataX(size32_t & len, void * & target, const char 
 }
 
 void XmlSetColumnProvider::getDataRaw(size32_t len, void * target, const char * name)
-{ 
+{
 #ifdef _DEBUG
     assertex(stricmp(name, "value")==0);
 #endif
@@ -407,7 +407,7 @@ void XmlSetColumnProvider::getDataRaw(size32_t len, void * target, const char * 
 }
 
 void XmlSetColumnProvider::getDataRawX(size32_t & len, void * & target, const char * name)
-{ 
+{
 #ifdef _DEBUG
     assertex(stricmp(name, "value")==0);
 #endif
@@ -420,7 +420,7 @@ void XmlSetColumnProvider::getDataRawX(size32_t & len, void * & target, const ch
     }
     len = (size32_t)strlen(hexPairSequence);
     target = malloc(len);
-    memcpy(target, hexPairSequence, len);   
+    memcpy(target, hexPairSequence, len);
 }
 
 void XmlSetColumnProvider::getQString(size32_t len, char * target, const char * name)
@@ -523,12 +523,12 @@ void XmlSetColumnProvider::readDataX(size32_t & len, void * & target, const char
 }
 
 void XmlSetColumnProvider::readDataRaw(size32_t len, void * target, const char * path, size32_t _lenDefault, const void * _default)
-{ 
+{
     rtlDataToData(len, target, _lenDefault, _default);
 }
 
 void XmlSetColumnProvider::readDataRawX(size32_t & len, void * & target, const char * path, size32_t _lenDefault, const void * _default)
-{ 
+{
     rtlDataToData(len, target, _lenDefault, _default);
 }
 
@@ -1306,21 +1306,21 @@ public:
     {
         if (path && '/' == *path && '/' != *(path+1))
             return root->hasProp(path+1);
-        else 
+        else
             return node->hasProp(path);
     }
     inline const char * queryProp(const char * path)
     {
         if (path && '/' == *path && '/' != *(path+1))
             return root->queryProp(path+1);
-        else 
+        else
             return node->queryProp(path);
     }
     inline bool getPropBin(const char * path, MemoryBuffer & mb)
     {
-        if (path && '/' == *path && '/' != *(path+1)) 
+        if (path && '/' == *path && '/' != *(path+1))
             return root->getPropBin(path+1, mb);
-        else 
+        else
             return node->getPropBin(path, mb);
     }
 
@@ -1334,11 +1334,11 @@ public:
         readDataX(len, data, path, 0, NULL);
     }
     void getDataRaw(size32_t len, void * data, const char * path)
-    { 
+    {
         readDataRaw(len, data, path, 0, NULL);
     }
     void getDataRawX(size32_t & len, void * & data, const char * path)
-    { 
+    {
         readDataRawX(len, data, path, 0, NULL);
     }
     bool getBool(const char * path)
@@ -1380,7 +1380,7 @@ public:
     IColumnProviderIterator * getChildIterator(const char * path)
     {
         Owned<IPropertyTreeIterator> iter;
-        if (path && '/' == *path && '/' != *(path+1)) 
+        if (path && '/' == *path && '/' != *(path+1))
             iter.setown(root->getElements(path+1));
         else
             iter.setown(node->getElements(path));
@@ -1402,9 +1402,9 @@ public:
         else
         {
             if (!getPropBin(path, tmpMb.clear()))
-            { 
+            {
                 rtlStrToData(len, data, _lenDefault, _default);
-                return; 
+                return;
             }
             cnv2Latin1(tmpMb.length(), tmpMb.toByteArray(), sharedResult);
         }
@@ -1423,9 +1423,9 @@ public:
         else
         {
             if (!getPropBin(path, tmpMb.clear()))
-            { 
+            {
                 rtlStrToDataX(len, data, _lenDefault, _default);
-                return; 
+                return;
             }
             cnv2Latin1(tmpMb.length(), tmpMb.toByteArray(), sharedResult);
         }
@@ -1444,9 +1444,9 @@ public:
         else
         {
             if (!getPropBin(path, tmpMb.clear()))
-            { 
+            {
                 rtlStrToData(len, data, _lenDefault, _default);
-                return; 
+                return;
             }
         }
         memcpy(data, sharedResult.toByteArray(), sharedResult.length());
@@ -1466,9 +1466,9 @@ public:
         else
         {
             if (!getPropBin(path, tmpMb.clear()))
-            { 
+            {
                 rtlStrToDataX(len, data, _lenDefault, _default);
-                return; 
+                return;
             }
         }
         len = tmpMb.length();
@@ -1632,7 +1632,7 @@ public:
         {
             StringBuffer fullpath;
             fullpath.append(path).append("/All");
-            if (path && '/' == *path && '/' != *(path+1)) 
+            if (path && '/' == *path && '/' != *(path+1))
                 return root->hasProp(fullpath.str()+1);
             else
                 return node->hasProp(fullpath.str());

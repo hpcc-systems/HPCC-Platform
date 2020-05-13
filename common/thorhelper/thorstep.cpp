@@ -127,7 +127,7 @@ void CSteppingMeta::intersect(IInputSteppingMeta * inputMeta)
 
 //---------------------------------------------------------------------------
 
-CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSteppingMeta * _inputStepping, IEngineRowAllocator * _rowAllocator, IRangeCompare * _compare, bool _paranoid) 
+CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSteppingMeta * _inputStepping, IEngineRowAllocator * _rowAllocator, IRangeCompare * _compare, bool _paranoid)
 : input(_input), compare(_compare)
 {
     maxFields = compare ? compare->maxFields() : 0;
@@ -160,7 +160,7 @@ const void * CSteppedInputLookahead::nextInputRow()
         return readAheadRows.dequeue();
     return input->nextInputRow();
 }
-    
+
 const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
 {
     while (readAheadRows.ordinality())
@@ -214,7 +214,7 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         const void * next = input->nextInputRowGE(seek, numFields, wasCompleteMatch, inputStepExtra);
         if (!next)
             break;
-        //wasCompleteMatch can be false if we've just read the last row returned from a block of reads, 
+        //wasCompleteMatch can be false if we've just read the last row returned from a block of reads,
         //but if so the next read request will do another blocked read, so just ignore this one.
         if (wasCompleteMatch)
         {
@@ -225,7 +225,7 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
                 seekRows.enqueue(rowAllocator->linkRow(next));
                 lastSeekRow = next;
             }
-            //update the seek pointer to the best value.  
+            //update the seek pointer to the best value.
             seek = next;
         }
         else
@@ -280,7 +280,7 @@ void CSteppedInputLookahead::fill()
     {
         //note - this will either return a valid value to be included in the range,
         //or if invalid then it must be out of range -> will fail includeInOutput later,
-        //but we may as well keep the row 
+        //but we may as well keep the row
         unsigned numFields = numRestrictFields < numStepableFields ? numRestrictFields : numStepableFields;
 
         //Default to returning mismatches, but could be overidden from outside
@@ -424,7 +424,7 @@ void CSteppedInputLookahead::setAlwaysReadExact()
 }
 
 void CSteppedInputLookahead::setReadAhead(bool value)
-{ 
+{
     //This never removes readahead if requested somewhere else, so don't update the mask.
     if (value)
         stepFlagsValue |= SSEFreadAhead;
@@ -505,8 +505,8 @@ CFilteredInputBuffer::~CFilteredInputBuffer()
 }
 
 
-const void * CFilteredInputBuffer::consume() 
-{ 
+const void * CFilteredInputBuffer::consume()
+{
     if (!rows.isItem(readIndex))
         return NULL;
     const void * ret = rows.item(readIndex);
@@ -679,7 +679,7 @@ void CFilteredSteppedMerger::afterProcessingAll()
 {
     merger.cleanup();
 }
-    
+
 const void * CFilteredSteppedMerger::nextOutputRow()
 {
     return merger.nextRow();
@@ -773,7 +773,7 @@ void CFilteredSteppedMerger::tagMatches()
     unsigned numInputs = inputs.ordinality();
     fullyMatchedLevel = numInputs;
 
-    //for m of n, need to start matching at levels 0,1,.. numLevels - minMatches 
+    //for m of n, need to start matching at levels 0,1,.. numLevels - minMatches
     unsigned iterateLevels = numInputs - minMatches;
     for (unsigned level =0; level <= iterateLevels; level++)
     {
@@ -1402,7 +1402,7 @@ bool CAndLeftMergeJoinProcessor::findCandidates(const void * seekValue, unsigned
                 {
                     if (numEqualFields == numExternalEqualFields)
                     {
-                        //I think this is worth doing here... 
+                        //I think this is worth doing here...
                         //Skip input0 to a mismatch value, so the optimizer doesn't waste time reading extra equalities
                         RtlStaticRowBuilder rowBuilder(tempSeekBuffer, maxSeekRecordSize);
                         bool calculatedNextSeek = helper.createNextJoinValue(rowBuilder, lhs);
@@ -1609,14 +1609,14 @@ bool CMofNMergeJoinProcessor::findCandidates(const void * originalSeekValue, uns
 {
     if (numActive < minMatches)
         return false;
-    
+
     unsigned numFreeToMismatch = numActive - minMatches;
     const void * seekValue = originalSeekValue;
     unsigned numSeekFields = numOriginalSeekFields;
     //This should be true, because after candidates are matched their values are removed.
-    assertex(matches.numInputs() <= numFreeToMismatch);             // 
+    assertex(matches.numInputs() <= numFreeToMismatch);             //
 
-    //MORE: This needs rewriting, so that mismatches are handled coorectly.  In particular, 
+    //MORE: This needs rewriting, so that mismatches are handled coorectly.  In particular,
     while (matches.numInputs() < numActive)
     {
         unsigned nextInput = nextToMatch();
@@ -1735,7 +1735,7 @@ unsigned CMofNMergeJoinProcessor::nextToMatch() const
   D(highest,lowest) = max(D(highest,i)+D(i,lowest))
 
   We're only interested in the maximum values, which are obtained by the maximum distances between the elements.  The lowest and highest memebers
-  of the group are going to be the ends.  So we use the maximum of those distances to work out D(i,low) and D(high, i), being careful to only use 
+  of the group are going to be the ends.  So we use the maximum of those distances to work out D(i,low) and D(high, i), being careful to only use
   the range if it is valid (e.g., the end must be possible to be the highest/lowest)
 
   D(a,b) = 4, D(b,a) = 10
@@ -1827,7 +1827,7 @@ bool CNaryJoinLookaheadQueue::firstSelection()
         *activeRowPtr = rows.item(curRow);
         return true;
     }
-    
+
     if (!left->firstSelection())
         return false;
 
@@ -2002,7 +2002,7 @@ void CNaryJoinLookaheadQueue::skip()
     else
         rows.skip();
 
-    numSkipped++; 
+    numSkipped++;
 }
 
 bool CNaryJoinLookaheadQueue::flushUnmatched()
@@ -2166,7 +2166,7 @@ unsigned CProximityJoinProcessor::getBestToSeekFrom(unsigned seekInput) const
 //---------------------------------------------------------------------------
 
 //NULL passed to CSteppedInputLookahead first parameter means nextGE() must be overridden
-CJoinGenerator::CJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CJoinGenerator::CJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     helper(_helper), inputAllocator(_inputAllocator), outputAllocator(_outputAllocator)
 {
     state = JSdone;
@@ -2368,7 +2368,7 @@ bool CJoinGenerator::nextSelection()
 
 //---------------------------------------------------------------------------
 
-CEqualityJoinGenerator::CEqualityJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CEqualityJoinGenerator::CEqualityJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     CJoinGenerator(_inputAllocator, _outputAllocator, _helper, _inputs)
 {
     lowestInput = NULL;
@@ -2433,7 +2433,7 @@ bool CEqualityJoinGenerator::gatherNextCandidates()
 
 void CEqualityJoinGenerator::prefetchAllCandidates()
 {
-    //could be done in parallel, but 
+    //could be done in parallel, but
     ForEachItemIn(i, inputs)
     {
         CNaryJoinLookaheadQueue & curInput = inputs.item(i);
@@ -2471,7 +2471,7 @@ bool CEqualityJoinGenerator::selectNextLowestInput()
 
 //---------------------------------------------------------------------------
 
-CSortedEqualityJoinGenerator::CSortedEqualityJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CSortedEqualityJoinGenerator::CSortedEqualityJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     CEqualityJoinGenerator(_inputAllocator, _outputAllocator, _helper, _inputs), lowestSpotter(inputs)
 {
     lowestSpotter.init(inputAllocator, helper.queryMergeCompare(), helper.querySteppingMeta()->queryCompare());
@@ -2512,7 +2512,7 @@ bool CSortedEqualityJoinGenerator::selectNextLowestInput()
 
 //---------------------------------------------------------------------------
 
-CRangeJoinGenerator::CRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CRangeJoinGenerator::CRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     CJoinGenerator(_inputAllocator, _outputAllocator, _helper, _inputs)
 {
     maxRightBeforeLeft = helper.maxRightBeforeLeft();
@@ -2521,7 +2521,7 @@ CRangeJoinGenerator::CRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, 
 
 //---------------------------------------------------------------------------
 
-CAnchoredRangeJoinGenerator::CAnchoredRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CAnchoredRangeJoinGenerator::CAnchoredRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     CRangeJoinGenerator(_inputAllocator, _outputAllocator, _helper, _inputs)
 {
     iLowest = maxRightBeforeLeft < 0 ? 0 : inputs.ordinality()-1;
@@ -2559,7 +2559,7 @@ bool CAnchoredRangeJoinGenerator::doGatherNextCandidates()
         {
             __int64 maxLowestBeforeCur = maxDistanceAfterLowest(iInput);
             assertex(maxLowestBeforeCur > 0);
-            unsigned __int64 maxDistance = lowestDistance + maxLowestBeforeCur;     
+            unsigned __int64 maxDistance = lowestDistance + maxLowestBeforeCur;
             if (!curInput.setCandidateRange(maxDistance, false))
                 return false;
         }
@@ -2634,7 +2634,7 @@ bool CAnchoredRangeJoinGenerator::gatherNextCandidates()
 
 //---------------------------------------------------------------------------
 
-CProximityRangeJoinGenerator::CProximityRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) : 
+CProximityRangeJoinGenerator::CProximityRangeJoinGenerator(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator, IHThorNWayMergeJoinArg & _helper, CSteppedInputLookaheadArray & _inputs) :
     CRangeJoinGenerator(_inputAllocator, _outputAllocator, _helper, _inputs), lowestSpotter(inputs)
 {
     lowestSpotter.init(inputAllocator, helper.queryMergeCompare(), helper.querySteppingMeta()->queryCompare());
@@ -2694,7 +2694,7 @@ bool CProximityRangeJoinGenerator::gatherNextCandidates(unsigned iLowest)
             assertex(maxLowestBeforeCur >= 0);          // should have created an anchored variant if not true
 
             // maxLowestBeforeCur = maxCurAfterLowest
-            unsigned __int64 maxDistance = lowestDistance + maxLowestBeforeCur;     
+            unsigned __int64 maxDistance = lowestDistance + maxLowestBeforeCur;
             if (!curInput.setCandidateRange(maxDistance, true))
                 return false;
         }

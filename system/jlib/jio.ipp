@@ -90,7 +90,7 @@ protected:
         if (curBufferOffset > numInBuffer)
             numInBuffer = curBufferOffset;
     }
-    inline size32_t readFromBuffer(size32_t len, void * data) 
+    inline size32_t readFromBuffer(size32_t len, void * data)
     {
         size32_t sizeGot = numInBuffer - curBufferOffset;
         if (sizeGot > len)

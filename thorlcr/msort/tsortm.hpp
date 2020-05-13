@@ -39,7 +39,7 @@ public:
     virtual void SortSetup(
                             IThorRowInterfaces *rowif,
                             ICompare * compare,
-                            ISortKeySerializer *keyserializer, 
+                            ISortKeySerializer *keyserializer,
                             bool cosort,
                             bool needconnect,
                             const char *cosortfilenames,

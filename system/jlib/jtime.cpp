@@ -801,7 +801,7 @@ static unsigned dayOfWeek(unsigned y, unsigned m, unsigned d)
         m += 13;
         y--;
     }
-    else  
+    else
         m++;
     return (d+26*m/10+y+y/4-y/100+y/400+6)%7;
 }
@@ -881,14 +881,14 @@ inline const char *getnumorname(const char *s, unsigned &n,unsigned first,unsign
     n = NotFound;
     if (isdigit(*s))
         return getnum(s,n,first,last);
-    if (last==6)  // dow 
+    if (last==6)  // dow
         n = decodeDay(s);
-    else if (last==12)  // mon 
+    else if (last==12)  // mon
         n = decodeMon(s);
     if (n!=NotFound)
         s+=3;
     return s;
-}       
+}
 
 static int cmpval(unsigned const *a,unsigned const *b)
 {
@@ -923,12 +923,12 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
                         s++;
                         unsigned n2;
                         s = getnumorname(s,n2,first,last);
-                        if (n2==NotFound) 
+                        if (n2==NotFound)
                             n2 = last;
                         unsigned inc = 1;
                         if (*s=='/') { // inc
                             s++;
-                            if (isdigit(*s)) 
+                            if (isdigit(*s))
                                 s = getnum(s,inc,1,last);
                         }
                         if (n <= n2)
@@ -948,14 +948,14 @@ static const char *parseCronItem(const char *s,UnsignedArray &a,unsigned first,u
                     else
                         a.bAdd(n,cmpval,added);
                 }
-                else if (*s==',') 
+                else if (*s==',')
                     s++;
                 else
                     break;
             }
         }
         while (isspace(*s))
-            s++;                
+            s++;
     }
     return s;
 }
@@ -1031,14 +1031,14 @@ bool CCronAtSchedule::matchDay(unsigned yr, unsigned mon, unsigned dy, unsigned 
 
 void CCronAtSchedule::next(const CDateTime &fromdt, CDateTime &nextdt, bool greater)
 {
-    unsigned hr; 
-    unsigned min; 
+    unsigned hr;
+    unsigned min;
     unsigned sec;
     unsigned nano;
     fromdt.getTime(hr, min, sec, nano);
     sec = 0;
     nano = 0;
-    unsigned yr; 
+    unsigned yr;
     unsigned mon;
     unsigned dy;
     fromdt.getDate(yr, mon, dy);
@@ -1094,7 +1094,7 @@ void CCronAtSchedule::next(const CDateTime &fromdt, CDateTime &nextdt, bool grea
         min = nextmin;
         break;
     }
-    nextdt.set(yr,mon,dy,hr,min,sec,nano);      
+    nextdt.set(yr,mon,dy,hr,min,sec,nano);
 }
 
 class CronTableItem
@@ -1603,10 +1603,10 @@ time_t timetFromIDateTime(const CDateTime * source)
 {
     if (source == NULL)
         return (time_t) 0;
-    
+
     unsigned bluff;
     struct tm ttm;
-    // better fix: change the signature to unsigned's ?? 
+    // better fix: change the signature to unsigned's ??
     source->getDate((unsigned &)ttm.tm_year, (unsigned &)ttm.tm_mon, (unsigned &)ttm.tm_mday);
     source->getTime((unsigned &)ttm.tm_hour, (unsigned &)ttm.tm_min, (unsigned &)ttm.tm_sec, bluff);
     ttm.tm_isdst = -1;

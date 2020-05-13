@@ -30,7 +30,7 @@
 #include "jptree.hpp"
 
 #include "connect.hpp"
-#include "newvaluedlg.h" 
+#include "newvaluedlg.h"
 
 class CTreeListItem;
 class CInspectorTreeCtrl;       // forward references
@@ -111,7 +111,7 @@ private:
     CTreeListItem * GetTreeListItem(HTREEITEM in);
     bool GetNewItem(NewValue_t nvt, CString & name, CString & value, HTREEITEM & hParent);
 
-protected:  
+protected:
     // Generated message map functions
     //{{AFX_MSG(CInspectorTreeCtrl)
     afx_msg void OnPaint();
@@ -146,7 +146,7 @@ protected:
 public:
     CInspectorTreeCtrl();
     ~CInspectorTreeCtrl();
-    
+
     virtual BOOL DestroyWindow();
 
     int getColumnWidth(int idx);
@@ -184,7 +184,7 @@ protected:
 
     afx_msg void OnSize(UINT type, int cx, int cy);
 
-    DECLARE_MESSAGE_MAP()   
+    DECLARE_MESSAGE_MAP()
 
 public:
     ~CPropertyInspector();

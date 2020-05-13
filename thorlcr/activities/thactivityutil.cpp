@@ -495,7 +495,7 @@ static void _doReplicate(CActivityBase *activity, IPartDescriptor &partDesc, ICo
         rfn.getPath(dstName);
         assertex(dstName.length());
 
-        if (replicateCopy>0 )  
+        if (replicateCopy>0 )
         {
             try
             {
@@ -567,7 +567,7 @@ void cancelReplicates(CActivityBase *activity, IPartDescriptor &partDesc)
         rfn.getPath(dstName);
         assertex(dstName.length());
 
-        if (replicateCopy>0)  
+        if (replicateCopy>0)
         {
             try
             {
@@ -827,7 +827,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
 
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     public:
-        CSeqPartHandler(CPartHandler *_partHandler, IArrayOf<IPartDescriptor> &_partDescs, bool _grouped) 
+        CSeqPartHandler(CPartHandler *_partHandler, IArrayOf<IPartDescriptor> &_partDescs, bool _grouped)
             : partDescs(_partDescs), partHandler(_partHandler), grouped(_grouped)
         {
             part = 0;

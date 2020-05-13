@@ -69,7 +69,7 @@ public:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(HqlThorBoundaryInfo, expr); }
     inline HqlThorBoundaryInfo * queryBodyExtra(IHqlExpression * expr)      { return static_cast<HqlThorBoundaryInfo *>(queryTransformExtra(expr->queryBody())); }
-    
+
     void transformRoot(const HqlExprArray & in, HqlExprArray & out);
 
 protected:
@@ -159,7 +159,7 @@ public:
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(SequenceNumberInfo, expr); }
-    
+
     //queryExtra() instead of queryBodyExtra() because it is used to modify how queryTransform() acts.
     //NOTE: I'm not sure this really works e.g., if the transformed expression is a sequence list.
     SequenceNumberInfo * queryExtra(IHqlExpression * expr) { return dynamic_cast<SequenceNumberInfo *>(queryTransformExtra(expr)); }
@@ -245,15 +245,15 @@ protected:
 class CompoundSourceInfo : public NewTransformInfo
 {
 public:
-    CompoundSourceInfo(IHqlExpression * _original); 
+    CompoundSourceInfo(IHqlExpression * _original);
 
     bool canMergeLimit(IHqlExpression * expr, ClusterType targetClusterType) const;
     void ensureCompound();
     bool isAggregate() const;
     inline bool isShared() { return splitCount > 1; }
     bool inherit(const CompoundSourceInfo & other, node_operator newSourceOp = no_none);
-    inline bool isNoteUsageFirst() 
-    { 
+    inline bool isNoteUsageFirst()
+    {
         noteUsage();
         return (splitCount == 1);
     }
@@ -282,8 +282,8 @@ public:
 
 enum
 {
-    CSFpreload      = 0x0001, 
-    CSFindex        = 0x0002, 
+    CSFpreload      = 0x0001,
+    CSFindex        = 0x0002,
     CSFignoreShared = 0x0010,
     CSFnewdisk      = 0x0020,
     CSFnewindex     = 0x0040,
@@ -346,8 +346,8 @@ public:
 
     inline bool isShared() { return getNumUses() > 1; }
     inline void noteUsed() { setNumUses(getNumUses()+1); }
-    inline void inherit(const OptimizeActivityInfo * other) 
-    { 
+    inline void inherit(const OptimizeActivityInfo * other)
+    {
         setNumUses(getNumUses() + other->getNumUses());
     }
 
@@ -371,7 +371,7 @@ public:
 
 protected:
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr)  { return CREATE_NEWTRANSFORMINFO(OptimizeActivityInfo, expr); }
-    
+
     IHqlExpression * doCreateTransformed(IHqlExpression * expr);
     IHqlExpression * insertChoosen(IHqlExpression * lhs, IHqlExpression * limit, __int64 limitDelta);
     IHqlExpression * optimizeCompare(IHqlExpression * lhs, IHqlExpression * rhs, node_operator op);
@@ -413,7 +413,7 @@ public:
             return true;
         }
         lastWfid = wfid;
-        firstUseIsConditional = isConditional; 
+        firstUseIsConditional = isConditional;
         return false;
     }
 
@@ -461,7 +461,7 @@ protected:
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(WorkflowTransformInfo, expr); }
 
     IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, const char * label)
-    { 
+    {
         ContingencyData conts;
         return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster, label);
     }
@@ -487,7 +487,7 @@ protected:
 
     IHqlExpression *          transformInternalCall(IHqlExpression * transformed);
     IHqlExpression *          transformInternalFunction(IHqlExpression * transformed);
-    
+
     IHqlExpression *          createCompoundWorkflow(IHqlExpression * expr);
     IHqlExpression *          createIfWorkflow(IHqlExpression * expr);
     IHqlExpression *          createParallelWorkflow(IHqlExpression * expr);
@@ -495,7 +495,7 @@ protected:
     IHqlExpression *          createWaitWorkflow(IHqlExpression * expr);
     IHqlExpression *          transformRootAction(IHqlExpression * expr);
     IHqlExpression *          transformSequentialEtc(IHqlExpression * expr);
-    
+
     IWorkflowItem *           lookupWorkflowItem(unsigned wfid);
     IHqlExpression *          createWorkflowAction(unsigned wfid);
     unsigned                  ensureWorkflowAction(IHqlExpression * expr);
@@ -515,13 +515,13 @@ protected:
     inline WorkflowTransformInfo * queryBodyExtra(IHqlExpression * expr) { return static_cast<WorkflowTransformInfo *>(queryTransformExtra(expr->queryBody())); }
 
     inline unsigned           markDependencies() { return cumulativeDependencies.ordinality(); }
-    inline bool               restoreDependencies(unsigned mark) 
-    { 
+    inline bool               restoreDependencies(unsigned mark)
+    {
         bool anyAdded = (mark == cumulativeDependencies.ordinality());
-        cumulativeDependencies.trunc(mark); 
+        cumulativeDependencies.trunc(mark);
         return anyAdded;
     }
-    
+
     bool                      haveSameDependencies(IHqlExpression * expr1, IHqlExpression * expr2);
     bool                      includesNewDependencies(IHqlExpression * prev, IHqlExpression * next);
     bool                      hasNonTrivialDependencies(IHqlExpression * expr);
@@ -553,7 +553,7 @@ protected:
     UnsignedArray             cumulativeDependencies;
     UnsignedArray             emptyDependencies;
     UnsignedArray             storedWfids;
-    OwnedHqlExpr              rootCluster;  // currently unset, but if need to 
+    OwnedHqlExpr              rootCluster;  // currently unset, but if need to
 //used while analysing..
     unsigned                  activeWfid;
     bool                      isConditional;
@@ -880,7 +880,7 @@ public:
 
 protected:
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr)  { return CREATE_NEWTRANSFORMINFO(NestedSelectorInfo, expr); }
-    
+
     IHqlExpression * createNormalized(IHqlExpression * expr);
     NestedSelectorInfo * queryBodyExtra(IHqlExpression * expr)      { return (NestedSelectorInfo *)queryTransformExtra(expr->queryBody()); }
 
@@ -1119,7 +1119,7 @@ class ContainsCompoundTransformer : public QuickHqlTransformer
 {
 public:
     ContainsCompoundTransformer();
-    
+
 protected:
     virtual void doAnalyseBody(IHqlExpression * expr);
 
@@ -1139,7 +1139,7 @@ public:
 
     IHqlExpression * cloneAnnotations(IHqlExpression * body);
     void noteAnnotation(IHqlExpression * _annotation);
-    
+
 public:
     HqlExprCopyArray annotations;
 };
@@ -1149,7 +1149,7 @@ class AnnotationNormalizerTransformer : public NewHqlTransformer
 {
 public:
     AnnotationNormalizerTransformer();
-    
+
     virtual void analyseExpr(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
@@ -1169,7 +1169,7 @@ class NestedCompoundTransformer : public HoistingHqlTransformer
 {
 public:
     NestedCompoundTransformer(HqlCppTranslator & _translator);
-    
+
 protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
@@ -1195,7 +1195,7 @@ public:
     HqlTreeNormalizerInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { symbol = NULL; }
 
     void noteSymbol(IHqlExpression * _symbol);
-    
+
 public:
     IHqlExpression * symbol;
 };

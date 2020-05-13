@@ -37,7 +37,7 @@
 
 int started=0;
 static const char *trcfile="hrpctrc.txt";
-#include <stdio.h> 
+#include <stdio.h>
 #include <time.h>
 #include "jdebug.hpp"
 
@@ -52,7 +52,7 @@ void HRPCtrace(const char *fmt, ...)
 }
 
 
-#else 
+#else
 inline void HRPCtrace(const char *, ...) {}
 #endif
 
@@ -62,14 +62,14 @@ class DECL_EXCEPTION HRPCException: public IHRPC_Exception, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     HRPCException(int code) : errcode(code) { modname[0]=0; };
-    HRPCException(int code,HRPCmoduleid &id) : errcode(code) 
-    { 
+    HRPCException(int code,HRPCmoduleid &id) : errcode(code)
+    {
         memcpy(modname,id.modname,sizeof(id.modname));
-        modname[sizeof(id.modname)]=0; 
+        modname[sizeof(id.modname)]=0;
         modver = id.version;
     };
-    
-    HRPCException(int code,IException *e) : errcode(code) 
+
+    HRPCException(int code,IException *e) : errcode(code)
     {
         if (e)
             e->errorMessage(excstr);
@@ -80,7 +80,7 @@ public:
     {
        return errcode;
     }
-    
+
     StringBuffer &  errorMessage(StringBuffer &str) const
     {
         if (modname[0]) {
@@ -107,17 +107,17 @@ public:
             str.append(']');
         }
         return str;
-    }   
+    }
 
-    MessageAudience errorAudience() const 
-    { 
+    MessageAudience errorAudience() const
+    {
         switch (errcode) {
-        case HRPCERR_lost_connection:           
-        case HRPCERR_connection_failed:         
-        case HRPCERR_transport_port_in_use:     
-            return MSGAUD_operator; 
+        case HRPCERR_lost_connection:
+        case HRPCERR_connection_failed:
+        case HRPCERR_transport_port_in_use:
+            return MSGAUD_operator;
         }
-        return MSGAUD_user; 
+        return MSGAUD_user;
     }
 private:
     int     errcode;
@@ -147,9 +147,9 @@ class DECL_EXCEPTION CRemoteException: implements IRemoteException, public CInte
 public:
     IMPLEMENT_IINTERFACE;
     CRemoteException(int code,const char *str,int kind) : msg(str),errcode(code),errkind((RemoteExceptionKind)kind) {};
-    
+
     int             errorCode() const { return errcode; }
-    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}   
+    StringBuffer &  errorMessage(StringBuffer &str) const { str.append(msg); return str;}
     MessageAudience errorAudience() const { return MSGAUD_user; }
     RemoteExceptionKind      kind() { return errkind; }
     static IRemoteException *Make(int code,const char *str,int kind) { return new CRemoteException(code,str,kind); }
@@ -158,20 +158,20 @@ protected:
     int                     errcode;
     RemoteExceptionKind     errkind;
     StringAttr msg;
-};  
+};
 
 struct Csaveseh
 {
     bool save;
-    Csaveseh(bool e) 
+    Csaveseh(bool e)
     {
         save = e;
-        if (e) 
+        if (e)
             EnableSEHtoExceptionMapping();
     }
-    ~Csaveseh() 
+    ~Csaveseh()
     {
-        if (save) 
+        if (save)
             DisableSEHtoExceptionMapping();
     }
 };
@@ -207,11 +207,11 @@ HRPCmodule::~HRPCmodule()
 }
 
 void HRPCmodule::termconnection()
-{ 
+{
     // forced termination of connection - does not fail if connection has already gone down
     if (connected && transport) {
         transport->Sync().lock(); // just in case
-        connected=false; 
+        connected=false;
         try {
             _returnnull(retbuff);
         }
@@ -219,13 +219,13 @@ void HRPCmodule::termconnection()
             e->Release();
         }
         try {
-            transport->Disconnect(); 
+            transport->Disconnect();
         }
         catch (IException *e) {
             e->Release();
         }
         transport->Sync().unlock();
-    } 
+    }
 }
 
 
@@ -275,7 +275,7 @@ static void dosendexception(HRPCbuffer &rbuff,unsigned char exctype,int errcode,
     if (modname) {
         unsigned i;
         for (i=0;i<8;i++) {
-            if (modname[i]) 
+            if (modname[i])
                 msg.append(modname[i]);
             else
                 break;
@@ -290,7 +290,7 @@ static void dosendexception(HRPCbuffer &rbuff,unsigned char exctype,int errcode,
     rbuff.write(&exctype,sizeof(exctype));
     rbuff.writestr(msg.str());
 }
-        
+
 void HRPCcommon::_sendexception(HRPCbuffer &rbuff,unsigned char exctype,int errcode,const char *str)
 {
     dosendexception(rbuff,exctype,errcode,_id?_id->modname:NULL,str);
@@ -311,7 +311,7 @@ void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuff
     size32_t base=buff.markwrite();
     HRPCtrace(">doproxy in fn=%d base=%d cb=%d locked=%d\n",fn,base,cb,locked);
     HRPCpacketheader *h=(HRPCpacketheader *)buff.buffptr(frame.mark);
-    h->function = fn; 
+    h->function = fn;
     memcpy(&h->module,_id,sizeof(h->module));
     h->flags = HRPCendian;
     if (cb||cbnest) {
@@ -344,7 +344,7 @@ void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuff
             unsigned char exctype;
             buff.read(&exctype,sizeof(exctype));
             throw(CRemoteException::Make(errcode,buff.readstrptr(),exctype));
-        }   
+        }
         else if (h->flags&HRPCpacketheader::PFcallback) {
             Csaveseh saveseh(cbreturnexceptions);
             try {
@@ -415,20 +415,20 @@ bool HRPCmodule::TryConnect(int msecs,bool raiseex,bool leaveunlocked)
                 tryconnected = TClocked;
 
         }
-        catch (IHRPC_Exception *e) { 
+        catch (IHRPC_Exception *e) {
             sync->unlock();
-            if (raiseex) 
+            if (raiseex)
                 throw e;
         }
         catch (IException *e) {
             sync->unlock();
-            if (raiseex) 
+            if (raiseex)
                 throw e;
             e->Release();
         }
         catch (...) {
             sync->unlock();
-            if (raiseex) 
+            if (raiseex)
                 throw;
         }
     }
@@ -584,7 +584,7 @@ void HRPCserver::Listen(IHRPCtransport * trans)
         while ((state!=server_closed) && transport->Listen()) {
 
 #ifdef _DEBUG_MEM
-            _CrtMemState start, end, diff;  
+            _CrtMemState start, end, diff;
             DBGLOG("\n====================== Memory leak check point starts ======================");
             _CrtMemCheckpoint(&start);
 #endif
@@ -714,7 +714,7 @@ void HRPCserver::DoRun(size32_t base)
             e->Release();
             transport->Transmit(retbuff);
         }
-        
+
         inbuff.releasewrite(base);
     } while (lockcontinue);
     transport->Disconnect();

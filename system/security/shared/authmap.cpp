@@ -47,7 +47,7 @@ ISecResourceList* CAuthMap::queryResourceList(const char* path)
         const char* curpath = (char*)m_paths.item(x);
         if(!curpath || !*curpath)
             continue;
-        
+
         int curlen = strlen(curpath);
         if(pathlen >= curlen && strncmp(curpath, path, strlen(curpath)) == 0 && (path[curlen - 1] == '/' || path[curlen] == '/' || path[curlen] == '\0'))
         {
@@ -181,5 +181,5 @@ const char* resTypeDesc(SecResourceType type)
     case RT_VIEW_SCOPE: return "View";
     default: return "<unknown>";
     }
-}       
+}
 

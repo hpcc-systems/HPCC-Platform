@@ -59,8 +59,8 @@ ESP_FACTORY IEspService * ia_service_factory(const char *name, const char* type,
 
    return NULL;
 }
-   
-   
+
+
 //#ifdef ESP_PLUGIN
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
@@ -84,7 +84,7 @@ ESP_FACTORY IEspRpcBinding * ia_binding_factory(const char *name, const char* ty
         else
         {
             CIASoapBinding* binding = new CIASoapBinding;
-            //binding->init(cfg, process, name); 
+            //binding->init(cfg, process, name);
             return binding;
         }
 

@@ -53,7 +53,7 @@ using roxiemem::DynamicRoxieOutputRowArray;
 
 class DECL_EXCEPTION CHThorException : implements IHThorException, public CInterface
 {
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     CHThorException(int _code, char const * format, va_list args, MessageAudience _audience, ThorActivityKind _kind, unsigned _activityId, unsigned _subgraphId)  __attribute__((format(printf,3,0)))
     : code(_code), audience(_audience), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
@@ -71,7 +71,7 @@ public:
         exc->Release();
         msg.append(" (").append(extra).append(")");
     }
-    
+
     virtual int errorCode() const { return code; }
     virtual StringBuffer & errorMessage(StringBuffer & buff) const { return buff.appendf("%s (in %s G%u E%u)", msg.str(), getActivityText(kind), subgraphId, activityId); }
     virtual MessageAudience errorAudience() const { return audience; }
@@ -193,7 +193,7 @@ static bool verifyFormatCrcSuper(unsigned helperCrc, IDistributedFile * df, bool
     virtual unsigned queryOutputs() const { return 0; } \
     virtual const void * nextRow() { throwUnexpected(); } \
     virtual bool isGrouped() { throwUnexpected(); } \
-    virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); } 
+    virtual IOutputMetaData * queryOutputMeta() const   { throwUnexpected(); }
 
 class CHThorActivityBase : public CInterface, implements IHThorActivity, implements IHThorInput, implements IEngineRowStream
 {
@@ -212,7 +212,7 @@ protected:
     unsigned subgraphId;
     IException * makeWrappedException(IException * e) const;
     IException * makeWrappedException(IException * e, char const * extra) const;
-    IEngineRowAllocator *rowAllocator;      
+    IEngineRowAllocator *rowAllocator;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -232,8 +232,8 @@ public:
     virtual unsigned queryId() const { return activityId; }
     virtual ThorActivityKind getKind() const  { return kind; };
 
-    virtual bool needsAllocator() const { return false; }       
-    void createRowAllocator();                                  
+    virtual bool needsAllocator() const { return false; }
+    void createRowAllocator();
     virtual bool isPassThrough();
     virtual IEngineRowStream &queryStream() { return *this; }
     inline const void *ungroupedNextRow() { return IEngineRowStream::ungroupedNextRow(); }
@@ -272,7 +272,7 @@ protected:
 };
 
 struct IFileDescriptor;
-class CHThorDiskWriteActivity : public CHThorActivityBase 
+class CHThorDiskWriteActivity : public CHThorActivityBase
 {
 protected:
     IHThorDiskWriteArg &helper;
@@ -298,8 +298,8 @@ protected:
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
-    virtual bool isFixedWidth() 
-    { 
+    virtual bool isFixedWidth()
+    {
         return (input->queryOutputMeta()->querySerializedDiskMeta()->isFixedSize());
     }
 
@@ -310,7 +310,7 @@ protected:
     void updateWorkUnitResult(unsigned __int64 reccount);
     void finishOutput();
     bool next();
-    const void *getNext(); 
+    const void *getNext();
     void checkSizeLimit();
     virtual bool needsAllocator() const { return true; }
 public:
@@ -368,7 +368,7 @@ public:
     virtual void execute();
 };
 
-class CHThorIndexWriteActivity : public CHThorActivityBase 
+class CHThorIndexWriteActivity : public CHThorActivityBase
 {
     IHThorIndexWriteArg &helper;
     Owned<ClusterWriteHandler> clusterHandler;
@@ -419,7 +419,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -438,7 +438,7 @@ public:
     ~CHThorProcessActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -456,7 +456,7 @@ public:
 
     virtual void stop();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -565,13 +565,13 @@ class HashDedupTable : public SuperHashTable
 {
 public:
     HashDedupTable(IHThorHashDedupArg & _helper, unsigned _activityId)
-        : helper(_helper), 
+        : helper(_helper),
           activityId(_activityId)
     {
         queryBestCompare = helper.queryCompareBest();
     }
     virtual ~HashDedupTable()
-    { 
+    {
         _releaseAll();
     }
     virtual void onAdd(void *et)    {}
@@ -580,19 +580,19 @@ public:
         const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
         delete element;
     }
-    virtual unsigned getHashFromElement(const void *et) const 
-    { 
+    virtual unsigned getHashFromElement(const void *et) const
+    {
         const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
-        return element->queryHash(); 
+        return element->queryHash();
     }
     virtual unsigned getHashFromFindParam(const void *fp) const         { throwUnexpected(); }
     virtual const void * getFindParam(const void *et) const             { throwUnexpected(); }
-    virtual bool matchesFindParam(const void *et, const void *key, unsigned fphash) const 
-    { 
+    virtual bool matchesFindParam(const void *et, const void *key, unsigned fphash) const
+    {
         const HashDedupElement *element = reinterpret_cast<const HashDedupElement *>(et);
         if (fphash != element->queryHash())
             return false;
-        return (helper.queryKeyCompare()->docompare(element->queryRow(), key) == 0); 
+        return (helper.queryKeyCompare()->docompare(element->queryRow(), key) == 0);
     }
     virtual bool matchesElement(const void *et, const void *searchET) const { throwUnexpected(); }
 
@@ -616,7 +616,7 @@ public:
     virtual void ready();
     virtual void stop();
     virtual const void *nextRow();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
 private:
     IHThorHashDedupArg & helper;
@@ -639,7 +639,7 @@ public:
     ~CHThorNormalizeActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -660,8 +660,8 @@ public:
 
     virtual void stop();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
-    
+    virtual bool needsAllocator() const { return true; }
+
     //interface IHThorInput
     virtual const void *nextRow();
 
@@ -702,7 +702,7 @@ public:
     ~CHThorProjectActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -737,7 +737,7 @@ public:
     ~CHThorFilterProjectActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -753,7 +753,7 @@ public:
     ~CHThorCountProjectActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -829,8 +829,8 @@ class CHThorOnFailLimitActivity : public CHThorSkipLimitActivity
 {
 public:
     CHThorOnFailLimitActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind);
-    
-    virtual bool needsAllocator() const { return true; }    
+
+    virtual bool needsAllocator() const { return true; }
     virtual void onLimitExceeded();
 };
 
@@ -878,7 +878,7 @@ public:
         inputTrue->updateProgress(progress);
         if (inputFalse)
             inputFalse->updateProgress(progress);
-    }   
+    }
 };
 
 class CHThorSampleActivity : public CHThorSimpleActivityBase
@@ -905,7 +905,7 @@ public:
     CHThorAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorAggregateArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -925,7 +925,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1031,7 +1031,7 @@ public:
 class CHThorGroupActivity : public CHThorSteppableActivityBase
 {
     IHThorGroupArg &helper;
-    OwnedConstRoxieRow next; 
+    OwnedConstRoxieRow next;
     bool endPending;
     bool firstDone;
 public:
@@ -1086,7 +1086,7 @@ public:
 
     //interface IHThorInput
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     virtual void stop();
     virtual const void *nextRow();
@@ -1259,7 +1259,7 @@ class CHThorSortedActivity : public CHThorSteppableActivityBase
 {
     IHThorSortedArg &helper;
     ICompare * compare;
-    OwnedConstRoxieRow next; 
+    OwnedConstRoxieRow next;
     bool firstDone;
 public:
     CHThorSortedActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind);
@@ -1330,8 +1330,8 @@ class CHThorJoinActivity : public CHThorActivityBase
     OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
 
-    Owned<IEngineRowAllocator> defaultLeftAllocator;    
-    Owned<IEngineRowAllocator> defaultRightAllocator;   
+    Owned<IEngineRowAllocator> defaultLeftAllocator;
+    Owned<IEngineRowAllocator> defaultRightAllocator;
 
 private:
     void * cloneOrReturnOutput(memsize_t thisSize);
@@ -1344,15 +1344,15 @@ private:
     const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows, unsigned flags);
     const void * joinException(const void * curLeft, IException * except);
     void failLimit();
-    void createDefaultLeft();   
-    void createDefaultRight();  
+    void createDefaultLeft();
+    void createDefaultRight();
 
 public:
     CHThorJoinActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual void setInput(unsigned, IHThorInput *);
     IHThorInput *queryOutput(unsigned index) { return this; }
 
@@ -1367,7 +1367,7 @@ public:
         CHThorActivityBase::updateProgress(progress);
         if (input1)
             input1->updateProgress(progress);
-    }   
+    }
 };
 
 class CHThorSelfJoinActivity : public CHThorActivityBase
@@ -1400,7 +1400,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     RtlDynamicRowBuilder outBuilder;
     Owned<IException> failingLimit;
     bool failingOuterAtmost;
-    Owned<IEngineRowAllocator> defaultAllocator;    
+    Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
     Owned<IGroupedInput> groupedInput;
@@ -1417,7 +1417,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1482,7 +1482,7 @@ private:
     Owned<IException> failingLimit;
 
     ConstPointerArray filteredRight;
-    Owned<IEngineRowAllocator> defaultRightAllocator;   
+    Owned<IEngineRowAllocator> defaultRightAllocator;
 
 private:
     void loadRight();
@@ -1494,7 +1494,7 @@ private:
     const void * fillRightGroup();
     const void * readRightGroup() { if(rightGroup.isItem(rightGroupIndex)) return rightGroup.item(rightGroupIndex++); else return NULL; }
     void failLimit();
-    void createDefaultRight();  
+    void createDefaultRight();
 
     const void * nextRowJoin();
     const void * nextRowDenormalize();
@@ -1504,7 +1504,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual void setInput(unsigned index, IHThorInput * _input);
     IHThorInput * queryOutput(unsigned index) { return this; }
 
@@ -1515,7 +1515,7 @@ public:
         CHThorActivityBase::updateProgress(progress);
         if (input1)
             input1->updateProgress(progress);
-    }   
+    }
 
     virtual bool isGrouped();
 
@@ -1546,13 +1546,13 @@ private:
     OwnedRowArray rightset;
     ConstPointerArray filteredRight;
     BoolArray matchedRight;
-    Owned<IEngineRowAllocator> defaultRightAllocator;   
+    Owned<IEngineRowAllocator> defaultRightAllocator;
 
 private:
     void loadRight();
     const void * joinRecords(const void * left, const void * right, unsigned counter, unsigned flags);
     const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows, unsigned flags);
-    void createDefaultRight();  
+    void createDefaultRight();
 public:
     CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind);
 
@@ -1560,7 +1560,7 @@ public:
     virtual void stop();
     virtual void setInput(unsigned index, IHThorInput * _input);
     IHThorInput * queryOutput(unsigned index) { return this; }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void * nextRow();
@@ -1569,7 +1569,7 @@ public:
         CHThorActivityBase::updateProgress(progress);
         if (input1)
             input1->updateProgress(progress);
-    }   
+    }
 
     virtual bool isGrouped();
 
@@ -1726,7 +1726,7 @@ class CHThorChildIteratorActivity : public CHThorSimpleActivityBase
 
 public:
     CHThorChildIteratorActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorChildIteratorArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1843,7 +1843,7 @@ public:
     CHThorCombineActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1863,7 +1863,7 @@ public:
     virtual void ready();
     virtual void stop();
     virtual void setInput(unsigned, IHThorInput *);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1880,14 +1880,14 @@ public:
     CHThorRollupGroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupGroupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual bool isGrouped() { return false; }
 
     //interface IHThorInput
     virtual const void *nextRow();
 };
 
-class CHThorApplyActivity : public CHThorActivityBase 
+class CHThorApplyActivity : public CHThorActivityBase
 {
     IHThorApplyArg &helper;
 public:
@@ -1922,10 +1922,10 @@ class CHThorWorkunitReadActivity : public CHThorSimpleActivityBase
     Owned<IHThorDiskReadArg> diskreadHelper;
     Owned<CHThorDiskReadActivity> diskread;
 
-    Owned<IOutputRowDeserializer> rowDeserializer;  
+    Owned<IOutputRowDeserializer> rowDeserializer;
     MemoryBuffer resultBuffer;
     Owned<ISerialStream> bufferStream;
-    CThorStreamDeserializerSource deserializer;         
+    CThorStreamDeserializerSource deserializer;
 
 public:
     CHThorWorkunitReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkunitReadArg &_arg, ThorActivityKind _kind);
@@ -1936,7 +1936,7 @@ public:
     virtual void ready();
     virtual void stop();
     virtual bool isGrouped() { return grouped; }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1953,7 +1953,7 @@ public:
 
 //interface IMatchedAction
     unsigned onMatch(ARowBuilder & self, const void * curRecord, IMatchedResults * results, IMatchWalker * walker);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -1985,14 +1985,14 @@ public:
 
 protected:
     inline bool wanted()
-    {       
+    {
         counter += numerator;
         if(counter >= denominator)
         {
             counter -= denominator;
             return true;
-        }       
-        return false;   
+        }
+        return false;
     }
 
     void start();
@@ -2046,7 +2046,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2096,7 +2096,7 @@ class CHThorWSCRowCallActivity : public CHThorWSCBaseActivity
 {
 public:
     CHThorWSCRowCallActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     virtual const void *nextRow();
 
@@ -2138,7 +2138,7 @@ public:
     CHThorSoapDatasetCallActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapCallArg &_arg, ThorActivityKind _kind);
 
     virtual const void *nextRow();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     // IWSCRowProvider
     virtual const void * getNextRow();
@@ -2166,7 +2166,7 @@ class CHThorChildNormalizeActivity : public CHThorSimpleActivityBase
 
 public:
     CHThorChildNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorChildNormalizeArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2181,7 +2181,7 @@ class CHThorChildAggregateActivity : public CHThorSimpleActivityBase
 
 public:
     CHThorChildAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorChildAggregateArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2201,7 +2201,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2221,7 +2221,7 @@ class CHThorChildThroughNormalizeActivity : public CHThorSimpleActivityBase
 
 public:
     CHThorChildThroughNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorChildThroughNormalizeArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2308,7 +2308,7 @@ public:
     IHThorInput *queryOutput(unsigned index)                { return this; }
 
 //interface IHThorInput
-    virtual bool isGrouped()                                { return grouped; }             
+    virtual bool isGrouped()                                { return grouped; }
     virtual IOutputMetaData * queryOutputMeta() const               { return outputMeta; }
 
 //interface IFilePositionProvider
@@ -2377,7 +2377,7 @@ public:
 
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2392,7 +2392,7 @@ public:
     ~CHThorCsvReadActivity();
     virtual const void *nextRow();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual void stop();
 
 protected:
@@ -2406,7 +2406,7 @@ protected:
     IHThorCsvReadArg &  helper;
     unsigned            headerLines;
     size32_t            maxDiskSize;
-    CSVSplitter         csvSplitter;    
+    CSVSplitter         csvSplitter;
     unsigned __int64 limit;
     size32_t maxRowSize;
 };
@@ -2418,10 +2418,10 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CHThorXmlReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
-    
+
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual const void *nextRow();
 
     //iface IXMLSelect
@@ -2468,7 +2468,7 @@ public:
 
     virtual void stop();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2490,7 +2490,7 @@ public:
 
     virtual void stop();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2511,7 +2511,7 @@ public:
     ~CHThorDiskCountActivity();
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2536,7 +2536,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2557,7 +2557,7 @@ public:
 
     virtual void ready();
     virtual bool isGrouped() { return grouped; }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2603,17 +2603,17 @@ public:
 protected:
     virtual void ready();
     virtual void stop();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 };
 
 
 class LocalResultInput : public CInterfaceOf<IEngineRowStream>
 {
 public:
-    void init(IHThorGraphResult * _result)      
-    { 
-        result.set(_result); 
-        curRow = 0; 
+    void init(IHThorGraphResult * _result)
+    {
+        result.set(_result);
+        curRow = 0;
     }
 
     virtual const void * nextRow()
@@ -2673,7 +2673,7 @@ class CHThorLoopActivity : public CHThorSimpleActivityBase
     IEngineRowStream * curInput;
     ConstPointerArray loopPending; //MORE: would be safer and neater to use an OwnedRowArray, but would need to change prototype of IHThorBoundLoopGraph::execute
     ConstPointerArrayInput arrayInput;
-    LocalResultInput resultInput; 
+    LocalResultInput resultInput;
     unsigned maxIterations;
     unsigned loopCounter;
     bool finishedLooping;
@@ -2687,7 +2687,7 @@ public:
     ~CHThorLoopActivity();
     virtual const void *nextRow();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { loopGraph.set(graph); }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
 protected:
     virtual void ready();
@@ -2711,7 +2711,7 @@ public:
 
     virtual void ready();
     virtual bool isGrouped() { return grouped; }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
     //interface IHThorInput
     virtual const void *nextRow();
@@ -2750,7 +2750,7 @@ public:
     CHThorGraphLoopActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind);
     virtual const void *nextRow();
     virtual void setBoundGraph(IHThorBoundLoopGraph * graph) { loopGraph.set(graph); }
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
 
 protected:
     virtual void ready();

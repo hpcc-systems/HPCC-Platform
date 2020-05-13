@@ -45,9 +45,9 @@ interface IThorRowSortedLoader: extends IInterface
     virtual IRowStream *load(                       // if returns NULL if no overflay
         IRowStream *in,
         IThorRowInterfaces *rowif,
-        ICompare *icompare, 
-        bool alldisk, 
-        bool &abort, 
+        ICompare *icompare,
+        bool alldisk,
+        bool &abort,
         bool &isempty,
         const char *tracename,
         bool isstable,
@@ -106,7 +106,7 @@ public:
         ISortKeySerializer *_serializer,
         ICompare *_icompare,
         ICompare *_ikeycompare,
-        ICompare *_irowkeycompare); 
+        ICompare *_irowkeycompare);
     void clear();
     void add(const void *row);
     unsigned ordinality() { return keys.ordinality(); }

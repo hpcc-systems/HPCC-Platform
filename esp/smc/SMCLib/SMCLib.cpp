@@ -21,8 +21,8 @@
 #include "stdafx.h"
 #include "SMCLib.h"
 
-BOOL APIENTRY DllMain( HANDLE hModule, 
-                       DWORD  ul_reason_for_call, 
+BOOL APIENTRY DllMain( HANDLE hModule,
+                       DWORD  ul_reason_for_call,
                        LPVOID lpReserved
                      )
 {
@@ -50,7 +50,7 @@ SMCLIB_API int fnSMCLib(void)
 // This is the constructor of a class that has been exported.
 // see SMCLib.h for the class definition
 CSMCLib::CSMCLib()
-{ 
-    return; 
+{
+    return;
 }
 

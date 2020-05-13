@@ -152,7 +152,7 @@ static void parseAttribute(IPropertyTree *destTree, const char *text, const char
 class WebServicesExtractor
 {
 public:
-    WebServicesExtractor(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx) 
+    WebServicesExtractor(HqlLookupContext & _lookupCtx) : lookupCtx(_lookupCtx)
     {
         root.setown(createPTree("Cache"));
     }
@@ -185,8 +185,8 @@ void WebServicesExtractor::getAttributeText(StringBuffer & text, const char* att
     if(!dot || !dot[1])
         throw MakeStringException(3, "Please specify both module and attribute");
 
-    OwnedHqlExpr symbol = getResolveAttributeFullPath(attributeName, LSFpublic, lookupCtx); 
-    if (!symbol || !hasNamedSymbol(symbol) || !symbol->hasText()) 
+    OwnedHqlExpr symbol = getResolveAttributeFullPath(attributeName, LSFpublic, lookupCtx);
+    if (!symbol || !hasNamedSymbol(symbol) || !symbol->hasText())
     {
         StringBuffer txt;
         txt.append("Could not read attribute: ").append(attributeName);
@@ -233,7 +233,7 @@ IPropertyTree * WebServicesExtractor::ensureCacheEntry(const char * name)
 
     Owned<IPropertyTree> tree = createPTree("attr");
     tree->setProp("@name", name);
-    
+
     StringBuffer lowerName;
     tree->setProp("@key", lowerName.append(name).toLowerCase());
 
@@ -360,7 +360,7 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, HqlLookupContext & ctx)
     ForEachItemIn(i, results)
     {
         StringPairItem & cur = results.item(i);
-        webServicesInfo->setInfo(cur.first, cur.second); 
+        webServicesInfo->setInfo(cur.first, cur.second);
     }
 
     //Names are currently stored case insensitively, we want the case sensitive variant.
@@ -370,7 +370,7 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, HqlLookupContext & ctx)
         const char *caseSensitiveModuleName = s1->queryScope()->queryFullName();
         webServicesInfo->setModuleName(caseSensitiveModuleName);
     }
-    
+
     unsigned version = extractor.getVersion();
     webServicesInfo->setWebServicesCRC(version);
 
@@ -396,7 +396,7 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, const char * queryText, HqlLoo
     ForEachItemIn(i, results)
     {
         StringPairItem & cur = results.item(i);
-        webServicesInfo->setInfo(cur.first, cur.second); 
+        webServicesInfo->setInfo(cur.first, cur.second);
     }
 
     unsigned version = extractor.getVersion();
@@ -416,7 +416,7 @@ IPropertyTree * retrieveWebServicesInfo(WebServicesExtractor &extractor, HqlLook
     ForEachItemIn(i, results)
     {
         StringPairItem & cur = results.item(i);
-        result->setProp(cur.first, cur.second); 
+        result->setProp(cur.first, cur.second);
     }
 
     result->setPropInt("@crc", extractor.getVersion());

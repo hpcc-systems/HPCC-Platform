@@ -129,7 +129,7 @@ StringBuffer& CWsTopologyEx::getAcceptLanguage(IEspContext& context, StringBuffe
     return acceptLanguage;
 }
 
-void CWsTopologyEx::loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
+void CWsTopologyEx::loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue,
                                                     bool& bThresholdIsPercentage)
 {
     const char* threshold = pServiceNode->queryProp(attrName);
@@ -166,11 +166,11 @@ bool CWsTopologyEx::onTpSwapNode(IEspContext &context,IEspTpSwapNodeRequest  &re
 
         path.clear().append("/WsTopology/TpMachineQuery?Type=THORMACHINES&Cluster=");
         path.append(req.getCluster()).append("&Path=").append(encodedXpath);
-       
+
         resp.setRedirectUrl(path.str());
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -185,7 +185,7 @@ bool CWsTopologyEx::onTpSetMachineStatus(IEspContext &context,IEspTpSetMachineSt
         resp.setTpSetMachineStatusResult(true);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -230,7 +230,7 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -348,7 +348,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
 
             int outlen = 0;
             unsigned char* outd = NULL;
-            ret = loadFile(ifname.str(), outlen, outd); 
+            ret = loadFile(ifname.str(), outlen, outd);
             if(ret < 0 || outlen < 1 || !outd || !*outd)
             {
                 Owned<IFile> rFile = createIFile(ifname.str());
@@ -379,7 +379,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -395,7 +395,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         strBuff.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
         getThorXml(req.getName(),xmlBuff);
         strBuff.append(xmlBuff);
-        
+
         MemoryBuffer membuff;
         membuff.setBuffer(strBuff.length(), (void*)strBuff.str());
 
@@ -403,7 +403,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         resp.setThefile(membuff);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -631,7 +631,7 @@ bool CWsTopologyEx::readLastLogDateTime(const char *logName, IFileIO* rIO, size3
         size32_t bytesRead = rIO->read(readFrom, readSize, contentBuffer.clear().reserve(readSize));
         if (bytesRead != readSize)
             throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logName);
-            
+
         if (!previousPartialLine.isEmpty())
             contentBuffer.append(previousPartialLine); //Append the leftover from the last chunk
 
@@ -663,7 +663,7 @@ const char* CWsTopologyEx::readLastLogDateTimeFromContentBuffer(StringBuffer& co
     const char* lineEndPtr = startPtr + contentBuffer.length();
     const char* finger = lineEndPtr - 1;
     while (finger > startPtr)
-    { 
+    {
         if (isLineTerminator(finger, finger - lineEndPtr, readLogReq.ltBytes))
         {
             const char* lineStartPtr = finger + readLogReq.ltBytes;
@@ -1157,7 +1157,7 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
         }
         double version = context.getClientVersion();
         if (version > 1.07)
-        {       
+        {
             resp.setEnableSNMP(m_enableSNMP);
         }
         if (version >= 1.20)
@@ -1169,7 +1169,7 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
         resp.setTpClusters(clusters);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return false;
@@ -1298,7 +1298,7 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
 
         resp.setShowDetails(req.getShowDetails());
         if ((version > 1.12) && (m_preflightProcessFilter.length() > 0))
-        {       
+        {
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
         }
         if (version >= 1.20)
@@ -1308,7 +1308,7 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return false;
@@ -1350,13 +1350,13 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         resp.setTpLogicalClusters(clusters);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
-    
+
     return true;
 }
-    
+
 bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest &req, IEspTpGroupQueryResponse &resp)
 {
     try
@@ -1368,7 +1368,7 @@ bool CWsTopologyEx::onTpGroupQuery(IEspContext &context, IEspTpGroupQueryRequest
         resp.setTpGroups(Groups);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1419,7 +1419,7 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1443,8 +1443,8 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpEclCCServers( ServiceList.getTpEclCCServers() );
             m_TpWrapper.getTpEclAgents( ServiceList.getTpEclAgents() );
             m_TpWrapper.getTpEspServers( ServiceList.getTpEspServers() );
-            m_TpWrapper.getTpDfuServers( ServiceList.getTpDfuServers() );   
-            m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );   
+            m_TpWrapper.getTpDfuServers( ServiceList.getTpDfuServers() );
+            m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );
             m_TpWrapper.getTpLdapServers( ServiceList.getTpLdapServers() );
             m_TpWrapper.getTpDropZones(version, nullptr, true, ServiceList.getTpDropZones() );
@@ -1452,11 +1452,11 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpDkcSlaves( ServiceList.getTpDkcSlaves() );
 
             if (version > 1.15)
-            {       
+            {
                 m_TpWrapper.getTpEclSchedulers( ServiceList.getTpEclSchedulers() );
             }
             if (version >= 1.28)
-            {       
+            {
                 m_TpWrapper.getTpSparkThors(version, nullptr, ServiceList.getTpSparkThors() );
             }
         }
@@ -1468,15 +1468,15 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         resp.setDiskThresholdType( m_bDiskThresholdIsPercentage ? "0" : "1");
 
         if (version > 1.06 && m_bEncapsulatedSystem)
-        {       
+        {
             resp.setEncapsulatedSystem( m_bEncapsulatedSystem );
         }
         if (version > 1.07)
-        {       
+        {
             resp.setEnableSNMP(m_enableSNMP);
         }
         if ((version > 1.12) && (m_preflightProcessFilter.length() > 0))
-        {       
+        {
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
         }
         if (version >= 1.20)
@@ -1486,14 +1486,14 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
 }
 
 bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryRequest &req, IEspTpMachineQueryResponse &resp)
-{ 
+{
     try
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpMachineQuery: Permission denied.");
@@ -1535,13 +1535,13 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         resp.setEnablePreflightInfo( bEnablePreflightInfo );
 
         if (version > 1.07)
-        {       
+        {
             resp.setEnableSNMP(m_enableSNMP);
         }
         if ((version > 1.12) && (m_preflightProcessFilter.length() > 0))
-        {       
+        {
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
-        }       
+        }
         if (version > 1.14 && hasThorSpareProcess)
         {
             resp.setHasThorSpareProcess( hasThorSpareProcess );
@@ -1553,7 +1553,7 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1574,7 +1574,7 @@ bool CWsTopologyEx::onTpMachineInfo(IEspContext &context, IEspTpMachineInfoReque
     return false;
 }
 
-bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, 
+bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req,
     IEspTpGetComponentFileResponse &resp)
 {
     try
@@ -1614,7 +1614,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
                 fileName = "esp.xml";
             else if (!stricmp(compType, eqSashaServer))
                 fileName = "sashaconf.xml";
-            else 
+            else
             {
                 const unsigned int len = strlen(compType);
                 if (len>4)
@@ -1644,8 +1644,8 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
 
         if (!fileName)
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_COMPONENT_OR_FILE_TYPE, "Unsupported component or file type specified!");
-                        
-        
+
+
         //the paths are all windows or samba network shares so construct windows network path
         StringBuffer netAddressStr;
         SCMStringBuffer scmNetAddress;
@@ -1672,7 +1672,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
             xpath.clear();
             if (!stricmp(compType, "RoxieCluster"))
                 xpath.append("RoxieServerProcess[1]");
-            else 
+            else
                 if (!stricmp(compType, "ThorCluster"))
                     xpath.append("ThorMasterProcess");
                 else//HoleCluster
@@ -1801,7 +1801,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
 
                     trans->setXmlSource(pchBuf, buf.length());
                     trans->loadXslFromFile("xslt/xmlformatter.xsl");
-                    
+
                     StringBuffer htmlBuf;
                     trans->transform(htmlBuf);
 
@@ -1823,7 +1823,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
                     }
                     else
                     {
-                        const char* pBuf = strstr(pchBuf+2, "?>"); 
+                        const char* pBuf = strstr(pchBuf+2, "?>");
                         if (pBuf)
                         {
                             const char* header="<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
@@ -1841,7 +1841,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;

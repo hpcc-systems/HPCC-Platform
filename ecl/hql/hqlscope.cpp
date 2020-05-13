@@ -63,13 +63,13 @@ void ScopeCheckerBase::popScope()                               { curScopeState.
 void ScopeCheckerBase::suspendScope()                           { curScopeState.clear(); ScopedTransformer::suspendScope(); }
 void ScopeCheckerBase::restoreScope()                           { curScopeState.clear(); ScopedTransformer::restoreScope(); }
 void ScopeCheckerBase::clearDataset(bool nested)                { curScopeState.clear(); ScopedTransformer::clearDataset(nested); }
-bool ScopeCheckerBase::setDataset(IHqlExpression * _dataset, IHqlExpression * _transformed) 
+bool ScopeCheckerBase::setDataset(IHqlExpression * _dataset, IHqlExpression * _transformed)
                                                             { curScopeState.clear(); return ScopedTransformer::setDataset(_dataset, _transformed); }
-bool ScopeCheckerBase::setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * seq)   
+bool ScopeCheckerBase::setDatasetLeft(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * seq)
                                                             { curScopeState.clear(); return ScopedTransformer::setDatasetLeft(_dataset, _transformed, seq); }
-bool ScopeCheckerBase::setLeft(IHqlExpression * _left, IHqlExpression * seq)            
+bool ScopeCheckerBase::setLeft(IHqlExpression * _left, IHqlExpression * seq)
                                                             { curScopeState.clear(); return ScopedTransformer::setLeft(_left, seq); }
-bool ScopeCheckerBase::setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * seq) 
+bool ScopeCheckerBase::setLeftRight(IHqlExpression * _left, IHqlExpression * _right, IHqlExpression * seq)
                                                             { curScopeState.clear(); return ScopedTransformer::setLeftRight(_left, _right, seq); }
 bool ScopeCheckerBase::setTopLeftRight(IHqlExpression * _dataset, IHqlExpression * _transformed, IHqlExpression * seq)
                                                             { curScopeState.clear(); return ScopedTransformer::setTopLeftRight(_dataset, _transformed, seq); }
@@ -82,7 +82,7 @@ void ScopeCheckerBase::suspendAllScopes(ScopeSuspendInfo & info)
 
 void ScopeCheckerBase::restoreScopes(ScopeSuspendInfo & info)
 {
-    curScopeState.clear(); 
+    curScopeState.clear();
     ScopedTransformer::restoreScopes(info);
 }
 
@@ -128,14 +128,14 @@ bool ScopeConsistencyChecker::isActive(IHqlExpression * ds)
     case no_activetable:
         return true;
     }
-    
+
     if (activeTables.find(*ds) != NotFound)
         return true;
 
     ForEachItemIn(i, scopeStack)
     {
         ScopeInfo & cur = scopeStack.item(i);
-        
+
         switch (ds->getOperator())
         {
         case no_left:

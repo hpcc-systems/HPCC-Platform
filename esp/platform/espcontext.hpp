@@ -110,12 +110,12 @@ interface IEspSecureContext;
 esp_http_decl IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
 
 // Get URL parameters (include these from Content)
-// Return: a=b&c=d format. 
+// Return: a=b&c=d format.
 esp_http_decl bool getUrlParams(IProperties *props, StringBuffer& params);
 
 // Only the original URL (not these from Content: URL form encoded)
 // Also remove these params that start with dot (.).
-// Return: a=b&c=d format. 
+// Return: a=b&c=d format.
 esp_http_decl void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* excludeParams[]);
 
 esp_http_decl void addEspNativeArray(StringBuffer& schema, const char* xsdType, const char* arrayType);

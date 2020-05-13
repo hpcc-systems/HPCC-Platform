@@ -43,11 +43,11 @@
 #include "jlog.hpp"
 #include "daftprogress.hpp"
 
-DaftProgress::DaftProgress() 
-{ 
-    startTime = get_cycles_now(); 
-    scale = 1; 
-    scaleUnit = "bytes"; 
+DaftProgress::DaftProgress()
+{
+    startTime = get_cycles_now();
+    scale = 1;
+    scaleUnit = "bytes";
     cycleToNanoScale = cycle_to_nanosec(1000000000) / 1000000000.0;
     numSamples = 0;
     nextSample = 0;
@@ -80,7 +80,7 @@ void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalS
         cycle_t elapsedTime = nowTime - startTime;
         cycle_t timeLeft = (cycle_t)(((double)elapsedTime) * (double)(totalSize - sizeDone) / (double)(sizeDone-startSize));
         unsigned __int64 msGone = cycle_to_nanosec(elapsedTime)/1000000;
-        
+
         unsigned firstSample = (nextSample+MaxSamples-numSamples) % MaxSamples;
         offset_t recentSizeDelta = sizeDone - savedSize[firstSample];
         unsigned __int64 recentTimeDelta = cycle_to_nanosec(nowTime - savedTime[firstSample])/1000000;
@@ -88,8 +88,8 @@ void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalS
         unsigned secsLeft = (unsigned)(timeLeft * cycleToNanoScale /1000000000);
         char temp[20];
         formatTime(temp, secsLeft);
-        displayProgress((unsigned)(sizeDone*100/totalSize), secsLeft, temp, 
-                        sizeDone/scale,totalSize/scale,scaleUnit, 
+        displayProgress((unsigned)(sizeDone*100/totalSize), secsLeft, temp,
+                        sizeDone/scale,totalSize/scale,scaleUnit,
                         (unsigned)(msGone ? (sizeDone-startSize)/msGone : 0),
                         (unsigned)(recentTimeDelta ? recentSizeDelta / recentTimeDelta : 0), numNodes);
 

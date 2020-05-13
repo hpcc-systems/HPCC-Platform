@@ -48,34 +48,34 @@ private:
     StringBuffer m_soapMessage;
     StringBuffer m_HttpMessage;
     StringBuffer m_StatusMessage;
-    
+
     WsEclClientRequestState m_state;
     Semaphore m_semSink;
     Owned<IClientWsEclEvents> m_eventSink;
-    
+
     unsigned long m_client_value;
     unsigned long m_request_id;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
-    
-    CClientWsEclResponse(unsigned long cv=0, unsigned long reqId=0) : 
+
+    CClientWsEclResponse(unsigned long cv=0, unsigned long reqId=0) :
     m_client_value(cv), m_request_id(reqId), m_ResultsXML(nilIgnore)
     {
     }
-    
+
     //interface IClientWsEclResp
     unsigned long getRequestId(){return m_request_id;}
     unsigned long getClientValue(){return m_client_value;}
-    
-    WsEclClientRequestState getRequestState(){return m_state;}  
+
+    WsEclClientRequestState getRequestState(){return m_state;}
     const char * getResultsXML() { return m_ResultsXML->str(); }
     const char* getSoapMessage() { return m_soapMessage; }
-        
+
     //Functions without interfaces
     void setRequestId(unsigned long reqId){m_request_id = reqId;}
     void setClientValue(unsigned long cv){m_client_value = cv;}
-    
+
     void setHttpMessage(const char *message){ m_HttpMessage.set(message);}
     const char* getHttpMessage(StringBuffer &message)
     {
@@ -102,12 +102,12 @@ public:
     {
         m_ResultsXML.unmarshall(rpc_response, "Results");
     }
-    
+
     virtual void unserialize(StringBuffer &value)
     {
         if(value.length() < 19)
             return;
-        
+
         const char* sptr = strstr(value.str(), "<Results>");
         if(sptr)
         {
@@ -129,7 +129,7 @@ public:
                 buf.append(eptr - sptr, sptr);
                 m_ResultsXML->set(buf);
             }
-        }   
+        }
 
         // find namespace
         StringBuffer soapNS;
@@ -137,7 +137,7 @@ public:
         if (sptr)
         {
             const char* start = sptr;
-            while (start>value.str() && *start!='<') 
+            while (start>value.str() && *start!='<')
                 start--;
             if (*start == '<')
                 soapNS.append(sptr-start-1,start+1);
@@ -152,7 +152,7 @@ public:
         {
             sptr += body.length();
             while (*sptr && *sptr!='>')
-                sptr++; 
+                sptr++;
             if (*sptr!='>') {
                 UWARNLOG("Parsing soap message error: could not find ending > for Body");
                 return;
@@ -165,17 +165,17 @@ public:
                 m_soapMessage.clear().append(eptr-sptr, sptr);
         }
     }
-    
+
     virtual void setEvents(IClientWsEclEvents *eventSink)
     {
         m_eventSink.set(eventSink);
     }
-    
+
     void setRequestState(WsEclClientRequestState state)
     {
         m_state = state;
     }
-    
+
     int Notify()
     {
         m_semSink.wait();
@@ -189,14 +189,14 @@ public:
         m_semSink.signal();
         return 0;
     }
-    
+
 };
 
 class EclClientStringArray
 {
     StringBuffer m_name;
     StringArray m_array;
-    
+
 public:
     EclClientStringArray(const char *name, const StringArray &array)
     {
@@ -204,9 +204,9 @@ public:
         ForEachItemIn(idx, array)
             m_array.append(array.item(idx));
     }
-    
+
     const char *getName(){return m_name;}
-    
+
     StringArray &query(){return m_array;}
 };
 
@@ -220,9 +220,9 @@ private:
     Owned<IProperties> m_params;
     Owned<IProperties> m_attrs;
     PointerArray m_children;
-    
-    IProperties* queryParams() 
-    {       
+
+    IProperties* queryParams()
+    {
         if (!m_params)
             m_params.setown(createProperties());
         return m_params.get();
@@ -230,7 +230,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     CClientRequestNode() {}
 
     CClientRequestNode(const char* name, const char* value=NULL) : m_name(name), m_value(value) {}
@@ -243,7 +243,7 @@ public:
             delete item;
         }
     }
-    
+
     virtual void addTag(const char * name, const char * value)
     {
         if (name && value)
@@ -253,7 +253,7 @@ public:
             queryParams()->setProp(name, encval.str());
         }
     }
-    
+
     virtual void setTag(const char * name, const char * value)
     {
         if (name && value)
@@ -272,12 +272,12 @@ public:
             return false;
         return m_params->hasProp(name);
     }
-        
+
     virtual void addIntTag(const char * name, int value)
     {
         queryParams()->setProp(name, value);
     }
-    
+
     virtual void addAttr(const char* name, const char* value)
     {
         if (!m_attrs)
@@ -297,7 +297,7 @@ public:
         CClientRequestNode* node = new CClientRequestNode(name, value);
         m_children.append(node);
         return *node;
-    }   
+    }
 
     virtual void addDataset(const char * name, const char * ds)
     {
@@ -335,17 +335,17 @@ public:
             else if (m_value.length())
                 rpcMsg.add_value(path, "", m_name.get(), "", m_value.get());
         }
-            
+
         if (m_params || m_children.length())
         {
             if (m_params)
             {
-                Owned<IPropertyIterator> piter = m_params->getIterator();       
+                Owned<IPropertyIterator> piter = m_params->getIterator();
                 ForEach(*piter)
                 {
                     const char *propkey = piter->getPropKey();
                     rpcMsg.add_value(path, "", propkey, "", m_params->queryProp(propkey), false);
-                }       
+                }
             }
 
             // child elements
@@ -389,14 +389,14 @@ private:
     StringAttr m_soapAction;
     bool m_noSecurityHeader;
     bool m_disableKeepAlive;
-    
+
     unsigned long m_req_id;
     unsigned long m_client_value;
-    
+
     Owned<IClientWsEclEvents> m_eventSink;
     Semaphore m_semWorkerThread;
     void *m_hThunk;
-    
+
     PointerArray m_arrays;
     Owned<IProperties> m_attrs;
 
@@ -407,15 +407,15 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    
-    CClientWsEclRequest(const char *method) : 
-            m_method(method), 
-            m_noSecurityHeader(false), 
-            m_disableKeepAlive(false), 
+
+    CClientWsEclRequest(const char *method) :
+            m_method(method),
+            m_noSecurityHeader(false),
+            m_disableKeepAlive(false),
             m_nsvar("m"),
             m_itemTag("Item")
     { }
-    
+
     virtual ~CClientWsEclRequest()
     {
         ForEachItemIn(idx, m_arrays)
@@ -424,7 +424,7 @@ public:
             delete array;
         }
     }
-        
+
     //interface IClientWsEclRequest
     virtual void setClientValue(unsigned long cv)  { m_client_value = cv;}
     virtual void setNamespace(const char* ns)   { m_nsuri.set(ns); }
@@ -433,11 +433,11 @@ public:
     virtual void setNoSecurityHeader(bool noHeader) {  m_noSecurityHeader = noHeader; }
     virtual void disableKeepAlive() { m_disableKeepAlive = true; }
     virtual const char* getSerializedContent()          { return m_serializedContent; }
-    
+
     virtual void setSerializedContent(const char* c) { m_serializedContent.set(c); }
 
-    virtual void appendSerializedContent(const char* content) 
-    { 
+    virtual void appendSerializedContent(const char* content)
+    {
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(content);
         Owned<IPTreeIterator> it = pTree->getElements("*");
         // NOTE: this does not support hierarchy yet (which is sufficient for flat style roxie request).
@@ -447,7 +447,7 @@ public:
             addTag(pNode->queryName(),pNode->queryProp(NULL));
         }
     }
-    
+
     virtual void setItemTag(const char * tag) {m_itemTag.set(tag); }
     virtual void addArray(const char * name, StringArray &value)
     {
@@ -469,14 +469,14 @@ public:
     {
         m_base.setTag(name, value);
     }
-    
+
     virtual void addAttr(const char * name, const char * value)
     {
         if (!m_attrs)
             m_attrs.setown(createProperties());
         m_attrs->setProp(name, value);
     }
-    
+
     virtual void addIntTag(const char * name, int value)
     {
         m_base.addIntTag(name, value);
@@ -486,7 +486,7 @@ public:
     {
         return m_base.hasTag(name);
     }
-    
+
     virtual IClientRequestNode& addChild(const char* name)
     {
         return m_base.addChild(name);
@@ -509,25 +509,25 @@ public:
     {
         m_url.set(url);
     }
-    
+
     //Functions not belonging to any interface
     void setRequestId(unsigned long reqId){ m_req_id = reqId; }
-    
+
     virtual unsigned long getRequestId()
     {
         return m_req_id;
     }
-        
+
     virtual void setEvents(IClientWsEclEvents *eventSink)
     {
         m_eventSink.set(eventSink);
     }
-    
+
     virtual IClientWsEclEvents* getEvents()
     {
         return m_eventSink.get();
     }
-    
+
     virtual void setSpecialMethod(const char* method)   { m_specialmethod.set(method); }
     virtual void serialize(IRpcMessage& rpc_request)
     {
@@ -538,9 +538,9 @@ public:
             rpc_request.set_name(m_specialmethod.get());
         else
             rpc_request.set_name(m_method.get());
-        
-        
-        
+
+
+
         if (m_nsuri)
             rpc_request.set_nsuri(m_nsuri);
         else
@@ -549,7 +549,7 @@ public:
             nsuri.appendLower(m_method.length(), m_method.str());
             rpc_request.set_nsuri(nsuri.str());
         }
-        
+
         if (m_attrs)
         {
             rpc_request.add_attr(NULL, NULL, NULL, *m_attrs.get());
@@ -567,14 +567,14 @@ public:
         if (serializedContent && *serializedContent)
             rpc_request.setSerializedContent(serializedContent);
     }
-    
-    virtual void sendHttpRequest( CClientWsEclResponse& eclresponse, const char* method, const char* url, const char *user="", 
-                                            const char *pw="", const char *realm="", const char* httpPostVariableName=NULL, 
+
+    virtual void sendHttpRequest( CClientWsEclResponse& eclresponse, const char* method, const char* url, const char *user="",
+                                            const char *pw="", const char *realm="", const char* httpPostVariableName=NULL,
                                             bool encodeHttpPostBody=false)
     {
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
         Owned<IHttpClient> httpclient = httpctx->createHttpClient("", url);
-        
+
         if(user && *user && pw && *pw)
         {
             httpclient->setUserID(user);
@@ -644,25 +644,25 @@ public:
     {
         Owned<CRpcCall> rpccall;
         Owned<CRpcResponse> rpcresponse;
-        
+
         rpccall.setown(new CRpcCall);
         rpcresponse.setown(new CRpcResponse);
         rpccall->set_url(url);
-        
+
         serialize(*static_cast<IRpcMessage*>(rpccall));
-        
+
         IRpcMessageArray rpcheaders;
         m_headers.serializeChildren(rpcheaders);
-        
+
         Owned<ISoapClient> soapclient;
         soapclient.setown(new CSoapClient);
-        
+
         if (m_disableKeepAlive)
             soapclient->disableKeepAlive();
 
         if (!m_noSecurityHeader)
             soapclient->setUsernameToken(user, pw, realm);
-        
+
         StringBuffer soapAction, resultbuf;
         if (m_soapAction)
             soapAction = m_soapAction.get();
@@ -672,7 +672,7 @@ public:
             soapAction = m_method.get();
         int result = soapclient->postRequest(soapAction.str(), *rpccall.get(), resultbuf, &rpcheaders);
         //DBGLOG("SOAP Response: %s", resultbuf.str());
-        
+
         if(result == SOAP_OK)
         {
             response.setRequestState(ESP_CLIENT_REQUEST_OK);
@@ -687,43 +687,43 @@ public:
             response.setRequestState(ESP_CLIENT_REQUEST_NORMAL_ERROR);
         }
     }
-    
+
     static int transferThunkEvent(void *data)
     {
         CClientWsEclResponse* response = (CClientWsEclResponse*)data;
-        
+
         if (response != NULL)
         {
             //DBGLOG("in main thread - result = %s", response->getResultsXML());
             response->Notify();
         }
-        
+
         return 0;
     }
-    
+
     void asyncPost(const char* url, CClientWsEclResponse& response)
     {
         response.setEvents(m_eventSink);
         post(url, response);
-        
+
         ThunkToClientThread(m_hThunk, transferThunkEvent, (void *)&response);
     }
-    
+
     static void eclWorkerThread(void* data)
     {
         CClientWsEclRequest *request = (CClientWsEclRequest *) data;
-        
+
         if (request != NULL)
         {
-            request->m_semWorkerThread.wait();  
-            
+            request->m_semWorkerThread.wait();
+
             CClientWsEclResponse* response = new CClientWsEclResponse;
-            
+
             request->asyncPost(request->m_url.get(), *response);
             request->m_semWorkerThread.signal();
             request->Release();
         }
-    }   
+    }
 };
 
 

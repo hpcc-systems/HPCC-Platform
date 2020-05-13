@@ -27,7 +27,7 @@ using namespace std;
 
 /**
  * Encapsulate XML ETag
- * 
+ *
  *
  * @author Aleksander Slominski [aslom@extreme.indiana.edu]
  */
@@ -41,26 +41,26 @@ namespace xpp {
 
   public:
     EndTag() { init(); }
-    /** 
-     *  
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     *
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getUri() const { return uri; }
 
-    /** 
-     *  
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     *
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
-    const SXT_CHAR* getLocalName() const { return localName; }      
+    const SXT_CHAR* getLocalName() const { return localName; }
 
-    /** 
-     *  
-     * @return DO NOT DEALLOCATE RETURN VALUE! 
+    /**
+     *
+     * @return DO NOT DEALLOCATE RETURN VALUE!
      */
     const SXT_CHAR* getQName() const { return qName; }
 
     const SXT_STRING toString() const {
-      string buf = SXT_STRING("EndTag={");    
+      string buf = SXT_STRING("EndTag={");
       buf = buf + " '" + qName + "'";
       if(SXT_STRING(_MYT("")) != uri) {
         buf = buf + "('" + uri +"','" + localName + "') ";
@@ -68,7 +68,7 @@ namespace xpp {
       buf += " }";
       return buf;
     }
-    
+
   protected:
     void init() {
       uri = NULL;
@@ -76,28 +76,28 @@ namespace xpp {
       qName = NULL;
     }
 
-    friend ostream& operator<<(ostream& output, 
+    friend ostream& operator<<(ostream& output,
       const EndTag& startTag);
-          
-               
+
+
     // ===== internals available for superclasses
-    
+
     const SXT_CHAR* uri;
     const SXT_CHAR* localName;
     const SXT_CHAR* qName;
     SXT_STRING nameBuf;
   };
-  
-inline ostream& operator<<(ostream& output, 
-  const EndTag& endTag) 
+
+inline ostream& operator<<(ostream& output,
+  const EndTag& endTag)
 {
     const SXT_STRING s = endTag.toString();
     output << s << endl;
     return output;
 }
 
-  
-  
+
+
 } //namespace
 
 #endif // XPP_END_TAG_H_

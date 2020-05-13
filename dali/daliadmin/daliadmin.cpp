@@ -62,7 +62,7 @@ static bool noninteractive=false;
 void usage(const char *exe)
 {
   printf("Usage:\n");
-  printf("  %s [<daliserver-ip>] <command> { <option> }\n", exe);              
+  printf("  %s [<daliserver-ip>] <command> { <option> }\n", exe);
   printf("\n");
   printf("Data store commands:\n");
   printf("  export <branchxpath> <destfile>\n");
@@ -586,9 +586,9 @@ static void setdfspartattr(const char *lname, unsigned partNum, const char *attr
     StringBuffer str;
     CDfsLogicalFileName lfn;
     lfn.set(lname);
-    if (lfn.isExternal()) 
+    if (lfn.isExternal())
         throw MakeStringException(0, "External file not supported");
-    if (lfn.isForeign()) 
+    if (lfn.isForeign())
         throw MakeStringException(0, "Foreign file not supported");
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc, false, false, false, nullptr, defaultPrivilegedUser);
     if (!file)
@@ -905,7 +905,7 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true,nullptr,defaultPrivilegedUser);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
-        ForEach(*iter) 
+        ForEach(*iter)
             OUTLOG("%s,%s",iter->query().queryLogicalName(),lname);
     }
 }
@@ -1177,7 +1177,7 @@ static void unprotect(const char *filename, const char *callerid, IUserDescripto
 
 static void listprotect(const char *filename, const char *callerid)
 {
-    Owned<IDFProtectedIterator> piter = queryDistributedFileDirectory().lookupProtectedFiles((strcmp(callerid,"*")==0)?NULL:callerid); 
+    Owned<IDFProtectedIterator> piter = queryDistributedFileDirectory().lookupProtectedFiles((strcmp(callerid,"*")==0)?NULL:callerid);
     ForEach(*piter) {
         if (WildMatch(piter->queryFilename(),filename))
             OUTLOG("%s,%s,%s", piter->isSuper()?"SuperFile":"File", piter->queryFilename(), piter->queryOwner());
@@ -1677,7 +1677,7 @@ static bool onlyNamePtree(IPropertyTree *t)
 
 static bool countScopeChildren(IPropertyTree *t,unsigned &files, unsigned &sfiles, unsigned &scopes, unsigned &other)
 {
-    scopes = 0; 
+    scopes = 0;
     files = 0;
     sfiles = 0;
     other = 0;
@@ -1687,13 +1687,13 @@ static bool countScopeChildren(IPropertyTree *t,unsigned &files, unsigned &sfile
     ForEach(*it) {
         IPropertyTree *st = &it->query();
         const char *s = st?st->queryName():NULL;
-        if (!s) 
+        if (!s)
             other++;
-        else if (stricmp(s,queryDfsXmlBranchName(DXB_File))==0) 
+        else if (stricmp(s,queryDfsXmlBranchName(DXB_File))==0)
             files++;
-        else if (stricmp(s,queryDfsXmlBranchName(DXB_SuperFile))==0) 
+        else if (stricmp(s,queryDfsXmlBranchName(DXB_SuperFile))==0)
             sfiles++;
-        else if (stricmp(s,queryDfsXmlBranchName(DXB_Scope))==0) 
+        else if (stricmp(s,queryDfsXmlBranchName(DXB_Scope))==0)
             scopes++;
         else
             other++;
@@ -1768,7 +1768,7 @@ static void cleanscopes(IUserDescriptor *user)
         dlfn.set(scope.str(),"x");
         dlfn.makeScopeQuery(s.clear(),true);
         Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
-        if (!conn)  
+        if (!conn)
             UWARNLOG("Could not connect to '%s' using %s",iter->query(),s.str());
         else {
             if (recursiveCheckEmptyScope(*conn->queryRoot())) {
@@ -2166,7 +2166,7 @@ static void clusterlist()
     bool *done = (bool *)calloc(list.ordinality(),sizeof(bool));
     clustersToGroups(conn->queryRoot(),list,cnames,groups,done);
     free(done);
-    ForEachItemIn(i,cnames) 
+    ForEachItemIn(i,cnames)
         OUTLOG("%s,%s",cnames.item(i),groups.item(i));
 }
 
@@ -3283,7 +3283,7 @@ int main(int argc, char* argv[])
                 queryLogMsgManager()->addMonitorOwn(fileMsgHandler.getClear(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
             }
         }
-        // set stdout 
+        // set stdout
         attachStandardHandleLogMsgMonitor(stdout,0,MSGAUD_all,MSGCLS_all&~(MSGCLS_disaster|MSGCLS_error|MSGCLS_warning));
         Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error|MSGCLS_warning);
         queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);

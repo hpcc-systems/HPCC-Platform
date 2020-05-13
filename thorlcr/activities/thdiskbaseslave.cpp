@@ -63,7 +63,7 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, unsigned nparts, IPartDesc
 
 //////////////////////////////////////////////
 
-CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity) 
+CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity)
     : activity(_activity), fileStats(diskReadRemoteStatistics)
 {
     checkFileCrc = activity.checkFileCrc;
@@ -112,7 +112,7 @@ void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc)
     open();
 }
 
-void CDiskPartHandlerBase::open() 
+void CDiskPartHandlerBase::open()
 {
     unsigned location;
     StringBuffer filePath;
@@ -416,7 +416,7 @@ void CDiskWriteSlaveActivityBase::close()
             if (calcFileCrc) {
                 if (diskHelperBase->getFlags() & TDWextend) {
                     assertex(!"TBD need to merge CRC");
-                }   
+                }
                 else
                     out->flush(&fileCRC);
             }
@@ -450,7 +450,7 @@ void CDiskWriteSlaveActivityBase::close()
         }
     }
     catch (IException *e)
-    { 
+    {
         ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
         abortSoon = true;
         removeFiles();

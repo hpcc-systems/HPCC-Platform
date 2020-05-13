@@ -21,7 +21,7 @@
 
 //#define TRACE_BALANCED
 
-enum ResourceType { 
+enum ResourceType {
 //Slave specific
     RESslavememory,
     RESslavesocket,
@@ -29,7 +29,7 @@ enum ResourceType {
     RESmastermemory,
     RESmastersocket,
 //General
-    REShashdist, 
+    REShashdist,
     RESheavy,
     RESactivities,
     RESmax

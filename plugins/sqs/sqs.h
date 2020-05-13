@@ -50,51 +50,51 @@
 
 #ifdef ECL_SQS_EXPORTS
 
-extern  "C" 
+extern  "C"
 {
   ECL_SQS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
   ECL_SQS_API void setPluginContext(IPluginContext * _ctx);
 }
 #endif
 
-extern "C++" 
+extern "C++"
 {
   namespace SQSHPCCPlugin
   {
     using namespace std;
-    typedef struct 
+    typedef struct
     {
       int code;
       std::string body;
       bool success;
     } Response;
 
-    struct AtomicCounter 
+    struct AtomicCounter
     {
       std::atomic<int> counter;
-	
+
       void increment() {
 	++counter;
-      } 
-      
+      }
+
       void decrement() {
         --counter;
       }
 
       int get() {
         return counter.load();
-      } 
+      }
 
     };
 
-  
+
     class SQSHPCC
     {
 
     public:
       explicit SQSHPCC(const std::string& _queueName);
       ~SQSHPCC();
- 
+
       Response sendMessage(const char* message,const char* messagecount);
       Response createQueue();
       Response deleteQueue();
@@ -102,8 +102,8 @@ extern "C++"
       Response receiveMessage();
 
       void setSQSConfiguration(const std::string& protocol,const std::string& region,const bool useProxy, const std::string& proxyHost,const unsigned proxyPort, const std::string& proxyUsername, const std::string& proxyPassword);
-      void setAwsCredentials(const char* accessKeyId, 
-			     const char* secretKey); 
+      void setAwsCredentials(const char* accessKeyId,
+			     const char* secretKey);
       bool disconnect();
       bool QueueExists();
 
@@ -130,8 +130,8 @@ extern "C++"
 
     /**
      * Queues the message for publishing to aws queue
-     * 
-     * @param   Reqion          
+     *
+     * @param   Reqion
      * @param   QueueName
      * @param   message            The message to send
      *
@@ -142,16 +142,16 @@ extern "C++"
     //---------------------------------------------------------------------
 
     ECL_SQS_API bool ECL_SQS_CALL publishOrderedMessage(ICodeContext * ctx,const char* region, const char* queueName, const char* message, const char* messageCount,const bool useProxy, const char* proxyHost, __int32 proxyPort, const char* proxyUsername, const char* proxyPassword);
-    /** 
+    /**
      *
      *
      */
     ECL_SQS_API bool ECL_SQS_CALL createQueue(ICodeContext * ctx,const char* region, const char* queueName);
 
     ECL_SQS_API bool ECL_SQS_CALL QueueExists(ICodeContext* ctx,const char* region, const char* queueName);
-     
-    ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);      
-	
+
+    ECL_SQS_API bool ECL_SQS_CALL deleteQueue(ICodeContext * ctx,const char* region, const char* queueName);
+
   }
 }
 #endif

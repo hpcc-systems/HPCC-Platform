@@ -28,7 +28,7 @@
 #include "hqlstack.hpp"
 
 //Options for the constant folding...
-enum { 
+enum {
     HFOx_op_not_x       = 0x0001,                       // constant fold X AND NOT X => false, X OR NOT X => true
     HFOcanbreakshared   = 0x0002,                   // ok to perform folding that may mean expressions are no longer shared
     HFOfoldimpure       = 0x0004,

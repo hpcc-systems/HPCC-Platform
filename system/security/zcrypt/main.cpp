@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 
-const char* privkeystr = 
+const char* privkeystr =
 "-----BEGIN RSA PRIVATE KEY-----\n"
 "Proc-Type: 4,ENCRYPTED\n"
 "DEK-Info: DES-EDE3-CBC,05364530B1FCC285\n"
@@ -54,7 +54,7 @@ const char* privkeystr =
 "bpbAJSnigO+wz3JgNKEkMBqcUliowqgMFOvS5MqvRYnTSxgNAwpN7A==\n"
 "-----END RSA PRIVATE KEY-----\n";
 
-const char* privkeystr1 = 
+const char* privkeystr1 =
 "-----BEGIN RSA PRIVATE KEY-----\n"
 "MIIEowIBAAKCAQEA8QDpGCUDHVNANQmR81gaoxD4mJGD+YdRe2uohjfvN4GLLg8N\n"
 "5a6MNBDYPhB8l24TgmtWUDzqSIIvpcTCi8FxeZEyQByB/0/u8iCz+Up0hkiqGU0k\n"
@@ -84,7 +84,7 @@ const char* privkeystr1 =
 "-----END RSA PRIVATE KEY-----\n";
 
 
-const char* pubkeystr = 
+const char* pubkeystr =
 "-----BEGIN PUBLIC KEY-----\n"
 "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8QDpGCUDHVNANQmR81ga\n"
 "oxD4mJGD+YdRe2uohjfvN4GLLg8N5a6MNBDYPhB8l24TgmtWUDzqSIIvpcTCi8Fx\n"

@@ -55,7 +55,7 @@ class da_decl CDfsLogicalFileName
     StringAttr lfn;
     unsigned tailpos;
     unsigned localpos; // if 0 not foreign
-    StringAttr cluster; 
+    StringAttr cluster;
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
@@ -106,7 +106,7 @@ public:
     void setQuery(const SocketEndpoint &rfsep,const char *query);
     bool isQuery() const;
 
-    void setCluster(const char *cname); 
+    void setCluster(const char *cname);
     StringBuffer &getCluster(StringBuffer &cname) const { return cname.append(cluster); }
 
     const char *get(bool removeforeign=false) const;
@@ -269,18 +269,18 @@ extern da_decl const char * querySdsRelationshipsRoot();
 extern da_decl void ensureSDSPath(const char * sdsPath);
 
 extern da_decl IPropertyTreeIterator *deserializePartAttrIterator(MemoryBuffer &mb);    // clears mb
-extern da_decl MemoryBuffer &serializePartAttr(MemoryBuffer &mb,IPropertyTree *tree); 
+extern da_decl MemoryBuffer &serializePartAttr(MemoryBuffer &mb,IPropertyTree *tree);
 extern da_decl IPropertyTree *deserializePartAttr(MemoryBuffer &mb);
 
-extern da_decl void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster=NULL); 
+extern da_decl void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster=NULL);
      // expands Parts blob in file as well as optionally filling in node IPs
      // if expand nodes set then removes all clusters > 1 (for backward compatibility)
 extern da_decl bool shrinkFileTree(IPropertyTree *file); // compresses parts into Parts blob
 extern da_decl void filterParts(IPropertyTree *file,UnsignedArray &partslist); // only include parts in list (in expanded tree)
 
-IRemoteConnection *getSortedElements( const char *basexpath, 
-                                     const char *xpath, 
-                                     const char *sortorder, 
+IRemoteConnection *getSortedElements( const char *basexpath,
+                                     const char *xpath,
+                                     const char *sortorder,
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
                                      StringArray& unknownAttributes,
@@ -295,15 +295,15 @@ interface IElementsPager : extends IInterface
     virtual bool allMatchingElementsReceived() = 0;
 };
 extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
-                                     const char *sortorder, 
+                                     const char *sortorder,
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
                                      StringArray& unknownAttributes, //the attribute not exist or empty
                                      IArrayOf<IPropertyTree> &sortedElements);
 
 extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager,
-                                     unsigned startoffset, 
-                                     unsigned pagesize, 
+                                     unsigned startoffset,
+                                     unsigned pagesize,
                                      ISortedElementsTreeFilter *postfilter, // if non-NULL filters before adding to page
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
@@ -341,7 +341,7 @@ public:
     void scan(IRemoteConnection *conn,  // conn is connection to Files
               bool includefiles=true,
               bool includesuper=false);
-              
+
     bool singlefile(IRemoteConnection *conn,CDfsLogicalFileName &lfn);  // useful if just want to process 1 file using same code
 };
 
@@ -380,7 +380,7 @@ public:
     ~CheckTime()
     {
         unsigned e=msTick()-start;
-        if (e>1000) 
+        if (e>1000)
             DBGLOG("TIME: %s took %d", msg.str(), e);
     }
     bool slow() { return ((msTick()-start) > 1000); }
@@ -434,7 +434,7 @@ interface ILocalOrDistributedFile: extends IInterface
     virtual unsigned numPartCopies(unsigned partnum) = 0;
     virtual IFile *getPartFile(unsigned partnum,unsigned copy=0) = 0;
     virtual RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy=0) = 0;
-    virtual offset_t getPartFileSize(unsigned partnum)=0;   // NB expanded size             
+    virtual offset_t getPartFileSize(unsigned partnum)=0;   // NB expanded size
     virtual bool getPartCrc(unsigned partnum, unsigned &crc) = 0;
     virtual bool exists() const = 0;   // if created for writing, this may be false
     virtual bool isExternal() const = 0;

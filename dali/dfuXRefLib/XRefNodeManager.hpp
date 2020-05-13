@@ -102,9 +102,9 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CXRefNode(); 
-    CXRefNode(IPropertyTree* pTreeRoot); 
-    CXRefNode(const char* clusterName,IRemoteConnection *conn); 
+    CXRefNode();
+    CXRefNode(IPropertyTree* pTreeRoot);
+    CXRefNode(const char* clusterName,IRemoteConnection *conn);
     virtual ~CXRefNode();
     bool IsChanged();
     void SetChanged(bool bChanged);
@@ -119,7 +119,7 @@ public:
     virtual StringBuffer & getLastModified(StringBuffer & str) override;
     virtual bool useSasha() override;
     virtual const char *queryRootDir() const override { return rootDir; }
-    
+
     virtual StringBuffer& getXRefData(StringBuffer & buff) override;
     virtual StringBuffer& getStatus(StringBuffer & buff) override;
     virtual IXRefFilesNode* getLostFiles() override;
@@ -132,7 +132,7 @@ public:
     virtual void deserializeDirectories(IPropertyTree& inTree) override;
     virtual bool removeEmptyDirectories(StringBuffer &errstr) override;
     virtual void setName(const char* str) override;
-    
+
     void setXRefData(StringBuffer & buff);
     void setXRefData(IPropertyTree & pTree);
 
@@ -159,4 +159,4 @@ public:
 
 
 
-#endif // 
+#endif //

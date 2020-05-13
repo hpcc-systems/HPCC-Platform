@@ -54,13 +54,13 @@ public:
         {
             memset(ekey,0,ekeylen);
             free(ekey);
-            props.setPropBool("@encrypted", true);      
+            props.setPropBool("@encrypted", true);
             blockCompressed = true;
         }
         else if (0 != (helper->getFlags() & TDWnewcompress) || 0 != (helper->getFlags() & TDXcompress))
             blockCompressed = true;
         if (blockCompressed)
-            props.setPropBool("@blockCompressed", true);        
+            props.setPropBool("@blockCompressed", true);
         if (0 != (helper->getFlags() & TDXgrouped))
             fileDesc->queryProperties().setPropBool("@grouped", true);
         props.setProp("@kind", "flat");

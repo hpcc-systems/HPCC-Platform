@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     SocketEndpointArray epa;
     ep.set(argv[1],DALI_SERVER_PORT);
     epa.append(ep);
-    Owned<IGroup> group = createIGroup(epa); 
+    Owned<IGroup> group = createIGroup(epa);
     try
     {
         initClientProcess(group, DCR_XRef);
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 
 class Ccallback: public CInterface, implements IXRefProgressCallback
 {
-public: 
+public:
     IMPLEMENT_IINTERFACE;
     virtual void progress(const char *text)
     {
@@ -222,7 +222,7 @@ public:
     {
         printf("ERROR: %s\n",text);
     }
-    
+
 };
 
 int main(int argc, char* argv[])
@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
     SocketEndpointArray epa;
     ep.set(argv[1],DALI_SERVER_PORT);
     epa.append(ep);
-    Owned<IGroup> group = createIGroup(epa); 
+    Owned<IGroup> group = createIGroup(epa);
     try {
         initClientProcess(group);
         setPasswordsFromSDS();

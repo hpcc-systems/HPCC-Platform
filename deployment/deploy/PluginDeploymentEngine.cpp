@@ -20,7 +20,7 @@
 //#####################################################################################################
 //#  NOTE: Plugins can no longer be shared and deployed as a component.  To avoid version conflicts,  #
 //#        any component using a plugin (currently only ecl/attr servers) must deploy any necessary   #
-//#        plugins as part of its deployment.                                                         # 
+//#        plugins as part of its deployment.                                                         #
 //#        This (pre-existing) class merely serves as a base class for components that need plugins.  #
 //#####################################################################################################
 
@@ -28,7 +28,7 @@
 // CPluginDeploymentEngine
 //---------------------------------------------------------------------------
 CPluginDeploymentEngine::CPluginDeploymentEngine(IEnvDeploymentEngine& envDepEngine,
-                                                 IConstEnvironment& environment, 
+                                                 IConstEnvironment& environment,
                                                  IPropertyTree& process,
                                                  const char* instanceType/*=NULL*/)
  : CDeploymentEngine(envDepEngine, environment, process, instanceType)
@@ -43,7 +43,7 @@ CPluginDeploymentEngine::CPluginDeploymentEngine(IEnvDeploymentEngine& envDepEng
 //---------------------------------------------------------------------------
 void CPluginDeploymentEngine::getPluginDirectory(const char* destPath, StringBuffer& sPluginDest) const
 {
-   sPluginDest.clear().append(destPath); 
+   sPluginDest.clear().append(destPath);
    sPluginDest.replace('\\', '/');
 
    StringBuffer sPluginsDir; //relative path (from ECL server installation directory) for plugins
@@ -71,17 +71,17 @@ void CPluginDeploymentEngine::getPluginDirectory(const char* destPath, StringBuf
 //---------------------------------------------------------------------------
 // getDefaultPlugins
 //---------------------------------------------------------------------------
-void CPluginDeploymentEngine::getDefaultPlugins(StringArray& plugins, 
-                                                   StringBuffer& sPluginsPath, 
+void CPluginDeploymentEngine::getDefaultPlugins(StringArray& plugins,
+                                                   StringBuffer& sPluginsPath,
                                                    const char* destDir) const
 {
     mmapStr2PairStrStr fileMap;
     CDeploymentEngine::createInstallFileMap(m_process, ".", fileMap);
-    
+
     // Get install file list and sort out plugins
     mmapStr2PairStrStr::const_iterator i;
     mmapStr2PairStrStr::const_iterator iEnd = fileMap.end();
-    
+
     for (i=fileMap.begin(); i != iEnd; i++)
     {
         const char* dest = (*i).first.c_str();
@@ -98,7 +98,7 @@ void CPluginDeploymentEngine::getDefaultPlugins(StringArray& plugins,
             }
          else
                // Check that file matches plugin path .\plugins or ./plugins as specified in the release_eclserver file
-               if (strlen(dest) > 2 && *dest == '.' && (*(dest+1)=='\\' || *(dest+1)=='/') && 
+               if (strlen(dest) > 2 && *dest == '.' && (*(dest+1)=='\\' || *(dest+1)=='/') &&
                 strnicmp(dest+2, "plugins", sizeof("plugins")-1) == 0)
                {
                    // Append plugin to files list - only care about dlls
@@ -122,7 +122,7 @@ void CPluginDeploymentEngine::getDefaultPlugins(StringArray& plugins,
 // getPlugins
 //---------------------------------------------------------------------------
 void CPluginDeploymentEngine::getPlugins(StringArray& plugins,
-                                            StringBuffer& sPluginsPath, 
+                                            StringBuffer& sPluginsPath,
                                             const char* pluginDest) const
 {
    // Iterate through plugin references
@@ -148,7 +148,7 @@ void CPluginDeploymentEngine::getPlugins(StringArray& plugins,
          const char* ext = ::PathFindExtension(dest);
 
          // Append plugin to files list - only care about dll/so
-         if (ext && (stricmp(ext, ".dll")==0 || stricmp(ext, ".so")==0) && 
+         if (ext && (stricmp(ext, ".dll")==0 || stricmp(ext, ".so")==0) &&
              plugins.find(dest) == NotFound)
          {
             plugins.append(dest);
@@ -161,8 +161,8 @@ void CPluginDeploymentEngine::getPlugins(StringArray& plugins,
 //---------------------------------------------------------------------------
 // createInstallFileMap
 //---------------------------------------------------------------------------
-int CPluginDeploymentEngine::createInstallFileMap(IPropertyTree& node, 
-                                                     const char* destPath, 
+int CPluginDeploymentEngine::createInstallFileMap(IPropertyTree& node,
+                                                     const char* destPath,
                                                      mmapStr2PairStrStr& fileMap) const
 {
    CDeploymentEngine::createInstallFileMap(node, destPath, fileMap);
@@ -172,7 +172,7 @@ int CPluginDeploymentEngine::createInstallFileMap(IPropertyTree& node,
    StringBuffer sPluginDest;
    getPluginDirectory(destPath, sPluginDest);//get absolute path where plugins are to be deployed
 
-   //process plugin references for this eclserver process and add files for each service used by 
+   //process plugin references for this eclserver process and add files for each service used by
    //each binding before adding files for this esp process
    Owned<IPropertyTreeIterator> iter = m_process.getElements("PluginRef");
    ForEach(*iter)

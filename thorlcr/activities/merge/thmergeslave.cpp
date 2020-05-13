@@ -38,7 +38,7 @@ class GlobalMergeSlaveActivity : public CSlaveActivity
     typedef CSlaveActivity PARENT;
 
 public:
-    IArrayOf<IRowStream> streams; 
+    IArrayOf<IRowStream> streams;
     IHThorMergeArg *helper;
     Owned<IFile> tmpfile;
     Owned<IRowStream> out;
@@ -75,7 +75,7 @@ public:
 
         ~cRemoteStream()
         {
-            while (rows.ordinality()) 
+            while (rows.ordinality())
                 ReleaseThorRow(rows.dequeue());
         }
 
@@ -111,9 +111,9 @@ public:
         const void *nextRow()
         {
             if (!eos) {
-                if (rows.ordinality()==0) 
+                if (rows.ordinality()==0)
                     load();
-                if (rows.ordinality()) 
+                if (rows.ordinality())
                     return rows.dequeue();
                 eos = true;
             }
@@ -182,7 +182,7 @@ public:
 #endif
             return 0;
         }
-        void stop() 
+        void stop()
         {
             if (!stopped)
             {
@@ -210,7 +210,7 @@ public:
             return NULL;
         ActPrintLog("MERGE receiving partition from master");
         rank_t sender;
-        if (!queryJobChannel().queryJobComm().recv(mb, 0, replytag, &sender)) 
+        if (!queryJobChannel().queryJobComm().recv(mb, 0, replytag, &sender))
             return NULL;
         assertex((unsigned)sender==0);
         ActPrintLog("MERGE received partition from master");
@@ -255,7 +255,7 @@ public:
     ~GlobalMergeSlaveActivity()
     {
         try {
-            if (tmpfile) 
+            if (tmpfile)
                 tmpfile->remove();
         }
         catch (IException *e) {
@@ -309,7 +309,7 @@ public:
         while (n>1) {
             unsigned i = getRandom()%n;
             n--;
-            if (i!=n) 
+            if (i!=n)
                 streams.swap(i,n);
         }
 #endif
@@ -371,7 +371,7 @@ public:
         offset_t so = rs->getOffset();
         size32_t len = 0;
         size32_t chunksize = chunkmaxsize;
-        if (pos+chunksize>end) 
+        if (pos+chunksize>end)
             chunksize = (size32_t)(end-pos);
         do {
             OwnedConstThorRow r = rs->nextRow();
@@ -388,7 +388,7 @@ public:
         return len;
     }
 
-    const void * nextRow() 
+    const void * nextRow()
     {
         if (!abortSoon) {
             if (out) {
@@ -414,7 +414,7 @@ public:
 
 class LocalMergeSlaveActivity : public CSlaveActivity
 {
-    IArrayOf<IRowStream> streams; 
+    IArrayOf<IRowStream> streams;
     Owned<IRowStream> out;
     IHThorMergeArg *helper;
 public:

@@ -65,7 +65,7 @@ public:
     }
     ~MSortSlaveActivity()
     {
-        if (portbase) 
+        if (portbase)
             queryJobChannel().freePort(portbase,NUMSLAVEPORTS);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -75,7 +75,7 @@ public:
         barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
         portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
         ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
-        server.setLocalHost(portbase); 
+        server.setLocalHost(portbase);
         helper = (IHThorSortArg *)queryHelper();
         sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
         server.serialize(slaveData);
@@ -102,7 +102,7 @@ public:
                 barrier->cancel();
                 throw;
             }
-            
+
             Linked<IThorRowInterfaces> rowif = queryRowInterfaces(input);
             Owned<IThorRowInterfaces> auxrowif;
             if (helper->querySortedRecordSize())
@@ -200,7 +200,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if (abortSoon) 
+        if (abortSoon)
             return NULL;
         OwnedConstThorRow row = output->nextRow();
         if (!row)

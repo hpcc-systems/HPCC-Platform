@@ -100,7 +100,7 @@ public:
     virtual bool performMatch(IMatchedAction & action, const void * record, unsigned len, const void * data) = 0;
     virtual void reset() = 0;
     // only valid after performMatch has been called, and whilst the parameters passed to performMatch aren't freed.
-    virtual INlpResultIterator * queryResultIter() = 0;     
+    virtual INlpResultIterator * queryResultIter() = 0;
 };
 
 
@@ -116,12 +116,12 @@ interface INlpParseAlgorithm : public IInterface
     enum ScanAction     { NlpScanWhole, NlpScanNone, NlpScanNext, NlpScanAll };
 
 public:
-    //MORE: This should be implemented so that we can have interchangable algorithms, 
+    //MORE: This should be implemented so that we can have interchangable algorithms,
     //and so they can be implemented as add on bits of the system.
     virtual void setOptions(MatchAction _matchAction, ScanAction _scanAction, NlpInputFormat _inputFormat, unsigned _keepLimit, unsigned _atMostLimit) = 0;
-    virtual void setChoose(bool _chooseMin, bool _chooseMax, bool _chooseBest, bool _chooseBestScan) = 0; 
-    virtual void setJoin(bool _notMatched, bool _notMatchedOnly) = 0; 
-    virtual void setLimit(size32_t _maxLength) = 0; 
+    virtual void setChoose(bool _chooseMin, bool _chooseMax, bool _chooseBest, bool _chooseBestScan) = 0;
+    virtual void setJoin(bool _notMatched, bool _notMatchedOnly) = 0;
+    virtual void setLimit(size32_t _maxLength) = 0;
     virtual void serialize(MemoryBuffer & out) = 0;
 
     virtual void init(IHThorParseArg & arg) = 0;

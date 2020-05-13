@@ -34,7 +34,7 @@ public:\
 #define END_CONSTRUCTOR() }
 
 #define REQ_PARAMETER(MyTag) \
-    rpc_call->get_value(#MyTag, m_##MyTag); 
+    rpc_call->get_value(#MyTag, m_##MyTag);
 
 #define REQ_METHOD_STRINGATTR(MyFunction, MyTag) \
     StringAttr m_##MyTag; \

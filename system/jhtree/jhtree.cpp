@@ -18,9 +18,9 @@
 //****************************************************************************
 // Name:         jhtree.cpp
 //
-// Purpose:      
+// Purpose:
 //
-// Description:    
+// Description:
 //
 // Notes:        Supports only static (non-changing) files
 //
@@ -440,8 +440,8 @@ public:
         started = false;
     }
 
-    virtual void append(IKeySegmentMonitor *segment) 
-    { 
+    virtual void append(IKeySegmentMonitor *segment)
+    {
         assertex(!newFilters && !started);
         filter->append(segment);
     }
@@ -637,7 +637,7 @@ private:
     CNodeMRUCache leafCache;
     CNodeMRUCache blobCache;
     CNodeMRUCache preloadCache;
-    bool cacheNodes; 
+    bool cacheNodes;
     bool cacheLeaves;
     bool cacheBlobs;
     bool preloadNodes;
@@ -656,7 +656,7 @@ public:
 
     bool isPreloaded(int keyID, offset_t pos);
 
-    inline bool getNodeCachePreload() 
+    inline bool getNodeCachePreload()
     {
         return preloadNodes;
     }
@@ -679,14 +679,14 @@ public:
     {
         CriticalBlock block(lock);
         unsigned oldV = leafCache.setMemLimit(newSize);
-        cacheLeaves = (newSize != 0); 
+        cacheLeaves = (newSize != 0);
         return oldV;
     }
     inline size32_t setBlobCacheMem(size32_t newSize)
     {
         CriticalBlock block(lock);
         unsigned oldV = blobCache.setMemLimit(newSize);
-        cacheBlobs = (newSize != 0); 
+        cacheBlobs = (newSize != 0);
         return oldV;
     }
     void clear()
@@ -831,7 +831,7 @@ StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
 
     Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
     ForEach(*iter)
-    {           
+    {
         CKeyIndexMapping &mapping = iter->query();
         IKeyIndex &index = mapping.query();
         const char *name = mapping.queryFindString();
@@ -848,7 +848,7 @@ void CKeyStore::resetMetrics()
 
     Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
     ForEach(*iter)
-    {           
+    {
         CKeyIndexMapping &mapping = iter->query();
         IKeyIndex &index = mapping.query();
         index.resetCounts();
@@ -869,7 +869,7 @@ void CKeyStore::clearCache(bool killAll)
         StringArray goers;
         Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
         ForEach(*iter)
-        {           
+        {
             CKeyIndexMapping &mapping = iter->query();
             IKeyIndex &index = mapping.query();
             if (!index.IsShared())
@@ -895,7 +895,7 @@ void CKeyStore::clearCacheEntry(const char *keyName)
 
     StringArray goers;
     ForEach(*iter)
-    {           
+    {
         CKeyIndexMapping &mapping = iter->query();
         IKeyIndex &index = mapping.query();
         if (!index.IsShared())
@@ -1029,7 +1029,7 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
     nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
     {
-        IException *E = MakeStringException(errno, "Error reading node at position %" I64F "x past EOF", pos); 
+        IException *E = MakeStringException(errno, "Error reading node at position %" I64F "x past EOF", pos);
         StringBuffer m;
         m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
@@ -1056,7 +1056,7 @@ CDiskKeyIndex::CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool isTL
     init(hdr, isTLK, allowPreload);
 }
 
-CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos) 
+CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
 {
     nodesLoaded++;
     unsigned nodeSize = keyHdr->getNodeSize();
@@ -1065,7 +1065,7 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
-        IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
+        IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos);
         StringBuffer m;
         m.appendf("In key %s, position 0x%" I64F "x", name.get(), pos);
         EXCLOG(E, m.str());
@@ -1074,7 +1074,7 @@ CJHTreeNode *CDiskKeyIndex::loadNode(offset_t pos)
     return CKeyIndex::loadNode(nodeData, pos, true);
 }
 
-CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy) 
+CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
 {
     try
     {
@@ -1150,10 +1150,10 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
     return new CKeyCursor(*this, filter, logExcessiveSeeks);
 }
 
-CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx) 
-{ 
+CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx)
+{
     latestGetNodeOffset = offset;
-    return cache->getNode(this, iD, offset, ctx, isTopLevelKey()); 
+    return cache->getNode(this, iD, offset, ctx, isTopLevelKey());
 }
 
 void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
@@ -1512,12 +1512,12 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
         // 2. The record we want is on the current page
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
-        {   
+        {
             int rc = node->compareValueAt(src, ++nodeKey);
             if (rc <= 0)
             {
                 node->getValueAt(nodeKey, dst);
-                return true; 
+                return true;
             }
             if (nodeKey < numKeys-1)
             {
@@ -1556,7 +1556,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
             if (node)
             {
                 node->getValueAt(nodeKey, dst);
-                return true; 
+                return true;
             }
             else
                 return false;
@@ -1586,12 +1586,12 @@ bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
         // 2. The record we want is on the current page
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
-        {   
+        {
             int rc = node->compareValueAt(src, ++nodeKey);
             if (rc < 0)
             {
                 --nodeKey;
-                return true; 
+                return true;
             }
             if (nodeKey < numKeys-1)
             {
@@ -1631,7 +1631,7 @@ bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
             }
             if (node)
             {
-                return true; 
+                return true;
             }
             else
                 return false;
@@ -2156,7 +2156,7 @@ bool IndexRowFilter::canMatch() const
 class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
-    unsigned crc; 
+    unsigned crc;
     Linked<IDelayedFile> delayedFile;
     mutable Owned<IFileIO> iFileIO;
     mutable Owned<IKeyIndex> realKey;
@@ -2299,7 +2299,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
     // Also one cache per key would surely be faster, and could still use a global total
     if (!pos)
         return NULL;
-    { 
+    {
         // It's a shame that we don't know the type before we read it. But probably not that big a deal
         CriticalBlock block(lock);
         CKeyIdAndPos key(iD, pos);
@@ -2609,15 +2609,15 @@ public:
                    This code restores the heap property
                 */
                 unsigned p = 0; /* parent */
-                while (1) 
+                while (1)
                 {
                     unsigned c = p*2 + 1; /* child */
-                    if ( c >= activekeys ) 
+                    if ( c >= activekeys )
                         break;
                     /* Select smaller child */
                     if ( c+1 < activekeys && BuffCompare( c+1, c ) < 0 ) c += 1;
                     /* If child is greater or equal than parent then we are done */
-                    if ( BuffCompare( c, p ) >= 0 ) 
+                    if ( BuffCompare( c, p ) >= 0 )
                         break;
                     /* Swap parent and child */
                     int r = mergeheap[c];
@@ -2672,9 +2672,9 @@ public:
     }
 
     virtual void setLayoutTranslator(const IDynamicTransform * trans) override
-    { 
+    {
         if (trans && trans->keyedTranslated())
-            throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order"); 
+            throw MakeStringException(0, "Layout translation not supported when merging key parts, as it may change sort order");
 
         // It MIGHT be possible to support translation still if all keyCursors have the same translation
         // would have to translate AFTER the merge, but that's ok
@@ -2746,7 +2746,7 @@ public:
                 }
             }
         }
-        if (activekeys>0) 
+        if (activekeys>0)
         {
             if (stats.ctx)
                 stats.ctx->noteStatistic(StNumIndexMerges, activekeys);
@@ -2761,10 +2761,10 @@ public:
             {
                 int r = mergeheap[i];
                 int c = i; /* child */
-                while (c > 0) 
+                while (c > 0)
                 {
                     int p = (c-1)/2; /* parent */
-                    if ( BuffCompare( c, p ) >= 0 ) 
+                    if ( BuffCompare( c, p ) >= 0 )
                         break;
                     mergeheap[c] = mergeheap[p];
                     mergeheap[p] = r;
@@ -2832,15 +2832,15 @@ public:
                This code restores the heap property
             */
             unsigned p = 0; /* parent */
-            while (1) 
+            while (1)
             {
                 unsigned c = p*2 + 1; /* child */
-                if ( c >= activekeys ) 
+                if ( c >= activekeys )
                     break;
                 /* Select smaller child */
                 if ( c+1 < activekeys && BuffCompare( c+1, c ) < 0 ) c += 1;
                 /* If child is greater or equal than parent then we are done */
-                if ( BuffCompare( c, p ) >= 0 ) 
+                if ( BuffCompare( c, p ) >= 0 )
                     break;
                 /* Swap parent and child */
                 int r = mergeheap[c];
@@ -2951,7 +2951,7 @@ class CKeyIndexSet : implements IKeyIndexSet, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    
+
     virtual bool IsShared() const { return CInterface::IsShared(); }
     void addIndex(IKeyIndex *i) { indexes.append(i); }
     virtual unsigned numParts() { return indexes.length(); }
@@ -3034,7 +3034,7 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
-class IKeyManagerTest : public CppUnit::TestFixture  
+class IKeyManagerTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( IKeyManagerTest  );
         CPPUNIT_TEST(testStepping);
@@ -3093,8 +3093,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000003033", 10)==0);
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000005033", 10)==0);
             ASSERT(tlk1->lookup(true)); ASSERT(memcmp(tlk1->queryKeyBuffer(), "0000006033", 10)==0);
-            ASSERT(!tlk1->lookup(true)); 
-            ASSERT(!tlk1->lookup(true)); 
+            ASSERT(!tlk1->lookup(true));
+            ASSERT(!tlk1->lookup(true));
 
             Owned <IKeyManager> tlk2 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
             tlk2->setKey(keyset);
@@ -3109,8 +3109,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000003033", 10)==0);
             ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000005033", 10)==0);
             ASSERT(tlk2->lookup(true)); ASSERT(memcmp(tlk2->queryKeyBuffer(), "0000006033", 10)==0);
-            ASSERT(!tlk2->lookup(true)); 
-            ASSERT(!tlk2->lookup(true)); 
+            ASSERT(!tlk2->lookup(true));
+            ASSERT(!tlk2->lookup(true));
 
             Owned <IKeyManager> tlk3 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
             tlk3->setKey(keyset);
@@ -3122,8 +3122,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(tlk3->lookupSkip("031", 7, 3)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000003031", 10)==0);
             ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000005031", 10)==0);
             ASSERT(tlk3->lookup(true)); ASSERT(memcmp(tlk3->queryKeyBuffer(), "0000006031", 10)==0);
-            ASSERT(!tlk3->lookupSkip("081", 7, 3)); 
-            ASSERT(!tlk3->lookup(true)); 
+            ASSERT(!tlk3->lookupSkip("081", 7, 3));
+            ASSERT(!tlk3->lookup(true));
 
             Owned <IKeyManager> tlk4 = createKeyMerger(meta->queryRecordAccessor(true), NULL, 7, NULL, false, false);
             tlk4->setKey(keyset);
@@ -3143,8 +3143,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000003999", 10)==0);
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000005999", 10)==0);
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006999", 10)==0);
-            ASSERT(!tlk4->lookup(true)); 
-            ASSERT(!tlk4->lookup(true)); 
+            ASSERT(!tlk4->lookup(true));
+            ASSERT(!tlk4->lookup(true));
 
         }
         clearKeyStoreCache(true);
@@ -3397,17 +3397,17 @@ protected:
                     tlk3->reset();
                     for (i = 1; i <= 100; i++)
                     {
-                        ASSERT(tlk3->lookup(true)); 
+                        ASSERT(tlk3->lookup(true));
                         sprintf(buf, "%010d", i);
                         ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         if (i==48 || i==49)
                         {
-                            ASSERT(tlk3->lookup(true)); 
+                            ASSERT(tlk3->lookup(true));
                             ASSERT(memcmp(tlk3->queryKeyBuffer(), buf, 10)==0);
                         }
                     }
-                    ASSERT(!tlk3->lookup(true)); 
-                    ASSERT(!tlk3->lookup(true));    
+                    ASSERT(!tlk3->lookup(true));
+                    ASSERT(!tlk3->lookup(true));
                 }
             }
             tlk1->releaseSegmentMonitors();

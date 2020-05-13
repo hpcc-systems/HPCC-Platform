@@ -186,8 +186,8 @@ void SprayTest(unsigned num)
                 source->setRecordSize(32);  // needed cause going to split file
                 destination->setLogicalName("testing::nigel::testfile1");
                 destination->setDirectory("/c$/thordata/testing/nigel");
-                destination->setFileMask("testfile1._$P$_of_$N$");                  
-                destination->setGroupName("thor_fi_01");    
+                destination->setFileMask("testfile1._$P$_of_$N$");
+                destination->setGroupName("thor_fi_01");
                 options->setReplicate(true);
                 options->setOverwrite(true);
             }
@@ -201,7 +201,7 @@ void SprayTest(unsigned num)
                 destination->setTitle("testfile1.d02");
                 options->setOverwrite(true);
             }
-            PROGLOG("submitting %s",wu->queryId()); 
+            PROGLOG("submitting %s",wu->queryId());
             submitDFUWorkUnit(wu.getClear());
         }
     }
@@ -256,8 +256,8 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setRecordSize(32);  // needed cause going to split file
             destination->setLogicalName("thor_dev::nigel::testfile1");
             destination->setDirectory("c:\\thordata\\thor_dev\\nigel");
-            destination->setFileMask("testfile1._$P$_of_$N$");                  
-            destination->setGroupName("thor_dev");  
+            destination->setFileMask("testfile1._$P$_of_$N$");
+            destination->setGroupName("thor_dev");
             options->setReplicate(true);
             options->setOverwrite(true);
         }
@@ -279,8 +279,8 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setLogicalName("thor_dev::nigel::testfile1");
             destination->setLogicalName("thor_dev::nigel::testfile2");
             destination->setDirectory("c:\\thordata\\thor_dev\\nigel");
-            destination->setFileMask("testfile2._$P$_of_$N$");                  
-            destination->setGroupName("thor_dev");  
+            destination->setFileMask("testfile2._$P$_of_$N$");
+            destination->setGroupName("thor_dev");
             options->setReplicate(true);
         }
         break;
@@ -328,8 +328,8 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setLogicalName("nigel18::dist1.out");
             destination->setLogicalName("nigel18::dist1.cpy");
             destination->setDirectory("c:\\thordata\\nigel18");
-            destination->setFileMask("dist1.cpy._$P$_of_$N$");                  
-            destination->setGroupName("nigel18");   
+            destination->setFileMask("dist1.cpy._$P$_of_$N$");
+            destination->setGroupName("nigel18");
             options->setReplicate(true);
         }
         break;
@@ -344,22 +344,22 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setRecordSize(16);  // needed cause going to split file
             destination->setLogicalName("nigel18::testout1");
             destination->setDirectory("c:\\thordata\\nigel18");
-            destination->setFileMask("testout1._$P$_of_$N$");                   
-            destination->setGroupName("nigel18");   
+            destination->setFileMask("testout1._$P$_of_$N$");
+            destination->setGroupName("nigel18");
             options->setReplicate(true);
             options->setOverwrite(true);
         }
         break;
     case 7:  // copy from an external Dali
-        {   
+        {
             wu->setCommand(DFUcmd_copy);
             source->setLogicalName("nigel18::dist1.out");
             SocketEndpoint ep("10.150.10.75");
             source->setForeignDali(ep);
             destination->setLogicalName("nigel18::dist2.cpy");
             destination->setDirectory("c:\\thordata\\nigel18");
-            destination->setFileMask("dist2.cpy._$P$_of_$N$");                  
-            destination->setGroupName("nigel18");   
+            destination->setFileMask("dist2.cpy._$P$_of_$N$");
+            destination->setGroupName("nigel18");
             options->setReplicate(true);
             options->setOverwrite(true);
         }
@@ -382,8 +382,8 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setLogicalName("thor_data400::nhtest::testspray1");
             destination->setLogicalName("thor_data400::nhtest::testspray1");
             destination->setDirectory("c:\\thordata\\thor_data400\\nhtest");
-            destination->setFileMask("testspray1._$P$_of_$N$");                 
-            destination->setGroupName("thor_data400");  
+            destination->setFileMask("testspray1._$P$_of_$N$");
+            destination->setGroupName("thor_data400");
             options->setReplicate(true);
             options->setOverwrite(true);
         }
@@ -397,14 +397,14 @@ void testWUcreate(int kind,StringBuffer &wuidout)
             source->setLogicalName("thor_data400::base::hss_name_phonew20050107-143927");
             destination->setLogicalName("thor_data400::nhtest::testcopy1");
             destination->setDirectory("c:\\thordata\\thor_data400\\nhtest");
-            destination->setFileMask("testcopy1._$P$_of_$N$");                  
-            destination->setGroupName("thor_data400");  
+            destination->setFileMask("testcopy1._$P$_of_$N$");
+            destination->setGroupName("thor_data400");
             options->setReplicate(true);
             options->setOverwrite(true);
         }
         break;
     }
-    wuidout.append(wu->queryId());  
+    wuidout.append(wu->queryId());
     submitDFUWorkUnit(wu.getClear());
 }
 
@@ -607,7 +607,7 @@ void testMultiFilename()
 
 void testIterate()
 {
-    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();   
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IConstDFUWorkUnitIterator> iter = //factory->getWorkUnitsByOwner("Nigel");
                                             factory->getWorkUnitsByState(DFUstate_started);
     StringBuffer wuid;
@@ -620,8 +620,8 @@ void testIterate()
             PROGLOG("  job name = %s",wu->getJobName(s.clear()).str());
             PROGLOG("  queue    = %s",wu->getQueue(s.clear()).str());
             PROGLOG("  state    = %s",encodeDFUstate(wu->queryProgress()->getState(),s.clear()).str());
-    
-            IConstDFUfileSpec * file = wu->queryDestination(); 
+
+            IConstDFUfileSpec * file = wu->queryDestination();
             StringBuffer tmp;
             PROGLOG("  dest    = %s",file->getTitle(tmp).str());
 
@@ -631,7 +631,7 @@ void testIterate()
 
 void testPagedIterate()
 {
-    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();   
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     __int64 cachehint=0;
     unsigned n=0;
     for (unsigned page=0;page<3;page++) {
@@ -647,8 +647,8 @@ void testPagedIterate()
             PROGLOG("  queue    = %s",wu->getQueue(s.clear()).str());
             PROGLOG("  user     = %s",wu->getUser(s.clear()).str());
             PROGLOG("  state    = %s",encodeDFUstate(wu->queryProgress()->getState(),s.clear()).str());
-    
-            IConstDFUfileSpec * file = wu->queryDestination(); 
+
+            IConstDFUfileSpec * file = wu->queryDestination();
             StringBuffer tmp;
             PROGLOG("  dest    = %s",file->getTitle(tmp).str());
 
@@ -671,7 +671,7 @@ void testDFUwuqueue()
 void testDFUwuqueue(const char *name)
 {
     StringAttrArray wulist;
-    unsigned running = queuedJobs(name,wulist); 
+    unsigned running = queuedJobs(name,wulist);
     StringBuffer cmd;
     StringBuffer cname;
     StringBuffer jname;
@@ -679,7 +679,7 @@ void testDFUwuqueue(const char *name)
     ForEachItemIn(i,wulist) {
         const char *wuid = wulist.item(i).text.get();
         Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid,false);
-        if (wu) 
+        if (wu)
             PROGLOG("%s: %s,%s,%s,%s,%s",wuid,i<running?"Running":"Queued",
               encodeDFUcommand(wu->getCommand(),cmd.clear()).str(),
               wu->getClusterName(cname.clear()).str(),
@@ -688,7 +688,7 @@ void testDFUwuqueue(const char *name)
             );
     }
 }
-    
+
 #endif
 
 #define WAIT_SECONDS 30
@@ -707,7 +707,7 @@ void testRepeatedFiles1(StringBuffer &wuid)
     // IMPORT single cluster, part repeated
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test job 1");
     wu->setQueue("dfuserver_queue");
@@ -746,7 +746,7 @@ void testRepeatedFiles2(StringBuffer &wuid)
     // COPY single cluster, part repeated  (uses file created by 1)
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test job 2");
     wu->setQueue("dfuserver_queue");
@@ -795,7 +795,7 @@ void testRepeatedFiles3(StringBuffer &wuid)
     // IMPORT double cluster, part repeated
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test job 3");
     wu->setQueue("dfuserver_queue");
@@ -839,7 +839,7 @@ void testRepeatedFiles4(StringBuffer &wuid)
     Owned<IGroup> auxgrp =  getAuxGroup();
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test job 2");
     wu->setQueue("dfuserver_queue");
@@ -869,7 +869,7 @@ void testRepeatedFiles5(StringBuffer &wuid)
     Owned<IGroup> auxgrp =  getAuxGroup();
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test job 2");
     wu->setQueue("dfuserver_queue");
@@ -900,7 +900,7 @@ void testSuperCopy1(StringBuffer &wuid)
 {
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    wuid.append(wu->queryId()); 
+    wuid.append(wu->queryId());
     wu->setClusterName("thor");
     wu->setJobName("test super copy 1");
     wu->setQueue("dfuserver_queue");
@@ -934,7 +934,7 @@ void testSuperCopy1(StringBuffer &wuid)
 
 struct ReleaseAtomBlock { ~ReleaseAtomBlock() { releaseAtoms(); } };
 int main(int argc, char* argv[])
-{   
+{
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
 
@@ -954,9 +954,9 @@ int main(int argc, char* argv[])
         SocketEndpointArray epa;
         ep.set(argv[1],DALI_SERVER_PORT);
         epa.append(ep);
-        Owned<IGroup> group = createIGroup(epa); 
+        Owned<IGroup> group = createIGroup(epa);
         initClientProcess(group,DCR_Testing);
-        if (0) { 
+        if (0) {
             //test2();
             //testMultiFilename();
             //testPagedIterate();
@@ -982,7 +982,7 @@ int main(int argc, char* argv[])
             testSuperCopy1(wuid);
 //          testRepeatedFiles5(wuid);
 
-            
+
 //          testWUcreate(1,wuid.clear());
 //          testWUcreate(2,wuid.clear());
 //          testWUcreate(3,wuid.clear());
@@ -1029,8 +1029,8 @@ void simpleRoxieCopy()
     bool overwrite;
     DFUclusterPartDiskMapping val;                          // roxie
     const char * baseDir;                                   // roxie
-    
-    
+
+
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
     wu->setJobName(dstName);
@@ -1066,7 +1066,7 @@ void simpleRoxieCopy()
     options->setOverwrite(overwrite);
     options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
     // other options
-    wu->submit();                            
+    wu->submit();
 }
 
 
@@ -1087,8 +1087,8 @@ void repeatedLastPartRoxieCopy()
 
     DFUclusterPartDiskMapping val;                          // roxie
     const char * baseDir;                                   // roxie
-    
-    
+
+
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
     wu->setJobName(dstName);
@@ -1124,9 +1124,9 @@ void repeatedLastPartRoxieCopy()
     options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
 
     options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
-    
+
     // other options
-    wu->submit();                            
+    wu->submit();
 }
 
 void repeatedLastPartWithServersRoxieCopy()
@@ -1147,9 +1147,9 @@ void repeatedLastPartWithServersRoxieCopy()
     const char * baseDir;                                   // roxie
     const char *farmname;                           // **** RoxieFarmProcess/@name in Environment
     const char *farmBaseDir;                        // **** base directory for farm
-                                                    
-    
-    
+
+
+
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
     wu->setJobName(dstName);
@@ -1190,7 +1190,7 @@ void repeatedLastPartWithServersRoxieCopy()
     options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
 
     // other options
-    wu->submit();                            
+    wu->submit();
 }
 
 
@@ -1214,8 +1214,8 @@ void simpleRoxieSuperCopy()
 
     const char * extraPrefix;           // **** extra leading prefix for sub-file names (e.g. "roxie1")
                                         // should *not* contain trailing "::"
-    
-    
+
+
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
     wu->setJobName(dstName);
@@ -1252,7 +1252,7 @@ void simpleRoxieSuperCopy()
     options->setOverwrite(overwrite);
     options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
     // other options
-    wu->submit();                            
+    wu->submit();
 }
 
 #endif

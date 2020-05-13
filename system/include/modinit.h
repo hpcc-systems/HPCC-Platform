@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-// 
+//
 // Defines system wide MODULE_INIT priority values.
 // The higher the value the earlier it will be created.
 // Destruction is in reverse priority, i.e. highest will be destoyed last.

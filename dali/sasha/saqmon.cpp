@@ -21,7 +21,7 @@
 
 
 class CSashaQMonitorServer: public ISashaServer, public Thread
-{  
+{
 
     bool stopped;
     bool qinitdone;
@@ -51,7 +51,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -189,7 +189,7 @@ public:
                                 acs.appendListUniq(allowedClusters.str(), ",");
                                 bool found = true;
                                 ForEachItemIn(i,acs) {
-                                    if (strcmp(cnames.item(qi),acs.item(i))==0) 
+                                    if (strcmp(cnames.item(qi),acs.item(i))==0)
                                         return doSwitch(wuid,acs.item(i));
                                 }
                             }
@@ -250,7 +250,7 @@ public:
                         queues.item(qi).getStats(connected,waiting,enqueued);
                         if (moninter==0)
                             LOG(MCauditInfo,",ThorQueueMonitor,%s,%d,%d,%d,%d,%d,%s,%s",qname,wuids.ordinality(),enqueued,waiting,connected,qidlecount[qi],wuids.ordinality()>0?wuids.item(0):"---",wuids.ordinality()>1?wuids.item(1):"---");
-                        if (waiting>0) 
+                        if (waiting>0)
                             qidlecount[qi]++;
                         else
                             qidlecount[qi] = 0;

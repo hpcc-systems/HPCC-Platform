@@ -7975,7 +7975,7 @@ IHqlExpression * ScalarGlobalTransformer::createTransformed(IHqlExpression * exp
     case no_ensureresult:
         {
         //Don't prevent no_globalscope being added in analyse because other expression may require
-        //it to be made global.  However if a no_globalscope has been added to the child, remove it.  
+        //it to be made global.  However if a no_globalscope has been added to the child, remove it.
         IHqlExpression * child = transformed->queryChild(0);
         if (child->getOperator() == no_globalscope)
         {

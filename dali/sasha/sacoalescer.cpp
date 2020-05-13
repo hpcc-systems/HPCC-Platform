@@ -36,15 +36,15 @@ void coalesceDatastore(bool force)
             coalesceProps.setown(createPTree("Coalescer"));
         StringBuffer dataPath, backupPath;
         IPropertyTree &confProps = querySDS().queryProperties();
-        confProps.getProp("@dataPathUrl", dataPath); 
-        confProps.getProp("@backupPathUrl", backupPath); 
+        confProps.getProp("@dataPathUrl", dataPath);
+        confProps.getProp("@backupPathUrl", backupPath);
         unsigned keepStores = confProps.getPropInt("@keepStores");
         if (0 == dataPath.length())
         {
             OERRLOG("COALESCER: No dali data path found.");
             return;
         }
-        
+
         if (backupPath.length())
             addPathSepChar(backupPath);
         addPathSepChar(dataPath);
@@ -60,7 +60,7 @@ void coalesceDatastore(bool force)
             Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
-            if (minDeltaSize) 
+            if (minDeltaSize)
             {
                 StringBuffer detachPath;
                 detachPath.append(dataPath);
@@ -82,7 +82,7 @@ void coalesceDatastore(bool force)
             }
 
 
-            StringBuffer storeFilename(dataPath);   
+            StringBuffer storeFilename(dataPath);
             iStoreHelper->getCurrentStoreFilename(storeFilename);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
@@ -195,7 +195,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         CriticalBlock b(suspendResumeCrit);
@@ -257,7 +257,7 @@ public:
                         PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
                     else
                         OERRLOG("COALESCE: Running '%s' in unknown current directory",cmd.str());
-                    if (!invoke_program(cmd.str(), runcode, false, NULL, &h)) 
+                    if (!invoke_program(cmd.str(), runcode, false, NULL, &h))
                         OERRLOG("Could not run saserver in coalesce mode");
                     else {
                         PROGLOG("COALESCE: started pid = %d",(int)h);

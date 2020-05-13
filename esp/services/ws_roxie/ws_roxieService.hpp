@@ -41,7 +41,7 @@ public:
     bool onPublishConfiguration(IEspContext &context, IEspPublishConfigurationRequest &req, IEspPublishConfigurationResponse &resp);
     bool onTestQuery(IEspContext &context, IEspTestQueryRequest &req, IEspTestQueryResponse &resp);
     bool onRemoveDll(IEspContext &context, IEspRemoveDllRequest &req, IEspRemoveDllResponse &resp);
-    
+
     bool onSetActiveVersion(IEspContext &context, IEspSetActiveVersionRequest &req, IEspSetActiveVersionResponse &resp);
     bool onGetActiveVersion(IEspContext &context, IEspGetActiveVersionRequest &req, IEspGetActiveVersionResponse &resp);
     bool onGetQueryVersionList(IEspContext &context, IEspGetQueryVersionListRequest &req, IEspGetQueryVersionListResponse &resp);

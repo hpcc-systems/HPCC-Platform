@@ -56,7 +56,7 @@
 //#define HACK_TO_IGNORE_TABLE
 
 //#define TraceExprPrintLog(x, expr)                DBGLOG(x ": %s", expr->toString(StringBuffer()).str());
-#define TraceExprPrintLog(x, expr)              
+#define TraceExprPrintLog(x, expr)
 //#define TraceTableFields
 
 inline bool needToSerializeRecord(node_operator mode)
@@ -636,10 +636,10 @@ class SourceBuilder
 public:
     SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : tableExpr(_tableExpr), newInputMapping(false), translator(_translator)
-    { 
+    {
         nameExpr.setown(foldHqlExpression(_nameExpr));
-        needDefaultTransform = true; 
-        needToCallTransform = false; 
+        needDefaultTransform = true;
+        needToCallTransform = false;
         isPreloaded = false;
         isCompoundCount = false;
         transformCanFilter = false;
@@ -1423,7 +1423,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             //Following is a bit nasty....
             //Converting the no_hqlproject to a no_newusertable means that some of the expressions
             //are commoned up with expressions calculated by a previous filter, reducing the code.
-            //However, it isn't valid if transform contains an instance of newSelect - 
+            //However, it isn't valid if transform contains an instance of newSelect -
             //e.g. project(i(x), transform(exists(i....))) - see jholt25.xhql
             //And unfortunately it fails silently.
             //So we use queryReplaceSelector which fails if an ambiguity is introduced by the replacement
@@ -1573,16 +1573,16 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
 
             BoundRow * rightCursor = NULL;
             LinkedHqlExpr transform = expr->queryChild(3);
-            if (!containsOnlyLeft(transform, true)) 
+            if (!containsOnlyLeft(transform, true))
             {
                 IHqlExpression * rhs = expr->queryChild(1);
                 IHqlExpression * memoryRhsRecord = rhs->queryRecord();
 
-                //RIGHT is the input data row.  
+                //RIGHT is the input data row.
                 //a) In hthor the remote file is read locally, so RIGHT is a deserialized unmodified row.
                 //b) in roxie it is serialized, and accessed in its serialized form.
                 //c) in thor it is serialized, but also (inefficiently) deserialized, so use the deserialized form.
-                //NOTE: Currently extractJoinFields either does nothing, or sends the entire row.  Needless to say that could be improved - 
+                //NOTE: Currently extractJoinFields either does nothing, or sends the entire row.  Needless to say that could be improved -
                 //and would mean the roxie/thor code required changing
                 if (translator.targetRoxie())
                 {
@@ -2346,7 +2346,7 @@ void SourceBuilder::buildGroupAggregateProcessHelper(ParentExtract * extractBuil
 
     if (aggregate->getOperator() == no_aggregate)
     {
-        //It is inefficient to call processUserAggregateTransform() twice, but this is an unusual construct, so leave as it 
+        //It is inefficient to call processUserAggregateTransform() twice, but this is an unusual construct, so leave as it
         //is for the moment.
         OwnedHqlExpr firstTransform;
         OwnedHqlExpr nextTransform;
@@ -2945,7 +2945,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     if (activityKind != TAKpiperead)
         translator.buildMetaMember(instance->classctx, projectedRecord, isGrouped(tableExpr), "queryProjectedDiskRecordSize");
 
-    buildLimits(instance->startctx, expr, instance->activityId); 
+    buildLimits(instance->startctx, expr, instance->activityId);
     buildKeyedLimitHelper(expr);
 
     //Note the helper base class contains code like the following
@@ -3174,7 +3174,7 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
             translator.doBuildXmlReadMember(*instance, expr, "queryXmlTransformer", usesContents);
             translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryAttributeChild(xmlFromPipe, rowAtom, 0));
         }
-        
+
         StringBuffer flags;
         if (tableExpr->hasAttribute(groupAtom))      // not supported in parser?
             flags.append("|TPFgroupeachrow");
@@ -3388,7 +3388,7 @@ class DiskNormalizeBuilder : public DiskReadBuilderBase
 public:
     DiskNormalizeBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
-    { 
+    {
     }
 
     virtual void buildTransform(IHqlExpression * expr);
@@ -3460,7 +3460,7 @@ class DiskAggregateBuilder : public DiskReadBuilderBase
 public:
     DiskAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
-    { 
+    {
         failedFilterValue.clear();
     }
 
@@ -3528,7 +3528,7 @@ class DiskCountBuilder : public DiskReadBuilderBase
 public:
     DiskCountBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, node_operator _aggOp)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
-    { 
+    {
         aggOp = _aggOp;
         isCompoundCount = true;
         failedFilterValue.set(queryZero());
@@ -3627,7 +3627,7 @@ class DiskGroupAggregateBuilder : public DiskReadBuilderBase
 public:
     DiskGroupAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : DiskReadBuilderBase(_translator, _tableExpr, _nameExpr, false)
-    { 
+    {
         failedFilterValue.clear();
     }
 
@@ -3660,7 +3660,7 @@ void DiskGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
 void DiskGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 {
     MemberFunction func(translator, instance->startctx, "void doProcessRow(const byte * left, IHThorGroupAggregateCallback * callback)");
-    bool accessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_file_logicalname); 
+    bool accessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_file_logicalname);
     buildGroupAggregateTransformBody(func.ctx, expr, isNormalize || accessesCallback, true);
 }
 
@@ -3698,7 +3698,7 @@ class ChildBuilderBase : public SourceBuilder
 public:
     ChildBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : SourceBuilder(_translator, _tableExpr, _nameExpr)
-    { 
+    {
     }
 
     virtual void buildMembers(IHqlExpression * expr) {}
@@ -3712,7 +3712,7 @@ class ChildNormalizeBuilder : public ChildBuilderBase
 public:
     ChildNormalizeBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : ChildBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
     }
 
     virtual void buildTransform(IHqlExpression * expr);
@@ -3771,7 +3771,7 @@ class ChildAggregateBuilder : public ChildBuilderBase
 public:
     ChildAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : ChildBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
         failedFilterValue.clear();
     }
 
@@ -3826,7 +3826,7 @@ class ChildGroupAggregateBuilder : public ChildBuilderBase
 public:
     ChildGroupAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : ChildBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
         failedFilterValue.clear();
     }
 
@@ -3889,7 +3889,7 @@ class ChildThroughNormalizeBuilder : public ChildBuilderBase
 public:
     ChildThroughNormalizeBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : ChildBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
     }
 
     virtual void buildTransform(IHqlExpression * expr);
@@ -3972,7 +3972,7 @@ class IndexReadBuilderBase : public SourceBuilder
 public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, false)
-    { 
+    {
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -4245,7 +4245,7 @@ class IndexNormalizeBuilder : public IndexReadBuilderBase
 public:
     IndexNormalizeBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
     }
 
     virtual void buildTransform(IHqlExpression * expr);
@@ -4317,7 +4317,7 @@ class IndexAggregateBuilder : public IndexReadBuilderBase
 public:
     IndexAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
         failedFilterValue.clear();
     }
 
@@ -4373,7 +4373,7 @@ class IndexCountBuilder : public IndexReadBuilderBase
 public:
     IndexCountBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, node_operator _aggOp)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
         aggOp = _aggOp;
         isCompoundCount = true;
         failedFilterValue.set(queryZero());
@@ -4483,7 +4483,7 @@ class IndexGroupAggregateBuilder : public IndexReadBuilderBase
 public:
     IndexGroupAggregateBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
         : IndexReadBuilderBase(_translator, _tableExpr, _nameExpr)
-    { 
+    {
         failedFilterValue.clear();
         transformAccessesCallback = false;
     }
@@ -4510,7 +4510,7 @@ protected:
 
 void IndexGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
 {
-    transformAccessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_id2blob); 
+    transformAccessesCallback = containsOperator(expr, no_filepos) || containsOperator(expr, no_id2blob);
 
     buildFilenameMember();
     buildGroupingMonitors(expr, monitors);
@@ -4911,7 +4911,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.bindTableCursor(func.ctx, fetch->queryChild(1), "right", no_right, selSeq);
         translator.buildReturn(func.ctx, fetch->queryChild(2));
     }
-    
+
     translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom), "getFileEncryptKey");
 
     //Fetch flags
@@ -4920,7 +4920,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         flags.append("|FFdatafileoptional");
     if (!nameExpr->isConstant())
         flags.append("|FFvarfilename");
-    if (translator.hasDynamicFilename(tableExpr))     
+    if (translator.hasDynamicFilename(tableExpr))
         flags.append("|FFdynamicfilename");
     if (isNonConstantAndQueryInvariant(nameExpr))
         flags.append("|FFinvariantfilename");
@@ -5022,11 +5022,11 @@ static HqlTransformerInfo fetchInputReplacerInfo("FetchInputReplacer");
 class FetchInputReplacer : public NewHqlTransformer
 {
 public:
-    FetchInputReplacer(IHqlExpression * _newDataset, node_operator side) 
+    FetchInputReplacer(IHqlExpression * _newDataset, node_operator side)
         : NewHqlTransformer(fetchInputReplacerInfo)
-    { 
-        newDataset = _newDataset; 
-        child = (side == no_left) ? 0 : 1; 
+    {
+        newDataset = _newDataset;
+        child = (side == no_left) ? 0 : 1;
     }
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)

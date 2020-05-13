@@ -182,7 +182,7 @@ static HqlTransformerInfo hqlLibraryTransformerInfo("HqlLibraryTransformer");
 class HqlLibraryTransformer: public QuickHqlTransformer
 {
 public:
-    HqlLibraryTransformer(IConstWorkUnit * _wu, bool _isLibrary) 
+    HqlLibraryTransformer(IConstWorkUnit * _wu, bool _isLibrary)
         : QuickHqlTransformer(hqlLibraryTransformerInfo, NULL), wu(_wu)
     {
         ignoreFirstScope = _isLibrary;
@@ -287,7 +287,7 @@ protected:
 class HqlEmbeddedLibraryTransformer: public HqlLibraryTransformer
 {
 public:
-    HqlEmbeddedLibraryTransformer(IConstWorkUnit * _wu, HqlExprArray & _internalLibraries, bool _isLibrary) 
+    HqlEmbeddedLibraryTransformer(IConstWorkUnit * _wu, HqlExprArray & _internalLibraries, bool _isLibrary)
         : HqlLibraryTransformer(_wu, _isLibrary), internalLibraries(_internalLibraries)
     {
     }
@@ -444,7 +444,7 @@ void HqlCppLibraryImplementation::mapLogicalToImplementation(HqlExprArray & expr
         // Do a global replace of input(n) with no_getgraphresult(n), and no_param with no_
         if (!output->isDatarow() && !output->isDataset())
             output.setown(convertScalarToDataset(output));
-        
+
         HqlExprArray args;
         args.append(*LINK(output));
         args.append(*LINK(libraryId));
@@ -493,7 +493,7 @@ void HqlCppTranslator::buildLibraryInstanceExtract(BuildCtx & ctx, HqlCppLibrary
 
     beginExtract(func.ctx, extractBuilder);
 
-    //Ensure all the values are added to the serialization in the correct order 
+    //Ensure all the values are added to the serialization in the correct order
     CHqlBoundExpr dummyTarget;
     unsigned numParams = libraryInstance->numParameters();
     for (unsigned i2 = libraryInstance->numStreamedInputs(); i2 < numParams; i2++)

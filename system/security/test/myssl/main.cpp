@@ -49,8 +49,8 @@ void inputpassword(const char* prompt, StringBuffer& passwd)
         {
             printf("\b \b");
             if (num_entries)
-            { 
-                num_entries--; 
+            {
+                num_entries--;
             }
             continue;
         }
@@ -475,7 +475,7 @@ int main(int argc, char* argv[])
         else if(stricmp(argv[1], "-sign") == 0)
         {
             StringBuffer csrbuf, ca_cert, ca_privkey, certbuf;
-            
+
             if(rfbuf.length() == 0 || cfbuf.length() == 0 || pfbuf.length() == 0)
                 throw MakeStringException(-1, "You need to specify csr file, certificate file and privatekey file");
 

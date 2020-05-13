@@ -184,8 +184,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    HttpClient( IProperties* globals, const char* url, const char* inname = NULL, 
-                const char* outdir = NULL, const char* outfilename = NULL, bool writeToFiles = false, 
+    HttpClient( IProperties* globals, const char* url, const char* inname = NULL,
+                const char* outdir = NULL, const char* outfilename = NULL, bool writeToFiles = false,
                 int doValidation = 0, const char* xsdpath = NULL,
                 bool isEspLogFile=false);
     void start();
@@ -248,7 +248,7 @@ private:
     ISecureSocketContext* m_ssctx;
 
 public:
-    COneServerHttpProxyThread(ISocket* client, const char* host, int port, FILE* ofile, bool use_ssl, 
+    COneServerHttpProxyThread(ISocket* client, const char* host, int port, FILE* ofile, bool use_ssl,
                                       ISecureSocketContext* ssctx, const char* url_prefix);
     virtual int start();
 };

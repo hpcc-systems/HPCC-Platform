@@ -1335,7 +1335,7 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
 }
 
 /*
-    Builds up the request string into the 'reqStr' buffer in a format 
+    Builds up the request string into the 'reqStr' buffer in a format
     suitable for submission to back-end service.
  */
 
@@ -1352,7 +1352,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                                         StringBuffer &reqProcessed)
 {
     const char *mthName = mthdef.queryName();
-    
+
     reqProcessed.append(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">");
@@ -1361,7 +1361,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
     {
         const char *tgtQueryName =  tgtcfg->queryProp("@queryname");
         if (!isEmptyString(tgtQueryName))
-        {   
+        {
             reqProcessed.append("<soap:Body><").append(tgtQueryName).append(">");
             reqProcessed.appendf("<_TransactionId>%s</_TransactionId>", context.queryTransactionID());
 
@@ -1400,7 +1400,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
                     reqProcessed.trim();
                 }
             }
-        } 
+        }
         else
         {
             // Use WsException here because both callers throw this type of exception
@@ -1423,7 +1423,7 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
 
     // Process Custom Request Transforms
 
-    // If the CRTs are nullptr, we could have been called from a context without 
+    // If the CRTs are nullptr, we could have been called from a context without
     // access to them, so pull them from ourself. When they are passed in the
     // error checking has already been completed.
 
@@ -3342,7 +3342,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
-                    
+
                     m_pESDLService->prepareFinalRequest(*context, nullptr, nullptr, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
                 }
                 else

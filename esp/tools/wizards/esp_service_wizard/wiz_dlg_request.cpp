@@ -23,7 +23,7 @@ CEspRequestWizDlg::CEspRequestWizDlg()
     m_parameterToAdd = _T("");
     m_typeToAdd = 2;
     //}}AFX_DATA_INIT
-    
+
     m_count=0;
 }
 
@@ -79,10 +79,10 @@ BOOL CEspRequestWizDlg::OnDismiss()
         strKey.Format("ESP_REQ_PARM_TYPE_%d", m_count);
         espaw.m_Dictionary.RemoveKey(strKey);
     }
-    
+
     char strVal[512];
     int len;
-    
+
     int count = m_count = m_parameterList.GetCount();
     espaw.m_Dictionary["ESP_REQ_PARM_COUNT"]=itoa(count, strVal, 10);
 
@@ -98,7 +98,7 @@ BOOL CEspRequestWizDlg::OnDismiss()
                 *pos=0;
                 pos+=2;
             }
-        
+
             strKey.Format("ESP_REQ_PARM_%d", count);
             espaw.m_Dictionary[strKey]=strVal;
             strKey.Format("ESP_REQ_PARM_TYPE_%d", count);
@@ -123,10 +123,10 @@ END_MESSAGE_MAP()
 
 
 
-void CEspRequestWizDlg::OnBtnAddParameter() 
+void CEspRequestWizDlg::OnBtnAddParameter()
 {
     UpdateData();
-    
+
     CString addString;
 
     if (!m_parameterToAdd.IsEmpty())
@@ -141,7 +141,7 @@ void CEspRequestWizDlg::OnBtnAddParameter()
     UpdateData(FALSE);
 }
 
-void CEspRequestWizDlg::OnBtnDelete() 
+void CEspRequestWizDlg::OnBtnDelete()
 {
     UpdateData();
 

@@ -126,7 +126,7 @@ CHThorNWayMergeActivity::~CHThorNWayMergeActivity()
     merger.cleanup();
 }
 
-void CHThorNWayMergeActivity::stop()    
+void CHThorNWayMergeActivity::stop()
 {
     merger.done();
     CHThorNaryActivity::stop();
@@ -146,7 +146,7 @@ void CHThorNWayMergeActivity::ready()
     merger.initInputs(expandedInputs.length(), expandedInputs.getArray());
 }
 
-IInputSteppingMeta * CHThorNWayMergeActivity::querySteppingMeta() 
+IInputSteppingMeta * CHThorNWayMergeActivity::querySteppingMeta()
 {
     assertex(inputs.ordinality() != 0);
     if (meta.getNumFields() == 0)
@@ -213,8 +213,8 @@ void CHThorMergeJoinBaseActivity::ready()
 }
 
 
-IInputSteppingMeta * CHThorMergeJoinBaseActivity::querySteppingMeta() 
-{ 
+IInputSteppingMeta * CHThorMergeJoinBaseActivity::querySteppingMeta()
+{
     return processor.queryInputSteppingMeta();
 }
 

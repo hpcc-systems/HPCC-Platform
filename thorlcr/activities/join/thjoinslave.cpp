@@ -122,7 +122,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
         }
 
 
-    };  
+    };
 
     struct CompareReverse : public ICompare
     {
@@ -175,7 +175,7 @@ public:
 
     ~JoinSlaveActivity()
     {
-        if (portbase) 
+        if (portbase)
             queryJobChannel().freePort(portbase, NUMSLAVEPORTS);
     }
 
@@ -216,7 +216,7 @@ public:
             barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
             portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
             ActPrintLog("SortJoinSlaveActivity::init portbase = %d, mpTagRPC=%d",portbase,(int)mpTagRPC);
-            server.setLocalHost(portbase); 
+            server.setLocalHost(portbase);
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
         }
@@ -421,7 +421,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(slaveTimerStats, timeActivities);
-        if(joinhelper) 
+        if(joinhelper)
         {
             OwnedConstThorRow row = joinhelper->nextRow();
             if (row) {
@@ -446,7 +446,7 @@ public:
         {
             ThorDataLinkMetaInfo info;
             leftInput->getMetaInfo(info);
-            if (info.totalRowsMax==0) 
+            if (info.totalRowsMax==0)
                 isemptylhs = true;
             if (leftInput->isGrouped())
                 leftStream.setown(createUngroupStream(leftInputStream));
@@ -708,9 +708,9 @@ public:
     {
         return processor.gatherConjunctions(collector);
     }
-    virtual void resetEOF() 
-    { 
-        processor.queryResetEOF(); 
+    virtual void resetEOF()
+    {
+        processor.queryResetEOF();
     }
 // steppable
     virtual void setInputStream(unsigned index, CThorInput &input, bool consumerOrdered) override

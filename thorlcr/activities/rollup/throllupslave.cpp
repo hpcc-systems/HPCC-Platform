@@ -56,16 +56,16 @@ class CDedupAllHelper : implements IRowStream, public CSimpleInterface
                 {
                     if((*abort))
                     {
-                        dedupIdx = dedupCount = 0;                          
+                        dedupIdx = dedupCount = 0;
                         return;
                     }
                     const void * right = dedupArray[idxR];
                     if((idxL != idxR) && right)
                     {
                         if(helper->matches(left, right))
-                        {   
+                        {
                             if(keepLeft)
-                            {                               
+                            {
                                 remove(idxR);
                             }
                             else
@@ -447,7 +447,7 @@ private:
     IHThorRollupArg * ruhelper;
 
 public:
-    CRollupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp) 
+    CRollupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupRollupBaseActivity(_container, true, global, groupOp)
     {
         ruhelper = static_cast <IHThorRollupArg *>  (queryHelper());

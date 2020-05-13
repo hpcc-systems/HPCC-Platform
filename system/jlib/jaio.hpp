@@ -40,8 +40,8 @@ private:
   void waitblk();
   void enqueue(AsyncRequest *req);
   void finish();
-  
-  
+
+
   AsyncRequest *cur;
   AsyncRequest *next;
   size32_t blksize;
@@ -53,7 +53,7 @@ private:
   int eof;
 };
 
-#endif  
+#endif
 
 
 
@@ -82,7 +82,7 @@ public:
     CW32AsyncBlockReader();
     ~CW32AsyncBlockReader();
 
-    void init(HANDLE file, offset_t start, size32_t blockSize, void * buffer1, void * buffer2); 
+    void init(HANDLE file, offset_t start, size32_t blockSize, void * buffer1, void * buffer2);
     void * readnext(size32_t &readLength);
     void reset();
     void getinfo(offset_t &of, offset_t &p, offset_t &sz);

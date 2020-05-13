@@ -29,7 +29,7 @@
 //////////////////////////////////////////////////////////////////////
 
 
-CXRefFilesNode::CXRefFilesNode(IPropertyTree& baseNode,const char* cluster,const char *_rootdir) 
+CXRefFilesNode::CXRefFilesNode(IPropertyTree& baseNode,const char* cluster,const char *_rootdir)
   : m_baseTree(baseNode), rootdir(_rootdir)
 {
     baseNode.setProp("@Cluster",cluster);
@@ -80,7 +80,7 @@ IPropertyTree* CXRefFilesNode::FindNode(const char* NodeName)
     xpath.clear().appendf("File/[Partmask=\"%s\"]", NodeName);
     return queryDataTree().getBranch(xpath.str());
 }
-        
+
 IPropertyTreeIterator *CXRefFilesNode::getMatchingFiles(const char *match, const char *type)
 {
     StringBuffer xpath;
@@ -122,7 +122,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
             {
                 i++;
                 xpath.clear().appendf(rep?"RNode[%d]":"Node[%d]",i);
-                if (!part.hasProp(xpath.str())) 
+                if (!part.hasProp(xpath.str()))
                     break;
                 SocketEndpoint ep(part.queryProp(xpath.str()));
                 ep.port = 0;
@@ -153,7 +153,7 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
 
 
 bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
-{   
+{
     size32_t startlen = errstr.length();
     IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch)
@@ -162,12 +162,12 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         errstr.appendf("ERROR: %s branch not found",Partmask);
         return false;
     }
-    // sanity check file doesn't (now) exist 
+    // sanity check file doesn't (now) exist
     bool exists = false;
     StringBuffer lfn;
     if (LogicalNameFromMask(Partmask,lfn))
     {
-        if (queryDistributedFileDirectory().exists(lfn.str(),udesc,true)) 
+        if (queryDistributedFileDirectory().exists(lfn.str(),udesc,true))
             exists = true;
     }
     if (!checkPartsInCluster(Partmask,clustername,subBranch,errstr,exists))
@@ -189,11 +189,11 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         {
             i++;
             xpath.clear().appendf("Node[%d]",i);
-            if (!part.hasProp(xpath.str())) 
+            if (!part.hasProp(xpath.str()))
                 break;
             SocketEndpoint ip(part.queryProp(xpath.str()));
             RemoteFilename rmtFile;
-            rmtFile.setPath(ip,remoteFile.str()); 
+            rmtFile.setPath(ip,remoteFile.str());
             files.append(rmtFile);
         }
         i = 0;
@@ -201,19 +201,19 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         {
             i++;
             xpath.clear().appendf("RNode[%d]",i);
-            if (!part.hasProp(xpath.str())) 
+            if (!part.hasProp(xpath.str()))
                 break;
             SocketEndpoint ip(part.queryProp(xpath.str()));
             RemoteFilename rmtFile;
             StringBuffer replicateFile;
-            if (setReplicateDir(remoteFile.str(),replicateFile))  
+            if (setReplicateDir(remoteFile.str(),replicateFile))
                 rmtFile.setPath(ip,replicateFile.str());        // old semantics
             else
-                rmtFile.setPath(ip,remoteFile.str()); 
+                rmtFile.setPath(ip,remoteFile.str());
             files.append(rmtFile);
         }
     }
-        
+
     CriticalSection crit;
 
     class casyncfor: public CAsyncFor
@@ -270,9 +270,9 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
             }
 
         }
-    } afor(files,errstr,crit);  
+    } afor(files,errstr,crit);
     afor.For(files.ordinality(),10,false,true);
-    if (!RemoveTreeNode(Partmask))                 
+    if (!RemoveTreeNode(Partmask))
     {
         OERRLOG("Error Removing XRef Branch %s",Partmask);
         return false;
@@ -286,7 +286,7 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
     StringBuffer xpath;
     xpath.clear().appendf("File/[Name=\"%s\"]", LogicalName);
     StringBuffer tmpbuf;
-        
+
 
     IPropertyTree* pLogicalFileNode =  queryDataTree().getBranch(xpath.str());
     if (!pLogicalFileNode)
@@ -365,7 +365,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     {
         IPropertyTree& part = partItr->query();
 
-            //get the full file path 
+            //get the full file path
         StringBuffer remoteFilePath;
         expandMask(remoteFilePath, Partmask, part.getPropInt("Num")-1, numparts);
 
@@ -425,7 +425,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
     Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
     dFile->attach(logicalName.str(),udesc);
 
-    if (!RemoveTreeNode(Partmask)) {                   
+    if (!RemoveTreeNode(Partmask)) {
         OERRLOG("Removing XRef Branch %s",Partmask);
         errstr.appendf("ERROR: Removing XRef Branch %s",Partmask);
         return false;
@@ -450,7 +450,7 @@ void CXRefFilesNode::DirectoryFromMask(const char* Partmask,StringBuffer& direct
 bool CXRefFilesNode::LogicalNameFromMask(const char* fname,StringBuffer& logicalName)
 {
     CDfsLogicalFileName lfn;
-    if (!lfn.setFromMask(fname,rootdir))  
+    if (!lfn.setFromMask(fname,rootdir))
         return false;
     logicalName.append(lfn.get());
     return true;
@@ -471,7 +471,7 @@ bool CXRefFilesNode::RemoveRemoteFile(const char* fileName,  const char* ipAddre
     ip.set(ipAddress);
     RemoteFilename rmtFile;
     rmtFile.setPath(ip,fileName); // filename shhould be full windows or unix path
-    
+
     Owned<IFile> _remoteFile =  createIFile(rmtFile);
     if (_remoteFile->exists())
         return _remoteFile->remove();
@@ -482,7 +482,7 @@ bool CXRefFilesNode::RemoveRemoteFile(const char* fileName,  const char* ipAddre
 //
 //
 ////////////////////////////////////////////////////////////////////////////////////
-CXRefOrphanFilesNode::CXRefOrphanFilesNode(IPropertyTree& baseNode,const char* cluster,const char* rootdir) 
+CXRefOrphanFilesNode::CXRefOrphanFilesNode(IPropertyTree& baseNode,const char* cluster,const char* rootdir)
   : CXRefFilesNode(baseNode,cluster,rootdir)
 {
 }

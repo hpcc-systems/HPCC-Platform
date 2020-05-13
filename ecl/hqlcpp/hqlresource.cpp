@@ -3832,7 +3832,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr, bool isProjected)
             break;
         case no_rowsetrange:
             {
-                //Don't resource this as an activity if it is a function of the input graph rows, 
+                //Don't resource this as an activity if it is a function of the input graph rows,
                 //however we do want to if it is coming from a dataset list.
                 IHqlExpression * ds = expr->queryChild(0);
                 //MORE: Should walk further down the tree to allow for nested rowsetranges etc.
@@ -4044,7 +4044,7 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
 
     LinkKind childLinkKind = UnconditionalLink;
     Linked<ResourceGraphInfo> thisGraph = ownerGraph;
-    bool forceNewChildGraph = false; 
+    bool forceNewChildGraph = false;
     if (info->isActivity)
     {
         //Need to ensure no_libraryselects are not separated from the no_libraryscopeinstance
@@ -4673,8 +4673,8 @@ void EclResourcer::resourceSubGraph(ResourceGraphInfo * graph)
 
     IHqlExpression * sourceNode = graph->sinks.item(0).sourceNode->queryBody();
 #ifdef _DEBUG
-    //Sanity check, ensure there is only a single sink for this graph.  
-    //However because libraryselects are tightly bound to their library instance there may be multiple library selects.  
+    //Sanity check, ensure there is only a single sink for this graph.
+    //However because libraryselects are tightly bound to their library instance there may be multiple library selects.
     //They won't affect the resourcing though, since they'll plug into the same library instance, and the selects use no resources.
     ForEachItemIn(idx2, graph->sinks)
     {
@@ -5709,7 +5709,7 @@ bool EclResourcer::queryMergeGraphLink(ResourceGraphLink & link)
 {
     if (link.linkKind == UnconditionalLink)
     {
-        //Don't combine any dependencies 
+        //Don't combine any dependencies
         const GraphLinkArray & sinks = link.sourceGraph->sinks;
         ForEachItemIn(i1, sinks)
         {
@@ -6067,7 +6067,7 @@ void EclResourcer::moveExternalSpillPoints()
 
     //if we have a external spill point where all the external outputs reduce their data significantly
     //either via a project or a filter, then it might be worth including those activities in the main
-    //graph and ,if all external children reduce data, then may be best to filter 
+    //graph and ,if all external children reduce data, then may be best to filter
     ForEachItemIn(idx, links)
     {
         ResourceGraphLink & cur = links.item(idx);
@@ -6162,7 +6162,7 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
                     resourced = LINK(child);
                 else
                     resourced = createResourced(child, ownerGraph, expandInParent, false);
-                if (child != resourced) 
+                if (child != resourced)
                     same = false;
                 args.append(*resourced);
             }
@@ -6238,7 +6238,7 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
                 }
                 else
                     resourced = createResourced(child, ownerGraph, expandInParent, false);
-                if (child != resourced) 
+                if (child != resourced)
                     same = false;
                 args.append(*resourced);
             }
@@ -6276,7 +6276,7 @@ createResourced()
     else isSplitter and alreadyGeneratedForThisGraph
         return previous result
     else
-        create transformed  
+        create transformed
 }
   */
 
@@ -6825,7 +6825,7 @@ protected:
 static HqlTransformerInfo spillActivityTransformerInfo("SpillActivityTransformer");
 SpillActivityTransformer::SpillActivityTransformer(bool _createGraphResults)
 : NewHqlTransformer(spillActivityTransformerInfo), createGraphResults(_createGraphResults)
-{ 
+{
 }
 
 void SpillActivityTransformer::analyseExpr(IHqlExpression * expr)

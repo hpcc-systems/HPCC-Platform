@@ -26,7 +26,7 @@
 CThorConfigGenEngine::CThorConfigGenEngine(IEnvDeploymentEngine& envDepEngine,
                                              IDeploymentCallback& callback,
                                              IPropertyTree& process,
-                                             const char* inputDir, 
+                                             const char* inputDir,
                                              const char* outputDir)
  : CConfigGenEngine(envDepEngine, callback, process, inputDir, outputDir)
 {

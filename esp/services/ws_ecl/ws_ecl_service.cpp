@@ -650,7 +650,7 @@ static void buildReqXml(StringArray& parentTypes, IXmlType* type, StringBuffer& 
             parmval.append(reqTree->queryProp(NULL));
         if (!parmval.length() && (flags & REQSF_SAMPLE_DATA))
             type->getSampleValue(parmval, NULL);
-        
+
         if (parmval.length() || !(flags&REQSF_TRIM))
         {
             if (strieq(typeName, "boolean"))
@@ -1341,7 +1341,7 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     Owned<IPropertyTree> namespaces = createPTree();
     appendSchemaNamespaces(namespaces, ctx, req, wsinfo);
     Owned<IPropertyTreeIterator> nsiter = namespaces->getElements("namespace");
-    
+
     StringBuffer urn("urn:hpccsystems:ecl:");
     urn.appendLower(wsinfo.queryname.length(), wsinfo.queryname.str());
     schema.appendf("<xsd:schema elementFormDefault=\"qualified\" targetNamespace=\"%s\" ", urn.str());
@@ -2662,7 +2662,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
     {
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
-    
+
     response->handleExceptions(getXslProcessor(), me, "WsEcl", "", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt").str(), false);
     return 0;
 }

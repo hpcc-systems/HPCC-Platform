@@ -87,7 +87,7 @@ extern DAFSCLIENT_API void setRemoteFileTimeouts(unsigned maxconnecttime,unsigne
 #define DAFS_VALIDATE_READ_FAIL_MIRROR   (0x24)
 #define DAFS_VALIDATE_DISK_FULL_MIRROR   (0x28)
 #define DAFS_SCRIPT_FAIL            (0x40)
-                                
+
 extern DAFSCLIENT_API unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename=NULL);
 
 extern DAFSCLIENT_API void installFileHooks(const char *filespec);

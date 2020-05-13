@@ -300,8 +300,8 @@ bool DirectDiskDataSource::loadBlock(__int64 startRow, offset_t startOffset)
     return true;
 }
 
-void DirectDiskDataSource::onClose()    
-{ 
+void DirectDiskDataSource::onClose()
+{
     DiskDataSource::onClose();
     if (openCount == 0)
         physical.close();
@@ -644,7 +644,7 @@ bool TranslatedDiskDataSource::createHelperWU()
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IWorkUnit> workunit = factory->createWorkUnit(application, username);
     workunit->setUser(username);
-    workunit->setClusterName(cluster);  
+    workunit->setClusterName(cluster);
     workunit->setAction(WUActionCompile);
 
     StringBuffer jobName;
@@ -715,7 +715,7 @@ bool IndirectDiskDataSource::createBrowseWU()
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IWorkUnit> workunit = factory->createWorkUnit(application, owner);
     workunit->setUser(owner);
-    workunit->setClusterName(cluster);  
+    workunit->setClusterName(cluster);
 
     StringBuffer jobName;
     jobName.append("FileView_for_").append(logicalName);

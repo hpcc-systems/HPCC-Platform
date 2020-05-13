@@ -25,9 +25,9 @@ class GroupAggregateSlaveActivity : public CSlaveActivity
     IHThorAggregateArg * helper;
 
 public:
-    GroupAggregateSlaveActivity(CGraphElementBase *_container) 
+    GroupAggregateSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container)
-    { 
+    {
         helper = static_cast <IHThorAggregateArg *> (queryHelper());
         setRequireInitData(false);
         appendOutputLinked(this);

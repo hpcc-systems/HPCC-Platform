@@ -24,9 +24,9 @@ class CDegroupSlaveActivity : public CSlaveActivity, public CThorSteppable
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CDegroupSlaveActivity(CGraphElementBase *_container) 
+    CDegroupSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorSteppable(this)
-    { 
+    {
         setRequireInitData(false);
         appendOutputLinked(this);
     }
@@ -72,17 +72,17 @@ public:
         return NULL;
     }
     virtual bool gatherConjunctions(ISteppedConjunctionCollector &collector) override
-    { 
+    {
         return input->gatherConjunctions(collector);
     }
     virtual void resetEOF() override
-    { 
+    {
         abortSoon = false;
         inputStream->resetEOF();
     }
     virtual bool isGrouped() const override
-    { 
-        return false; 
+    {
+        return false;
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {

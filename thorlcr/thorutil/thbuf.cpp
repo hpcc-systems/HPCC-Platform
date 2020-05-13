@@ -42,8 +42,8 @@
 
 struct SmartBufReenterCheck
 {
-    bool &check; 
-    SmartBufReenterCheck(bool &_check) 
+    bool &check;
+    SmartBufReenterCheck(bool &_check)
         : check(_check)
     {
         assertex(!check);
@@ -95,7 +95,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         if (nb<=numblocks) {
             for (unsigned i=0;i<=numblocks-nb;i++) {
                 unsigned j;
-                for (j=i;j<i+nb;j++) 
+                for (j=i;j<i+nb;j++)
                     if (!diskfree->test(j))
                         break;
                 if (j==i+nb) {
@@ -121,13 +121,13 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         struct cSaveIn {
             ThorRowQueue *rq;
             ThorRowQueue *&in;
-            cSaveIn(ThorRowQueue *&_in) 
+            cSaveIn(ThorRowQueue *&_in)
                 : in(_in)
             {
                 rq = in;
                 in = NULL;
             }
-            ~cSaveIn() 
+            ~cSaveIn()
             {
                 if (!in)
                     in = rq;
@@ -160,7 +160,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
                     if (waiting)
                         break;
                     const void *row = csavein.rq->item(i);
-                    if (row) { 
+                    if (row) {
                         b = 1;
                         mb.append(b);
                         serializer->serialize(mbs,(const byte *)row);
@@ -200,7 +200,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         else {
             diskin.append(blk);
             diskinlen.append(nb);
-            while (csavein.rq->ordinality()) 
+            while (csavein.rq->ordinality())
                 ReleaseThorRow(csavein.rq->dequeue());
         }
         insz = 0;
@@ -213,7 +213,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
         unsigned blk = diskin.item(0);
         unsigned nb = diskinlen.item(0);
         diskin.remove(0);  // better as q but given reading from disk...
-        diskinlen.remove(0);  
+        diskinlen.remove(0);
         {
             SpinUnblock unblock(lock);
             MemoryAttr ma;
@@ -230,7 +230,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
                     break;
                 if (b==1) {
                     RtlDynamicRowBuilder rowBuilder(allocator);
-                    size32_t sz = deserializer->deserialize(rowBuilder,ds); 
+                    size32_t sz = deserializer->deserialize(rowBuilder,ds);
                     rq->enqueue(rowBuilder.finalizeRowClear(sz));
                 }
                 else if (b==2)
@@ -261,7 +261,7 @@ public:
         numblocks = 0;
         insz = 0;
         eoi = false;
-        diskfree.setown(createThreadSafeBitSet()); 
+        diskfree.setown(createThreadSafeBitSet());
 
 #ifdef _FULL_TRACE
         ActPrintLog(activity, "SmartBuffer create %x",(unsigned)(memsize_t)this);
@@ -275,11 +275,11 @@ public:
 #endif
         assertex(!waiting);
         assertex(!waitflush);
-        // clear in/out contents 
-        while (in->ordinality()) 
+        // clear in/out contents
+        while (in->ordinality())
             ReleaseThorRow(in->dequeue());
         delete in;
-        while (out->ordinality()) 
+        while (out->ordinality())
             ReleaseThorRow(out->dequeue());
         delete out;
         if (fileio)
@@ -296,9 +296,9 @@ public:
         SpinBlock block(lock);
         if (eoi) {
             ReleaseThorRow(row);
-            
+
             return;
-        }       
+        }
         assertex(in);  // reentry check
         if (sz+insz+(in->ordinality()+2)*sizeof(byte)>blocksize) // byte extra per row + end byte
             diskflush();
@@ -325,7 +325,7 @@ public:
 #endif
         eoi = true;
 
-        while (out&&out->ordinality()) 
+        while (out&&out->ordinality())
             ReleaseThorRow(out->dequeue());
         while (NULL == in)
         {
@@ -333,9 +333,9 @@ public:
             SpinUnblock unblock(lock);
             waitsem.wait();
         }
-        while (out&&out->ordinality()) 
+        while (out&&out->ordinality())
             ReleaseThorRow(out->dequeue());
-        while (in&&in->ordinality()) 
+        while (in&&in->ordinality())
             ReleaseThorRow(in->dequeue());
         diskin.kill();
         if (waiting) {
@@ -381,7 +381,7 @@ public:
                             waitflushsem.signal();
                             waitflush = false;
                         }
-                        if (eoi) 
+                        if (eoi)
                             return NULL;
                     }
                 }
@@ -409,7 +409,7 @@ public:
                 waitsem.signal();
                 waiting = false;
             }
-            if (out&&!out->ordinality()&&!diskin.ordinality()&&!in->ordinality()) 
+            if (out&&!out->ordinality()&&!diskin.ordinality()&&!in->ordinality())
                 break;
             waitflush = true;
             SpinUnblock unblock(lock);
@@ -464,8 +464,8 @@ public:
 
     ~CSmartRowInMemoryBuffer()
     {
-        // clear in contents 
-        while (in->ordinality()) 
+        // clear in contents
+        while (in->ordinality())
             ReleaseThorRow(in->dequeue());
         delete in;
     }
@@ -565,7 +565,7 @@ public:
 #endif
 
         eoi = true;
-        while (in->ordinality()) 
+        while (in->ordinality())
             ReleaseThorRow(in->dequeue());
         in->clear();
         if (waitingin) {
@@ -592,7 +592,7 @@ public:
                 waitoutsem.signal();
                 waitingout = false;
             }
-            if (!in->ordinality()) 
+            if (!in->ordinality())
                 break;
             waitingin = true;
             SpinUnblock unblock(lock);
@@ -685,7 +685,7 @@ public:
     }
     virtual bool Release() const;
     void clear() { rows.clearRows(); }
-    void setChunk(unsigned _chunk) { chunk = _chunk; } 
+    void setChunk(unsigned _chunk) { chunk = _chunk; }
     void reset(unsigned _chunk)
     {
         chunk = _chunk;
@@ -961,7 +961,7 @@ protected:
         {
             if (queryCOutput(o).currentChunkNum < lsf)
             {
-                lsf = queryCOutput(o).currentChunkNum; 
+                lsf = queryCOutput(o).currentChunkNum;
                 lsfOutput = o;
             }
             if (++o == outputCount)
@@ -1852,7 +1852,7 @@ public:
         crc.tally(rd,data);
         return rd;
     }
-    
+
     size32_t write(size32_t len, const void * data)
     {
         throw MakeStringException(-1,"CRCFileStream does not support write");

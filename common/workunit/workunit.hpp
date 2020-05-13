@@ -139,9 +139,9 @@ enum WUAction
     WUActionCheck = 2,
     WUActionRun = 3,
     WUActionExecuteExisting = 4,
-    WUActionPause = 5, 
-    WUActionPauseNow = 6, 
-    WUActionResume = 7, 
+    WUActionPause = 5,
+    WUActionPauseNow = 6,
+    WUActionResume = 7,
     WUActionSize = 8
 };
 
@@ -1496,7 +1496,7 @@ interface IExtendedWUInterface
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles) = 0;
     virtual IPropertyTree *getUnpackedTree(bool includeProgress) const = 0;
     virtual IPropertyTree *queryPTree() const = 0;
-    
+
 };
 
 //Do not mark this as WORKUNIT_API - all functions are inline, and it causes windows link errors

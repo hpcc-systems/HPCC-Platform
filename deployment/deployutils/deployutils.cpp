@@ -239,8 +239,8 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
           sbOutPlugins.append(",");
         sbOutPlugins.append("'").append(szName).append("'");
       }
-      else 
-      { 
+      else
+      {
         if (!szName || !*szName)
           continue;
 
@@ -261,7 +261,7 @@ void LoadComboBox(const char* szPath, bool bAddBlank, const IPropertyTree* pNode
   if (addDeclStart)
     sbComboBox.append("new Array(");
 
-  if (bAddBlank) 
+  if (bAddBlank)
     sbComboBox.append("''");
 
   const char* buildSet = NULL;
@@ -305,11 +305,11 @@ void LoadComboBox(const char* szPath, bool bAddBlank, const IPropertyTree* pNode
       else
         bAdd = true;
 
-      if (bAdd) 
+      if (bAdd)
       {
         if (sbComboBox.length() > 10)
           sbComboBox.append(",");
-        
+
         if (!appendParentName)
           sbComboBox.appendf("'%s'", szName);
         else
@@ -322,14 +322,14 @@ void LoadComboBox(const char* szPath, bool bAddBlank, const IPropertyTree* pNode
     sbComboBox.append(")");
 }
 
-void addItem(StringBuffer& jsStrBuf, 
-             const IPropertyTree* pEnv, 
-             const char* tabName, 
-             const char* attrName, 
-             const char* tip, 
-             bool hidden, 
-             bool required, 
-             const char* extra, 
+void addItem(StringBuffer& jsStrBuf,
+             const IPropertyTree* pEnv,
+             const char* tabName,
+             const char* attrName,
+             const char* tip,
+             bool hidden,
+             bool required,
+             const char* extra,
              short ctrlType)
 {
   // Control types:
@@ -356,7 +356,7 @@ void addItem(StringBuffer& jsStrBuf,
   {
     if (extra[0] != '|')
       LoadComboBox(extra, false, pEnv, pEnv, sb);
-    else 
+    else
       sb.append(++extra);
 
     jsStrBuf.appendf("attr%s%s.extra = %s;", attrName, tabName, sb.str());
@@ -387,7 +387,7 @@ void addTopologyType(StringBuffer& jsStrBuf, const IPropertyTree* pEnv, const ch
       {
         const char* szName = pBuild->queryProp(XML_ATTR_NAME);
 
-        if (szName && *szName) 
+        if (szName && *szName)
         {
           if (sb.length() > 10)
             sb.append(",");
@@ -403,7 +403,7 @@ void addTopologyType(StringBuffer& jsStrBuf, const IPropertyTree* pEnv, const ch
   {
     if (extra[0] != '|')
       LoadComboBox(extra, false, pEnv, pEnv, sb);
-    else 
+    else
       sb.append(++extra);
 
     jsStrBuf.appendf("attr%s%s.extra = %s;", attrName, tabName, sb.str());
@@ -452,7 +452,7 @@ void GetDisplayName(IPropertyTree* pNode, StringBuffer& sb, bool bAppendProcessN
   GetDisplayProcessName(pNode->queryName(), szBuf);
 
   const char* szName = pNode->queryProp(XML_ATTR_NAME);
-  if (!szName || !*szName) 
+  if (!szName || !*szName)
     szName = pNode->queryProp(XML_ATTR_PROCESS);
 
   if (bAppendProcessName)
@@ -461,7 +461,7 @@ void GetDisplayName(IPropertyTree* pNode, StringBuffer& sb, bool bAppendProcessN
     {
       cnt -= strlen(szName);
       strncat(szBuf, " - ", cnt);
-      strncat(szBuf, szName, cnt - 3); 
+      strncat(szBuf, szName, cnt - 3);
     }
 
     sb.clear().append(szBuf);
@@ -566,7 +566,7 @@ public:
         {
           short index = 0;
           m_jsStrBuf.append("compTabs['ThorCluster'][compTabs['ThorCluster'].length]= 'Topology';");
-          m_colIndex.appendf("colIndex['nameTopology']=%d;", index++); 
+          m_colIndex.appendf("colIndex['nameTopology']=%d;", index++);
           m_colIndex.appendf("colIndex['processTopology']=%d;", index++);
           m_colIndex.appendf("colIndex['netAddressTopology']=%d;", index++);
           m_jsStrBuf.append("compTabToNode['Topology']= 'Topology';");
@@ -581,7 +581,7 @@ public:
         StringBuffer aName;
         StringBuffer value, tempPath, wizDefVal;
         attrname.append(attr.queryProp(XML_ATTR_NAME));
-        
+
         const char *use = attr.queryProp("@use");
         if (!m_genOptional && use && *use && !strcmp(use, "optional"))
         {
@@ -597,7 +597,7 @@ public:
 
           return;
         }
-        
+
         if(m_wizFlag)
         {
           if(attr.hasProp("./xs:annotation/xs:appinfo/autogenforwizard"))
@@ -633,7 +633,7 @@ public:
 
           if (!pTab)
             pTab = pProcess->addPropTree(getRealTabName(tabName), createPTree());
-          
+
           pField = pTab->addPropTree("Field", createPTree());
         }
 
@@ -704,7 +704,7 @@ public:
           m_jsStrBuf.appendf("%s.displayMode = %d;", aName.str(), displayMode && !strcmp(displayMode, "simple"));
 
           const char* colIndex = pAppInfo->queryProp("colIndex");
-          
+
           if (colIndex && *colIndex)
           {
             int i = atoi(colIndex);
@@ -915,7 +915,7 @@ public:
             else if (strcmp(type, "esploggingagentType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;
-              bAddBlank = true;  
+              bAddBlank = true;
               //LoadComboBox("Software/ESPLoggingAgent", bAddBlank, m_pEnv, m_pEnv, strBuf);
               LoadComboBox("Software/*/[@type=\"DefaultLoggingAgent\"]", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
@@ -1060,7 +1060,7 @@ public:
               }
               else
                 xpath.clear().appendf("Software/*[@buildSet='%s']", type);
-              
+
               strBuf.clear();
               Owned<IPropertyTreeIterator> iterEspServices = m_pEnv->getElements(xpath);
               short blank = 0;
@@ -1094,8 +1094,8 @@ public:
 
               extraInfo = strBuf.str();
             }
-            else if (strcmp(type, "AutoTimeStampType")==0 || 
-              strcmp(type, "AutoComputerType")==0 || 
+            else if (strcmp(type, "AutoTimeStampType")==0 ||
+              strcmp(type, "AutoComputerType")==0 ||
               strcmp(type, "AutoUseridType")==0)
             {
               if (nCtrlType != 0/*LVC_NONE*/)//is not read only
@@ -1168,7 +1168,7 @@ public:
         m_jsStrBuf.appendf("cS['%s']=%s;", attrname.str(), aName.str());
       }
 
-      void AddAttributeFromSchema(IPropertyTree& schemaNode, 
+      void AddAttributeFromSchema(IPropertyTree& schemaNode,
         const char * elemName,
         const char *compName,
         const char* tabName,
@@ -1217,14 +1217,14 @@ public:
         }
       }
 
-      void ProcessElementSchemaNode(IPropertyTree* pElement, 
-        IPropertyTree* pParentElement, 
+      void ProcessElementSchemaNode(IPropertyTree* pElement,
+        IPropertyTree* pParentElement,
         StringBuffer& sbCompName)
       {
         bool bOptSubType = false;
         if (pElement)
         {
-          TRACE_SCHEMA_NODE("ProcessElementSchemaNode", pElement); 
+          TRACE_SCHEMA_NODE("ProcessElementSchemaNode", pElement);
           const char* szParentElementName = pParentElement->queryProp(XML_ATTR_NAME);
 
           const char*  szElementName = pElement->queryProp(XML_ATTR_NAME);
@@ -1262,7 +1262,7 @@ public:
               bOptSubType = true;
             }
 
-            if (!strcmp(viewType, "Instance") || !strcmp(viewType, "instance") || 
+            if (!strcmp(viewType, "Instance") || !strcmp(viewType, "instance") ||
               !strcmp(viewType, "RoxiePorts") || !strcmp(viewType, "RoxieSlaves"))
               bOptSubType = true;
           }
@@ -1290,7 +1290,7 @@ public:
                   IPropertyTree &subSchemaElement = iter->query();
                   const char* szSubElementName = subSchemaElement.queryName();
                   StringBuffer sbSubElemName(szSubElementName);
-                  TRACE_SCHEMA_NODE("ProcessSchemaElement", &subSchemaElement); 
+                  TRACE_SCHEMA_NODE("ProcessSchemaElement", &subSchemaElement);
                   m_splitterTabName.clear().append(getRealTabName(szCaption));
                   if (m_allSubTypes || !bOptSubType)
                     ProcessComplexTypeSchemaNode(&subSchemaElement, m_pSchemaRoot, sbElemName);
@@ -1302,9 +1302,9 @@ public:
                 //no attributes
                 if (bMaxOccursOnce)
                 {
-                  //has child elements but no attribs and only occurs once 
+                  //has child elements but no attribs and only occurs once
                   //so skip this element and create node list view for its children
-                  pViewSchemaNode = schemaNodeHasElements(pElement); 
+                  pViewSchemaNode = schemaNodeHasElements(pElement);
                   if (pInstanceNode)
                   {
                     IPropertyTree* pNewInstanceNode = pInstanceNode->queryPropTree(szElementName);
@@ -1391,13 +1391,13 @@ public:
       }
 
 
-      void ProcessComplexTypeSchemaNode(IPropertyTree* schemaNode, 
+      void ProcessComplexTypeSchemaNode(IPropertyTree* schemaNode,
         IPropertyTree* pParentElement,
         StringBuffer& sbCompName)
       {
         if (schemaNode)
         {
-          TRACE_SCHEMA_NODE("ProcessComplexTypeSchemaNode", schemaNode); 
+          TRACE_SCHEMA_NODE("ProcessComplexTypeSchemaNode", schemaNode);
           const char* szParentElementName = pParentElement->queryProp(XML_ATTR_NAME);
 
           //now process the rest...
@@ -1469,19 +1469,19 @@ public:
         {
           IPropertyTree &schemaElement = iter->query();
           const char* szElementName = schemaElement.queryName();
-          TRACE_SCHEMA_NODE("ProcessSchemaElement", &schemaElement); 
+          TRACE_SCHEMA_NODE("ProcessSchemaElement", &schemaElement);
 
           //if node is xs:complexType and xs:complexContent then process children
           if (!strcmp(szElementName, XSD_TAG_COMPLEX_TYPE) ||
             !strcmp(szElementName, XSD_TAG_COMPLEX_CONTENT))
           {
             //if this schema node has any attributes then add an attribute tab
-            //            
+            //
             bool bHasAttribs = schemaNodeHasAttributes(&schemaElement);
             if (bHasAttribs)
             {
               AddAttributesFromSchema(schemaNode, m_compName, "Attributes", NULL);
-            }                   
+            }
           }
 
           ProcessComplexTypeSchemaNode(&schemaElement, m_pSchemaRoot, m_compName);
@@ -1519,7 +1519,7 @@ public:
         m_viewChildNodes.setown(createPTree("viewChildNodes"));
         m_multiRowNodes.clear();
         m_multiRowNodes.setown(createPTree("multiRowNodes"));
-        
+
         generateHeaders();
         compDefn.clear().append(m_jsStrBuf);
 
@@ -1542,7 +1542,7 @@ public:
       {
         m_genOptional = flag;
       }
-     
+
       void setWizard(CWizardInputs* ptr)
       {
         m_wizard.set(ptr);
@@ -1558,7 +1558,7 @@ public:
         if(attr.hasProp("./xs:annotation/xs:appinfo/autogendefaultvalue"))
         {
            tempPath.clear().append("./xs:annotation/xs:appinfo/autogendefaultvalue");
-         
+
            if(!strcmp(attr.queryProp(tempPath.str()), "$defaultenvfile"))
            {
              tempPath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", (m_wizard->getService()).str());
@@ -1591,11 +1591,11 @@ public:
               ForEach (*iterClusters)
               {
                 IPropertyTree* pCluster = &iterClusters->query();
-                
-                if (pCluster->queryPropTree(XML_TAG_ROXIECLUSTER) || 
+
+                if (pCluster->queryPropTree(XML_TAG_ROXIECLUSTER) ||
                     pCluster->queryPropTree(XML_TAG_THORCLUSTER))
                   continue;
-                else 
+                else
                 {
                   wizDefVal.clear().append(pCluster->queryProp(XML_ATTR_NAME));
                   break;
@@ -1701,7 +1701,7 @@ public:
 
           if(!strcmp(name, "dbUser"))
           {
-            wizDefVal.clear().append(m_wizard->getDbUser()); 
+            wizDefVal.clear().append(m_wizard->getDbUser());
           }
           else if(!strcmp(name, "dbPassword"))
           {
@@ -1776,9 +1776,9 @@ public:
           }
           else
              xpath.clear().appendf("Software/*[@buildSet='%s']", type);
-          
+
           wizDefVal.clear();
-          
+
           Owned<IPropertyTreeIterator> iterEspServices = m_pEnv->getElements(xpath);
           short blank = 0;
           ForEach (*iterEspServices)
@@ -1791,7 +1791,7 @@ public:
               if (pEspService->queryPropTree(xpath.str()) == NULL)
                 continue;
             }
-           
+
             Owned<IPropertyTreeIterator> iter = m_pEnv->getElements("Software/EspProcess[1]");
 
             ForEach (*iter)
@@ -2353,7 +2353,7 @@ nodeFullData[0] = nodeRoot;  \
         else
           pszBuildset = buildset.str();
 
-        if ((multipleComps > 1) && (lastCompAdded.length() == 0 || strcmp(lastCompAdded.str(), pszBuildset))) 
+        if ((multipleComps > 1) && (lastCompAdded.length() == 0 || strcmp(lastCompAdded.str(), pszBuildset)))
         {
           char szBuf[200];
           GetDisplayProcessName(compTree.queryName(), szBuf);
@@ -2422,7 +2422,7 @@ nodeFullData[0] = nodeRoot;  \
     jsName.append("navtreedata.js");
     writeToFile(jsName, jsStrBuf);
   }
-  
+
   return true;
 }
 
@@ -2561,14 +2561,14 @@ void deleteRecursive(const char* path)
             {
                 Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
                 ForEach(*it)
-                {               
+                {
                     StringBuffer name;
                     it->getName(name);
-                    
+
                     StringBuffer childPath(path);
                     childPath.append(PATHSEPCHAR);
                     childPath.append(name);
-                    
+
                     deleteRecursive(childPath.str());
                 }
             }
@@ -2625,10 +2625,10 @@ void getDefnString(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char
   }
 }
 
-bool checkComponentReferences(const IPropertyTree* pEnv, 
-                              IPropertyTree* pOrigNode, 
-                              const char* szName, 
-                              const char* xpath, 
+bool checkComponentReferences(const IPropertyTree* pEnv,
+                              IPropertyTree* pOrigNode,
+                              const char* szName,
+                              const char* xpath,
                               StringBuffer& sMsg,
                               const StringArray& attribArray,
                               const char* szNewName/*=NULL*/)
@@ -2636,8 +2636,8 @@ bool checkComponentReferences(const IPropertyTree* pEnv,
   const IPropertyTree* pSoftware = pEnv->queryPropTree(XML_TAG_SOFTWARE);
 
   // split xpath into 2 strings: one for component and the other for its childrens' xpath
-  // so we can report its name, if needed.  For instance, if xpath is 
-  // "Topology/EclServerProcess/EclAgentProcess" then create 2 separate xpaths: 
+  // so we can report its name, if needed.  For instance, if xpath is
+  // "Topology/EclServerProcess/EclAgentProcess" then create 2 separate xpaths:
   // "Topology" and "EclServerProcess/EclAgentProcess" so we can report Topology's name.
   //
   StringBuffer xpath1;//component
@@ -2690,7 +2690,7 @@ bool checkComponentReferences(const IPropertyTree* pEnv,
         if (!szValue)
           continue;
 
-        bool bMatch;                
+        bool bMatch;
         if (bEspProcess)
         {
           const unsigned int len = strlen(szName);
@@ -2740,26 +2740,26 @@ bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pNode, c
 {
   const char* szProcess = pNode->queryName();
 
-  // A component may be referenced by other components with any attribute name 
-  // (and not just @process), for e.g. @eclServer, @mySQL, @MySQL etc.  The 
-  // components are inter-twined with cross links amongst them and there is 
-  // no way to figure them out dynamically generically based on just the 
-  // schema etc. (we only load one schema at a time anyway).  
+  // A component may be referenced by other components with any attribute name
+  // (and not just @process), for e.g. @eclServer, @mySQL, @MySQL etc.  The
+  // components are inter-twined with cross links amongst them and there is
+  // no way to figure them out dynamically generically based on just the
+  // schema etc. (we only load one schema at a time anyway).
 
   // So we would hard code these rules for dependency checks based on current
-  // relationships until we figure out a better way to do the same in future.  
+  // relationships until we figure out a better way to do the same in future.
   // The drawback is that these rules will have to be kept in sync with the
   // the introduction of newer relationships.
 
   // We need to check for other components with different xpaths and each
-  // with possibly more than one attribute name so define an StringArray 
+  // with possibly more than one attribute name so define an StringArray
   // to store xpaths and another array of StringArray objects to hold list of
   // attributes corresponding to the xpaths to be validated.
   //
   // This avoids multiple traversals of the xpath for multiple attribute names.
   //
   StringArray xpathArray;
-  StringArray attribArray[6];//we don't add attributes for more than 6 xpaths 
+  StringArray attribArray[6];//we don't add attributes for more than 6 xpaths
   //as for EspBinding below
   int numXpaths = 0;
   StringArray& attribs = attribArray[numXpaths++];
@@ -2843,15 +2843,15 @@ bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pNode, c
   }
   else if (!strcmp(szProcess, XML_TAG_ESPBINDING) || !strcmp(szProcess, XML_TAG_ESPPROCESS))
   {
-    xpathArray.append(XML_TAG_ESPSERVICE); 
+    xpathArray.append(XML_TAG_ESPSERVICE);
     attribs.append("@eclWatch");          //ws_ecl
     attribs.append("@attributeServer");//ws_ecl and ws_roxieconfig
 
     xpathArray.append("EspService/WsEcl");//ws_facts and ws_distrix
-    attribArray[numXpaths++].append("@espBinding"); 
+    attribArray[numXpaths++].append("@espBinding");
 
     xpathArray.append("EspService/SourceAttributeServer");//ws_roxieconfig
-    attribArray[numXpaths++].append("@espBinding"); 
+    attribArray[numXpaths++].append("@espBinding");
 
     xpathArray.append(XML_TAG_ECLSERVERPROCESS);
     attribArray[numXpaths++].append("@eclWatch");
@@ -3037,7 +3037,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
 
    if ((s << 8) != (e << 8))
      throw MakeStringException(-1, "Start and stop IP addresses must be within same subnet");
-  
+
    // Create string for common attributes
    StringBuffer attr, val, sAttributes;
    attr.appendf(" %s=\"%s\"", &XML_ATTR_DOMAIN[1], domain);
@@ -3051,7 +3051,7 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    StringBuffer sNode("<" XML_TAG_HARDWARE ">"), sName, sIP;
    int count = (e >> 24) - (s >> 24) + 1;
    nCount = count;
-   
+
    while (count--)
    {
      range.getIpText(sIP.clear());
@@ -3075,14 +3075,14 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
                       attr.str());
      range.ipincrement(1);
    }
-   
+
    if (sNode.length() > 10)
    {
     sNode.append("</" XML_TAG_HARDWARE ">");
     IPropertyTree* pTree = createPTreeFromXMLString(sNode);
     return pTree;
    }
-   else 
+   else
      return NULL;
 }
 
@@ -3109,8 +3109,8 @@ bool ensureUniqueName(const IPropertyTree* pEnv, IPropertyTree* pParentNode, con
       else
         if (!strcmp(name, newName))
         {
-          bDuplicateFound = true;//cannot exit loop prematurely since this 
-          if (bOriginalFound)     //until this is set 
+          bDuplicateFound = true;//cannot exit loop prematurely since this
+          if (bOriginalFound)     //until this is set
             break;
         }
     }
@@ -3118,7 +3118,7 @@ bool ensureUniqueName(const IPropertyTree* pEnv, IPropertyTree* pParentNode, con
 
   if (bOriginalFound && bDuplicateFound)
   {
-    throw MakeStringException(-1, "Another %s already exists with the same name!\nPlease specify a unique name", 
+    throw MakeStringException(-1, "Another %s already exists with the same name!\nPlease specify a unique name",
       pParentNode->queryName());
   }
 
@@ -3194,12 +3194,12 @@ bool xsltTransform(const char *xml, const char* sheet, IProperties *params, Stri
 
 bool onChangeAttribute(const IPropertyTree* pEnv,
                        IConstEnvironment* pConstEnv,
-                       const char* attrName, 
-                       IPropertyTree* pOnChange, 
-                       IPropertyTree*& pNode, 
-                       IPropertyTree* pParentNode, 
-                       int position, 
-                       const char* szNewValue, 
+                       const char* attrName,
+                       IPropertyTree* pOnChange,
+                       IPropertyTree*& pNode,
+                       IPropertyTree* pParentNode,
+                       int position,
+                       const char* szNewValue,
                        const char* prevValue,
                        const char* buildSet)
 {
@@ -3261,7 +3261,7 @@ bool onChangeAttribute(const IPropertyTree* pEnv,
         if (xsltTransform(xml, sXsltPath, params, ret))
         {
           Owned<IPropertyTree> result = createPTreeFromXMLString(ret.str());
-          
+
           Owned<IAttributeIterator> iAttr = result->getAttributes();
           ForEach(*iAttr)
           {
@@ -3305,7 +3305,7 @@ void UpdateRefAttributes(IPropertyTree* pEnv, const char* szPath, const char* sz
     IPropertyTree& node = iter->query();
     const char* szVal = node.queryProp(szAttr);
     if (szVal && strcmp(szVal, szOldVal)==0)
-      node.setProp(szAttr, szNewVal);      
+      node.setProp(szAttr, szNewVal);
   }
 }
 
@@ -3330,9 +3330,9 @@ void addInstanceToCompTree(const IPropertyTree* pEnvRoot,const IPropertyTree* pI
   ForEach(*iterInst)
   {
     IPropertyTree& pComputer = iterInst->query();
-    xpath.clear().appendf("./Hardware/Computer[@name=\"%s\"]", pComputer.queryProp(XML_ATTR_NAME)); 
+    xpath.clear().appendf("./Hardware/Computer[@name=\"%s\"]", pComputer.queryProp(XML_ATTR_NAME));
     IPropertyTree* pComputerNode = pEnvRoot->queryPropTree(xpath.str());
-    xpath.clear().appendf("Instance[@netAddress=\"%s\"]", pComputerNode->queryProp(XML_ATTR_NETADDRESS)); 
+    xpath.clear().appendf("Instance[@netAddress=\"%s\"]", pComputerNode->queryProp(XML_ATTR_NETADDRESS));
     if (pCompTree->queryPropTree(xpath.str()))
     {
       dups.appendf("\n%s", pComputerNode->queryProp(XML_ATTR_NETADDRESS));
@@ -3436,7 +3436,7 @@ void formIPList(const char* ip, StringArray& formattedIpList)
                        endAddr^=startAddr;
                        startAddr^=endAddr;
                      }
-                     
+
                      while(startAddr <= endAddr)
                      {
                        newip.clear().append(comip).append(startAddr);
@@ -3539,14 +3539,14 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
     StringBuffer xpath, compName, ipAssigned, computerName, linkString, buildSetName;
     Owned<IPropertyTree> pSummaryTree = createPTree("ComponentList");
     IPropertyTree* pSWCompTree  = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
-        
+
     if(pSWCompTree)
     {
       Owned<IPropertyTreeIterator> swCompIter = pSWCompTree->getElements("*");
       StringArray espServiceArr;
       ForEach(*swCompIter)
       {
-      
+
         bool instanceFound = false;
         IPropertyTree* pCompTree = &swCompIter->query();
         if(pCompTree)
@@ -3584,7 +3584,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
                 const char* port = pEspBinding->queryProp(XML_ATTR_PORT);
                 const char* protocol = pEspBinding->queryProp(XML_ATTR_PROTOCOL);
                 const char* buildset = NULL;
-                xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, serviceName); 
+                xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, serviceName);
                 IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());
                 if(pEspService)
                   buildset = pEspService->queryProp(XML_ATTR_BUILDSET);
@@ -3606,7 +3606,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
           if(!instanceFound && (strcmp(pCompTree->queryName(), XML_TAG_ROXIECLUSTER) != 0 && strcmp(pCompTree->queryName(), XML_TAG_THORCLUSTER) != 0))
           {
             if(pCompTree->hasProp(XML_ATTR_COMPUTER))
-            { 
+            {
               xpath.clear().appendf("./Hardware/%s/[%s=\"%s\"]", XML_TAG_COMPUTER, XML_ATTR_NAME, pCompTree->queryProp(XML_ATTR_COMPUTER));
               IPropertyTree* pHardware = pEnvRoot->queryPropTree(xpath.str());
               if(pHardware)
@@ -3634,7 +3634,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
           }
           else if(!strcmp(pCompTree->queryName(), XML_TAG_THORCLUSTER))
           {
-            
+
             IPropertyTree* pCluster = pEnvRoot->queryPropTree("./Software/ThorCluster");
             if(pCluster)
             {
@@ -3669,7 +3669,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
 
           if(ipAssigned.length() && ipAssigned.charAt(ipAssigned.length()-1) == ',')
              ipAssigned.setCharAt((ipAssigned.length()-1),' ');
-         
+
           if(ipAssigned.length() && compName.length())
           {
             IPropertyTree* pComponentType = pSummaryTree->addPropTree("Component", createPTree("Component"));
@@ -3773,7 +3773,7 @@ void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, Strin
       }
     }
 
-    IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());  
+    IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());
     IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, pCfg, serviceName);
 
     StringBuffer sb(type);
@@ -3798,7 +3798,7 @@ void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, Strin
 
   if (!flag)
   {
-    IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());  
+    IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());
     IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, pCfg, serviceName);
     StringBuffer sbNewName(XML_TAG_ESPBINDING);
     xpath.clear().appendf("%s[@name='%s']/EspBinding", processName, espName);
@@ -3806,7 +3806,7 @@ void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, Strin
     getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_SOFTWARE);
     xpath.clear().append(XML_TAG_ESPBINDING).append("/").append(XML_ATTR_NAME);
     pCompTree->setProp(xpath.str(), sbNewName);
-    
+
     if (pEspService && pCompTree)
       pEspService->addPropTree(XML_TAG_ESPBINDING, pCompTree->queryPropTree(XML_TAG_ESPBINDING));
   }
@@ -3817,7 +3817,7 @@ bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, b
   bool ret = false;
   const char* rundir = pEnvRoot->queryProp("Software/Directories/Category[@name='run']/@dir");
   StringBuffer sbdir;
-  
+
   if (rundir && ovrRun)
   {
     sbdir.clear().append(rundir);
@@ -3835,7 +3835,7 @@ bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, b
       ret = true;
     }
   }
-  
+
   const char* logdir = pEnvRoot->queryProp("Software/Directories/Category[@name='log']/@dir");
   if (logdir && ovrLog)
   {
@@ -3856,7 +3856,7 @@ bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, b
   }
 
   return ret;
-} 
+}
 
 //returns temp path that ends with path sep
 //

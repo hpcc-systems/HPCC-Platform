@@ -33,9 +33,9 @@ typedef unsigned char BYTE;
 typedef unsigned short WORD;
 typedef void *PVOID;
 
-typedef PVOID PACCESS_TOKEN;            
-typedef PVOID PSECURITY_DESCRIPTOR;     
-typedef PVOID PSID;     
+typedef PVOID PACCESS_TOKEN;
+typedef PVOID PSECURITY_DESCRIPTOR;
+typedef PVOID PSID;
 
 typedef struct _GUID {          // size is 16
     DWORD Data1;
@@ -181,7 +181,7 @@ typedef PVOID PSID;
 //
 //
 
-#define ANYSIZE_ARRAY 1       
+#define ANYSIZE_ARRAY 1
 
 typedef struct _SID_IDENTIFIER_AUTHORITY {
     BYTE  Value[6];
@@ -648,10 +648,10 @@ typedef struct _SECURITY_DESCRIPTOR {
 //         contains an offset to the ACL, rather than a pointer.
 //
 
-bool GetSecurityDescriptorDacl(PSECURITY_DESCRIPTOR pSecurityDescriptor, int* lpbDaclPresent, PACL *pDacl, 
+bool GetSecurityDescriptorDacl(PSECURITY_DESCRIPTOR pSecurityDescriptor, int* lpbDaclPresent, PACL *pDacl,
                                int* lpbDaclDefaulted);
 
-bool GetAclInformation(PACL pAcl, void* pAclInformation, DWORD nAclInformationLength, 
+bool GetAclInformation(PACL pAcl, void* pAclInformation, DWORD nAclInformationLength,
                        ACL_INFORMATION_CLASS dwAclInformationClass);
 
 bool GetAce (PACL pAcl, DWORD dwAceIndex, void** pAce);
@@ -666,20 +666,20 @@ bool AddAccessAllowedAce(PACL pAcl, DWORD dwAceRevision, DWORD AccessMask, PSID 
 
 bool SetSecurityDescriptorDacl(PSECURITY_DESCRIPTOR pSecurityDescriptor, bool bDaclPresent, PACL pDacl, bool bDaclDefaulted);
 
-bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor, 
-                        PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor, 
+bool MakeSelfRelativeSD(PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
+                        PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
                         DWORD* lpdwBufferLength);
 
-bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor, 
-                    PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor, 
-                    DWORD* lpdwAbsoluteSecurityDescriptorSize, 
-                    PACL pDacl, 
-                    DWORD* lpdwDaclSize, 
-                    PACL pSacl,  
-                    DWORD* lpdwSaclSize, 
-                    PSID pOwner, 
-                    DWORD* lpdwOwnerSize, 
-                    PSID pPrimaryGroup, 
+bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
+                    PSECURITY_DESCRIPTOR pAbsoluteSecurityDescriptor,
+                    DWORD* lpdwAbsoluteSecurityDescriptorSize,
+                    PACL pDacl,
+                    DWORD* lpdwDaclSize,
+                    PACL pSacl,
+                    DWORD* lpdwSaclSize,
+                    PSID pOwner,
+                    DWORD* lpdwOwnerSize,
+                    PSID pPrimaryGroup,
                     DWORD* lpdwPrimaryGroupSize);
 
 unsigned long GetSecurityDescriptorLength(PSECURITY_DESCRIPTOR pSecurityDescriptor);
@@ -708,7 +708,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     PermissionProcessor(IPropertyTree* cfg);
-    
+
     virtual void setLdapClient(ILdapClient* client)
     {
         m_ldap_client = client;
@@ -727,7 +727,7 @@ public:
     {
         if(sd == NULL || sd->getDescriptor().length() == 0)
             return 0;
-        else 
+        else
             return 1;
     }
     virtual bool getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<CPermission>& permissions);

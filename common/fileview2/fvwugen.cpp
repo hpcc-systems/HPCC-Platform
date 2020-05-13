@@ -132,7 +132,7 @@ IHqlExpression * buildDiskOutputEcl(const char * logicalName, IHqlExpression * r
 //Add holepos/filepos/sizeof to the query, so that the browse has something to work on.
 static HqlTransformerInfo positionTransformerInfo("PositionTransformer");
 PositionTransformer::PositionTransformer()  : NewHqlTransformer(positionTransformerInfo)
-{ 
+{
     insertedAttr.setown(createAttribute(insertedAtom));
 }
 
@@ -232,7 +232,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                 IHqlExpression * record = child->queryChild(1);
                 if (record->getOperator() == no_null)
                 {
-                    //MORE: This might will not work for ifblocks, and may not cope with 
+                    //MORE: This might will not work for ifblocks, and may not cope with
                     //      alien(self.x), or nested records.
                     IHqlExpression * record = child->queryRecord();
                     ForEachChild(idx, record)

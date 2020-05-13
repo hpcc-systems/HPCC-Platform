@@ -54,7 +54,7 @@ interface jlib_thrown_decl IMultiException : extends IException
    virtual void deserialize(const char* xml) = 0; //throws IException on failure!
 
    //the following methods override those in IIException
-   // 
+   //
     virtual int errorCode() const = 0;
     virtual StringBuffer&   errorMessage(StringBuffer &msg) const = 0;
     virtual MessageAudience errorAudience() const = 0;
@@ -145,8 +145,8 @@ const char jlib_decl *sanitizeSourceFile(const char *file);
 #define UNIMPLEMENTED_X(reason) throw makeStringExceptionV(-1, "UNIMPLEMENTED '" reason "' at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
 #define UNIMPLEMENTED_XY(a,b) throw makeStringExceptionV(-1, "UNIMPLEMENTED " a " %s at %s(%d)", b, sanitizeSourceFile(__FILE__), __LINE__)
 
-IException jlib_decl * deserializeException(MemoryBuffer & in); 
-void jlib_decl serializeException(IException * e, MemoryBuffer & out); 
+IException jlib_decl * deserializeException(MemoryBuffer & in);
+void jlib_decl serializeException(IException * e, MemoryBuffer & out);
 
 void  jlib_decl printStackReport(__int64 startIP = 0);
 // Macro for legacy name of above function

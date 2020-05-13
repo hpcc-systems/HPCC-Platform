@@ -45,7 +45,7 @@ public:
     virtual void fileSizeCopied(offset_t size, bool bWholeFileDone) { }
 
     virtual void printStatus(IDeployTask* task);
-    virtual void printStatus(StatusType type, const char* processType, const char* process, 
+    virtual void printStatus(StatusType type, const char* processType, const char* process,
                              const char* instance, const char* format=NULL, ...) __attribute__((format(printf,6,7)));
    virtual bool onDisconnect(const char* target);
     bool getAbortStatus() const
@@ -67,7 +67,7 @@ public:
 
    virtual void getSshAccountInfo(StringBuffer& userid, StringBuffer& password) const;
    //the following throws exception on abort, returns true for ignore
-   virtual bool processException(const char* processType, const char* process, const char* instance, 
+   virtual bool processException(const char* processType, const char* process, const char* instance,
                                            IException* e, const char* szMessage=NULL, const char* szCaption=NULL,
                                             IDeployTask* pTask = NULL);
     virtual IEnvDeploymentEngine* getEnvDeploymentEngine() const { return m_pEnvDepEngine.getLink(); }

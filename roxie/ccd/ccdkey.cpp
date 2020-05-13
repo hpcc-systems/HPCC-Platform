@@ -103,7 +103,7 @@ public:
         delete [] fragments;
     }
 
-    static int compareFragments(const void *_l, const void *_r) 
+    static int compareFragments(const void *_l, const void *_r)
     {
         FragmentInfo *l = (FragmentInfo *) _l;
         FragmentInfo *r = (FragmentInfo *) _r;
@@ -128,7 +128,7 @@ public:
             numBases++;
             if (numBases==maxBases)
             {
-                qsort(fragments, numBases, sizeof(fragments[0]), compareFragments); 
+                qsort(fragments, numBases, sizeof(fragments[0]), compareFragments);
             }
         }
     }
@@ -423,19 +423,19 @@ typedef IArrayOf<InMemoryIndex> InMemoryIndexSet;
  * When numParts is > 1
  *   This indicates that the caller has divided the task between multiple threads, and we are to give each thread a portion of the
  *   file to work with.
- *   The in-memory case uses the baseMap to divide the number of files originally loaded into N 
+ *   The in-memory case uses the baseMap to divide the number of files originally loaded into N
  *     (the file boundaries are the only place we are sure there are record boundaries - fixed size case could do better in theory)
  *   The disk case gives an empty set to all but the first thread - could certainly do better
  * How it should work
  *   IDirectReader should be derived from ISerialStream (with the addition of the ptr to offset mapping functions)
  *   We should not peek past end of a single file
- *   We are then free to use memory-mapped files and/or existing fileIO stream code, and IDirectReader is much simpler, 
+ *   We are then free to use memory-mapped files and/or existing fileIO stream code, and IDirectReader is much simpler,
  *   just handling the move from one file to the next and the PtrToOffset stuff
  * Implications for caller
  *   Callers already use different code for variable vs fixed cases to avoid conditional code inside inner loop
  *   Callers in fixed case can peek multiple rows ahead (and when in memory will be given very large peeks...)
  *   Callers in variable case will switch to prefetch to get row size rather than getRecordSize().
- *   If we really want maximum performance on variable-size in-memory cases we can have a third variant that relies on initial peek 
+ *   If we really want maximum performance on variable-size in-memory cases we can have a third variant that relies on initial peek
  *   giving entire file, and uses getRecordSize(). Will avoid a one or more virtual peek() calls per row.
  *====================================================================================================*/
 
@@ -618,7 +618,7 @@ public:
             return 0;
         memcpy(data, ptr, got);
         skip(got);
-        return got;     
+        return got;
     }
 
     // Interface IDirectReaderEx
@@ -633,7 +633,7 @@ public:
         return baseMap.makeFilePositionLocal(pos);
     }
 
-    // Interface IThorDiskCallback 
+    // Interface IThorDiskCallback
 
     virtual unsigned __int64 getFilePosition(const void *_ptr) override
     {
@@ -656,7 +656,7 @@ public:
     }
 
     virtual const char * queryLogicalFilename(const void * row) override
-    { 
+    {
         UNIMPLEMENTED;
         // Could implement fairly trivially since we don't support superfiles.
         // Even if we did can work out the partno using makeFilePositionLocal() and get the lfn from that
@@ -685,8 +685,8 @@ public:
         thisPartIdx = 0;
         unsigned maxParts = f ? f->length() : 0;
 
-        // This code is supposed to divide the work between multiple parallel processors. 
-        // See the inMem version for details. 
+        // This code is supposed to divide the work between multiple parallel processors.
+        // See the inMem version for details.
         // For now until get round to doing better, we give all the work to the first slot...
         while (!_partNo && !thisPart && ++thisPartIdx < maxParts) // MORE
         {
@@ -700,7 +700,7 @@ public:
         }
 
         if (thisPart)
-        {       
+        {
             curStream.setown(createFileSerialStream(thisPart, _startPos));
             unsigned subFileIdx = f->getSubFile(thisPartIdx);
             prefetcher.setown(translators->getPrefetcher(subFileIdx));
@@ -808,7 +808,7 @@ public:
             got = max_len;
         memcpy(data, ptr, got);
         skip(got);
-        return got;     
+        return got;
     }
 
     // Interface IDirectReaderEx
@@ -843,7 +843,7 @@ public:
     }
 
     virtual const char * queryLogicalFilename(const void * row) override
-    { 
+    {
         return f->queryLogicalFilename(thisPartIdx);
     }
 };
@@ -956,7 +956,7 @@ public:
         {
             files.set(_files);
             totalSize = 0;
-            fileEnd = NULL; 
+            fileEnd = NULL;
             if (files)
             {
                 for (unsigned idx=0; idx < files->length(); idx++)
@@ -1227,13 +1227,13 @@ public:
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
 
-    virtual const char * queryLogicalFilename(const void * row) 
-    { 
+    virtual const char * queryLogicalFilename(const void * row)
+    {
         UNIMPLEMENTED;
     }
     virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
 
-    virtual void serializeCursorPos(MemoryBuffer &mb) const 
+    virtual void serializeCursorPos(MemoryBuffer &mb) const
     {
         index->serializeCursorPos(mb);
         mb.append(cur);
@@ -1303,7 +1303,7 @@ extern IInMemoryIndexManager *createInMemoryIndexManager(const RtlRecord &recInf
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
-class InMemoryIndexTest : public CppUnit::TestFixture  
+class InMemoryIndexTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( InMemoryIndexTest );
         CPPUNIT_TEST(test1);
@@ -1397,7 +1397,7 @@ protected:
     }
 };
 
-class StringSetTest : public CppUnit::TestFixture  
+class StringSetTest : public CppUnit::TestFixture
 {
     // Should really be in jset but did not want to have jlib dependent on cppunit
     CPPUNIT_TEST_SUITE( StringSetTest );
@@ -1509,7 +1509,7 @@ protected:
                 ASSERT(transition==(unsigned)-1);
             }
         }
-    
+
     }
 
     void test3()
@@ -1553,7 +1553,7 @@ protected:
         slu4.setown(slu3->unionSet(slu));
         checkValues3(slu4);
 
-        
+
         slu.setown(createStringSet(sizeof(int), false, false));
         slu->addAll();
         for (i = 11; i < 20; i+=2)

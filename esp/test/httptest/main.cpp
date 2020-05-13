@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
 
     int delay = 0;
     int recvDelay = 0, sendDelay = 0, blockDelay = 0;
-    
+
     int i = 1;
     while(i<argc)
     {
@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
                 HttpClient client(threads, times, host.str(), port, ofile, use_ssl, sslconfig.get());
                 if(delay > 0)
                     client.setDelay(delay);
-                client.sendRequest(in_fname.str());         
+                client.sendRequest(in_fname.str());
             }
             else
             {

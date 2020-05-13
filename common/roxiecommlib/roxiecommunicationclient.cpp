@@ -441,7 +441,7 @@ public:
         xpath.appendf("<control:queryActiveMetaInfo addClusterName='%d' groupByDataPackage='%d' version='%d'", addClusterName, groupByDataPackage, version);
 
         xpath.appendf("/>");
-        
+
         return sendRoxieControlQuery(xpath.str(), false);   // assume we only need info from one server - they all must be the same or roxie is in trouble
     }
 
@@ -470,7 +470,7 @@ public:
         }
         else
             xpath.append("/>");
-        
+
         return sendRoxieControlQuery(xpath.str(), true);
     }
 

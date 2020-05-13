@@ -93,7 +93,7 @@
 #define ERR_TYPEOF_ILLOPERAND       2010 /* Illegal operand for TYPEOF */
 #define ERR_USRTYPE_NESTEDDECL      2011 /* Cannot nest user TYPE declarations */
 #define ERR_TYPEMISMATCH_DATASET    2012 /* Datasets must be the same type */
-#define ERR_TYPE_DIFFER             2013 /* The types must be the same */ 
+#define ERR_TYPE_DIFFER             2013 /* The types must be the same */
 #define ERR_ELEMENT_NO_TYPE         2014 /* List element has unknown type */
 
 #define ERR_TYPEERR_INT             2015 /* Integer type expected */
@@ -239,7 +239,7 @@
 #define ERR_SUBSTR_EMPTYRANGE       2191  /* Empty substring range */
 #define ERR_USRTYPE_EMPTYDEF        2192  /* Empty user type definition */
 #define ERR_TRANSFORM_EMPTYDEF      2193  /* Empty transform definition */
-#define ERR_COMMENT_UNENDED         2194  /* Unended comment */         
+#define ERR_COMMENT_UNENDED         2194  /* Unended comment */
 #define ERR_STRING_UNENDED          2195  /* Unended string constant: string must end in one line */
 #define ERR_STRING_ILLDELIMITER     2196  /* " is illegal string delimiter: use ' instead */
 #define ERR_IFBLOCK_EMPTYDEF        2197  /* Empty ifblock definition */
@@ -332,7 +332,7 @@
 #define ERR_AMBIGUOUS_PRODUCTION    2296
 #define ERR_NOT_ROW_RULE            2297
 
-//                                  2299 
+//                                  2299
 
 // Any old errors..
 #define ERR_NO_MULTI_ARRAY          2300  /* Multi dimension array indexing not supported. */

@@ -32,7 +32,7 @@ private:
 public:
    IMPLEMENT_IINTERFACE;
 
-   CEspPlugin(const char *plugin, bool fload=true) : 
+   CEspPlugin(const char *plugin, bool fload=true) :
       m_plugin(plugin)
    {
       if (fload)

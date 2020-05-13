@@ -32,7 +32,7 @@
 #include "espplugin.hpp"
 #include "espplugin.ipp"
 #include "espcfg.ipp"
-#include "xslprocessor.hpp" 
+#include "xslprocessor.hpp"
 #include "espcontext.hpp"
 #include "mplog.hpp"
 #include "rmtfile.hpp"
@@ -108,7 +108,7 @@ StringBuffer &CVSBuildToEspVersion(char const * tag, StringBuffer & out)
         else
             subbuild = *tag-'A'+1;
     }
-        
+
     out.append(build/10).append('.').append(build%10).append(subbuild);
     return out;
 }
@@ -263,7 +263,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_envpt.setown(envpt);
     m_cfg.setown(procpt);
 
-    loadBuiltIns();   
+    loadBuiltIns();
 
     // load options
     const char* level = m_cfg->queryProp("@logLevel");
@@ -422,10 +422,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
                     map<string, srv_cfg*>::value_type en(svcfg->name.str(), svcfg);
                     m_services.insert(en);
-                }               
+                }
                 pt_iter->next();
             }
-    
+
             pt_iter->Release();
             pt_iter=NULL;
         }
@@ -456,18 +456,18 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
                     map<string, protocol_cfg*>::value_type en(pcfg->name.str(), pcfg);
                     m_protocols.insert(en);
-                }               
+                }
 
                 pt_iter->next();
             }
-    
+
             pt_iter->Release();
             pt_iter=NULL;
         }
 
         xpath.clear();
         xpath.append("EspBinding");
- 
+
         pt_iter = m_cfg->getElements(xpath.str());
 
         if (pt_iter!=NULL)
@@ -475,7 +475,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             IPropertyTree *ptree = NULL;
 
             pt_iter->first();
-    
+
 
             while(pt_iter->isValid())
             {
@@ -518,7 +518,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
 
                 pt_iter->next();
             }
-    
+
             pt_iter->Release();
             pt_iter=NULL;
         }
@@ -574,7 +574,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
 {
     map<string, srv_cfg*>::iterator sit = m_services.find(xcfg.service_name.str());
     map<string, protocol_cfg*>::iterator pit = m_protocols.find(xcfg.protocol_name.str());
-    
+
     IEspService *isrv = NULL;
     IEspProtocol *iprot = NULL;
 
@@ -601,7 +601,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
             if(isrv != NULL)
                 xcfg.service.setown(LINK(isrv));
             xcfg.protocol.setown(LINK(iprot));
-            
+
             builtin *pdirect = getBuiltIn(xcfg.plugin.str());
             if (pdirect)
             {
@@ -643,7 +643,7 @@ void CEspConfig::loadBinding(binding_cfg &xcfg)
         else
         {
             throw MakeStringException(-1, "Protocol %s wasn't loaded correctly for the binding", xcfg.protocol_name.str());
-        }   
+        }
    }
 }
 
@@ -722,7 +722,7 @@ void CEspConfig::loadProtocols()
 void CEspConfig::loadBindings()
 {
     list<binding_cfg*>::iterator iter = m_bindings.begin();
-    
+
     while (iter!=m_bindings.end())
     {
 #ifndef _USE_OPENLDAP
@@ -781,20 +781,20 @@ public:
     {
         return CInterface::Release();
     }
-    
+
     ESPxsltIncludeHandler()
     {
     }
     ~ESPxsltIncludeHandler()
     {
     }
-    
-    
+
+
     inline bool fileExists(StringBuffer &filename)
     {
         return (checkFileExists(filename.str()) || checkFileExists(filename.toUpperCase().str()) || checkFileExists(filename.toLowerCase().str()));
     }
-    
+
     inline bool fileRead(const char *filename, MemoryBuffer &buff)
     {
         Owned<IFile> fi=createIFile(filename);
@@ -991,7 +991,7 @@ void CEspConfig::unloadProtocols()
             pcfg->cfg.clear();
             delete pcfg;
         }
-        
+
         proti++;
     }
     m_protocols.clear();
@@ -999,7 +999,7 @@ void CEspConfig::unloadProtocols()
 
 IEspPlugin* CEspConfig::getPlugin(const char* name)
 {
-    if(!name || !*name) 
+    if(!name || !*name)
         return NULL;
     ForEachItemIn(x, m_plugins)
     {
@@ -1013,7 +1013,7 @@ IEspPlugin* CEspConfig::getPlugin(const char* name)
     if(pplg)
     {
         pplg->Link(); //YMA: intentional leak. Unloading DLLs during ESP shutdown causes all kinds of issues.
-        m_plugins.append(*LINK(pplg)); 
+        m_plugins.append(*LINK(pplg));
         return LINK(pplg);
     }
 

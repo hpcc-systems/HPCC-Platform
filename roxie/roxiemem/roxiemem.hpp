@@ -237,8 +237,8 @@ private:
     friend class CDataBufferManager;
     CDataBufferManager * volatile owner;
     std::atomic_uint okToFree;      // use uint since it is more efficient on some architectures
-    DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
-    DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
+    DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager
+    DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager
     DataBuffer *freeChain;
     CriticalSection crit;
 
@@ -300,8 +300,8 @@ public:
     inline OwnedConstRoxieRow(const OwnedConstRoxieRow & other) { ptr = other.getLink(); }
 
     inline ~OwnedConstRoxieRow()                            { if (ptr) ReleaseRoxieRow(ptr); }
-    
-private: 
+
+private:
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
     void operator = (const void * _ptr)              { set(_ptr);  }
     void operator = (const OwnedConstRoxieRow & other) { set(other.get());  }
@@ -311,18 +311,18 @@ private:
     inline OwnedConstRoxieRow(const OwnedRoxieRow & other)  { }
 
 public:
-    inline const void * operator -> () const        { return ptr; } 
-    inline operator const void *() const            { return ptr; } 
-    
+    inline const void * operator -> () const        { return ptr; }
+    inline operator const void *() const            { return ptr; }
+
     inline void clear()                     { const void *temp=ptr; ptr=NULL; ReleaseRoxieRow(temp); }
     inline const void * get() const             { return ptr; }
     inline const void * getClear()              { const void * temp = ptr; ptr = NULL; return temp; }
     inline const void * getLink() const         { LinkRoxieRow(ptr); return ptr; }
     inline void set(const void * _ptr)          { const void * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); }
     inline void setown(const void * _ptr)           { const void * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); }
-    
+
     inline void set(const OwnedConstRoxieRow &other) { set(other.get()); }
-    
+
 private:
     const void * ptr;
 };
@@ -337,8 +337,8 @@ public:
     inline OwnedRoxieRow(const OwnedRoxieRow & other)   { ptr = other.getLink(); }
 
     inline ~OwnedRoxieRow()                             { ReleaseRoxieRow(ptr); }
-    
-private: 
+
+private:
     /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
     void operator = (void * _ptr)                { set(_ptr);  }
     void operator = (const OwnedRoxieRow & other) { set(other.get());  }
@@ -347,18 +347,18 @@ private:
     void setown(const OwnedRoxieRow &other) {  }
 
 public:
-    inline void * operator -> () const      { return ptr; } 
-    inline operator void *() const          { return ptr; } 
-    
+    inline void * operator -> () const      { return ptr; }
+    inline operator void *() const          { return ptr; }
+
     inline void clear()                     { void *temp=ptr; ptr=NULL; ReleaseRoxieRow(temp); }
     inline void * get() const               { return ptr; }
     inline void * getClear()                { void * temp = ptr; ptr = NULL; return temp; }
     inline void * getLink() const           { LinkRoxieRow(ptr); return ptr; }
     inline void set(void * _ptr)            { void * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); }
     inline void setown(void * _ptr)         { void * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); }
-    
+
     inline void set(const OwnedRoxieRow &other) { set(other.get()); }
-    
+
 private:
     void * ptr;
 };
@@ -493,7 +493,7 @@ extern roxiemem_decl void setDataAlignmentSize(unsigned size);
 #define MIN_ABORT_CHECK_INTERVAL 10
 #define MAX_ABORT_CHECK_INTERVAL 5000
 
-interface ITimeLimiter 
+interface ITimeLimiter
 {
     virtual void checkAbort() = 0;
     virtual unsigned checkInterval() const = 0;

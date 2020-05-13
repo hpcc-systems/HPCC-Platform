@@ -8,29 +8,29 @@
  * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice in the documentation and/or other materials provided with 
+ *    notice in the documentation and/or other materials provided with
  *    the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "stdafx.h"
 #include "PxShlAPI.h"
 
 #ifdef _UNICODE
-    #define IShellLinkPtr   IShellLinkWPtr  
+    #define IShellLinkPtr   IShellLinkWPtr
     #define IExtractIconPtr IExtractIconWPtr
 #else
-    #define IShellLinkPtr   IShellLinkAPtr  
+    #define IShellLinkPtr   IShellLinkAPtr
     #define IExtractIconPtr IExtractIconAPtr
 #endif
 
@@ -44,14 +44,14 @@ LPITEMIDLIST GetItemIDFromPath(LPCTSTR pszPath)
     ULONG         chEaten;
     ULONG         dwAttributes;
     OLECHAR       olePath[_MAX_PATH];
-    
+
     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED,
         pszPath, -1, olePath, sizeof(olePath));
-    
+
     hr = GetDesktopFolder()->ParseDisplayName(
         NULL,NULL,olePath,&chEaten,&pidl,&dwAttributes);
-    
-    if( FAILED(hr) ) 
+
+    if( FAILED(hr) )
         return NULL;
 
     return pidl;
@@ -77,7 +77,7 @@ IMallocPtr& GetMalloc()
 
 // get size of PIDL - returns PIDL size (even if it's composite
 // PIDL - i.e. composed from more than one PIDLs)
-int GetItemIDSize(LPCITEMIDLIST pidl) 
+int GetItemIDSize(LPCITEMIDLIST pidl)
 {
     if( !pidl ) return 0;
     int nSize = 0;
@@ -103,7 +103,7 @@ int GetItemIDCount(LPCITEMIDLIST pidl)
 int CompareItemID(LPCITEMIDLIST pidl1,LPCITEMIDLIST pidl2)
 {
     if( pidl1 == pidl2 ) return 0;
-    if( !pidl1 || !pidl2 ) return -1; 
+    if( !pidl1 || !pidl2 ) return -1;
     if( GetItemIDSize(pidl1) != GetItemIDSize(pidl2) ) return -1;
     return memcmp(pidl1,pidl2,GetItemIDSize(pidl1) );
 }
@@ -133,28 +133,28 @@ LPBYTE GetItemIDPos(LPCITEMIDLIST pidl, int nPos)
     return NULL;
 }
 
-LPITEMIDLIST CopyItemID(LPCITEMIDLIST pidl, int cb/*=-1*/) 
-{ 
+LPITEMIDLIST CopyItemID(LPCITEMIDLIST pidl, int cb/*=-1*/)
+{
     if( !(bool)::GetMalloc() ) return NULL;
 
-//  Get the size of the specified item identifier. 
+//  Get the size of the specified item identifier.
     if( cb == -1 )
-        cb = GetItemIDSize(pidl); 
+        cb = GetItemIDSize(pidl);
 
-//  Allocate a new item identifier list. 
-    LPITEMIDLIST pidlNew = (LPITEMIDLIST)GetMalloc()->Alloc(cb+sizeof(USHORT)); 
-    if(pidlNew == NULL) return NULL; 
+//  Allocate a new item identifier list.
+    LPITEMIDLIST pidlNew = (LPITEMIDLIST)GetMalloc()->Alloc(cb+sizeof(USHORT));
+    if(pidlNew == NULL) return NULL;
 
-//  Copy the specified item identifier. 
-    CopyMemory(pidlNew, pidl, cb); 
+//  Copy the specified item identifier.
+    CopyMemory(pidlNew, pidl, cb);
 
-//  Append a terminating zero. 
-    *((USHORT *)(((LPBYTE) pidlNew) + cb)) = 0; 
+//  Append a terminating zero.
+    *((USHORT *)(((LPBYTE) pidlNew) + cb)) = 0;
 
-    return pidlNew; 
+    return pidlNew;
 }
 
-LPITEMIDLIST MergeItemID(LPCITEMIDLIST pidl,...) 
+LPITEMIDLIST MergeItemID(LPCITEMIDLIST pidl,...)
 {
     va_list marker;
     int nSize = GetItemIDSize(pidl) + sizeof(pidl->mkid.cb);
@@ -166,18 +166,18 @@ LPITEMIDLIST MergeItemID(LPCITEMIDLIST pidl,...)
         nSize += GetItemIDSize(p);
     va_end(marker);
 //  allocate and merge pidls
-    LPITEMIDLIST pidlNew = (LPITEMIDLIST)GetMalloc()->Alloc(nSize); 
-    if(pidlNew == NULL) return NULL; 
+    LPITEMIDLIST pidlNew = (LPITEMIDLIST)GetMalloc()->Alloc(nSize);
+    if(pidlNew == NULL) return NULL;
 
     va_start(marker,pidl);
-    CopyMemory(((LPBYTE)pidlNew), pidl, nSize = GetItemIDSize(pidl)); 
+    CopyMemory(((LPBYTE)pidlNew), pidl, nSize = GetItemIDSize(pidl));
     while( p = va_arg(marker, LPITEMIDLIST) ) {
-           CopyMemory(((LPBYTE)pidlNew) + nSize, p, GetItemIDSize(p)); 
+           CopyMemory(((LPBYTE)pidlNew) + nSize, p, GetItemIDSize(p));
            nSize += p->mkid.cb;
     }
     va_end(marker);
-    *((USHORT *)(((LPBYTE) pidlNew) + nSize)) = 0; 
-    return pidlNew; 
+    *((USHORT *)(((LPBYTE) pidlNew) + nSize)) = 0;
+    return pidlNew;
 }
 
 HRESULT
@@ -205,7 +205,7 @@ SHBindToParent(LPCITEMIDLIST pidl, REFIID riid, VOID **ppv, LPCITEMIDLIST *ppidl
         LPBYTE pRel = ::GetItemIDPos(pidl, nCount-1);
         CPidl pidlPar(::CopyItemID(pidl, pRel-(LPBYTE)pidl));
         IShellFolderPtr pFolder;
-        
+
         if( FAILED(hr = GetDesktopFolder()->BindToObject(pidlPar, NULL,
             __uuidof(pFolder), (void**)&pFolder)) )
         {
@@ -237,7 +237,7 @@ _CtxMenuWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_DRAWITEM:
         case WM_MENUCHAR:
         case WM_MEASUREITEM:
-            if( pSubclassData->pContextMenu2 && 
+            if( pSubclassData->pContextMenu2 &&
                 SUCCEEDED(pSubclassData->pContextMenu2->HandleMenuMsg(uMsg, wParam, lParam)) )
                 return TRUE;
             return FALSE;
@@ -268,13 +268,13 @@ BOOL TrackItemIDContextMenu(LPCITEMIDLIST pidlShellItem,
     if( SUCCEEDED(hr = SHBindToParent(pidlShellItem, __uuidof(pParent),
         (void**)&pParent, pidlRel)) )
     {
-        if( SUCCEEDED(pParent->GetUIObjectOf(NULL, 1, pidlRel, 
+        if( SUCCEEDED(pParent->GetUIObjectOf(NULL, 1, pidlRel,
             __uuidof(pCtxMenu), NULL, (void**)&pCtxMenu)) )
         {
             CMenu ctxMenu;
             if( !ctxMenu.CreatePopupMenu() )
                 return FALSE;
-        //  
+        //
             if( FAILED(hr = pCtxMenu->QueryContextMenu(ctxMenu, 0,
                 1, 10000, CMF_NORMAL)) )
                 return FALSE;
@@ -317,7 +317,7 @@ BOOL TrackItemIDContextMenu(LPCTSTR pszShellItemPath,
         pszShellItemPath[0] == 0 )
         return FALSE;
     CPidl pidlAbsolute(pszShellItemPath);
-    return 
+    return
         pidlAbsolute.IsEmpty() ||
         TrackItemIDContextMenu(pidlAbsolute, nFlags, ptPoint, hWnd);
 }

@@ -171,7 +171,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowDeserializeRow(BuildCtx & ctx, 
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
 
-    HqlExprArray args;  
+    HqlExprArray args;
     args.append(*createSerializer(ctx, record, serializeForm, deserializerAtom));
     args.append(*LINK(srcRow));
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
@@ -218,7 +218,7 @@ void HqlCppTranslator::buildConstRow(IHqlExpression * record, IHqlExpression * r
         initializer.setown(createValue(no_create_initializer, rowData->getType(), LINK(rowData)));
     }
 
-    //MORE: Currently these are marked as const rows, but not generated as such 
+    //MORE: Currently these are marked as const rows, but not generated as such
     OwnedHqlExpr boundDeclare = createVariable(rowName, makeConstantModifier(LINK(declareType)));
     OwnedHqlExpr boundRow = createVariable(rowName, LINK(rowType));
     declareCtx.addDeclare(boundDeclare, initializer);
@@ -442,7 +442,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXMLorJSON(BuildCtx & ctx, I
 
 
 
-//NB: If this is a dataset operation, this function assumes that any parent datasets are already in scope 
+//NB: If this is a dataset operation, this function assumes that any parent datasets are already in scope
 //    i.e. processed in buildDatasetAssign()
 //    the one exception is aggregate because it needs to treat its input differently.
 
@@ -1235,7 +1235,7 @@ void HqlCppTranslator::doBuildExprExists(BuildCtx & ctx, IHqlExpression * expr, 
 static IHqlExpression * createMinMax(node_operator compareOp, ITypeInfo * type, IHqlExpression * left, IHqlExpression * right)
 {
     return createValue(no_if, LINK(type),
-                            createBoolExpr(compareOp, LINK(left), LINK(right)), 
+                            createBoolExpr(compareOp, LINK(left), LINK(right)),
                             LINK(left), LINK(right));
 }
 
@@ -1271,7 +1271,7 @@ bool HqlCppTranslator::doBuildAggregateMinMaxList(BuildCtx & ctx, const CHqlBoun
                 OwnedHqlExpr cmp02 = createMinMax(compareOp, type, simple[0], simple[2]);
                 OwnedHqlExpr cmp12 = createMinMax(compareOp, type, simple[1], simple[2]);
                 value.setown(createValue(no_if, expr->getType(),
-                            createBoolExpr(compareOp, LINK(simple[0]), LINK(simple[1])), 
+                            createBoolExpr(compareOp, LINK(simple[0]), LINK(simple[1])),
                             LINK(cmp02), LINK(cmp12)));
             }
         }
@@ -1801,7 +1801,7 @@ void HqlCppTranslator::beginExtract(BuildCtx & ctx, ParentExtract * extractBuild
 }
 
 void HqlCppTranslator::endExtract(BuildCtx & ctx, ParentExtract * extractBuilder)
-{ 
+{
     extractBuilder->endUseExtract(ctx);
     ctx.removeAssociation(extractBuilder);
 }
@@ -1880,7 +1880,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
 
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
-    
+
     resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false, isInsideChildQuery));
     if (options.optimizeSpillProject)
     {
@@ -2748,7 +2748,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     {
     case no_limit:
         assertex(!expr->hasAttribute(skipAtom) && !expr->hasAttribute(onFailAtom));
-        //Do the limit check as a post test.  
+        //Do the limit check as a post test.
         //It means we may read more records than we need to, but the code is inline, and the code is generally much better.
         if (target.count)
         {
@@ -3197,7 +3197,7 @@ void HqlCppTranslator::createInlineDictionaryRows(HqlExprArray & args, ConstantR
         if (rows[i])
             args.append(*LINK(rows[i]->boundRow));
         else
-            args.append(*LINK(nullRow)); 
+            args.append(*LINK(nullRow));
     }
 }
 
@@ -4258,7 +4258,7 @@ void HqlCppTranslator::buildCompoundAssign(BuildCtx & ctx, IHqlExpression * left
             buildFilter(subctx, test);
             buildCompoundAssign(subctx, left->queryChild(1), leftSelector, rightScope, rightSelector);
 
-            //This calculates the size of the previous block.  It means that subsequent uses of the 
+            //This calculates the size of the previous block.  It means that subsequent uses of the
             //offsets are cached - even if they are inside another ifblock().
             CHqlBoundExpr bound;
             IHqlExpression * mapexpr = createSelectExpr(LINK(leftSelector->queryExpr()), LINK(left));
@@ -4510,7 +4510,7 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
     OwnedHqlExpr guard;
     if (needGuard)
     {
-        Owned<ITypeInfo> boolType = makeBoolType(); 
+        Owned<ITypeInfo> boolType = makeBoolType();
         guard.setown(ctx.getTempDeclare(boolType, queryBoolExpr(false)));
     }
 
@@ -4580,12 +4580,12 @@ void HqlCppTranslator::doBuildRowAssignCreateRow(BuildCtx & ctx, IReferenceSelec
     Owned<BoundRow> selfCursor = target->getRow(ctx);
     doTransform(ctx, transform, selfCursor);
 }
-        
+
 void HqlCppTranslator::doBuildRowAssignNullRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     target->buildClear(ctx, 0);
 }
-        
+
 void HqlCppTranslator::doBuildRowAssignProjectRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     IHqlExpression * srcRow = expr->queryChild(0);
@@ -4601,7 +4601,7 @@ void HqlCppTranslator::doBuildRowAssignProjectRow(BuildCtx & ctx, IReferenceSele
     Owned<BoundRow> selfCursor = target->getRow(subctx);
     doTransform(subctx, newTransform, selfCursor);
 }
-        
+
 void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     IHqlExpression * srcRow = expr->queryChild(0);
@@ -4630,7 +4630,7 @@ void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSe
         //very unusual code, so not too concerned.
     }
 }
-        
+
 void HqlCppTranslator::doBuildRowAssignUserTable(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     Owned<BoundRow> selfCursor = target->getRow(ctx);
@@ -4904,7 +4904,7 @@ BoundRow * HqlCppTranslator::buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExp
                 else
                     bindTableCursor(ctx, expr->queryChild(0), tempRow->queryBound(), no_none, NULL);
             }
-                
+
             doBuildRowAssignAggregate(subctx, createdRef, expr);
             finalizeTempRow(ctx, tempRow, rowBuilder);
             ctx.associate(*tempRow);
@@ -5207,7 +5207,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
         //MORE? Following doesn't work for implicit normalize which iterates multiple levels
         bool specialCase = false;
         dataset.set(querySkipDatasetMeta(dataset));
-        
+
         switch (dataset->getOperator())
         {
         case no_select:

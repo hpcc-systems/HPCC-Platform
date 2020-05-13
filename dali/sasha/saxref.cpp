@@ -43,7 +43,7 @@
 
 #define DEFAULT_RECENT_CUTOFF_DAYS 1
 
-inline bool nextCsvToken(const char *&s,StringBuffer &tok) 
+inline bool nextCsvToken(const char *&s,StringBuffer &tok)
 {
     if (!s)
         return false;
@@ -73,7 +73,7 @@ struct cMisplacedRec
 {
     cMisplacedRec *next;
     unsigned short nn;  // node on (+N*drv)
-    unsigned short pn;  // part number 
+    unsigned short pn;  // part number
     bool marked;
 
     void init(unsigned drv,
@@ -113,7 +113,7 @@ struct cMisplacedRec
 struct cFileDesc // no virtuals
 {
     unsigned hash;
-    unsigned short N;           // num parts 
+    unsigned short N;           // num parts
     const char *owningfile;     // for crosslinked
     cMisplacedRec *misplaced;   // for files on the wrong node
     byte name[1];               // first byte length
@@ -125,7 +125,7 @@ struct cFileDesc // no virtuals
 
     static cFileDesc * create(CLargeMemoryAllocator &mem,const char *_name,unsigned n)
     {
-        size32_t sl = strlen(_name); 
+        size32_t sl = strlen(_name);
         if (sl>255) {
             OWARNLOG(LOGPFX "File name %s longer than 255 chars, truncating",_name);
             sl = 255;
@@ -181,7 +181,7 @@ struct cFileDesc // no virtuals
     bool eq(const char *key)
     {
         size32_t sl = strlen(key);
-        if (sl>255) 
+        if (sl>255)
             sl = 255;
         if (sl!=(byte)name[0])
             return false;
@@ -206,15 +206,15 @@ struct cFileDesc // no virtuals
         return NULL;
         // not used
     }
-    
+
     static unsigned getHash(const char *key)
     {
         size32_t sl = strlen(key);
-        if (sl>255) 
+        if (sl>255)
             sl = 255;
         return  hashc((const byte *)key,sl,17);
     }
-    
+
 
     static void destroy(cFileDesc *)
     {
@@ -229,8 +229,8 @@ struct cFileDesc // no virtuals
 struct cDirDesc
 {
     unsigned hash;
-    CMinHashTable<cDirDesc> dirs;       
-    CMinHashTable<cFileDesc> files; 
+    CMinHashTable<cDirDesc> dirs;
+    CMinHashTable<cFileDesc> files;
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
     offset_t maxsize[2];                //  largest node size
@@ -276,7 +276,7 @@ struct cDirDesc
     bool eq(const char *key)
     {
         size32_t sl = strlen(key);
-        if (sl>255) 
+        if (sl>255)
             sl = 255;
         if (sl!=(byte)name[0])
             return false;
@@ -289,15 +289,15 @@ struct cDirDesc
         return NULL;
         // not used
     }
-    
+
     static unsigned getHash(const char *key)
     {
         size32_t sl = strlen(key);
-        if (sl>255) 
+        if (sl>255)
             sl = 255;
         return  hashc((const byte *)key,sl,17);
     }
-    
+
 
     static void destroy(cDirDesc *)
     {
@@ -310,7 +310,7 @@ struct cDirDesc
     }
 
     cDirDesc *lookupDir(const char *name,CLargeMemoryAllocator *mem)
-    { 
+    {
         cDirDesc *ret = dirs.find(name,false);
         if (!ret&&mem) {
             ret = new cDirDesc(*mem,name);
@@ -509,7 +509,7 @@ public:
         va_end(args);
         if (errors.ordinality()<1000) {
             errors.append(*new cMessage(lname,line.str()));
-            if (errors.ordinality()==1000) 
+            if (errors.ordinality()==1000)
                 errors.append(*new cMessage("","error limit exceeded (1000), truncating"));
         }
 
@@ -526,7 +526,7 @@ public:
         va_end(args);
         if (warnings.ordinality()<1000) {
             warnings.append(*new cMessage(lname,line.str()));
-            if (warnings.ordinality()==1000) 
+            if (warnings.ordinality()==1000)
                 warnings.append(*new cMessage("","warning limit (1000) exceeded, truncating"));
         }
         OWARNLOG("%s: %s",lname,line.str());
@@ -610,14 +610,14 @@ public:
 
 
 
-    void saveToEclWatch(bool &abort,bool byscheduler) 
+    void saveToEclWatch(bool &abort,bool byscheduler)
     {
         if (abort)
             return;
         log("Saving information");
         Owned<IPropertyTree> croot = createPTree("Cluster");
         croot->setProp("@name",clustname);
-        if (!rootdir.isEmpty()) 
+        if (!rootdir.isEmpty())
             croot->setProp("@rootdir",rootdir);
         CDateTime dt;
         dt.setNow();
@@ -655,7 +655,7 @@ public:
 
 class CNewXRefManager: public CNewXRefManagerBase
 {
-    cDirDesc *root;     
+    cDirDesc *root;
     CriticalSection crit;
     bool iswin;                     // set by scanDirectories
     IpAddress *iphash;
@@ -692,7 +692,7 @@ public:
     ~CNewXRefManager()
     {
         delete root;
-        if (iphash) 
+        if (iphash)
             delete [] iphash;
         delete [] ipnum;
     }
@@ -702,7 +702,7 @@ public:
     {
         CNewXRefManagerBase::start(updateeclwatch,clustname);
     }
-    
+
 
 
     void addIpHash(const IpAddress &ip,unsigned n)
@@ -710,7 +710,7 @@ public:
         unsigned r;
         _cpyrev4(&r,&ip);
         unsigned h = hashc((const byte *)&r,sizeof(r),0)%iphashsz;
-        while (!iphash[h].isNull()) 
+        while (!iphash[h].isNull())
             if (++h==iphashsz)
                 h = 0;
         iphash[h] = ip;
@@ -772,14 +772,14 @@ public:
         SocketEndpointArray deduppedEps;
         ForEachNodeInGroup(i,*grp) {
             const SocketEndpoint &ep = grp->queryNode(i).endpoint();
-            if (ep.port!=0) 
+            if (ep.port!=0)
                 OWARNLOG(LOGPFX "Group has ports!");
             // check port 0 TBD
             if (NotFound == checkIpHash(ep)) {
                 addIpHash(ep,i);
                 deduppedEps.append(ep);
             }
-        }   
+        }
         rawgrp.setown(createIGroup(deduppedEps));
         numuniqnodes = rawgrp->ordinality();
         clusters.kill();
@@ -828,10 +828,10 @@ public:
     }
 
     cDirDesc *findDirectory(const char *name)
-    { 
-        if (stricmp(name,rootdir)==0) 
+    {
+        if (stricmp(name,rootdir)==0)
             return root;
-        if (!*name) 
+        if (!*name)
             return NULL;
         StringBuffer pdir;
         const char *tail = splitDirTail(name,pdir);
@@ -871,7 +871,7 @@ public:
     bool scanDirectory(unsigned node,const SocketEndpoint &ep,StringBuffer &path, unsigned drv, cDirDesc *pdir, IFile *cachefile)
     {
         size32_t dsz = path.length();
-        if (pdir==NULL) 
+        if (pdir==NULL)
             pdir = root;
         RemoteFilename rfn;
         rfn.setPath(ep,path.str());
@@ -971,7 +971,7 @@ public:
                     return;
                 }
                 i = (i+r)%n;
-                setReplicateFilename(path,1);   
+                setReplicateFilename(path,1);
                 ep = parent.rawgrp->queryNode(i).endpoint();
                 parent.log("Scanning %s directory %s",ep.getUrlStr(tmp.clear()).str(),path.str());
                 if (!parent.scanDirectory(i,ep,path,1,NULL,NULL)) {
@@ -990,7 +990,7 @@ public:
         return afor.ok;
     }
 
-    void scanLogicalFiles(bool &abort) 
+    void scanLogicalFiles(bool &abort)
     {
         if (!grp||abort)
             return;
@@ -1006,7 +1006,7 @@ public:
                     return false;
                 StringArray groups;
                 getFileGroups(&file,groups);
-                if (groups.ordinality()==0) { 
+                if (groups.ordinality()==0) {
                     parent.error(filename,"File has no group defined");
                     return false;
                 }
@@ -1026,7 +1026,7 @@ public:
             {
                 return !abort;
             }
-            
+
 
             void processFile(IPropertyTree &file,StringBuffer &name)
             {
@@ -1055,13 +1055,13 @@ public:
                     StringBuffer lastdir;
                     cDirDesc *pdir = NULL;
                     bool islost = false;
-                    bool incluster = true;          
+                    bool incluster = true;
                     for (unsigned p=0;p<np;p++) {
                         if (abort)
                             return;
                         unsigned matched = 0;
                         unsigned nc = fdesc->numCopies(p);
-                        if (nc==0) 
+                        if (nc==0)
                             continue;   // ignore if no parts
                         for (unsigned c=0;c<nc;c++) {
                             RemoteFilename rfn;
@@ -1087,7 +1087,7 @@ public:
                                 if (pdir&&pdir->markFile(drv,tail,nn,ep,*parent.grp,parent.numnodes)) {
                                     matched++;
                                 }
-                                
+
                             }
                             else if (p==0) { // skip file
                                 if (parent.verbose)
@@ -1144,7 +1144,7 @@ public:
             Owned<IFile> file = createIFile(rfn);
             bool isdir;
             bool ret = false;
-            if (file->getInfo(isdir,sz,dt)&&!isdir) 
+            if (file->getInfo(isdir,sz,dt)&&!isdir)
                 ret = true;
 #ifdef _DEBUG
             StringBuffer dbgname;
@@ -1175,7 +1175,7 @@ public:
             pb = branch->addPropTree("Part",pb);
         }
         pb->setProp(rep?"RNode":"Node",ep.getUrlStr(tmp.clear()).str());
-    }   
+    }
 
 
     void listOrphans(cFileDesc *f,const char *basedir,bool &abort,unsigned int recentCutoffDays)
@@ -1194,8 +1194,8 @@ public:
         unsigned drv;
         for (drv=0;drv<2;drv++) {
             unsigned i0;
-            for (i0=0;i0<f->N;i0++) 
-                if (f->testpresent(drv,i0)&&!f->testmarked(drv,i0)) 
+            for (i0=0;i0<f->N;i0++)
+                if (f->testpresent(drv,i0)&&!f->testmarked(drv,i0))
                     break;
             if (i0<f->N)
                 break;
@@ -1257,7 +1257,7 @@ public:
                         }
                     }
                     if (found) {
-                        if (mostrecent[drv].isNull()||(dt.compare(mostrecent[drv],false)>0)) 
+                        if (mostrecent[drv].isNull()||(dt.compare(mostrecent[drv],false)>0))
                             mostrecent[drv].set(dt);
                         completed[pn] = true;
                         totsize[drv] += sz;
@@ -1278,8 +1278,8 @@ public:
             return;
         // check if complete here
         unsigned ncomplete = 0;
-        for (unsigned i=0;i<f->N;i++) 
-            if (completed[i]) 
+        for (unsigned i=0;i<f->N;i++)
+            if (completed[i])
                 ncomplete++;
         if (ncomplete!=f->N) {  // if a found file ignore misplaces
             cMisplacedRec *mp = f->misplaced;
@@ -1293,7 +1293,7 @@ public:
                     StringBuffer path(basedir);
                     if (*basedir)
                         addPathSepChar(path);
-                    if (drv) 
+                    if (drv)
                         setReplicateFilename(path,drv);
                     f->getPartName(path,mp->pn);
                     RemoteFilename rfn;
@@ -1301,7 +1301,7 @@ public:
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {
-                        if (mostrecent[drv].isNull()||(dt.compare(mostrecent[drv],false)>0)) 
+                        if (mostrecent[drv].isNull()||(dt.compare(mostrecent[drv],false)>0))
                             mostrecent[drv].set(dt);
                         totsize[drv] += sz;
                         ndone[drv]++;
@@ -1325,7 +1325,7 @@ public:
                 return;
             if (branch[drv]) {
                 tmp.clear().append(mask.str());
-                if (drv) 
+                if (drv)
                     setReplicateFilename(tmp,1);
                 CDateTime co(mostrecent[drv]);
                 co.adjustTime(recentCutoffDays*60*24);
@@ -1340,7 +1340,7 @@ public:
                 branch[drv]->setPropInt("Numparts",f->N);
             }
             if (ncomplete!=f->N) {
-                if (branch[drv]) 
+                if (branch[drv])
                     branch[drv]->setPropInt("Partsfound",ndone[drv]);
             }
         }
@@ -1432,7 +1432,7 @@ public:
         PROGLOG("listOrphans TEST DIR(%s)",dbgname.str());
 #endif
         size32_t bds = basedir.length();
-        if (bds!=0) 
+        if (bds!=0)
             addPathSepChar(basedir);
         d->getName(basedir);
         listDirectory(d,basedir.str(),abort);
@@ -1469,7 +1469,7 @@ public:
     }
 
     void listOrphans(bool &abort,unsigned int recentCutoffDays)
-    {   
+    {
         // also does directories
         log("Scanning for orphans");
         StringBuffer basedir;
@@ -1536,7 +1536,7 @@ public:
                 ft->setProp("Modified",tmp.str());
             }
             unsigned np = file->numParts();
-            unsigned cn = 0;                    
+            unsigned cn = 0;
             ft->setProp("Name",lfn.get());
             tmp.clear().append(file->queryPartMask()).toLowerCase();
             ft->setProp("Partmask",tmp.str());
@@ -1610,7 +1610,7 @@ public:
                     rc++;
                     c++;
                 }
-                else if (primlost[i1]) 
+                else if (primlost[i1])
                     pc++;
                 else if (replost[i1])
                     rc++;
@@ -1704,7 +1704,7 @@ public:
         }
         if (errors.ordinality()<1000) {
             errors.append(*new cMessage(lname,line.str()));
-            if (errors.ordinality()==1000) 
+            if (errors.ordinality()==1000)
                 errors.append(*new cMessage("","error limit exceeded (1000), truncating"));
         }
 
@@ -1754,7 +1754,7 @@ public:
                             fileowner.append(owner);
                             owned = true;
                         }
-                    }   
+                    }
                 }
                 if (owned)
                     parent.fnum++;
@@ -1823,7 +1823,7 @@ public:
             const char *owner = superowner.item(i1);
             const char *owned = superowned.item(i1);
             bool ok = false;
-            if (*owned=='{') 
+            if (*owned=='{')
                 ok = true;
             else {
                 ForEachItemIn(i2,fileowned) {
@@ -1861,7 +1861,7 @@ public:
                     }
                 }
             }
-        }       
+        }
         log("Crossreferencing %d Files",fileowned.ordinality());
         ForEachItemIn(i3,fileowned) {
             const char *fowner = fileowner.item(i3);
@@ -1882,7 +1882,7 @@ public:
                     StringBuffer lfnpath;
                     lfn.makeFullnameQuery(lfnpath,DXB_SuperFile);
                     Owned<IRemoteConnection> conn = querySDS().connect(lfnpath.str(),myProcessSession(),0, INFINITE);
-                    if (conn) 
+                    if (conn)
                         errornotrecent(fowner,"FAILED nosublink to %s",fowned);
                     else {
                         bool fixed = false;
@@ -1906,7 +1906,7 @@ public:
                     }
                 }
             }
-        }       
+        }
 
     }
 
@@ -1965,7 +1965,7 @@ int main(int argc, char* argv[])
     SocketEndpointArray epa;
     ep.set(argv[1],DALI_SERVER_PORT);
     epa.append(ep);
-    Owned<IGroup> group = createIGroup(epa); 
+    Owned<IGroup> group = createIGroup(epa);
     try {
         initClientProcess(group,DCR_Dfu);
         setPasswordsFromSDS();
@@ -1989,7 +1989,7 @@ int main(int argc, char* argv[])
 
 
 class CSashaXRefServer: public ISashaServer, public Thread
-{  
+{
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
@@ -2009,7 +2009,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
             parent.runXRef(servers,false,false);
             return 0;
         }
-    }; 
+    };
 
 
 public:
@@ -2034,7 +2034,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -2094,11 +2094,11 @@ public:
         ForEachItemIn(i,groups) {
 #ifdef TESTINGSUPERFILELINKAGE
             continue;
-#endif          
+#endif
             const char *gname = groups.item(i);
             unsigned maxMb = serverConfig->getPropInt("DfuXRef/@memoryLimit", DEFAULT_MAXMEMORY);
             CNewXRefManager manager(maxMb);
-            if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
+            if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone))
                 continue;
             manager.start(updateeclwatch);
             manager.updateStatus(true);
@@ -2193,7 +2193,7 @@ public:
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval) 
+        if (interval)
             schedule.init(props,interval,initinterval);
         initinterval *= 60*60*1000; // ms
         unsigned started = msTick();
@@ -2204,7 +2204,7 @@ public:
                 break;
             StringBuffer cname;
             bool byscheduler=false;
-            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear())) {         
+            if (!eclwatchprovider||!checkClusterSubmitted(cname.clear())) {
                 if (!interval||((started!=(unsigned)-1)&&(msTick()-started<initinterval)))
                     continue;
                 started = (unsigned)-1;
@@ -2253,7 +2253,7 @@ void processXRefRequest(ISashaCommand *cmd)
 // File Expiry monitor
 
 class CSashaExpiryServer: public ISashaServer, public Thread
-{  
+{
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
@@ -2279,7 +2279,7 @@ public:
     void ready()
     {
     }
-    
+
     void stop()
     {
         if (!stopped) {
@@ -2372,7 +2372,7 @@ public:
         PROGLOG(LOGPFX2 "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2;  // wait a bit til dali has started
         CSashaSchedule schedule;
-        if (interval) 
+        if (interval)
             schedule.init(props,interval,initinterval);
         initinterval *= 60*60*1000; // ms
         unsigned started = msTick();

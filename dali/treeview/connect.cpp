@@ -57,7 +57,7 @@ public:
 
 class LocalConnection : public Connection, implements IConnection
 {
-private: 
+private:
     IPropertyTree * loadTree(LPCSTR fname)
     {
         IPropertyTree * r = NULL;
@@ -95,7 +95,7 @@ public:
             pTree = NULL;
             type = CT_none;
         }
-    }       
+    }
 
     ~LocalConnection()
     {
@@ -107,24 +107,24 @@ public:
     virtual bool unlockWrite() { return true; }
     virtual Connection_t getType() { return type; }
     virtual void commit() { /* NULL */ }
-    virtual IPropertyTree * queryRoot(const char * xpath) 
-    { 
+    virtual IPropertyTree * queryRoot(const char * xpath)
+    {
         if(xpath)
         {
             IPropertyTree * oldpTree = pTree;
             try
             {
                 pTree = pTree->getPropTree(xpath);      // this links
-                if(oldpTree) oldpTree->Release();           
+                if(oldpTree) oldpTree->Release();
             }
             catch(IException * e)
             {
                 reportException(e);
                 e->Release();
-                pTree = oldpTree;                   
+                pTree = oldpTree;
             }
         }
-        return pTree; 
+        return pTree;
     }
     virtual LPCSTR queryName() { return type == CT_none ? NULL : fname; }
 };
@@ -182,7 +182,7 @@ public:
     }
 
     ~RemoteConnection()
-    {       
+    {
         killConnection();
         closedownClientProcess();
     }
@@ -191,7 +191,7 @@ public:
     virtual bool lockWrite()
     {
         if (!conn) return false;
-        try 
+        try
         {
             conn->changeMode(RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
         }
@@ -210,7 +210,7 @@ public:
     virtual bool unlockWrite()
     {
         if (!conn) return false;
-        try 
+        try
         {
             conn->changeMode(0, CONNECTION_TIMEOUT);
         }
@@ -228,8 +228,8 @@ public:
     }
     virtual Connection_t getType() { return type; }
     virtual void commit() { if(conn) conn->commit(); }
-    virtual IPropertyTree * queryRoot(const char * xpath) 
-    { 
+    virtual IPropertyTree * queryRoot(const char * xpath)
+    {
         killConnection();
         try
         {
@@ -243,11 +243,11 @@ public:
             conn = NULL;
             type = CT_none;
             reportException(e);
-            return NULL;            
+            return NULL;
         }
         pTree = conn->getRoot();
         type = CT_remote;
-        return pTree; 
+        return pTree;
     }
     virtual LPCSTR queryName() { return type == CT_none ? NULL : fname; }
 };

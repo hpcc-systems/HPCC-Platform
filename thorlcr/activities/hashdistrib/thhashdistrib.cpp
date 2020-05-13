@@ -38,8 +38,8 @@ class HashDistributeMasterBase : public CMasterActivity
     mptag_t mptag;
     mptag_t mptag2; // for tag 2
 public:
-    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info) 
-        : CMasterActivity(info), mode(_mode) 
+    HashDistributeMasterBase(DistributeMode _mode, CMasterGraphElement *info)
+        : CMasterActivity(info), mode(_mode)
     {
         mptag = TAG_NULL;
         mptag2 = TAG_NULL;
@@ -64,7 +64,7 @@ protected:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         dst.append((int)mptag);
-        if (mode==DM_join) 
+        if (mode==DM_join)
             dst.append((int)mptag2);
     }
 };
@@ -163,8 +163,8 @@ class ReDistributeActivityMaster : public HashDistributeMasterBase
     mptag_t statstag;
 
 public:
-    ReDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_redistribute, info) 
-    { 
+    ReDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_redistribute, info)
+    {
         statstag = container.queryJob().allocateMPTag();
     }
     ~ReDistributeActivityMaster()
@@ -179,8 +179,8 @@ public:
     void process()
     {
         ActPrintLog("ReDistributeActivityMaster::process");
-        HashDistributeMasterBase::process();        
-        IHThorHashDistributeArg *helper = (IHThorHashDistributeArg *)queryHelper(); 
+        HashDistributeMasterBase::process();
+        IHThorHashDistributeArg *helper = (IHThorHashDistributeArg *)queryHelper();
         unsigned n = container.queryJob().querySlaves();
         MemoryAttr ma;
         offset_t *sizes = (offset_t *)ma.allocate(sizeof(offset_t)*n);
@@ -194,7 +194,7 @@ public:
                 ActPrintLog("ReDistribute process, Receiving on tag %d",statstag);
 #endif
                 rank_t sender;
-                if (!receiveMsg(mb, RANK_ALL, statstag, &sender)||abortSoon) 
+                if (!receiveMsg(mb, RANK_ALL, statstag, &sender)||abortSoon)
                     return;
 #ifdef _TRACE
                 ActPrintLog("ReDistribute process, Received size from %d",sender);
@@ -217,14 +217,14 @@ public:
             double maxskew = helper->getTargetSkew();
             if (maxskew>helper->getSkew()) {
                 offset_t tot = 0;
-                for (i=0;i<n;i++) 
+                for (i=0;i<n;i++)
                     tot += sizes[i];
                 offset_t avg = tot/n;
                 for (i=0;i<n;i++) {
                     double r = ((double)sizes[i]-(double)avg)/(double)avg;
                     if ((r>=maxskew)||(-r>maxskew)) {
                         throw MakeActivityException(this, TE_DistributeFailedSkewExceeded, "DISTRIBUTE maximum skew exceeded (node %d has %" I64F "d, average is %" I64F "d)",i+1,sizes[i],avg);
-                    }               
+                    }
                 }
             }
 
@@ -271,7 +271,7 @@ CActivityBase *createHashDedupMergeActivityMaster(CMasterGraphElement *container
 
 CActivityBase *createHashJoinActivityMaster(CMasterGraphElement *container)
 {
-        return new HashJoinDistributeActivityMaster(DM_join, container);        
+        return new HashJoinDistributeActivityMaster(DM_join, container);
 }
 
 CActivityBase *createHashAggregateActivityMaster(CMasterGraphElement *container)
@@ -279,10 +279,10 @@ CActivityBase *createHashAggregateActivityMaster(CMasterGraphElement *container)
     if (container->queryLocalOrGrouped())
         return new CMasterActivity(container);
     else
-        return new HashDistributeActivityMaster(DM_groupaggregate, container);      
+        return new HashDistributeActivityMaster(DM_groupaggregate, container);
 }
 
 CActivityBase *createKeyedDistributeActivityMaster(CMasterGraphElement *container)
 {
-    return new IndexDistributeActivityMaster(container);        
+    return new IndexDistributeActivityMaster(container);
 }

@@ -77,7 +77,7 @@ private:
     inline const byte * doPeek(size32_t minSize, size32_t & available)
     {
         const byte * ret = static_cast<const byte *>(in->peek(minSize, available));
-        if (minSize > available) 
+        if (minSize > available)
             reportReadFail();
         return ret;
     }

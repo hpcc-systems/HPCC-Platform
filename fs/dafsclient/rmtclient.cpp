@@ -1304,7 +1304,7 @@ extern unsigned stopRemoteServer(ISocket * socket)
     }
     catch (IJSOCK_Exception *e)
     {
-        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close)) 
+        if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close))
             EXCLOG(e);
         else
             errCode = 0;
@@ -1419,7 +1419,7 @@ class CDafsOsCache: public SuperHashTableOf<CDafsOsCacheEntry,SocketEndpoint>
     }
     unsigned getHashFromElement(const void *e) const
     {
-        const CDafsOsCacheEntry &elem=*(const CDafsOsCacheEntry *)e;        
+        const CDafsOsCacheEntry &elem=*(const CDafsOsCacheEntry *)e;
         return elem.ep.hash(0);
     }
 
@@ -1430,7 +1430,7 @@ class CDafsOsCache: public SuperHashTableOf<CDafsOsCacheEntry,SocketEndpoint>
 
     const void * getFindParam(const void *p) const
     {
-        const CDafsOsCacheEntry &elem=*(const CDafsOsCacheEntry *)p;        
+        const CDafsOsCacheEntry &elem=*(const CDafsOsCacheEntry *)p;
         return (void *)&elem.ep;
     }
 
@@ -1444,7 +1444,7 @@ class CDafsOsCache: public SuperHashTableOf<CDafsOsCacheEntry,SocketEndpoint>
 public:
     static CriticalSection crit;
 
-    CDafsOsCache() 
+    CDafsOsCache()
     {
     }
     ~CDafsOsCache()

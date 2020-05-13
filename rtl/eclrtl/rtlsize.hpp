@@ -233,7 +233,7 @@ public:
 /*
 {
     RecordSelector r1(NULL, NULL, 100);
-    ArraySelector a1(r1, NULL, d, DefaultDimensions); 
+    ArraySelector a1(r1, NULL, d, DefaultDimensions);
     RecordSelector r2(&a1, NULL, 5);
     RecordSelector r3(&a1, &r2, 5);
     ArraySelector a2

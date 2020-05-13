@@ -34,9 +34,9 @@ extern jlib_decl void fastLZDecompressToAttr(MemoryAttr & out, const void * src)
 extern jlib_decl void fastLZDecompressToBuffer(MemoryAttr & out, MemoryBuffer & in);
 
 
-// basic routines 
+// basic routines
 
-extern jlib_decl size32_t fastlz_compress(const void* input, size32_t inlength, void* output); 
+extern jlib_decl size32_t fastlz_compress(const void* input, size32_t inlength, void* output);
         // returns compressed size
         // output length must be at least inlength+fastlzSlack(inlength)
 extern jlib_decl size32_t fastlz_decompress(const void* input, size32_t inlength, void* output, size32_t maxout);

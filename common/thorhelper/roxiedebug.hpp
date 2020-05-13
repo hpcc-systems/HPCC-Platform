@@ -26,7 +26,7 @@
 constexpr const char *BreakpointModes[] = {"none", "edge", "node", "graph", "global", NULL };
 // enum BreakpointActionMode { BreakpointActionBreak, BreakpointActionSkip, BreakpointActionLimit, BreakpointActionContinue };
 constexpr const char *BreakpointActionModes[] = {"break", "skip", "limit", "continue", NULL };
-enum BreakpointConditionMode { BreakpointConditionNone, BreakpointConditionEquals, BreakpointConditionContains, BreakpointConditionStartsWith, BreakpointConditionLess, 
+enum BreakpointConditionMode { BreakpointConditionNone, BreakpointConditionEquals, BreakpointConditionContains, BreakpointConditionStartsWith, BreakpointConditionLess,
      BreakpointConditionGreater, BreakpointConditionLessEqual, BreakpointConditionGreaterEqual, BreakpointConditionNotEqual, BreakpointConditionEOG, BreakpointConditionEOF };
 constexpr const char *BreakpointConditionModes[] = {"none", "equals", "contains", "startswith", "<", ">", "<=", ">=", "!=", "eog", "eof", NULL };
 enum BreakpointCountMode { BreakpointCountNone, BreakpointCountEquals, BreakpointCountAtleast };
@@ -105,8 +105,8 @@ public:
     virtual unsigned querySequence() const { return sequence; }
     virtual unsigned queryRowCount() const { return rowCount; }
 
-    virtual bool wasSkipped() const { return skipped; } 
-    virtual bool wasLimited() const { return limited; } 
+    virtual bool wasSkipped() const { return skipped; }
+    virtual bool wasLimited() const { return limited; }
     virtual void setSkipped() { skipped = true; }
     virtual void setLimited() { limited = true; }
 
@@ -143,7 +143,7 @@ private:
     }
 
 
-    
+
 public:
     IMPLEMENT_IINTERFACE;
     CBreakpointInfo(BreakpointMode _mode, const char *_id, BreakpointActionMode _action,
@@ -295,7 +295,7 @@ class THORHELPER_API CBaseServerDebugContext : public CBaseDebugContext, impleme
     // Some questions:
     // 1. Do we let all threads go even when say step? Probably... (may allow a thread to be suspended at some point)
     // 2. Doesn't that then make a bit of a mockery of step (when there are multiple threads active)... I _think_ it actually means we DON'T try to wait for all
-    //    threads to hit a stop, but allow any that hit stop while we are paused to be queued up to be returned by step.... perhaps actually stop them in critsec rather than 
+    //    threads to hit a stop, but allow any that hit stop while we are paused to be queued up to be returned by step.... perhaps actually stop them in critsec rather than
     //    semaphore and it all becomes easier to code... Anything calling checkBreakPoint while program state is "in debugger" will block on that critSec.
     // 3. I think we need to recheck breakpoints on server but just check not deleted
 
@@ -323,7 +323,7 @@ public:
     void serializeBreakpoints(MemoryBuffer &to);
     virtual void debugInitialize(const char *id, const char *_queryName, bool _breakAtStart);
     virtual void debugTerminate();
-    virtual void addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action, 
+    virtual void addBreakpoint(IXmlWriter *output, const char *modeString, const char *id, const char *action,
                                const char *fieldName, const char *condition, const char *value, bool caseSensitive,
                                unsigned hitCount, const char *hitCountMode);
     virtual void removeBreakpoint(IXmlWriter *output, unsigned removeIdx);
@@ -367,7 +367,7 @@ class THORHELPER_API CBaseDebugGraphManager : public CInterface, implements IPro
         unsigned sequence;
         const char *edgeId;
         IActivityBase *targetActivity;
-    
+
         IMPLEMENT_IINTERFACE;
         DebugDependencyRecord(IActivityBase *_sourceActivity, unsigned _sourceIndex, unsigned _controlId, const char *_edgeId, IActivityBase *_targetActivity, unsigned _sequence)
             : sourceActivity(_sourceActivity),

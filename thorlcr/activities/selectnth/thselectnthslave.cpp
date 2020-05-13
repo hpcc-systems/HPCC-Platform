@@ -112,7 +112,7 @@ public:
             StringBuffer meta;
             meta.appendf("META(totalRowsMin=%" I64F "d,totalRowsMax=%" I64F "d, spilled=%" I64F "d,byteTotal=%" I64F "d)",
                 info.totalRowsMin,info.totalRowsMax,info.spilled,info.byteTotal);
-#if 0                 
+#if 0
             Owned<IThorException> e = MakeActivityWarning(this, -1, "%s", meta.str());
             fireException(e);
 #else
@@ -185,7 +185,7 @@ public:
             if (exception.get())
                 throw exception.getClear();
         }
-        if (ret) 
+        if (ret)
             dataLinkIncrement();
         return ret.getClear();
     }
@@ -193,7 +193,7 @@ public:
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
-        info.isSequential = true; 
+        info.isSequential = true;
         info.canReduceNumRows = true; // not sure what selectNth is doing
         calcMetaInfoSize(info, queryInput(0));
     }

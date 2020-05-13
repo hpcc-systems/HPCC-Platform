@@ -26,9 +26,9 @@
     #define HTPASSWDSECURITY_API DECL_EXPORT
 #endif //HTPASSWDSECURITY_EXPORTS
 
-#endif 
+#endif
 
-extern "C" 
+extern "C"
 {
     HTPASSWDSECURITY_API ISecManager * createInstance(const char *serviceName, IPropertyTree &secMgrCfg, IPropertyTree &bndCfg);
 }

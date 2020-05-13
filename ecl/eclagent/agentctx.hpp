@@ -91,7 +91,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual void unlockWorkUnit() = 0;
-    
+
     virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
     virtual StringBuffer & getTempfileBase(StringBuffer & buff) = 0;
     virtual const char *noteTemporaryFile(const char *fname) = 0;
@@ -109,14 +109,14 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual void outputFormattedResult(const char *name, unsigned sequence, bool close) = 0;
 
     virtual const char *queryAllowedPipePrograms() = 0;
-    
+
     virtual IOrderedOutputSerializer * queryOutputSerializer() = 0;
 
     virtual IGroup *getHThorGroup(StringBuffer &grpnameout) = 0;
 
     virtual RecordTranslationMode getLayoutTranslationMode() const = 0;
     virtual unsigned __int64 queryStopAfter() = 0;
-    
+
     virtual const char *queryWuid() = 0;
 
     virtual void updateWULogfile() = 0;

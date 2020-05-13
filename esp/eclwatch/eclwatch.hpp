@@ -19,7 +19,7 @@
 #define __ECLWATCH
 
 #include "http/platform/httpservice.hpp"
-#include "workunit.hpp" 
+#include "workunit.hpp"
 #include "espxslt.hpp"
 #include "dadfs.hpp"
 

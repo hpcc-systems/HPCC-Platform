@@ -80,10 +80,10 @@ interface IMessagePacker : extends IInterface
     virtual void sendMetaInfo(const void *buf, unsigned len) = 0;
 
     virtual unsigned size() const = 0;  // Total amount written via putBuffer plus any overhead from record length prefixes
-    
-    // Notes: 
-    // 1. Parameters to putBuffer must have been returned from getBuffer. 
-    // 2  putBuffer must me called before any call to flush 
+
+    // Notes:
+    // 1. Parameters to putBuffer must have been returned from getBuffer.
+    // 2  putBuffer must me called before any call to flush
     // 3. There is an implicit abort if is released without final flush
     // 4  This interface is single threaded
     // 5. call to getbuffer, without call to makes the previous call to getBuffer and NULL operation
@@ -97,7 +97,7 @@ interface IMessageUnpackCursor : extends IInterface
     virtual const void *getNext(int length) = 0;
     virtual bool atEOF() const = 0;
     virtual bool isSerialized() const = 0;
-    //    if one tries to read past the last record then NULL will be returned, 
+    //    if one tries to read past the last record then NULL will be returned,
     //    if one asks for more data than available then throws exception.
 };
 
@@ -117,7 +117,7 @@ interface IMessageCollator : extends IInterface
     virtual unsigned queryBytesReceived() const = 0;
 };
 
-interface IReceiveManager : extends IInterface 
+interface IReceiveManager : extends IInterface
 {
     virtual IMessageCollator *createMessageCollator(roxiemem::IRowManager *rowManager, ruid_t ruid) = 0;
     virtual void detachCollator(const IMessageCollator *collator) = 0;
@@ -128,7 +128,7 @@ interface IUdpReceiverEntry
 {
 };
 
-interface ISendManager : extends IInterface 
+interface ISendManager : extends IInterface
 {
     virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) = 0;
     virtual void writeOwn(IUdpReceiverEntry &receiver, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;
