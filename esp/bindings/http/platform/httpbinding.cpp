@@ -1423,7 +1423,10 @@ int EspHttpBinding::onGetJsonBuilder(IEspContext &context, CHttpRequest* request
     ISecUser* user = context.queryUser();
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
-    xform->setStringParameter("destination", methodQName.str());
+
+    StringBuffer destination;
+    destination.appendf("%s?%s", methodQName.str(), params.str());
+    xform->setStringParameter("destination", destination.str());
 
     StringBuffer page;
     xform->transform(page);
