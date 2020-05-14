@@ -8121,7 +8121,7 @@ CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, un
     isCodeSigned = false;
     if (_node)
     {
-        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
         isCodeSigned = isActivityCodeSigned(*_node);
@@ -10522,7 +10522,7 @@ CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_age
     isCodeSigned = false;
     if (_node)
     {
-        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
         isCodeSigned = isActivityCodeSigned(*_node);
