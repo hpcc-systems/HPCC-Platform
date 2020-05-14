@@ -112,7 +112,7 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
         Owned<IHThorArg> helper = helperFactory();
         meta.set(helper->queryOutputMeta());
     }
-    const char *recordTranslationModeHintText = _graphNode.queryProp("hint[@name='layoutTranslation']/@value");
+    const char *recordTranslationModeHintText = _graphNode.queryProp("hint[@name='layouttranslation']/@value");
     if (recordTranslationModeHintText)
         recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
 }

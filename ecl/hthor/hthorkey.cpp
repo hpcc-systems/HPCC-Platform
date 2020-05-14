@@ -364,7 +364,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     limitTransformExtra = nullptr;
     if (_node)
     {
-        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+        const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
         if (recordTranslationModeHintText)
             recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
     }
@@ -2281,7 +2281,7 @@ public:
         dequeuedSeq = 0;
         if (_node)
         {
-            const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+            const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
             if (recordTranslationModeHintText)
                 recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
         }
@@ -3473,7 +3473,7 @@ public:
         eclKeySize.set(helper.queryIndexRecordSize());
         if (_node)
         {
-            const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layoutTranslation']/@value");
+            const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
             if (recordTranslationModeHintText)
                 recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
             isCodeSigned = isActivityCodeSigned(*_node);
