@@ -1064,6 +1064,58 @@ static const unsigned char BASE64_dec[256] =
 
 static const char pad = '=';
 
+// NB: use a template vs passing a std::function so that it can be inlined.
+template <typename FUNC>
+void JBASE64_Encode(const void *data, long length, FUNC outputFunc, bool addLineBreaks)
+{
+    const unsigned char *in = static_cast<const unsigned char *>(data);
+
+    unsigned char one;
+    unsigned char two;
+    unsigned char three;
+
+    long i;
+    for(i = 0; i < length && length - i >= 3;)
+    {
+        one = *(in + i++);
+        two = *(in + i++);
+        three = *(in + i++);
+
+        // 0x30 -> 0011 0000 b
+        // 0x3c -> 0011 1100 b
+        // 0x3f -> 0011 1111 b
+        //
+        outputFunc(BASE64_enc[one >> 2]);
+        outputFunc(BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
+        outputFunc(BASE64_enc[((two << 2)  & 0x3c) | (three >> 6)]);
+        outputFunc(BASE64_enc[three & 0x3f]);
+
+        if(addLineBreaks && (i % 54 == 0))
+            outputFunc('\n');
+    }
+
+    switch(length - i)
+    {
+        case 2:
+            one = *(in + i++);
+            two = *(in + i++);
+
+            outputFunc(BASE64_enc[one >> 2]);
+            outputFunc(BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
+            outputFunc(BASE64_enc[(two << 2)  & 0x3c]);
+            outputFunc(pad);
+        break;
+
+        case 1:
+            one = *(in + i++);
+
+            outputFunc(BASE64_enc[one >> 2]);
+            outputFunc(BASE64_enc[(one << 4) & 0x30]);
+            outputFunc(pad);
+            outputFunc(pad);
+        break;
+    }
+}
 
 //
 // Encode the input in a base64 format
@@ -1074,110 +1126,22 @@ static const char pad = '=';
 //
 void JBASE64_Encode(const void *data, long length, IIOStream &out, bool addLineBreaks)
 {
-    const unsigned char *in = static_cast<const unsigned char *>(data);
-
-    unsigned char one;
-    unsigned char two;
-    unsigned char three;
-
-    long i;
-    for(i = 0; i < length && length - i >= 3;)
+    auto f = [&out](const char c)
     {
-        one = *(in + i++);
-        two = *(in + i++);
-        three = *(in + i++);
-
-        // 0x30 -> 0011 0000 b
-        // 0x3c -> 0011 1100 b
-        // 0x3f -> 0011 1111 b
-        //
-        writeCharToStream(out, BASE64_enc[one >> 2]);
-        writeCharToStream(out, BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
-        writeCharToStream(out, BASE64_enc[((two << 2)  & 0x3c) | (three >> 6)]);
-        writeCharToStream(out, BASE64_enc[three & 0x3f]);
-
-        if(addLineBreaks && (i % 54 == 0))
-        {
-            writeCharToStream(out, '\n');
-        }
-    }
-
-    switch(length - i)
-    {
-        case 2:
-            one = *(in + i++);
-            two = *(in + i++);
-
-            writeCharToStream(out, BASE64_enc[one >> 2]);
-            writeCharToStream(out, BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
-            writeCharToStream(out, BASE64_enc[(two << 2)  & 0x3c]);
-            writeCharToStream(out, pad);
-        break;
-
-        case 1:
-            one = *(in + i++);
-
-            writeCharToStream(out, BASE64_enc[one >> 2]);
-            writeCharToStream(out, BASE64_enc[(one << 4) & 0x30]);
-            writeCharToStream(out, pad);
-            writeCharToStream(out, pad);
-        break;
-    }
+        writeCharToStream(out, c);
+    };
+    JBASE64_Encode(data, length, f, addLineBreaks);
 }
 
-// JCSMORE could have IIOStream StringBuffer adapter inplace of below.
 void JBASE64_Encode(const void *data, long length, StringBuffer &out, bool addLineBreaks)
 {
-    const unsigned char *in = static_cast<const unsigned char *>(data);
-
-    unsigned char one;
-    unsigned char two;
-    unsigned char three;
-
-    long i;
-    for(i = 0; i < length && length - i >= 3;)
+    auto f = [&out](const char c)
     {
-        one = *(in + i++);
-        two = *(in + i++);
-        three = *(in + i++);
-
-        // 0x30 -> 0011 0000 b
-        // 0x3c -> 0011 1100 b
-        // 0x3f -> 0011 1111 b
-        //
-        out.append(BASE64_enc[one >> 2]);
-        out.append(BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
-        out.append(BASE64_enc[((two << 2)  & 0x3c) | (three >> 6)]);
-        out.append(BASE64_enc[three & 0x3f]);
-
-        if(addLineBreaks && (i % 54 == 0))
-        {
-            out.append('\n');
-        }
-    }
-
-    switch(length - i)
-    {
-        case 2:
-            one = *(in + i++);
-            two = *(in + i++);
-
-            out.append(BASE64_enc[one >> 2]);
-            out.append(BASE64_enc[((one << 4) & 0x30) | (two >> 4)]);
-            out.append(BASE64_enc[(two << 2)  & 0x3c]);
-            out.append(pad);
-        break;
-
-        case 1:
-            one = *(in + i++);
-
-            out.append(BASE64_enc[one >> 2]);
-            out.append(BASE64_enc[(one << 4) & 0x30]);
-            out.append(pad);
-            out.append(pad);
-        break;
-    }
+        out.append(c);
+    };
+    JBASE64_Encode(data, length, f, addLineBreaks);
 }
+
 
 //
 // Decode the input in a base64 format
