@@ -319,7 +319,7 @@ void CJobManager::fatal(IException *e)
             queryServerStatus().queryProperties()->queryProp("@thorname"),
             queryServerStatus().queryProperties()->queryProp("@nodeGroup"),
             queryServerStatus().queryProperties()->queryProp("@queue"));
-    
+
     queryLogMsgManager()->flushQueue(10*1000);
 
 #ifdef _WIN32
@@ -362,7 +362,7 @@ static int getRunningMaxPriority(const char *qname)
     int maxpriority = 0; // ignore neg
     try {
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
-        if (conn.get()) 
+        if (conn.get())
         {
             Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server"));
             ForEach(*it) {
@@ -435,16 +435,16 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
 
         return doit(workunit, graphName, agentep);
     }
-    catch (IException *e) 
-    { 
+    catch (IException *e)
+    {
         IThorException *te = QUERYINTERFACE(e, IThorException);
-        if (te && tea_shutdown==te->queryAction()) 
+        if (te && tea_shutdown==te->queryAction())
             stopped = true;
-        reply(workunit, wuid, e, agentep, false); 
+        reply(workunit, wuid, e, agentep, false);
     }
-    catch (CATCHALL) 
-    { 
-        reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false); 
+    catch (CATCHALL)
+    {
+        reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false);
     }
     return false;
 }
@@ -474,7 +474,7 @@ void CJobManager::run()
     struct cdynprio: public IDynamicPriority
     {
         const char *qn;
-        int get() 
+        int get()
         {
             int p = getRunningMaxPriority(qn);
             if (p)
@@ -482,7 +482,7 @@ void CJobManager::run()
             return p;
         }
     } *dp = NULL;
-    
+
     if (globals->getPropBool("@multiThorPriorityLock")) {
         PROGLOG("multiThorPriorityLock enabled");
         dp = new cdynprio;
@@ -493,7 +493,7 @@ void CJobManager::run()
     Owned<IMPServer> mpServer = getMPServer();
     Owned<ICommunicator> comm = mpServer->createCommunicator(&queryClusterGroup());
     if (!comm->verifyAll(false, 1000*60*30, 1000*60))
-        throwStringExceptionV(0, "Failed to connect to all slaves");    
+        throwStringExceptionV(0, "Failed to connect to all slaves");
     else
         PROGLOG("verified mp connection to all slaves");
 
@@ -520,7 +520,7 @@ void CJobManager::run()
                 CMessageBuffer msg;
                 if (!queryWorldCommunicator().recv(msg, NULL, mptag))
                     break;
-                
+
                 StringAttr cmd;
                 msg.read(cmd);
                 if (0 == stricmp("stop", cmd))
@@ -668,7 +668,7 @@ void CJobManager::run()
         if (!conversation.get()||!item.get())
         {
             if (!stopped)
-                setExitCode(0); 
+                setExitCode(0);
             PROGLOG("acceptConversation aborted - terminating");
             break;
         }
@@ -709,16 +709,16 @@ void CJobManager::run()
             daliLock.clear();
             reply(workunit, wuid, NULL, agentep, allDone);
         }
-        catch (IException *e) 
-        { 
+        catch (IException *e)
+        {
             IThorException *te = QUERYINTERFACE(e, IThorException);
-            if (te && tea_shutdown==te->queryAction()) 
+            if (te && tea_shutdown==te->queryAction())
                 stopped = true;
-            reply(workunit, wuid, e, agentep, false); 
+            reply(workunit, wuid, e, agentep, false);
         }
-        catch (CATCHALL) 
-        { 
-            reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false); 
+        catch (CATCHALL)
+        {
+            reply(workunit, wuid, MakeStringException(0, "Unknown exception"), agentep, false);
         }
 
         // reset for next job
@@ -807,7 +807,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     }
 #else
     workunit->forceReload();
-    if (!conversation) 
+    if (!conversation)
         return;
     StringBuffer s;
     if (e) {
@@ -883,7 +883,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     StringAttr wuid(workunit.queryWuid());
     cycle_t startCycles = get_cycles_now();
 
-    Owned<IConstWUQuery> query = workunit.getQuery(); 
+    Owned<IConstWUQuery> query = workunit.getQuery();
     SCMStringBuffer soName;
     query->getQueryDllName(soName);
     unsigned version = query->getQueryDllCrc();
@@ -906,7 +906,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         OwnedIFile out = createIFile(compoundPath.str());
         try
         {
-            out->setCreateFlags(S_IRWXU); 
+            out->setCreateFlags(S_IRWXU);
             OwnedIFileIO io = out->open(IFOcreate);
             io->write(0, file.length(), file.toByteArray());
             io.clear();
@@ -914,7 +914,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         catch (IException *e)
         {
             FLLOG(MCexception(e), thorJob, e, "Failed to write query dll - ignoring!");
-            e->Release();   
+            e->Release();
         }
         sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
     }
@@ -1095,6 +1095,46 @@ void closeThorServerStatus()
     }
 }
 
+
+#ifdef _CONTAINERIZED
+/*
+ * Waits on recv for another wuid/graph to run.
+ * Return values:
+ * -2 = reply to client failed
+ * -1 = recv failed/timedout
+ *  0 = unrecognised format, or wuid mismatch
+ *  1 = success. new graph/wuid received.
+ */
+static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &retWuid, StringBuffer &retGraphName)
+{
+    PROGLOG("Lingering time left: %.2f", ((float)timeoutMs)/1000);
+    CMessageBuffer msg;
+    if (!queryWorldCommunicator().recv(msg, NULL, MPTAG_THOR, nullptr, timeoutMs))
+        return -1;
+    StringBuffer next;
+    msg.read(next);
+
+    // validate
+    StringArray sArray;
+    sArray.appendList(next, "/");
+    if (2 == sArray.ordinality())
+    {
+        if (wuid && !streq(sArray.item(0), wuid))
+            return 0;
+        msg.clear().append(true);
+        if (queryWorldCommunicator().reply(msg, 60*1000)) // should be quick!
+        {
+            retWuid.set(sArray.item(0));
+            retGraphName.set(sArray.item(1));
+            return 1;
+        }
+        else
+            return -2;
+    }
+    return 0;
+}
+#endif
+
 void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphName)
 {
     aborting = 0;
@@ -1113,7 +1153,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                 notify.setown(createMultiThorResourceMutex(ngname.str(),serverStatus));
                 setMultiThorMemoryNotify(multiThorMemoryThreshold,notify);
                 PROGLOG("Multi-Thor resource limit for %s set to %" I64F "d",ngname.str(),(__int64)multiThorMemoryThreshold);
-            }   
+            }
             else
                 multiThorMemoryThreshold = 0;
         }
@@ -1129,22 +1169,25 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 #ifndef _CONTAINERIZED
             jobManager->run();
 #else
-            unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", DEFAULT_LINGER_SECS*1000);
+            unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", DEFAULT_LINGER_SECS)*1000;
+            bool multiJobLinger = globals->getPropBool("@multiJobLinger");
+            VStringBuffer multiJobLingerQueueName("%s_lingerqueue", globals->queryProp("@name"));
             StringBuffer instance("thorinstance_");
             queryMyNode()->endpoint().getUrlStr(instance);
             StringBuffer currentGraphName(graphName);
+            StringBuffer currentWuid(wuid);
 
             while (true)
             {
-                PROGLOG("Executing: wuid=%s, graph=%s", wuid, currentGraphName.str());
+                PROGLOG("Executing: wuid=%s, graph=%s", currentWuid.str(), currentGraphName.str());
 
                 {
                     Owned<IWorkUnitFactory> factory;
                     Owned<IConstWorkUnit> workunit;
                     factory.setown(getWorkUnitFactory());
-                    workunit.setown(factory->openWorkUnit(wuid));
+                    workunit.setown(factory->openWorkUnit(currentWuid));
                     SocketEndpoint dummyAgentEp;
-                    jobManager->execute(workunit, wuid, currentGraphName, dummyAgentEp);
+                    jobManager->execute(workunit, currentWuid, currentGraphName, dummyAgentEp);
                     IException *e = jobManager->queryExitException();
                     Owned<IWorkUnit> w = &workunit->lock();
                     if (e)
@@ -1161,7 +1204,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         break;
                     }
 
-                    if (lingerPeriod)
+                    if (!multiJobLinger && lingerPeriod)
                         w->setDebugValue(instance, "1", true);
 
                     w->setState(WUStateWait);
@@ -1170,41 +1213,60 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
 
                 if (lingerPeriod)
                 {
+                    // Register the idle lingering Thor.
+
+                    Owned<IRemoteConnection> multiJobLingerInstanceConn;
+                    if (multiJobLinger)
+                    {
+                        // Global, available to any workunit.
+                        // Register it in a dali psuedo queue
+
+                        VStringBuffer multiJobLingerXPath("/Status/ThorLinger/%s", globals->queryProp("@name"));
+                        Owned<IRemoteConnection> conn = querySDS().connect(multiJobLingerXPath, myProcessSession(), RTM_CREATE_QUERY | RTM_LOCK_WRITE, 5*60*1000);
+
+                        StringBuffer instance;
+                        queryMyNode()->endpoint().getUrlStr(instance);
+                        VStringBuffer entryXPath("%s/Thor%" I64F "u", multiJobLingerXPath.str(), myProcessSession());
+
+                        /* Establish the instance with a RTM_DELETE_ON_DISCONNECT, so that if process exits for any reason,
+                         * the instance is also automatically removed.
+                         * A client (agent) may pick up this instance and consume it.
+                         * NB: There's a window where it's possible that a client picks up this Thor instance, as it's shutting down,
+                         * in which case, the client will timeout trying to connect to it and cycle around to try another or queue the job
+                         * for a new instance.
+                         */
+                        multiJobLingerInstanceConn.setown(querySDS().connect(entryXPath, myProcessSession(), RTM_CREATE_QUERY | RTM_DELETE_ON_DISCONNECT | RTM_LOCK_WRITE, 5*1000));
+                        multiJobLingerInstanceConn->queryRoot()->setProp(nullptr, instance);
+                        multiJobLingerInstanceConn->changeMode(RTM_NONE); // unlock, because can be read and deleted by a reader
+                        PROGLOG("Thor %s added to multijob linger queue: %s", instance.str(), multiJobLingerQueueName.str());
+                    }
+
                     CMessageBuffer msg;
                     CTimeMon timer(lingerPeriod);
-                    bool handled = false;
                     unsigned remaining;
                     while (!timer.timedout(&remaining))
                     {
-                        PROGLOG("Lingering time left: %.2f", ((float)remaining)/1000);
-                        if (!queryWorldCommunicator().recv(msg, NULL, MPTAG_THOR, nullptr, remaining))
-                            break;
-                        StringBuffer next;
-                        msg.read(next);
-
-                        // validate
-                        StringArray sArray;
-                        sArray.appendList(next, "/");
-                        if (2 == sArray.ordinality() && streq(sArray.item(0), wuid))
+                        StringBuffer wuid;
+                        int ret = recvNextGraph(remaining, multiJobLinger ? nullptr : currentWuid.str(), wuid, currentGraphName);
+                        if (ret > 0)
                         {
-                            currentGraphName.set(sArray.item(1));
-                            // NB: agent could send empty graphName to terminate early before timeout
-                            msg.clear().append(true);
-                            if (queryWorldCommunicator().reply(msg, 60*1000)) // should be quick!
-                                handled = true;
-                            else
-                                currentGraphName.clear();
-                            break;
+                            currentWuid.set(wuid); // NB: will always be same if !multiJobLinger
+                            break; // success
                         }
-                        // reject/ignore duff message.
+                        else if (ret < 0)
+                            break; // timeout/abort
+                        // else - reject/ignore duff message.
                     }
-                    if (!handled) // i.e. if timedout of comms issue, clear lingering flag before exiting
+
+                    // De-register the idle lingering entry.
+                    // NB: in the case of multiJobLinger, it is handled by the RTM_DELETE_ON_DISCONNECT on multiJobLingerInstanceConn
+                    if (!multiJobLinger && (0 == currentGraphName.length()))
                     {
                         // remove lingering instance from workunit
                         Owned<IWorkUnitFactory> factory;
                         Owned<IConstWorkUnit> workunit;
                         factory.setown(getWorkUnitFactory());
-                        workunit.setown(factory->openWorkUnit(wuid));
+                        workunit.setown(factory->openWorkUnit(currentWuid));
                         Owned<IWorkUnit> w = &workunit->lock();
                         w->setDebugValue(instance, "0", true);
                     }
@@ -1220,7 +1282,7 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
             throw;
         }
     }
-    catch (IException *e) 
+    catch (IException *e)
     {
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         e->Release();

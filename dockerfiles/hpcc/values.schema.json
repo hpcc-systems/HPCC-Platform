@@ -26,7 +26,7 @@
       "items": {
         "allOf": [
           { "$ref": "#/definitions/eclagent" },
-          { 
+          {
             "name": {
               "type": "string",
               "description": "The name of the eclagent process"
@@ -35,7 +35,7 @@
               "type": "string",
               "description": "The (optional) file prefix to add to relative filenames"
             },
-            "required": [ "name" ] 
+            "required": [ "name" ]
           }
         ]
       }
@@ -256,7 +256,7 @@
           "description": "Roxie query services",
           "type": "array",
           "items": { "$ref": "#/definitions/roxieservice" }
-        }    
+        }
       }
     },
     "roxieservice": {
@@ -298,6 +298,15 @@
           "type": "integer",
           "description": "The number of slave pods",
           "minimum": 1
+        },
+        "lingerPeriod": {
+          "type": "integer",
+          "description": "[Optional] Seconds to keep Thor instance running, waiting for more graphs to execute",
+          "minimum": 1
+        },
+        "multiJobLinger": {
+          "type": "boolean",
+          "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job"
         },
         "eclagent": {
           "$ref": "#/definitions/eclagent"

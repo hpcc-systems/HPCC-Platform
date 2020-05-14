@@ -91,6 +91,9 @@ data:
 {{ toYaml (omit $thorScope "logging") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
     {{ $agentAppType }}:
+{{- if $thorScope.multiJobLinger }}
+      multiJobLinger: true
+{{- end }}
 {{ toYaml (omit $hthorScope "logging") | indent 6 }}
       platform:
         type: "thor"

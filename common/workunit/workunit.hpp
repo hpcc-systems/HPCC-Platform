@@ -1692,7 +1692,7 @@ extern WORKUNIT_API bool isValidMemoryValue(const char * memoryUnit);
 inline cost_type calcCost(cost_type ratePerHour, unsigned __int64 ms) { return ratePerHour * ms / 1000 / 3600; }
 
 #ifdef _CONTAINERIZED
-extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName);
+extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName);
 extern WORKUNIT_API void deleteK8sJob(const char *componentName, const char *job);
 extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, const char *condition=nullptr);
 extern WORKUNIT_API void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
