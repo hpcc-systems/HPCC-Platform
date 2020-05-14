@@ -124,6 +124,16 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
          */
         loadArgsIntoConfiguration(globals, cmdArgs);
 
+#ifdef _DEBUG
+        unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
+        if (mySlaveNum == holdSlave)
+        {
+            DBGLOG("Thor slave %u paused for debugging purposes, attach and set held=false to release", mySlaveNum);
+            bool held = true;
+            while (held)
+                Sleep(5);
+        }
+#endif
         unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);

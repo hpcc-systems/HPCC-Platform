@@ -1746,6 +1746,8 @@ private:
                 FieldMatchType maskedType = (FieldMatchType)(info.matchType & ~(match_link|match_inifblock));
                 if (((maskedType != match_perfect) || (idx != info.matchIdx)) && ((field->flags & RFTMispayloadfield) == 0 || (sourceFlags & RFTMispayloadfield) == 0))
                     matchFlags |= match_keychange;
+                else if ((field->flags & RFTMispayloadfield) != (sourceFlags & RFTMispayloadfield))
+                    matchFlags |= match_keychange;
             }
             matchFlags |= info.matchType;
         }
