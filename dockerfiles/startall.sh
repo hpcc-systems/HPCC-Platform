@@ -18,11 +18,13 @@
 ##############################################################################
 
 # Utility script for starting a local cluster corresponding to current git branch
+# Usage startup.sh [<image.version>] [<helm-install-options>]
 
 LABEL=$1
 [[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep 'hpccsystems/platform-core' | head -n 1 | awk '{print $2}')
+shift
 
-helm install mycluster hpcc/ --set global.image.version=$LABEL --set global.privileged=true
+helm install mycluster hpcc/ --set global.image.version=$LABEL --set global.privileged=true $*
 sleep 1
 kubectl get pods
 

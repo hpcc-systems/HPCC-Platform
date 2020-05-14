@@ -26,7 +26,7 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:flpt:u:” opt; do
+while getopts “d:fhlpt:u:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     p) PUSH=1 ;;
@@ -35,6 +35,16 @@ while getopts “d:flpt:u:” opt; do
     u) INPUT_BUILD_USER=$OPTARG ;;
     b) INPUT_BUILD_TYPE=$OPTARG ;;
     f) FORCE=1 ;;
+    h) echo "Usage: incr.sh [options]"
+       echo "    -d <docker-repo>   Specify the repo to publish images to"
+       echo "    -f                 Force build from scratch"
+       echo "    -h                 Display help"
+       echo "    -l                 Tag the images as the latest"
+       echo "    -p                 Push images to docker repo"
+       echo "    -t <num-threads>   Override the number of build threads"
+       echo "    -u <user>          Specify the build user"
+       exit
+       ;;
   esac
 done
 shift $(( $OPTIND-1 ))

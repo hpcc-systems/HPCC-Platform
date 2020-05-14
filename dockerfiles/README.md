@@ -42,6 +42,15 @@ settings can be started, but it will be more normal to apply some configuration 
 container launch time.
 
 ---
+Bash scripts
+============
+buildall.sh - Used to create and publish a docker container corresponding to a github tag
+clean.sh    - Clean up old docker images (if disk gets full)
+incr.sh     - Build local images for testing (delta from a published image)
+startall.sh - Start a local k8s cluster
+stopall.sh  - Stop a local k8s cluster
+
+---
 
 Helm chart
 ==========
