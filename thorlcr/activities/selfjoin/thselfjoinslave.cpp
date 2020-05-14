@@ -63,9 +63,7 @@ private:
 #endif
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
-        CRuntimeStatisticCollection spillStats(spillStatistics);
-        mergeStats(spillStats, iLoader);  // Not sure of the best policy if rs spills later on.
-        stats.merge(spillStats);
+        mergeStats(stats, iLoader, spillStatistics);  // Not sure of the best policy if rs spills later on.
         PARENT::stopInput(0);
         return rs.getClear();
     }
@@ -239,9 +237,7 @@ public:
             CriticalBlock b(joinHelperCrit);
             rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
             stats.setStatistic(StNumLeftRows, p);
-            CRuntimeStatisticCollection spillStats(spillStatistics);
-            mergeStats(spillStats, sorter);    // No danger of a race with reset() because that never replaces a valid sorter
-            stats.merge(spillStats);
+            mergeStats(stats, sorter, spillStatistics);    // No danger of a race with reset() because that never replaces a valid sorter
         }
         CSlaveActivity::serializeStats(mb);
     }

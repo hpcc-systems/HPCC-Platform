@@ -38,8 +38,8 @@ class CLocalSortSlaveActivity : public CSlaveActivity
     ICompare *iCompare;
     Owned<IThorRowLoader> iLoader;
     Owned<IRowStream> out;
-    bool unstable, eoi;
-    CriticalSection statsCs;
+    bool unstable, eoi = false;
+    CriticalSection loaderCs; // Ensure iLoader remains valid for the duration of mergeStats()
 
 public:
     CLocalSortSlaveActivity(CGraphElementBase *_container)
@@ -67,12 +67,10 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        CRuntimeStatisticCollection spillStats(spillStatistics);
         {
-            CriticalBlock block(statsCs);
-            mergeStats(spillStats, iLoader);
+            CriticalBlock block(loaderCs);
+            mergeStats(stats, iLoader, spillStatistics);
         }
-        stats.merge(spillStats);
         PARENT::serializeStats(mb);
     }
 
@@ -81,12 +79,10 @@ public:
         out.clear();
         if (hasStarted())
         {
-            CRuntimeStatisticCollection spillStats(spillStatistics);
             {
-                CriticalBlock block(statsCs);
-                mergeStats(spillStats, iLoader);
+                CriticalBlock block(loaderCs);
+                mergeStats(stats, iLoader, spillStatistics);
             }
-            stats.merge(spillStats);
             iLoader.clear();
         }
         PARENT::stop();

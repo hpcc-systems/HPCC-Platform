@@ -125,7 +125,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 partFileIO.setown(iFile->open(IFOread));
 
             {
-                CriticalBlock block(statsCs);
+                CriticalBlock block(inputCs);
                 iFileIO.setown(partFileIO.getClear());
             }
 
@@ -137,7 +137,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         {
             Owned<IFileIO> partFileIO;
             {
-                CriticalBlock block(statsCs);
+                CriticalBlock block(inputCs);
                 partFileIO.setown(iFileIO.getClear());
             }
             mergeStats(fileStats, partFileIO);
@@ -168,7 +168,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         offset_t getLocalOffset() { return localOffset; }
         virtual void gatherStats(CRuntimeStatisticCollection & merged)
         {
-            CriticalBlock block(statsCs);
+            CriticalBlock block(inputCs); // Ensure iFileIO remains valid for the duration of mergeStats()
             CDiskPartHandlerBase::gatherStats(merged);
             mergeStats(merged, iFileIO);
         }
