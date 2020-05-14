@@ -1158,7 +1158,9 @@
                 <xsl:if test="$checked='1'">
                     <xsl:text disable-output-escaping="yes"><![CDATA[' checked='1]]></xsl:text>
                 </xsl:if>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' onClick='onBoolChange(this)'/> <input type='hidden' value=']]></xsl:text>
+                <xsl:text disable-output-escaping="yes"><![CDATA[' onClick='onBoolChange(this)' name=']]></xsl:text>
+                <xsl:value-of select="$fieldId"/>
+                <xsl:text disable-output-escaping="yes"><![CDATA['/> <input type='hidden' value=']]></xsl:text>
                 <xsl:value-of select="$checked"/>
                 <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                 <xsl:value-of select="$fieldId"/>
