@@ -221,7 +221,10 @@ define([
         },
 
         refreshActionState: function (selection) {
-            registry.byId(this.id + "Open").set("disabled", !selection.length);
+            var openWidget = registry.byId(this.id + "Open");
+            if (openWidget) {
+                openWidget.set("disabled", !selection.length);
+            }
         }
     });
 });
