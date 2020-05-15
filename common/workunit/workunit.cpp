@@ -13772,7 +13772,7 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
     }
 
     StringBuffer output, error;
-    unsigned ret = runExternalCommand(output, error, "kubectl apply -f -", jobYaml.str());
+    unsigned ret = runExternalCommand(output, error, "kubectl replace --force -f -", jobYaml.str());
     DBGLOG("kubectl output: %s", output.str());
     if (error.length())
         DBGLOG("kubectl error: %s", error.str());
