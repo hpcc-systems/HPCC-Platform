@@ -23,6 +23,29 @@
 #include "environment.hpp"
 #include "logthread.hpp"
 
+struct LogAgentAction
+{
+    CLogAgentActions type;
+    StringArray* fileNames = nullptr;
+};
+
+class CLogAgentActionResults : public CSimpleInterfaceOf<IInterface>
+{
+    IArrayOf<IEspLogAgentGroupStatus> groupStatus;
+    IArrayOf<IEspLogAgentGroupSetting> groupSettings;
+    IArrayOf<IEspLogAgentGroupTankFiles> tankFilesInGroups;
+
+public:
+    CLogAgentActionResults() {};
+
+    IArrayOf<IEspLogAgentGroupStatus>& queryGroupStatus() { return groupStatus; }
+    void appendGroupStatus(IEspLogAgentGroupStatus* status) { groupStatus.append(*status); }
+    IArrayOf<IEspLogAgentGroupSetting>& queryGroupSettings() { return groupSettings; }
+    void appendGroupSetting(IEspLogAgentGroupSetting* setting) { groupSettings.append(*setting); }
+    IArrayOf<IEspLogAgentGroupTankFiles>& queryTankFilesInGroup() { return tankFilesInGroups; }
+    void appendGroupTankFiles(IEspLogAgentGroupTankFiles* groupTankFiles) { tankFilesInGroups.append(*groupTankFiles); }
+};
+
 class CWSDecoupledLogSoapBindingEx : public CWSDecoupledLogSoapBinding
 {
 public:
@@ -52,6 +75,69 @@ public:
     IUpdateLogThread* getLoggingAgentThread(const char* name);
 };
 
+class WSDecoupledLogAction : public CSimpleInterfaceOf<IInterface>
+{
+    void checkGroupInput(std::map<std::string, Owned<WSDecoupledLogAgentGroup>>& allGroups, IArrayOf<IConstLogAgentGroup>& groupsReq);
+
+protected:
+    LogAgentAction& action;
+    CLogAgentActionResults& results;
+
+public:
+    WSDecoupledLogAction(LogAgentAction& _action, CLogAgentActionResults& _results)
+        : action(_action), results(_results) {}
+
+    void doAction(IEspContext& context, std::map<std::string, Owned<WSDecoupledLogAgentGroup>>& _allGroups,
+        IArrayOf<IConstLogAgentGroup>& _groups);
+    virtual bool doActionForAgent(const char* agentName, IUpdateLogThread* agentThread) = 0;
+    virtual void doActionInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames);
+};
+
+class WSDecoupledLogGetSettings : public WSDecoupledLogAction
+{
+    Owned<IEspLogAgentGroupSetting> groupSetting;
+
+public:
+    WSDecoupledLogGetSettings(LogAgentAction& _action, CLogAgentActionResults& _results)
+        : WSDecoupledLogAction(_action, _results) {}
+
+    virtual bool doActionForAgent(const char* agentName, IUpdateLogThread* agentThread);
+    virtual void doActionInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames);
+};
+
+class WSDecoupledLogPause : public WSDecoupledLogAction
+{
+    Owned<IEspLogAgentGroupStatus> groupStatus;
+
+public:
+    WSDecoupledLogPause(LogAgentAction& _action, CLogAgentActionResults& _results)
+        : WSDecoupledLogAction(_action, _results) {}
+
+    virtual bool doActionForAgent(const char* agentName, IUpdateLogThread* agentThread);
+    virtual void doActionInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames);
+};
+
+class WSDecoupledLogGetAckedLogFileNames : public WSDecoupledLogAction
+{
+    Owned<IEspLogAgentGroupTankFiles> tankFilesInGroup;
+
+public:
+    WSDecoupledLogGetAckedLogFileNames(LogAgentAction& _action, CLogAgentActionResults& _results)
+        : WSDecoupledLogAction(_action, _results) {}
+
+    virtual bool doActionForAgent(const char* agentName, IUpdateLogThread* agentThread);
+    virtual void doActionInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames);
+};
+
+class WSDecoupledLogCleanAckedLogFiles : public WSDecoupledLogAction
+{
+public:
+    WSDecoupledLogCleanAckedLogFiles(LogAgentAction& _action, CLogAgentActionResults& _results)
+        : WSDecoupledLogAction(_action, _results) {}
+
+    virtual bool doActionForAgent(const char* agentName, IUpdateLogThread* agentThread);
+};
+
 class CWSDecoupledLogEx : public CWSDecoupledLog
 {
     StringAttr espProcess;
@@ -59,14 +145,6 @@ class CWSDecoupledLogEx : public CWSDecoupledLog
     std::map<std::string, Owned<WSDecoupledLogAgentGroup>> logGroups;
 
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* service, IPropertyTree* cfg);
-    void pauseLoggingAgentsInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames, bool pause,
-        IArrayOf<IEspLogAgentGroupStatus>& groupStatusResp);
-    void pauseAllLoggingAgentsInGroup(WSDecoupledLogAgentGroup* group, bool pause, IArrayOf<IEspLogAgentStatus>& agentStatusResp);
-    void getSettingsForLoggingAgentsInGroup(WSDecoupledLogAgentGroup* group, StringArray* agentNames,
-        IArrayOf<IEspLogAgentGroupSetting>& groupSettingResp);
-    void getSettingsForAllLoggingAgentsInGroup(WSDecoupledLogAgentGroup* group, IArrayOf<IEspLogAgentSetting>& agentSettingResp);
-    void pauseLoggingAgent(const char* agentName, IUpdateLogThread* agentThread, bool pause, IArrayOf<IEspLogAgentStatus>& agentStatusResp);
-    void getLoggingAgentSettings(const char* agentName, IUpdateLogThread* agentThread, IArrayOf<IEspLogAgentSetting>& agentSettingResp);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -79,6 +157,8 @@ public:
     virtual void init(IPropertyTree* cfg, const char* process, const char* service);
     virtual bool onGetLogAgentSetting(IEspContext& context, IEspGetLogAgentSettingRequest& req, IEspGetLogAgentSettingResponse& resp);
     virtual bool onPauseLog(IEspContext& context, IEspPauseLogRequest& req, IEspPauseLogResponse& resp);
+    virtual bool onGetAckedLogFiles(IEspContext& context, IEspGetAckedLogFilesRequest& req, IEspGetAckedLogFilesResponse& resp);
+    virtual bool onCleanAckedFiles(IEspContext& context, IEspCleanAckedFilesRequest& req, IEspCleanAckedFilesResponse& resp);
 };
 
 #endif //_ESPWIZ_ws_decoupledlogging_HPP__

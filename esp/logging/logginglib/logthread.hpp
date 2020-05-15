@@ -41,7 +41,16 @@ public:
 
 class CLogThread;
 
-class CLogRequestReader : public CInterface, implements IThreaded
+interface ILogRequestReader : extends IThreaded
+{
+    virtual CLogRequestReaderSettings* getSettings() = 0;
+    virtual void setPause(bool pause) = 0;
+    virtual void reportAckedLogFiles(StringArray& ackedLogFiles) = 0;
+    virtual void removeUnknownAckedLogFiles(StringArray& ackedLogFiles) = 0;
+    virtual void cleanAckedLogFiles(StringArray& fileNames) = 0;
+};
+
+class CLogRequestReader : public CInterface, implements ILogRequestReader
 {
     Owned<CLogRequestReaderSettings> settings;
     StringArray newAckedLogFiles;
@@ -69,6 +78,7 @@ class CLogRequestReader : public CInterface, implements IThreaded
     void addPendingLogsToQueue();
     void updateAckedFileList();
     void updateAckedLogRequestList();
+    void addNewAckedFileList(const char* list, StringArray& fileNames);
 
 public:
     CLogRequestReader(CLogRequestReaderSettings* _settings, CLogThread* _logThread)
@@ -82,11 +92,11 @@ public:
     virtual void threadmain() override;
 
     void addACK(const char* GUID);
-    virtual CLogRequestReaderSettings* getSettings() { return settings; };
-    void setPause(bool pause)
-    {
-        paused = pause;
-    };
+    virtual CLogRequestReaderSettings* getSettings() override { return settings; };
+    virtual void setPause(bool pause) override { paused = pause; };
+    virtual void reportAckedLogFiles(StringArray& ackedLogFiles) override;
+    virtual void removeUnknownAckedLogFiles(StringArray& ackedLogFiles) override;
+    virtual void cleanAckedLogFiles(StringArray& fileNames) override;
 };
 
 interface IUpdateLogThread : extends IInterface
@@ -101,7 +111,7 @@ interface IUpdateLogThread : extends IInterface
     virtual bool queueLog(IEspUpdateLogRequest* logRequest) = 0;
     virtual bool queueLog(IEspUpdateLogRequestWrap* logRequest) = 0;
     virtual void sendLog() = 0;
-    virtual CLogRequestReader* getLogRequestReader() = 0;
+    virtual ILogRequestReader* getLogRequestReader() = 0;
 };
 
 class CLogThread : public Thread , implements IUpdateLogThread

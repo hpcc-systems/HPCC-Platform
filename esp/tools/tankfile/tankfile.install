@@ -1,0 +1,1 @@
+installFile "$binPath/tankfile" "/usr/bin/tankfile" 1 || exit 1
