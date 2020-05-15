@@ -88,11 +88,11 @@ IDaliClient_Exception *createClientException(DaliClientError err, const char *ms
 
 
 
-bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
+bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout, bool listen)
 {
     assertex(servergrp);
     daliClientIsActive = true;
-    startMPServer(role, mpport);
+    startMPServer(role, mpport, false, listen);
     Owned<ICommunicator> comm(createCommunicator(servergrp,true));
     IGroup * covengrp;
     if (!registerClientProcess(comm.get(),covengrp,timeout,role))

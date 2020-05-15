@@ -394,7 +394,7 @@ int main( int argc, const char *argv[]  )
         if (0 == slfEp.port) // assume default from config if not on command line
             slfEp.port = globals->getPropInt("@slaveport", THOR_BASESLAVE_PORT);
 
-        startMPServer(DCR_ThorSlave, slfEp.port, false);
+        startMPServer(DCR_ThorSlave, slfEp.port, false, true);
         if (0 == slfEp.port)
             slfEp.port = queryMyNode()->endpoint().port;
         setMachinePortBase(slfEp.port);

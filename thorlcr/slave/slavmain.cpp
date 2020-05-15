@@ -1665,7 +1665,7 @@ public:
         for (unsigned sc=1; sc<channelsPerSlave; sc++)
         {
             unsigned port = getMachinePortBase() + (sc * localThorPortInc);
-            IMPServer *mpServer = startNewMPServer(port);
+            IMPServer *mpServer = startNewMPServer(port, true);
             if (reconnect)
                 mpServer->setOpt(mpsopt_channelreopen, "true");
             mpServers.append(*mpServer);

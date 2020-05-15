@@ -654,7 +654,7 @@ int main( int argc, const char *argv[]  )
             try
             {
                 LOG(MCdebugProgress, thorJob, "calling initClientProcess %d", thorEp.port);
-                initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port);
+                initClientProcess(serverGroup, DCR_ThorMaster, thorEp.port, nullptr, nullptr, MP_WAIT_FOREVER, true);
                 if (0 == thorEp.port)
                     thorEp.port = queryMyNode()->endpoint().port;
                 // both same
