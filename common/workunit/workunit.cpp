@@ -13925,20 +13925,23 @@ void waitK8sJob(const char *componentName, const char *job)
     for (;;)
     {
         StringBuffer output, error;
-        unsigned ret = runExternalCommand(componentName, output, error, waitJob.str(), nullptr);
+        unsigned ret = runExternalCommand(nullptr, output, error, waitJob.str(), nullptr);
         if (ret || error.length())
             throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", waitJob.str(), ret, error.str());
         if (!streq(output, "1"))  // status.active value
         {
+            // Job is no longer active - we can terminate
             DBGLOG("kubectl jobs output: %s", output.str());
             break;
         }
-        ret = runExternalCommand(componentName, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
+        ret = runExternalCommand(nullptr, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
         if (error.length())
         {
-            DBGLOG("kubectl get pods error: %s", error.str());
+            DBGLOG("kubectl get schedule status error: %s", error.str());
             break;
         }
+        // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
+        // we would prefer them to fail instead.
         bool pending = streq(output, "False");
         if (pending && msTick()-start > pendingTimeout)
         {
@@ -13974,7 +13977,7 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
     }
 
     StringBuffer output, error;
-    unsigned ret = runExternalCommand(output, error, "kubectl replace --force -f -", jobYaml.str());
+    unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());
     DBGLOG("kubectl output: %s", output.str());
     if (error.length())
         DBGLOG("kubectl error: %s", error.str());

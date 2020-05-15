@@ -479,9 +479,9 @@ public:
                 workunit.setown(factory->updateWorkUnit(wuid.get()));
                 if (workunit)
                 {
-                    if (workunit->aborting() || workunit->getState()==WUStateAborted)
+                    if (workunit->aborting())
                         workunit->setState(WUStateAborted);
-                    else
+                    else if (workunit->getState()!=WUStateAborted)
                     {
                         StringBuffer msg;
                         error->errorMessage(msg);
