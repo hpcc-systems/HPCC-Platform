@@ -2808,13 +2808,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createLZWCompressor(true); }
         virtual IExpander *getExpander(const char *options) { return createLZWExpander(true); }
     };
-    ICompressHandler *flzCompressor = new CFLZCompressHandler();
-    addCompressorHandler(flzCompressor);
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
     addCompressorHandler(new CLZWCompressHandler());
-    addCompressorHandler(new CLZ4CompressHandler());
-    defaultCompressor.set(flzCompressor);
+    addCompressorHandler(new CFLZCompressHandler());
+    ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
+    addCompressorHandler(lz4Compressor);
+    defaultCompressor.set(lz4Compressor);
     return true;
 }
 
