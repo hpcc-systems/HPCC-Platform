@@ -475,7 +475,8 @@ OUTPUT(decryptedStr);</programlisting>
 
     <para>The Decrypt function decrypts the given
     <emphasis>encryptedData</emphasis> using the options defined in the
-    Symmetric Encryption module.</para>
+    Symmetric Encryption module. You can only decrypt data that was encrypted
+    by the Standard Library's Encrypt method. </para>
 
     <para>Example:</para>
 
@@ -669,7 +670,8 @@ OUTPUT( (STRING)myPKEModule.Decrypt(encrypted) );
 
     <para>The Decrypt function decrypts the given
     <emphasis>encryptedData</emphasis>, using the options specified in the
-    Public Key Encryption module definition.</para>
+    Public Key Encryption module definition. You can only decrypt data that
+    was encrypted by the Standard Library's Encrypt method. </para>
 
     <para>Example:</para>
 
@@ -1048,7 +1050,8 @@ OUTPUT( (STRING)MyPKEModule.Decrypt(encrypted));</programlisting>
 
     <para>The Decrypt function decrypts the given
     <emphasis>encryptedData</emphasis>, using the options specified in the
-    Public Key Encryption From Buffer module definition.</para>
+    Public Key Encryption From Buffer module definition. You can only decrypt
+    data that was encrypted by the Standard Library's Encrypt method. </para>
 
     <para>Example:</para>
 
@@ -1570,7 +1573,8 @@ OUTPUT( (STRING)MyPKEModule.Decrypt(encrypted));
 
     <para>The Decrypt function decrypts the given
     <emphasis>encryptedData</emphasis>, using the options specified in the
-    Public Key Encryption From LFN module definition.</para>
+    Public Key Encryption From LFN module definition. You can only decrypt
+    data that was encrypted by the Standard Library's Encrypt method. </para>
 
     <para>Example:</para>
 
