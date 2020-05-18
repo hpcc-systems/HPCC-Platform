@@ -1,0 +1,16 @@
+# Default values for azhpcc.
+fullnameOverride: azhpcc
+
+dali:
+  #sku: Premium_ZRS
+  sku: "Standard_LRS"
+  storageSize: 3Gi
+
+data:
+  #sku: Standard_ZRS
+  sku: "Standard_LRS"
+  storageSize: 10Gi
+
+dlls:
+  #sku: Standard_LRS
+  storageSize: 1Gi

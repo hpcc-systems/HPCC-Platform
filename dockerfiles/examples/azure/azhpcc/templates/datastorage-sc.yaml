@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: data-storage-class
+provisioner: kubernetes.io/azure-file
+parameters:
+  skuName: {{ .Values.data.sku | default "Standard_ZRS" }}        # Normally sequential access, a disaster if it disappears.
+reclaimPolicy: Retain
+allowVolumeExpansion: true

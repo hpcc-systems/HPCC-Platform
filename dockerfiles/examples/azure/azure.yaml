@@ -1,0 +1,119 @@
+# Default values for hpcc.
+
+global:
+  # Settings in the global section apply to all HPCC components in all subcharts
+
+  dllserver:
+    storageSize: 3Gi
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    existingClaim: "azhpcc-dllserver-pv-claim"
+
+  dataStorage:
+    storageSize: 1Gi
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    existingClaim: "azhpcc-datastorage-pv-claim"
+
+  image:
+    ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
+    version: latest
+    root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
+    pullPolicy: IfNotPresent
+
+  # Set to true if using hostPath storageClass
+  # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
+  hostStorage: false
+
+  # logging sets the default logging information for all components. Can be overridden locally
+  logging:
+    detail: 100
+
+  # Specify a defauleEsp to control which EclWatch service is returned from Std.File.GetEspURL, and other uses
+  # If not specified, the first esp component present is assumed.
+  # Can also be overridden locally in individual components
+  ## defaultEsp: myesp
+
+dali:
+- name: mydali
+  storage:
+    storageSize: 1Gi
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    #storageClass: "azurefile"
+    existingClaim: "azhpcc-dalistorage-pv-claim"
+
+
+eclagent:
+- name: hthor
+  ## replicas indicates how many eclagent pods should be started
+  replicas: 1
+  ## maxActive controls how many workunits may be active at once (per replica)
+  maxActive: 100
+  ## prefix may be used to set a filename prefix applied to any relative filenames used by jobs submitted to this queue
+  prefix: hthor
+  ## Set to false if you want to launch each workunit in its own container, true to run as child processes in eclagent pod
+  useChildProcesses: false
+  ## type may be 'hthor' (the default) or 'roxie', to specify that the roxie engine rather than the hthor engine should be used for eclagent workunit processing
+  type: hthor
+
+- name: roxie
+  replicas: 1
+  prefix: roxie
+  useChildProcesses: false
+  type: roxie
+
+eclccserver:
+- name: myeclccserver
+  replicas: 1
+  ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
+  useChildProcesses: false
+  ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
+  listen: []
+
+esp:
+- name: myesp
+  replicas: 1
+
+roxie:
+- name: roxie-cluster
+  disabled: true
+  prefix: roxiecluster
+  services:
+  - name: query
+    port: 9876
+    listenQueue: 200
+    numThreads: 0
+    external: true
+  - name: on-demand
+    port: 0
+  numChannels: 2
+  ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with slave nodes not acting as servers
+  serverReplicas: 0
+  topoReplicas: 1
+  topoport: 9004
+  ## Set localSlave to true for a scalable cluster of "single-node" roxie servers
+  localSlave: false
+  useAeron: false
+
+thor:
+- name: thor
+  numSlaves: 2
+  globalMemorySize: 4096
+  prefix: thor
+  eclagent:
+    maxActive: 4
+  thoragent:
+    maxActive: 2

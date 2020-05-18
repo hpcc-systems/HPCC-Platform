@@ -1,0 +1,15 @@
+# Persistent Volume Claim for dali data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-dalistorage-pv-claim" (include "hpcc.fullname" .) }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ include "hpcc.chart" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce        # Require dali and sasha to run on the same node
+  resources:
+    requests:
+      storage: {{ .Values.dali.storageSize }}
+  storageClassName: "dali-storage-class"

@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: dll-storage-class
+provisioner: kubernetes.io/azure-file
+parameters:
+  skuName: {{ .Values.dlls.sku | default "Standard_LRS" }}     # Sequential access, not a disaster if it disappears.
+reclaimPolicy: Retain
+allowVolumeExpansion: true
