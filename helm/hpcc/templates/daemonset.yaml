@@ -1,0 +1,23 @@
+{{- if .Values.global.prepull -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: prepull
+spec:
+  selector:
+    matchLabels:
+      name: prepull 
+  template:
+    metadata:
+      labels:
+        name: prepull 
+    spec:
+      containers:
+      - name: prepull 
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "platform-core") | indent 8 }}
+        command: ["sleep", "10000d"]
+        resources:
+          requests:
+            memory: 1Mi
+            cpu: 1m
+{{- end -}}

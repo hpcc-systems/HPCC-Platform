@@ -123,6 +123,9 @@
     "global": {
       "type": "object",
       "properties": {
+        "prepull": {
+          "type": "boolean"
+        },
         "privileged": {
           "type": "boolean"
         },
