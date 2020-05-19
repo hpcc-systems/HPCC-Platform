@@ -30,6 +30,7 @@ include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
          wsdfuaccess.cpp 
+         ${ESPSCM_GENERATED_DIR}/ws_dfu_common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp
     )
 

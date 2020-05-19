@@ -28,11 +28,14 @@ include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
          ../../../dali/dfu/dfuutil.cpp 
+         ${ESPSCM_GENERATED_DIR}/ws_dfu_common_esp.cpp 
          ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp 
          ${ESPSCM_GENERATED_DIR}/ws_dfuXref_esp.cpp 
+         ${HPCC_SOURCE_DIR}/esp/scm/ws_dfu_common.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_dfu.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_dfuXref.ecm
          ${HPCC_SOURCE_DIR}/esp/clients/roxiecontrol.cpp
+         ws_dfuHelpers.cpp 
          ws_dfuPlugin.cpp 
          ws_dfuService.cpp 
          ws_dfuXRefService.cpp 
