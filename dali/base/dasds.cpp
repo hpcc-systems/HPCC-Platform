@@ -240,7 +240,13 @@ public:
     }
     void changeToWrite(unsigned timeout)
     {
-        lock.changeToWrite(timeout);
+        /* NB: this is used by the disconnect RTM_DELETE_ON_DISCONNECT logic
+         * This unlock/lock leaves a window, where others could gain the lock, and perform actions before regaining the lock here
+         * Because RTM_DELETE_ON_DISCONNECT can delete the root node, it cause "Transaction to orphaned server node" to be seen,
+         * and returned to the client.
+         */
+        lock.unlock();
+        lock.lockWrite(timeout);
     }
 };
 #else
@@ -267,7 +273,13 @@ public:
     }
     void changeToWrite(unsigned timeout)
     {
-        lock.changeToWrite(timeout);
+        /* NB: this is used by the disconnect RTM_DELETE_ON_DISCONNECT logic
+        * This unlock/lock leaves a window, where others could gain the lock, and perform actions before regaining the lock here
+        * Because RTM_DELETE_ON_DISCONNECT can delete the root node, it cause "Transaction to orphaned server node" to be seen,
+        * and returned to the client.
+        */
+        lock.unlock();
+        lock.lockWrite(timeout);
     }
 };
 #endif
