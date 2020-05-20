@@ -48,6 +48,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     bool buildTlk, active;
     bool sizeSignalled;
     bool isLocal, singlePartKey, reportOverflow, fewcapwarned, refactor;
+    bool defaultNoSeek = false;
     unsigned __int64 totalCount;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
@@ -86,6 +87,7 @@ public:
         singlePartKey = false;
         refactor = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
+        defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", false)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
         duplicateKeyCount = 0;
     }
@@ -173,7 +175,7 @@ public:
         buildLayoutMetadata(metadata);
         // NOTE - if you add any more flags here, be sure to update checkReservedMetadataName
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
-        if (metadata->getPropBool("_noSeek", false))
+        if (metadata->getPropBool("_noSeek", defaultNoSeek))
             flags |= TRAILING_HEADER_ONLY;
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;

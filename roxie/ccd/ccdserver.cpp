@@ -12360,7 +12360,9 @@ public:
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
-            if (metadata->getPropBool("_noSeek", false))
+            //MORE: Could be cached in the factory.
+            bool defaultNoSeek = ctx->queryServerContext()->queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", false);
+            if (metadata->getPropBool("_noSeek", defaultNoSeek))
                 flags |= TRAILING_HEADER_ONLY;
             if (metadata->getPropBool("_useTrailingHeader", true))
                 flags |= USE_TRAILING_HEADER;
