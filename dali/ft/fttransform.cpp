@@ -846,7 +846,7 @@ processedProgress:
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, 0, true, compressor, COMPRESS_METHOD_LZW));
+                outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZW));
             }
 
             LOG(MCdebugProgress, unknownJob, "Start pulling to file: %s", localFilename.str());
@@ -972,7 +972,7 @@ bool TransferServer::push()
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, 0, true, compressor, COMPRESS_METHOD_LZW));
+                outio.setown(createCompressedFileWriter(outio, false, 0, true, compressor, COMPRESS_METHOD_LZW));
             }
             out.setown(createIOStream(outio));
             if (!compressOutput)

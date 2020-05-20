@@ -2428,10 +2428,10 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
 
 
 
-ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsize,bool _setcrc,ICompressor *compressor, unsigned _compMethod)
+ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, size32_t recordsize,bool _setcrc,ICompressor *compressor, unsigned _compMethod)
 {
     CompressedFileTrailer trailer;
-    offset_t fsize = fileio->size();
+    offset_t fsize = append ? fileio->size() : 0;
     if (fsize)
     {
         for (;;)
@@ -2493,7 +2493,7 @@ ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bo
             append = false;
         Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate, extraFlags);
         if (fileio) 
-            return createCompressedFileWriter(fileio,recordsize,_setcrc,compressor,_compMethod);
+            return createCompressedFileWriter(fileio,append,recordsize,_setcrc,compressor,_compMethod);
     }
     return NULL;
 }
