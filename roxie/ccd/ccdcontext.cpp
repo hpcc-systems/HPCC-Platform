@@ -1585,7 +1585,7 @@ public:
 
         if (realThor)
         {
-            executeThorGraph(name);
+            executeThorGraph(name, *workUnit, queryComponentConfig());
         }
         else
         {
@@ -2267,271 +2267,6 @@ protected:
         }
         throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
     }
-
-    // Copied from eclgraph.cpp, in the hope that we will be deleting that code soon
-    void executeThorGraph(const char *graphName)
-    {
-        assertex(workUnit);
-        StringAttr wuid(workUnit->queryWuid());
-
-        unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
-
-#ifdef _CONTAINERIZED
-        // NB: If a single Eclagent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
-        setWUState(WUStateBlocked);
-
-        if (queryComponentConfig().hasProp("@queue"))
-        {
-            if (executeGraphOnLingeringThor(*workUnit, graphName))
-                PROGLOG("Existing lingering Thor handled graph: %s", graphName);
-            else
-            {
-                VStringBuffer queueName("%s.thor", queryComponentConfig().queryProp("@queue"));
-                DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
-                Owned<IJobQueue> queue = createJobQueue(queueName.str());
-                VStringBuffer jobName("%s/%s", wuid.get(), graphName);
-                IJobQueueItem *item = createJobQueueItem(jobName);
-                queue->enqueue(item);
-            }
-
-            unsigned runningTimeLimit = workUnit->getDebugValueInt("maxRunTime", 0);
-            runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
-
-            std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
-            for (unsigned i=0; i<2; i++)
-            {
-                WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
-                DBGLOG("Got state: %s", getWorkunitStateStr(state));
-                if (WUStateWait == state) // already finished
-                    break;
-                else if ((INFINITE != timelimit) && (WUStateUnknown == state))
-                    throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
-                else
-                {
-                    auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
-                    if (it == expectedStates.end())
-                        throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
-                }
-                timelimit = runningTimeLimit;
-                expectedStates = { WUStateWait };
-            }
-        }
-        else
-        {        
-            VStringBuffer job("%s-%s", wuid.str(), graphName);
-            runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
-        }        
-            
-        if (workUnit->getExceptionCount())
-        {
-            Owned<IConstWUExceptionIterator> iter = &workUnit->getExceptions();
-            ForEach(*iter)
-            {
-                IConstWUException &e = iter->query();
-                SCMStringBuffer str;
-                e.getExceptionSource(str);
-                if (streq("thormasterexception", str.s))
-                {
-                    str.clear();
-                    e.getExceptionMessage(str);
-                    throw makeStringException(e.getExceptionCode(), str.str());
-                }
-            }
-        }
-        else
-        {
-            WorkunitUpdate w(&workUnit->lock());
-            WUState state = w->getState();
-            if (WUStateFailed == state)
-                throw makeStringException(0, "Workunit failed");
-        }
-
-        setWUState(WUStateRunning);
-
-#else    
-        StringAttr owner(workUnit->queryUser());
-        StringAttr cluster(workUnit->queryClusterName());
-
-        int priority = workUnit->getPriorityValue();
-#ifdef _CONTAINERIZED
-        StringBuffer queueName;
-        queueName.append(cluster).append(".thor");
-#else
-        Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
-        if (!c)
-            throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
-        SCMStringBuffer queueName;
-        c->getThorQueue(queueName);
-#endif
-        Owned<IJobQueue> jq = createJobQueue(queueName.str());
-        Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-        bool resubmit;
-        do // loop if pause interrupted graph and needs resubmitting on resume
-        {
-            resubmit = false; // set if job interrupted in thor
-            if (WUStatePaused == workUnit->getState()) // check initial state - and wait if paused
-            {
-                for (;;)
-                {
-                    WUAction action = wuFactory->waitForWorkUnitAction(wuid, queryWorkUnit()->getAction());
-                    if (action == WUActionUnknown)
-                        throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
-                    if (action != WUActionPause && action != WUActionPauseNow)
-                        break;
-                }
-            }
-            setWUState(WUStateBlocked);
-
-            class cPollThread: public Thread  // MORE - why do we ned a thread here?
-            {
-                Semaphore sem;
-                bool stopped;
-                IJobQueue *jq;
-                IConstWorkUnit *wu;
-            public:
-
-                bool timedout;
-                CTimeMon tm;
-                cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
-                    : tm(timelimit)
-                {
-                    stopped = false;
-                    jq = _jq;
-                    wu = _wu;
-                    timedout = false;
-                }
-                ~cPollThread()
-                {
-                    stop();
-                }
-                int run()
-                {
-                    while (!stopped) {
-                        sem.wait(ABORT_POLL_PERIOD);
-                        if (stopped)
-                            break;
-                        if (tm.timedout()) {
-                            timedout = true;
-                            stopped = true;
-                            jq->cancelInitiateConversation();
-                        }
-                        else if (wu->aborting()) {
-                            stopped = true;
-                            jq->cancelInitiateConversation();
-                        }
-
-                    }
-                    return 0;
-                }
-                void stop()
-                {
-                    stopped = true;
-                    sem.signal();
-                }
-            } pollthread(jq, workUnit, timelimit*1000);
-
-            pollthread.start();
-
-            PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
-            IJobQueueItem* item = createJobQueueItem(wuid.str());
-            item->setOwner(owner.str());
-            item->setPriority(priority);
-            Owned<IConversation> conversation = jq->initiateConversation(item);
-            bool got = conversation.get()!=NULL;
-            pollthread.stop();
-            pollthread.join();
-            if (!got)
-            {
-                if (pollthread.timedout)
-                    throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
-                throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
-            }
-            // get the thor ep from whoever picked up
-
-            SocketEndpoint thorMaster;
-            MemoryBuffer msg;
-            if (!conversation->recv(msg,1000*60)) {
-                throw MakeStringException(0, "Query %s cancelled (2)",wuid.str());
-            }
-            thorMaster.deserialize(msg);
-            msg.clear().append(graphName);
-            SocketEndpoint myep;
-            myep.setLocalHost(0);
-            myep.serialize(msg);  // only used for tracing
-            if (!conversation->send(msg)) {
-                StringBuffer s("Failed to send query to Thor on ");
-                thorMaster.getUrlStr(s);
-                throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
-            }
-
-            StringBuffer eps;
-            PROGLOG("Thor on %s running %s",thorMaster.getUrlStr(eps).str(),wuid.str());
-            MemoryBuffer reply;
-            try
-            {
-                if (!conversation->recv(reply,INFINITE))
-                {
-                    StringBuffer s("Failed to receive reply from thor ");
-                    thorMaster.getUrlStr(s);
-                    throw MakeStringExceptionDirect(-1, s.str());
-                }
-            }
-            catch (IException *e)
-            {
-                StringBuffer s("Failed to receive reply from thor ");
-                thorMaster.getUrlStr(s);
-                s.append("; (").append(e->errorCode()).append(", ");
-                e->errorMessage(s).append(")");
-                e->Release();
-                throw MakeStringExceptionDirect(-1, s.str());
-            }
-            unsigned replyCode;
-            reply.read(replyCode);
-            switch ((ThorReplyCodes) replyCode)
-            {
-                case DAMP_THOR_REPLY_PAUSED:
-                {
-                    bool isException ;
-                    reply.read(isException);
-                    if (isException)
-                    {
-                        Owned<IException> e = deserializeException(reply);
-                        VStringBuffer str("Pausing job %s caused exception", wuid.str());
-                        EXCLOG(e, str.str());
-                    }
-                    WorkunitUpdate w(&workUnit->lock());
-                    w->setState(WUStatePaused); // will trigger executeThorGraph to pause next time around.
-                    WUAction action = w->getAction();
-                    switch (action)
-                    {
-                        case WUActionPause:
-                        case WUActionPauseNow:
-                            w->setAction(WUActionUnknown);
-                    }
-                    resubmit = true; // JCSMORE - all subgraph _could_ be done, thor will check though and not rerun
-                    break;
-                }
-                case DAMP_THOR_REPLY_GOOD:
-                    break;
-                case DAMP_THOR_REPLY_ERROR:
-                {
-                    throw deserializeException(reply);
-                }
-                case DAMP_THOR_REPLY_ABORT:
-                {
-                    Owned<IException> e = deserializeException(reply);
-                    StringBuffer msg;
-                    e->errorMessage(msg);
-                    throw new WorkflowException(e->errorCode(), msg.str(), 0, WorkflowException::ABORT, MSGAUD_user);
-                }
-                default:
-                    throwUnexpected();
-            }
-            workUnit->forceReload();
-        }
-        while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
-#endif
-    }
 };
 
 //-----------------------------------------------------------------------------------------------
@@ -3103,7 +2838,7 @@ public:
         {
 #ifdef _CONTAINERIZED
             // signal to any lingering Thor's that job is complete and they can quit before timeout.
-            executeGraphOnLingeringThor(*workUnit, nullptr);
+            executeGraphOnLingeringThor(*workUnit, nullptr, nullptr);
 #endif
 
             if (options.failOnLeaks && !failed)
@@ -3929,7 +3664,7 @@ public:
         /* NB: platform specs. are defined if agent is running in the context of
          * another engine, e.g. query has been submitted to Thor, but some code is
         * executing outside of it.
-        * 
+        *
         * If not defined then assumed to be executing in roxie context,
         * where platform() defaults to "roxie".
         */
@@ -3937,7 +3672,7 @@ public:
         if (!topology->getProp("platform/@type", type))
             type.set("roxie");
         return type.detach();
-#else            
+#else
         if (clusterNames.length())
         {
             const char * cluster = clusterNames.tos();
@@ -4075,12 +3810,12 @@ public:
                 /* NB: platform specs. are defined if agent is running in the context of
                  * another engine, e.g. query has been submitted to Thor, but some code is
                  * executing outside of it.
-                 * 
+                 *
                  * If not defined then assumed to be executing in roxie context,
                  * where getNodes() defaults to 'numChannels'.
                  */
                 clusterWidth = topology->getPropInt("platform/@width", numChannels);
-#else            
+#else
                 const char * cluster = clusterNames.tos();
                 Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
                 if (!clusterInfo)
@@ -4089,7 +3824,7 @@ public:
                     clusterWidth = numChannels;  // We assume it's the current roxie - that's ok so long as roxie's don't call other roxies.
                 else
                     clusterWidth = clusterInfo->getSize();
-#endif            
+#endif
             }
             return clusterWidth;
         }

@@ -2486,7 +2486,7 @@ protected:
 
 // Aggregate costs excluding all hThor costs
 // Note: the only reason that this class is required is that it is not possible to determine the creator
-//       of a scope when iterating with IConstWUScopeIterator.  (When this functionlity becomes available, 
+//       of a scope when iterating with IConstWUScopeIterator.  (When this functionlity becomes available,
 //       consider filtering within aggregateCost and eliminating this class.)
 class CostAggregatorExcludeHThor : public CInterfaceOf<IWuScopeVisitor>
 {
@@ -3924,7 +3924,7 @@ public:
             { return c->getApplicationValue(application, propname, str); }
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const
             { return c->getApplicationValueInt(application, propname, defVal); }
-    virtual IConstWUAppValueIterator & getApplicationValues() const 
+    virtual IConstWUAppValueIterator & getApplicationValues() const
             { return c->getApplicationValues(); }
     virtual bool hasWorkflow() const
             { return c->hasWorkflow(); }
@@ -3966,9 +3966,9 @@ public:
             { return c->getDebugValueReal(propname, defVal); }
     virtual bool getDebugValueBool(const char * propname, bool defVal) const
             { return c->getDebugValueBool(propname, defVal); }
-    virtual IStringIterator & getDebugValues() const 
+    virtual IStringIterator & getDebugValues() const
             { return c->getDebugValues(NULL); }
-    virtual IStringIterator & getDebugValues(const char *prop) const 
+    virtual IStringIterator & getDebugValues(const char *prop) const
             { return c->getDebugValues(prop); }
     virtual unsigned getExceptionCount() const
             { return c->getExceptionCount(); }
@@ -4047,7 +4047,7 @@ public:
     virtual bool getStatistic(stat_type & value, const char * scope, StatisticKind kind) const override
             { return c->getStatistic(value, scope, kind); }
     virtual IStringVal & getSnapshot(IStringVal & str) const
-            { return c->getSnapshot(str); } 
+            { return c->getSnapshot(str); }
     virtual const char *queryUser() const
             { return c->queryUser(); }
     virtual ErrorSeverity getWarningSeverity(unsigned code, ErrorSeverity defaultSeverity) const
@@ -4381,7 +4381,7 @@ class CLocalWUWebServicesInfo : implements IWUWebServicesInfo, public CInterface
     mutable CriticalSection crit;
 
 private:
-    
+
 public:
     IMPLEMENT_IINTERFACE;
     CLocalWUWebServicesInfo(IPropertyTree *p);
@@ -4392,7 +4392,7 @@ public:
     virtual IStringVal& getInfo(const char *name, IStringVal &str) const;
     virtual IStringVal& getText(const char *name, IStringVal &str) const;
     virtual unsigned getWebServicesCRC() const;
- 
+
     virtual void        setModuleName(const char *);
     virtual void        setAttributeName(const char *);
     virtual void        setDefaultName(const char *);
@@ -4459,7 +4459,7 @@ public:
     virtual void        setResultFetchSize(unsigned rows);      // 0 means file-loaded
     virtual void        setResultTotalRowCount(__int64 rows);   // -1 means unknown
     virtual void        setResultRowCount(__int64 rows);
-    virtual void        setResultDataset(const char *ecl, const char *defs);        
+    virtual void        setResultDataset(const char *ecl, const char *defs);
     virtual void        setResultLogicalName(const char *logicalName);
     virtual void        setResultKeyField(const char * name);
     virtual void        setResultRequestedRows(unsigned req);
@@ -4739,7 +4739,7 @@ public:
         PROGLOG("WU removeDll %s", name.get());
         queryDllServer().removeDll(name, true, true); // <name>, removeDlls=true, removeDirectory=true
     }
-};      
+};
 
 class asyncRemoveRemoteFileWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveFile
 {
@@ -6580,9 +6580,9 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
         LOG(MCexception(E, MSGCLS_warning), E, s.append("Exception during cleanupAndDelete: ").append(p->queryName()).str());
         E->Release();
     }
-    catch (...) 
-    { 
-        WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName()); 
+    catch (...)
+    {
+        WARNLOG("Unknown exception during cleanupAndDelete: %s", p->queryName());
     }
 }
 
@@ -6599,7 +6599,7 @@ IJlibDateTime & CLocalWorkUnit::getTimeScheduled(IJlibDateTime &val) const
     p->getProp("@timescheduled",str);
     if(str.length())
         val.setGmtString(str.str());
-    return val; 
+    return val;
 }
 
 bool modifyAndWriteWorkUnitXML(char const * wuid, StringBuffer & buf, StringBuffer & extra, IFileIO * fileio)
@@ -6663,7 +6663,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base, bool del, bool ignoredlle
         {
             if (getState()==WUStateUnknown)
                 setState(WUStateArchived);  // to allow delete
-            cleanupAndDelete(false,deleteOwned);    // no query, may as well delete 
+            cleanupAndDelete(false,deleteOwned);    // no query, may as well delete
         }
         return false;
     }
@@ -6976,12 +6976,12 @@ IStringVal& CLocalWorkUnit::getAllowedClusters(IStringVal &str) const
 }
 
 void CLocalWorkUnit::setAllowAutoQueueSwitch(bool val)
-{ 
+{
     setDebugValueInt("allowautoqueueswitch",val?1:0,true);
 }
-    
+
 bool CLocalWorkUnit::getAllowAutoQueueSwitch() const
-{ 
+{
     CriticalBlock block(crit);
     return getDebugValueBool("allowautoqueueswitch",false);
 }
@@ -7012,7 +7012,7 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
         if (perm<0) {
             if (perm == SecAccess_Unavailable)
                 perm = SecAccess_Full;
-            else 
+            else
                 perm = SecAccess_None;
         }
     }
@@ -7023,10 +7023,10 @@ void CLocalWorkUnit::remoteCheckAccess(IUserDescriptor *user, bool writeaccess) 
 }
 
 
-void CLocalWorkUnit::setUser(const char * value) 
-{ 
+void CLocalWorkUnit::setUser(const char * value)
+{
     CriticalBlock block(crit);
-    p->setProp("@submitID", value); 
+    p->setProp("@submitID", value);
 }
 
 const char *CLocalWorkUnit::queryUser() const
@@ -7038,8 +7038,8 @@ const char *CLocalWorkUnit::queryUser() const
     return ret;
 }
 
-void CLocalWorkUnit::setWuScope(const char * value) 
-{ 
+void CLocalWorkUnit::setWuScope(const char * value)
+{
     if (value && *value)
     {
         if (checkWuScopeSecAccess(value, secMgr.get(), secUser.get(), SecAccess_Write, "Change Scope", true, true))
@@ -7059,13 +7059,13 @@ const char *CLocalWorkUnit::queryWuScope() const
     return ret;
 }
 
-void CLocalWorkUnit::setPriority(WUPriorityClass cls) 
+void CLocalWorkUnit::setPriority(WUPriorityClass cls)
 {
     CriticalBlock block(crit);
     setEnum(p, "@priorityClass", cls, priorityClasses);
 }
 
-WUPriorityClass CLocalWorkUnit::getPriority() const 
+WUPriorityClass CLocalWorkUnit::getPriority() const
 {
     CriticalBlock block(crit);
     return (WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses);
@@ -7076,7 +7076,7 @@ const char *CLocalWorkUnit::queryPriorityDesc() const
     return getEnumText(getPriority(), priorityClasses);
 }
 
-void CLocalWorkUnit::setState(WUState value) 
+void CLocalWorkUnit::setState(WUState value)
 {
     if (value==WUStateAborted || value==WUStatePaused || value==WUStateCompleted || value==WUStateFailed || value==WUStateSubmitted || value==WUStateWait)
     {
@@ -7116,19 +7116,19 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
     p->setPropInt64("@agentSession", sessionId);
 }
 
-bool CLocalWorkUnit::getIsQueryService() const 
+bool CLocalWorkUnit::getIsQueryService() const
 {
     CriticalBlock block(crit);
     return p->getPropBool("@isQueryService", false);
 }
 
-void CLocalWorkUnit::setIsQueryService(bool value) 
+void CLocalWorkUnit::setIsQueryService(bool value)
 {
     CriticalBlock block(crit);
     p->setPropBool("@isQueryService", value);
 }
 
-void CLocalWorkUnit::checkAgentRunning(WUState & state) 
+void CLocalWorkUnit::checkAgentRunning(WUState & state)
 {
     if (queryDaliServerVersion().compare("2.1")<0)
         return;
@@ -7181,7 +7181,7 @@ void CLocalWorkUnit::checkAgentRunning(WUState & state)
     }
 }
 
-WUState CLocalWorkUnit::getState() const 
+WUState CLocalWorkUnit::getState() const
 {
     CriticalBlock block(crit);
     WUState state = (WUState) getEnum(p, "@state", states);
@@ -7204,7 +7204,7 @@ WUState CLocalWorkUnit::getState() const
     return state;
 }
 
-IStringVal& CLocalWorkUnit::getStateEx(IStringVal & str) const 
+IStringVal& CLocalWorkUnit::getStateEx(IStringVal & str) const
 {
     CriticalBlock block(crit);
     str.set(p->queryProp("@stateEx"));
@@ -7237,13 +7237,13 @@ const char * CLocalWorkUnit::queryStateDesc() const
     }
 }
 
-void CLocalWorkUnit::setAction(WUAction value) 
+void CLocalWorkUnit::setAction(WUAction value)
 {
     CriticalBlock block(crit);
     setEnum(p, "Action", value, actions);
 }
 
-WUAction CLocalWorkUnit::getAction() const 
+WUAction CLocalWorkUnit::getAction() const
 {
     CriticalBlock block(crit);
     return (WUAction) getEnum(p, "Action", actions);
@@ -7270,7 +7270,7 @@ IStringVal& CLocalWorkUnit::getApplicationValue(const char *app, const char *pro
     prop.append(app).append('/').append(propname);
 
     CriticalBlock block(crit);
-    str.set(p->queryProp(prop.str())); 
+    str.set(p->queryProp(prop.str()));
     return str;
 }
 
@@ -7280,7 +7280,7 @@ int CLocalWorkUnit::getApplicationValueInt(const char *app, const char *propname
     prop.append(app).append('/').append(propname);
 
     CriticalBlock block(crit);
-    return p->getPropInt(prop.str(), defVal); 
+    return p->getPropInt(prop.str(), defVal);
 }
 
 IConstWUAppValueIterator& CLocalWorkUnit::getApplicationValues() const
@@ -7299,9 +7299,9 @@ void CLocalWorkUnit::setApplicationValue(const char *app, const char *propname, 
     if (overwrite || !p->hasProp(prop.str()))
     {
         StringBuffer sp;
-        p->setProp(sp.append("Application").str(), ""); 
-        p->setProp(sp.append('/').append(app).str(), ""); 
-        p->setProp(prop.str(), value); 
+        p->setProp(sp.append("Application").str(), "");
+        p->setProp(sp.append('/').append(app).str(), "");
+        p->setProp(prop.str(), value);
     }
 }
 
@@ -7311,16 +7311,16 @@ void CLocalWorkUnit::setApplicationValueInt(const char *app, const char *propnam
     setApplicationValue(app, propname, s, overwrite);
 }
 
-void CLocalWorkUnit::setPriorityLevel(int level) 
+void CLocalWorkUnit::setPriorityLevel(int level)
 {
     CriticalBlock block(crit);
     p->setPropInt("PriorityFlag",  level);
 }
 
-int CLocalWorkUnit::getPriorityLevel() const 
+int CLocalWorkUnit::getPriorityLevel() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("PriorityFlag"); 
+    return p->getPropInt("PriorityFlag");
 }
 
 int calcPriorityValue(const IPropertyTree * p)
@@ -7339,22 +7339,22 @@ int calcPriorityValue(const IPropertyTree * p)
 }
 
 
-int CLocalWorkUnit::getPriorityValue() const 
+int CLocalWorkUnit::getPriorityValue() const
 {
     CriticalBlock block(crit);
     return calcPriorityValue(p);
 }
 
-void CLocalWorkUnit::setRescheduleFlag(bool value) 
+void CLocalWorkUnit::setRescheduleFlag(bool value)
 {
     CriticalBlock block(crit);
-    p->setPropInt("RescheduleFlag", (int) value); 
+    p->setPropInt("RescheduleFlag", (int) value);
 }
 
-bool CLocalWorkUnit::getRescheduleFlag() const 
+bool CLocalWorkUnit::getRescheduleFlag() const
 {
     CriticalBlock block(crit);
-    return p->getPropInt("RescheduleFlag") != 0; 
+    return p->getPropInt("RescheduleFlag") != 0;
 }
 
 class NullIStringIterator : implements IStringIterator, public CInterface
@@ -7559,7 +7559,7 @@ bool CLocalWorkUnit::resolveFilePrefix(StringBuffer & prefix, const char * queue
     return false;
 }
 
-IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const 
+IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const
 {
     StringBuffer prefix;
     CriticalBlock block(crit);
@@ -7576,7 +7576,7 @@ IStringVal& CLocalWorkUnit::getScope(IStringVal &str) const
 }
 
 //Queries
-void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVersion, const char * eclVersion) 
+void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVersion, const char * eclVersion)
 {
     CriticalBlock block(crit);
     p->setPropInt("@codeVersion", codeVersion);
@@ -7584,38 +7584,38 @@ void CLocalWorkUnit::setCodeVersion(unsigned codeVersion, const char * buildVers
     p->setProp("@eclVersion", eclVersion);
 }
 
-unsigned CLocalWorkUnit::getCodeVersion() const 
+unsigned CLocalWorkUnit::getCodeVersion() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("@codeVersion");
 }
 
-unsigned CLocalWorkUnit::getWuidVersion() const 
+unsigned CLocalWorkUnit::getWuidVersion() const
 {
     CriticalBlock block(crit);
     return p->getPropInt("@wuidVersion");
 }
 
-void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const 
+void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
 {
     CriticalBlock block(crit);
     buildVersion.set(p->queryProp("@buildVersion"));
     eclVersion.set(p->queryProp("@eclVersion"));
 }
 
-void CLocalWorkUnit::setCloneable(bool value) 
+void CLocalWorkUnit::setCloneable(bool value)
 {
     CriticalBlock block(crit);
     p->setPropInt("@cloneable", value);
 }
 
-void CLocalWorkUnit::setIsClone(bool value) 
+void CLocalWorkUnit::setIsClone(bool value)
 {
     CriticalBlock block(crit);
     p->setPropInt("@isClone", value);
 }
 
-bool CLocalWorkUnit::getCloneable() const 
+bool CLocalWorkUnit::getCloneable() const
 {
     CriticalBlock block(crit);
     return p->getPropBool("@cloneable", false);
@@ -7676,7 +7676,7 @@ unsigned CLocalWorkUnit::getResultLimit() const
 IStringVal & CLocalWorkUnit::getSnapshot(IStringVal & str) const
 {
     CriticalBlock block(crit);
-    str.set(p->queryProp("SNAPSHOT")); 
+    str.set(p->queryProp("SNAPSHOT"));
     return str;
 }
 
@@ -7778,8 +7778,8 @@ static void setProp(IPropertyTree * to, const IPropertyTree * from, const char *
 
 static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
 {
-    IPropertyTree * match = from->getBranch(xpath); 
-    if (match) 
+    IPropertyTree * match = from->getBranch(xpath);
+    if (match)
         to->setPropTree(xpath, match);
 }
 
@@ -7811,7 +7811,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
-    pt = fromP->getBranch("Application/LibraryModule"); 
+    pt = fromP->getBranch("Application/LibraryModule");
     if (pt)
     {
         ensurePTree(p, "Application");
@@ -7824,7 +7824,7 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
         p->setPropTree("Application/prefix", pt);
     }
 
-    pt = fromP->queryBranch("Debug"); 
+    pt = fromP->queryBranch("Debug");
     if (pt)
     {
         IPropertyTree *curDebug = p->queryPropTree("Debug");
@@ -7948,7 +7948,7 @@ IStringVal& CLocalWorkUnit::getDebugValue(const char *propname, IStringVal &str)
     lower.append(propname).toLowerCase();
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
-    str.set(p->queryProp(prop.append(lower).str())); 
+    str.set(p->queryProp(prop.append(lower).str()));
     return str;
 }
 
@@ -7979,7 +7979,7 @@ int CLocalWorkUnit::getDebugValueInt(const char *propname, int defVal) const
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
-    return p->getPropInt(prop.str(), defVal); 
+    return p->getPropInt(prop.str(), defVal);
 }
 
 __int64 CLocalWorkUnit::getDebugValueInt64(const char *propname, __int64 defVal) const
@@ -8009,7 +8009,7 @@ bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
     CriticalBlock block(crit);
     StringBuffer prop("Debug/");
     prop.append(lower);
-    return p->getPropBool(prop.str(), defVal); 
+    return p->getPropBool(prop.str(), defVal);
 }
 
 IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
@@ -8078,8 +8078,8 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     if (overwrite || !p->hasProp(prop.str()))
     {
         // MORE - not sure this line should be needed....
-        p->setProp("Debug", ""); 
-        p->setProp(prop.str(), value); 
+        p->setProp("Debug", "");
+        p->setProp(prop.str(), value);
     }
 }
 
@@ -8093,8 +8093,8 @@ void CLocalWorkUnit::setDebugValueInt(const char *propname, int value, bool over
     if (overwrite || !p->hasProp(prop.str()))
     {
         // MORE - not sure this line should be needed....
-        p->setProp("Debug", ""); 
-        p->setPropInt(prop.str(), value); 
+        p->setProp("Debug", "");
+        p->setPropInt(prop.str(), value);
     }
 }
 
@@ -8102,16 +8102,16 @@ void CLocalWorkUnit::setTracingValue(const char *propname, const char *value)
 {
     CriticalBlock block(crit);
     // MORE - not sure this line should be needed....
-    p->setProp("Tracing", ""); 
+    p->setProp("Tracing", "");
     StringBuffer prop("Tracing/");
-    p->setProp(prop.append(propname).str(), value); 
+    p->setProp(prop.append(propname).str(), value);
 }
 
 void CLocalWorkUnit::setTracingValueInt(const char *propname, int value)
 {
     CriticalBlock block(crit);
     StringBuffer prop("Tracing/");
-    p->setPropInt(prop.append(propname).str(), value); 
+    p->setPropInt(prop.append(propname).str(), value);
 }
 
 void CLocalWorkUnit::setTracingValueInt64(const char *propname, __int64 value)
@@ -8144,7 +8144,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
         if (!s)
             s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>")); // Is this really desirable (the fetchEntire) ?
         s->Link();
-        query.setown(new CLocalWUQuery(s)); 
+        query.setown(new CLocalWUQuery(s));
     }
     return query.getLink();
 }
@@ -8455,7 +8455,7 @@ IWUPlugin* CLocalWorkUnit::updatePluginByName(const char *qname)
     IPropertyTree *pl = p->queryPropTree("Plugins");
     IPropertyTree *s = pl->addPropTree("Plugin");
     s->Link();
-    IWUPlugin* q = new CLocalWUPlugin(s); 
+    IWUPlugin* q = new CLocalWUPlugin(s);
     q->Link();
     plugins.append(*q);
     q->setPluginName(qname);
@@ -8491,7 +8491,7 @@ IWULibrary* CLocalWorkUnit::updateLibraryByName(const char *qname)
     IPropertyTree *pl = p->queryPropTree("Libraries");
     IPropertyTree *s = pl->addPropTree("Library");
     s->Link();
-    IWULibrary* q = new CLocalWULibrary(s); 
+    IWULibrary* q = new CLocalWULibrary(s);
     q->Link();
     libraries.append(*q);
     q->setName(qname);
@@ -8574,7 +8574,7 @@ IWUException* CLocalWorkUnit::createException()
     IPropertyTree *r = p->queryPropTree("Exceptions");
     IPropertyTree *s = r->addPropTree("Exception");
     s->setPropInt("@sequence", exceptions.ordinality());
-    IWUException* q = new CLocalWUException(LINK(s)); 
+    IWUException* q = new CLocalWUException(LINK(s));
     exceptions.append(*LINK(q));
 
     Owned<IJlibDateTime> now = createDateTimeNow();
@@ -8615,7 +8615,7 @@ IWUWebServicesInfo* CLocalWorkUnit::updateWebServicesInfo(bool create)
                 return NULL;
         }
         s->Link();
-        webServicesInfo.setown(new CLocalWUWebServicesInfo(s)); 
+        webServicesInfo.setown(new CLocalWUWebServicesInfo(s));
         webServicesInfoCached = true;
     }
     return webServicesInfo.getLink();
@@ -8714,7 +8714,7 @@ IWUResult* CLocalWorkUnit::createResult()
     IPropertyTree *s = r->addPropTree("Result");
 
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     results.append(*q);
     return q;
@@ -8726,7 +8726,7 @@ IWUResult* CLocalWorkUnit::updateResultByName(const char *qname)
     IConstWUResult *existing = getResultByName(qname);
     if (existing)
         return (IWUResult *) existing;
-    IWUResult* q = createResult(); 
+    IWUResult* q = createResult();
     q->setResultName(qname);
     return q;
 }
@@ -8737,7 +8737,7 @@ IWUResult* CLocalWorkUnit::updateResultBySequence(unsigned seq)
     IConstWUResult *existing = getResultBySequence(seq);
     if (existing)
         return (IWUResult *) existing;
-    IWUResult* q = createResult(); 
+    IWUResult* q = createResult();
     q->setResultSequence(seq);
     return q;
 }
@@ -8883,7 +8883,7 @@ IWUResult* CLocalWorkUnit::updateTemporaryByName(const char *qname)
     IPropertyTree *vars = (temporaries.length()) ? p->queryPropTree("Temporaries") : p->addPropTree("Temporaries");
     IPropertyTree *s = vars->addPropTree("Variable");
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     temporaries.append(*q);
     q->setResultName(qname);
@@ -8902,7 +8902,7 @@ IWUResult* CLocalWorkUnit::updateVariableByName(const char *qname)
     IPropertyTree *vars = p->queryPropTree("Variables");
     IPropertyTree *s = vars->addPropTree("Variable");
     s->Link();
-    IWUResult* q = new CLocalWUResult(s); 
+    IWUResult* q = new CLocalWUResult(s);
     q->Link();
     variables.append(*q);
     q->setResultName(qname);
@@ -9143,27 +9143,27 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
         return false; // this query was not compiled with recordFieldUsage option.
 
     ForEach(*files)
-    {    
+    {
         Owned<IConstWUFileUsage> file = files->get();
 
         StringBuffer filename(file->queryName());
         size32_t length = filename.length();
-        
+
         if (length == 0)
             throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
 
         StringBuffer normalizedFilename;
-        
+
         // Two cases to handle:
         // 1. Filename was known at compile time, and is surrounded in single quotes (i.e. 'filename').
-        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query), 
+        // 2. Filename could not be resolved at compile time (i.e. filename is an input to a query),
         //    and is a raw expression WITHOUT surrounding single quotes (i.e. STORED('input_filename')).
         if (isFilenameResolved(filename))
         {
             // filename cannot be empty (i.e. empty single quotes '')
             if (length == 2)
                 throw MakeStringException(WUERR_InvalidFieldUsage, "Invalid FieldUsage found in WU. Cannot enforce view security.");
-        
+
             // Remove surrounding single quotes
             StringAttr cleanFilename(filename.str()+1, length-2);
 
@@ -9185,7 +9185,7 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
             }
             else
             {
-                normalizedFilename.append(cleanFilename); 
+                normalizedFilename.append(cleanFilename);
             }
         }
         else
@@ -9197,7 +9197,7 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
 
         Owned<IConstWUFieldUsageIterator> fields = file->getFields();
         ForEach(*fields)
-        {    
+        {
             Owned<IConstWUFieldUsage> field = fields->get();
             filenames.append(normalizedFilename.str());
             columnnames.append(field->queryName());
@@ -9404,7 +9404,7 @@ unsigned CLocalWorkUnit::getSourceFileCount() const
         return p->queryPropTree("FilesRead")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getResultCount() const
@@ -9415,7 +9415,7 @@ unsigned CLocalWorkUnit::getResultCount() const
         return p->queryPropTree("Results")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getVariableCount() const
@@ -9426,7 +9426,7 @@ unsigned CLocalWorkUnit::getVariableCount() const
         return p->queryPropTree("Variables")->numChildren();
     }
     return 0;
-    
+
 }
 
 unsigned CLocalWorkUnit::getApplicationValueCount() const
@@ -9437,7 +9437,7 @@ unsigned CLocalWorkUnit::getApplicationValueCount() const
         return p->queryPropTree("Application")->numChildren();
     }
     return 0;
-    
+
 }
 
 StringBuffer &appendPTreeOpenTag(StringBuffer &s, IPropertyTree *tree, const char *name, unsigned indent, bool hidePasswords)
@@ -9906,7 +9906,7 @@ WUQueryType CLocalWUQuery::getQueryType() const
     return (WUQueryType) getEnum(p, "@type", queryTypes);
 }
 
-void CLocalWUQuery::setQueryType(WUQueryType qt) 
+void CLocalWUQuery::setQueryType(WUQueryType qt)
 {
     setEnum(p, "@type", qt, queryTypes);
 }
@@ -10060,7 +10060,7 @@ void CLocalWUQuery::addAssociatedFile(WUFileType type, const char * name, const 
         s->setPropInt("@minActivity", minActivity);
     if (maxActivity)
         s->setPropInt("@maxActivity", maxActivity);
-    IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s)); 
+    IConstWUAssociatedFile * q = new CLocalWUAssociated(LINK(s));
     associated.append(*q);
 }
 
@@ -10432,8 +10432,8 @@ void readRow(StringBuffer &out, MemoryBuffer &in, TypeInfoArray &types, StringAt
                 free(outstr);
                 break;
             }
-        case type_int: 
-        case type_swapint: 
+        case type_int:
+        case type_swapint:
             if (type.isSigned())
             {
                 const unsigned char *raw = (const unsigned char *) in.readDirect(size);
@@ -10728,14 +10728,14 @@ void CLocalWUResult::setResultFormat(WUResultFormat format)
 {
     switch (format)
     {
-    case ResultFormatXml: 
-        p->setProp("@format","xml"); 
+    case ResultFormatXml:
+        p->setProp("@format","xml");
         break;
-    case ResultFormatXmlSet: 
-        p->setProp("@format","xmlSet"); 
+    case ResultFormatXmlSet:
+        p->setProp("@format","xmlSet");
         break;
-    case ResultFormatCsv: 
-        p->setProp("@format","csv"); 
+    case ResultFormatCsv:
+        p->setProp("@format","csv");
         break;
     default:
         p->removeProp("@format");
@@ -10756,13 +10756,13 @@ void CLocalWUResult::addResultRaw(unsigned len, const void *data, WUResultFormat
     const char *formatStr = NULL;
     switch (format)
     {
-    case ResultFormatXml: 
-        formatStr = "xml"; 
+    case ResultFormatXml:
+        formatStr = "xml";
         break;
-    case ResultFormatXmlSet: 
+    case ResultFormatXmlSet:
         formatStr = "xmlSet";
         break;
-    case ResultFormatCsv: 
+    case ResultFormatCsv:
         formatStr = "csv";
         break;
     default:
@@ -11656,7 +11656,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
     assertex(workunit);
     StringAttr clusterName(workunit->queryClusterName());
-    if (!clusterName.length()) 
+    if (!clusterName.length())
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
     workunit->commit();
     workunit.clear();
@@ -11665,7 +11665,7 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     getClusterEclCCServerQueueName(serverQueue, clusterName);
     assertex(serverQueue.length());
     Owned<IJobQueue> queue = createJobQueue(serverQueue.str());
-    if (!queue.get()) 
+    if (!queue.get())
         throw MakeStringException(WUERR_InvalidQueue, "Could not create workunit queue");
 
     IJobQueueItem *item = createJobQueueItem(wuid);
@@ -11752,7 +11752,7 @@ IConstWorkflowItemIterator* CLocalWorkUnit::getWorkflowItems() const
         assertex(!workflowIterator);
         Owned<IPropertyTree> s = p->getPropTree("Workflow");
         if(s)
-            workflowIterator.setown(createWorkflowItemIterator(s)); 
+            workflowIterator.setown(createWorkflowItemIterator(s));
         workflowIteratorCached = true;
     }
     return workflowIterator.getLink();
@@ -11791,7 +11791,7 @@ IWorkflowItemIterator * CLocalWorkUnit::updateWorkflowItems()
         IPropertyTree * s = p->queryPropTree("Workflow");
         if(!s)
             s = p->addPropTree("Workflow");
-        workflowIterator.setown(createWorkflowItemIterator(s)); 
+        workflowIterator.setown(createWorkflowItemIterator(s));
         workflowIteratorCached = true;
     }
     return workflowIterator.getLink();
@@ -11860,7 +11860,7 @@ void CLocalWorkUnit::schedule()
     ncnameEscape(wuid, xpath);
     bool more;
     do more = root->removeProp(xpath.str()); while(more);
-        
+
     Owned<IConstWorkflowItemIterator> iter = getWorkflowItems();
     Owned<IWorkflowEvent> event;
     Owned<IPropertyTree> branch1, branch2;
@@ -12915,7 +12915,7 @@ IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char *
         else
             throw MakeStringException(WUERR_PackageAlreadyExists, "Package name %s already exists, either delete it or specify overwrite",name);
     }
-    
+
     IPropertyTree *tree = packageRegistry->addPropTree("Package", packageInfo);
     tree->setProp("@id", lcName);
     return tree;
@@ -12971,7 +12971,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
         throw MakeStringException(WUERR_InvalidDll, "Cannot deploy query - no associated dll.");
 
     StringBuffer currentTargetClusterType;
-    queryRegistry->getProp("@targetclustertype", currentTargetClusterType); 
+    queryRegistry->getProp("@targetclustertype", currentTargetClusterType);
 
     SCMStringBuffer targetClusterType;
     workunit->getDebugValue("targetclustertype", targetClusterType);
@@ -12979,7 +12979,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     SCMStringBuffer snapshot;
     workunit->getSnapshot(snapshot);
 
-    if (currentTargetClusterType.length() < 1) 
+    if (currentTargetClusterType.length() < 1)
     {
         queryRegistry->setProp("@targetclustertype", targetClusterType.str());
     }
@@ -13014,7 +13014,7 @@ void activateQuery(IPropertyTree *queryRegistry, WUQueryActivationOptions activa
         {
             if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
                 setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
-            else 
+            else
                 removeNamedQuery(queryRegistry, prevQuery->queryProp("@id"));
         }
     }
@@ -13453,58 +13453,425 @@ bool isValidMemoryValue(const char *memoryUnit)
     return false;
 }
 
-#ifdef _CONTAINERIZED
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+
+// used by eclagent and roxie
+
+#define ABORT_POLL_PERIOD (5*1000)
+void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config)
 {
-    // check if lingering thor instance is up.
+    unsigned timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 60));
+    StringAttr wuid(workunit.queryWuid());
 
-    /* If code was dependent on reading a workunit in parallel, the whole area of
-     * workunit locking and reading will need revisiting, because at the moment the 
-     * workunit reading code does not lock at all.
-     * 
-     */
+#ifdef _CONTAINERIZED
+    // NB: If a single agent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
 
-    /* NB: forcing a reload here to ensure Debug values are recent.
-     * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
-     * The area of persisting a non-locked connection to workunits should be resivisted..
+    {
+        Owned<IWorkUnit> w = &workunit.lock();
+        w->setState(WUStateBlocked);
+    }
+
+    WUState state = WUStateUnknown;
+    if (config.hasProp("@queue"))
+    {
+        bool multiJobLinger = config.getPropBool("@multiJobLinger");
+        if (executeGraphOnLingeringThor(workunit, graphName, multiJobLinger ? config.queryProp("@queue") : nullptr))
+            PROGLOG("Existing lingering Thor handled graph: %s", graphName);
+        else
+        {
+            VStringBuffer queueName("%s.thor", config.queryProp("@queue"));
+            DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+            Owned<IJobQueue> queue = createJobQueue(queueName);
+            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
+            IJobQueueItem *item = createJobQueueItem(jobName);
+            queue->enqueue(item);
+        }
+
+        // NB: overall max runtime if guillotine set handled by abortmonitor
+        unsigned runningTimeLimit = workunit.getDebugValueInt("maxRunTime", 0);
+        runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
+
+        std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
+        for (unsigned i=0; i<2; i++)
+        {
+            WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
+            DBGLOG("Got state: %s", getWorkunitStateStr(state));
+            if (WUStateWait == state) // already finished
+                break;
+            else if ((INFINITE != timelimit) && (WUStateUnknown == state))
+                throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
+            else
+            {
+                auto it = std::find(expectedStates.begin(), expectedStates.end(), state);
+                if (it == expectedStates.end())
+                    throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
+            }
+            timelimit = runningTimeLimit;
+            expectedStates = { WUStateWait };
+        }
+    }
+    else
+    {
+        VStringBuffer job("%s-%s", wuid.str(), graphName);
+        runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
+    }
+
+    /* In k8s, Thor feeds back the terminating exception via the workunit.
+     * (in bare-metal it is returned via a socket the agent connect to Thor with)
      */
     workunit.forceReload();
-
-    Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
-    ForEach(*iter)
+    if (workunit.getExceptionCount())
     {
-        /* NB: Thor's set their running endpoint into Debug values of workunit
-         * Check to see if workunit has any Thor's available lingering instances.
-         */
-        SCMStringBuffer thorInstance;
-        iter->str(thorInstance);
-        SCMStringBuffer thorInstanceValue;
-        if (workunit.getDebugValueBool(thorInstance.s, false))
+        Owned<IConstWUExceptionIterator> iter = &workunit.getExceptions();
+        ForEach(*iter)
         {
+            IConstWUException &e = iter->query();
+            SCMStringBuffer str;
+            e.getExceptionSource(str);
+            if (streq("thormasterexception", str.s))
             {
-                Owned<IWorkUnit> w = &workunit.lock();
-                w->setDebugValue(thorInstance.s, "0", true);
-            }
-            /* NB: there's a window where Thor could shutdown here.
-             * In that case, the sendRecv will fail and it will fall through to queueing.
-             */
-            const char *instanceName = strchr(thorInstance.str(), '_') + 1;
-
-            Owned<INode> masterNode = createINode(instanceName);
-            CMessageBuffer msg;
-            VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
-            msg.append(jobStr);
-            if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
-            {
-                bool ok;
-                msg.read(ok);
-                if (graphName) // if graphName==nullptr, then continue around to look at others
+                str.clear();
+                e.getExceptionMessage(str);
+                unsigned errCode = e.getExceptionCode();
                 {
-                    if (ok)
+                    /* Clear the feedback exception (consume it),
+                     * so that any future re-submissions of this workunit (e.g. due to workflow)
+                     * don't see it again.
+                     */
+                    Owned<IWorkUnit> w = &workunit.lock();
+                    w->clearExceptions("thormasterexception");
+                }
+                throw makeStringException(errCode, str.str());
+            }
+        }
+    }
+    else
+    {
+        Owned<IWorkUnit> w = &workunit.lock();
+        WUState state = w->getState();
+        if (WUStateFailed == state)
+            throw makeStringException(0, "Workunit failed");
+    }
+
+    {
+        Owned<IWorkUnit> w = &workunit.lock();
+        w->setState(WUStateRunning);
+    }
+#else
+    StringAttr owner(workunit.queryUser());
+    StringAttr cluster(workunit.queryClusterName());
+    int priority = workunit.getPriorityValue();
+
+    Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster);
+    if (!c)
+        throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
+    SCMStringBuffer queueName;
+    c->getThorQueue(queueName);
+    Owned<IJobQueue> jq = createJobQueue(queueName.str());
+
+    bool resubmit;
+    Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
+    do // loop if pause interrupted graph and needs resubmitting on resume
+    {
+        resubmit = false; // set if job interrupted in thor
+        if (WUStatePaused == workunit.getState()) // check initial state - and wait if paused
+        {
+            for (;;)
+            {
+                WUAction action = wuFactory->waitForWorkUnitAction(wuid, workunit.getAction());
+                if (action == WUActionUnknown)
+                    throw new WorkflowException(0, "Workunit aborting", 0, WorkflowException::ABORT, MSGAUD_user);
+                if (action != WUActionPause && action != WUActionPauseNow)
+                    break;
+            }
+        }
+
+        {
+            Owned<IWorkUnit> w = &workunit.lock();
+            w->setState(WUStateBlocked);
+        }
+
+        class cPollThread: public Thread  // MORE - why do we ned a thread here?
+        {
+            Semaphore sem;
+            bool stopped;
+            IJobQueue *jq;
+            IConstWorkUnit *wu;
+        public:
+
+            bool timedout;
+            CTimeMon tm;
+            cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
+                : tm(timelimit)
+            {
+                stopped = false;
+                jq = _jq;
+                wu = _wu;
+                timedout = false;
+            }
+            ~cPollThread()
+            {
+                stop();
+            }
+            int run()
+            {
+                while (!stopped) {
+                    sem.wait(ABORT_POLL_PERIOD);
+                    if (stopped)
+                        break;
+                    if (tm.timedout()) {
+                        timedout = true;
+                        stopped = true;
+                        jq->cancelInitiateConversation();
+                    }
+                    else if (wu->aborting()) {
+                        stopped = true;
+                        jq->cancelInitiateConversation();
+                    }
+
+                }
+                return 0;
+            }
+            void stop()
+            {
+                stopped = true;
+                sem.signal();
+            }
+        } pollthread(jq, &workunit, timelimit*1000);
+
+        pollthread.start();
+
+        PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
+        IJobQueueItem* item = createJobQueueItem(wuid.str());
+        item->setOwner(owner.str());
+        item->setPriority(priority);
+        Owned<IConversation> conversation = jq->initiateConversation(item);
+        bool got = conversation.get()!=NULL;
+        pollthread.stop();
+        pollthread.join();
+        if (!got)
+        {
+            if (pollthread.timedout)
+                throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
+            throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
+        }
+        // get the thor ep from whoever picked up
+
+        SocketEndpoint thorMaster;
+        MemoryBuffer msg;
+        if (!conversation->recv(msg,1000*60))
+            throw MakeStringException(0, "Query %s cancelled (2)",wuid.str());
+        thorMaster.deserialize(msg);
+        msg.clear().append(graphName);
+        SocketEndpoint myep;
+        myep.setLocalHost(0);
+        myep.serialize(msg);  // only used for tracing
+        if (!conversation->send(msg)) {
+            StringBuffer s("Failed to send query to Thor on ");
+            thorMaster.getUrlStr(s);
+            throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
+        }
+
+        StringBuffer eps;
+        PROGLOG("Thor on %s running %s",thorMaster.getUrlStr(eps).str(),wuid.str());
+        MemoryBuffer reply;
+        try
+        {
+            if (!conversation->recv(reply,INFINITE))
+            {
+                StringBuffer s("Failed to receive reply from thor ");
+                thorMaster.getUrlStr(s);
+                throw MakeStringExceptionDirect(-1, s.str());
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer s("Failed to receive reply from thor ");
+            thorMaster.getUrlStr(s);
+            s.append("; (").append(e->errorCode()).append(", ");
+            e->errorMessage(s).append(")");
+            e->Release();
+            throw MakeStringExceptionDirect(-1, s.str());
+        }
+        unsigned replyCode;
+        reply.read(replyCode);
+        switch ((ThorReplyCodes) replyCode)
+        {
+            case DAMP_THOR_REPLY_PAUSED:
+            {
+                bool isException;
+                reply.read(isException);
+                if (isException)
+                {
+                    Owned<IException> e = deserializeException(reply);
+                    VStringBuffer str("Pausing job %s caused exception", wuid.get());
+                    EXCLOG(e, str.str());
+                }
+                Owned<IWorkUnit> w = &workunit.lock();
+                w->setState(WUStatePaused); // will trigger executeThorGraph to pause next time around.
+                WUAction action = w->getAction();
+                switch (action)
+                {
+                    case WUActionPause:
+                    case WUActionPauseNow:
+                        w->setAction(WUActionUnknown);
+                }
+                resubmit = true; // JCSMORE - all subgraph _could_ be done, thor will check though and not rerun
+                break;
+            }
+            case DAMP_THOR_REPLY_GOOD:
+                break;
+            case DAMP_THOR_REPLY_ERROR:
+            {
+                throw deserializeException(reply);
+            }
+            case DAMP_THOR_REPLY_ABORT:
+            {
+                Owned<IException> e = deserializeException(reply);
+                StringBuffer msg;
+                e->errorMessage(msg);
+                throw new WorkflowException(e->errorCode(), msg.str(), 0, WorkflowException::ABORT, MSGAUD_user);
+            }
+            default:
+                throwUnexpected();
+        }
+        workunit.forceReload();
+    }
+    while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
+#endif
+}
+
+
+#ifdef _CONTAINERIZED
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName)
+{
+    // check if lingering thor instance is up.
+    // Returns true if successfully submitted graph to a lingering Thor.
+
+    /* If code was dependent on reading a workunit in parallel, the whole area of
+     * workunit locking and reading will need revisiting, because at the moment the
+     * workunit reading code does not lock at all.
+     *
+     * Either,
+     * 1) multiJobThorLinger is set, meaning Thor instances will wait for any job's graph.
+     * OR
+     * 2) if not set, the Thor will wait for graphs from same job only, and will be
+     *    notified to quit by the agent, when the last graph is complete.
+     *
+     * This code is called from the client (agent) when it wants to execute a Thor graph.
+     * This function checks to see if there any registered lingering Thor instances available.
+     *
+     * Lingering Thor's register when they are idle either with the workunit itself in
+     * the case of [2], or with a Dali psuedo queue (a branch under /Status/ThorLinger),
+     * in the case of [1]
+     * If they have not been contacted within the 'lingerPeriod' they shutdown and remove
+     * their registered instance from the queue.
+     *
+     * The client will attempt to find a lingering Thor in either the workunit or a global
+     * named dali queue (depending on the configuration), it will then remove that entry,
+     * and attempt to post the graph to that lingering Thor. If the Thor acknowledges the
+     * request, this function exits with success. If it it fails, or there are no more
+     * lingering Thor instances, it returns with false to indicate that the graph was not
+     * submitted to a lingering Thor.
+     * The client should then queue the wuid/graph normally, which will invoke a new Thor
+     * instance.
+     */
+
+    try
+    {
+        if (multiJobLingerQueueName && graphName)
+        {
+            // check a Dali queue for idle spare Thor's
+            DBGLOG("Checking multi job lingering queue: %s", multiJobLingerQueueName);
+
+            VStringBuffer xpath("/Status/ThorLinger/%s", multiJobLingerQueueName);
+            while (true)
+            {
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);
+                if (!conn)
+                    break;
+                IPropertyTree *root = conn->queryRoot();
+                if (0 == root->numChildren())
+                    break;
+                IPropertyTree *entry = root->queryPropTree("Thor*[1]");
+                const char *entryName = entry->queryName();
+
+                // get available instance and remove it
+                VStringBuffer entryXPath("%s/%s", xpath.str(), entryName);
+                Owned<IRemoteConnection> lingerInstanceConn = querySDS().connect(entryXPath, myProcessSession(), RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, 5*1000);
+                if (lingerInstanceConn)
+                {
+                    StringBuffer instanceName;
+                    lingerInstanceConn->queryRoot()->getProp(nullptr, instanceName);
+                    lingerInstanceConn->close(true);
+                    lingerInstanceConn.clear();
+                    conn.clear();
+
+                    Owned<INode> masterNode = createINode(instanceName);
+                    CMessageBuffer msg;
+                    VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName);
+                    msg.append(jobStr);
+
+                    bool success = queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000);
+                    DBGLOG("Found lingering Thor: %s, submitted: %s, success: %s", instanceName.str(), jobStr.str(), boolToStr(success));
+                    if (success)
+                    {
+                        bool ok;
+                        msg.read(ok);
                         return true;
+                    }
                 }
             }
         }
+        else
+        {
+            /* NB: forcing a reload here to ensure Debug values are recent.
+            * Could be improved by refreshing only the specific area of interest (i.e. Debug/ in this case).
+            * The area of persisting a non-locked connection to workunits should be resivisted..
+            */
+            workunit.forceReload();
+
+            Owned<IStringIterator> iter = &workunit.getDebugValues("thorinstance_*");
+            ForEach(*iter)
+            {
+                /* NB: Thor's set their running endpoint into Debug values of workunit
+                * Check to see if workunit has any Thor's available lingering instances.
+                */
+                SCMStringBuffer thorInstance;
+                iter->str(thorInstance);
+                SCMStringBuffer thorInstanceValue;
+                if (workunit.getDebugValueBool(thorInstance.s, false))
+                {
+                    {
+                        Owned<IWorkUnit> w = &workunit.lock();
+                        w->setDebugValue(thorInstance.s, "0", true);
+                    }
+                    /* NB: there's a window where Thor could shutdown here.
+                    * In that case, the sendRecv will fail and it will fall through to queueing.
+                    */
+                    const char *instanceName = strchr(thorInstance.str(), '_') + 1;
+
+                    Owned<INode> masterNode = createINode(instanceName);
+                    CMessageBuffer msg;
+                    VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
+                    msg.append(jobStr);
+                    if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
+                    {
+                        bool ok;
+                        msg.read(ok);
+                        if (graphName) // if graphName==nullptr, then continue around to look at others
+                        {
+                            if (ok)
+                                return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "executeGraphOnLingeringThor");
+        e->Release();
     }
     return false;
 }
@@ -13586,7 +13953,7 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
     }
 
     StringBuffer output, error;
-    unsigned ret = runExternalCommand(output, error, "kubectl apply -f -", jobYaml.str());
+    unsigned ret = runExternalCommand(output, error, "kubectl replace --force -f -", jobYaml.str());
     DBGLOG("kubectl output: %s", output.str());
     if (error.length())
         DBGLOG("kubectl error: %s", error.str());

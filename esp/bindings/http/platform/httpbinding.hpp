@@ -387,7 +387,6 @@ public:
     }
     void readAuthDomainCfg(IPropertyTree* procCfg);
     void readUnrestrictedResources(const char* resources);
-    void setSDSSession();
     void setABoolHash(const char* csv, BoolHash& hash) const;
     bool isCORSRequest(const char* originHeader);
     bool canRedirectAfterAuth(const char* url) const;

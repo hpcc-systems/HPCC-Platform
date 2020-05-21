@@ -220,7 +220,8 @@ public:
                     break;
             }
             PROGLOG("CLCLockBlock(write=%d) timeout %s(%d), took %d ms",!readLock,fname,lnum,got-msTick());
-            PrintStackReport();
+            if (readWriteStackTracing)
+                PrintStackReport();
         }
         got = msTick();
     };
@@ -238,10 +239,7 @@ public:
                 PrintStackReport();
         }
     }
-    void changeToWrite(unsigned timeout)
-    {
-        lock.changeToWrite(timeout);
-    }
+    void changeToWrite(const char *msg);
 };
 #else
 class LinkingCriticalBlock : public CriticalBlock, public CInterface, implements IInterface
@@ -265,12 +263,32 @@ public:
     {
         lock.unlock();
     }
-    void changeToWrite(unsigned timeout)
-    {
-        lock.changeToWrite(timeout);
-    }
+    void changeToWrite(const char *msg);
 };
 #endif
+
+void CLCLockBlock::changeToWrite(const char *msg)
+{
+    /* NB: this intentionally clears the lock, before re-establishing a write lock
+     * because we do not want to keep this read lock whilst waiting for a write,
+     * as other write transactions would pile up and/or cause deadlock.
+     */
+
+    // Must be read locked when called.
+    dbgassertex(lock.queryReadLockCount() > 0);
+
+    lock.unlock();
+
+    CCycleTimer timer;
+    while (true)
+    {
+        if (lock.lockWrite(readWriteTimeout))
+            break;
+        PROGLOG("changeToWrite timeout [%s], time taken so far %u ms", msg, timer.elapsedMs());
+        if (readWriteStackTracing)
+            PrintStackReport();
+    }
+}
 
 #ifdef USECHECKEDCRITICALSECTIONS
 #define CHECKEDDALIREADLOCKBLOCK(l, timeout)  Owned<CLCLockBlock> glue(block,__LINE__) = new CLCLockBlock(l, true, timeout, __FILE__, __LINE__)
@@ -7848,43 +7866,66 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, CLCLockBlock
     else
         DBGLOG("Disconnecting orphaned connection: %s, deleteRoot=%s", connection->queryXPath(), deleteRoot?"true":"false");
     // Still want disconnection to be performed & recorded, if orphaned
-    if (!deleteRoot && unlock(tree->queryServerId(), id, true)) // unlock returns true if last unlock and there was a setDROLR on it
+    bool last = !deleteRoot && unlock(tree->queryServerId(), id, true); // unlock returns true if last unlock and there was a setDROLR on it
+    if (last)
         deleteRoot = true;
     if (deleteRoot)
     {
-        if (lockBlock)
-            lockBlock->changeToWrite(readWriteTimeout);
-        connection->queryParent()->removeTree(tree);
-        writeTransactions++;
-        if (!orphaned)
+        if (lockBlock) // NB: only passed if might need read->write
         {
-            Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE);
-            IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree());
-            d->setProp("@name", tree->queryName());
-            d->setPropInt("@pos", index+1);
+            lockBlock->changeToWrite(connection->queryXPath());
 
-            Owned<CBranchChange> branchChange = new CBranchChange(*tree);
-            branchChange->noteChange(PDS_Deleted, PDS_Deleted);
-            CPTStack stack = connection->queryPTreePath();
-            stack.pop();
-            if (connection->queryRootUnvalidated() == SDSManager->queryRoot())
-                stack.pop();
-
-            if (!RTM_MODE(connection->queryMode(), RTM_INTERNAL))
+            /* If it was last and deleteRoot was triggered, check again (now that have exclusive read write lock),
+             * that I am last, i.e. that no-one else has established a lock in the changeToWrite window.
+             * If they have, do not deleteRoot, as others are using it.
+             * 
+             * NB: that will mean the write lock was not actually needed.
+             * The lock will be released by the caller (of disconnect()), when 'lockBlock' goes out of scope.
+             */
+            if (last)
             {
-                connection->notify();
-                SDSManager->startNotification(*changeTree, stack, *branchChange);
+                /* check if lock has been re-established, in window within changeToWrite
+                 * If it has, then I am no longer the last link, do not delete root
+                 */
+                CLock *lock = queryLock(tree->queryServerId());
+                if (lock && lock->lockCount())
+                    deleteRoot = false;
             }
+        }
+        if (deleteRoot)
+        {
+            connection->queryParent()->removeTree(tree);
+            writeTransactions++;
+            if (!orphaned)
+            {
+                Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE);
+                IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree());
+                d->setProp("@name", tree->queryName());
+                d->setPropInt("@pos", index+1);
 
-            StringBuffer head;
-            const char *tail = splitXPath(path.str(), head);
-            CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
-            if (NotFound != index)
-                saveDelta(head.str(), *changeTree);
-            else
-            { // NB: don't believe this can happen, but last thing want to do is save duff delete delta.
-                IERRLOG("** CCovenSDSManager::disconnect - index position lost **");
-                PrintStackReport();
+                Owned<CBranchChange> branchChange = new CBranchChange(*tree);
+                branchChange->noteChange(PDS_Deleted, PDS_Deleted);
+                CPTStack stack = connection->queryPTreePath();
+                stack.pop();
+                if (connection->queryRootUnvalidated() == SDSManager->queryRoot())
+                    stack.pop();
+
+                if (!RTM_MODE(connection->queryMode(), RTM_INTERNAL))
+                {
+                    connection->notify();
+                    SDSManager->startNotification(*changeTree, stack, *branchChange);
+                }
+
+                StringBuffer head;
+                const char *tail = splitXPath(path.str(), head);
+                CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
+                if (NotFound != index)
+                    saveDelta(head.str(), *changeTree);
+                else
+                { // NB: don't believe this can happen, but last thing want to do is save duff delete delta.
+                    IERRLOG("** CCovenSDSManager::disconnect - index position lost **");
+                    PrintStackReport();
+                }
             }
         }
     }

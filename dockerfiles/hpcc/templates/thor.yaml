@@ -11,7 +11,7 @@
 {{- $thorAgentDefaults := dict "name" $thorAgentName "useChildProcesses" false "replicas" 1 }}
 {{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
 {{- $hthorDefaults := dict "name" $hthorName }}
-{{- $hthorScope := .hthor | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
+{{- $hthorScope := .eclagent | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
 {{- $thorScopeStd := omit . "eclagent" "thoragent" "hthor" }}
 {{- $thorScope := $thorAgentScope.useChildProcesses | ternary ($thorScopeStd | mergeOverwrite (dict "masterport" 0 "slaveport" 0)) ($thorScopeStd) }}
 apiVersion: apps/v1
@@ -91,6 +91,9 @@ data:
 {{ toYaml (omit $thorScope "logging") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
     {{ $agentAppType }}:
+{{- if $thorScope.multiJobLinger }}
+      multiJobLinger: true
+{{- end }}
 {{ toYaml (omit $hthorScope "logging") | indent 6 }}
       platform:
         type: "thor"
@@ -108,7 +111,7 @@ data:
 {{ toYaml (omit $thorAgentScope "logging") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorAgentScope) | indent 6 }}
       type: thor
-{{- if $thorAgentScope.useChildProceses }}
+{{- if $thorAgentScope.useChildProcesses }}
     thor:
 {{ toYaml (omit $thorScope "logging") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}

@@ -363,9 +363,9 @@ function onSendRequest()
     document.getElementById("resp_body").value = "";
     document.getElementById("resp_header").value = "";
 
-    var url = "]]></xsl:text><xsl:value-of select="$destination"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+    var url = "]]></xsl:text><xsl:value-of select="$destination"/><xsl:if test="$showJobType"><xsl:text disable-output-escaping="yes"><![CDATA[";
     if (document.getElementById("job_type").value == "WORKUNIT")
-        url = "]]></xsl:text><xsl:value-of select="$createWorkunitDestination"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+        url = "]]></xsl:text><xsl:value-of select="$createWorkunitDestination"/></xsl:if><xsl:text disable-output-escaping="yes"><![CDATA[";
 
     var user = document.getElementById("username").value;
     var passwd = document.getElementById("password").value;

@@ -174,8 +174,11 @@ const Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
                     __hpcc_id: item.Wuid,
                     component: "ActivityWidget"
                 }, item));
-                if (!wu.isComplete || !wu.isComplete()) {
+                if (queue && (!wu.isComplete || !wu.isComplete())) {
                     queue.addChild(wu);
+                }
+                if (!queue) {
+                    console.error("Invalid configuration:  ", item);
                 }
             });
         }
