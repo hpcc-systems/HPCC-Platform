@@ -5126,9 +5126,36 @@ bool isAbsolutePath(const char *path)
     }
 }
 
+//Treat a filename as remote if:
+//  a) The filename begins \\ or //
+//  b) The filename begins xxx://
+//
+bool isRemotePath(const char *path)
+{
+    if (!path||!*path)
+        return false;
+    if (isPathSepChar(path[0]) && isPathSepChar(path[1]))
+        return true;
+
+    const char * cur = path;
+    for (;;)
+    {
+        switch (*cur++)
+        {
+        case '/':
+        case '\\':
+        case '\0':
+            return false;
+        case ':':
+            return cur[0]=='/' && cur[1]=='/';
+        }
+    }
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
-    if (isAbsolutePath(relpath))
+    // NOTE - this function also normalizes the supplied path yo remove . and .. references
+    if (isRemotePath(relpath))
     {
         if (mustExist)
         {
