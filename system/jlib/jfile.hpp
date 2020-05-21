@@ -539,7 +539,10 @@ inline const char *splitDirTail(const char *path,StringBuffer &dir)
     return tail;        
 }
 
+extern jlib_decl bool isRemotePath(const char *path);
 extern jlib_decl bool isAbsolutePath(const char *path);
+
+// NOTE - makeAbsolutePath also normalizes the supplied path to remove . and .. references
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out,bool mustExist=false);
 extern jlib_decl StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustExist=false);
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath, const char *basedir, StringBuffer &out);
