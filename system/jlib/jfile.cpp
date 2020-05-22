@@ -2449,10 +2449,11 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
 //---------------------------------------------------------------------------
 
-CFileIOStream::CFileIOStream(IFileIO * _io)
+CFileIOStream::CFileIOStream(IFileIO * _io, bool _allowSeek)
 {
     io.set(_io);
     curOffset = 0;
+    allowSeek = _allowSeek;
 }
 
 
@@ -2470,6 +2471,7 @@ size32_t CFileIOStream::read(size32_t len, void * data)
 
 void CFileIOStream::seek(offset_t pos, IFSmode origin)
 {
+    auto oldOffset = curOffset;
     switch (origin)
     {
     case IFScurrent:
@@ -2482,6 +2484,8 @@ void CFileIOStream::seek(offset_t pos, IFSmode origin)
         curOffset = pos;
         break;
     }
+    if (!allowSeek && oldOffset != curOffset)
+        throw makeStringException(0, "Seek on non-seekable CFileIOStream");
 }
 
 offset_t CFileIOStream::size()
@@ -4130,12 +4134,10 @@ IFile * createIFile(const char * filename)
 }
 
 
-IFileIOStream * createIOStream(IFileIO * file)
+IFileIOStream * createIOStream(IFileIO * file, bool allowSeek)
 {
-    return new CFileIOStream(file);
+    return new CFileIOStream(file, allowSeek);
 }
-
-
 
 IFileIO * createIORange(IFileIO * io, offset_t header, offset_t length)
 {

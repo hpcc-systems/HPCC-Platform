@@ -3161,7 +3161,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
     {
         OwnedIFile file = createIFile(filename);
         OwnedIFileIO io = file->openShared(IFOcreate, IFSHfull);
-        Owned<IFileIOStream> out = createIOStream(io);
+        Owned<IFileIOStream> out = createIOStream(io, !noSeek);
         unsigned maxRecSize = variable ? 18 : 10;
         unsigned keyedSize = 10;
         Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |
