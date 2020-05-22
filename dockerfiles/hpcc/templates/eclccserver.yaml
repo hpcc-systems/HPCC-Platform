@@ -16,7 +16,7 @@ spec:
     spec:
       serviceAccountName: hpcc
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
-      {{- include "hpcc.checkDllServerHostMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         args: [
@@ -28,11 +28,11 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllserverVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $ | indent 6 }}
-{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
+{{ include "hpcc.addDllVolume" $ | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
@@ -77,11 +77,11 @@ data:
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllserverVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 10 }}
 {{ include "hpcc.addDataVolume" $ | indent 10 }}
-{{ include "hpcc.addDllserverVolume" $ | indent 10 }}
+{{ include "hpcc.addDllVolume" $ | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
       

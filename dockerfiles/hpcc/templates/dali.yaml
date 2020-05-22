@@ -14,7 +14,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      {{- include "hpcc.checkDaliStoreHostMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         args: [
@@ -25,15 +25,15 @@ spec:
         volumeMounts:
         - name: {{ .name }}-configmap-volume
           mountPath: /etc/config
-        - name: dalistore-pv
-          mountPath: "/var/lib/HPCCSystems/dalistore"
+        - name: dalistorage-pv
+          mountPath: "/var/lib/HPCCSystems/dalistorage"
       volumes:
       - name: {{ .name }}-configmap-volume
         configMap:
           name: {{ .name }}-configmap
-      - name: dalistore-pv
+      - name: dalistorage-pv
         persistentVolumeClaim:
-          claimName: {{ .storage.existingClaim | default (printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name) }}
+          claimName: {{ $.Values.storage.daliStorage.existingClaim | default (printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name) }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
@@ -61,13 +61,13 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
-{{- if (not .storage.existingClaim) }}
+{{- if (not $.Values.storage.daliStorage.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
+  name: {{ printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name }}
   labels:
-    app.kubernetes.io/name: {{ printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name }}
+    app.kubernetes.io/name: {{ printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
     app.kubernetes.io/managed-by: {{ $.Release.Service }}
     helm.sh/chart: {{ include "hpcc.chart" $ }}
@@ -76,12 +76,12 @@ spec:
     - ReadWriteMany  # accessed from dali and sasha
   resources:
     requests:
-      storage: {{ .storage.storageSize }}
-{{- if .storage.storageClass }}
-{{- if (eq "-" .storage.storageClass) }}
+      storage: {{ $.Values.storage.daliStorage.storageSize }}
+{{- if $.Values.storage.daliStorage.storageClass }}
+{{- if (eq "-" $.Values.storage.daliStorage.storageClass) }}
   storageClassName: ""
 {{- else }}
-  storageClassName: "{{ .storage.storageClass }}"
+  storageClassName: "{{ $.Values.storage.daliStorage.storageClass }}"
 {{- end }}
 {{- end }}
 {{- end }}
