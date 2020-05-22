@@ -1,0 +1,19 @@
+ESPrequest BazSearchRequest
+{
+  string BazName;
+};
+
+ESPresponse BazSearchResponse
+{
+  int Count;
+  string Information;
+};
+
+ESPservice [
+    auth_feature("DEFERRED"),
+    version("1"),
+    default_client_version("1"),
+] WsBaz
+{
+  ESPmethod BazSearch(BazSearchRequest, BazSearchResponse);
+};

@@ -1,0 +1,8 @@
+<Scripts>
+  <es:BackendResponse xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRESPSRV2" value="'s22'" />
+  </es:BackendResponse>
+  <es:BackendResponse xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="BRESPSRV3" value="'s33'" />
+  </es:BackendResponse>
+</Scripts>

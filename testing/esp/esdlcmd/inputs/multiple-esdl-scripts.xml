@@ -1,0 +1,13 @@
+<Scripts>
+    <es:BackendRequest name="request-script" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+        <es:set-value target="Engine" value="'caboose'"/>
+    </es:BackendRequest>
+    <es:PreLogging name="log-script" trace="log-script" source="getDataSection('esdl_request')/soap:Envelope/soap:Body/{$query}/{$request}/Row/Options" xmlns:es="urn:hpcc:esdl:script" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <es:ensure-target xpath="scripted-values">
+            <es:set-value target="logoptions" select="'000000'"/>
+            <es:if test="translate(substring(MatchFlag, 1,1), 't', 'T')='T' or MatchFlag=1">
+                <es:set-value target="logoptions" select="'100000'"/>
+            </es:if>
+        </es:ensure-target>
+    </es:PreLogging>
+</Scripts>

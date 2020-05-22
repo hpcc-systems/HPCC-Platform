@@ -1,0 +1,13 @@
+<Scripts>
+  <es:BackendResponse xmlns:es="urn:hpcc:esdl:script" xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+    <es:target xpath="soap:Body">
+      <es:target xpath="resp:RoxieEchoPersonInfoResponse">
+        <es:target xpath="resp:Results/resp:Result">
+          <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+            <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="'-and-method'" />
+          </es:target>
+        </es:target>
+      </es:target>
+    </es:target>
+  </es:BackendResponse>
+</Scripts>

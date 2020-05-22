@@ -1,0 +1,11 @@
+<Scripts>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="PLSRV1" value="'s111'" />
+  </es:PreLogging>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="PLSRV2" value="'s222'" />
+  </es:PreLogging>
+  <es:PreLogging xmlns:es="urn:hpcc:esdl:script">
+    <es:set-value target="PLSRV3" value="'s333'" />
+  </es:PreLogging>
+</Scripts>

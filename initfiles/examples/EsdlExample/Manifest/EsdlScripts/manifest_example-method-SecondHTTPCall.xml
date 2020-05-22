@@ -1,0 +1,43 @@
+<es:BackendResponse xmlns:es="urn:hpcc:esdl:script" xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+  <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDataset" name="roxie_call_success">
+    <es:content>
+      <es:element name="Envelope">
+        <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+        <es:element name="Body">
+          <es:element name="roxieechopersoninfoRequest">
+            <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+            <es:element name="roxieechopersoninforequest">
+              <es:element name="Row">
+                <es:element name="Name">
+                  <es:set-value target="First" value="'echoFirst'"/>
+                  <es:set-value target="Last" value="'echoLast'"/>
+                  <es:element name="Aliases">
+                    <es:set-value target="Alias" value="'echoA1'"/>
+                    <es:add-value target="Alias" value="'echoA2'"/>
+                  </es:element>
+                </es:element>
+              </es:element>
+            </es:element>
+          </es:element>
+        </es:element>
+      </es:element>
+    </es:content>
+  </es:http-post-xml>
+  <es:target xpath="soap:Body">
+    <es:target xpath="resp:RoxieEchoPersonInfoResponse">
+      <es:target xpath="resp:Results/resp:Result">
+        <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+          <es:source xpath="$roxie_call_success/response/content">
+            <es:source xpath="soap:Envelope/soap:Body">
+              <es:source xpath="resp:roxieechopersoninfoResponse/resp:Results/resp:Result">
+                <es:source xpath="ds1:Dataset/ds1:Row">
+                  <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="concat('-plus-echoed-alias-', ds1:Name/ds1:Aliases/ds1:Alias[2])" />
+                </es:source>
+              </es:source>
+            </es:source>
+          </es:source>
+        </es:target>
+      </es:target>
+    </es:target>
+  </es:target>
+</es:BackendResponse>

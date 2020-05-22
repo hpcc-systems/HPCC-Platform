@@ -1,0 +1,20 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <em:Scripts xmlns:es="urn:hpcc:esdl:script">
+                <es:BackendRequest name="request-prep" target="soap:Body/{$query}" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:es="urn:hpcc:esdl:script">
+                    <es:set-value target="RequestValue" value="&apos;foobar&apos;"/>
+                </es:BackendRequest>
+                <em:Include file="WsFoobar-logging-prep.xml"/>
+            </em:Scripts>
+            <Method name="FoobarSearch" url="127.0.0.1:8888">
+                <em:Scripts>
+                    <em:Include file="FoobarSearch-scripts.xml"/>
+                </em:Scripts>
+            </Method>
+        </Methods>
+        <LoggingManager>
+            <LogAgent transformSource="local" name="main-logging"></LogAgent>
+        </LoggingManager>
+    </em:ServiceBinding>
+</em:Manifest>

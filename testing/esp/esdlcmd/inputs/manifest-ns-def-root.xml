@@ -1,0 +1,21 @@
+<!--
+    Shows handling of default namespace
+-->
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" xmlns="urn:nonsense:default" outputType="binding">
+    <em:ServiceBinding esdlservice="WsTest" id="WsTest_desdl_binding">
+        <Methods>
+            <em:Scripts>
+                <em:Include file="multiple-esdl-scripts.xml"/>
+            </em:Scripts>
+            <Method name="AllVersionReport" path="" url="https://127.0.0.1:9876" timeout="" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available" maxWaitSecondsAllowed="10" traceLevel="1" auth_feature="AllowAllVersionReport:FULL">
+                <Gateways>
+                    <Gateway name="sample" password="xxx" url="https://127.0.0.1:88" username="misteruser"/>
+                </Gateways>
+            </Method>
+        </Methods>
+        <LoggingManager name="logman">
+            <Failsafe/>
+            <Filters/>
+        </LoggingManager>
+    </em:ServiceBinding>
+</em:Manifest>

@@ -3,10 +3,34 @@ esdlcmd Regression Script
 
 Runs esdl tool commands with known inputs to compare results to known correct key results. It currently supports testing the commands:
 
-- xsd
-- wsdl
-- java
+- manifest
 - cpp
+- java
+- wsdl
+- xsd
+
+Usage
+------
+
+usage: esdlcmd-test.py [-h] [-o OUTDIR] [-e ESDLPATH] [-x XSLPATH] [-d] testroot
+
+Test the functioning of the esdl command. Version 0.1
+
+positional arguments:
+  testroot              Path of the root folder of the esdlcmd testing project
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTDIR, --outdir OUTDIR
+                        Directory name of output for tests. Defaults to creating 'esdlcmd-
+                        test-output' in the current directory.
+  -e ESDLPATH, --esdlpath ESDLPATH
+                        Path to the esdl executable to test.
+  -x XSLPATH, --xslpath XSLPATH
+                        Path to the folder containing ESP's xslt/*.xslt transforms.
+                        Defaults to /opt/HPCCSystems/componentfiles/
+  -d, --debug           Enable debug logging of test cases
+
 
 Test Contents
 --------------
@@ -31,3 +55,7 @@ If a change is made to the platform code that changes the output of the esdl too
 2. Verifying by hand that the changed output is correct.
 3. Updating the key in the testing/esp/esdlcmd/key directory with the new output. Note that the name of the updated key must match the name of the Test Case that generates that output. Some commands like ``wsdl`` generate a single file of output, and others like ``cpp`` generate a directory of output.
 4. Commit the changes to the testing/esp/esdlcmd project.
+
+Revision Notes
+---------------
+HPCC-24058 : Update wsdl key files to conform to default behavior- unspecified interface version defaults to version from ecm file. See HPCC-27571 "ESDL should default interface version". Print file diffs when test fails. Add cases for manifest command.

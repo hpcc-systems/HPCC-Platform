@@ -1,0 +1,19 @@
+<EsdlBundle>
+  <Binding id="WsFoobar_desdl_binding">
+    <Definition esdlservice="WsFoobar" id="WsFoobar.1">
+      <Methods>
+        <Scripts>
+          <![CDATA[
+            <Scripts>
+              <es:BackendRequest name="request-prep" target="soap:Body/{$query}" xmlns:es="urn:hpcc:esdl:script" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                <es:set-value target="RequestValue" value="&apos;foobar&apos;"/>
+              </es:BackendRequest>
+            </Scripts>
+          ]]>
+        </Scripts>
+        <Method name="FoobarSearch" url="127.0.0.1:8888">
+        </Method>
+      </Methods>
+    </Definition>
+  </Binding>
+</EsdlBundle>

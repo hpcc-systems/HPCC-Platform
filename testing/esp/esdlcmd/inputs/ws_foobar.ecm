@@ -1,0 +1,21 @@
+ESPrequest FoobarSearchRequest
+{
+    int RequestOption;
+    string RequestName;
+    [optional("hidden")] bool HiddenOption;
+};
+
+ESPresponse FoobarSearchResponse
+{
+    int FoundCount;
+    string FoundAddress;
+};
+
+ESPservice [
+    auth_feature("DEFERRED"),
+    version("1"),
+    default_client_version("1"),
+] WsFoobar
+{
+    ESPmethod FoobarSearch(FoobarSearchRequest, FoobarSearchResponse);
+};

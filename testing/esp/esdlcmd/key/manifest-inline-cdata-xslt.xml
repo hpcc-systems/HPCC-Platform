@@ -1,0 +1,34 @@
+<Binding id="WsFoobar_desdl_binding">
+  <Definition esdlservice="WsFoobar">
+    <Methods>
+      <Method name="FoobarSearch" url="127.0.0.1:8888" mode="ESDL" queryname="DummyModule.Foobar_Service" status="available"/>
+    </Methods>
+    <LoggingManager name="logman">
+      <LogAgent name="dummyagent" type="LogAgent" services="GetTransactionID" plugin="fakeplugin">
+        <LoggingServer url="https://127.0.0.1:1973/WsLogService" user="" password=""/>
+        <FailSafe>false</FailSafe>
+        <LogDataXPath>
+          <LogInfo name="message" default="" XPath="" xsl="massage-message" multiple="" encode="true" type="Data"/>
+        </LogDataXPath>
+        <XSL>
+          <Transform name="massage-message">
+            <![CDATA[
+                        &lt;xsl:stylesheet version=&quot;1.0&quot; xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot;&gt;
+                          &lt;xsl:output method=&quot;xml&quot; omit-xml-declaration=&quot;yes&quot;/&gt;
+                          &lt;xsl:template match=&quot;/&quot;&gt;
+                            &lt;Result&gt;
+                              &lt;Dataset name=&apos;timemachine&apos;&gt;
+                                &lt;Record order=&apos;1&apos; unescapedvalue=&apos;&lt;&apos; escapedvalue=&apos;&amp;lt;&apos;&gt;
+                                    Mr. Peabody &amp; Sherman
+                                &lt;/Record&gt;
+                              &lt;/Dataset&gt;
+                            &lt;/Result&gt;
+                          &lt;/xsl:template&gt;
+                        &lt;/xsl:stylesheet&gt;
+                    ]]>
+          </Transform>
+        </XSL>
+      </LogAgent>
+    </LoggingManager>
+  </Definition>
+</Binding>

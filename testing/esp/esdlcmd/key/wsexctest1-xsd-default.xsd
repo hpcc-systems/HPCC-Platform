@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest1" elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest1">
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest1@ver=1" elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest1@ver=1">
   <xsd:element name="string" nillable="true" type="xsd:string"/>
   <xsd:complexType name="EspException">
     <xsd:all>

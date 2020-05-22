@@ -1,0 +1,17 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+    <em:ServiceBinding esdlservice="WsFoobar" id="WsFoobar_desdl_binding">
+        <Methods>
+            <Method name="FoobarSearch" url="127.0.0.1:8888">
+                <em:Foo>
+                  <bar baz="pizza"/>
+                </em:Foo>
+            </Method>
+        </Methods>
+        <LoggingManager>
+            <LogAgent transformSource="local" name="main-logging"></LogAgent>
+        </LoggingManager>
+        <em:Foo2>
+          <bar baz="taco"/>
+        </em:Foo2>
+    </em:ServiceBinding>
+</em:Manifest>

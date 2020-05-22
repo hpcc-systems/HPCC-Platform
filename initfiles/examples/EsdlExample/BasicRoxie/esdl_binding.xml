@@ -1,0 +1,46 @@
+<Methods>
+   <Scripts><![CDATA[
+      <Scripts xmlns:es='urn:hpcc:esdl:script'>
+         <es:BackendRequest>
+            <es:choose>
+               <es:when test="$clientversion=1.9">
+                  <es:set-value target="Row/Name/First" value="'service'" />
+               </es:when>
+               <es:otherwise>
+                  <es:set-value target="Row/Name/Last" value="'zz'"/>
+               </es:otherwise>
+            </es:choose>
+         </es:BackendRequest>
+         <es:BackendRequest>
+            <es:element name="www">
+               <es:set-value target="yyy" value="'111'"/>
+            </es:element>
+         </es:BackendRequest>
+      </Scripts>
+      ]]>
+   </Scripts>
+   <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
+      <Scripts><![CDATA[
+         <Scripts xmlns:es='urn:hpcc:esdl:script'>
+            <es:BackendRequest target="soap:Body/{$query}">
+               <es:choose>
+                  <es:when test="$clientversion=1.9">
+                     <es:set-value target="vertest" value="'v1.9'"/>
+                     <es:set-value target="RoxieEchoPersonInfoRequest/Row/Name/First" value="'v1.9'"/>
+                  </es:when>
+                  <es:otherwise>
+                     <es:set-value target="vertest" value="concat('v', $clientversion)"/>
+                     <es:set-value target="RoxieEchoPersonInfoRequest/Row/Name/Last" value="concat('v', $clientversion)"/>
+                  </es:otherwise>
+               </es:choose>
+            </es:BackendRequest>
+            <es:BackendRequest>
+               <es:element name="abc">
+                  <es:set-value target="xyz" value="'000'"/>
+               </es:element>
+            </es:BackendRequest>
+         </Scripts>
+      ]]>
+      </Scripts>
+   </Method>
+</Methods>

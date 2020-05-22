@@ -1,0 +1,22 @@
+<em:Manifest xmlns:em="urn:hpcc:esdl:manifest" outputType="binding">
+  <em:ServiceBinding id="manifest_example_binding" esdlservice="EsdlExample">
+    <Methods>
+      <em:Scripts>
+        <em:Include file="manifest_example-svc-BackendRequest.xml"/>
+        <em:Include file="manifest_example-svc-ModifyResponse.xml"/>
+        <em:Include file="manifest_example-svc-EsdlResponse.xml"/>
+        <em:Include file="manifest_example-svc-BackendResponse.xml"/>
+        <em:Include file="manifest_example-svc-PreLogging.xml"/>
+      </em:Scripts>
+      <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
+        <em:Scripts>
+          <em:Include file="manifest_example-method-BackendRequest.xml"/>
+          <em:Include file="manifest_example-method-ModifyResponse.xml"/>
+          <em:Include file="manifest_example-method-SecondHTTPCall.xml"/>
+          <em:Include file="manifest_example-method-SetBRESPMTH3.xml"/>
+          <em:Include file="manifest_example-method-PreLogging.xml"/>
+        </em:Scripts>
+      </Method>
+    </Methods>
+  </em:ServiceBinding>
+</em:Manifest>

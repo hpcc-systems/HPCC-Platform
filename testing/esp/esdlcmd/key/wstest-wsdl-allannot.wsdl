@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wstest" targetNamespace="urn:hpccsystems:ws:wstest">
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wstest@ver=1" targetNamespace="urn:hpccsystems:ws:wstest@ver=1">
   <wsdl:types>
-    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wstest">
+    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wstest@ver=1">
       <xsd:element name="string" nillable="true" type="xsd:string"/>
       <xsd:complexType name="EspException">
         <xsd:all>
@@ -18,6 +18,11 @@
         </xsd:sequence>
       </xsd:complexType>
       <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+      <xsd:complexType name="EspStringArray">
+        <xsd:sequence>
+          <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
       <xsd:simpleType name="AnnotatedEnum">
         <xsd:annotation>
           <xsd:appinfo>
@@ -56,11 +61,6 @@
           </xsd:element>
         </xsd:all>
       </xsd:complexType>
-      <xsd:complexType name="EspStringArray">
-        <xsd:sequence>
-          <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
-        </xsd:sequence>
-      </xsd:complexType>
       <xsd:element name="AllVersionReportRequest">
         <xsd:complexType>
           <xsd:all>
@@ -76,30 +76,9 @@
           </xsd:all>
         </xsd:complexType>
       </xsd:element>
-      <xsd:element name="MinVersionReportRequest">
-        <xsd:complexType>
-          <xsd:all>
-            <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
-          </xsd:all>
-        </xsd:complexType>
-      </xsd:element>
       <xsd:element name="WsTestPingRequest">
         <xsd:complexType>
           <xsd:all/>
-        </xsd:complexType>
-      </xsd:element>
-      <xsd:element name="VersionRangeReportRequest">
-        <xsd:complexType>
-          <xsd:all>
-            <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
-          </xsd:all>
-        </xsd:complexType>
-      </xsd:element>
-      <xsd:element name="VersionRangeReportResponse">
-        <xsd:complexType>
-          <xsd:all>
-            <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
-          </xsd:all>
         </xsd:complexType>
       </xsd:element>
       <xsd:element name="AllVersionReportResponse">
@@ -107,13 +86,6 @@
           <xsd:all>
             <xsd:element minOccurs="0" name="ResultVal" type="xsd:string"/>
             <xsd:element minOccurs="0" name="ResultArrays" type="tns:AllVersionArrays"/>
-          </xsd:all>
-        </xsd:complexType>
-      </xsd:element>
-      <xsd:element name="MinVersionReportResponse">
-        <xsd:complexType>
-          <xsd:all>
-            <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
           </xsd:all>
         </xsd:complexType>
       </xsd:element>
@@ -133,23 +105,11 @@
   <wsdl:message name="AllVersionReportSoapOut">
     <wsdl:part name="parameters" element="tns:AllVersionReportResponse"/>
   </wsdl:message>
-  <wsdl:message name="MinVersionSoapIn">
-    <wsdl:part name="parameters" element="tns:MinVersionReportRequest"/>
-  </wsdl:message>
-  <wsdl:message name="MinVersionSoapOut">
-    <wsdl:part name="parameters" element="tns:MinVersionReportResponse"/>
-  </wsdl:message>
   <wsdl:message name="PingSoapIn">
     <wsdl:part name="parameters" element="tns:WsTestPingRequest"/>
   </wsdl:message>
   <wsdl:message name="PingSoapOut">
     <wsdl:part name="parameters" element="tns:WsTestPingResponse"/>
-  </wsdl:message>
-  <wsdl:message name="VersionRangeReportSoapIn">
-    <wsdl:part name="parameters" element="tns:VersionRangeReportRequest"/>
-  </wsdl:message>
-  <wsdl:message name="VersionRangeReportSoapOut">
-    <wsdl:part name="parameters" element="tns:VersionRangeReportResponse"/>
   </wsdl:message>
   <wsdl:portType name="WsTestServiceSoap">
     <wsdl:operation name="AllVersionReport">
@@ -157,38 +117,16 @@
       <wsdl:output message="tns:AllVersionReportSoapOut"/>
       <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
     </wsdl:operation>
-    <wsdl:operation name="MinVersion">
-      <wsdl:input message="tns:MinVersionSoapIn"/>
-      <wsdl:output message="tns:MinVersionSoapOut"/>
-      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
-    </wsdl:operation>
     <wsdl:operation name="Ping">
       <wsdl:input message="tns:PingSoapIn"/>
       <wsdl:output message="tns:PingSoapOut"/>
-      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
-    </wsdl:operation>
-    <wsdl:operation name="VersionRangeReport">
-      <wsdl:input message="tns:VersionRangeReportSoapIn"/>
-      <wsdl:output message="tns:VersionRangeReportSoapOut"/>
       <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="WsTestServiceSoap" type="tns:WsTestServiceSoap">
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
     <wsdl:operation name="AllVersionReport">
-      <soap:operation style="document" soapAction="WsTest/AllVersionReport?ver_=0.000000"/>
-      <wsdl:input>
-        <soap:body use="literal"/>
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal"/>
-      </wsdl:output>
-      <wsdl:fault name="excfault">
-        <soap:fault name="excfault" use="literal"/>
-      </wsdl:fault>
-    </wsdl:operation>
-    <wsdl:operation name="MinVersion">
-      <soap:operation style="document" soapAction="WsTest/MinVersion?ver_=0.000000"/>
+      <soap:operation style="document" soapAction="WsTest/AllVersionReport?ver_=1.000000"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>
@@ -200,19 +138,7 @@
       </wsdl:fault>
     </wsdl:operation>
     <wsdl:operation name="Ping">
-      <soap:operation style="document" soapAction="WsTest/Ping?ver_=0.000000"/>
-      <wsdl:input>
-        <soap:body use="literal"/>
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal"/>
-      </wsdl:output>
-      <wsdl:fault name="excfault">
-        <soap:fault name="excfault" use="literal"/>
-      </wsdl:fault>
-    </wsdl:operation>
-    <wsdl:operation name="VersionRangeReport">
-      <soap:operation style="document" soapAction="WsTest/VersionRangeReport?ver_=0.000000"/>
+      <soap:operation style="document" soapAction="WsTest/Ping?ver_=1.000000"/>
       <wsdl:input>
         <soap:body use="literal"/>
       </wsdl:input>

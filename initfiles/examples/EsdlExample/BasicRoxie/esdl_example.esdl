@@ -38,33 +38,7 @@ ESPStruct AddressInfo
     string Line2;
     string City;
     string State;
-    int Zip(33487);  
-};
-
-ESPrequest CppEchoPersonInfoRequest
-{
-     ESPstruct NameInfo Name;
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
-};
-
-ESPresponse CppEchoPersonInfoResponse
-{
-     int count(0);
-     ESPstruct NameInfo Name;
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
-};
-
-ESPrequest JavaEchoPersonInfoRequest
-{
-     ESPstruct NameInfo Name;
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
-};
-
-ESPresponse JavaEchoPersonInfoResponse
-{
-     int count(0);
-     ESPstruct NameInfo Name;
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
+    int Zip(33487);
 };
 
 ESPrequest RoxieEchoPersonInfoRequest
@@ -80,31 +54,7 @@ ESPresponse RoxieEchoPersonInfoResponse
      ESParray<ESPstruct AddressInfo, Address> Addresses;
 };
 
-ESPrequest MySqlEchoAddressInfoRequest
-{
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
-};
-
-ESPresponse MySqlEchoAddressInfoResponse
-{
-     ESParray<ESPstruct AddressInfo, Address> Addresses;
-};
-
-ESPrequest MySqlEchoAddressResetRequest
-{
-};
-
-ESPresponse MySqlEchoAddressResetResponse
-{
-};
-
-
 ESPservice [version("0.01")] EsdlExample
 {
-    ESPmethod CppEchoPersonInfo(CppEchoPersonInfoRequest, CppEchoPersonInfoResponse);
-    ESPmethod JavaEchoPersonInfo(JavaEchoPersonInfoRequest, JavaEchoPersonInfoResponse);
     ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
-    ESPmethod MySqlEchoAddressInfo(MySqlEchoAddressInfoRequest, MySqlEchoAddressInfoResponse);
-    ESPmethod MySqlEchoAddressReset(MySqlEchoAddressResetRequest, MySqlEchoAddressResetResponse);
 };
-
