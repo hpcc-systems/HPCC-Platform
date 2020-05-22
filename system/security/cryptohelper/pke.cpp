@@ -73,14 +73,27 @@ void CLoadedKey::finalize(RSA *_rsa, const char *_keyName)
     keyName.set(_keyName);
 }
 
+//called during PEM_read_bio_RSA_PUBKEY to set passphrase
+int passphraseCB(char *passPhraseBuf, int passPhraseBufSize, int rwflag, void *pPassPhraseMB)
+{
+    size32_t len = ((MemoryBuffer*)pPassPhraseMB)->length();
+    if (passPhraseBufSize >= (int)len)
+    {
+        memcpy(passPhraseBuf, ((MemoryBuffer*)pPassPhraseMB)->bufferBase(), len);
+        return len;
+    }
+    PROGLOG("Private Key Passphrase too long (%d bytes), max %d", len, passPhraseBufSize);
+    return 0;
+}
+
 class CLoadedPublicKeyFromFile : public CLoadedKey
 {
 public:
-    CLoadedPublicKeyFromFile(const char *keyFile, const char *passPhrase)
+    CLoadedPublicKeyFromFile(const char *keyFile)
     {
         if (!loadKeyFromFile(keyFile))
-            throwEVPExceptionV(0, "loadKeyFromFile: failed to open key: %s", keyFile);
-        RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, (void*)passPhrase);
+            throwEVPExceptionV(0, "CLoadedPublicKeyFromFile: failed to open key: %s", keyFile);
+        RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, nullptr);
         if (!rsaKey)
             throwEVPExceptionV(0, "Failed to create public key: %s", keyFile);
         finalize(rsaKey, keyFile);
@@ -90,10 +103,10 @@ public:
 class CLoadedPublicKeyFromMemory : public CLoadedKey
 {
 public:
-    CLoadedPublicKeyFromMemory(const char *key, const char *passPhrase)
+    CLoadedPublicKeyFromMemory(const char *key)
     {
         loadKeyFromMem(key);
-        RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, (void*)passPhrase);
+        RSA *rsaKey = PEM_read_bio_RSA_PUBKEY(keyBio, nullptr, nullptr, nullptr);
         if (!rsaKey)
             throwEVPException(0, "Failed to create public key");
         finalize(rsaKey, "<inline>");
@@ -103,11 +116,22 @@ public:
 class CLoadedPrivateKeyFromFile : public CLoadedKey
 {
 public:
+    CLoadedPrivateKeyFromFile(const char *keyFile, size32_t passPhraseLen, const void *passPhrase)
+    {
+        if (!loadKeyFromFile(keyFile))
+            throwEVPException(0, "CLoadedPrivateKeyFromFile: failed to open private key");
+        MemoryBuffer passPhraseMB;
+        passPhraseMB.setBuffer(passPhraseLen, (void *)passPhrase);
+        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, passphraseCB, (void *)&passPhraseMB);//Binary passphrase
+        if (!rsaKey)
+            throwEVPException(0, "Failed to create private key");
+        finalize(rsaKey, keyFile);
+    }
     CLoadedPrivateKeyFromFile(const char *keyFile, const char *passPhrase)
     {
         if (!loadKeyFromFile(keyFile))
-            throwEVPException(0, "loadKeyFromFile: failed to open private key");
-        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);
+            throwEVPException(0, "CLoadedPrivateKeyFromFile: failed to open private key");
+        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);//plain text or no passphrase
         if (!rsaKey)
             throwEVPException(0, "Failed to create private key");
         finalize(rsaKey, keyFile);
@@ -117,24 +141,34 @@ public:
 class CLoadedPrivateKeyFromMemory : public CLoadedKey
 {
 public:
+    CLoadedPrivateKeyFromMemory(const char *key, size32_t passPhraseLen, const void *passPhrase)
+    {
+        MemoryBuffer passPhraseMB;
+        passPhraseMB.setBuffer(passPhraseLen, (void *)passPhrase);
+        loadKeyFromMem(key);
+        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, passphraseCB, (void *)&passPhraseMB);//Binary passphrase
+        if (!rsaKey)
+            throwEVPException(0, "Failed to create private key");
+        finalize(rsaKey, "<inline>");
+    }
     CLoadedPrivateKeyFromMemory(const char *key, const char *passPhrase)
     {
         loadKeyFromMem(key);
-        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);
+        RSA *rsaKey = PEM_read_bio_RSAPrivateKey(keyBio, nullptr, nullptr, (void*)passPhrase);//plain text or no passphrase
         if (!rsaKey)
             throwEVPException(0, "Failed to create private key");
         finalize(rsaKey, "<inline>");
     }
 };
 
-CLoadedKey *loadPublicKeyFromFile(const char *keyFile, const char *passPhrase)
+CLoadedKey *loadPublicKeyFromFile(const char *keyFile)
 {
-    return new CLoadedPublicKeyFromFile(keyFile, passPhrase);
+    return new CLoadedPublicKeyFromFile(keyFile);
 }
 
-CLoadedKey *loadPublicKeyFromMemory(const char *key, const char *passPhrase)
+CLoadedKey *loadPublicKeyFromMemory(const char *key)
 {
-    return new CLoadedPublicKeyFromMemory(key, passPhrase);
+    return new CLoadedPublicKeyFromMemory(key);
 }
 
 CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase)
@@ -145,6 +179,16 @@ CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase)
 CLoadedKey *loadPrivateKeyFromMemory(const char *key, const char *passPhrase)
 {
     return new CLoadedPrivateKeyFromMemory(key, passPhrase);
+}
+
+CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, size32_t passPhraseLen, const void *passPhrase)
+{
+    return new CLoadedPrivateKeyFromFile(keyFile, passPhraseLen, passPhrase);
+}
+
+CLoadedKey *loadPrivateKeyFromMemory(const char *key, size32_t passPhraseLen, const void *passPhrase)
+{
+    return new CLoadedPrivateKeyFromMemory(key, passPhraseLen, passPhrase);
 }
 
 size32_t _publicKeyEncrypt(OwnedEVPMemory &dstMem, size32_t dstMaxSz, size32_t inSz, const void *inBytes, const CLoadedKey &publicKey)

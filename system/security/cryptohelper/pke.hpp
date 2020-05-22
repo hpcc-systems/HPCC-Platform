@@ -50,10 +50,14 @@ public:
     const char *queryKeyName() const  { return keyName; }
 };
 
-jlib_decl CLoadedKey *loadPublicKeyFromFile(const char *keyFile, const char *passPhrase);
-jlib_decl CLoadedKey *loadPublicKeyFromMemory(const char *key, const char *passPhrase);
+jlib_decl CLoadedKey *loadPublicKeyFromFile(const char *keyFile);
+jlib_decl CLoadedKey *loadPublicKeyFromMemory(const char *key);
 jlib_decl CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase);
 jlib_decl CLoadedKey *loadPrivateKeyFromMemory(const char *key, const char *passPhrase);
+
+//binary passphase, possibly containing embedded NULL characters
+jlib_decl CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, size32_t passPhraseLen, const void *passPhrase);
+jlib_decl CLoadedKey *loadPrivateKeyFromMemory(const char *key, size32_t passPhraseLen, const void *passPhrase);
 
 jlib_decl size32_t publicKeyEncrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);
 jlib_decl size32_t privateKeyDecrypt(MemoryBuffer &out, size32_t inLen, const void *inBytes, const CLoadedKey &key);

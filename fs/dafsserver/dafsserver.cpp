@@ -2411,7 +2411,7 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
         const char *publicKeyFName = keyPair->queryProp("@publicKey");
         if (isEmptyString(publicKeyFName))
             throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing public key definition");
-        Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName, nullptr); // NB: if cared could cache loaded keys
+        Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName); // NB: if cared could cache loaded keys
         if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
             throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: signature verification failed");
 
