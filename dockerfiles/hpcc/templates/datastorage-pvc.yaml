@@ -1,4 +1,4 @@
-{{- if (not .Values.global.dataStorage.existingClaim) }}
+{{- if (not .Values.storage.dataStorage.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -13,12 +13,12 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: {{ .Values.global.dataStorage.storageSize }}
-{{- if .Values.global.dataStorage.storageClass }}
-{{- if (eq "-" .Values.global.dataStorage.storageClass) }}
+      storage: {{ .Values.storage.dataStorage.storageSize }}
+{{- if .Values.storage.dataStorage.storageClass }}
+{{- if (eq "-" .Values.storage.dataStorage.storageClass) }}
   storageClassName: ""
 {{- else }}
-  storageClassName: "{{ .Values.global.dataStorage.storageClass }}"
+  storageClassName: "{{ .Values.storage.dataStorage.storageClass }}"
 {{- end }}
 {{- end }}
 {{- end }}

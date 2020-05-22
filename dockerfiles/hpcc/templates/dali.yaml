@@ -14,7 +14,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      {{- include "hpcc.checkDaliStoreHostMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.checkDaliStorageMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         args: [
@@ -33,7 +33,7 @@ spec:
           name: {{ .name }}-configmap
       - name: dalistore-pv
         persistentVolumeClaim:
-          claimName: {{ .storage.existingClaim | default (printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name) }}
+          claimName: {{ $.Values.storage.daliStorage.existingClaim | default (printf "%s-%s-dalistore-pv-claim" (include "hpcc.fullname" $) .name) }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
@@ -61,7 +61,7 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
-{{- if (not .storage.existingClaim) }}
+{{- if (not $.Values.storage.daliStorage.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -76,12 +76,12 @@ spec:
     - ReadWriteMany  # accessed from dali and sasha
   resources:
     requests:
-      storage: {{ .storage.storageSize }}
-{{- if .storage.storageClass }}
-{{- if (eq "-" .storage.storageClass) }}
+      storage: {{ $.Values.storage.daliStorage.storageSize }}
+{{- if $.Values.storage.daliStorage.storageClass }}
+{{- if (eq "-" $.Values.storage.daliStorage.storageClass) }}
   storageClassName: ""
 {{- else }}
-  storageClassName: "{{ .storage.storageClass }}"
+  storageClassName: "{{ $.Values.storage.daliStorage.storageClass }}"
 {{- end }}
 {{- end }}
 {{- end }}

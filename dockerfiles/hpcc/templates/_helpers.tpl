@@ -96,24 +96,24 @@ Add data volume
 {{- define "hpcc.addDataVolume" -}}
 - name: datastorage-pv
   persistentVolumeClaim:
-    claimName: {{ .Values.global.dataStorage.existingClaim | default (printf "%s-datastorage-pv-claim" (include "hpcc.fullname" .)) }}
+    claimName: {{ .Values.storage.dataStorage.existingClaim | default (printf "%s-datastorage-pv-claim" (include "hpcc.fullname" .)) }}
 {{- end -}}
 
 {{/*
-Add dllserver volume mount
+Add dll volume mount
 */}}
-{{- define "hpcc.addDllserverVolumeMount" -}}
-- name: dllserver-pv-storage
+{{- define "hpcc.addDllVolumeMount" -}}
+- name: dll-pv-storage
   mountPath: "/var/lib/HPCCSystems/queries"
 {{- end -}}
 
 {{/*
-Add dllserver volume
+Add dll volume
 */}}
-{{- define "hpcc.addDllserverVolume" -}}
-- name: dllserver-pv-storage
+{{- define "hpcc.addDllVolume" -}}
+- name: dll-pv-storage
   persistentVolumeClaim:
-    claimName: {{ .Values.global.dllserver.existingClaim | default (printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .)) }}
+    claimName: {{ .Values.storage.dllStorage.existingClaim | default (printf "%s-dll-pv-claim" (include "hpcc.fullname" .)) }}
 {{- end -}}
 
 {{/*
@@ -156,9 +156,9 @@ imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent
 {{- end -}}
 
 {{/*
-A kludge to ensure host mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV
+A kludge to ensure mounted storage (e.g. for minikube or docker for desktop) has correct permissions for PV
 */}}
-{{- define "hpcc.changeHostMountPerms" -}}
+{{- define "hpcc.changeMountPerms" -}}
 initContainers:
 # This is a bit of a hack, to ensure that the persistent storage mounted
 # is writable. This is not something we would want to do if using anything other than
@@ -178,29 +178,29 @@ initContainers:
 {{- end }}
 
 {{/*
-Check dllserver host mount point, using hpcc.changeHostMountPerms
+Check dll mount point, using hpcc.changeMountPerms
 */}}
-{{- define "hpcc.checkDllServerHostMount" -}}
-{{- if .root.Values.global.hostStorage | default false }}
-{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dllserver-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") }}
+{{- define "hpcc.checkDllMount" -}}
+{{- if .root.Values.storage.dllStorage.forcePermissions | default false }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "dll-pv-storage" "volumePath" "/var/lib/HPCCSystems/queries") }}
 {{- end }}
 {{- end }}
 
 {{/*
-Check datastorage host mount point, using hpcc.changeHostMountPerms
+Check datastorage mount point, using hpcc.changeMountPerms
 */}}
-{{- define "hpcc.checkDataStorageHostMount" -}}
-{{- if .root.Values.global.hostStorage | default false }}
-{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
+{{- define "hpcc.checkDataStorageMount" -}}
+{{- if .root.Values.storage.dataStorage.forcePermissions | default false }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "datastorage-pv" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
 {{- end }}
 {{- end }}
 
 {{/*
-Check dalistore host mount point, using hpcc.changeHostMountPerms
+Check dalistore mount point, using hpcc.changeMountPerms
 */}}
-{{- define "hpcc.checkDaliStoreHostMount" -}}
-{{- if .root.Values.global.hostStorage | default false }}
-{{ include "hpcc.changeHostMountPerms" (dict "root" .root "volumeName" "dalistore-pv" "volumePath" "/var/lib/HPCCSystems/dalistore") }}
+{{- define "hpcc.checkDaliStorageMount" -}}
+{{- if .root.Values.storage.daliStorage.forcePermissions | default false }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "dalistore-pv" "volumePath" "/var/lib/HPCCSystems/dalistore") }}
 {{- end }}
 {{- end }}
 
