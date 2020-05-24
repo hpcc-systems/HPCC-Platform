@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hpcc-nfs
+description: A Helm chart to provision HPCC PVC's using an NFS deployment as shared storage
+type: application
+version: 0.1.0
+appVersion: 1.16.0

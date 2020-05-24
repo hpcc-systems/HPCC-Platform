@@ -1,0 +1,13 @@
+{{- if (not $.Values.sharedStorage.existingClaim) }}
+{{- $pvcName := printf "%s-pvc" (include "hpcc-nfs.fullname" $) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvcName }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sharedStorage.size }}
+{{- end }}
