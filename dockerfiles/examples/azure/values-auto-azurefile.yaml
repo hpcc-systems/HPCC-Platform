@@ -1,0 +1,16 @@
+# Overrides for azure storage in hpcc.
+# NB: Using the default "azurefile" storage class results in automatically
+# provisioned Persistent Volume's with a reclaimPolicy of "Delete"
+
+storage:
+  dllStorage:
+    storageSize: 3Gi
+    storageClass: "azurefile"
+
+  daliStorage:
+    storageSize: 1Gi
+    storageClass: "azurefile"
+
+  dataStorage:
+    storageSize: 1Gi
+    storageClass: "azurefile"
