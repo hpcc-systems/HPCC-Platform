@@ -173,6 +173,8 @@ public:
         // object and scan through until we find the matching file, in order to extract it.
         StringAttr container, option, relpath;
         splitArchivedFileName(_fullName, container, option, relpath);
+        if (!relpath)
+            relpath.set("");
         curPos = 0;
         lastPos = 0;
         curBuffSize = 0;
