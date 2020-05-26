@@ -225,6 +225,8 @@ void EclCMDShell::usage()
            "   getname     provide job name from WUID\n"
            "   getwuid     provide WUID from job name\n"
            "   zapgen      provide ZAP file from WUID\n"
+           "   sign        add digital signature to an ecl file or a text file\n"
+           "   listkeyuid  lists all the key user IDs that can be used in the sign command\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }

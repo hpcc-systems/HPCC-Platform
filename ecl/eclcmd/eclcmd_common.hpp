@@ -194,6 +194,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
 
+#define ECLOPT_KEYUID "--keyuid"
+#define ECLOPT_KEYPASS "--keypass"
+
 const char *queryEclccPath(bool optVerbose);
 
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
