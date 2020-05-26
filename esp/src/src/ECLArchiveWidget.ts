@@ -86,7 +86,7 @@ export class ECLArchiveWidget {
             .textFileIcon("fa fa-file-code-o")
             .omitRoot(true)
             ;
-        this.editor = new ECLEditor();
+        this.editor = new ECLEditor().readOnly(true);
         this.archiveViewer = new SplitPanel("horizontal");
 
         const wu = Workunit.attach({ baseUrl: "" }, params.Wuid);
