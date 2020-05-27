@@ -199,7 +199,9 @@
   </chapter>
 
   <chapter id="File_Movement">
-    <title><emphasis>Movimentação de Arquivos</emphasis></title>
+    <title>
+      <emphasis>Movimentação de Arquivos</emphasis>
+    </title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DfuPlusExec.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -226,6 +228,9 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayXML.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayJson.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WaitDfuWorkunit.xml"
