@@ -531,6 +531,7 @@
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/[INST]" name="run"/>
    <Category dir="$ENV{DESTDIR}${CONFIG_PREFIX}/[NAME]/[INST]" name="conf"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/[INST]/temp" name="temp"/>
+   <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="dali"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
    <Category dir="$ENV{DESTDIR}${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>

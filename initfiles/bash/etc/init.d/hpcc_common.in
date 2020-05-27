@@ -383,6 +383,8 @@ createRuntime() {
     chown -c $user:$group "$log/$compName"  1> /dev/null 2>/dev/null
     chown -c $user:$group "$compPath"  1> /dev/null 2>/dev/null
 
+    dir.getByName dali
+    chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName data
     chown -c $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
     dir.getByName data2

@@ -432,7 +432,9 @@ int main(int argc, const char* argv[])
         if (mirrorPath.length())
             serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
 #else
-        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath)) 
+        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"dali","dali",serverConfig->queryProp("@name"),dataPath))
+            serverConfig->setProp("@dataPath",dataPath.str());
+        else if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath))
             serverConfig->setProp("@dataPath",dataPath.str());
         else
             serverConfig->getProp("@dataPath",dataPath);
