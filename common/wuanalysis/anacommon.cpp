@@ -49,7 +49,7 @@ void PerformanceIssue::createException(IWorkUnit * wu)
 {
     Owned<IWUException> we = wu->createException();
     we->setExceptionCode(errorCode);
-    we->setSeverity(SeverityInformation);
+    we->setSeverity(SeverityWarning);
     we->setScope(scope.str());
     we->setPriority((unsigned) statUnits2msecs(cost));
     if (line>0 && column>0)

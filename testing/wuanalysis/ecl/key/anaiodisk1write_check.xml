@@ -1,4 +1,4 @@
 <Dataset name='Result 1'>
- <Row><severity>0</severity><code>0</code><source>Workunit Analyse</source><message>Significant skew in records causes uneven disk write time (a7)</message></Row>
- <Row><severity>0</severity><code>0</code><source>Workunit Analyse</source><message>Significant skew in DISTRIBUTE output (a6)</message></Row>
+ <Row><severity>1</severity><code>30004</code><source>Workunit Analyse</source><message>Significant skew in records causes uneven disk write time (w1:graph1:sg1:a7)</message></Row>
+ <Row><severity>1</severity><code>30002</code><source>Workunit Analyse</source><message>Significant skew in DISTRIBUTE output (w1:graph1:sg1:a6)</message></Row>
 </Dataset>
