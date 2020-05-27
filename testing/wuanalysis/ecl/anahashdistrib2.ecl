@@ -18,7 +18,7 @@
 // Analysis should show: Significant skew in DISTRIBUTE output
 //
 // NOTE: For faster nodes, it may be necessary to increase the size of testfile
-
+#ONWARNING(30002,ignore);
 //nokey
 //noroxie
 //nohthor
