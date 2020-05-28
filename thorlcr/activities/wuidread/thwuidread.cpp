@@ -47,12 +47,11 @@ static bool getWorkunitResultFilename(CGraphElementBase &container, StringBuffer
 {
     try
     {
-        ICodeContextExt &codeContext = *QUERYINTERFACE(container.queryCodeContext(), ICodeContextExt);
         Owned<IConstWUResult> result;
         if (wuid)
-            result.setown(codeContext.getExternalResult(wuid, stepname, sequence));
+            result.setown(container.queryCodeContext()->getExternalResult(wuid, stepname, sequence));
         else
-            result.setown(codeContext.getResultForGet(stepname, sequence));
+            result.setown(container.queryCodeContext()->getResultForGet(stepname, sequence));
         if (!result)
             throw MakeThorException(TE_FailedToRetrieveWorkunitValue, "Failed to find value %s:%d in workunit %s", stepname?stepname:"(null)", sequence, wuid?wuid:"(null)");
 

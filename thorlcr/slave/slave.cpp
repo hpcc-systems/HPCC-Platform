@@ -278,7 +278,7 @@ class CGenericSlaveGraphElement : public CSlaveGraphElement
     Owned<CActivityBase> nullActivity;
     CriticalSection nullActivityCs;
 public:
-    CGenericSlaveGraphElement(CGraphBase &_owner, IPropertyTree &xgmml) : CSlaveGraphElement(_owner, xgmml)
+    CGenericSlaveGraphElement(CGraphBase &_owner, IPropertyTree &xgmml, CGraphBase *resultsGraph) : CSlaveGraphElement(_owner, xgmml, resultsGraph)
     {
         wuidread2diskread = false;
         switch (getKind())
@@ -784,7 +784,7 @@ public:
 
 activityslaves_decl CGraphElementBase *createSlaveContainer(IPropertyTree &xgmml, CGraphBase &owner, CGraphBase *resultsGraph)
 {
-    return new CGenericSlaveGraphElement(owner, xgmml);
+    return new CGenericSlaveGraphElement(owner, xgmml, resultsGraph);
 }
 
 activityslaves_decl IThorRowInterfaces *queryRowInterfaces(IThorDataLink *link) { return link?link->queryFromActivity():NULL; }

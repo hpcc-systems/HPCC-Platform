@@ -363,7 +363,7 @@ void CSlaveMessageHandler::threadmain()
 //////////////////////
 
 CMasterActivity::CMasterActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
-    : CActivityBase(_container), threaded("CMasterActivity", this), statsCollection(statsMapping)
+    : CActivityBase(_container, statsMapping), threaded("CMasterActivity", this), statsCollection(statsMapping)
 {
     notedWarnings = createThreadSafeBitSet();
     mpTag = TAG_NULL;
@@ -550,7 +550,7 @@ void CMasterActivity::done()
 // CMasterGraphElement impl.
 //
 
-CMasterGraphElement::CMasterGraphElement(CGraphBase &_owner, IPropertyTree &_xgmml) : CGraphElementBase(_owner, _xgmml)
+CMasterGraphElement::CMasterGraphElement(CGraphBase &_owner, IPropertyTree &_xgmml) : CGraphElementBase(_owner, _xgmml, nullptr)
 {
 }
 

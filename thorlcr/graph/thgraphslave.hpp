@@ -203,7 +203,6 @@ protected:
     CThorInputArray inputs;
     IPointerArrayOf<IThorDataLink> outputs;
     IPointerArrayOf<IEngineRowStream> outputStreams;
-    CRuntimeStatisticCollection stats;
 
     IThorDataLink *input = nullptr;
     bool inputStopped = false;
@@ -420,7 +419,7 @@ public:
 class graphslave_decl CSlaveGraphElement : public CGraphElementBase
 {
 public:
-    CSlaveGraphElement(CGraphBase &owner, IPropertyTree &xgmml) : CGraphElementBase(owner, xgmml)
+    CSlaveGraphElement(CGraphBase &owner, IPropertyTree &xgmml, CGraphBase *resultsGraph) : CGraphElementBase(owner, xgmml, resultsGraph)
     {
     }
 };

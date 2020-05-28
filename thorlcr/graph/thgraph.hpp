@@ -31,6 +31,9 @@
 #define DEFAULT_MAX_ACTINITWAITTIME_MINS (2*60) // 2hrs
 #define DEFAULT_MAXLFN_BLOCKTIME_MINS 25 // 25 mins
 
+#include <unordered_map>
+#include <string>
+
 #include "jlib.hpp"
 #include "jarray.hpp"
 #include "jexcept.hpp"
@@ -43,6 +46,7 @@
 #include "mptag.hpp"
 
 #include "roxiemem.hpp"
+#include "thorstats.hpp"
 #include "thormisc.hpp"
 #include "workunit.hpp"
 #include "thorcommon.hpp"
@@ -258,6 +262,116 @@ typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> 
 
 typedef IIteratorOf<CGraphStub> IThorGraphStubIterator;
 
+
+
+class CActivityCodeContext : implements ICodeContextExt
+{
+    ICodeContextExt *ctx = nullptr;
+    CGraphBase *containerGraph = nullptr;
+    CGraphBase *parent = nullptr;
+    CRuntimeStatisticCollection *stats = nullptr;
+    mutable CriticalSection contextCrit;
+    std::unordered_map<std::string, Owned<ISectionTimer>> functionTimers;
+
+public:
+    CActivityCodeContext();
+    void setContext(CGraphBase *_parent, CGraphBase *_containerGraph, ICodeContextExt *_ctx)
+    {
+        parent = _parent;
+        containerGraph = _containerGraph;
+        ctx = _ctx;
+    }
+    void setStats(CRuntimeStatisticCollection *_stats) { stats = _stats; }
+    virtual const char *loadResource(unsigned id) { return ctx->loadResource(id); }
+    virtual void setResultBool(const char *name, unsigned sequence, bool value) { ctx->setResultBool(name, sequence, value); }
+    virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultData(name, sequence, len, data); }
+    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val); }
+    virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { ctx->setResultInt(name, sequence, value, size); }
+    virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultRaw(name, sequence, len, data); }
+    virtual void setResultReal(const char * stepname, unsigned sequence, double value) { ctx->setResultReal(stepname, sequence, value); }
+    virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { ctx->setResultSet(name, sequence, isAll, len, data, transformer); }
+    virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { ctx->setResultString(name, sequence, len, str); }
+    virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { ctx->setResultUInt(name, sequence, value, size); }
+    virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { ctx->setResultUnicode(name, sequence, len, str); }
+    virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { ctx->setResultVarString(name, sequence, value); }
+    virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { ctx->setResultVarUnicode(name, sequence, value); }
+    virtual bool getResultBool(const char * name, unsigned sequence) { return ctx->getResultBool(name, sequence); }
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { ctx->getResultData(tlen, tgt, name, sequence); }
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { ctx->getResultDecimal(tlen, precision, isSigned, tgt, stepname, sequence); }
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRaw(tlen, tgt, name, sequence, xmlTransformer, csvTransformer); }
+    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultSet(isAll, tlen, tgt, name, sequence, xmlTransformer, csvTransformer); }
+    virtual __int64 getResultInt(const char * name, unsigned sequence) { return ctx->getResultInt(name, sequence); }
+    virtual double getResultReal(const char * name, unsigned sequence) { return ctx->getResultReal(name, sequence); }
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { ctx->getResultString(tlen, tgt, name, sequence); }
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { ctx->getResultStringF(tlen, tgt, name, sequence); }
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { ctx->getResultUnicode(tlen, tgt, name, sequence); }
+    virtual char *getResultVarString(const char * name, unsigned sequence) { return ctx->getResultVarString(name, sequence); }
+    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { return ctx->getResultVarUnicode(name, sequence); }
+    virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
+    virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { return ctx->getExternalResultHash(wuid, name, sequence); }
+    virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
+    virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
+    virtual char *getWuid() { return ctx->getWuid(); }
+    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
+    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
+    virtual char * getExpandLogicalName(const char * logicalName) { return ctx->getExpandLogicalName(logicalName); }
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) { ctx->addWuException(text, code, severity, source); }
+    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort); }
+    virtual IUserDescriptor *queryUserDescriptor() { return ctx->queryUserDescriptor(); }
+    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { return ctx->getDatasetHash(name, hash); }
+    virtual unsigned getNodes() { return ctx->getNodes(); }
+    virtual unsigned getNodeNum() { return ctx->getNodeNum(); }
+    virtual char *getFilePart(const char *logicalPart, bool create) { return ctx->getFilePart(logicalPart, create); }
+    virtual unsigned __int64 getFileOffset(const char *logicalPart) { return ctx->getFileOffset(logicalPart); }
+    virtual IDistributedFileTransaction *querySuperFileTransaction() { return ctx->querySuperFileTransaction(); }
+    virtual char *getJobName() { return ctx->getJobName(); }
+    virtual char *getJobOwner() { return ctx->getJobOwner(); }
+    virtual char *getClusterName() { return ctx->getClusterName(); }
+    virtual char *getGroupName() { return ctx->getGroupName(); }
+    virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { return ctx->queryIndexMetaData(lfn, xpath); }
+    virtual unsigned getPriority() const { return ctx->getPriority(); }
+    virtual char *getPlatform() { return ctx->getPlatform(); }
+    virtual char *getEnv(const char *name, const char *defaultValue) const { return ctx->getEnv(name, defaultValue); }
+    virtual char *getOS() { return ctx->getOS(); }
+    virtual IThorChildGraph * resolveChildQuery(__int64 gid, IHThorArg * colocal);
+    virtual IEclGraphResults * resolveLocalQuery(__int64 gid);
+    virtual char *getEnv(const char *name, const char *defaultValue) { return ctx->getEnv(name, defaultValue); }
+    virtual unsigned logString(const char * text) const { return ctx->logString(text); }
+    virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
+    virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { return ctx->getRowAllocatorEx(meta, activityId, heapFlags); }
+    virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
+    virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
+
+    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
+    virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
+    virtual IDebuggableContext *queryDebugContext() const override { return ctx->queryDebugContext(); }
+    virtual unsigned getGraphLoopCounter() const;
+    virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { return ctx->getExternalResult(wuid, name, sequence); }
+    virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { return ctx->getResultForGet(name, sequence); }
+    virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
+    virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
+    {
+        return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
+    }
+    virtual IEngineContext *queryEngineContext()
+    {
+        return ctx->queryEngineContext();
+    }
+    virtual char *getDaliServers()
+    {
+        return ctx->getDaliServers();
+    }
+    virtual IWorkUnit *updateWorkUnit() const { return ctx->updateWorkUnit(); }
+    virtual ISectionTimer * registerTimer(unsigned activityId, const char * name);
+
+    virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { ctx->addWuExceptionEx(text, code, severity, audience, source); }
+};
+
+
 class CJobBase;
 class CJobChannel;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
@@ -278,6 +392,7 @@ protected:
     bool haveCreateCtx;
     unsigned maxCores;
     bool isCodeSigned = false;
+    CActivityCodeContext activityCodeContext;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -292,7 +407,7 @@ public:
     unsigned whichBranch;
     Owned<IBitSet> sentActInitData;
 
-    CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml);
+    CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml, CGraphBase *resultsGraph);
     ~CGraphElementBase();
 
     void doconnect();
@@ -374,7 +489,7 @@ public:
     virtual CActivityBase *factory(ThorActivityKind kind) { assertex(false); return NULL; }
     virtual CActivityBase *factory() { return factory(getKind()); }
     virtual CActivityBase *factorySet(ThorActivityKind kind) { CActivityBase *_activity = factory(kind); activity.setown(_activity); return _activity; }
-    virtual ICodeContext *queryCodeContext();
+    virtual ICodeContextExt *queryCodeContext();
     virtual bool activityIsCodeSigned() const { return isCodeSigned; }
 };
 
@@ -476,122 +591,6 @@ class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
 
     void clean();
 
-    class CGraphCodeContext : implements ICodeContextExt
-    {
-        ICodeContextExt *ctx = nullptr;
-        CGraphBase *containerGraph = nullptr;
-        CGraphBase *parent = nullptr;
-    public:
-        CGraphCodeContext() { }
-        void setContext(CGraphBase *_parent, CGraphBase *_containerGraph, ICodeContextExt *_ctx)
-        {
-            parent = _parent;
-            containerGraph = _containerGraph;
-            ctx = _ctx;
-        }
-        virtual const char *loadResource(unsigned id) { return ctx->loadResource(id); }
-        virtual void setResultBool(const char *name, unsigned sequence, bool value) { ctx->setResultBool(name, sequence, value); }
-        virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultData(name, sequence, len, data); }
-        virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { ctx->setResultDecimal(stepname, sequence, len, precision, isSigned, val); }
-        virtual void setResultInt(const char *name, unsigned sequence, __int64 value, unsigned size) { ctx->setResultInt(name, sequence, value, size); }
-        virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultRaw(name, sequence, len, data); }
-        virtual void setResultReal(const char * stepname, unsigned sequence, double value) { ctx->setResultReal(stepname, sequence, value); }
-        virtual void setResultSet(const char *name, unsigned sequence, bool isAll, size32_t len, const void * data, ISetToXmlTransformer * transformer) { ctx->setResultSet(name, sequence, isAll, len, data, transformer); }
-        virtual void setResultString(const char *name, unsigned sequence, int len, const char * str) { ctx->setResultString(name, sequence, len, str); }
-        virtual void setResultUInt(const char *name, unsigned sequence, unsigned __int64 value, unsigned size) { ctx->setResultUInt(name, sequence, value, size); }
-        virtual void setResultUnicode(const char *name, unsigned sequence, int len, UChar const * str) { ctx->setResultUnicode(name, sequence, len, str); }
-        virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { ctx->setResultVarString(name, sequence, value); }
-        virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { ctx->setResultVarUnicode(name, sequence, value); }
-        virtual bool getResultBool(const char * name, unsigned sequence) { return ctx->getResultBool(name, sequence); }
-        virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { ctx->getResultData(tlen, tgt, name, sequence); }
-        virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { ctx->getResultDecimal(tlen, precision, isSigned, tgt, stepname, sequence); }
-        virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRaw(tlen, tgt, name, sequence, xmlTransformer, csvTransformer); }
-        virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultSet(isAll, tlen, tgt, name, sequence, xmlTransformer, csvTransformer); }
-        virtual __int64 getResultInt(const char * name, unsigned sequence) { return ctx->getResultInt(name, sequence); }
-        virtual double getResultReal(const char * name, unsigned sequence) { return ctx->getResultReal(name, sequence); }
-        virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { ctx->getResultString(tlen, tgt, name, sequence); }
-        virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { ctx->getResultStringF(tlen, tgt, name, sequence); }
-        virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { ctx->getResultUnicode(tlen, tgt, name, sequence); }
-        virtual char *getResultVarString(const char * name, unsigned sequence) { return ctx->getResultVarString(name, sequence); }
-        virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { return ctx->getResultVarUnicode(name, sequence); }
-        virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
-        virtual unsigned getExternalResultHash(const char * wuid, const char * name, unsigned sequence) { return ctx->getExternalResultHash(wuid, name, sequence); }
-        virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
-        virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
-        virtual char *getWuid() { return ctx->getWuid(); }
-        virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
-        virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
-        virtual char * getExpandLogicalName(const char * logicalName) { return ctx->getExpandLogicalName(logicalName); }
-        virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) { ctx->addWuException(text, code, severity, source); }
-        virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort); }
-        virtual IUserDescriptor *queryUserDescriptor() { return ctx->queryUserDescriptor(); }
-        virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { return ctx->getDatasetHash(name, hash); }
-        virtual unsigned getNodes() { return ctx->getNodes(); }
-        virtual unsigned getNodeNum() { return ctx->getNodeNum(); }
-        virtual char *getFilePart(const char *logicalPart, bool create) { return ctx->getFilePart(logicalPart, create); }
-        virtual unsigned __int64 getFileOffset(const char *logicalPart) { return ctx->getFileOffset(logicalPart); }
-        virtual IDistributedFileTransaction *querySuperFileTransaction() { return ctx->querySuperFileTransaction(); }
-        virtual char *getJobName() { return ctx->getJobName(); }
-        virtual char *getJobOwner() { return ctx->getJobOwner(); }
-        virtual char *getClusterName() { return ctx->getClusterName(); }
-        virtual char *getGroupName() { return ctx->getGroupName(); }
-        virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { return ctx->queryIndexMetaData(lfn, xpath); }
-        virtual unsigned getPriority() const { return ctx->getPriority(); }
-        virtual char *getPlatform() { return ctx->getPlatform(); }
-        virtual char *getEnv(const char *name, const char *defaultValue) const { return ctx->getEnv(name, defaultValue); }
-        virtual char *getOS() { return ctx->getOS(); }
-        virtual IThorChildGraph * resolveChildQuery(__int64 gid, IHThorArg * colocal)
-        {
-            return parent->getChildGraph((graph_id)gid);
-        }
-        virtual IEclGraphResults * resolveLocalQuery(__int64 gid)
-        {
-            if (gid == containerGraph->queryGraphId())
-                return containerGraph;
-            else
-                return ctx->resolveLocalQuery(gid);
-        }
-        virtual char *getEnv(const char *name, const char *defaultValue) { return ctx->getEnv(name, defaultValue); }
-        virtual unsigned logString(const char * text) const { return ctx->logString(text); }
-        virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
-        virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
-        virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned heapFlags) const { return ctx->getRowAllocatorEx(meta, activityId, heapFlags); }
-        virtual void getResultRowset(size32_t & tcount, const byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) override { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer); }
-        virtual void getResultDictionary(size32_t & tcount, const byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) override { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, xmlTransformer, csvTransformer, hasher); }
-
-        virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
-        virtual void getRowJSON(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToJSON(lenResult, result, info, row, flags); }
-        virtual IDebuggableContext *queryDebugContext() const override { return ctx->queryDebugContext(); }
-        virtual unsigned getGraphLoopCounter() const
-        {
-            return containerGraph->queryLoopCounter();           // only called if value is valid
-        }
-        virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { return ctx->getExternalResult(wuid, name, sequence); }
-        virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { return ctx->getResultForGet(name, sequence); }
-        virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
-        {
-            return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
-        }
-        virtual const void * fromJson(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
-        {
-            return ctx->fromJson(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
-        }
-        virtual IEngineContext *queryEngineContext()
-        {
-            return ctx->queryEngineContext();
-        }
-        virtual char *getDaliServers()
-        {
-            return ctx->getDaliServers();
-        }
-        virtual IWorkUnit *updateWorkUnit() const { return ctx->updateWorkUnit(); }
-        virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
-        {
-            return ctx->registerTimer(activityId, name);
-        }
-        virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { ctx->addWuExceptionEx(text, code, severity, audience, source); }
-   } graphCodeContext;
-
 protected:
     Owned<IThorGraphResults> localResults, graphLoopResults;
     CGraphBase *owner, *parent, *graphResultsContainer;
@@ -664,7 +663,6 @@ public:
         sz = parentExtractSz;
         return (const byte *)parentExtractMb.toByteArray();
     }
-    virtual ICodeContext *queryCodeContext() { return &graphCodeContext; }
     void setLoopCounter(unsigned _counter) { counter = _counter; }
     unsigned queryLoopCounter() const { return counter; }
     virtual void setComplete(bool tf=true) { complete=tf; }
@@ -1028,7 +1026,7 @@ public:
         return LINK(allGraphs.find(gid));
     }
 
-    ICodeContext &queryCodeContext() const;
+    ICodeContextExt &queryCodeContext() const;
     ICodeContext &querySharedMemCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
     IThorAllocator *queryThorAllocator() const { return thorAllocator; }
@@ -1079,10 +1077,12 @@ protected:
     bool timeActivities; // purely for access efficiency
     bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
+    CRuntimeStatisticCollection stats;
 
 public:
-    CActivityBase(CGraphElementBase *container);
+    CActivityBase(CGraphElementBase *container, const StatisticsMapping &statsMapping);
     ~CActivityBase();
+    CRuntimeStatisticCollection &queryStats() { return stats; }
     inline activity_id queryId() const { return container.queryId(); }
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
@@ -1145,7 +1145,7 @@ public:
     virtual IOutputRowDeserializer * queryRowDeserializer(); 
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
     virtual unsigned queryActivityId() const { return (unsigned)queryId(); }
-    virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
+    virtual ICodeContextExt *queryCodeContext() { return container.queryCodeContext(); }
     virtual roxiemem::IRowManager *queryRowManager() const { return queryJobChannel().queryRowManager(); }
 
     StringBuffer &getOpt(const char *prop, StringBuffer &out) const { return container.getOpt(prop, out); }
