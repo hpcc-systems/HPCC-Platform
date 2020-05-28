@@ -29,12 +29,15 @@ add_subdirectory(${HPCC_SOURCE_DIR}/system/yaml/libyaml ${CMAKE_BINARY_DIR}/syst
 if(NOT PLUGIN)
     if(WIN32)
         install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/yaml${CMAKE_SHARED_LIBRARY_SUFFIX}
-            DESTINATION ${LIB_DIR})
+            DESTINATION ${EXEC_DIR})
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE
+            RENAME libyaml-LICENSE.txt
+            DESTINATION ${EXEC_DIR})
     else()
         install(PROGRAMS ${LIBRARY_OUTPUT_PATH}/libyaml${CMAKE_SHARED_LIBRARY_SUFFIX}
             DESTINATION ${LIB_DIR})
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE
+            RENAME libyaml-LICENSE.txt
+            DESTINATION ${LIB_DIR})
     endif()
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/libyaml/LICENSE
-        RENAME libyaml-LICENSE.txt
-        DESTINATION ${LIB_DIR})
 endif(NOT PLUGIN)

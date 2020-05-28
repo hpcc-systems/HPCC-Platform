@@ -48,8 +48,8 @@ Files.layout_visits addTime(Files.layout_visits l, INTEGER c) := TRANSFORM
   SELF := L;
 END;
 
-visits1 := DISTRIBUTE(NORMALIZE(v, 100000, addTime(LEFT, COUNTER)), HASH32(timestamp));
-visits2 := DISTRIBUTE(NORMALIZE(v, 100000, addTime(LEFT, COUNTER)), HASH32(url));
+visits1 := DISTRIBUTE(NORMALIZE(v, 200000, addTime(LEFT, COUNTER)), HASH32(timestamp));
+visits2 := DISTRIBUTE(NORMALIZE(v, 200000, addTime(LEFT, COUNTER)), HASH32(url));
 
 OUTPUT(visits1, , Files.testfile1, OVERWRITE);
 OUTPUT(visits2, , Files.testfile2, OVERWRITE);

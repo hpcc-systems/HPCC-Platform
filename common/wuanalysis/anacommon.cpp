@@ -47,9 +47,13 @@ void PerformanceIssue::print() const
 
 void PerformanceIssue::createException(IWorkUnit * wu)
 {
+    ErrorSeverity mappedSeverity = wu->getWarningSeverity(errorCode, (ErrorSeverity)SeverityWarning);
+    if (mappedSeverity == SeverityIgnore)
+        return;
+
     Owned<IWUException> we = wu->createException();
     we->setExceptionCode(errorCode);
-    we->setSeverity(SeverityInformation);
+    we->setSeverity(mappedSeverity);
     we->setScope(scope.str());
     we->setPriority((unsigned) statUnits2msecs(cost));
     if (line>0 && column>0)

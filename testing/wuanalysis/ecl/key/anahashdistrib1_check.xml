@@ -1,3 +1,3 @@
 <Dataset name='Result 1'>
- <Row><severity>0</severity><code>0</code><source>Workunit Analyse</source><message>DISTRIBUTE output skew is worse than input skew (a3)</message></Row>
+ <Row><severity>1</severity><code>30001</code><source>Workunit Analyse</source><message>DISTRIBUTE output skew is worse than input skew (w1:graph1:sg1:a3)</message></Row>
 </Dataset>

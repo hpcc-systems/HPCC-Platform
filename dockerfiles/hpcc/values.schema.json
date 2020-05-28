@@ -5,6 +5,21 @@
     "global": {
       "$ref": "#/definitions/global"
     },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "dllStorage": {
+          "$ref": "#/definitions/storageType"
+        },
+        "dataStorage": {
+          "$ref": "#/definitions/storageType"
+        },
+        "daliStorage": {
+          "$ref": "#/definitions/storageType"
+        }
+      },
+      "additionalProperties": false
+    },
     "dali": {
       "description": "dali process",
       "type": "array",
@@ -60,17 +75,8 @@
     "global": {
       "type": "object",
       "properties": {
-        "dllserver": {
-          "$ref": "#/definitions/storage"
-        },
-        "hostStorage": {
-          "type": "boolean"
-        },
         "privileged": {
           "type": "boolean"
-        },
-        "dataStorage": {
-          "$ref": "#/definitions/storage"
         },
         "image": {
           "$ref": "#/definitions/image"
@@ -101,7 +107,7 @@
       },
       "additionalProperties": false
     },
-    "storage": {
+    "storageType": {
       "type": "object",
       "properties": {
         "storageSize": {
@@ -112,6 +118,9 @@
         },
         "existingClaim": {
           "type": "string"
+        },
+        "forcePermissions": {
+          "type": "boolean"
         }
       },
       "required": [ "storageSize" ],
@@ -137,7 +146,7 @@
     },
     "dali": {
       "type": "object",
-      "required": [ "name", "storage" ],
+      "required": [ "name" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -146,9 +155,6 @@
         },
         "image": {
           "$ref": "#/definitions/image"
-        },
-        "storage": {
-          "$ref": "#/definitions/storage"
         },
         "logging": {
           "$ref": "#/definitions/logging"
