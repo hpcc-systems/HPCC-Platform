@@ -1003,7 +1003,7 @@ bool CWsPackageProcessEx::onListPackages(IEspContext &context, IEspListPackagesR
                 Owned<IPropertyTree> pkgSetRegistry= &iter->get();
                 StringBuffer process;
                 pkgSetRegistry->getProp("@process", process);
-                if (process.length() && (streq(process.str(), "*") || WildMatch(process.str(), processReq, true)))
+                if (!process.isEmpty() && (isEmptyString(processReq) || streq(process.str(), "*") || WildMatch(process.str(), processReq, true)))
                     listPkgInfo(version, targetReq, process.str(), packageMaps, pkgSetRegistry, &results);
             }
             catch(IException* e)
