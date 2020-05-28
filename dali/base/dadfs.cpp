@@ -1374,6 +1374,7 @@ public:
         if (!lfn.isExternal() && !checkLogicalName(lfn,user,true,true,true,"remove"))
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
+        CTimeMon timer(timeoutms);
         for (;;)
         {
             // Transaction files have already been unlocked at this point, delete all remaining files
@@ -1384,6 +1385,7 @@ public:
             if (!file->canRemove(reason, false))
                 ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
 
+            Owned<IException> timeoutException;
             // This will do the right thing for either super-files and logical-files.
             try
             {
@@ -1396,15 +1398,27 @@ public:
                 {
                     case SDSExcpt_LockTimeout:
                     case SDSExcpt_LockHeld:
-                        e->Release();
+                        timeoutException.setown(e);
                         break;
                     default:
                         throw;
                 }
             }
             file.clear();
+            unsigned sleepTime = SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY);
+            if (INFINITE != timeoutms)
+            {
+                unsigned remaining;
+                if (timer.timedout(&remaining))
+                {
+                    StringBuffer timeoutText;
+                    throwStringExceptionV(-1, "Failed to remove %s: %s", logicalname, timeoutException->errorMessage(timeoutText).str());
+                }
+                if (sleepTime>remaining)
+                    sleepTime = remaining;
+            }
             PROGLOG("CDelayedDelete: pausing due to locked file = %s", logicalname);
-            Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY));
+            Sleep(sleepTime);
         }
     }
 };

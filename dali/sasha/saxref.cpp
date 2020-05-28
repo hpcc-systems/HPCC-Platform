@@ -2349,7 +2349,10 @@ public:
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try
             {
-                queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, NULL, INFINITE, true); //MORE:Pass IUserDescriptor
+                /* NB: 0 timeout, meaning fail and skip, if there is any locking contention.
+                 * If the file is locked, it implies it is being accessed.
+                 */
+                queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, NULL, 0, true); //MORE:Pass IUserDescriptor
                 PROGLOG(LOGPFX2 "Deleted %s",lfn);
             }
             catch (IException *e) // may want to just detach if fails
