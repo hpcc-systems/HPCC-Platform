@@ -103,6 +103,9 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
         PROGLOG("%s %s: %s", agentName.get(), PropAckedFiles, settings->ackedFileList.str());
         PROGLOG("%s %s: %s", agentName.get(), PropDefaultAckedLogRequests, settings->ackedLogRequestFile.str());
         PROGLOG("%s %s: %d. %s: %d", agentName.get(), PropReadRequestWaitingSeconds, settings->waitSeconds, PropPendingLogBufferSize, settings->pendingLogBufferSize);
+
+        checkAndCreateFile(settings->ackedFileList);
+        checkAndCreateFile(settings->ackedLogRequestFile);
         logRequestReader.setown(new CLogRequestReader(settings.getClear(), this));
     }
     PROGLOG("%s CLogThread started.", agentName.get());
@@ -554,6 +557,20 @@ IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
         ESPLOG(LOG_LEVEL, "LThread:waitRQ: %dms", delta);
     return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
 #undef LOG_LEVEL
+}
+
+void CLogThread::checkAndCreateFile(const char* fileName)
+{
+    Owned<IFile> file = createIFile(fileName);
+    if(file->isFile() != notFound)
+        return;
+
+    StringBuffer dir;
+    splitFilename(fileName, &dir, &dir, nullptr, nullptr);
+    recursiveCreateDirectory(dir);
+
+    Owned<IFileIO> io = file->openShared(IFOcreate, IFSHfull);
+    PROGLOG("CLogThread::checkAndCreateFile: %s is created.", fileName);
 }
 
 CLogRequestReader::~CLogRequestReader()
