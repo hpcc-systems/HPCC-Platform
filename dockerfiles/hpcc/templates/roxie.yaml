@@ -97,7 +97,7 @@ spec:
         run: {{ $servername | quote }}
         roxie-server: {{ $servername | quote }}
     spec:
-      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $servername | quote }}
         args: [
@@ -124,11 +124,11 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllserverVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
 {{ include "hpcc.addDataVolume" $ | indent 6 }}
-{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
+{{ include "hpcc.addDllVolume" $ | indent 6 }}
 ---
 
 {{ end -}}
@@ -153,7 +153,7 @@ spec:
         roxie-server: {{ $servername | quote }}
 {{- end }}
     spec:
-      {{- include "hpcc.checkDataStorageHostMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $name | quote}}
         args: [ 
@@ -183,11 +183,11 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDllserverVolumeMount" $roxie | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $roxie | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
 {{ include "hpcc.addDataVolume" $ | indent 6 }}
-{{ include "hpcc.addDllserverVolume" $ | indent 6 }}
+{{ include "hpcc.addDllVolume" $ | indent 6 }}
 
 ---
 

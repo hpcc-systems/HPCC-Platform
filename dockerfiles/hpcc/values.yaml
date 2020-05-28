@@ -2,61 +2,61 @@
 
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
-  
-  dllserver:
-    storageSize: 3Gi
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
-    storageClass: ""
-    # existingClaim: ""
-  
-  dataStorage:
-    storageSize: 1Gi
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
-    storageClass: ""
-    # existingClaim: ""
 
   image:
     ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
     #version: latest
-    root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems/*
+    root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
   
-  # Set to true if using hostPath storageClass
-  # This will cause initContainers to be created to ensure that host mount points have correct uid/gid
-  hostStorage: true
-
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 100
 
-  # Specify a defauleEsp to control which EclWatch service is returned from Std.File.GetEspURL, and other uses
+  # Specify a defaultEsp to control which EclWatch service is returned from Std.File.GetEspURL, and other uses
   # If not specified, the first esp component present is assumed.
   # Can also be overridden locally in individual components
   ## defaultEsp: myesp
 
-dali:
-- name: mydali
-  storage:
-    storageSize: 1Gi
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
+
+## storage:
+##
+## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
+## exist with that name. If an existingClaim is specified, storageClass and
+## storageSize are not used.
+##
+## If storage.[type].storageClass is defined, storageClassName: <storageClass>
+## If set to "-", storageClassName: "", which disables dynamic provisioning
+## If undefined (the default) or set to null, no storageClassName spec is
+##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+##   GKE, AWS & OpenStack)
+##
+## storage.[type].forcePermissions=true is required by some types of provisioned
+## storage, where the mounted filing system has insufficient permissions to be
+## read by the hpcc pods. Examples include using hostpath storage (e.g. on
+## minikube and docker for desktop), or using NFS mounted storage.
+
+storage:
+  dllStorage:
+    storageSize: 3Gi
     storageClass: ""
     # existingClaim: ""
+    # forcePermissions: false
 
+  daliStorage:
+    storageSize: 1Gi
+    storageClass: ""
+    # existingClaim: ""
+    # forcePermissions: false
+
+  dataStorage:
+    storageSize: 1Gi
+    storageClass: ""
+    # existingClaim: ""
+    # forcePermissions: false
+
+dali:
+- name: mydali
 
 eclagent:
 - name: hthor

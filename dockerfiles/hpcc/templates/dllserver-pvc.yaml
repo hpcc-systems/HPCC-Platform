@@ -1,10 +1,10 @@
-{{- if (not .Values.global.dllserver.existingClaim) }}
+{{- if (not .Values.storage.dllStorage.existingClaim) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .) }}
+  name: {{ printf "%s-dllstorage-pvc" (include "hpcc.fullname" .) }}
   labels:
-    app.kubernetes.io/name: {{ printf "%s-dllserver-pv-claim" (include "hpcc.fullname" .) }}
+    app.kubernetes.io/name: {{ printf "%s-dllstorage-pvc" (include "hpcc.fullname" .) }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     helm.sh/chart: {{ include "hpcc.chart" . }}
@@ -13,12 +13,12 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: {{ .Values.global.dllserver.storageSize }}
-{{- if .Values.global.dllserver.storageClass }}
-{{- if (eq "-" .Values.global.dllserver.storageClass) }}
+      storage: {{ .Values.storage.dllStorage.storageSize }}
+{{- if .Values.storage.dllStorage.storageClass }}
+{{- if (eq "-" .Values.storage.dllStorage.storageClass) }}
   storageClassName: ""
 {{- else }}
-  storageClassName: "{{ .Values.global.dllserver.storageClass }}"
+  storageClassName: "{{ .Values.storage.dllStorage.storageClass }}"
 {{- end }}
 {{- end }}
 {{- end }}
