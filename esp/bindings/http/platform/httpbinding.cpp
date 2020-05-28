@@ -1935,30 +1935,41 @@ void EspHttpBinding::generateSampleXmlFromSchema(bool isRequest, IEspContext &co
     StringBuffer element, schemaXmlbuff(schemaxml);
     getXMLMessageTag(context, isRequest, methodQName.str(), element);
 
-    Owned<IXmlSchema> schema = createXmlSchema(schemaXmlbuff);
-    if (schema.get())
+    StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    if (context.queryRequestParameters()->hasProp("display"))
+        content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+
+    if (!methodQName || !*methodQName)
     {
-        IXmlType* type = schema->queryElementType(element);
-        if (type)
+        StringBuffer label(isRequest ? "Requests" : "Responses");
+        content.appendf("<Examples><%s>", label.str());
+        MethodInfoArray methods;
+        getQualifiedNames(context, methods);
+        ForEachItemIn(i, methods)
         {
-            StringBuffer content;
-            StringStack parent;
-            StringBuffer nsdecl("xmlns=\"");
-
-            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-            if (context.queryRequestParameters()->hasProp("display"))
-                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
-
-            genSampleXml(parent,type, content, element, generateNamespace(context, request, serviceQName.str(), methodQName.str(), nsdecl).append('\"').str());
-            response->setContent(content.length(), content.str());
-            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
-            response->setStatus(HTTP_STATUS_OK);
-            response->send();
-            return;
+            generateSampleXml(isRequest, context, request, content, serviceQName.str(), methods.item(i).m_label.str());
         }
+        content.appendf("</%s></Examples>", label.str());
+    }
+    else
+    {
+        Owned<IXmlSchema> schema = createXmlSchema(schemaXmlbuff);
+        if (!schema.get())
+            throw MakeStringException(-1, "Could not create XML Schema");
+
+        IXmlType* type = schema->queryElementType(element);
+        if (!type)
+            throw MakeStringException(-1, "Unknown type: %s", element.str());
+
+        StringStack parent;
+        StringBuffer nsdecl("xmlns=\"");
+        genSampleXml(parent,type, content, element, generateNamespace(context, request, serviceQName.str(), methodQName.str(), nsdecl).append('\"').str());
     }
 
-    throw MakeStringException(-1,"Unknown type: %s", element.str());
+    response->setContent(content.length(), content.str());
+    response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
 }
 
 int EspHttpBinding::onGetReqSampleXml(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
