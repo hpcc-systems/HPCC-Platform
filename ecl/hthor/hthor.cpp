@@ -1085,6 +1085,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     }
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
+    defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
 }
 
 CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
@@ -1144,7 +1145,7 @@ void CHThorIndexWriteActivity::execute()
         buildUserMetadata(metadata);
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
-        if (metadata->getPropBool("_noSeek", false))
+        if (metadata->getPropBool("_noSeek", defaultNoSeek))
             flags |= TRAILING_HEADER_ONLY;
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
