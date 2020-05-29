@@ -202,6 +202,51 @@ static constexpr const char * esdlScriptNoPrefix = R"!!(<CustomRequestTransform 
 </CustomRequestTransform>
 )!!";
 
+static constexpr const char * esdlScriptSelectPath = R"!!(
+<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="soap:Body/extra/{$query}/{$request}">
+  <es:param name="selectPath" select="''"/>
+
+  <es:set-value target="_OUTPUT_" select="$selectPath"/>
+</es:CustomRequestTransform>
+)!!";
+
+static constexpr const char* selectPathResult = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <extra>
+   <EchoPersonInfo>
+    <Context>
+     <Row>
+      <Common>
+       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+      </Common>
+     </Row>
+    </Context>
+    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+    <EchoPersonInfoRequest>
+     <Row>
+      <Addresses>
+       <Address>
+        <type>Home</type>
+        <Line2>Apt 202</Line2>
+        <Line1>101 Main street</Line1>
+        <City>Hometown</City>
+        <Zip>96703</Zip>
+        <State>HI</State>
+       </Address>
+      </Addresses>
+      <Name>
+       <Last>Doe</Last>
+       <First>Joe</First>
+      </Name>
+     </Row>
+     <_OUTPUT_>Joe</_OUTPUT_>
+    </EchoPersonInfoRequest>
+   </EchoPersonInfo>
+  </extra>
+ </soap:Body>
+</soap:Envelope>
+)!!";
+
 
 static const char *target_config = "<method queryname='EchoPersonInfo'/>";
 
@@ -223,6 +268,12 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testEsdlTransformFailLevel2A);
         CPPUNIT_TEST(testEsdlTransformFailLevel2B);
         CPPUNIT_TEST(testEsdlTransformFailLevel2C);
+        CPPUNIT_TEST(testEsdlTransformAnyDescendentPath);
+        CPPUNIT_TEST(testEsdlTransformAbsoluteSoapPath);
+        CPPUNIT_TEST(testEsdlTransformRelativePath);
+        CPPUNIT_TEST(testEsdlTransformSelectPath);
+        CPPUNIT_TEST(testEsdlTransformImplicitPrefix);
+        CPPUNIT_TEST(testEsdlTransformRequestNamespaces);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -268,6 +319,362 @@ public:
             }
             E->Release();
         }
+    }
+
+    void testEsdlTransformSelectPath()
+    {
+      constexpr const char* config = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="select-path"/>
+            <Param name='selectPath' select="//First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+    }
+
+    void testEsdlTransformAbsoluteSoapPath()
+    {
+      constexpr const char* config = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="absolute-soap-path"/>
+            <Param name='selectPath' select="/soap:Envelope/soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+    }
+
+    void testEsdlTransformRelativePath()
+    {
+      constexpr const char* config = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="relative-path"/>
+            <Param name='selectPath' select="soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+    }
+
+    void testEsdlTransformAnyDescendentPath()
+    {
+      constexpr const char* config = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="any-descendent-path"/>
+            <Param name='selectPath' select="//First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+    }
+
+    void testEsdlTransformImplicitPrefix()
+    {
+      static constexpr const char * soapRequestImplicitPrefix = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http://webservices.example.com/WsFooBar">
+<soap:Body>
+<extra>
+<EchoPersonInfo>
+  <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+  <Context>
+   <Row>
+    <Common>
+     <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+    </Common>
+   </Row>
+  </Context>
+  <EchoPersonInfoRequest>
+   <Row>
+    <Name>
+     <First>Joe</First>
+     <Last>Doe</Last>
+    </Name>
+    <Addresses>
+     <Address>
+      <type>Home</type>
+      <Line1>101 Main street</Line1>
+      <Line2>Apt 202</Line2>
+      <City>Hometown</City>
+      <State>HI</State>
+      <Zip>96703</Zip>
+     </Address>
+    </Addresses>
+   </Row>
+  </EchoPersonInfoRequest>
+</EchoPersonInfo>
+</extra>
+</soap:Body>
+</soap:Envelope>
+)!!";
+      constexpr const char* implicitPrefixResult = R"!!(<soap:Envelope xmlns="http://webservices.example.com/WsFooBar" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <extra>
+   <EchoPersonInfo>
+    <Context>
+     <Row>
+      <Common>
+       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+      </Common>
+     </Row>
+    </Context>
+    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+    <EchoPersonInfoRequest>
+     <Row>
+      <Addresses>
+       <Address>
+        <type>Home</type>
+        <Line2>Apt 202</Line2>
+        <Line1>101 Main street</Line1>
+        <City>Hometown</City>
+        <Zip>96703</Zip>
+        <State>HI</State>
+       </Address>
+      </Addresses>
+      <Name>
+       <Last>Doe</Last>
+       <First>Joe</First>
+      </Name>
+     </Row>
+     <_OUTPUT_>Joe</_OUTPUT_>
+    </EchoPersonInfoRequest>
+   </EchoPersonInfo>
+  </extra>
+ </soap:Body>
+</soap:Envelope>
+)!!";
+
+      constexpr const char* config = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="implicit-prefix"/>
+            <Param name='selectPath' select="soap:Body/n:extra/n:EchoPersonInfo/n:EchoPersonInfoRequest/n:Row/n:Name/n:First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      constexpr const char* configNoPrefix = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="implicit-prefix-not-used"/>
+            <Param name='selectPath' select="soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      runTest(esdlScriptSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
+
+      // The implicit 'n' prefix is required if the content has a namespace defined
+      // with no prefix. This test is expected to throw an exception.
+      runTest(esdlScriptSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
+    }
+
+    void testEsdlTransformRequestNamespaces()
+    {
+      static constexpr const char * soapRequestNsInvalid = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="invalid.uri.string">
+<soap:Body>
+<extra>
+<EchoPersonInfo>
+  <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+  <Context>
+   <Row>
+    <Common>
+     <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+    </Common>
+   </Row>
+  </Context>
+  <EchoPersonInfoRequest>
+   <Row>
+    <Name>
+     <First>Joe</First>
+     <Last>Doe</Last>
+    </Name>
+   </Row>
+  </EchoPersonInfoRequest>
+</EchoPersonInfo>
+</extra>
+</soap:Body>
+</soap:Envelope>
+)!!";
+
+      static constexpr const char * soapRequestNsArbitrary1 = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="arbitary:urn:text.here?really">
+<soap:Body>
+<extra>
+<EchoPersonInfo>
+  <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+  <Context>
+   <Row>
+    <Common>
+     <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+    </Common>
+   </Row>
+  </Context>
+  <EchoPersonInfoRequest>
+   <Row>
+    <Name>
+     <First>Joe</First>
+     <Last>Doe</Last>
+    </Name>
+   </Row>
+  </EchoPersonInfoRequest>
+</EchoPersonInfo>
+</extra>
+</soap:Body>
+</soap:Envelope>
+)!!";
+
+      static constexpr const char * soapRequestNsArbitrary2 = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http:hullabaloo//nonsense:foo:bar#fragment">
+<soap:Body>
+<extra>
+<EchoPersonInfo>
+  <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+  <Context>
+   <Row>
+    <Common>
+     <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+    </Common>
+   </Row>
+  </Context>
+  <EchoPersonInfoRequest>
+   <Row>
+    <Name>
+     <First>Joe</First>
+     <Last>Doe</Last>
+    </Name>
+   </Row>
+  </EchoPersonInfoRequest>
+</EchoPersonInfo>
+</extra>
+</soap:Body>
+</soap:Envelope>
+)!!";
+
+      constexpr const char* namespaceResult = R"!!(<soap:Envelope xmlns="http://webservices.example.com/WsFooBar" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <extra>
+   <EchoPersonInfo>
+    <Context>
+     <Row>
+      <Common>
+       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+      </Common>
+     </Row>
+    </Context>
+    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+    <EchoPersonInfoRequest>
+     <Row>
+      <Name>
+       <Last>Doe</Last>
+       <First>Joe</First>
+      </Name>
+     </Row>
+     <_OUTPUT_>Joe</_OUTPUT_>
+    </EchoPersonInfoRequest>
+   </EchoPersonInfo>
+  </extra>
+ </soap:Body>
+</soap:Envelope>
+)!!";
+
+      constexpr const char* namespaceResultArbitrary1 = R"!!(<soap:Envelope xmlns="arbitary:urn:text.here?really" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <extra>
+   <EchoPersonInfo>
+    <Context>
+     <Row>
+      <Common>
+       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+      </Common>
+     </Row>
+    </Context>
+    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+    <EchoPersonInfoRequest>
+     <Row>
+      <Name>
+       <Last>Doe</Last>
+       <First>Joe</First>
+      </Name>
+     </Row>
+     <_OUTPUT_>Joe</_OUTPUT_>
+    </EchoPersonInfoRequest>
+   </EchoPersonInfo>
+  </extra>
+ </soap:Body>
+</soap:Envelope>
+)!!";
+
+      constexpr const char* namespaceResultArbitrary2 = R"!!(<soap:Envelope xmlns="http:hullabaloo//nonsense:foo:bar#fragment" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <extra>
+   <EchoPersonInfo>
+    <Context>
+     <Row>
+      <Common>
+       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+      </Common>
+     </Row>
+    </Context>
+    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+    <EchoPersonInfoRequest>
+     <Row>
+      <Name>
+       <Last>Doe</Last>
+       <First>Joe</First>
+      </Name>
+     </Row>
+     <_OUTPUT_>Joe</_OUTPUT_>
+    </EchoPersonInfoRequest>
+   </EchoPersonInfo>
+  </extra>
+ </soap:Body>
+</soap:Envelope>
+)!!";
+
+      constexpr const char* configInvalidURI = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="invalid-uri"/>
+            <Param name='selectPath' select="soap:Body/n:extra/n:EchoPersonInfo/n:EchoPersonInfoRequest/n:Row/n:Name/n:First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      constexpr const char* configArbitraryURI1 = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="arbitrary-uri-1"/>
+            <Param name='selectPath' select="soap:Body/n:extra/n:EchoPersonInfo/n:EchoPersonInfoRequest/n:Row/n:Name/n:First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      constexpr const char* configArbitraryURI2 = R"!!(
+        <config strictParams='true'>
+          <Transform>
+            <Param name='testcase' value="arbitrary-uri-2"/>
+            <Param name='selectPath' select="soap:Body/n:extra/n:EchoPersonInfo/n:EchoPersonInfoRequest/n:Row/n:Name/n:First"/>
+          </Transform>
+        </config>
+      )!!";
+
+      // An invalid namespace URI that is expected to throw an exception
+      runTest(esdlScriptSelectPath, soapRequestNsInvalid, configInvalidURI, namespaceResult, 99);
+
+      // Weird but valid URIs for namespaces
+      runTest(esdlScriptSelectPath, soapRequestNsArbitrary1, configArbitraryURI1, namespaceResultArbitrary1, 0);
+      runTest(esdlScriptSelectPath, soapRequestNsArbitrary2, configArbitraryURI2, namespaceResultArbitrary2, 0);
+
     }
 
     void testEsdlTransformScript()
@@ -480,42 +887,42 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     void testEsdlTransformForEach()
     {
         static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
-        <root>
+        <root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
         <extra>
           <Friends>
             <Name>
              <First>Joe</First>
-             <Alias>Moe</Alias>
-             <Alias>Poe</Alias>
-             <Alias>Doe</Alias>
+             <xx1:Alias>Moe</xx1:Alias>
+             <xx1:Alias>Poe</xx1:Alias>
+             <xx1:Alias>Doe</xx1:Alias>
             </Name>
             <Name>
              <First>Jane</First>
-             <Alias>Jan</Alias>
-             <Alias>Janie</Alias>
-             <Alias>Janet</Alias>
+             <xx1:Alias>Jan</xx1:Alias>
+             <xx1:Alias>Janie</xx1:Alias>
+             <xx1:Alias>Janet</xx1:Alias>
             </Name>
           </Friends>
           <Relatives>
             <Name>
              <First>Jonathon</First>
-             <Alias>John</Alias>
-             <Alias>Jon</Alias>
-             <Alias>Johnny</Alias>
-             <Alias>Johnnie</Alias>
+             <xx1:Alias>John</xx1:Alias>
+             <xx1:Alias>Jon</xx1:Alias>
+             <xx1:Alias>Johnny</xx1:Alias>
+             <xx1:Alias>Johnnie</xx1:Alias>
             </Name>
             <Name>
              <First>Jennifer</First>
-             <Alias>Jen</Alias>
-             <Alias>Jenny</Alias>
-             <Alias>Jenna</Alias>
+             <xx1:Alias>Jen</xx1:Alias>
+             <xx1:Alias>Jenny</xx1:Alias>
+             <xx1:Alias>Jenna</xx1:Alias>
             </Name>
           </Relatives>
         </extra>
         </root>
         )!!";
 
-        static constexpr const char * forEachScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="extra">
+        static constexpr const char * forEachScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" xmlns:x1="urn:x1"  xmlns:x2="urn:x2" target="extra">
            <es:param name="ForBuildListPath"/>
            <es:param name="ForIdPath"/>
            <es:param name="section"/>
@@ -523,7 +930,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
            <es:for-each select="$ForBuildListPath">
                <es:variable name="q" select="str:decode-uri('%27')"/>
                <es:variable name="path" select="concat($section, '/Name[First=', $q, First, $q, ']/Aliases', $garbage)"/>
-               <es:for-each select="Alias">
+               <es:for-each select="x1:Alias">
                  <es:choose>
                    <es:when test="position()=1">
                      <es:append-to-value xpath_target="$path" select="."/>
@@ -541,21 +948,21 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         </es:CustomRequestTransform>
         )!!";
 
-        constexpr const char * resultFriends = R"!!(<root>
+        constexpr const char * resultFriends = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
  <extra>
   <Relatives>
    <Name>
-    <Alias>John</Alias>
-    <Alias>Jon</Alias>
-    <Alias>Johnny</Alias>
-    <Alias>Johnnie</Alias>
     <First>Jonathon</First>
+    <xx1:Alias>John</xx1:Alias>
+    <xx1:Alias>Jon</xx1:Alias>
+    <xx1:Alias>Johnny</xx1:Alias>
+    <xx1:Alias>Johnnie</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jen</Alias>
-    <Alias>Jenny</Alias>
-    <Alias>Jenna</Alias>
     <First>Jennifer</First>
+    <xx1:Alias>Jen</xx1:Alias>
+    <xx1:Alias>Jenny</xx1:Alias>
+    <xx1:Alias>Jenna</xx1:Alias>
    </Name>
   </Relatives>
   <People>
@@ -566,18 +973,18 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </People>
   <Friends>
    <Name>
-    <Alias>Moe</Alias>
-    <Alias>Poe</Alias>
-    <Alias>Doe</Alias>
     <Aliases>Moe,Poe,Doe</Aliases>
     <First>Joe</First>
+    <xx1:Alias>Moe</xx1:Alias>
+    <xx1:Alias>Poe</xx1:Alias>
+    <xx1:Alias>Doe</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jan</Alias>
-    <Alias>Janie</Alias>
-    <Alias>Janet</Alias>
     <Aliases>Jan,Janie,Janet</Aliases>
     <First>Jane</First>
+    <xx1:Alias>Jan</xx1:Alias>
+    <xx1:Alias>Janie</xx1:Alias>
+    <xx1:Alias>Janet</xx1:Alias>
    </Name>
   </Friends>
  </extra>
@@ -596,23 +1003,23 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         runTest(forEachScript, input, configFriends, resultFriends, 0);
 
-        constexpr const char * resultRelatives = R"!!(<root>
+        constexpr const char * resultRelatives = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
  <extra>
   <Relatives>
    <Name>
-    <Alias>John</Alias>
-    <Alias>Jon</Alias>
-    <Alias>Johnny</Alias>
-    <Alias>Johnnie</Alias>
     <Aliases>John,Jon,Johnny,Johnnie</Aliases>
     <First>Jonathon</First>
+    <xx1:Alias>John</xx1:Alias>
+    <xx1:Alias>Jon</xx1:Alias>
+    <xx1:Alias>Johnny</xx1:Alias>
+    <xx1:Alias>Johnnie</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jen</Alias>
-    <Alias>Jenny</Alias>
-    <Alias>Jenna</Alias>
     <Aliases>Jen,Jenny,Jenna</Aliases>
     <First>Jennifer</First>
+    <xx1:Alias>Jen</xx1:Alias>
+    <xx1:Alias>Jenny</xx1:Alias>
+    <xx1:Alias>Jenna</xx1:Alias>
    </Name>
   </Relatives>
   <People>
@@ -623,16 +1030,16 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </People>
   <Friends>
    <Name>
-    <Alias>Moe</Alias>
-    <Alias>Poe</Alias>
-    <Alias>Doe</Alias>
     <First>Joe</First>
+    <xx1:Alias>Moe</xx1:Alias>
+    <xx1:Alias>Poe</xx1:Alias>
+    <xx1:Alias>Doe</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jan</Alias>
-    <Alias>Janie</Alias>
-    <Alias>Janet</Alias>
     <First>Jane</First>
+    <xx1:Alias>Jan</xx1:Alias>
+    <xx1:Alias>Janie</xx1:Alias>
+    <xx1:Alias>Janet</xx1:Alias>
    </Name>
   </Friends>
  </extra>
@@ -663,35 +1070,35 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         runTest(forEachScript, input, configGarbagePathError, nullptr, -1);
 
-        constexpr const char * resultNada = R"!!(<root>
+        constexpr const char * resultNada = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
  <extra>
   <Relatives>
    <Name>
-    <Alias>John</Alias>
-    <Alias>Jon</Alias>
-    <Alias>Johnny</Alias>
-    <Alias>Johnnie</Alias>
     <First>Jonathon</First>
+    <xx1:Alias>John</xx1:Alias>
+    <xx1:Alias>Jon</xx1:Alias>
+    <xx1:Alias>Johnny</xx1:Alias>
+    <xx1:Alias>Johnnie</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jen</Alias>
-    <Alias>Jenny</Alias>
-    <Alias>Jenna</Alias>
     <First>Jennifer</First>
+    <xx1:Alias>Jen</xx1:Alias>
+    <xx1:Alias>Jenny</xx1:Alias>
+    <xx1:Alias>Jenna</xx1:Alias>
    </Name>
   </Relatives>
   <Friends>
    <Name>
-    <Alias>Moe</Alias>
-    <Alias>Poe</Alias>
-    <Alias>Doe</Alias>
     <First>Joe</First>
+    <xx1:Alias>Moe</xx1:Alias>
+    <xx1:Alias>Poe</xx1:Alias>
+    <xx1:Alias>Doe</xx1:Alias>
    </Name>
    <Name>
-    <Alias>Jan</Alias>
-    <Alias>Janie</Alias>
-    <Alias>Janet</Alias>
     <First>Jane</First>
+    <xx1:Alias>Jan</xx1:Alias>
+    <xx1:Alias>Janie</xx1:Alias>
+    <xx1:Alias>Janet</xx1:Alias>
    </Name>
   </Friends>
  </extra>
