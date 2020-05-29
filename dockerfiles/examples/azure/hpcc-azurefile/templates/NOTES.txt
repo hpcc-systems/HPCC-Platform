@@ -1,0 +1,18 @@
+{{ $dllPvcName := printf "dll-%s-pvc" (include "hpcc-azurefile.fullname" $) }}
+{{ $daliPvcName := printf "dali-%s-pvc" (include "hpcc-azurefile.fullname" $) }}
+{{ $dataPvcName := printf "data-%s-pvc" (include "hpcc-azurefile.fullname" $) }}
+
+Persistent Volume Claims created: {{ $dllPvcName }}, {{ $daliPvcName }}, {{ $dataPvcName }}
+
+Pass a values yaml to hpcc helm charts to use these existing claims.
+e.g.:
+
+storage:
+  dllStorage:
+    existingClaim: "{{ $dllPvcName }}"
+
+  daliStorage:
+    existingClaim: "{{ $daliPvcName }}"
+
+  dataStorage:
+    existingClaim: "{{ $dataPvcName }}"

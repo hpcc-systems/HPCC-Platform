@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ printf "dali-%s-sc" (include "hpcc-azurefile.fullname" $) }}
+provisioner: kubernetes.io/azure-file
+parameters:
+  skuName: {{ .Values.daliStorage.sku | default "Standard_LRS" }}
+reclaimPolicy: Retain
+allowVolumeExpansion: true
