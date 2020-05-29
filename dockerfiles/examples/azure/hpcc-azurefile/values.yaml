@@ -1,4 +1,4 @@
-# Default values for hpcc-azure-storage.
+# Default values for hpcc-azurefile
 
 dllStorage:
   size: 256Mi
