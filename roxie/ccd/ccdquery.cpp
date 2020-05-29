@@ -275,7 +275,7 @@ protected:
 
 //----------------------------------------------------------------------------------------------
 // Class CQueryOptions is used to store options affecting the execution of a query
-// These can be set globally, byt he query workunit, or by the query XML parameters
+// These can be set globally, by the query workunit, or by the query XML parameters
 //----------------------------------------------------------------------------------------------
 
 QueryOptions::QueryOptions()
@@ -304,6 +304,7 @@ QueryOptions::QueryOptions()
     timeActivities = defaultTimeActivities;
     traceEnabled = defaultTraceEnabled;
     traceLimit = defaultTraceLimit;
+    noSeekBuildIndex = defaultNoSeekBuildIndex;
     allSortsMaySpill = false; // No global default for this
     failOnLeaks = false;
     collectFactoryStatistics = defaultCollectFactoryStatistics;
@@ -335,6 +336,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     timeActivities = other.timeActivities;
     traceEnabled = other.traceEnabled;
     traceLimit = other.traceLimit;
+    noSeekBuildIndex = other.noSeekBuildIndex;
     allSortsMaySpill = other.allSortsMaySpill;
     failOnLeaks = other.failOnLeaks;
     collectFactoryStatistics = other.collectFactoryStatistics;
@@ -378,6 +380,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(traceLimit, wu, "traceLimit");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
     updateFromWorkUnit(failOnLeaks, wu, "failOnLeaks");
+    updateFromWorkUnit(noSeekBuildIndex, wu, "noSeekBuildIndex");
     updateFromWorkUnit(collectFactoryStatistics, wu, "collectFactoryStatistics");
 }
 
@@ -435,6 +438,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
         updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");
         updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
+        updateFromContext(noSeekBuildIndex, ctx, "@noSeekBuildIndex", "_NoSeekBuildIndex");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
         updateFromContext(failOnLeaks, ctx, "@failOnLeaks", "_FailOnLeaks");
         updateFromContext(collectFactoryStatistics, ctx, "@collectFactoryStatistics", "_CollectFactoryStatistics");

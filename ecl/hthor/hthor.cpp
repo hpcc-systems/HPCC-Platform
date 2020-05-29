@@ -1085,7 +1085,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     }
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
-    defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", false);
+    defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
 }
 
 CHThorIndexWriteActivity::~CHThorIndexWriteActivity()

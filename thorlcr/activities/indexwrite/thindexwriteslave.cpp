@@ -87,7 +87,7 @@ public:
         singlePartKey = false;
         refactor = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
-        defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", false)));
+        defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", isContainerized())));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
         duplicateKeyCount = 0;
     }
