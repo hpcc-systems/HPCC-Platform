@@ -41,11 +41,6 @@ public:
     {
     }
 
-    CumulativeTimer(const CumulativeTimer& t)
-        : mNestingDepth(t.mNestingDepth)
-        , mTotalTime(t.mTotalTime)
-    {}
-
     ~CumulativeTimer()
     {
     }
@@ -105,7 +100,7 @@ private:
 
     unsigned __int64 mNestingDepth;
     unsigned __int64 mTotalTime;
-    LogLevel logLevel;
+    LogLevel logLevel = 0;
 
 private:
     CumulativeTimer& operator =(const CumulativeTimer&) = delete;

@@ -1629,7 +1629,7 @@ protected:
 
 static bool wasLegacyAssignable(ITypeInfo * to, ITypeInfo * from)
 {
-    return (to->getTypeCode() == type_boolean) && isIntegralType(from);
+    return to && from && (to->getTypeCode() == type_boolean) && isIntegralType(from);
 }
 
 /* this func does not affect linkage */

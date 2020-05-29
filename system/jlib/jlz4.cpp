@@ -291,7 +291,7 @@ class CLZ4Stream : public CFcmpStream
 
 
 public:
-    CLZ4Stream() { compType = LZ4STRMCOMPRESSEDFILEFLAG; }
+    CLZ4Stream() : CFcmpStream(LZ4STRMCOMPRESSEDFILEFLAG) { }
 
     virtual ~CLZ4Stream() { flush(); }
 

@@ -1820,9 +1820,6 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
         }
     }
 
-    if (!evaluateLocally)
-        return NotFoundAlias;
-
     translator.expandAliases(ctx, value, NULL);
     translator.buildTempExpr(ctx, value, tgt);
     return RuntimeAlias;

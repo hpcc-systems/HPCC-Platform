@@ -300,7 +300,7 @@ class HQLCPP_API CHqlBoundTarget
 {
 public:
     CHqlBoundTarget() {}
-    ~CHqlBoundTarget() { validate(); }
+    ~CHqlBoundTarget() noexcept(false) { validate(); }
 
     bool extractFrom(const CHqlBoundExpr & bound);
     bool isFixedSize() const;

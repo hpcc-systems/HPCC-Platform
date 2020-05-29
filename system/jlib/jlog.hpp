@@ -570,7 +570,7 @@ protected:
     LogMsgSysInfo             sysInfo;
     LogMsgJobInfo             jobInfo;
     LogMsgCode                msgCode = NoLogMsgCode;
-    unsigned                  component;
+    unsigned                  component = 0;    // Not sure this is used
     StringBuffer              text;
     bool                      remoteFlag = false;
 };

@@ -585,8 +585,8 @@ public:
 
 public:
     StringAttr filename;
-    offset_t length;
-    offset_t offset;
+    offset_t length = 0;
+    offset_t offset = 0;
 };
 typedef CIArrayOf<ExtractedBlobInfo> ExtractedBlobArray;
 

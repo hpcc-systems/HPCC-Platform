@@ -148,8 +148,8 @@ public:
         Owned<ISecUser> user = ldapsecurity->createUser(username);
         user->setAuthenticateStatus(AS_AUTHENTICATED);
 
-        bool filescope = stricmp(key,"Scope")==0;
-        bool wuscope = stricmp(key,"workunit")==0;
+        bool filescope = key && stricmp(key,"Scope")==0;
+        bool wuscope = key && stricmp(key,"workunit")==0;
 
         if (filescope || wuscope) {
             SecAccessFlags perm = SecAccess_None;

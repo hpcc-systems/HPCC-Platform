@@ -163,8 +163,7 @@ private:
     CApplicationPortMap m_portmap;
     bool m_viewConfig;
     int m_MaxRequestEntityLength;
-    IEspContainer *m_container;
-    unsigned m_nextSeq;
+    IEspContainer *m_container = nullptr;
     Owned<IPersistentHandler> m_persistentHandler;
     ReadWriteLock rwLock;
 

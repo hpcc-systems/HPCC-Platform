@@ -25,20 +25,20 @@
 class jlib_decl CFcmpCompressor : public CSimpleInterfaceOf<ICompressor>
 {
 protected:
-    size32_t blksz;
-    size32_t bufalloc;
+    size32_t blksz = 0;
+    size32_t bufalloc = 0;
     MemoryBuffer inma;      // equals blksize len
-    MemoryBuffer *outBufMb; // used when dynamic output buffer (when open() used)
-    size32_t outBufStart;
-    byte *inbuf;
-    size32_t inmax;         // remaining
-    size32_t inlen;
-    size32_t inlenblk;      // set to COMMITTED when so
-    bool trailing;
-    byte *outbuf;
-    size32_t outlen;
-    size32_t wrmax;
-    size32_t dynamicOutSz;
+    MemoryBuffer *outBufMb = nullptr; // used when dynamic output buffer (when open() used)
+    size32_t outBufStart = 0;
+    byte *inbuf = nullptr;
+    size32_t inmax = 0;         // remaining
+    size32_t inlen = 0;
+    size32_t inlenblk = 0;      // set to COMMITTED when so
+    bool trailing = false;
+    byte *outbuf = nullptr;
+    size32_t outlen = 0;
+    size32_t wrmax = 0;
+    size32_t dynamicOutSz = 0;
 
     virtual void setinmax() = 0;
     virtual void flushcommitted() = 0;
@@ -56,14 +56,8 @@ protected:
 public:
     CFcmpCompressor()
     {
-        outlen = 0;
         outbuf = NULL;      // only set on close
-        bufalloc = 0;
         wrmax = 0;          // set at open
-        dynamicOutSz = 0;
-        outBufMb = NULL;
-        outBufStart = 0;
-        inbuf = NULL;
     }
 
     virtual ~CFcmpCompressor()
@@ -216,7 +210,7 @@ protected:
     byte *outbuf;
     size32_t outlen;
     size32_t bufalloc;
-    const size32_t *in;
+    const size32_t *in = nullptr;
 
 public:
     CFcmpExpander()
@@ -305,12 +299,12 @@ protected:
     bool reading;
     MemoryAttr ma;
     size32_t bufsize;
-    size32_t bufpos;        // reading only
-    offset_t expSize;
+    size32_t bufpos = 0;        // reading only
+    offset_t expSize = 0;
     __int64 compType;
 
 public:
-    CFcmpStream()
+    CFcmpStream(__int64 _compType) : compType(_compType)
     {
         expOffset = 0;
         cmpOffset = 0;

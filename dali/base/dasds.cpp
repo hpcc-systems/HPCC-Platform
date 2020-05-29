@@ -4850,9 +4850,11 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
 // Not really coalescing, blocking transations and saving store (which will delete pending transactions).
 class CLightCoalesceThread : implements ICoalesce, public CInterface
 {
-    bool stopped, within24;
+    bool stopped = false;
+    bool within24 = false;
     Semaphore sem;
-    unsigned writeTransactionsNow, lastSaveWriteTransactions, lastWarning;
+    unsigned lastSaveWriteTransactions = 0;
+    unsigned lastWarning = 0;
     unsigned idlePeriod, minimumTimeBetweenSaves, idleRate;
     Linked<IPropertyTree> config;
     Owned<IJlibDateTime> quietStartTime, quietEndTime;
@@ -4871,7 +4873,6 @@ public:
     IMPLEMENT_IINTERFACE;
     CLightCoalesceThread(IPropertyTree &_config, IStoreHelper *_iStoreHelper) : config(&_config), iStoreHelper(_iStoreHelper)
     {
-        stopped = false;
         idlePeriod = config->getPropInt("@lCIdlePeriod", DEFAULT_LCIDLE_PERIOD)*1000;
         minimumTimeBetweenSaves = config->getPropInt("@lCMinTime", DEFAULT_LCMIN_TIME)*1000;
         idleRate = config->getPropInt("@lCIdleRate", DEFAULT_LCIDLE_RATE);
@@ -8667,6 +8668,8 @@ bool CCovenSDSManager::fireException(IException *e)
     // so ignore unhandled exceptions for the moment! 
     IERRLOG(e, "Caught unhandled exception!");
     return true;
+
+#if 0
     { CHECKEDCRITICALBLOCK(unhandledCrit, fakeCritTimeout);
         if (processingUnhandled)
         {
@@ -8723,6 +8726,7 @@ bool CCovenSDSManager::fireException(IException *e)
     };
     unhandledThread.setown(new CHandleException(*this, e, restartOnError));
     return true;
+#endif
 }
 
 void CCovenSDSManager::addNodeSubscriber(ISubscription *sub, SubscriptionId id)
