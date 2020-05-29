@@ -12360,7 +12360,7 @@ public:
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
-            if (metadata->getPropBool("_noSeek", false))
+            if (metadata->getPropBool("_noSeek", ctx->queryOptions().noSeekBuildIndex))
                 flags |= TRAILING_HEADER_ONLY;
             if (metadata->getPropBool("_useTrailingHeader", true))
                 flags |= USE_TRAILING_HEADER;

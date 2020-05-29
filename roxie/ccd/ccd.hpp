@@ -297,6 +297,7 @@ extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
 extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
+extern bool defaultNoSeekBuildIndex;
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
 #else

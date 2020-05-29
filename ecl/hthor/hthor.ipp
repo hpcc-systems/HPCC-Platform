@@ -375,6 +375,7 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     StringAttr filename;
     Owned<IFile> file;
     bool incomplete;
+    bool defaultNoSeek = false;
     offset_t sizeLimit;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;

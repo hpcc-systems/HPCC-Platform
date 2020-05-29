@@ -129,6 +129,7 @@ bool preloadOnceData;
 bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
+bool defaultNoSeekBuildIndex = false;
 bool useOldTopology = false;
 
 int backgroundCopyClass = 0;
@@ -1033,6 +1034,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
+        defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
 
