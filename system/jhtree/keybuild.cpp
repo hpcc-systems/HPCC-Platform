@@ -97,7 +97,7 @@ private:
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
     CBlobWriteNode *activeBlobNode = nullptr;
-    CIArrayOf<CBlobWriteNode> pendingBlobs;
+    CIArrayOf<CWriteNodeBase> pendingNodes;
     IArrayOf<IBloomBuilder> bloomBuilders;
     IArrayOf<IRowHasher> rowHashers;
     bool enforceOrder = true;
@@ -310,18 +310,13 @@ protected:
         // Messy code, but I don't have the energy to recode right now.
         if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
         {
-            if (activeBlobNode)
+            while (pendingNodes)
             {
-                pendingBlobs.append(*activeBlobNode);
-                activeBlobNode = nullptr;
-            }
-            while (pendingBlobs)
-            {
-                CBlobWriteNode &pending = pendingBlobs.item(0);
+                CWriteNodeBase &pending = pendingNodes.item(0);
                 if (!prevLeafNode || pending.getFpos() > prevLeafNode->getFpos())
                     break;
                 writeNode(&pending, pending.getFpos());
-                pendingBlobs.remove(0);
+                pendingNodes.remove(0);
             }
         }
         if (prevLeafNode != NULL)
@@ -335,8 +330,13 @@ protected:
             }
             else
                 nodeInfo.append(* new CNodeInfo(prevLeafNode->getFpos(), NULL, keyedSize, lastSequence));
-            writeNode(prevLeafNode, prevLeafNode->getFpos());
-            prevLeafNode->Release();
+            if ((keyHdr->getKeyType() & TRAILING_HEADER_ONLY) != 0 && activeBlobNode && activeBlobNode->getFpos() < prevLeafNode->getFpos())
+                pendingNodes.append(*prevLeafNode);
+            else
+            {
+                writeNode(prevLeafNode, prevLeafNode->getFpos());
+                prevLeafNode->Release();
+            }
             prevLeafNode = NULL;
         }
         if (NULL != node)
@@ -380,13 +380,18 @@ protected:
 
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
     {
+        if (activeBlobNode && (keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
+        {
+            pendingNodes.append(*activeBlobNode);
+            activeBlobNode = nullptr;
+        }
         if (NULL != activeNode)
         {
             flushNode(activeNode, leafInfo);
             activeNode->Release();
             activeNode = nullptr;
         }
-        if (activeBlobNode && !(keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
+        if (activeBlobNode)
         {
             writeNode(activeBlobNode, activeBlobNode->getFpos());
             activeBlobNode->Release();
@@ -395,12 +400,12 @@ protected:
         flushNode(NULL, leafInfo);
         if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
         {
-            ForEachItemIn(idx, pendingBlobs)
+            ForEachItemIn(idx, pendingNodes)
             {
-                CBlobWriteNode &pending = pendingBlobs.item(idx);
+                CWriteNodeBase &pending = pendingNodes.item(idx);
                 writeNode(&pending, pending.getFpos());
             }
-            pendingBlobs.kill();
+            pendingNodes.kill();
         }
         buildTree(leafInfo);
         if(metadata)
@@ -500,7 +505,7 @@ protected:
             activeBlobNode->setLeftSib(prevBlobNode->getFpos());
             prevBlobNode->setRightSib(activeBlobNode->getFpos());
             if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
-                pendingBlobs.append(*prevBlobNode);
+                pendingNodes.append(*prevBlobNode);
             else
             {
                 writeNode(prevBlobNode, prevBlobNode->getFpos());
