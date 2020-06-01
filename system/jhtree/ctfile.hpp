@@ -185,13 +185,15 @@ protected:
     byte keyType;
     size32_t keyLen;
     size32_t keyCompareLen;
-    offset_t fpos;
     CKeyHdr *keyHdr;
     bool isVariable;
 
+private:
+    offset_t fpos;
+
 public:
     virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
-    inline offset_t getFpos() const { return fpos; }
+    inline offset_t getFpos() const { assertex(fpos); return fpos; }
     inline size32_t getKeyLen() const { return keyLen; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     inline bool isBlob() const { return hdr.leafFlag == 2; }
@@ -314,17 +316,6 @@ public:
     unsigned get4();
 private:
     unsigned read = 0;
-};
-
-class jhtree_decl CNodeHeader : public CNodeBase
-{
-public:
-    CNodeHeader();
-
-    void load(NodeHdr &hdr);
-
-    inline offset_t getRightSib() const { return hdr.rightSib; }
-    inline offset_t getLeftSib() const { return hdr.leftSib; }
 };
 
 class jhtree_decl CWriteNodeBase : public CNodeBase
