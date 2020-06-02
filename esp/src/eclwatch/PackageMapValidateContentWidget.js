@@ -74,10 +74,11 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            if ((params.targets !== undefined) && (params.targets[0].Name !== undefined))
+            if ((params.targets !== undefined) && (params.targets[0].Name !== undefined)) {
                 this.initSelections(params.targets);
-            else
+            } else {
                 this.getSelections();
+            }
 
             this.editorControl = registry.byId(this.id + "Source");
             this.editorControl.init(params);
@@ -118,20 +119,23 @@ define([
             if (this.targets.length > 0) {
                 var defaultTarget = 0;
                 for (var i = 0; i < this.targets.length; ++i) {
-                    if ((defaultTarget === 0) && (this.targets[i].Type === 'roxie'))
+                    if ((defaultTarget === 0) && (this.targets[i].Type === 'roxie')) {
                         defaultTarget = i; //first roxie
+                    }
                     this.targetSelectControl.options.push({ label: this.targets[i].Name, value: this.targets[i].Name });
                 }
                 this.targetSelectControl.set("value", this.targets[defaultTarget].Name);
-                if (this.targets[defaultTarget].Processes !== undefined)
+                if (this.targets[defaultTarget].Processes !== undefined) {
                     this.updateProcessSelections(this.targets[defaultTarget], '');
+                }
             }
         },
 
         updateProcessSelections: function (target, targetName) {
             this.processSelectControl.removeOption(this.processSelectControl.getOptions());
-            if (target !== null)
+            if (target !== null) {
                 this.addProcessSelections(target.Processes.Item);
+            }
             else {
                 for (var i = 0; i < this.targets.length; ++i) {
                     var target = this.targets[i];
@@ -148,12 +152,15 @@ define([
         addProcessSelections: function (processes) {
             this.processes.length = 0;
 
-            if (processes.length < 1)
+            if (processes.length < 1) {
                 return;
+            }
+
             for (var i = 0; i < processes.length; ++i) {
                 var process = processes[i];
-                if ((this.processes !== null) && (this.processes.indexOf(process) !== -1))
+                if ((this.processes !== null) && (this.processes.indexOf(process) !== -1)) {
                     continue;
+                }
                 this.processes.push(process);
                 this.processSelectControl.options.push({ label: process, value: process });
             }
@@ -188,15 +195,17 @@ define([
             this.resultControl.setText("");
             this.validateButton.set("disabled", true);
             WsPackageMaps.validatePackage(request).then(function (response) {
-                var responseText = context.validateResponseToText(response.ValidatePackageResponse);
-                if (responseText === '')
-                    context.resultControl.setText(context.i18n.Empty);
-                else {
-                    responseText = context.i18n.ValidateResult + responseText;
-                    context.resultControl.setText(responseText);
+                if (lang.exists("response.ValidatePackageResponse", response)) {
+                    var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                    if (responseText === '') {
+                        context.resultControl.setText(context.i18n.Empty);
+                    } else {
+                        responseText = context.i18n.ValidateResult + responseText;
+                        context.resultControl.setText(responseText);
+                    }
+                    context.validateButton.set("disabled", false);
+                    return response;
                 }
-                context.validateButton.set("disabled", false);
-                return response;
             }, function (err) {
                 context.showErrors(err);
                 return err;
@@ -205,14 +214,16 @@ define([
 
         validateResponseToText: function (response) {
             var text = "";
-            if (!lang.exists("Errors", response) || (response.Errors.length < 1))
+            if (!lang.exists("Errors", response) || (response.Errors.length < 1)) {
                 text += this.i18n.NoErrorFound;
-            else
+            } else {
                 text = this.addArrayToText(this.i18n.Errors, response.Errors, text);
-            if (!lang.exists("Warnings", response) || (response.Warnings.length < 1))
+            }
+            if (!lang.exists("Warnings", response) || (response.Warnings.length < 1)) {
                 text += this.i18n.NoWarningFound;
-            else
+            } else {
                 text = this.addArrayToText(this.i18n.Warnings, response.Warnings, text);
+            }
 
             text += "\n";
             text = this.addArrayToText(this.i18n.QueriesNoPackage, response.queries.Unmatched, text);
