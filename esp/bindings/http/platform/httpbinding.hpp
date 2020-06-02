@@ -18,6 +18,7 @@
 #ifndef _HTTPBINDING_HPP__
 #define _HTTPBINDING_HPP__
 
+#include <set>
 #include "http/platform/httptransport.ipp"
 #include "espcache.hpp"
 
@@ -172,6 +173,7 @@ private:
     BoolHash                invalidURLsAfterAuth; //Those URLs should not be used for redirect after authenticated, such as /SMC/, /esp/login
     BoolHash                domainAuthResources;
     StringArray             domainAuthResourcesWildMatch;
+    std::set<sub_service>   unrestrictedSSTypes;
 
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
 
@@ -387,6 +389,8 @@ public:
     }
     void readAuthDomainCfg(IPropertyTree* procCfg);
     void readUnrestrictedResources(const char* resources);
+    void setUnrestrictedSSTypes();
+    bool isUnrestrictedSSType(sub_service ss) const;
     void setABoolHash(const char* csv, BoolHash& hash) const;
     bool isCORSRequest(const char* originHeader);
     bool canRedirectAfterAuth(const char* url) const;
