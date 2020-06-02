@@ -436,6 +436,7 @@ class CMPChannel;
 class CMPConnectThread: public Thread
 {
     bool running;
+    bool listen;
     ISocket *listensock;
     CMPServer *parent;
     int mpSoMaxConn;
@@ -444,7 +445,7 @@ class CMPConnectThread: public Thread
     void checkSelfDestruct(void *p,size32_t sz);
 
 public:
-    CMPConnectThread(CMPServer *_parent, unsigned port);
+    CMPConnectThread(CMPServer *_parent, unsigned port, bool _listen);
     ~CMPConnectThread()
     {
         ::Release(listensock);
@@ -504,7 +505,7 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(CMPChannelHT);
 
-    CMPServer(unsigned __int64 _role, unsigned _port);
+    CMPServer(unsigned __int64 _role, unsigned _port, bool _listen);
     ~CMPServer();
     void start();
     virtual void stop();
@@ -824,7 +825,7 @@ protected: friend class CMPPacketReader;
             {
                 StringBuffer str;
 #ifdef _TRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s",remoteep.getUrlStr(str).str());
+                LOG(MCdebugInfo(100), unknownJob, "MP: connecting to %s role: %" I64F "u", remoteep.getUrlStr(str).str(), parent->getRole());
 #endif
                 if (((int)tm.timeout)<0)
                     remaining = CONNECT_TIMEOUT;
@@ -985,7 +986,7 @@ protected: friend class CMPPacketReader;
                 }
 
 #ifdef _TRACE
-                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket read rd=%u, reply=%u, sizeof(connectHdr)=%lu", rd, reply, sizeof(connectHdr));
+                LOG(MCdebugInfo(100), unknownJob, "MP: connect after socket read rd=%u, sizeof(connectHdr)=%lu", rd, sizeof(connectHdr));
 #endif
 
                 if (rd)
@@ -1580,7 +1581,7 @@ public:
                     // assumes packet header will arrive in one go
                     if (sizeavail<sizeof(hdr)) {
 #ifdef _FULLTRACE
-                        LOG(MCdebugInfo(100), unknownJob, "Selected stalled on header %d %d",sizeavail,sizeavail-sizeof(hdr));
+                        LOG(MCdebugInfo(100), unknownJob, "Selected stalled on header %u %lu",sizeavail,sizeavail-sizeof(hdr));
 #endif
                         size32_t szread;
                         sock->read(&hdr,sizeof(hdr),sizeof(hdr),szread,60); // I don't *really* want to block here but not much else can do
@@ -1935,18 +1936,22 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
 }
     
 // --------------------------------------------------------
-CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
+CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _listen)
     : Thread("MP Connection Thread")
 {
     parent = _parent;
+    listen = _listen;
     mpSoMaxConn = 0;
     mpTraceLevel = 0;
     Owned<IPropertyTree> env = getHPCCEnvironment();
     if (env)
     {
-        mpSoMaxConn = env->getPropInt("EnvSettings/mpSoMaxConn", 0);
-        if (!mpSoMaxConn)
-            mpSoMaxConn = env->getPropInt("EnvSettings/ports/mpSoMaxConn", 0);
+        if (listen)
+        {
+            mpSoMaxConn = env->getPropInt("EnvSettings/mpSoMaxConn", 0);
+            if (!mpSoMaxConn)
+                mpSoMaxConn = env->getPropInt("EnvSettings/ports/mpSoMaxConn", 0);
+        }
         mpTraceLevel = env->getPropInt("EnvSettings/mpTraceLevel", 0);
     }
     if (mpSoMaxConn)
@@ -1956,7 +1961,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
         if (soMaxCheck && (mpSoMaxConn > kernSoMaxConn))
             WARNLOG("MP: kernel listen queue backlog setting (somaxconn=%d) is lower than environment mpSoMaxConn (%d) setting and should be increased", kernSoMaxConn, mpSoMaxConn);
     }
-    if (!mpSoMaxConn)
+    if (!mpSoMaxConn && listen)
         mpSoMaxConn = DEFAULT_LISTEN_QUEUE_SIZE;
     if (!port)
     {
@@ -1978,6 +1983,8 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
         }
         assertex(maxPort >= minPort);
         Owned<IJSOCK_Exception> lastErr;
+        // mck - if not listening then could ignore port range and
+        //       let OS select an unused port ...
         unsigned numPorts = maxPort - minPort + 1;
         for (unsigned retries = 0; retries < numPorts * 3; retries++)
         {
@@ -2045,6 +2052,8 @@ void CMPConnectThread::startPort(unsigned short port)
 {
     if (!listensock)
         listensock = ISocket::create(port, mpSoMaxConn);
+    if (!listen)
+        return;
     running = true;
     Thread::start();
 }
@@ -2312,13 +2321,18 @@ CMPChannel *CMPServer::lookup(const SocketEndpoint &endpoint)
 }
 
 
-CMPServer::CMPServer(unsigned __int64 _role, unsigned _port)
+CMPServer::CMPServer(unsigned __int64 _role, unsigned _port, bool _listen)
 {
     RTsalt=0xff;
     role = _role;
     port = 0;   // connectthread tells me what port it actually connected on
     checkclosed = false;
-    connectthread = new CMPConnectThread(this, _port);
+
+    // If !_listen, CMPConnectThread binds a port but does not actually start
+    // running, it is used as a unique IP:port required in MP INode/IGroup internals
+    // for MP clients that do not need to accept connections.
+
+    connectthread = new CMPConnectThread(this, _port, _listen);
     selecthandler = createSocketSelectHandler();
     pingpackethandler = new PingPacketHandler;              // TAG_SYS_PING
     pingreplypackethandler = new PingReplyPacketHandler;    // TAG_SYS_PING_REPLY
@@ -2521,7 +2535,7 @@ void CMPServer::start()
 
 void CMPServer::stop()
 {
-    selecthandler->stop(true); 
+    selecthandler->stop(true);
     connectthread->stop();
     CMPChannel *c = NULL;
     for (;;) {
@@ -3201,10 +3215,10 @@ ICommunicator *CMPServer::createCommunicator(IGroup *group, bool outer)
 
 ///////////////////////////////////
 
-IMPServer *startNewMPServer(unsigned port)
+IMPServer *startNewMPServer(unsigned port, bool listen)
 {
     assertex(sizeof(PacketHeader)==32);
-    CMPServer *mpServer = new CMPServer(0, port);
+    CMPServer *mpServer = new CMPServer(0, port, listen);
     mpServer->start();
     return mpServer;
 }
@@ -3218,7 +3232,7 @@ class CGlobalMPServer : public CMPServer
 public:
     static CriticalSection sect;
 
-    CGlobalMPServer(unsigned __int64 _role, unsigned _port) : CMPServer(_role, _port)
+    CGlobalMPServer(unsigned __int64 _role, unsigned _port, bool _listen) : CMPServer(_role, _port, _listen)
     {
         worldcomm = NULL;
         nestLevel = 0;
@@ -3252,13 +3266,13 @@ MODULE_EXIT()
     ::Release(globalMPServer);
 }
 
-void startMPServer(unsigned __int64 role, unsigned port, bool paused)
+void startMPServer(unsigned __int64 role, unsigned port, bool paused, bool listen)
 {
     assertex(sizeof(PacketHeader)==32);
     CriticalBlock block(CGlobalMPServer::sect);
     if (NULL == globalMPServer)
     {
-        globalMPServer = new CGlobalMPServer(role, port);
+        globalMPServer = new CGlobalMPServer(role, port, listen);
         initMyNode(globalMPServer->getPort());
     }
     if (0 == globalMPServer->queryNest())
@@ -3275,9 +3289,9 @@ void startMPServer(unsigned __int64 role, unsigned port, bool paused)
     globalMPServer->incNest();
 }
 
-void startMPServer(unsigned port, bool paused)
+void startMPServer(unsigned port, bool paused, bool listen)
 {
-    startMPServer(0, port, paused);
+    startMPServer(0, port, paused, listen);
 }
 
 void stopMPServer()

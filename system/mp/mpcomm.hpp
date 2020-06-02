@@ -104,11 +104,11 @@ interface IMPServer : extends IInterface
     virtual IWhiteListHandler *queryWhiteListCallback() const = 0;
 };
 
-extern mp_decl void startMPServer(unsigned port, bool paused=false);
-extern mp_decl void startMPServer(unsigned __int64 role, unsigned port, bool paused=false);
+extern mp_decl void startMPServer(unsigned port, bool paused=false, bool listen=false);
+extern mp_decl void startMPServer(unsigned __int64 role, unsigned port, bool paused=false, bool listen=false);
 extern mp_decl void stopMPServer();
 extern mp_decl IMPServer *getMPServer();
-extern mp_decl IMPServer *startNewMPServer(unsigned port);
+extern mp_decl IMPServer *startNewMPServer(unsigned port, bool listen=false);
 
 interface IConnectionMonitor: extends IInterface
 {

@@ -612,7 +612,7 @@ int main(int argc, const char* argv[])
         }
 
         unsigned short myport = epa.item(myrank).port;
-        startMPServer(DCR_DaliServer, myport, true);
+        startMPServer(DCR_DaliServer, myport, true, true);
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IWhiteListHandler> whiteListHandler = createWhiteListHandler(populateWhiteListFromEnvironment, formatDaliRole);
         mpServer->installWhiteListCallback(whiteListHandler);
@@ -687,7 +687,7 @@ int main(int argc, const char* argv[])
             throw;
         }
         PROGLOG("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
-        startMPServer(DCR_DaliServer, myport,false);
+        startMPServer(DCR_DaliServer, myport, false, true);
         bool ok = true;
         ForEachItemIn(i2,servers)
         {

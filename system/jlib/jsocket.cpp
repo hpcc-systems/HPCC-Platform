@@ -939,6 +939,11 @@ int CSocket::post_connect ()
 
 void CSocket::open(int listen_queue_size,bool reuseports)
 {
+    // If listen_queue_size==0 then bind port to address but
+    // do not actually listen() for accepting connections.
+    // This is used when a unique IP:port is needed for MP client
+    // INode/IGroup internals, but client never actually accepts connections.
+
     if (IP6preferred)
         sock = ::socket(AF_INET6, connectionless()?SOCK_DGRAM:SOCK_STREAM, PF_INET6);
     else
@@ -964,7 +969,7 @@ void CSocket::open(int listen_queue_size,bool reuseports)
 #ifndef _WIN32
     reuseports = true;  // for some reason linux requires reuse ports
 #endif
-    if (reuseports) {
+    if (reuseports && listen_queue_size) {
         int on = 1;
         setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
     }
@@ -996,7 +1001,7 @@ ErrPortInUse:
             THROWJSOCKEXCEPTION(saverr);
         }
     }
-    if (!connectionless()) {
+    if (!connectionless() && listen_queue_size) {
         if (::listen(sock, listen_queue_size) != 0) {
             saverr = ERRNO();
             if (saverr==JSE_ADDRINUSE)
