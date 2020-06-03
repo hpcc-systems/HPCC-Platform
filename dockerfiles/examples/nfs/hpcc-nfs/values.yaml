@@ -1,0 +1,17 @@
+# Default values for hpcc-nfs.
+
+sharedStorage:
+  size: 2Gi 
+  #existingClaim: myexistingclaim
+
+# NB: the sum of the size's below should be <= the sharedStorage size
+
+dllStorage:
+  size: 512Mi
+
+daliStorage:
+  size: 512Mi
+
+dataStorage:
+  size: 1Gi
+

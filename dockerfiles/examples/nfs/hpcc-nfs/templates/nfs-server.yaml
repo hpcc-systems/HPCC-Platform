@@ -1,0 +1,52 @@
+{{- $serverName := (include "hpcc-nfs.fullname" $) }}
+{{- $pvcName := $.Values.sharedStorage.existingClaim | default (printf "%s-pvc" (include "hpcc-nfs.fullname" $)) }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ $serverName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      server: {{ $serverName }}
+  template:
+    metadata:
+      labels:
+        server: {{ $serverName }}
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: {{ $serverName }}
+        image: gcr.io/google_containers/volume-nfs:0.8
+        ports:
+          - name: nfs
+            containerPort: 2049
+          - name: mountd
+            containerPort: 20048
+          - name: rpcbind
+            containerPort: 111
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - mountPath: /data
+            name: nfs-pvc
+      volumes:
+        - name: nfs-pvc
+          persistentVolumeClaim:
+            claimName: {{ $pvcName }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $serverName }}
+spec:
+  ports:
+    - name: nfs
+      port: 2049
+    - name: mountd
+      port: 20048
+    - name: rpcbind
+      port: 111
+  selector:
+    server: {{ $serverName }}
