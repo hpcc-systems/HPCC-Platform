@@ -1,0 +1,20 @@
+# Overrides for storage in hpcc, using host directories.
+# NB: The "hpcc-localfile" helm charts should be installed 1st.
+# The "hpcc-localfile" helm chart provisions and creates the
+# PVC's required by HPCC mapped to directories on the host.
+# The pvc names are dynamic based on the install name.
+# In this example the install name was "localfile"
+
+
+storage:
+  dllStorage:
+    existingClaim: "dll-localfile-hpcc-localfile-pvc"
+    forcePermissions: true
+
+  daliStorage:
+    existingClaim: "dali-localfile-hpcc-localfile-pvc"
+    forcePermissions: true
+
+  dataStorage:
+    existingClaim: "data-localfile-hpcc-localfile-pvc"
+    forcePermissions: true
