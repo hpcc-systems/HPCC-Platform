@@ -616,8 +616,6 @@ int main(int argc, const char* argv[])
         mpServer->installWhiteListCallback(whiteListHandler);
 #ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
-#else
-        setupContainerizedLogMsgHandler();
 #endif
         startLogMsgChildReceiver(); 
         startLogMsgParentReceiver();
