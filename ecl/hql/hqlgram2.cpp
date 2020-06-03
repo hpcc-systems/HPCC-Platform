@@ -8216,7 +8216,7 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
                     if (hadVariableAggregate)
                         reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", id ? str(id) : "");
 
-                    if (value->isGroupAggregateFunction())
+                    if (value->isGroupAggregateFunction() && (value->queryType()->getTypeCode() != type_any))
                         hadVariableAggregate = true;
                 }
 
