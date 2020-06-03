@@ -2774,6 +2774,8 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 
 void CMasterGraph::getStats(IStatisticGatherer &stats)
 {
+    stats.addStatistic(StNumSlaves, queryClusterWidth());
+
     // graph specific stats
 
     graphStats.getStats(stats);
