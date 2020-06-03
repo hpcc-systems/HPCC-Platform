@@ -14,7 +14,8 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
+      initContainers: 
+        {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems

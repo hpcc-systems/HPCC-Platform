@@ -55,6 +55,12 @@ storage:
     # existingClaim: ""
     # forcePermissions: false
 
+bundles: []
+## Specifying bundles here will cause the indicated bundles to be downloaded and installed automatically
+## whenever an eclccserver pod is started
+# for example
+# - name: DataPatterns
+
 dali:
 - name: mydali
 

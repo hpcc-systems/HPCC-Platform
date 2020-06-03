@@ -16,7 +16,8 @@ spec:
         run: {{ .name | quote }}
     spec:
       serviceAccountName: hpcc
-      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      initContainers:
+        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems

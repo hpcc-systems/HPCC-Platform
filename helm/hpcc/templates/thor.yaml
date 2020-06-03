@@ -134,7 +134,8 @@ data:
       template:
         spec:
           serviceAccountName: hpcc
-          {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
+          initContainers: 
+            {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
@@ -176,7 +177,8 @@ data:
       template:
         spec:
           serviceAccountName: hpcc
-          {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
+          initContainers:
+            {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}

@@ -16,7 +16,9 @@ spec:
     spec:
       serviceAccountName: hpcc
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
-      {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
+      initContainers:
+        {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
+        {{- include "hpcc.addBundles" (dict "root" $ "me" . "imagename" "eclccserver") | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -31,10 +33,14 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+        - name: "hpccbundles"
+          mountPath: "/home/hpcc/.HPCCSystems"
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $ | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
+      - name: hpccbundles
+        emptyDir: {}
 ---
 kind: ConfigMap 
 apiVersion: v1 

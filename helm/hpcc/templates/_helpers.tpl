@@ -171,7 +171,6 @@ imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
 */}}
 {{- define "hpcc.changeMountPerms" -}}
-initContainers:
 # This is a bit of a hack, to ensure that the persistent storage mounted is writable.
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
@@ -216,6 +215,27 @@ Check dalistorage mount point, using hpcc.changeMountPerms
 {{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "dalistorage-pv" "volumePath" "/var/lib/HPCCSystems/dalistorage") }}
 {{- end }}
 {{- end }}
+
+{{/*
+Add any bundles
+*/}}
+{{- define "hpcc.addBundles" -}}
+{{- $in := . -}}
+{{- range .root.Values.bundles }}
+- name: add-bundle-{{ .name | lower }}
+{{ include "hpcc.addImageAttrs" $in | indent 2 }}
+  command: [
+           "ecl-bundle",
+           "install",
+           "--remote",
+           "{{ .name }}"
+           ]
+  volumeMounts:
+  - name: "hpccbundles"
+    mountPath: "/home/hpcc/.HPCCSystems"
+{{- end }}
+{{- end }}
+
 
 {{/*
 Add security context

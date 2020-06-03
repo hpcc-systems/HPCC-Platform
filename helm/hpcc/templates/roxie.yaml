@@ -99,7 +99,8 @@ spec:
         run: {{ $servername | quote }}
         roxie-server: {{ $servername | quote }}
     spec:
-      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      initContainers:
+        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -157,7 +158,8 @@ spec:
         roxie-server: {{ $servername | quote }}
 {{- end }}
     spec:
-      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      initContainers:
+        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
