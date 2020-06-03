@@ -1303,7 +1303,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void clearExceptions(const char *source=nullptr) = 0;
     virtual void commit() = 0;
     virtual IWUException * createException() = 0;
-    virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log=NULL) = 0;
+    virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log=nullptr) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;

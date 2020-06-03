@@ -1344,7 +1344,7 @@ protected:
                 ex->setTimeStamp("2001");
             }
 
-            wu->addProcess("ptype", "pInstance", 54321, "mylog");
+            wu->addProcess("ptype", "pInstance", 54321, 50, "pPattern", false, "mylog");
             wu->setAction(WUActionCompile);
             wu->setApplicationValue("app1", "av1", "value", true);
             wu->setApplicationValueInt("app2", "av2", 42, true);
