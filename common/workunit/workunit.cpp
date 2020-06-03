@@ -13959,13 +13959,19 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
-    VStringBuffer args("\"--workunit=%s\"", wuid);
-    for (const auto &p: extraParams)
-        args.append(',').newline().append("\"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
     VStringBuffer jobSpecFilename("/etc/config/%s-jobspec.yaml", componentName);
     StringBuffer jobYaml;
     jobYaml.loadFile(jobSpecFilename, false);
     jobYaml.replaceString("%jobname", jobname.str());
+
+    VStringBuffer args("\"--workunit=%s\"", wuid);
+    for (const auto &p: extraParams)
+    {
+        if ('%' == p.first[0]) // jobspec substituion
+            jobYaml.replaceString(p.first.c_str(), p.second.c_str());
+        else
+            args.append(',').newline().append("\"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
+    }
     jobYaml.replaceString("%args", args.str());
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();

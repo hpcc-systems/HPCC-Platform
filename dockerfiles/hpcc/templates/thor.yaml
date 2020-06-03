@@ -199,7 +199,7 @@ data:
     metadata:
       name: %jobname
     spec:
-      parallelism: {{ $thor.numSlaves }}
+      parallelism: %numSlaves
       ttlSecondsAfterFinished: 100
       template:
         spec:
