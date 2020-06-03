@@ -183,7 +183,7 @@ protected: friend class CFileAsyncResult;
 class CFileIOStream : implements IFileIOStream, public CInterface
 {
 public:
-    CFileIOStream(IFileIO * _io);
+    CFileIOStream(IFileIO * _io, bool _allowSeek=true);
     IMPLEMENT_IINTERFACE
 
     virtual void flush();
@@ -196,6 +196,7 @@ public:
 protected:
     Linked<IFileIO>     io;
     offset_t            curOffset;
+    bool allowSeek = true;
 };
 
 

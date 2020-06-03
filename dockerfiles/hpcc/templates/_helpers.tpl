@@ -47,9 +47,21 @@ Generate global ConfigMap info
 Pass in root as .
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
+{{- $local := dict "defaultEsp" "" -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
-defaultEsp: {{ .Values.global.defaultEsp | default (index .Values.esp 0).name }}
+{{- if .Values.global.defaultEsp -}}
+ {{- $_ := set $local "defaultEsp" .Values.global.defaultEsp -}}
+{{- else if hasPrefix "[]" (typeOf .Values.esp) -}}
+ {{- range $key, $value := .Values.esp -}}
+  {{- if (not $value.disabled) -}}
+   {{- if (not $local.defaultEsp) -}}
+    {{- $_ := set $local "defaultEsp" $value.name -}}
+   {{- end -}} 
+  {{- end -}} 
+ {{- end -}} 
+{{- end }} 
+defaultEsp: {{ $local.defaultEsp | quote }}
 {{- end -}}
 
 {{/*

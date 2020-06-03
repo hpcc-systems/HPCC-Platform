@@ -1,0 +1,13 @@
+# Default values for hpcc-azurefile
+
+dllStorage:
+  size: 256Mi
+  #sku: "Standard_LRS"
+
+dataStorage:
+  size: 1Gi
+  #sku: "Standard_LRS"
+
+daliStorage:
+  size: 256Mi
+  #sku: "Standard_ZRS"

@@ -2128,77 +2128,83 @@ public:
         assertex(projected != nullptr);
         ForEachItemIn(idx, subFiles)
         {
-            FileFormatMode actualMode = getMode(subFiles.item(idx));
+            IFileDescriptor *subFile = subFiles.item(idx);
             IOutputMetaData *actual = expected;
-            const char *subname = subNames.item(idx);
-            if (fileMode!=actualMode)
+            if (subFile)
             {
-                if (traceLevel>0)
-                    DBGLOG("Not translating %s as file type does not match", subname);
-            }
-            else if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
-            {
-                int thisFormatCrc = 0;
-                bool actualUnknown = true;
-                if (mode != RecordTranslationMode::AlwaysECL)
+                FileFormatMode actualMode = getMode(subFile);
+                const char *subname = subNames.item(idx);
+                if (fileMode!=actualMode)
                 {
-                    thisFormatCrc = formatCrcs.item(idx);
-                    if (diskTypeInfo.item(idx))
-                    {
-                        actual = diskTypeInfo.item(idx);
-                        actualUnknown = false;
-                    }
-                    else if (thisFormatCrc == expectedFormatCrc)  // Type descriptors that cannot be serialized can still be read from code
-                    {
-                        actual = expected;
-                        actualUnknown = false;
-                    }
+                    if (traceLevel>0)
+                        DBGLOG("Not translating %s as file type does not match", subname);
                 }
-
-                assertex(actual);
-                if ((thisFormatCrc != prevFormatCrc) || (idx == 0))  // Check if same translation as last subfile
+                else if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
                 {
-                    translator.clear();
-                    keyedTranslator.clear();
-
-                    //Check if the file requires translation, but translation is disabled
-                    if (thisFormatCrc && expectedFormatCrc && (thisFormatCrc != expectedFormatCrc) && (mode == RecordTranslationMode::None))
-                        throwTranslationError(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true), subname);
-
-                    if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
+                    int thisFormatCrc = 0;
+                    bool actualUnknown = true;
+                    if (mode != RecordTranslationMode::AlwaysECL)
                     {
-                        if (traceLevel > 5)
-                            DBGLOG("Assume no translation required, crc's match");
-                    }
-                    else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
-                    {
-                        if (thisFormatCrc)
-                            throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
-                        else if (traceLevel > 5)
-                            DBGLOG("Assume no translation required, disk format unknown");
-                    }
-                    else
-                    {
-                        translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
-                        if (traceLevel>0 && traceTranslations)
+                        thisFormatCrc = formatCrcs.item(idx);
+                        if (diskTypeInfo.item(idx))
                         {
-                            DBGLOG("Record layout translator created for %s", subname);
-                            translator->describe();
+                            actual = diskTypeInfo.item(idx);
+                            actualUnknown = false;
                         }
-                        if (!translator || !translator->canTranslate())
-                            throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
-                        else if (translator->needsTranslate())
+                        else if (thisFormatCrc == expectedFormatCrc)  // Type descriptors that cannot be serialized can still be read from code
                         {
-                            if (fileMode==FileFormatMode::index && translator->keyedTranslated())
-                                throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
-                            keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                            actual = expected;
+                            actualUnknown = false;
+                        }
+                    }
+
+                    assertex(actual);
+                    if ((thisFormatCrc != prevFormatCrc) || (idx == 0))  // Check if same translation as last subfile
+                    {
+                        translator.clear();
+                        keyedTranslator.clear();
+
+                        //Check if the file requires translation, but translation is disabled
+                        if (thisFormatCrc && expectedFormatCrc && (thisFormatCrc != expectedFormatCrc) && (mode == RecordTranslationMode::None))
+                            throwTranslationError(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true), subname);
+
+                        if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
+                        {
+                            if (traceLevel > 5)
+                                DBGLOG("Assume no translation required, crc's match");
+                        }
+                        else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
+                        {
+                            if (thisFormatCrc)
+                                throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
+                            else if (traceLevel > 5)
+                                DBGLOG("Assume no translation required, disk format unknown");
                         }
                         else
-                            translator.clear();
+                        {
+                            translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
+                            if (traceLevel>0 && traceTranslations)
+                            {
+                                DBGLOG("Record layout translator created for %s", subname);
+                                translator->describe();
+                            }
+                            if (!translator || !translator->canTranslate())
+                                throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s", subname);
+                            else if (translator->needsTranslate())
+                            {
+                                if (fileMode==FileFormatMode::index && translator->keyedTranslated())
+                                    throw MakeStringException(ROXIE_MISMATCH, "Record layout mismatch detected in keyed fields for file %s", subname);
+                                keyedTranslator.setown(createKeyTranslator(actual->queryRecordAccessor(true), expected->queryRecordAccessor(true)));
+                            }
+                            else
+                                translator.clear();
+                        }
                     }
+                    prevFormatCrc = thisFormatCrc;
                 }
-                prevFormatCrc = thisFormatCrc;
             }
+            else if (traceLevel > 5)
+                DBGLOG("Assume no translation required, subfile is null");
             result->addTranslator(LINK(translator), LINK(keyedTranslator), LINK(actual));
         }
         return result.getClear();

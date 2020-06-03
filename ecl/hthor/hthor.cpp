@@ -1132,7 +1132,7 @@ void CHThorIndexWriteActivity::execute()
             io.setown(file->open(IFOcreate));
         }
         incomplete = true;
-        Owned<IFileIOStream> out = createIOStream(io);
+        bool needsSeek = true;
         bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
         unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY;
         if (helper.getFlags() & TIWrowcompress)
@@ -1146,7 +1146,10 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
         if (metadata->getPropBool("_noSeek", defaultNoSeek))
+        {
             flags |= TRAILING_HEADER_ONLY;
+            needsSeek = false;
+        }
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
 
@@ -1154,6 +1157,7 @@ void CHThorIndexWriteActivity::execute()
         if (hasTrailingFileposition(helper.queryDiskRecordSize()->queryTypeInfo()))
             keyMaxSize -= sizeof(offset_t);
 
+        Owned<IFileIOStream> out = createIOStream(io, needsSeek);
         Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
         class BcWrapper : implements IBlobCreator
         {

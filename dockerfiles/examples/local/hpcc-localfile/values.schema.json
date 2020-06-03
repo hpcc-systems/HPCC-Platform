@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "common": {
+      "type": "object",
+      "properties": {
+        "hostpath": {
+          "type": "string"
+        }
+      }
+    },
+    "dllStorage": {
+      "$ref": "#/definitions/storage"
+    },
+    "dataStorage": {
+      "$ref": "#/definitions/storage"
+    },
+    "daliStorage": {
+      "$ref": "#/definitions/storage"
+    }
+  },
+  "title": "Values",
+  "type": "object",
+  "definitions": {
+    "storage": {
+      "type": "object",
+      "required": [ "size" ],
+      "properties": {
+        "size": {
+          "type": "string"
+        },
+        "hostpath": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

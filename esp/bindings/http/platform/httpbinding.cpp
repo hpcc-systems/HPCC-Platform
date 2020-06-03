@@ -264,6 +264,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     if(m_challenge_realm.length() == 0)
         m_challenge_realm.append("ESP");
 
+    setUnrestrictedSSTypes();
+
     //Even for non-session based environment, the sessionIDCookieName may be used to
     //remove session related cookies cached in some browser page.
     sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
@@ -417,6 +419,23 @@ void EspHttpBinding::readUnrestrictedResources(const char* resources)
         else
             domainAuthResources.setValue(resource, true);
     }
+}
+
+//Set the subservice types (wsdl, xsd, etc) which do not need user authentication.
+void EspHttpBinding::setUnrestrictedSSTypes()
+{
+    unrestrictedSSTypes.insert(sub_serv_wsdl);
+    unrestrictedSSTypes.insert(sub_serv_xsd);
+    unrestrictedSSTypes.insert(sub_serv_reqsamplexml);
+    unrestrictedSSTypes.insert(sub_serv_respsamplexml);
+    unrestrictedSSTypes.insert(sub_serv_reqsamplejson);
+    unrestrictedSSTypes.insert(sub_serv_respsamplejson);
+}
+
+bool EspHttpBinding::isUnrestrictedSSType(sub_service ss) const
+{
+    auto search = unrestrictedSSTypes.find(ss);
+    return (search != unrestrictedSSTypes.end()); 
 }
 
 //Check whether the url is valid or not for redirect after authentication.

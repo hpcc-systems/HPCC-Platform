@@ -19,6 +19,8 @@
 
 //nothor
 //class=superfile
+//class=spray
+//class=copy
 
 import std.system.thorlib;
 import Std.File AS FileServices;

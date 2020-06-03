@@ -1,0 +1,16 @@
+# Overrides for azure storage in hpcc, using custom StorageClass'
+# NB: The "hpcc-azurefile" helm charts should be installed 1st.
+# The "hpcc-azurefile" helm chart provisions and creates the
+# PVC's required by HPCC.
+# The pvc names are dynamic based on the install name.
+# In this example the install name was "azstorage"
+
+storage:
+  dllStorage:
+    existingClaim: "dll-azstorage-hpcc-azurefile-pvc"
+
+  daliStorage:
+    existingClaim: "dali-azstorage-hpcc-azurefile-pvc"
+
+  dataStorage:
+    existingClaim: "data-azstorage-hpcc-azurefile-pvc"

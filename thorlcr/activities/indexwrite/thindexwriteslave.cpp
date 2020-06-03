@@ -157,9 +157,8 @@ public:
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
         bool compress=false;
-        OwnedIFileIO iFileIO = createMultipleWrite(this, partDesc, 0, TW_RenameToPrimary, compress, NULL, this, &abortSoon);
-        Owned<IFileIOStream> out = createBufferedIOStream(iFileIO);
         ActPrintLog("INDEXWRITE: created fixed output stream %s", partFname.str());
+        bool needsSeek = true;
         unsigned flags = COL_PREFIX;
         if (TIWrowcompress & helper->getFlags())
             flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
@@ -176,9 +175,14 @@ public:
         // NOTE - if you add any more flags here, be sure to update checkReservedMetadataName
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
         if (metadata->getPropBool("_noSeek", defaultNoSeek))
+        {
             flags |= TRAILING_HEADER_ONLY;
+            needsSeek = false;
+        }
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
+        OwnedIFileIO iFileIO = createMultipleWrite(this, partDesc, 0, TW_RenameToPrimary, compress, NULL, this, &abortSoon);
+        Owned<IFileIOStream> out = createBufferedIOStream(iFileIO, needsSeek);
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)

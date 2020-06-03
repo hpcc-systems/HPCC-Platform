@@ -271,8 +271,7 @@ void CWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
         lzwcomp.close();
     assertex(hdr.keyBytes<=maxBytes);
     writeHdr();
-    assertex(fpos);
-    out->seek(fpos, IFSbegin);
+    out->seek(getFpos(), IFSbegin);
     out->write(keyHdr->getNodeSize(), nodeBuf);
     if (crc)
         crc->tally(keyHdr->getNodeSize(), nodeBuf);
@@ -306,7 +305,7 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         keyPtr += sizeof(rsequence);
         hdr.keyBytes += sizeof(rsequence);
     }
-    if (isLeaf() && keyType & HTREE_COMPRESSED_KEY)
+    if (isLeaf() && (keyType & HTREE_COMPRESSED_KEY))
     {
         if (0 == hdr.numKeys)
             lzwcomp.open(keyPtr, maxBytes-hdr.keyBytes, isVariable, (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY);
@@ -412,8 +411,7 @@ unsigned __int64 CBlobWriteNode::makeBlobId(offset_t nodepos, unsigned offset)
 
 unsigned __int64 CBlobWriteNode::add(const char * &data, size32_t &size)
 {
-    assertex(fpos);
-    unsigned __int64 ret = makeBlobId(fpos, lzwcomp.getCurrentOffset());
+    unsigned __int64 ret = makeBlobId(getFpos(), lzwcomp.getCurrentOffset());
     unsigned written = lzwcomp.writeBlob(data, size);
     if (written)
     {
@@ -434,7 +432,6 @@ CMetadataWriteNode::CMetadataWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWrit
 
 size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
 {
-    assertex(fpos);
     unsigned short written = ((size > (maxBytes-sizeof(unsigned short))) ? (maxBytes-sizeof(unsigned short)) : size);
     _WINCPYREV2(keyPtr, &written);
     memcpy(keyPtr+sizeof(unsigned short), data, written);
@@ -452,7 +449,6 @@ CBloomFilterWriteNode::CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) :
 
 size32_t CBloomFilterWriteNode::set(const byte * &data, size32_t &size)
 {
-    assertex(fpos);
     unsigned short written;
     _WINCPYREV2(&written, keyPtr);
 
@@ -487,18 +483,6 @@ void CBloomFilterWriteNode::put8(__int64 val)
     _WINCPYREV8(keyPtr+sizeof(unsigned short)+written, &val);
     written += sizeof(val);
     _WINCPYREV2(keyPtr, &written);
-}
-
-//=========================================================================================================
-
-CNodeHeader::CNodeHeader() 
-{
-}
-
-void CNodeHeader::load(NodeHdr &_hdr)
-{
-    memcpy(&hdr, &_hdr, sizeof(hdr));
-    SwapBigEndian(hdr);
 }
 
 //=========================================================================================================

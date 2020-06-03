@@ -58,5 +58,6 @@ spec:
   selector:
     run: {{ .name | quote }}
   type: LoadBalancer
+---
 {{- end }}
 {{- end }}

@@ -1,0 +1,20 @@
+# Overrides for storage in hpcc hpcc, using nfs PVC's.
+# NB: The "hpcc-nfs" helm charts should be installed 1st.
+#
+# The "hpcc-nfs" helm chart provisions and creates the
+# PVC's required by HPCC.
+# The pvc names are dynamic based on the install name.
+# In this example the install name was "nfsstorage"
+
+storage:
+  dllStorage:
+    existingClaim: dll-nfsstorage-hpcc-nfs-pvc
+    forcePermissions: true
+
+  daliStorage:
+    existingClaim: dali-nfsstorage-hpcc-nfs-pvc
+    forcePermissions: true
+
+  dataStorage:
+    existingClaim: data-nfsstorage-hpcc-nfs-pvc
+    forcePermissions: true

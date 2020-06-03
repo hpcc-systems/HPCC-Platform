@@ -1423,6 +1423,9 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, St
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
         return authSucceeded;//Give the permission to send out some pages used for login or logout.
 
+    if (authReq.authBinding->isUnrestrictedSSType(authReq.stype))
+        return authSucceeded;//Give the permission to send out some pages which do not need user authentication.
+
     if (!authorizationHeader.isEmpty() && !isServiceMethodReq(authReq, "esp", "login")
         && !isServiceMethodReq(authReq, "esp", "unlock"))
         return authUnknown;

@@ -12348,7 +12348,7 @@ public:
             if(!io)
                 throw MakeStringException(errno, "Failed to create file %s for writing", filename.str());
 
-            Owned<IFileIOStream> out = createIOStream(io);
+            bool needsSeek = true;
             unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY;
             if (helper.getFlags() & TIWrowcompress)
                 flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
@@ -12361,9 +12361,13 @@ public:
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
             if (metadata->getPropBool("_noSeek", ctx->queryOptions().noSeekBuildIndex))
+            {
                 flags |= TRAILING_HEADER_ONLY;
+                needsSeek = false;
+            }
             if (metadata->getPropBool("_useTrailingHeader", true))
                 flags |= USE_TRAILING_HEADER;
+            Owned<IFileIOStream> out = createIOStream(io, needsSeek);
             Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
             class BcWrapper : implements IBlobCreator
             {

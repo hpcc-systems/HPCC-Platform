@@ -1,0 +1,18 @@
+# Default values for hpcc-localfile.
+
+common:
+  #The host path provides the location on the host machine that will contain the data.  The value can be overriden for
+  #each individual component
+  hostpath: "/var/lib/HPCCSystem/hpcc-data"
+
+dllStorage:
+  size: 3Gi
+  # hostpath: "/var/lib/HPCCSystem/hpcc-data/dlls/"
+
+dataStorage:
+  size: 1Gi
+  #hostpath: "/var/lib/HPCCSystem/hpcc-data/data/"
+
+daliStorage:
+  size: 1Gi
+  #hostpath: "/var/lib/HPCCSystem/hpcc-data/dali/"

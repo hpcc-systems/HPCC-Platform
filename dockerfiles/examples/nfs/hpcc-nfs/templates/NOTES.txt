@@ -1,0 +1,22 @@
+{{- $dllPvcName := printf "dll-%s-pvc" (include "hpcc-nfs.fullname" $) }}
+{{- $daliPvcName := printf "dali-%s-pvc" (include "hpcc-nfs.fullname" $) }}
+{{- $dataPvcName := printf "data-%s-pvc" (include "hpcc-nfs.fullname" $) }}
+
+# Nfs server deployed.
+# Persistent Volume Claims created: {{ $dllPvcName }}, {{ $daliPvcName }}, {{ $dataPvcName }}
+# 
+# Pass a values yaml to the hpcc helm chart to use these existing claims.
+# The generated content below can be used for that value yaml file.
+
+storage:
+  dllStorage:
+    existingClaim: "{{ $dllPvcName }}"
+    forcePermissions: true
+
+  daliStorage:
+    existingClaim: "{{ $daliPvcName }}"
+    forcePermissions: true
+
+  dataStorage:
+    existingClaim: "{{ $dataPvcName }}"
+    forcePermissions: true

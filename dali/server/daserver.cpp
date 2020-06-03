@@ -354,7 +354,7 @@ static constexpr const char * defaultYaml = R"!!(
 version: 1.0
 dali:
   name: dali
-  dataPath: "/var/lib/HPCCSystems/dalistore"
+  dataPath: "/var/lib/HPCCSystems/dalistorage"
   logging:
     detail: 100
 )!!";

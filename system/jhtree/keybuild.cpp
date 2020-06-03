@@ -74,7 +74,7 @@ public:
     virtual bool matchesFindParam(const void *et, const void *fp, unsigned) const { return *(offset_t *)((const CRC32HTE *)et)->queryEndParam() == *(offset_t *)fp; }
 };
 
-class CKeyBuilderBase : public CInterface
+class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
     unsigned keyValueSize;
@@ -92,8 +92,22 @@ protected:
     CRC32 headCRC;
     bool doCrc = false;
 
+private:
+    unsigned __int64 duplicateCount;
+    __uint64 partitionFieldMask = 0;
+    CWriteNode *activeNode = nullptr;
+    CBlobWriteNode *activeBlobNode = nullptr;
+    CIArrayOf<CBlobWriteNode> pendingBlobs;
+    IArrayOf<IBloomBuilder> bloomBuilders;
+    IArrayOf<IRowHasher> rowHashers;
+    bool enforceOrder = true;
+    bool isTLK = false;
+
 public:
-    CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
+        : out(_out),
+          enforceOrder(_enforceOrder),
+          isTLK(_isTLK)
     {
         sequence = _startSequence;
         keyHdr.setown(new CKeyHdr());
@@ -135,24 +149,27 @@ public:
         hdr->metadataHead = 0;
 
         keyHdr->write(out, &headCRC);  // Reserve space for the header - we may seek back and write it properly later
+
+        doCrc = true;
+        duplicateCount = 0;
+        if (_helper)
+        {
+            partitionFieldMask = _helper->getPartitionFieldMask();
+            auto bloomInfo =_helper->queryBloomInfo();
+            if (bloomInfo)
+            {
+                const RtlRecord &recinfo = _helper->queryDiskRecordSize()->queryRecordAccessor(true);
+                while (*bloomInfo)
+                {
+                    bloomBuilders.append(*createBloomBuilder(*bloomInfo[0]));
+                    rowHashers.append(*createRowHasher(recinfo, bloomInfo[0]->getBloomFields()));
+                    bloomInfo++;
+                }
+            }
+        }
     }
 
-    CKeyBuilderBase(CKeyHdr * chdr)
-    {
-        sequence = 0;
-        levels = 0;
-        records = 0;
-        prevLeafNode = NULL;
-
-        keyHdr.set(chdr);
-        KeyHdr *hdr = keyHdr->getHdrStruct();
-        records = hdr->nument;
-        nextPos = hdr->nodeSize; // leaving room for header
-        keyValueSize = keyHdr->getMaxKeyLength();
-        keyedSize = keyHdr->getNodeKeyLength();
-    }
-
-    ~CKeyBuilderBase()
+    ~CKeyBuilder()
     {
         for (;;)
         {
@@ -291,6 +308,22 @@ protected:
     void flushNode(CWriteNode *node, NodeInfoArray &nodeInfo)
     {   
         // Messy code, but I don't have the energy to recode right now.
+        if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
+        {
+            if (activeBlobNode)
+            {
+                pendingBlobs.append(*activeBlobNode);
+                activeBlobNode = nullptr;
+            }
+            while (pendingBlobs)
+            {
+                CBlobWriteNode &pending = pendingBlobs.item(0);
+                if (!prevLeafNode || pending.getFpos() > prevLeafNode->getFpos())
+                    break;
+                writeNode(&pending, pending.getFpos());
+                pendingBlobs.remove(0);
+            }
+        }
         if (prevLeafNode != NULL)
         {
             unsigned __int64 lastSequence = prevLeafNode->getLastSequence();
@@ -344,62 +377,31 @@ protected:
             hdr->hdrseq = levels;
         }
     }
-};
 
-class CKeyBuilder : public CKeyBuilderBase, implements IKeyBuilder
-{
-private:
-    CWriteNode *activeNode;
-    CBlobWriteNode *activeBlobNode;
-    unsigned __int64 duplicateCount;
-    __uint64 partitionFieldMask = 0;
-    IArrayOf<IBloomBuilder> bloomBuilders;
-    IArrayOf<IRowHasher> rowHashers;
-    bool enforceOrder = true;
-    bool isTLK = false;
-
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
-        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence),
-          enforceOrder(_enforceOrder),
-          isTLK(_isTLK)
-    {
-        doCrc = true;
-        activeNode = NULL;
-        activeBlobNode = NULL;
-        duplicateCount = 0;
-        if (_helper)
-        {
-            partitionFieldMask = _helper->getPartitionFieldMask();
-            auto bloomInfo =_helper->queryBloomInfo();
-            if (bloomInfo)
-            {
-                const RtlRecord &recinfo = _helper->queryDiskRecordSize()->queryRecordAccessor(true);
-                while (*bloomInfo)
-                {
-                    bloomBuilders.append(*createBloomBuilder(*bloomInfo[0]));
-                    rowHashers.append(*createRowHasher(recinfo, bloomInfo[0]->getBloomFields()));
-                    bloomInfo++;
-                }
-            }
-        }
-    }
-public:
     void finish(IPropertyTree * metadata, unsigned * fileCrc)
     {
         if (NULL != activeNode)
         {
             flushNode(activeNode, leafInfo);
             activeNode->Release();
+            activeNode = nullptr;
         }
-        if (NULL != activeBlobNode)
+        if (activeBlobNode && !(keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
         {
             writeNode(activeBlobNode, activeBlobNode->getFpos());
             activeBlobNode->Release();
+            activeBlobNode = nullptr;
         }
         flushNode(NULL, leafInfo);
+        if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
+        {
+            ForEachItemIn(idx, pendingBlobs)
+            {
+                CBlobWriteNode &pending = pendingBlobs.item(idx);
+                writeNode(&pending, pending.getFpos());
+            }
+            pendingBlobs.kill();
+        }
         buildTree(leafInfo);
         if(metadata)
         {
@@ -453,7 +455,7 @@ public:
         }
         else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
         {
-            int cmp = memcmp(keyData,activeNode->getLastKeyValue(),keyedSize);
+            int cmp = memcmp(keyData, activeNode->getLastKeyValue(), keyedSize);
             if (cmp<0)
                 throw MakeStringException(JHTREE_KEY_NOT_SORTED, "Unable to build index - dataset not sorted in key order");
             if (cmp==0)
@@ -497,8 +499,13 @@ public:
         {
             activeBlobNode->setLeftSib(prevBlobNode->getFpos());
             prevBlobNode->setRightSib(activeBlobNode->getFpos());
-            writeNode(prevBlobNode, prevBlobNode->getFpos());
-            delete(prevBlobNode);
+            if (keyHdr->getKeyType() & TRAILING_HEADER_ONLY)
+                pendingBlobs.append(*prevBlobNode);
+            else
+            {
+                writeNode(prevBlobNode, prevBlobNode->getFpos());
+                delete(prevBlobNode);
+            }
         }
     }
 
@@ -611,59 +618,6 @@ int compareParts(CInterface * const * _left, CInterface * const * _right)
     PartNodeInfo * left = (PartNodeInfo *)*_left;
     PartNodeInfo * right = (PartNodeInfo *)*_right;
     return (int)(left->part - right->part);
-}
-
-class CKeyDesprayer : public CKeyBuilderBase, public IKeyDesprayer
-{
-public:
-    CKeyDesprayer(CKeyHdr * _hdr, IFileIOStream * _out) : CKeyBuilderBase(_hdr)
-    {
-        out.set(_out);
-        nextPos = out->tell();
-    }
-    IMPLEMENT_IINTERFACE
-
-    virtual void addPart(unsigned idx, offset_t numRecords, NodeInfoArray & nodes)
-    {
-        records += numRecords;
-        parts.append(* new PartNodeInfo(idx, nodes));
-    }
-
-    virtual void finish()
-    {
-        levels = 1; // already processed one level of index....
-        parts.sort(compareParts);
-        ForEachItemIn(idx, parts)
-        {
-            NodeInfoArray & nodes = parts.item(idx).nodes;
-            ForEachItemIn(idx2, nodes)
-                leafInfo.append(OLINK(nodes.item(idx2)));
-        }
-        buildTree(leafInfo);
-        writeFileHeader(true, NULL);
-    }
-
-protected:
-    CIArrayOf<PartNodeInfo> parts;
-};
-
-
-extern jhtree_decl IKeyDesprayer * createKeyDesprayer(IFile * in, IFileIOStream * out)
-{
-    Owned<IFileIO> io = in->open(IFOread);
-    MemoryAttr buffer(sizeof(KeyHdr));
-    io->read(0, sizeof(KeyHdr), (void *)buffer.get());
-
-    Owned<CKeyHdr> hdr = new CKeyHdr;
-    hdr->load(*(KeyHdr *)buffer.get());
-    if (hdr->getKeyType() & USE_TRAILING_HEADER)
-    {
-        if (io->read(in->size() - hdr->getNodeSize(), sizeof(KeyHdr), (void *)buffer.get()) != sizeof(KeyHdr))
-            throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", in->queryFilename());
-        hdr->load(*(KeyHdr*)buffer.get());
-    }
-    hdr->getHdrStruct()->nument = 0;
-    return new CKeyDesprayer(hdr, out);
 }
 
 extern jhtree_decl bool checkReservedMetadataName(const char *name)
