@@ -2379,7 +2379,8 @@ void setupContainerizedLogMsgHandler()
             if (!isEmptyString(logAudiences))
                 msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
 
-            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail);
+            const bool local = true; // Do not include remote messages from other components
+            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
             theManager->changeMonitorFilter(theStderrHandler, filter);
         }
 

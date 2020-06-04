@@ -158,7 +158,7 @@ public:
         getPartFilename(partDesc, 0, partFname);
         bool compress=false;
         ActPrintLog("INDEXWRITE: created fixed output stream %s", partFname.str());
-        bool needsSeek = true;
+        //bool needsSeek = true;
         unsigned flags = COL_PREFIX;
         if (TIWrowcompress & helper->getFlags())
             flags |= HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY;
@@ -177,12 +177,12 @@ public:
         if (metadata->getPropBool("_noSeek", defaultNoSeek))
         {
             flags |= TRAILING_HEADER_ONLY;
-            needsSeek = false;
+            //needsSeek = false;
         }
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
         OwnedIFileIO iFileIO = createMultipleWrite(this, partDesc, 0, TW_RenameToPrimary, compress, NULL, this, &abortSoon);
-        Owned<IFileIOStream> out = createBufferedIOStream(iFileIO, needsSeek);
+        Owned<IFileIOStream> out = createBufferedIOStream(iFileIO); //, needsSeek);
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
