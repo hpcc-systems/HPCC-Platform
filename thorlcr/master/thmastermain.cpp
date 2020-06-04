@@ -873,6 +873,8 @@ int main( int argc, const char *argv[]  )
         StringBuffer cloudJobName;
         const char *workunit = nullptr;
         const char *graphName = nullptr;
+
+        CCycleTimer thorStartupTimer;
 #ifdef _CONTAINERIZED
         workunit = globals->queryProp("@workunit");
         graphName = globals->queryProp("@graphName");
@@ -954,6 +956,18 @@ int main( int argc, const char *argv[]  )
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
             // NB: workunit/graphName only set in one-shot mode (if isCloud())
+
+            if (workunit)
+            {
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnit> wuRead = factory->openWorkUnit(workunit);
+                if (wuRead)
+                {
+                    Owned<IWorkUnit> wuWrite = &wuRead->lock();
+                    updateWorkunitStat(wuWrite, SSTglobal, nullptr, StTimeThorStartup, nullptr, thorStartupTimer.elapsedNs());
+                }
+            }
+
             thorMain(logHandler, workunit, graphName);
             LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }

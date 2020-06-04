@@ -233,6 +233,8 @@ enum StatisticKind
     StTimeBlocked,
     StCycleBlockedCycles,
     StCostExecute,
+    StTimeThorStartup,                  // Time taken for Thor instance to spin up before beginning to run query
+    StCycleThorStartupCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
