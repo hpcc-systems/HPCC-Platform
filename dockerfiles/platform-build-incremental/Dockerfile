@@ -56,5 +56,6 @@ RUN echo Building with $(cat ~/build_threads) threads
 RUN make -j$(cat ~/build_threads)
 
 USER root
+RUN cmake /hpcc-dev/HPCC-Platform -DUSE_PYTHON2=0
 RUN make -j$(cat ~hpcc/build_threads) install
 
