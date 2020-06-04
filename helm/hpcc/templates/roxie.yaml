@@ -24,6 +24,8 @@ spec:
       - name: {{ $toponame | quote }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ toposerver ] 
         volumeMounts:
         - name: {{ .name }}-configmap-volume
           mountPath: /etc/config
@@ -100,6 +102,8 @@ spec:
       {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $servername | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ roxie ] 
         args: [
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
@@ -156,6 +160,8 @@ spec:
       {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $name | quote}}
+        workingDir: /var/lib/HPCCSystems
+        command: [ roxie ]
         args: [ 
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
