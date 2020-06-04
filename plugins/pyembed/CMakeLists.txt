@@ -59,9 +59,16 @@ elseif(NOT APPLE)
     set_target_properties(py2embed PROPERTIES NO_SONAME 1)
 endif()
 
+if (CONTAINERIZED)
+install(
+    TARGETS py2embed
+    DESTINATION plugins)
+else()
 install(
     TARGETS py2embed
     DESTINATION versioned/python2)
+endif()
+
 if(debug_python)
     target_link_libraries(py2embed ${DEBUG_PYTHON2_LIBRARY})
 else()

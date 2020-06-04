@@ -53,9 +53,15 @@ elseif(NOT APPLE)
     set_target_properties(py3embed PROPERTIES NO_SONAME 1)
 endif()
 
+if (CONTAINERIZED)
+install(
+    TARGETS py3embed
+    DESTINATION plugins)
+else()
 install(
     TARGETS py3embed
     DESTINATION versioned/python3)
+endif()
 
 target_link_libraries(py3embed ${Python3_LIBRARIES})
 
