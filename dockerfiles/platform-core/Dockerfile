@@ -20,7 +20,8 @@
 # Others may not be wanted at all in container mode - xterm,sshserver for example??
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-build:${BUILD_LABEL} as build
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL} as build
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt clean && \

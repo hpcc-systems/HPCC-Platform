@@ -26,7 +26,7 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:fhlpt:u:” opt; do
+while getopts “d:fhlpt:u:b:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     p) PUSH=1 ;;
@@ -38,6 +38,7 @@ while getopts “d:fhlpt:u:” opt; do
     h) echo "Usage: incr.sh [options]"
        echo "    -d <docker-repo>   Specify the repo to publish images to"
        echo "    -f                 Force build from scratch"
+       echo "    -b                 Build type (e.g. Debug / Release)"
        echo "    -h                 Display help"
        echo "    -l                 Tag the images as the latest"
        echo "    -p                 Push images to docker repo"
@@ -54,32 +55,42 @@ PREV=$1
 
 DOCKER_REPO=hpccsystems
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
+INCR_DOCKER_REPO=${DOCKER_REPO}
 BUILD_TYPE=Debug
 [[ -n ${INPUT_BUILD_TYPE} ]] && BUILD_TYPE=${INPUT_BUILD_TYPE}
 BUILD_THREADS=$INPUT_BUILD_THREADS # If not set, picks up default based on nproc
 
+# BUILD_USER used when building from scatch with force option (-f)
+BUILD_USER=hpccsystems
+[[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
+
 HEAD=$(git rev-parse --short HEAD)
-BUILD_LABEL="${HEAD}-Debug"
+BUILD_LABEL="${HEAD}-${BUILD_TYPE}"
 
 if [[ -z "$FORCE" ]] ; then
   # Look for an image that matches a commit, exclude images based on dirty working tree.
   if [[ -z ${PREV} ]] ; then
     docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | egrep -ve '-dirty.*$' > .candidate-tags
-    PREV=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | fgrep -f .candidate-tags | head -n 1)
+    PREV=$(git log --format=format:%h-${BUILD_TYPE} $(git describe --abbrev=0 --tags)..HEAD | fgrep -f .candidate-tags | head -n 1)
     rm -f .candidate-tags
   fi
 
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
-    PREV=$(git describe --abbrev=0 --tags)-Debug
-    docker pull ${DOCKER_REPO}/platform-build:${PREV}
+    PREV=$(git describe --abbrev=0 --tags)
+    if [[ ! "${BUILD_TYPE}" =~ "Release" ]] ; then
+      PREVE=${PREV}-${BUILD_TYPE}
+    fi
+    echo Finding image based on most recent git tag: ${PREV}
+    INCR_DOCKER_REPO=hpccsystems
+    docker pull ${INCR_DOCKER_REPO}/platform-build:${PREV}
     if [ $? -ne 0 ]; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
     fi
   fi
 
-  PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug.*$//")
+  PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   # create empty patch file
   echo -n > platform-build-incremental/hpcc.gitpatch
   porcelain=$(git status -uno --porcelain)
@@ -94,10 +105,10 @@ if [[ -z "$FORCE" ]] ; then
     BUILD_LABEL="${BUILD_LABEL}${DIRTY}"
   elif [[ "$BUILD_LABEL" == "$PREV" ]] ; then
     echo Checking if docker image ${DOCKER_REPO}/platform-core:${BUILD_LABEL} already exists
-    EXISTING_IMAGE_LABEL=$(git log --format=format:%h-Debug $(git describe --abbrev=0 --tags)..HEAD | grep `docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | head -n 2 | tail -n 1`)
+    EXISTING_IMAGE_LABEL=$(git log --format=format:%h-${BUILD_TYPE} $(git describe --abbrev=0 --tags)..HEAD | grep `docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | head -n 2 | tail -n 1`)
     if [[ -n ${EXISTING_IMAGE_LABEL} ]] ; then
       PREV=${EXISTING_IMAGE_LABEL}
-      PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-Debug//")
+      PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}//")
     fi
   fi
 fi
@@ -137,14 +148,20 @@ build_image() {
 
 if [[ -n "$FORCE" ]] ; then
   echo Building local forced build images [ BUILD_LABEL=${BUILD_LABEL} ]
-  build_image platform-build platform-build --build-arg BUILD_USER=${INPUT_BUILD_USER} --build-arg BUILD_TAG=${HEAD} --build-arg BASE_VER=7.8 --build-arg BUILD_THREADS=${BUILD_THREADS}
+  build_image platform-build platform-build --build-arg BUILD_USER=${BUILD_USER} --build-arg BUILD_TAG=${HEAD} --build-arg BUILD_THREADS=${BUILD_THREADS}
 else
   echo Building local incremental images [ BUILD_LABEL=${BUILD_LABEL} ] based on ${PREV}
-  build_image platform-build platform-build-incremental --build-arg DOCKER_REPO=${DOCKER_REPO} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS}
+  build_image platform-build platform-build-incremental --build-arg DOCKER_REPO=${INCR_DOCKER_REPO} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS}
 #  rm platform-build-incremental/hpcc.gitpatch
 fi
 
-build_image platform-core platform-core-debug
+if [[ "${BUILD_TYPE}" =~ "Release" ]] ; then
+  echo BUILDING: build_image platform-core
+  build_image platform-core
+else
+  echo BUILDING: build_image platform-core platform-core-debug
+  build_image platform-core platform-core-debug
+fi
 build_image roxie
 build_image dali
 build_image esp
