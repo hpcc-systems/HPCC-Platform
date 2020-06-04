@@ -8401,9 +8401,11 @@ bool CHThorDiskReadBaseActivity::openNext()
     actualFilter.clear();
     if (translators)
     {
-        /* if previous part was remotely accessed, the format used (actualDiskMeta), became the projected meta
-         * reset here, in case this next part is access locally, in which case the published or expect meta is needed
+        /* If previous part was remotely accessed, the format used (actualDiskMeta), became the projected meta.
+         * Reset for local/direct access.
          */
+        translator = &translators->queryTranslator();
+        keyedTranslator = translators->queryKeyedTranslator();
         actualDiskMeta.set(&translators->queryActualFormat());
     }
 
