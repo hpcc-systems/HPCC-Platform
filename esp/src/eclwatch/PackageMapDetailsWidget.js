@@ -31,8 +31,6 @@ define([
 
         borderContainer: null,
         tabContainer: null,
-        validateWidget: null,
-        validateWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
         partsWidget: null,
@@ -52,20 +50,12 @@ define([
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.tabContainer = registry.byId(this.id + "TabContainer");
-            this.validateWidget = registry.byId(this.id + "Validate");
             this.xmlWidget = registry.byId(this.id + "XML");
             this.partsWidget = registry.byId(this.id + "Parts");
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id === context.id + "Validate" && !context.validateWidgetLoaded) {
-                    context.validateWidgetLoaded = true;
-                    context.validateWidget.init({
-                        target: context.target,
-                        process: context.process,
-                        packageMap: context.packageMap
-                    });
-                } else if (nval.id === context.id + "XML" && !context.xmlWidgetLoaded) {
+                if (nval.id === context.id + "XML" && !context.xmlWidgetLoaded) {
                     context.xmlWidgetLoaded = true;
                     context.xmlWidget.init({
                         target: context.target,

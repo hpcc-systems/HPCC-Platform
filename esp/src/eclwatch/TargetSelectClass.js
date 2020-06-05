@@ -168,7 +168,9 @@ define([
                     for (var i = 0; i < targetData.length; ++i) {
                         context.options.push({
                             label: targetData[i].Name,
-                            value: targetData[i].Name
+                            value: targetData[i].Name,
+                            type: targetData[i].Type,
+                            processes: targetData[i].Processes
                         });
                     }
                     context._postLoad();

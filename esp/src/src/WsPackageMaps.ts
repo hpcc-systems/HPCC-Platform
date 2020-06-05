@@ -96,7 +96,7 @@ export function listProcessFilters(callback) {
 }
 
 export function validatePackage(params) {
-    const request = { Target: params.target };
+    const request = { Target: params.Target };
     if (params.packageMap)
         request["PMID"] = params.packageMap;
     if (params.process)
@@ -121,4 +121,14 @@ export function deactivatePackageMap(params) {
 
 export function deletePackageMap(params) {
     return ESPRequest.send("WsPackageProcess", "DeletePackage", params);
+}
+
+export function GetPackageMapSelectOptions (params) {
+    return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
+        request: {
+            IncludeTargets: params.IncludeTargets,
+            IncludeProcesses: params.IncludeProcesses,
+            IncludeProcessFilters: params.IncludeProcessFilters
+        }
+    });
 }

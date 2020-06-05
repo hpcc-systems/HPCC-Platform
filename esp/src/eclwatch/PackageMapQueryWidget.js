@@ -62,6 +62,7 @@ define([
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.tabContainer = registry.byId(this.id + "TabContainer");
             this.packagesTab = registry.byId(this.id + "_Packages");
+            this.validateTab = registry.byId(this.id + "_Validate");
             this.packagesGrid = registry.byId(this.id + "PackagesGrid");
             this.targetSelect = registry.byId(this.id + "TargetSelect");
             this.processSelect = registry.byId(this.id + "ProcessSelect");
@@ -266,25 +267,16 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.packagesTab.id) {
+                } else if (currSel.id === this.validateTab.id) {
+                    currSel.init({
+                        targets: this.targetSelect.options
+                    })
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
                     }
                 }
             }
-        },
-
-        initValidateTab: function (id, params) {
-            id = this.createChildTabID(id);
-            var retVal = new DelayLoadWidget({
-                id: id,
-                title: params.title,
-                closable: false,
-                delayWidget: "PackageMapValidateWidget",
-                params: params
-            });
-            this.tabContainer.addChild(retVal, 1);
-            return retVal;
         },
 
         initPackagesGrid: function () {
@@ -398,7 +390,7 @@ define([
                     delayWidget: "PackageMapDetailsWidget",
                     params: params
                 });
-                this.addChild(retVal, 1);
+                this.addChild(retVal, 2);
             }
             return retVal;
         }
