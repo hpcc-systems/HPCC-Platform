@@ -22,11 +22,11 @@
 ARG PREV_LABEL
 ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-build:${PREV_LABEL}
-RUN apt clean && \
-    apt autoclean && \
-    apt install -f && \
-    apt autoremove && \
-    apt-get update
+RUN apt clean -y && \
+    apt autoclean -y && \
+    apt install -y -f && \
+    apt autoremove -y && \
+    apt-get update -y
 
 RUN apt-get install -y \
     dnsutils \

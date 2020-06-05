@@ -24,11 +24,11 @@ ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL} as build
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt clean && \
-    apt autoclean && \
-    apt install -f && \
-    apt autoremove && \
-    apt-get update
+RUN apt clean -y && \
+    apt autoclean -y && \
+    apt install -y -f && \
+    apt autoremove -y && \
+    apt-get update -y
 
 RUN apt-get install -y \
   xterm \
