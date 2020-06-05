@@ -1301,6 +1301,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
+          <para>You can supply a list of preferred dropzone destinations and
+          keep some destinations hidden using the
+          <emphasis>ECLWatchVisible</emphasis> attribute. When set to true, a
+          specified landing zone will be shown in the dropdown list of
+          available dropzones in ECL Watch. When the
+          <emphasis>ECLWatchVisible</emphasis> attribute is set to false, the
+          dropzone is hidden. This may be useful in situations where you want
+          to maintain multiple dropzones but hide and protect some locations
+          from being used by certain users or groups. You can use the Notes
+          tab to record the details about your dropzone configurations.</para>
+
           <!-- /*Attribute table***replace with dynamically generated table*/
           <informaltable>
             <tgroup cols="2">
