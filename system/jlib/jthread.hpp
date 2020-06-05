@@ -206,6 +206,40 @@ public:
     virtual void Do(unsigned idx=0)=0;
 };
 
+template <typename AsyncFunc>
+class CAsyncForFunc final : public CAsyncFor
+{
+public:
+    CAsyncForFunc(AsyncFunc _func) : func(_func) {}
+    virtual void Do(unsigned idx=0) { func(idx); }
+private:
+    AsyncFunc func;
+};
+
+//Utility functions for executing a lambda function in parallel, but allow the number of concurrent iterations
+//action on exception, and shuffling to be controlled.
+template <typename AsyncFunc>
+inline void asyncFor(unsigned num, unsigned maxAtOnce, bool abortFollowingException, bool shuffled, AsyncFunc func)
+{
+    CAsyncForFunc<AsyncFunc> async(func);
+    async.For(num, maxAtOnce, abortFollowingException, shuffled);
+}
+template <typename AsyncFunc>
+inline void asyncFor(unsigned num, unsigned maxAtOnce, bool abortFollowingException, AsyncFunc func)
+{
+    asyncFor(num, maxAtOnce, abortFollowingException, false, func);
+}
+template <typename AsyncFunc>
+inline void asyncFor(unsigned num, unsigned maxAtOnce, AsyncFunc func)
+{
+    asyncFor(num, maxAtOnce, false, false, func);
+}
+template <typename AsyncFunc>
+inline void asyncFor(unsigned num, AsyncFunc func)
+{
+    asyncFor(num, num, false, false, func);
+}
+
 // ---------------------------------------------------------------------------
 // Thread Pools
 // ---------------------------------------------------------------------------
