@@ -971,10 +971,30 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
 
     ForEachItemIn(ir, sinks)
         sinks.item(ir).ready();
-    ForEachItemIn(ie, sinks)
-        sinks.item(ie).execute();
-    ForEachItemIn(id, sinks)
-        sinks.item(id).stop();
+    IException *e = nullptr;
+    try
+    {
+        ForEachItemIn(ie, sinks)
+           sinks.item(ie).execute();
+    }
+    catch (IException * _e)
+    {
+        e = _e;
+    }
+    try
+    {
+       ForEachItemIn(id, sinks)
+           sinks.item(id).stop();
+    }
+    catch (IException *_e)
+    {
+        if (!e)
+            e = _e;
+        else
+            _e->Release();
+    }
+    if (e)
+        throw e;
 
     elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
     executed = true;
