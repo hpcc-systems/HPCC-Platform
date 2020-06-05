@@ -4833,14 +4833,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     if (subfile) {
                         CDfsLogicalFileName lname;
                         lname.set(subfile.get());
-                        transaction->addDelayedDelete(lname, SDS_SUB_LOCK_TIMEOUT);
+                        transaction->addDelayedDelete(lname, INFINITE);
                     } else { // Remove all subfiles
                         Owned<IDistributedFileIterator> iter = parent->getSubFileIterator(false);
                         ForEach (*iter) {
                             CDfsLogicalFileName lname;
                             IDistributedFile *f = &iter->query();
                             lname.set(f->queryLogicalName());
-                            transaction->addDelayedDelete(lname, SDS_SUB_LOCK_TIMEOUT);
+                            transaction->addDelayedDelete(lname, INFINITE);
                         }
                     }
                 }
@@ -4921,7 +4921,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                         {
                             CDfsLogicalFileName lname;
                             lname.set(logicalName);
-                            transaction->addDelayedDelete(lname, SDS_SUB_LOCK_TIMEOUT);
+                            transaction->addDelayedDelete(lname, INFINITE);
                         }
                     }
                 }
