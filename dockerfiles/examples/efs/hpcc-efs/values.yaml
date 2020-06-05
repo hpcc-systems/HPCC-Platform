@@ -1,0 +1,16 @@
+efs:
+  namespace: default
+  # Check the EFS region ensure it is configured for. For example, us-east-1
+  #region: <EFS region>
+  region: us-east-1
+  #id: <ID of EFS>
+  id: ""
+
+dllStorage:
+  size: 1Mi
+
+daliStorage:
+ size: 1Mi
+
+dataStorage:
+ size: 5Mi

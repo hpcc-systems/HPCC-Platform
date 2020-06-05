@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "dll-%s-pvc" (include "hpcc-efs.fullname" $) }}
+spec:
+  accessModes:
+    - ReadWriteMany  # accessed from dali and sasha
+  resources:
+    requests:
+      storage: {{ .Values.dllStorage.size }}
+  storageClassName: efs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "data-%s-pvc" (include "hpcc-efs.fullname" $) }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.dataStorage.size }}
+  storageClassName: efs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "dali-%s-pvc" (include "hpcc-efs.fullname" $) }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.daliStorage.size }}
+  storageClassName: efs
