@@ -19,11 +19,11 @@
 
 FROM ubuntu:20.04 as build
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt clean && \
-    apt autoclean && \
-    apt install -f && \
-    apt autoremove && \
-    apt-get update
+RUN apt clean -y && \
+    apt autoclean -y && \
+    apt install -y -f && \
+    apt autoremove -y && \
+    apt-get update -y
 
 RUN apt-get install -y \
   automake \
@@ -83,7 +83,7 @@ RUN apt-get install -y \
 
 RUN curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 RUN apt-add-repository "deb https://deb.nodesource.com/node_10.x $(lsb_release -sc) main"
-RUN apt-get update
+RUN apt-get update -y
 RUN apt-get install -y nodejs
 
 RUN mkdir /home/temp
@@ -95,7 +95,7 @@ RUN make -j4
 RUN make install
 WORKDIR /
 RUN rm -rf /home/temp
-RUN apt-get clean
+RUN apt-get clean -y
 
 FROM ubuntu:20.04
 COPY --from=build / /
