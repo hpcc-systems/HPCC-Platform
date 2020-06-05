@@ -918,23 +918,25 @@ protected:
     unsigned channelNo;
     bool active;
     StringAttr querySetName;
+    CriticalSection crit;   // For parallel load
 
-    void addQuery(const char *id, IQueryFactory *n, hash64_t &hash)
+    void addQuery(const char *id, IQueryFactory *n)
     {
-        hash = rtlHash64Data(sizeof(hash), &hash, n->queryHash());
-        queries.setValue(id, n);
+        {
+            CriticalBlock b(crit);
+            queries.setValue(id, n);
+        }
         n->Release();  // setValue links
     }
 
-    void addAlias(const char *alias, const char *original, hash64_t &hash)
+    void addAlias(const char *alias, const char *original)
     {
         if (original && alias)
         {
             IQueryFactory *orig = queries.getValue(original);
             if (orig)
             {
-                hash = rtlHash64VStr(alias, hash);
-                hash = rtlHash64Data(sizeof(hash), &hash, orig->queryHash());
+                CriticalBlock b(crit);
                 aliases.setValue(alias, orig);
             }
             else
@@ -966,69 +968,92 @@ public:
 
     virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
-        Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
-        ForEach (*queryNames)
+        unsigned numQueries = const_cast<IPropertyTree *>(querySet)->getCount("Query");
+        if (numQueries)
         {
-            const IPropertyTree &query = queryNames->query();
-            const char *id = query.queryProp("@id");
-            const char *dllName = query.queryProp("@dll");
-            try
+            std::vector<hash64_t> queryHashes(numQueries);
+            asyncFor(numQueries, parallelLoadQueries, [this, querySet, &packages, &queryHashes, forceRetry](unsigned i)
             {
-                if (!id || !*id || !dllName || !*dllName)
-                    throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
-                Owned<const IQueryDll> queryDll = createQueryDll(dllName);
-                const IHpccPackage *package = NULL;
-                const char *packageName = query.queryProp("@package");
-                if (packageName && *packageName)
+                queryHashes[i] = 0;
+                VStringBuffer xpath("Query[%u]", i+1);
+                const IPropertyTree *query = querySet->queryPropTree(xpath);
+                assertex(query);
+                const char *id = query->queryProp("@id");
+                const char *dllName = query->queryProp("@dll");
+                try
                 {
-                    package = packages.queryPackage(packageName); // if a package is specified, require exact match
-                    if (!package)
-                        throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Package %s specified by query %s not found", packageName, id);
+                    if (!id || !*id || !dllName || !*dllName)
+                        throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
+                    Owned<const IQueryDll> queryDll = createQueryDll(dllName);
+                    const IHpccPackage *package = NULL;
+                    const char *packageName = query->queryProp("@package");
+                    if (packageName && *packageName)
+                    {
+                        package = packages.queryPackage(packageName); // if a package is specified, require exact match
+                        if (!package)
+                            throw MakeStringException(ROXIE_QUERY_MODIFICATION, "Package %s specified by query %s not found", packageName, id);
+                    }
+                    else
+                    {
+                        package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
+                        if(!package) package = packages.matchPackage(id);
+                        if (!package) package = &queryRootRoxiePackage();
+                    }
+                    assertex(package && QUERYINTERFACE(package, const IRoxiePackage));
+                    IQueryFactory *qf = loadQueryFromDll(id, queryDll.getClear(), *QUERYINTERFACE(package, const IRoxiePackage), query, forceRetry);
+                    queryHashes[i] = qf->queryHash();
+                    addQuery(id, qf);
                 }
-                else
+                catch (IException *E)
                 {
-                    package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
-                    if(!package) package = packages.matchPackage(id);
-                    if (!package) package = &queryRootRoxiePackage();
+                    // we don't want a single bad query in the set to stop us loading all the others
+                    StringBuffer msg;
+                    msg.appendf("Failed to load query %s from %s", id ? id : "(null)", dllName ? dllName : "(null)");
+                    EXCLOG(E, msg.str());
+                    if (id)
+                    {
+                        StringBuffer emsg;
+                        E->errorMessage(emsg);
+                        Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL, false);
+                        dummyQuery->suspend(emsg.str());
+                        queryHashes[i] = dummyQuery->queryHash();
+                        addQuery(id, dummyQuery.getClear());
+                    }
+                    E->Release();
                 }
-                assertex(package && QUERYINTERFACE(package, const IRoxiePackage));
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *QUERYINTERFACE(package, const IRoxiePackage), &query, forceRetry), hash);
-            }
-            catch (IException *E)
-            {
-                // we don't want a single bad query in the set to stop us loading all the others
-                StringBuffer msg;
-                msg.appendf("Failed to load query %s from %s", id ? id : "(null)", dllName ? dllName : "(null)");
-                EXCLOG(E, msg.str());
-                if (id)
-                {
-                    StringBuffer emsg;
-                    E->errorMessage(emsg);
-                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL, false);
-                    dummyQuery->suspend(emsg.str());
-                    addQuery(id, dummyQuery.getClear(), hash);
-                }
-                E->Release();
-            }
+            });
+            for (auto h : queryHashes)
+                hash = rtlHash64Data(sizeof(h), &h, hash);
         }
-
-        Owned<IPropertyTreeIterator> a = querySet->getElements("Alias");
-        ForEach(*a)
+        unsigned numAliases = const_cast<IPropertyTree *>(querySet)->getCount("Alias");
+        if (numAliases)
         {
-            IPropertyTree &item = a->query();
-            const char *alias = item.queryProp("@name");
-            const char *original = item.queryProp("@id");
-            try
+            std::vector<hash64_t> aliasHashes(numAliases);
+            asyncFor(numAliases, parallelLoadQueries, [this, querySet, &aliasHashes](unsigned i)
             {
-                addAlias(alias, original, hash);
-            }
-            catch (IException *E)
-            {
-                // we don't want a single bad alias in the set to stop us loading all the others
-                VStringBuffer msg("Failed to set alias %s on %s", alias, original);
-                EXCLOG(E, msg.str());
-                E->Release();
-            }
+                aliasHashes[i] = 0;
+                VStringBuffer xpath("Alias[%u]", i+1);
+                IPropertyTree *item = querySet->queryPropTree(xpath);
+                assertex(item);
+                const char *alias = item->queryProp("@name");
+                const char *original = item->queryProp("@id");
+                try
+                {
+                    addAlias(alias, original);
+                    hash64_t hash = rtlHash64VStr(alias, 0);
+                    aliasHashes[i] = rtlHash64VStr(original, hash);
+                }
+                catch (IException *E)
+                {
+                    // we don't want a single bad alias in the set to stop us loading all the others
+                    VStringBuffer msg("Failed to set alias %s on %s", alias, original);
+                    EXCLOG(E, msg.str());
+                    E->Release();
+                    aliasHashes[i] = 0;
+                }
+            });
+            for (auto h : aliasHashes)
+                hash = rtlHash64Data(sizeof(h), &h, hash);
         }
         active = packages.isActive();
         if (active)

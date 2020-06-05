@@ -130,6 +130,8 @@ bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
+unsigned parallelLoadQueries = 8;
+
 bool useOldTopology = false;
 
 int backgroundCopyClass = 0;
@@ -1035,6 +1037,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
+        parallelLoadQueries = topology->getPropInt("@parallelLoadQueries", 8);
+        if (!parallelLoadQueries)
+            parallelLoadQueries = 1;
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
 
