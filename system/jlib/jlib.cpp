@@ -47,7 +47,17 @@ void ExitModuleObjects() { ExitModuleObjects(0); }
 
 void _InitModuleObjects()
 {
-    queryInitTable()->init(0);
+    try
+    {
+        queryInitTable()->init(0);
+    }
+    catch(IException * e)
+    {
+        StringBuffer msg;
+        fprintf(stderr, "Exception in initialization code: %s\n", e->errorMessage(msg).str());
+        unsigned code = e->errorCode();
+        _exit(code ? code : 2);
+    }
 }
 
 InitTable::InitTable()

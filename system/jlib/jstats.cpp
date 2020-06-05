@@ -3557,7 +3557,7 @@ void verifyStatisticFunctions()
     }
 }
 
-#if 0
+#ifdef _DEBUG
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     verifyStatisticFunctions();
