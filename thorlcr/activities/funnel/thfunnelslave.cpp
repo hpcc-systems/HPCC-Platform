@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <future>
+#include <vector>
+
 #include "jlib.hpp"
 #include "jset.hpp"
 #include "jqueue.tpp"
@@ -309,10 +312,10 @@ public:
                 unsigned i;
                 for (i=0; i<inputs.ordinality(); i++) eog[i] = false;
             }
-            current = NULL;
             currentMarker = 0;
             readThisInput = 0;
-            ForEachItemIn(i, inputs)
+
+            auto startInputNFunc = [&](unsigned i)
             {
                 try { startInput(i); }
                 catch (CATCHALL)
@@ -320,9 +323,37 @@ public:
                     ActPrintLog("FUNNEL(%" ACTPF "d): Error staring input %d", container.queryId(), i);
                     throw;
                 }
-                if (!current)
-                    current = queryInputStream(i);
+            };
+
+            std::vector<std::future<void>> results;
+
+            // NB: one input can be launched synchronously (use deferred), others need a thread (async)
+            ForEachItemIn(i, inputs)
+                results.push_back(std::async((0 == i) ? std::launch::deferred : std::launch::async, startInputNFunc, i));
+
+            // NB: 1st future checked is deferred, i.e. it will be run on this thread
+            Owned<IException> exception;
+            for (auto &f: results)
+            {
+                try
+                {
+                    f.get(); // may throw
+                }
+                catch (IException *e)
+                {
+                    if (!exception)
+                        exception.setown(e);
+                    else
+                    {
+                        EXCLOG(e, nullptr);
+                        e->Release();
+                    }
+                }
             }
+            if (exception)
+                throw exception.getClear();
+
+            current = queryInputStream(0);
         }
         dataLinkStart();
     }
