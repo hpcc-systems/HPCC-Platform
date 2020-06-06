@@ -1552,6 +1552,72 @@
               </row>
 
               <row>
+                <entry>CodeSignAccess</entry>
+
+                <entry>Access to Code Signing service ListUserIDs</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Sign code</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>WsELKAccess</entry>
+
+                <entry>Access to ELK integration service</entry>
+
+                <entry>Access</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Read the ELK configuration</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>WsStoreAccess</entry>
+
+                <entry>Access to WsStore service</entry>
+
+                <entry>Access</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>List stores, fetch key-value pairs, listkeys,
+                listnamespaces</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Set key-value pairs</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete keys, delete namespaces, fetch
+                keymetadata</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
                 <entry>WsEclAccess</entry>
 
                 <entry>Access to WS ECL service</entry>
@@ -1597,6 +1663,14 @@
             to put files there. They need further permissions to be able to
             spray and copy files from the dropzone to their cluster and also
             to despray files from the cluster back to the dropzone.</para>
+          </listitem>
+
+          <listitem>
+            <para>The WsStore service uses <emphasis
+            role="bold">namespaces</emphasis> (similar to a database in a DBMS
+            system), <emphasis role="bold">stores</emphasis> (similar to
+            tables in a database), and <emphasis role="bold">key-value
+            pairs</emphasis> (similar to fields).</para>
           </listitem>
         </itemizedlist>
       </sect4>
