@@ -15,16 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-//version useEmbedded=true
-//version useEmbedded=false
+//version useEmbedded=true,noSeek=true
+//version useEmbedded=true,noSeek=false
+//version useEmbedded=false,noSeek=true
+//version useEmbedded=false,noSeek=false
+
 import setup;
 
 useEmbedded := #IFDEFINED(root.useEmbedded, false);
+noSeek := #IFDEFINED(root.noSeek, false);
+
 #if (useEmbedded)
 attr := 'EMBEDDED';
 #else
 attr := '';
 #end
+
+#option ('noSeekBuildIndex', noSeek);
+
 prefix := setup.Files(false, false).IndexPrefix + WORKUNIT + '::';
 
 grandchildRec := RECORD

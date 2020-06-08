@@ -24,9 +24,11 @@
 
 if (USE_CPPUNIT)
 
+if (NOT CONTAINERIZED)
 ADD_SUBDIRECTORY(configmgr)
+endif()
 
-project( unitests )
+project( unittests )
 
 set (    SRCS
          unittests.cpp
@@ -35,10 +37,16 @@ set (    SRCS
          jlibtests.cpp
          cryptotests.cpp
          hqltests.cpp
+    )
+
+if (NOT CONTAINERIZED)
+set (    SRCS
+         ${SRCS}
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
          configmgr/ConfigMgrHPCCTests.cpp
     )
+endif ()
 
 include_directories (
          .
@@ -71,8 +79,11 @@ target_link_libraries ( unittests
          deftype
          libbase58
          thorhelper
-         configmgr
          ${CPPUNIT_LIBRARIES}
     )
+
+if (NOT CONTAINERIZED)
+  target_link_libraries ( unittests configmgr )
+endif ()
 
 endif ()
