@@ -180,11 +180,10 @@ protected: friend class CFileAsyncResult;
 };
 
 
-class CFileIOStream : implements IFileIOStream, public CInterface
+class CFileIOStream : implements CInterfaceOf<IFileIOStream>
 {
 public:
-    CFileIOStream(IFileIO * _io, bool _allowSeek=true);
-    IMPLEMENT_IINTERFACE
+    CFileIOStream(IFileIO * _io);
 
     virtual void flush();
     virtual size32_t read(size32_t len, void * data);
@@ -196,9 +195,25 @@ public:
 protected:
     Linked<IFileIO>     io;
     offset_t            curOffset;
-    bool allowSeek = true;
 };
 
+
+
+class CNoSeekFileIOStream : implements CInterfaceOf<IFileIOStream>
+{
+public:
+    CNoSeekFileIOStream(IFileIOStream * _stream);
+
+    virtual void flush();
+    virtual size32_t read(size32_t len, void * data);
+    virtual void seek(offset_t pos, IFSmode origin);
+    virtual offset_t size();
+    virtual offset_t tell();
+    virtual size32_t write(size32_t len, const void * data);
+
+protected:
+    Linked<IFileIOStream>     stream;
+};
 
 
 class jlib_decl CIOStreamReadWriteSeq : public IWriteSeq, public IReadSeq, public CInterface
