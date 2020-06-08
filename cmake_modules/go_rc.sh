@@ -6,11 +6,10 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 . $SCRIPT_DIR/parse_cmake.sh
+. $SCRIPT_DIR/parse_hpcc_chart.sh
+
 if [ -e pom.xml ] ; then
   . $SCRIPT_DIR/parse_hpcc_pom.sh
-fi
-if [ -e Chart.yaml ] ; then
-  . $SCRIPT_DIR/parse_hpcc_chart.sh
 fi
 
 sync_git
@@ -43,6 +42,9 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
   update_version_file closedown $((NEW_POINT+1)) 0 $NEW_MINOR
+  if [ -e helm/hpcc/Chart.yaml ] ; then
+    update_chart_file helm/hpcc/Chart.yaml closedown $HPCC_POINT $NEW_SEQUENCE
+  fi
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
   doit "git push $REMOTE"
@@ -65,6 +67,10 @@ else
 fi
 
 update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR
+if [ -e helm/hpcc/Chart.yaml ] ; then
+  update_chart_file helm/hpcc/Chart.yaml rc $HPCC_POINT $NEW_SEQUENCE
+fi
+
 HPCC_MATURITY=rc
 HPCC_SEQUENCE=$NEW_SEQUENCE
 HPCC_MINOR=$NEW_MINOR
@@ -78,3 +84,22 @@ doit "git push $REMOTE $GIT_BRANCH $FORCE"
 
 # tag it
 do_tag
+
+if [ -e helm/hpcc/Chart.yaml ] ; then
+  # We publish any tagged version of helm chart to the helm-chart repo
+  # but only copy helm chart sources across for "latest stable" version
+  HPCC_DIR="$( pwd )"
+  pushd ../helm-chart 2>&1 > /dev/null
+  doit "git fetch $REMOTE"
+  doit "git merge --ff-only $REMOTE/master"
+  doit "git submodule update --init --recursive"
+  HPCC_PROJECTS=hpcc-helm
+  HPCC_NAME=HPCC
+  cd docs
+  doit helm package ${HPCC_DIR}/helm/hpcc/
+  doit helm repo index . --url https://hpcc-systems.github.io/helm-chart
+  
+  doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
+  doit "git push $REMOTE master $FORCE"
+  popd
+fi

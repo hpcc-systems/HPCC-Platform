@@ -4,18 +4,12 @@
 #
 set -e
 
-VERSIONFILE=Chart.yaml
-if [ ! -f $VERSIONFILE ]; then
-  echo "Expected $VERSIONFILE not found"
-  exit 2
-fi
-
-
-function parse_cmake()
+function parse_chart()
 {
-  HPCC_PROJECT=$(grep -m1 '^name:' $VERSIONFILE | sed "s/^name: *//")
+  local _chart=$1
+  HPCC_PROJECT=$(grep -m1 '^name:' $_chart | sed "s/^name: *//")
   HPCC_NAME="Helm Chart for $HPCC_PROJECT"
-  HPCC_VERSION=$(grep -m1 '^version:' $VERSIONFILE | sed "s/^version: *//")
+  HPCC_VERSION=$(grep -m1 '^version:' $_chart | sed "s/^version: *//")
 
   HPCC_MAJOR=$(echo $HPCC_VERSION | awk 'BEGIN {FS="[.-]"}; {print $1};')
   HPCC_MINOR=$(echo $HPCC_VERSION | awk 'BEGIN {FS="[.-]"}; {print $2};')
@@ -45,17 +39,16 @@ function parse_cmake()
     echo "-- possibly on branch using old versioning scheme"
     exit 2
   fi
-
-
 }
 
-function update_version_file()
+function update_chart_file()
 {
     # Update the Chart.yaml file
-    local _new_maturity=$1
-    local _new_point=$2
-    local _new_sequence=$3
-    local _new_minor=$4
+    local _chart=$1
+    local _new_maturity=$2
+    local _new_point=$3
+    local _new_sequence=$4
+    local _new_minor=$5
     if [ -z "$_new_minor" ] ; then
       _new_minor=$HPCC_MINOR
     fi
@@ -69,18 +62,18 @@ function update_version_file()
       echo sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
-       -i.bak $VERSIONFILE
+       -i.bak $_chart
     fi
     if [ -z "$DRYRUN" ] ; then 
       sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
-       -i.bak $VERSIONFILE
-       cat $VERSIONFILE
+       -i.bak $_chart
+       cat $_chart
     else
       sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
-       $VERSIONFILE
+       $_chart
     fi
 }
