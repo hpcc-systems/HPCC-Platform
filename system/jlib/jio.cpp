@@ -1055,7 +1055,7 @@ CBufferedIOStreamBase::CBufferedIOStreamBase(size32_t _bufferSize)
     numInBuffer = 0;
     curBufferOffset = 0;
     reading = true;
-    minDirectSize = std::min(bufferSize/4,(size32_t)0x2000);        // size where we don't bother copying into the buffer
+    minDirectSize = bufferSize/4;        // size where we don't bother copying into the buffer
 }
 
 size32_t CBufferedIOStreamBase::doread(size32_t len, void * data)
