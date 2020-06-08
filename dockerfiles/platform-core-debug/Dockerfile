@@ -28,7 +28,7 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en  
 ENV LC_ALL en_US.UTF-8     
 
-RUN apt-get install -y libcap2-bin
+RUN apt-get install -y libcap2-bin zip
 RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
 
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
