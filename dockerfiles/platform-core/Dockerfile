@@ -40,6 +40,7 @@ RUN apt-get install -y \
   libapr1 \
   python \ 
   psmisc \
+  zip \
   curl
   
 RUN apt-get install -y \
