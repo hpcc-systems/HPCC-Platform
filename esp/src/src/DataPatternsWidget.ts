@@ -260,7 +260,7 @@ export class DataPatternsWidget {
     refreshActionState() {
         const isComplete = this._wu && this._wu.isComplete();
         this.setDisabled(this.id + "Analyze", !!this._wu);
-        d3Select(`#${this.id}TargetSelectLabel`).style("color", !!this._wu ? "rgb(158,158,158)" : null);
+        d3Select(`#${this.id}TargetSelectLabel`).style("color", this._wu ? "rgb(158,158,158)" : null);
         this.setDisabled(this.id + "TargetSelect", !!this._wu);
         this.setDisabled(this.id + "Delete", !this._wu);
         this.setDisabled(this.id + "OptimizeDropDown", !isComplete);

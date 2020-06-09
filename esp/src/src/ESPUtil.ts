@@ -91,7 +91,7 @@ const SingletonData = declare([Stateful], {
     }
 });
 
-export let Monitor = declare(null, {
+export const Monitor = declare(null, {
     isMonitoring() {
         return this._timer && this._timer > 0;
     },
@@ -267,7 +267,7 @@ const GridHelper = declare(null, {
     }
 });
 
-export let LocalStorage = dojo.declare([Evented], {
+export const LocalStorage = dojo.declare([Evented], {
     constructor() {
         const context = this;
         if (typeof Storage !== void (0)) {
@@ -315,7 +315,7 @@ export function goToPageUserPreference(gridName, key) {
     return retVal;
 }
 
-export let MonitorLockClick = dojo.declare([Evented], {
+export const MonitorLockClick = dojo.declare([Evented], {
     unlocked() {
         this.emit("unlocked", {});
     },
@@ -324,7 +324,7 @@ export let MonitorLockClick = dojo.declare([Evented], {
     }
 });
 
-export let IdleWatcher = dojo.declare([Evented], {
+export const IdleWatcher = dojo.declare([Evented], {
     constructor(idleDuration) {
         idleDuration = idleDuration || 30 * 1000;
         this._idleDuration = idleDuration;
@@ -410,7 +410,7 @@ export class UndefinedMemory extends UndefinedMemoryBase {
             if (options.sort.length > 0) {
                 const sortSet = options.sort;
                 options.sort = function (a, b) {
-                    // tslint:disable-next-line: no-conditional-assignment
+                    // eslint-disable-next-line no-cond-assign
                     for (let sort, i = 0; sort = sortSet[i]; i++) {
                         let aValue = a[sort.attribute];
                         let bValue = b[sort.attribute];
@@ -513,19 +513,17 @@ export function MonitorVisibility(widget, callback) {
 
 const slice = Array.prototype.slice;
 export function override(method) {
-    let proxy;
-
     /** @this target object */
-    proxy = function () {
-        const me = this;
+    const proxy = function () {
+        const context = this;
         const inherited = (this.getInherited && this.getInherited({
             // emulating empty arguments
             callee: proxy,
             length: 0
         })) || function () { };
 
-        return method.apply(me, [function () {
-            return inherited.apply(me, arguments);
+        return method.apply(context, [function () {
+            return inherited.apply(context, arguments);
         }].concat(slice.apply(arguments)));
     };
 

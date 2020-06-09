@@ -6,7 +6,6 @@ define([
     "dojo/topic",
     "dojo/_base/array",
     "dojo/dom-form",
-    "dojo/topic",
 
     "dijit/registry",
     "dijit/Menu",
@@ -44,7 +43,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, topic, arrayUtil, domForm, topic,
+], function (declare, lang, i18n, nlsHPCC, topic, arrayUtil, domForm,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
     _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,

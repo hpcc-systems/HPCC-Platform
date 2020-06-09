@@ -21,12 +21,11 @@ define([
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
     "hpcc/DynamicESDLDefinitionQueryWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/DelayLoadWidget",
+    "hpcc/TargetSelectWidget"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom,
     registry, Button, ToolbarSeparator, Dialog, TextBox,
     tree, selector,
-    GridDetailsWidget, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget, DelayLoadWidget) {
+    GridDetailsWidget, WsESDLConfig, Utility, DelayLoadWidget, ESPUtil, DynamicESDLDefinitionQueryWidget, TargetSelectWidget) {
     return declare("DynamicESDLQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 
