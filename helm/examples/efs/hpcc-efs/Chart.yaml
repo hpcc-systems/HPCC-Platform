@@ -1,0 +1,6 @@
+apiVersion: v2
+description: An example Helm chart for launching a EFS cluster using Kubernetes
+name: hpcc-efs
+type: application
+version: 0.1.0
+appVersion: 0.1.0

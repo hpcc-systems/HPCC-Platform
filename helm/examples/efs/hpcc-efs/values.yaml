@@ -1,0 +1,23 @@
+efs:
+  #namespace: default
+  #serviceaccount: default
+
+  #region: <EFS region>
+  region: us-east-1
+
+  # This must be provided. It can be found from AWS Console EFS service or from AWS Cli:
+  # aws efs describe-file-systems --region <EFS region> | grep "^FILESYSTEMS" |  awk -F $'\t' '{print $8, $5}'
+  #id: <set to EFS id>
+  #
+
+  # EFS Docker image
+  image: quay.io/external_storage/efs-provisioner:v2.2.0-k8s1.12
+
+dllStorage:
+  size: 1Mi
+
+daliStorage:
+ size: 1Mi
+
+dataStorage:
+ size: 5Mi
