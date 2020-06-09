@@ -22,6 +22,7 @@ define([
     "dojox/widget/ColorPicker",
 
     "src/CodeMirror",
+    "src/react/index",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -57,10 +58,10 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
+], function(declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
-    CodeMirror,
+    CodeMirror, srcReact,
     _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme,
     template) {
 
@@ -81,12 +82,11 @@ define([
         upgradeBar: null,
         storage: null,
 
-        postCreate: function (args) {
+        postCreate: function(args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
             this.logoutBtn = registry.byId(this.id + "Logout");
             this.lockBtn = registry.byId(this.id + "Lock");
-            this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.setToolbarDialog = registry.byId(this.id + "SetToolbarDialog");
             this.stackContainer = registry.byId(this.id + "TabContainer");
@@ -112,7 +112,7 @@ define([
             });
         },
 
-        startup: function (args) {
+        startup: function(args) {
             this.inherited(arguments);
             domStyle.set(dom.byId(this.id + "StackController_stub_Plugins").parentNode.parentNode, {
                 visibility: "hidden"
@@ -126,7 +126,7 @@ define([
         },
 
         //  Implementation  ---
-        refreshBanner: function (activity) {
+        refreshBanner: function(activity) {
             if (this.showBanner !== activity.ShowBanner ||
                 this.bannerContent !== activity.BannerContent ||
                 this.bannerScroll !== activity.BannerScroll ||
@@ -152,7 +152,7 @@ define([
             }
         },
 
-        refreshUserName: function () {
+        refreshUserName: function() {
             if (this.userName) {
                 dom.byId(this.id + "UserID").textContent = this.userName;
             } else if (cookie("ESPUserName")) {
@@ -163,7 +163,7 @@ define([
             }
         },
 
-        init: function (params) {
+        init: function(params) {
             if (this.inherited(arguments))
                 return;
 
@@ -171,7 +171,7 @@ define([
 
             WsMachine.GetComponentStatus({
                 request: {}
-            }).then(function (response) {
+            }).then(function(response) {
                 if (lang.exists("GetComponentStatusResponse.ComponentStatus", response)) {
                     dojoConfig.monitoringEnabled = true;
                     var status = response.GetComponentStatusResponse.ComponentStatus
@@ -181,8 +181,7 @@ define([
                 }
             });
 
-            WsAccount.MyAccount({
-            }).then(function (response) {
+            WsAccount.MyAccount({}).then(function(response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
                     dojoConfig.username = response.MyAccountResponse.username;
@@ -215,9 +214,8 @@ define([
             });
 
             WsTopology.TpGetServicePlugins({
-                request: {
-                }
-            }).then(function (response) {
+                request: {}
+            }).then(function(response) {
                 if (lang.exists("TpGetServicePluginsResponse.Plugins.Plugin", response) && response.TpGetServicePluginsResponse.Plugins.Plugin.length) {
                     domStyle.set(dom.byId(context.id + "StackController_stub_Plugins").parentNode.parentNode, {
                         visibility: "visible"
@@ -225,12 +223,12 @@ define([
                 }
             });
 
-            WsTopology.TpGetServerVersion().then(function (buildVersion) {
+            WsTopology.TpGetServerVersion().then(function(buildVersion) {
                 context.build = WsSMC.parseBuildString(buildVersion);
             });
 
             this.activity = ESPActivity.Get();
-            this.activity.watch("__hpcc_changedCount", function (name, oldValue, newValue) {
+            this.activity.watch("__hpcc_changedCount", function(name, oldValue, newValue) {
                 context.refreshBanner(context.activity);
             });
 
@@ -243,19 +241,19 @@ define([
             this.initTab();
             this.checkIfSessionsAreActive();
 
-            topic.subscribe("hpcc/monitoring_component_update", function (topic) {
+            topic.subscribe("hpcc/monitoring_component_update", function(topic) {
                 context.checkMonitoring(topic.status);
             });
             this.storage = new ESPUtil.LocalStorage();
 
-            this.storage.on("storageUpdate", function (msg) {
+            this.storage.on("storageUpdate", function(msg) {
                 context._onUpdateFromStorage(msg)
             });
             this.storage.setItem("Status", "Unlocked");
 
             EnvironmentTheme.checkCurrentState(this.id, this);
 
-            this.environmentTextCB.on("change", function (state) {
+            this.environmentTextCB.on("change", function(state) {
                 if (state) {
                     context.environmentText.set("disabled", false);
                 } else {
@@ -264,7 +262,7 @@ define([
             });
         },
 
-        _onUpdateFromStorage: function (msg) {
+        _onUpdateFromStorage: function(msg) {
             var context = this;
             if (msg.event.newValue === "logged_out") {
                 window.location.reload();
@@ -275,7 +273,7 @@ define([
             }
         },
 
-        initTab: function () {
+        initTab: function() {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.init) {
@@ -284,18 +282,18 @@ define([
             }
         },
 
-        getTitle: function () {
+        getTitle: function() {
             return "ECL Watch";
         },
 
-        checkMonitoring: function (status) {
+        checkMonitoring: function(status) {
             if (status) {
                 domClass.remove("MonitorStatus");
                 domClass.add("MonitorStatus", status);
             }
         },
 
-        checkIfAdmin: function (user) {
+        checkIfAdmin: function(user) {
             var context = this;
             if (user == null) {
                 registry.byId(context.id + "SetBanner").set("disabled", false);
@@ -307,7 +305,7 @@ define([
                     request: {
                         username: user
                     }
-                }).then(function (response) {
+                }).then(function(response) {
                     if (lang.exists("UserEditResponse.isLDAPAdmin", response)) {
                         if (response.UserEditResponse.isLDAPAdmin === true) {
                             dojoConfig.isAdmin = true;
@@ -320,7 +318,7 @@ define([
                         }
                     } else {
                         if (lang.exists("UserEditResponse.Groups.Group", response)) {
-                            arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
+                            arrayUtil.some(response.UserEditResponse.Groups.Group, function(item, idx) {
                                 if (item.name === "Administrators" || item.name === "Directory Administrators") {
                                     dojoConfig.isAdmin = true;
                                     registry.byId(context.id + "SetBanner").set("disabled", false);
@@ -337,7 +335,7 @@ define([
             }
         },
 
-        checkIfSessionsAreActive: function () {
+        checkIfSessionsAreActive: function() {
             if (cookie("ESPSessionTimeoutSeconds")) {
                 this.logoutBtn.set("disabled", false);
                 this.lockBtn.set("disabled", false);
@@ -346,12 +344,12 @@ define([
             }
         },
 
-        setEnvironmentTheme: function () {
+        setEnvironmentTheme: function() {
             EnvironmentTheme.setEnvironmentTheme(this.id, this);
         },
 
         //  Hitched actions  ---
-        _onUserID: function (evt) {
+        _onUserID: function(evt) {
             var userDialog = registry.byId(this.id + "UserDialog");
             var userInfo = registry.byId(this.id + "UserInfo");
             if (!userInfo.init({ Username: this.userName })) {
@@ -360,53 +358,53 @@ define([
             userDialog.show();
         },
 
-        _onFind: function (evt) {
+        _onFind: function(evt) {
             var context = this;
             this.stackContainer.selectChild(this.mainPage);
-            this.mainPage.ensureWidget().then(function (mainPage) {
+            this.mainPage.ensureWidget().then(function(mainPage) {
                 mainPage.widget.TabContainer.selectChild(mainPage.widget._Search);
-                mainPage.widget._Search.ensureWidget().then(function (searchPage) {
+                mainPage.widget._Search.ensureWidget().then(function(searchPage) {
                     searchPage.doSearch(context.searchText.get("value"));
                 });
             });
         },
 
-        _openNewTab: function (url) {
+        _openNewTab: function(url) {
             var win = window.open(url, "_blank");
             if (win && win.focus) {
                 win.focus();
             }
         },
 
-        _onOpenResources: function (evt) {
+        _onOpenResources: function(evt) {
             this._openNewTab("https://hpccsystems.com/download");
         },
 
-        _onOpenDocuments: function (evt) {
+        _onOpenDocuments: function(evt) {
             this._openNewTab("https://hpccsystems.com/training/documentation");
         },
 
-        _onOpenJira: function (evt) {
+        _onOpenJira: function(evt) {
             this._openNewTab("https://track.hpccsystems.com/issues");
         },
 
-        _onOpenForums: function (evt) {
+        _onOpenForums: function(evt) {
             this._openNewTab("https://hpccsystems.com/bb/");
         },
 
-        _onOpenRedBook: function (evt) {
+        _onOpenRedBook: function(evt) {
             this._openNewTab("https://wiki.hpccsystems.com/x/fYAb");
         },
 
-        _onOpenReleaseNotes: function (evt) {
+        _onOpenReleaseNotes: function(evt) {
             this._openNewTab("https://hpccsystems.com/download/release-notes");
         },
 
-        _onOpenTransitionGuide: function (evt) {
+        _onOpenTransitionGuide: function(evt) {
             this._openNewTab("https://wiki.hpccsystems.com/display/hpcc/HPCC+ECL+Watch+5.0+Transition+Guide");
         },
 
-        _onOpenConfiguration: function (evt) {
+        _onOpenConfiguration: function(evt) {
             var context = this;
             if (!this.configText) {
                 ESPRequest.send("main", "", {
@@ -415,7 +413,7 @@ define([
                         PlainText: "yes"
                     },
                     handleAs: "text"
-                }).then(function (response) {
+                }).then(function(response) {
                     context.configText = context.formatXml(response);
                     context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
                         tabMode: "indent",
@@ -433,13 +431,13 @@ define([
             this.stackContainer.selectChild(this.widget._Config);
         },
 
-        _onOpenErrWarn: function (evt) {
+        _onOpenErrWarn: function(evt) {
             this.stackContainer.selectChild(this.errWarnPage);
         },
 
-        _ondebugLanguageFiles: function () {
+        _ondebugLanguageFiles: function() {
             var context = this;
-            require(["hpcc/nls/hpcc"], function (lang) {
+            require(["hpcc/nls/hpcc"], function(lang) {
                 var languageID = [];
                 var languageRequire = [];
                 for (var key in lang) {
@@ -448,9 +446,9 @@ define([
                         languageRequire.push("hpcc/nls/" + key + "/hpcc");
                     }
                 }
-                require(languageRequire, function () {
+                require(languageRequire, function() {
                     var errWarnGrid = registry.byId(context.id + "ErrWarnGrid");
-                    arrayUtil.forEach(arguments, function (otherLang, idx) {
+                    arrayUtil.forEach(arguments, function(otherLang, idx) {
                         var langID = languageID[idx];
                         for (var key in lang.root) {
                             if (!otherLang[key]) {
@@ -485,41 +483,39 @@ define([
         },
 
         _onAboutLoaded: false,
-        _onAbout: function (evt) {
-            if (!this._onAboutLoaded) {
-                this._onAboutLoaded = true;
-                dom.byId(this.id + "ServerVersion").value = this.build.version;
-            }
-            this.aboutDialog.show();
+        _onAbout: function(evt) {
+            var aboutNode = dom.byId(this.id + "AboutDialog");
+            srcReact.render(srcReact.AboutDialog, {
+                version: this.build.orig,
+                handleClose: function() {
+                    srcReact.unrender(aboutNode);
+                }
+            }, aboutNode);
         },
 
-        _onAboutClose: function (evt) {
-            this.aboutDialog.hide();
-        },
-
-        _onShowLock: function (evt) {
+        _onShowLock: function(evt) {
             var LockDialog = new LockDialogWidget({});
             LockDialog.show()
         },
 
-        _onLock: function (evt) {
+        _onLock: function(evt) {
             var LockDialog = new LockDialogWidget({});
             LockDialog._onLock();
         },
 
-        _onHideLock: function (evt) {
+        _onHideLock: function(evt) {
             var LockDialog = new LockDialogWidget({});
             LockDialog.hide();
         },
 
-        _onLogout: function (evt) {
+        _onLogout: function(evt) {
             var context = this;
             this.logoutConfirm.show();
             query(".dijitDialogUnderlay").style("opacity", "0.5");
-            this.logoutConfirm.on("execute", function () {
+            this.logoutConfirm.on("execute", function() {
                 xhr("esp/logout", {
                     method: "post"
-                }).then(function (data) {
+                }).then(function(data) {
                     if (data) {
                         cookie("ECLWatchUser", "", { expires: -1 });
                         cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
@@ -532,16 +528,16 @@ define([
             });
         },
 
-        _onMonitoring: function (evt) {
+        _onMonitoring: function(evt) {
             this.stackContainer.selectChild(this.operationsPage);
-            this.operationsPage.ensureWidget().then(function (operationsPage) {
-                operationsPage.widget._Topology.ensureWidget().then(function (topologyPage) {  //  This is needed otherwise topology will steal focus the first time it is delay loaded
+            this.operationsPage.ensureWidget().then(function(operationsPage) {
+                operationsPage.widget._Topology.ensureWidget().then(function(topologyPage) { //  This is needed otherwise topology will steal focus the first time it is delay loaded
                     operationsPage.selectChild(operationsPage.widget._Monitoring);
                 });
             });
         },
 
-        _onSetBanner: function (evt) {
+        _onSetBanner: function(evt) {
             registry.byId(this.id + "ShowBanner").set("value", this.activity.ShowBanner);
             dom.byId(this.id + "BannerContent").value = this.activity.BannerContent;
             dom.byId(this.id + "BannerColor").value = this.activity.BannerColor;
@@ -550,35 +546,35 @@ define([
             this.setBannerDialog.show();
         },
 
-        _onSetBannerOk: function (evt) {
+        _onSetBannerOk: function(evt) {
             this.activity.setBanner(domForm.toObject(this.id + "SetBannerForm"));
             this.setBannerDialog.hide();
         },
 
-        _onSetBannerCancel: function (evt) {
+        _onSetBannerCancel: function(evt) {
             this.setBannerDialog.hide();
         },
 
-        _onSetToolbar: function (evt) {
+        _onSetToolbar: function(evt) {
             this.setToolbarDialog.show();
         },
 
-        _onSetToolbarOk: function (evt) {
+        _onSetToolbarOk: function(evt) {
             this.setEnvironmentTheme();
         },
 
-        _onSetToolbarCancel: function (evt) {
+        _onSetToolbarCancel: function(evt) {
             this.setToolbarDialog.hide();
         },
 
-        _onSetToolbarReset: function (evt) {
+        _onSetToolbarReset: function(evt) {
             if (confirm(this.i18n.AreYouSureYouWantToResetTheme)) {
                 EnvironmentTheme._onResetDefaultTheme(this.id, this);
                 this._onSetToolbarCancel();
             }
         },
 
-        createStackControllerTooltip: function (widgetID, text) {
+        createStackControllerTooltip: function(widgetID, text) {
             return new Tooltip({
                 connectId: [this.id + "StackController_" + widgetID],
                 label: text,

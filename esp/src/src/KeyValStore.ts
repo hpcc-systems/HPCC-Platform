@@ -56,6 +56,35 @@ store.get("browser-stats").then(statsStr => {
     }
 });
 
+export function fetchStats() {
+    const store = globalKeyValStore();
+    return store.get("browser-stats").then(statsStr => {
+        const browser = [];
+        const os = [];
+        try {
+            const stats = JSON.parse(statsStr);
+            for (const key in stats) {
+                if (key !== "since") {
+                    const val = stats[key];
+                    if (val.count === undefined) {
+                        for (const bKey in val) {
+                            browser.push([`${key}-${bKey}`, val[bKey].count]);
+                        }
+                    } else {
+                        os.push([`${key}`, val.count]);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to read stats", e);
+        }
+        return {
+            browser,
+            os
+        };
+    });
+}
+
 /**
  *  User Store
  *      Stores info in Dali by user ID
