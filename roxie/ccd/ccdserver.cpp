@@ -12367,7 +12367,10 @@ public:
             }
             if (metadata->getPropBool("_useTrailingHeader", true))
                 flags |= USE_TRAILING_HEADER;
-            Owned<IFileIOStream> out = createIOStream(io, needsSeek);
+            Owned<IFileIOStream> out = createBufferedIOStream(io, 0x100000);
+            if (!needsSeek)
+                out.setown(createNoSeekIOStream(out));
+
             Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
             class BcWrapper : implements IBlobCreator
             {

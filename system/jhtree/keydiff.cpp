@@ -414,7 +414,10 @@ public:
         keyFileIO.setown(keyFile->openShared(IFOcreate, IFSHfull)); // not sure if needs shared here
         if(!keyFileIO)
             throw MakeStringException(0, "Could not write index file %s", filename);
-        keyStream.setown(createIOStream(keyFileIO, !noSeek));
+        keyStream.setown(createIOStream(keyFileIO));
+        if (noSeek)
+            keyStream.setown(createNoSeekIOStream(keyStream));
+
         unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY | USE_TRAILING_HEADER;
         if (noSeek)
             flags |= TRAILING_HEADER_ONLY;

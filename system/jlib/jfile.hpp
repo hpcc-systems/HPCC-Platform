@@ -267,7 +267,8 @@ extern jlib_decl IDirectoryIterator * createDirectoryIterator(const char * path 
 extern jlib_decl IDirectoryIterator * createNullDirectoryIterator();
 extern jlib_decl IFileIO * createIORange(IFileIO * file, offset_t header, offset_t length);     // restricts input/output to a section of a file.
 
-extern jlib_decl IFileIOStream * createIOStream(IFileIO * file, bool allowSeek=true);        // links argument
+extern jlib_decl IFileIOStream * createIOStream(IFileIO * file);        // links argument
+extern jlib_decl IFileIOStream * createNoSeekIOStream(IFileIOStream * stream);  // links argument
 extern jlib_decl IFileIOStream * createBufferedIOStream(IFileIO * file, unsigned bufsize=(unsigned)-1);// links argument
 extern jlib_decl IFileIOStream * createBufferedAsyncIOStream(IFileAsyncIO * file, unsigned bufsize=(unsigned)-1);// links argument
 

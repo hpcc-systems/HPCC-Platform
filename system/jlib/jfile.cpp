@@ -2449,11 +2449,10 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
 
 //---------------------------------------------------------------------------
 
-CFileIOStream::CFileIOStream(IFileIO * _io, bool _allowSeek)
+CFileIOStream::CFileIOStream(IFileIO * _io)
 {
     io.set(_io);
     curOffset = 0;
-    allowSeek = _allowSeek;
 }
 
 
@@ -2471,7 +2470,6 @@ size32_t CFileIOStream::read(size32_t len, void * data)
 
 void CFileIOStream::seek(offset_t pos, IFSmode origin)
 {
-    auto oldOffset = curOffset;
     switch (origin)
     {
     case IFScurrent:
@@ -2484,8 +2482,6 @@ void CFileIOStream::seek(offset_t pos, IFSmode origin)
         curOffset = pos;
         break;
     }
-    if (!allowSeek && oldOffset != curOffset)
-        throw makeStringException(0, "Seek on non-seekable CFileIOStream");
 }
 
 offset_t CFileIOStream::size()
@@ -2503,6 +2499,63 @@ size32_t CFileIOStream::write(size32_t len, const void * data)
     size32_t numWritten = io->write(curOffset, len, data);
     curOffset += numWritten;
     return numWritten;
+}
+
+
+
+//---------------------------------------------------------------------------
+
+CNoSeekFileIOStream::CNoSeekFileIOStream(IFileIOStream * _stream) : stream(_stream)
+{
+}
+
+
+void CNoSeekFileIOStream::flush()
+{
+    stream->flush();
+}
+
+
+size32_t CNoSeekFileIOStream::read(size32_t len, void * data)
+{
+    return stream->read(len, data);
+}
+
+void CNoSeekFileIOStream::seek(offset_t pos, IFSmode origin)
+{
+    offset_t prevOffset = stream->tell();
+    offset_t nextOffset = 0;
+    switch (origin)
+    {
+    case IFScurrent:
+        nextOffset = prevOffset + pos;
+        break;
+    case IFSend:
+        nextOffset = stream->size() + pos;
+        break;
+    case IFSbegin:
+        nextOffset = pos;
+        break;
+    }
+    if (prevOffset != nextOffset)
+        throw makeStringExceptionV(0, "Seek on non-seekable CFileIOStream (from %" I64F "u to %" I64F "u)", prevOffset, nextOffset);
+
+    //No need to call stream->seek since it will have no effect
+}
+
+offset_t CNoSeekFileIOStream::size()
+{
+    return stream->size();
+}
+
+offset_t CNoSeekFileIOStream::tell()
+{
+    return stream->tell();
+}
+
+size32_t CNoSeekFileIOStream::write(size32_t len, const void * data)
+{
+    return stream->write(len, data);
 }
 
 
@@ -4134,9 +4187,14 @@ IFile * createIFile(const char * filename)
 }
 
 
-IFileIOStream * createIOStream(IFileIO * file, bool allowSeek)
+IFileIOStream * createIOStream(IFileIO * file)
 {
-    return new CFileIOStream(file, allowSeek);
+    return new CFileIOStream(file);
+}
+
+IFileIOStream * createNoSeekIOStream(IFileIOStream * stream)
+{
+    return new CNoSeekFileIOStream(stream);
 }
 
 IFileIO * createIORange(IFileIO * io, offset_t header, offset_t length)
