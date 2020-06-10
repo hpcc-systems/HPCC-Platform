@@ -301,6 +301,9 @@ export class ECLArchiveWidget {
                 if (n.fullPath === queryPath) {
                     n.selected = true;
                     n.iconClass = "fa fa-code";
+                    if (n.content.length > context.editor.text().length) {
+                        context.editor.text(n.content);
+                    }
                 }
                 if (n && n.children) {
                     n.children.sort(function (a, b) {

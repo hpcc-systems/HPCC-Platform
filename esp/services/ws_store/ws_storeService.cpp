@@ -89,7 +89,8 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
             isDefault = iter->query().getPropBool(ESP_STORE_DEFAULT_ATT, false);
 
             ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
-            m_storeProvider->createStore(type.str(), id.str(), description.str(), new CSecureUser(owner.str(), nullptr), maxvalsize);
+            Owned<ISecUser> secuser = new CSecureUser(owner.str(), nullptr);
+            m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
             if (isDefault)
             {
                 if (!m_defaultStore.isEmpty())
@@ -127,6 +128,7 @@ IEspStore* CwsstoreEx::loadStoreProvider(const char* instanceName, const char* l
 bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, IEspListStoresResponse &resp)
 {
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     double version = context.getClientVersion();
 
     const char * namefilter = req.getNameFilter();
@@ -134,7 +136,7 @@ bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, 
     const char * typefilter  = req.getTypeFilter();
 
     IArrayOf<IEspStoreInfo> storeinfos;
-    Owned<IPropertyTree> stores = m_storeProvider->getStores(namefilter, ownerfilter, typefilter, new CSecureUser(user, nullptr));
+    Owned<IPropertyTree> stores = m_storeProvider->getStores(namefilter, ownerfilter, typefilter, secuser.get());
     if (stores)
     {
         Owned<IPropertyTreeIterator> iter = stores->getElements("Store");
@@ -160,6 +162,7 @@ bool CwsstoreEx::onListStores(IEspContext &context, IEspListStoresRequest &req, 
 bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req, IEspCreateStoreResponse &resp)
 {
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     double version = context.getClientVersion();
     unsigned int maxvalsize = DEFAULT_ESP_STORE_MAX_VAL_SIZE;
 
@@ -168,7 +171,7 @@ bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req
         maxvalsize = req.getMaxValueSize();
     }
 
-    bool success = m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), new CSecureUser(user, nullptr), maxvalsize);
+    bool success = m_storeProvider->createStore(req.getType(), req.getName(), req.getDescription(), secuser.get(), maxvalsize);
 
     if (version > 1)
       resp.setSuccess(success);
@@ -184,6 +187,7 @@ bool CwsstoreEx::onCreateStore(IEspContext &context, IEspCreateStoreRequest &req
 bool CwsstoreEx::onDelete(IEspContext &context, IEspDeleteRequest &req, IEspDeleteResponse &resp)
 {
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char *storename = req.getStoreName();
 
     if (!storename || !*storename)
@@ -192,13 +196,14 @@ bool CwsstoreEx::onDelete(IEspContext &context, IEspDeleteRequest &req, IEspDele
             storename = m_defaultStore.get();
     }
 
-    resp.setSuccess( m_storeProvider->deletekey(storename, req.getNamespace(), req.getKey(), new CSecureUser(user, nullptr), !req.getUserSpecific()));
+    resp.setSuccess( m_storeProvider->deletekey(storename, req.getNamespace(), req.getKey(), secuser.get(), !req.getUserSpecific()));
     return true;
 }
 
 bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequest &req, IEspDeleteNamespaceResponse &resp)
 {
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char *storename = req.getStoreName();
     bool global = !req.getUserSpecific();
     const char *targetUser = req.getTargetUser();
@@ -215,13 +220,14 @@ bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequ
             storename = m_defaultStore.get();
     }
 
-    resp.setSuccess(m_storeProvider->deleteNamespace(storename, req.getNamespace(), new CSecureUser(user, nullptr), !req.getUserSpecific()));
+    resp.setSuccess(m_storeProvider->deleteNamespace(storename, req.getNamespace(), secuser.get(), !req.getUserSpecific()));
     return true;
 }
 
 bool CwsstoreEx::onListNamespaces(IEspContext &context, IEspListNamespacesRequest &req, IEspListNamespacesResponse &resp)
 {
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char *storename = req.getStoreName();
 
     if (!storename || !*storename)
@@ -231,7 +237,7 @@ bool CwsstoreEx::onListNamespaces(IEspContext &context, IEspListNamespacesReques
     }
 
     StringArray namespaces;
-    m_storeProvider->fetchAllNamespaces(namespaces, storename, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    m_storeProvider->fetchAllNamespaces(namespaces, storename, secuser.get(), !req.getUserSpecific());
     resp.setNamespaces(namespaces);
     resp.setStoreName(storename);
     return true;
@@ -241,6 +247,7 @@ bool CwsstoreEx::onListKeys(IEspContext &context, IEspListKeysRequest &req, IEsp
 {
     const char * ns = req.getNamespace();
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char *storename = req.getStoreName();
 
     if (!storename || !*storename)
@@ -250,7 +257,7 @@ bool CwsstoreEx::onListKeys(IEspContext &context, IEspListKeysRequest &req, IEsp
     }
 
     StringArray keys;
-    m_storeProvider->fetchKeySet(keys, storename, ns, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    m_storeProvider->fetchKeySet(keys, storename, ns, secuser.get(), !req.getUserSpecific());
     resp.setKeySet(keys);
     resp.setNamespace(ns);
     resp.setStoreName(storename);
@@ -272,7 +279,8 @@ bool CwsstoreEx::onSet(IEspContext &context, IEspSetRequest &req, IEspSetRespons
     }
 
     const char *user = context.queryUserId();
-    resp.setSuccess(m_storeProvider->set(storename, ns, key, value, new CSecureUser(user, nullptr), !req.getUserSpecific()));
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
+	resp.setSuccess(m_storeProvider->set(storename, ns, key, value, secuser.get(), !req.getUserSpecific()));
 
     return true;
 }
@@ -281,6 +289,8 @@ bool CwsstoreEx::onFetch(IEspContext &context, IEspFetchRequest &req, IEspFetchR
 {
     StringBuffer value;
     const char *user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
+
     const char * storename = req.getStoreName();
 
     if (!storename || !*storename)
@@ -289,7 +299,7 @@ bool CwsstoreEx::onFetch(IEspContext &context, IEspFetchRequest &req, IEspFetchR
             storename = m_defaultStore.get();
     }
 
-    m_storeProvider->fetch(storename, req.getNamespace(), req.getKey(), value, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    m_storeProvider->fetch(storename, req.getNamespace(), req.getKey(), value, secuser.get(), !req.getUserSpecific());
     resp.setValue(value.str());
 
     return true;
@@ -299,6 +309,7 @@ bool CwsstoreEx::onFetchKeyMetadata(IEspContext &context, IEspFetchKeyMDRequest 
 {
     const char * ns = req.getNamespace();
     const char * user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char * storename = req.getStoreName();
     const char * key = req.getKey();
 
@@ -308,7 +319,7 @@ bool CwsstoreEx::onFetchKeyMetadata(IEspContext &context, IEspFetchKeyMDRequest 
             storename = m_defaultStore.get();
     }
 
-    Owned<IPropertyTree> nstree = m_storeProvider->getAllKeyProperties(storename, ns, key, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    Owned<IPropertyTree> nstree = m_storeProvider->getAllKeyProperties(storename, ns, key, secuser.get(), !req.getUserSpecific());
 
     if (nstree)
     {
@@ -337,6 +348,7 @@ bool CwsstoreEx::onFetchAll(IEspContext &context, IEspFetchAllRequest &req, IEsp
 {
     const char * ns = req.getNamespace();
     const char * user = context.queryUserId();
+    Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
     const char * storename = req.getStoreName();
 
     if (!storename || !*storename)
@@ -345,7 +357,7 @@ bool CwsstoreEx::onFetchAll(IEspContext &context, IEspFetchAllRequest &req, IEsp
             storename = m_defaultStore.get();
     }
 
-    Owned<IPropertyTree> nstree = m_storeProvider->getAllPairs(storename, ns, new CSecureUser(user, nullptr), !req.getUserSpecific());
+    Owned<IPropertyTree> nstree = m_storeProvider->getAllPairs(storename, ns, secuser.get(), !req.getUserSpecific());
 
     IArrayOf<IEspKVPair> pairs;
 
