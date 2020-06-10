@@ -8161,6 +8161,12 @@ void CHThorDiskReadBaseActivity::ready()
         keyedTranslator = translators->queryKeyedTranslator();
         actualDiskMeta.set(&translators->queryActualFormat());
     }
+    else
+    {
+        translator = nullptr;
+        keyedTranslator = nullptr;
+        actualDiskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
+    }
 }
 
 void CHThorDiskReadBaseActivity::stop()
