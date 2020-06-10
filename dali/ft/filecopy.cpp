@@ -2689,7 +2689,8 @@ void FileSprayer::setTarget(IDistributedFile * target)
         if (separator && (strcmp(separator, ",") == 0))
             srcFormat.separate.set("\\,");
 
-        tgtFormat.set(srcFormat);
+        //tgtFormat.set(srcFormat);
+        tgtFormat.set(FFTutf8);
         if (!unknownSourceFormat)
         {
             DistributedFilePropertyLock lock(target);
