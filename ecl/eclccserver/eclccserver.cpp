@@ -303,6 +303,22 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         query->getQueryText(eclQuery);
         query->getQueryMainDefinition(mainDefinition);
 
+        bool syntaxCheck = (workunit->getAction()==WUActionCheck);
+        if (syntaxCheck && (mainDefinition.length() == 0))
+        {
+            SCMStringBuffer syntaxCheckAttr;
+            workunit->getApplicationValue("SyntaxCheck", "AttributeName", syntaxCheckAttr);
+            syntaxCheckAttr.s.trim();
+            if (syntaxCheckAttr.length())
+            {
+                workunit->getApplicationValue("SyntaxCheck", "ModuleName", mainDefinition);
+                mainDefinition.s.trim();
+                if (mainDefinition.length())
+                    mainDefinition.s.append('.');
+                mainDefinition.s.append(syntaxCheckAttr.str());
+            }
+        }
+
         StringBuffer eclccProgName;
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
@@ -310,12 +326,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
-            eclccCmd.append(" -main ").append(mainDefinition);
+            eclccCmd.append(" -main \"").append(mainDefinition).append("\"");
         eclccCmd.append(" --timings --xml");
         eclccCmd.append(" --nostdinc");
         eclccCmd.append(" --metacache=");
         VStringBuffer logfile("%s.eclcc.log", workunit->queryWuid());
         eclccCmd.appendf(" --logfile=%s", logfile.str());
+        if (syntaxCheck)
+            eclccCmd.appendf(" -syntax");
+
         if (globals->getPropBool("@enableEclccDali", true))
         {
             const char *daliServers = globals->queryProp("@daliServers");
