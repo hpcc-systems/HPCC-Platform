@@ -34,7 +34,7 @@ define([
                         return innerText.get.call(this);
                     },
                     set: function (s) {
-                        return innerText.set.call(this, s);
+                        innerText.set.call(this, s);
                     }
                 }
             );

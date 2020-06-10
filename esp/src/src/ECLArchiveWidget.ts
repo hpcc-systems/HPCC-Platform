@@ -196,8 +196,8 @@ export class ECLArchiveWidget {
                         }
                         if (node.content && node.content.trim()) {
                             let _data = data;
-                            pathArr.forEach(function(pathSegmentName, i) {
-                                const found = _data.children.find(function(_n) {
+                            pathArr.forEach(function (pathSegmentName, i) {
+                                const found = _data.children.find(function (_n) {
                                     return _n.label === pathSegmentName;
                                 });
                                 if (found) {
@@ -212,7 +212,7 @@ export class ECLArchiveWidget {
                                     _data = _temp;
                                 }
                             })
-                            ;
+                                ;
                             let content = node.content.trim();
                             content = hasABase64Indicator ? atob(content) : content;
                             const path = pathArr.join(".");
@@ -225,14 +225,14 @@ export class ECLArchiveWidget {
                             });
                         } else if (node._children) {
                             if (skipPathConcat) {
-                                node._children.forEach(function(_node, i) {
+                                node._children.forEach(function (_node, i) {
                                     walk(_node, [...pathArr]);
                                 });
                             } else {
                                 if (label.indexOf(".") !== -1) {
                                     const name = getNodeName(node);
                                     if (name.indexOf(".") !== -1) {
-                                        name.split(".").forEach(function(seg, i, arr) {
+                                        name.split(".").forEach(function (seg, i, arr) {
                                             if (i < arr.length - 1) {
                                                 pathArr.push(seg);
                                             }
@@ -240,7 +240,7 @@ export class ECLArchiveWidget {
                                         });
                                     }
                                 }
-                                node._children.forEach(function(_node, i) {
+                                node._children.forEach(function (_node, i) {
                                     walk(_node, [...pathArr].concat([label]));
                                 });
                             }
@@ -253,7 +253,7 @@ export class ECLArchiveWidget {
 
             recursiveSort(data);
 
-            let firstTierLabels = data.children.map(function(n) {
+            let firstTierLabels = data.children.map(function (n) {
                 return n.label;
             });
 
@@ -262,7 +262,7 @@ export class ECLArchiveWidget {
                 const lib = data.children[librariesIdx];
                 data.children.splice(librariesIdx, 1);
                 data.children.push(lib);
-                firstTierLabels = data.children.map(function(n) {
+                firstTierLabels = data.children.map(function (n) {
                     return n.label;
                 });
             }
@@ -303,7 +303,7 @@ export class ECLArchiveWidget {
                     n.iconClass = "fa fa-code";
                 }
                 if (n && n.children) {
-                    n.children.sort(function(a, b) {
+                    n.children.sort(function (a, b) {
                         const aContent = a.content && a.content.trim();
                         const bContent = b.content && b.content.trim();
                         if (aContent && !bContent) {
@@ -325,8 +325,6 @@ export class ECLArchiveWidget {
                 label = label ? label : "";
                 if (!label && node["$"].resourcePath) {
                     label = node["$"].resourcePath.split("/").pop();
-                } else if (!label && node["$"].originalFilename) {
-                    label = node["$"].originalFilename.split("\\").pop();
                 } else if (!label && node["$"].originalFilename) {
                     label = node["$"].originalFilename.split("\\").pop();
                 }

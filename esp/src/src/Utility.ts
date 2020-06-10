@@ -116,6 +116,7 @@ export function valueCleanUp(intsize): string {
 }
 
 export function removeSpecialCharacters(stringToConvert): string {
+    // eslint-disable-next-line no-useless-escape
     return stringToConvert.replace(/[\!\@\#\$\%\^\&\*\)\(\+\=\.\<\>\{\}\[\]\:\;\'\"\|\~\`\_\-]/g, "");
 }
 
@@ -309,7 +310,7 @@ export function alphanum(a, b) {
         let i;
         let j;
 
-        // tslint:disable-next-line: no-conditional-assignment
+        // eslint-disable-next-line no-cond-assign
         while (i = (j = t.charAt(x++)).charCodeAt(0)) {
             // tslint:disable-next-line: triple-equals
             const m = (i == 46 || (i >= 48 && i <= 57));
@@ -353,7 +354,7 @@ export function alphanumCase(a, b) {
         let i;
         let j;
 
-        // tslint:disable-next-line: no-conditional-assignment
+        // eslint-disable-next-line no-cond-assign
         while (i = (j = t.charAt(x++)).charCodeAt(0)) {
             // tslint:disable-next-line: triple-equals
             const m = (i == 46 || (i >= 48 && i <= 57));    // jshint ignore:line
@@ -787,17 +788,17 @@ export function getImageHTML(name, tooltip?) {
 export function debounce(func, threshold, execAsap) {
     let timeout;
     return function debounced() {
-        const obj = this;
+        const context = this;
         const args = arguments;
         function delayed() {
             if (!execAsap)
-                func.apply(obj, args);
+                func.apply(context, args);
             timeout = null;
         }
         if (timeout)
             clearTimeout(timeout);
         else if (execAsap)
-            func.apply(obj, args);
+            func.apply(context, args);
         timeout = setTimeout(delayed, threshold || 100);
     };
 }

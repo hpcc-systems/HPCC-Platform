@@ -358,7 +358,7 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
         });
     }
 
-    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term: string = "") {
+    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term = "") {
         const [findScope, findTerm] = this.splitTerm(term);
 
         function highlightText(key: string, _text: any) {

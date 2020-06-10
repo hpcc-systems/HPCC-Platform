@@ -199,7 +199,7 @@ define([
         },
 
         cleanColumn: function (str) {
-            var clean = str.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>,.\/? ])+/g, '').replace(/^(-)+|(-)+$/g, '');
+            var clean = str.replace(/([~!@#$%^&*()_+=`{}[\]|\\:;'<>,./? ])+/g, '').replace(/^(-)+|(-)+$/g, '');
             return clean;
         },
 

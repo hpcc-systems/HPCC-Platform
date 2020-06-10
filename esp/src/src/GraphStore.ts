@@ -23,7 +23,7 @@ export class GraphStore extends UndefinedMemory {
         const sortSet = options && options.sort;
         if (sortSet) {
             retVal.sort(typeof sortSet === "function" ? sortSet : function (a, b) {
-                // tslint:disable-next-line: no-conditional-assignment
+                // eslint-disable-next-line no-cond-assign
                 for (let sort, i = 0; sort = sortSet[i]; i++) {
                     let aValue = a[sort.attribute];
                     let bValue = b[sort.attribute];

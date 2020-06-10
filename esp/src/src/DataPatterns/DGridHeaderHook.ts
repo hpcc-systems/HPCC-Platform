@@ -25,7 +25,7 @@ export class DGridHeaderHook {
     }
 
     render(wu: Workunit): Promise<void> {
-        d3SelectAll<HTMLElement, {}>(`#${this._gridID} > .dgrid-header tr:not(.dgrid-spacer-row) > th .placeholder`).remove();
+        d3SelectAll<HTMLElement, object>(`#${this._gridID} > .dgrid-header tr:not(.dgrid-spacer-row) > th .placeholder`).remove();
         if (wu) {
             return wu.watchUntilComplete().then(wu => {
                 return wu.fetchResults();

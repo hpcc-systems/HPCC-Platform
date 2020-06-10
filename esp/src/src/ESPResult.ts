@@ -670,9 +670,9 @@ class Result {
 
     getLoadingMessage() {
         if (lang.exists("wu.state", this)) {
-            return "<span class=\'dojoxGridWating\'>[" + this.wu.state + "]</span>";
+            return "<span class='dojoxGridWating'>[" + this.wu.state + "]</span>";
         }
-        return "<span class=\'dojoxGridWating\'>[unknown]</span>";
+        return "<span class='dojoxGridWating'>[unknown]</span>";
     }
 
     getECLRecord() {

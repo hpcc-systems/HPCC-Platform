@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 var fs = require("fs");
 
 function getConfig(env) {
@@ -90,4 +91,5 @@ function getConfig(env) {
     };
 }
 
+// eslint-disable-next-line no-undef
 module.exports = getConfig;

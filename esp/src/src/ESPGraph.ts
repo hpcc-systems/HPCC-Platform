@@ -459,7 +459,7 @@ const Edge = declare([GraphItem], {
     }
 });
 
-export let Graph = declare([], {
+export const Graph = declare([], {
     constructor() {
         this.clear();
     },

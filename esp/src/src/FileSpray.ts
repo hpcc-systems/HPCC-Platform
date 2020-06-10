@@ -217,7 +217,7 @@ const LandingZonesStore = declare([ESPRequest.Store], {
     }
 });
 
-export let LogFileStore = declare([ESPRequest.Store], {
+export const LogFileStore = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "FileList",
     responseQualifier: "FileListResponse.files.PhysicalFileStruct",

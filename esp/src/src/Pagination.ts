@@ -10,7 +10,7 @@ import * as DGrid from "dgrid/Grid";
 
 export const Pagination = declare([DGridPagination], {
     refresh() {
-        const self = this;
+        const context = this;
 
         _StoreMixin.prototype.refresh.apply(this, arguments);
 
@@ -25,10 +25,10 @@ export const Pagination = declare([DGridPagination], {
             // Emit on a separate turn to enable event to be used consistently for
             // initial render, regardless of whether the backing store is async
             setTimeout(function () {
-                on.emit(self.domNode, "dgrid-refresh-complete", {
+                on.emit(context.domNode, "dgrid-refresh-complete", {
                     bubbles: true,
                     cancelable: false,
-                    grid: self,
+                    grid: context,
                     results // QueryResults object (may be a wrapped promise)
                 });
             }, 0);
