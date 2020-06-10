@@ -118,8 +118,8 @@ static const char * EclDefinition =
 "  varstring ExternalLogicalFileName(const varstring location, const varstring path,boolean abspath=true) : c,entrypoint='fsExternalLogicalFileName'; \n"
 "  integer4 CompareFiles(const varstring lfn1, const varstring lfn2,boolean logicalonly=true,boolean usecrcs=false) : c,context,entrypoint='fsCompareFiles'; \n"
 "  varstring VerifyFile(const varstring lfn, boolean usecrcs) : c,action,context,entrypoint='fsVerifyFile'; \n"
-"  RemotePull( const varstring remoteEspFsURL, const varstring sourceLogicalName, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false,boolean forcePush=false, integer4 transferBufferSize=0,boolean wrap=false,boolean compress=false, boolean noSplit=false, integer4 expireDays=-1): c,action,context,entrypoint='fsRemotePull_v2'; \n"
-"  varstring fRemotePull( const varstring remoteEspFsURL, const varstring sourceLogicalName, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false,boolean forcePush=false, integer4 transferBufferSize=0,boolean wrap=false,boolean compress=false, boolean noSplit=false, integer4 expireDays=-1): c,action,context,entrypoint='fsfRemotePull_v2'; \n"
+"  RemotePull( const varstring remoteEspFsURL, const varstring sourceLogicalName, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false,boolean forcePush=false, integer4 transferBufferSize=0,boolean wrap=false,boolean compress=false, boolean noSplit=false, integer4 expireDays=-1, const varstring username = '', const varstring userPw = ''): c,action,context,entrypoint='fsRemotePull_v3'; \n"
+"  varstring fRemotePull( const varstring remoteEspFsURL, const varstring sourceLogicalName, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false,boolean forcePush=false, integer4 transferBufferSize=0,boolean wrap=false,boolean compress=false, boolean noSplit=false, integer4 expireDays=-1, const varstring username = '', const varstring userPw = ''): c,action,context,entrypoint='fsfRemotePull_v3'; \n"
 "  dataset(FsLogicalSuperSubRecord) LogicalFileSuperSubList() : c,context,entrypoint='fsLogicalFileSuperSubList';\n"
 "  PromoteSuperFileList(const set of varstring lsuperfns,const varstring addhead='',boolean deltail=false,boolean createonlyonesuperfile=false,boolean reverse=false) : c,action,context,entrypoint='fsPromoteSuperFileList'; \n"
 "  varstring fPromoteSuperFileList(const set of varstring lsuperfns,const varstring addhead='', boolean deltail=false,boolean createonlyonesuperfile=false, boolean reverse=false) : c,action,context,entrypoint='fsfPromoteSuperFileList'; \n"
@@ -2203,7 +2203,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
                                                      bool wrap,
                                                      bool compress,
                                                      bool noSplit,
-                                                     int expireDays)
+                                                     int expireDays,
+                                                     const char *username,
+                                                     const char *userPw)
 {
     LOG(MCauditInfo, "RemotePull(%s):  %s%s", remoteEspFsURL,sourceLogicalName,asSuperfile?" as superfile":"");
 
@@ -2248,6 +2250,15 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
 
     req->setExpireDays(expireDays);
 
+    // Handle username/psw
+    if (!isEmptyString(username))
+    {
+        server.setUsernameToken(username, userPw, nullptr);
+        req->setSrcusername(username);
+        if (!isEmptyString(userPw))
+           req->setSrcpassword(userPw);
+    }
+
     Owned<IClientCopyResponse> result = server.Copy(req);
 
     StringBuffer wuid(result->getResult());
@@ -2287,7 +2298,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
                                                      bool wrap,
                                                      bool compress)
 {
-    return fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, false, -1);
+    return fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, false, -1, nullptr, nullptr);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsRemotePull(ICodeContext *ctx,
@@ -2305,7 +2316,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRemotePull(ICodeContext *ctx,
                                                      bool wrap,
                                                      bool compress)
 {
-    CTXFREE(parentCtx, fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, false, -1));
+    CTXFREE(parentCtx, fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, false, -1, nullptr, nullptr));
 
 }
 
@@ -2326,7 +2337,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_v2(ICodeContext *ctx,
                                                      bool noSplit,
                                                      int expireDays)
 {
-    return fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays);
+    return fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays, nullptr, nullptr);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsRemotePull_v2(ICodeContext *ctx,
@@ -2346,7 +2357,52 @@ FILESERVICES_API void FILESERVICES_CALL fsRemotePull_v2(ICodeContext *ctx,
                                                      bool noSplit,
                                                      int expireDays)
 {
-    CTXFREE(parentCtx, fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays));
+    CTXFREE(parentCtx, fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays, nullptr, nullptr));
+
+}
+
+FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_v3(ICodeContext *ctx,
+                                                     const char * remoteEspFsURL,
+                                                     const char * sourceLogicalName,
+                                                     const char *destinationGroup,
+                                                     const char * destinationLogicalName,
+                                                     int timeOut,
+                                                     int maxConnections,
+                                                     bool overwrite,
+                                                     bool replicate,
+                                                     bool asSuperfile,
+                                                     bool forcePush,
+                                                     int transferBufferSize,
+                                                     bool wrap,
+                                                     bool compress,
+                                                     bool noSplit,
+                                                     int expireDays,
+                                                     const char *username,
+                                                     const char *userPw)
+{
+    return fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsRemotePull_v3(ICodeContext *ctx,
+                                                     const char * remoteEspFsURL,
+                                                     const char * sourceLogicalName,
+                                                     const char *destinationGroup,
+                                                     const char * destinationLogicalName,
+                                                     int timeOut,
+                                                     int maxConnections,
+                                                     bool overwrite,
+                                                     bool replicate,
+                                                     bool asSuperfile,
+                                                     bool forcePush,
+                                                     int transferBufferSize,
+                                                     bool wrap,
+                                                     bool compress,
+                                                     bool noSplit,
+                                                     int expireDays,
+                                                     const char *username,
+                                                     const char *userPw)
+{
+    CTXFREE(parentCtx, fsfRemotePull_impl(ctx, remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, overwrite, replicate, asSuperfile,forcePush,transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw));
 
 }
 
