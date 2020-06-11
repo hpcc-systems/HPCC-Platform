@@ -2189,6 +2189,12 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         if (!req.getExpireDays_isNull())
             options->setExpireDays(req.getExpireDays());
 
+        if (req.getKeepSourceEncoding_isNull())
+            // Set default value
+            options->setKeepSourceEncoding(true);
+        else
+            options->setKeepSourceEncoding(req.getKeepSourceEncoding());
+
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());

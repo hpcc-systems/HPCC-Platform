@@ -463,7 +463,7 @@ ITransformer * createTransformer(const FileFormat & srcFormat, const FileFormat 
             case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
                 break;
             default:
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString());
             }
             break;
         case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
@@ -472,7 +472,7 @@ ITransformer * createTransformer(const FileFormat & srcFormat, const FileFormat 
             case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
                 break;
             default:
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString());
             }
             break;
         }

@@ -1325,28 +1325,32 @@ void FileSprayer::checkFormats()
 
     FileFormatType srcType = srcFormat.type;
     FileFormatType tgtType = tgtFormat.type;
+    StringBuffer enc;
+    options->getProp("@encoding", enc);
+
     if (srcType != tgtType)
     {
         switch (srcType)
         {
         case FFTfixed:
             if ((tgtType != FFTvariable)&&(tgtType != FFTvariablebigendian))
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTvariable:
             if ((tgtType != FFTfixed) && (tgtType != FFTblocked)&& (tgtType != FFTvariablebigendian))
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTvariablebigendian:
             if ((tgtType != FFTfixed) && (tgtType != FFTblocked) && (tgtType != FFTvariable))
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTblocked:
             if ((tgtType != FFTvariable)&&(tgtType != FFTvariablebigendian))
-                throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTcsv:
-            throwError(DFTERR_BadSrcTgtCombination);
+                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
+            break;
         case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
             switch (tgtFormat.type)
             {
@@ -2689,8 +2693,10 @@ void FileSprayer::setTarget(IDistributedFile * target)
         if (separator && (strcmp(separator, ",") == 0))
             srcFormat.separate.set("\\,");
 
-        //tgtFormat.set(srcFormat);
-        tgtFormat.set(FFTutf8);
+        tgtFormat.set(srcFormat);
+        if ((operation == dfu_import) && ( !options->getPropBool("@keepSourceEncoding")))
+            tgtFormat.set(FFTutf8);
+
         if (!unknownSourceFormat)
         {
             DistributedFilePropertyLock lock(target);
