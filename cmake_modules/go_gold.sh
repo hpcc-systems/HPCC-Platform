@@ -52,6 +52,7 @@ done
 update_version_file release $HPCC_POINT $NEW_SEQUENCE
 if [ -e helm/hpcc/Chart.yaml ] ; then
   update_chart_file helm/hpcc/Chart.yaml release $HPCC_POINT $NEW_SEQUENCE
+  doit "git add helm/hpcc/Chart.yaml"
 fi
 
 HPCC_MATURITY=release
@@ -73,17 +74,20 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   HPCC_DIR="$( pwd )"
   pushd ../helm-chart 2>&1 > /dev/null
   doit "git fetch $REMOTE"
+  doit "git checkout master"
   doit "git merge --ff-only $REMOTE/master"
   doit "git submodule update --init --recursive"
   HPCC_PROJECTS=hpcc-helm
   HPCC_NAME=HPCC
   if [[ "$HPCC_MAJOR" == "7" ]] && [[ "$HPCC_MINOR" == "8" ]] ; then
-    doit rm -rf ./helm
-    doit cp -rf $HPCC_DIR/helm ./helm 
+    doit "rm -rf ./helm"
+    doit "cp -rf $HPCC_DIR/helm ./helm" 
+    doit "git add -A ./helm"
   fi
   cd docs
-  doit helm package ${HPCC_DIR}/helm/hpcc/
-  doit helm repo index . --url https://hpcc-systems.github.io/helm-chart
+  doit "helm package ${HPCC_DIR}/helm/hpcc/"
+  doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
+  doit "git add docs/*.tgz"
   
   doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
   doit "git push $REMOTE master $FORCE"
