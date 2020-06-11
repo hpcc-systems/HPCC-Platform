@@ -55,6 +55,9 @@
 
 #define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
 
+//Ldap extended control identifier LDAP_SERVER_SD_FLAGS_OID
+#define AAD_LDAP_SERVER_SD_FLAGS_OID "1.2.840.113556.1.4.801"
+
 #define UNK_PERM_VALUE (SecAccessFlags)-2	//used to initialize "default" permission, which we later try to deduce
 
 const char* UserFieldNames[] = { "@id", "@name", "@fullname", "@passwordexpiration", "@employeeid", "@employeenumber" };
@@ -278,6 +281,7 @@ private:
     StringBuffer         m_sdfieldname;
 
     int                  m_timeout;
+    bool                 m_isAzureAD = false;
 public:
     IMPLEMENT_IINTERFACE
 
@@ -295,6 +299,11 @@ public:
         {
             if (0 == stricmp(m_cfgServerType, "ActiveDirectory"))
                 m_serverType = ACTIVE_DIRECTORY;
+            else if (strieq(m_cfgServerType, "AzureActiveDirectory"))
+            {
+                m_serverType = ACTIVE_DIRECTORY;
+                m_isAzureAD = true;
+            }
             else if (0 == stricmp(m_cfgServerType, "389DirectoryServer"))//uses iPlanet style ACI
                 m_serverType = OPEN_LDAP;
             else if (0 == stricmp(m_cfgServerType, "OpenLDAP"))
@@ -744,6 +753,11 @@ public:
     virtual int getLdapTimeout()
     {
         return m_timeout;
+    }
+
+    bool isAzureAD()
+    {
+        return m_isAzureAD;
     }
 };
 
@@ -4038,9 +4052,11 @@ public:
 
         attrs[1] = NULL;
 
+        SDServerCtlWrapper ctlwrapper(m_ldapconfig->isAzureAD());
+
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = lconn.get()->getLd();
-        int rc = ldap_modify_ext_s(ld, (char*)normdnbuf.str(), attrs, NULL, NULL);
+        int rc = ldap_modify_ext_s(ld, (char*)normdnbuf.str(), attrs, ctlwrapper.ctls, NULL);
         if ( rc != LDAP_SUCCESS )
         {
             throw MakeStringException(-1, "ldap_modify_ext_s error: %d %s", rc, ldap_err2string( rc ));
@@ -4688,7 +4704,39 @@ public:
     }
 
 private:
+    class SDServerCtlWrapper
+    {
+    public:
+        LDAPControl **ctls = nullptr;
+        LDAPControl* ctl = nullptr;
+        StringBuffer oidbuf, valbuf;
 
+        SDServerCtlWrapper(bool isAzureAD)
+        {
+            if (isAzureAD)
+            {
+                oidbuf.append(AAD_LDAP_SERVER_SD_FLAGS_OID);
+                //48,3,2 are for ber-ans.1 encoding
+                //1 is the length of the data
+                //7 is the data, which is bit wise OR of owner info (0x1), group info (0x2) and discretionary ACL (0x4)
+                valbuf.appendf("%c%c%c%c%c", 48, 3, 2, 1, 7);
+                ctl = new LDAPControl;
+                ctl->ldctl_oid = (char*)oidbuf.str();
+                ctl->ldctl_value.bv_len = valbuf.length();
+                ctl->ldctl_value.bv_val = (char*)valbuf.str();
+                ctls = new LDAPControl*[2];
+                ctls[0] = ctl;
+                ctls[1] = nullptr;
+            }
+        }
+        ~SDServerCtlWrapper()
+        {
+            if (ctl)
+                delete ctl;
+            if (ctls)
+                delete []ctls;
+        }
+    };
     virtual void addDC(const char* dc)
     {
         if(dc == NULL || *dc == '\0')
@@ -5159,13 +5207,15 @@ private:
         }
         filter.append(")");
 
+        SDServerCtlWrapper ctlwrapper(m_ldapconfig->isAzureAD());
+
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         
         char* attrs[] = {(char*)id_fieldname, (char*)des_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = lconn.get()->getLd();
         CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, ctlwrapper.ctls, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
         
         if ( rc != LDAP_SUCCESS )
         {
@@ -5329,13 +5379,15 @@ private:
         }
         filter.append(")");
 
+        SDServerCtlWrapper ctlwrapper(m_ldapconfig->isAzureAD());
+
         TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
         
         char* attrs[] = {sd_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = lconn.get()->getLd();
         CLDAPMessage searchResult;
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, ctlwrapper.ctls, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
         
         if ( rc != LDAP_SUCCESS )
         {
