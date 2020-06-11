@@ -129,6 +129,7 @@ class CLogThread : public Thread , implements IUpdateLogThread
     void writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite);
     IEspUpdateLogRequestWrap* readJobQueue();
     IEspUpdateLogRequestWrap* checkAndReadLogRequestFromSharedTankFile(IEspUpdateLogRequestWrap* logRequest);
+    void checkAndCreateFile(const char* fileName);
 
 public:
     IMPLEMENT_IINTERFACE;
