@@ -185,7 +185,8 @@ sequential (
                         recordStructurePresent :=FALSE,
                         quotedTerminator :=TRUE,
                         encoding :='ascii',
-                        expireDays :=expireDaysOut1
+                        expireDays :=expireDaysOut1,
+                        KEEPSOURCEENCODING:=true
                         ),
     output(res1,NAMED('SprayVariable')),
     FileServices.SprayDelimited(
@@ -208,7 +209,8 @@ sequential (
                           recordStructurePresent :=FALSE,
                           quotedTerminator :=TRUE,
                           encoding :='ascii',
-                          expireDays :=expireDaysOut2
+                          expireDays :=expireDaysOut2,
+                          KEEPSOURCEENCODING:=true
                         ),
     output(res2,NAMED('SprayDelimited')),
     FileServices.SprayFixed(

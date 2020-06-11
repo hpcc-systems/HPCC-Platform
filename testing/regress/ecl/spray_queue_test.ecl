@@ -146,7 +146,8 @@ sprayRec sprayVariable(sprayRec l) := TRANSFORM
                         TIMEOUT := -1,
                         ESPSERVERIPPORT := espIpPort,
                         ALLOWOVERWRITE := true,
-                        DFUSERVERQUEUE := l.dfuQueue
+                        DFUSERVERQUEUE := l.dfuQueue,
+                        KEEPSOURCEENCODING:=true
                         );
     SELF.result := l.result + ' Pass';
     SELF.sourceFileName := l.sourceFileName;

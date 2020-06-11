@@ -2095,6 +2095,16 @@ public:
     {
         queryRoot()->setPropBool("@noCommon",val);
     }
+
+    bool getKeepSourceEncoding() const
+	{
+		return queryRoot()->getPropBool("@keepSourceEncoding", true);
+	}
+
+	void setKeepSourceEncoding(bool val)
+	{
+		queryRoot()->setPropBool("@keepSourceEncoding",val);
+	}
 };
 
 class CExceptionIterator: implements IExceptionIterator, public CInterface

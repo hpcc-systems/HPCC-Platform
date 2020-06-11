@@ -1321,6 +1321,8 @@ public:
 
                         opttree->setPropBool("@nosplit", options->getNoSplit());
 
+                        opttree->setPropBool("@keepSourceEncoding", options->getKeepSourceEncoding());
+
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc)
                         {

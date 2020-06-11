@@ -100,7 +100,7 @@
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
 #define DFTERR_CouldNotOpenFile_Text            "Could not open source file %s"
-#define DFTERR_BadSrcTgtCombination_Text        "This combination of source and target formats is not supported"
+#define DFTERR_BadSrcTgtCombination_Text        "This combination of source (%s) and target (%s) formats is not supported"
 #define DFTERR_UnknownFileFormatType_Text       "Unknown file format"
 #define DFTERR_CouldNotCreateOutput_Text        "Could not create output file %s"
 #define DFTERR_FixedWidthInconsistent_Text      "Length of file %s is inconsistent with its record size"
