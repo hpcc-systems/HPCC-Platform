@@ -63,7 +63,7 @@ eclagent:
   ## replicas indicates how many eclagent pods should be started
   replicas: 1
   ## maxActive controls how many workunits may be active at once (per replica)
-  maxActive: 100
+  maxActive: 4
   ## prefix may be used to set a filename prefix applied to any relative filenames used by jobs submitted to this queue
   prefix: hthor
   ## Set to false if you want to launch each workunit in its own container, true to run as child processes in eclagent pod
@@ -74,7 +74,8 @@ eclagent:
 - name: roxie
   replicas: 1
   prefix: roxie
-  useChildProcesses: false
+  maxActive: 20
+  useChildProcesses: true
   type: roxie
     
 eclccserver:
@@ -82,6 +83,8 @@ eclccserver:
   replicas: 1
   ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
   useChildProcesses: false
+  ## maxActive controls how many workunit compiles may be active at once (per replica)
+  maxActive: 4
   ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
   listen: []
     

@@ -909,7 +909,7 @@ int main(int argc, const char *argv[])
                 throw MakeStringException(0, "No queues found to listen on");
 #ifdef _CONTAINERIZED
             bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
-            unsigned maxThreads = globals->getPropInt("@maxActive", useChildProcesses ? 100 : 4);
+            unsigned maxThreads = globals->getPropInt("@maxActive", 4);
 #else
             // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
             // still accept the old name if the new one is not present.
