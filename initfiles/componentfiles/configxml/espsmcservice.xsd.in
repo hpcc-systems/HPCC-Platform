@@ -201,6 +201,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="WUResultMaxSizeMB" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>the size limit in megabyte for getting workunit result.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>

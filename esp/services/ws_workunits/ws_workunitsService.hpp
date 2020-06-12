@@ -34,6 +34,8 @@
 #define UFO_RELOAD_MAPPED_QUERIES                0x04
 #define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
+static const __uint64 defaultWUResultMaxSize = 10000000; //10M
+
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
     mutable CriticalSection crit;
@@ -358,6 +360,12 @@ private:
         IArrayOf<IEspQueryStats> &queryStatsList);
     void readQueryStatsList(IPropertyTree *queryStatsTree, const char *status, const char *ep,
         bool all, IArrayOf<IEspEndpointQueryStats> &endpointQueryStatsList);
+    void getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
+        unsigned &count, __int64 &total, IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &mb,
+        WUState &wuState, bool xsd=true);
+    void getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
+        IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &buf, bool xsd);
+    IDistributedFile *lookupLogicalName(IEspContext &context, const char *logicalName);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
@@ -378,6 +386,7 @@ private:
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
     Owned<IWorkUnitFactory> wuFactory;
     StringBuffer dataDirectory;
+    __uint64 wuResultMaxSize = defaultWUResultMaxSize;
 
 public:
     QueryFilesInUse filesInUse;

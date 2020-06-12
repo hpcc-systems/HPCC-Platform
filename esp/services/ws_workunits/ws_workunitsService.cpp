@@ -393,6 +393,11 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
     thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
 
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/WUResultMaxSizeMB", process, service);
+    unsigned wuResultMaxSizeMB = cfg->getPropInt(xpath);
+    if (wuResultMaxSizeMB > 0)
+        wuResultMaxSize = wuResultMaxSizeMB * 1000000;
+
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ZAPEmail", process, service);
     IPropertyTree *zapEmail = cfg->queryPropTree(xpath.str());
     if (zapEmail)
@@ -2837,9 +2842,9 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
     return filter->create();
 }
 
-void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start,
-    unsigned& count, __int64& total, IStringVal& resname, bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& mb,
-    WUState& wuState, bool xsd=true)
+void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
+    unsigned &count, __int64 &total, IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &mb,
+    WUState &wuState, bool xsd)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
@@ -2868,6 +2873,11 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
 
     if (!result)
         throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
+
+    if (result->getResultRawSize(nullptr, nullptr) > wuResultMaxSize)
+        throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result for %s. The size is bigger than %lld.",
+            wuid, wuResultMaxSize);
+
     if (!resname.length())
         result->getResultName(resname);
 
@@ -3199,11 +3209,34 @@ void getWorkunitCluster(IEspContext &context, const char *wuid, SCMStringBuffer 
     }
 }
 
-void getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
+IDistributedFile *CWsWorkunitsEx::lookupLogicalName(IEspContext &context, const char *logicalName)
+{
+    StringBuffer userID;
+    context.getUserID(userID);
+    Owned<IUserDescriptor> userDesc;
+    if (!userID.isEmpty())
+    {
+        userDesc.setown(createUserDescriptor());
+        userDesc->set(userID, context.queryPassword(), context.querySignature());
+    }
+
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userDesc, false,
+        false, false, nullptr, defaultPrivilegedUser);
+    return df.getClear();
+}
+
+void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
     IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &buf, bool xsd)
 {
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName);
+    if (!df)
+        throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
+    if (df->getDiskSize(true, false) > wuResultMaxSize)
+        throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result from file %s. The size is bigger than %lld.",
+            logicalName, wuResultMaxSize);
+
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
-    Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
+    Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(df, cluster));
     if (!filterBy || !filterBy->length())
         appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
     else

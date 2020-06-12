@@ -492,6 +492,7 @@ public:
 
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
+    virtual INewResultSet * createNewFileResultSet(IDistributedFile * df, const char * cluster);
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile);
     virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult);
