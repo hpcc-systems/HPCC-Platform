@@ -3043,7 +3043,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
     void testStepping()
     {
-        buildTestKeys(false, true, false);
+        buildTestKeys(false, true, false, false);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
@@ -3151,13 +3151,13 @@ class IKeyManagerTest : public CppUnit::TestFixture
         removeTestKeys();
     }
 
-    void buildTestKeys(bool variable, bool useTrailingHeader, bool noSeek)
+    void buildTestKeys(bool variable, bool useTrailingHeader, bool noSeek, bool quickCompressed)
     {
-        buildTestKey("keyfile1.$$$", false, variable, useTrailingHeader, noSeek);
-        buildTestKey("keyfile2.$$$", true, variable, useTrailingHeader, noSeek);
+        buildTestKey("keyfile1.$$$", false, variable, useTrailingHeader, noSeek, quickCompressed);
+        buildTestKey("keyfile2.$$$", true, variable, useTrailingHeader, noSeek, quickCompressed);
     }
 
-    void buildTestKey(const char *filename, bool skip, bool variable, bool useTrailingHeader, bool noSeek)
+    void buildTestKey(const char *filename, bool skip, bool variable, bool useTrailingHeader, bool noSeek, bool quickCompressed)
     {
         OwnedIFile file = createIFile(filename);
         OwnedIFileIO io = file->openShared(IFOcreate, IFSHfull);
@@ -3167,6 +3167,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         unsigned maxRecSize = variable ? 18 : 10;
         unsigned keyedSize = 10;
         Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |
+                (quickCompressed ? HTREE_QUICK_COMPRESSED_KEY : 0) |
                 (variable ? HTREE_VARSIZE : 0) |
                 (useTrailingHeader ? USE_TRAILING_HEADER : 0) |
                 (noSeek ? TRAILING_HEADER_ONLY : 0),
@@ -3238,7 +3239,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         key->releaseBlobs();
     }
 protected:
-    void testKeys(bool variable, bool useTrailingHeader, bool noSeek)
+    void testKeys(bool variable, bool useTrailingHeader, bool noSeek, bool quickCompressed)
     {
         const char *json = variable ?
                 "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
@@ -3258,7 +3259,7 @@ protected:
                 "}";
         Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
-        buildTestKeys(variable, useTrailingHeader, noSeek);
+        buildTestKeys(variable, useTrailingHeader, noSeek, quickCompressed);
         {
             Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, false);
             Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false, false);
@@ -3424,10 +3425,11 @@ protected:
     void testKeys()
     {
         ASSERT(sizeof(CKeyIdAndPos) == sizeof(unsigned __int64) + sizeof(offset_t));
-        for (bool var : { false, true })
+        for (bool var : { true, false })
             for (bool trail : { false, true })
                 for (bool noseek : { false, true })
-                    testKeys(var, trail, noseek);
+                    for (bool quick : { true, false })
+                        testKeys(var, trail, noseek, quick);
     }
 };
 

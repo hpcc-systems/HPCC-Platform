@@ -529,7 +529,7 @@ void *CJHTreeNode::allocMem(size32_t len)
     return ret;
 }
 
-char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize)
+char *CJHTreeNode::expandKeys(void *src,size32_t &retsize)
 {
     Owned<IExpander> exp = createLZWExpander(true);
     int len=exp->init(src);
@@ -589,10 +589,10 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         {
             MTIME_SECTION(queryActiveTimer(), "Compressed node expand");
             expandedSize = keyHdr->getNodeSize();
-            bool quick = !isBlob() && (keyType&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
+            bool quick = !isBlob() && (keyType&(HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))==HTREE_QUICK_COMPRESSED_KEY;
             keyBuf = NULL;
             if (!quick)
-                keyBuf = expandKeys(keys,keyLen,expandedSize);
+                keyBuf = expandKeys(keys,expandedSize);
         }
     }
     else
@@ -755,28 +755,6 @@ bool CJHTreeNode::getValueAt(unsigned int index, char *dst) const
     return true;
 }
 
-const char * CJHTreeNode::queryValueAt(unsigned int index, char *scratchBuffer) const
-{
-    if (index >= hdr.numKeys)
-        return nullptr;
-    else if (keyHdr->hasSpecialFileposition())
-    {
-        getValueAt(index, scratchBuffer);
-        return scratchBuffer;
-    }
-    else
-        return keyBuf + index*keyRecLen;
-}
-
-const char * CJHTreeNode::queryKeyAt(unsigned int index, char *scratchBuffer) const
-{
-    if (index >= hdr.numKeys)
-        return nullptr;
-    else
-        return keyBuf + index*keyRecLen + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0);
-}
-
-
 size32_t CJHTreeNode::getSizeAt(unsigned int index) const
 {
     if (keyHdr->hasSpecialFileposition())
@@ -934,26 +912,6 @@ bool CJHVarTreeNode::getValueAt(unsigned int num, char *dst) const
     return true;
 }
 
-const char *CJHVarTreeNode::queryValueAt(unsigned int index, char *scratchBuffer) const
-{
-    if (index >= hdr.numKeys)
-        return nullptr;
-    else if (keyHdr->hasSpecialFileposition())
-    {
-        getValueAt(index, scratchBuffer);
-        return scratchBuffer;
-    }
-    else
-        return recArray[index];
-}
-
-const char *CJHVarTreeNode::queryKeyAt(unsigned int index, char *scratchBuffer) const
-{
-    if (index >= hdr.numKeys)
-        return nullptr;
-    return recArray[index] + (keyHdr->hasSpecialFileposition() ? sizeof(offset_t) : 0);
-}
-
 size32_t CJHVarTreeNode::getSizeAt(unsigned int num) const
 {
     const char * p = recArray[num];
@@ -1007,29 +965,6 @@ bool CJHRowCompressedNode::getValueAt(unsigned int num, char *dst) const
             rowexp->expandRow(dst,num,0,keyLen);
     }
     return true;
-}
-
-const char *CJHRowCompressedNode::queryValueAt(unsigned int num, char *scratchBuffer) const
-{
-    if (num >= hdr.numKeys)
-        return nullptr;
-    else
-    {
-        getValueAt(num, scratchBuffer);
-        return scratchBuffer;
-    }
-}
-
-const char *CJHRowCompressedNode::queryKeyAt(unsigned int num, char *scratchBuffer) const
-{
-    if (num >= hdr.numKeys)
-        return nullptr;
-    unsigned keyedSize = keyHdr->getNodeKeyLength();
-    if (keyHdr->hasSpecialFileposition())
-        rowexp->expandRow(scratchBuffer,num,sizeof(offset_t),keyedSize);
-    else
-        rowexp->expandRow(scratchBuffer,num,0,keyedSize);
-    return scratchBuffer;
 }
 
 offset_t CJHRowCompressedNode::getFPosAt(unsigned int num) const

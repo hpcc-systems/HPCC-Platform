@@ -123,6 +123,8 @@ public:
         assertex(nodeSize <= 0xffff); // stored in a short in the header - we should fix that if/when we restructure header
         if (flags & TRAILING_HEADER_ONLY)
             flags |= USE_TRAILING_HEADER;
+        if ((flags & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE))
+            flags &= ~HTREE_QUICK_COMPRESSED;  // Quick does not support variable-size rows
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;

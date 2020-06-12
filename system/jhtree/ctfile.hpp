@@ -157,7 +157,7 @@ public:
     inline static size32_t getSize() { return sizeof(KeyHdr); }
     inline unsigned getNodeSize() { return hdr.nodeSize; }
     inline bool hasSpecialFileposition() const { return true; }
-    inline bool isRowCompressed() const { return (hdr.ktype & HTREE_QUICK_COMPRESSED_KEY) == HTREE_QUICK_COMPRESSED_KEY; }
+    inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
     __uint64 getPartitionFieldMask()
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
@@ -217,7 +217,7 @@ protected:
     unsigned __int64 firstSequence;
     size32_t expandedSize;
 
-    static char *expandKeys(void *src,unsigned keylength,size32_t &retsize);
+    static char *expandKeys(void *src,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
 
@@ -231,8 +231,6 @@ public:
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
     virtual bool getValueAt(unsigned int num, char *key) const;
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -251,8 +249,6 @@ public:
     ~CJHVarTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     virtual bool getValueAt(unsigned int num, char *key) const;
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -265,8 +261,6 @@ class CJHRowCompressedNode : public CJHTreeNode
 public:
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     virtual bool getValueAt(unsigned int num, char *key) const;
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const;
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
@@ -277,8 +271,6 @@ public:
     CJHTreeBlobNode ();
     ~CJHTreeBlobNode ();
     virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -292,8 +284,6 @@ class CJHTreeMetadataNode : public CJHTreeNode
 {
 public:
     virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -305,8 +295,6 @@ class CJHTreeBloomTableNode : public CJHTreeNode
 {
 public:
     virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
-    virtual const char *queryValueAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
-    virtual const char *queryKeyAt(unsigned int index, char *scratchBuffer) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
