@@ -162,15 +162,6 @@ else
   echo BUILDING: build_image platform-core platform-core-debug
   build_image platform-core platform-core-debug
 fi
-build_image roxie
-build_image dali
-build_image esp
-build_image eclccserver
-build_image eclagent
-build_image hthor
-build_image toposerver
-build_image thormaster
-build_image thorslave
 
 echo Built ${DOCKER_REPO}/*:${BUILD_LABEL}
 

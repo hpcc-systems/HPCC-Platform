@@ -16,6 +16,8 @@ spec:
     spec:
       containers:
       - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ esp ] 
         args: [
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}

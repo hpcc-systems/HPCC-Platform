@@ -19,6 +19,8 @@ spec:
       {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ agentexec ] 
         args: [ 
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
@@ -69,8 +71,9 @@ data:
               limits:
                 #limit-memory
                 #limit-cpu
-            command: [
-                        {{ $apptype | quote }},
+            workingDir: /var/lib/HPCCSystems
+            command: [ {{ $apptype | quote }} ]
+            args: [
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args

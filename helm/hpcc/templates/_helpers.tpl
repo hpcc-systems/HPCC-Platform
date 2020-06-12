@@ -146,11 +146,11 @@ Add dali arg for a component
 Get image name
 */}}
 {{- define "hpcc.imageName" -}}
-{{- /* Pass in a dictionary with root, me and imagename defined */ -}}
+{{- /* Pass in a dictionary with root and me defined */ -}}
 {{- if .me.image -}}
-{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .me.image.version | default .root.Values.global.image.version }}
+{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .me.image.name | default .root.Values.global.image.name | default "platform-core" }}:{{ .me.image.version | default .root.Values.global.image.version }}
 {{- else -}}
-{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .imagename }}:{{ .root.Values.global.image.version }}
+{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .root.Values.global.image.name | default "platform-core" }}:{{ .root.Values.global.image.version }}
 {{- end -}}
 {{- end -}}
 

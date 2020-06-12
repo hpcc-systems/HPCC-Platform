@@ -31,6 +31,8 @@ spec:
       serviceAccountName: hpcc
       containers:
       - name: {{ $eclAgentName | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ agentexec ]
         args: [
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
@@ -64,6 +66,8 @@ spec:
       serviceAccountName: hpcc
       containers:
       - name: {{ $thorAgentName | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ agentexec ]
         args: [
                 {{ include "hpcc.configArg" $thorAgentScope }},
                 {{ include "hpcc.daliArg" $ }},
@@ -142,8 +146,9 @@ data:
               limits:
                 #limit-memory
                 #limit-cpu
-            command: [
-                        {{ $agentAppType | quote }},
+            workingDir: /var/lib/HPCCSystems
+            command: [ {{ $agentAppType | quote }} ] 
+            args: [
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args
@@ -176,6 +181,8 @@ data:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 12 }}
+            workingDir: /var/lib/HPCCSystems
+            command: [ thormaster_lcr ] 
             args: [
                     {{ include "hpcc.configArg" . }},
                     {{ include "hpcc.daliArg" $ }},
@@ -208,6 +215,8 @@ data:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 12 }}
+            workingDir: /var/lib/HPCCSystems
+            command: [ thorslave_lcr ] 
             args: [
                     {{ include "hpcc.configArg" . }},
                     {{ include "hpcc.daliArg" $ }},

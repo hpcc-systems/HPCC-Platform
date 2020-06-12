@@ -22,6 +22,8 @@ spec:
       {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $roxie.name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ roxie ]
         args: [
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},

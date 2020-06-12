@@ -3,43 +3,35 @@ Docker images
 
 Docker images related to HPCC are structured as follows
 
-hpccsystems/platform-build-base
+**hpccsystems/platform-build-base**
 
 This image contains all the development packages required to build the hpcc platform,
-but no HPCC code or sources. It changes rarely. The current version is tagged 7.8 and
-is based on Ubuntu 18.04 base image
+but no HPCC code or sources. It changes rarely. The current version is tagged 7.10 and
+is based on Ubuntu 20.04 base image
 
 **hpccsystems/platform-build**
 
-Building this image builds an installation package (.deb file) for a specified git tag
-of the HPCC platform sources. The Dockerfile takes two arguments, naming the version of
-the platform-build-base image to use, and the git tag to use. Sources are fetched from
+Building this image builds and installs the HPCC codebase for a specified git tag
+of the HPCC platform sources. The Dockerfile takes arguments naming the version of
+the platform-build-base image to use and the git tag to use. Sources are fetched from
 github. An image will be pushed to Dockerhub for every public tag on the HPCC-Platform
 repository in GitHub, which developers can use as a base for their own development.
 
-There is a second Dockerfile inplatform-build-incremental that can be used by developers
+There is a second Dockerfile in platform-build-incremental that can be used by developers
 working on a branch that is not yet tagged or merged into upstream, that uses 
 hpccsystems/platform-build as a base in order to avoid the need for full rebuilds each time
 the image is built.
 
 **hpccsystems/plaform-core**
 
-This uses the .deb file from a hpccsystems/plaform-build image to install a copy of the
-full platform code, without specialization to a specific component.
+This uses the build artefacts file from a hpccsystems/plaform-build image to install a copy of the
+full platform code, which can be used to run any HPCC component.
 
-**hpccsystems/dali**  
-**hpccsystems/roxie**  
-**hpccsystems/esp**  
-**etc**  
+If you need additional components installed on your cluster, such as Python libraries, you can create
+a Docker image based on platform-core with additional components installed. An example can be found
+in the examples/numpy directory. You will then override the image name when deploying a helm chart in
+order to enabled your additional components.
 
-These are specializations of the platform-core image to run a specific component.
-Portions of the platform-core that are not needed by this component may be removed.
-These images are the ones that are referred to in helm scripts etc when launching
-a cloud cluster.
-
-If launched without further parameters or configuration, a system with default
-settings can be started, but it will be more normal to apply some configuration at
-container launch time.
 
 ---
 Bash scripts
@@ -55,7 +47,7 @@ stopall.sh  - Stop a local k8s cluster
 Helm chart
 ==========
 
-The Helm chart in hpcc/ can be used to deploy an entire HPCC environment to a K8s cluster.
+The Helm chart in helm/hpcc/ can be used to deploy an entire HPCC environment to a K8s cluster.
 
 values.yaml sections
 --------------------

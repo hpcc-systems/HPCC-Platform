@@ -19,6 +19,8 @@ spec:
       {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ eclccserver ] 
         args: [
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
@@ -68,7 +70,9 @@ data:
               limits:
                 #limit-memory
                 #limit-cpu
-            command: [
+            workingDir: /var/lib/HPCCSystems
+            command: [ eclccserver ]
+            args: [
                         "eclccserver",
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},

@@ -17,6 +17,8 @@ spec:
       {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ daserver ] 
         args: [
                 {{ include "hpcc.configArg" . }}
               ]

@@ -84,3 +84,6 @@ USER hpcc
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
+# temporary workaround for ESP configuration not being implemented yet
+COPY --chown=hpcc:hpcc esp.xml /var/lib/HPCCSystems
+

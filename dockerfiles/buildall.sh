@@ -99,15 +99,6 @@ build_image() {
 build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
-build_image roxie
-build_image dali
-build_image esp
-build_image eclccserver
-build_image eclagent
-build_image hthor
-build_image toposerver
-build_image thormaster
-build_image thorslave
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"

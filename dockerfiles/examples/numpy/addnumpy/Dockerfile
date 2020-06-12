@@ -15,16 +15,16 @@
 #    limitations under the License.
 ##############################################################################
 
-# Build container image for a single ESP server
+# Build container image for HPCC components including numpy
 
 ARG BUILD_LABEL
-ARG DOCKER_REPO
+ARG DOCKER_REPO=hpccsystems
 FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 
+USER root
+RUN apt install -y python3-pip
+
 USER hpcc
-RUN mkdir -p /var/lib/HPCCSystems/esp
-WORKDIR /var/lib/HPCCSystems/esp
-COPY --chown=hpcc:hpcc esp.xml /var/lib/HPCCSystems/esp
-#RUN esp --init
-ENTRYPOINT ["esp"]
+RUN pip3 install numpy
+RUN pip3 install tensorflow
 
