@@ -1006,10 +1006,20 @@ static void getDecimalResult(const RtlFieldInfo *field, const MYSQL_BIND &bound,
         value.set(p.decimalResult);
         return;
     }
-    size32_t chars;
-    rtlDataAttr result;
-    mysqlembed::getStringResult(field, bound, chars, result.refstr());
-    value.setString(chars, result.getstr());
+    if (isInteger(bound.buffer_type))
+    {
+        if (bound.is_unsigned)
+            value.setUInt64(rtlReadUInt(bound.buffer, *bound.length));
+        else
+            value.setInt64(rtlReadInt(bound.buffer, *bound.length));
+    }
+    else
+    {
+        size32_t chars;
+        rtlDataAttr result;
+        mysqlembed::getStringResult(field, bound, chars, result.refstr());
+        value.setString(chars, result.getstr());
+    }
     if (field)
     {
         RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *) field->type;
