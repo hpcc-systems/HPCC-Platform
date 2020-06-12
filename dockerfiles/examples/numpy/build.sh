@@ -1,5 +1,5 @@
 LABEL=$1
-[[ -n ${LABEL} ]] && LABEL=latest
+[[ -z ${LABEL} ]] && LABEL=latest
 
 docker image build -t hpccsystems/platform-core:numpy \
      --build-arg DOCKER_REPO=hpccsystems \
