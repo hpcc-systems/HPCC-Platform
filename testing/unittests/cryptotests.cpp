@@ -76,6 +76,43 @@ const char * pubKey =
 
 /* ============================================================= */
 
+/*Private key, with a passphrase, using
+   openssl genrsa -aes128 -passout pass:ThisIsMyPassphrase -out priv.pem 1024
+*/
+
+const char * privKeyPassphrase =
+"-----BEGIN RSA PRIVATE KEY-----\n"
+"Proc-Type: 4,ENCRYPTED\n"
+"DEK-Info: AES-128-CBC,27840180591F7545A3BC6AC26017B5E2\n"
+"\n"
+"JZ7kSTs0chmd3TmPTWQW3NM9dtfgJN59cecq8UzNeDfNdXQYU5WwhPFebpqX6K4H\n"
+"hRJ4pKaFCS39+ib68Yalwb5T+vru9t6WHhJkbGcl41bz6U0aXs3FCEEGFUEngVWu\n"
+"lonE8YjbeC+kiE7UlnGiFweteTJNlzbsFfa0w3U/6/tkfbd6ZDbriEhUvrbp1EPw\n"
+"JAAZDs9MNCqs2S76VqqWHyWhVI32lgauVRqDNZTZDSnXF9/huUUSuK8fLK4G68Jz\n"
+"0gSb7AeR9/AaJgg1FVUantmX7Ja60qLQW4O6DzTJgTGtuKEhaX3wNjpH5aKw8Ifn\n"
+"gVdZrm9hBKGQCxC5JjVjcrKRXKjj7iKf+d0UN57q9BlKcqw+r+ET2Lqf2jnm1XTt\n"
+"O1i6VkEGCZxSKdy2jb0d1kHNJonXyrW7mukfclO2LKqDwWYr2efu4wv0Dt9ttWeA\n"
+"jL6taU7O3aGwjTibLW8qcneWKQogIwnmvY2TsDTtL7Pr+zXpIeBOvuu9+IEGV5nm\n"
+"j4pVrlApKDF7+hhhYyevJSEfnImCwgeji3pZ5CnFEYASBMEGZmGmWtJyZ/sDkrTe\n"
+"RjyOV22NaHWtu7HISaOgU/inG8NwGsOL91osnmE+hB07vr44Blaz2oHQhtEZb35k\n"
+"YLeP+sf4MK0iQy/aKnLcZBHig8/m4MIPNKgpHu/MJ03pbiNiUzV34q4IkuvQiEFf\n"
+"9N/p4HHRx6789Ndf1b8+iW0VtftfTt/HXYnSw2I1InFfB8KmnC20gYIQEorGPUuX\n"
+"32yYXSjYNdyWZI52PwX57LD/A5YwkuTowib5MyYFoA2Po51B9bHNCTwzN1RTfGbH\n"
+"-----END RSA PRIVATE KEY-----\n";
+
+/*Public key generated using
+   openssl rsa -in priv.pem -passin pass:ThisIsMyPassphrase -pubout -out pub.pem
+*/
+
+const char * pubKeyPassphrase =
+"-----BEGIN PUBLIC KEY-----\n"
+"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCWnKkGM0l3Y6pKhxMq87hAGBL6\n"
+"FfEo2HC6XCSQuaAMLkdf7Yjn3FpvFIEO6A1ZYJy70cT8+HOFta+sSUyMn2fDc5cv\n"
+"VdX8v7XCycYXEBeZ4KsTCHHPCUoO/nxNbxhNz09T8dx/JsIH50LHipR6FTLTSCXR\n"
+"N9KVLaPXs5DdQx6PjQIDAQAB\n"
+"-----END PUBLIC KEY-----\n";
+
+/* ============================================================= */
 
 using namespace cryptohelper;
 
@@ -86,6 +123,7 @@ public:
     CPPUNIT_TEST_SUITE(CryptoUnitTest);
         CPPUNIT_TEST(digiSignTests);
         CPPUNIT_TEST(pkeEncryptDecryptTest);
+        CPPUNIT_TEST(pkeEncryptDecryptPassphraseTest);
         CPPUNIT_TEST(pkeParallelTest);
         CPPUNIT_TEST(aesEncryptDecryptTests);
         CPPUNIT_TEST(aesWithRsaEncryptedKey);
@@ -311,7 +349,7 @@ protected:
     {
         try
         {
-            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
+            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
             Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKey, nullptr);
 
             // create random data
@@ -347,6 +385,65 @@ protected:
         _pkeEncryptDecryptTest();
     }
 
+    void _pkeEncryptDecryptPassphraseTest()
+    {
+        try
+        {
+            // create random data
+            MemoryBuffer toEncryptMb;
+            fillRandomData(64, toEncryptMb);
+
+            MemoryBuffer pkeMb;
+            MemoryBuffer decryptedMb;
+
+            /////////////////////////////////////
+            //PKE tests using a passphrase string
+            /////////////////////////////////////
+
+            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKeyPassphrase);
+            Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKeyPassphrase, "ThisIsMyPassphrase");
+
+            publicKeyEncrypt(pkeMb, toEncryptMb.length(), toEncryptMb.bytes(), *publicKey);
+            privateKeyDecrypt(decryptedMb, pkeMb.length(), pkeMb.bytes(), *privateKey);
+
+            ASSERT(toEncryptMb.length() == decryptedMb.length());
+            ASSERT(0 == memcmp(toEncryptMb.bytes(), decryptedMb.bytes(), toEncryptMb.length()));
+
+            /////////////////////////////////////
+            //PKE tests using a passphrase buffer
+            /////////////////////////////////////
+
+            Owned<CLoadedKey> publicKeyPassphrase = loadPublicKeyFromMemory(pubKeyPassphrase);
+            Owned<CLoadedKey> privateKeyPassphrase = loadPrivateKeyFromMemory(privKeyPassphrase, 18, "ThisIsMyPassphrase");
+
+            pkeMb.clear();
+            publicKeyEncrypt(pkeMb, toEncryptMb.length(), toEncryptMb.bytes(), *publicKeyPassphrase);
+            decryptedMb.clear();
+            privateKeyDecrypt(decryptedMb, pkeMb.length(), pkeMb.bytes(), *privateKeyPassphrase);
+
+            ASSERT(toEncryptMb.length() == decryptedMb.length());
+            ASSERT(0 == memcmp(toEncryptMb.bytes(), decryptedMb.bytes(), toEncryptMb.length()));
+
+        }
+        catch (IException *e)
+        {
+            StringBuffer err;
+            e->errorMessage(err);
+            printf("pkeEncryptDecryptPassphraseTest IException thrown:%s\n", err.str());
+            throw;
+        }
+        catch (CppUnit::Exception &e)
+        {
+            printf("pkeEncryptDecryptPassphraseTest CppUnit::Exception thrown\n");
+            throw;
+        }
+    }
+
+    void pkeEncryptDecryptPassphraseTest()
+    {
+        printf("\nExecuting pkeEncryptDecryptPassphraseTest() unit tests\n");
+        _pkeEncryptDecryptPassphraseTest();
+    }
 
     void pkeParallelTest()
     {
@@ -464,7 +561,7 @@ protected:
             fillRandomData(aesMaxKeySize, aesKey);
             fillRandomData(aesBlockSize, aesIV);
 
-            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
+            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
             MemoryBuffer encryptedMessageMb;
             aesEncryptWithRSAEncryptedKey(encryptedMessageMb, messageMb.length(), messageMb.bytes(), *publicKey);
 
@@ -608,7 +705,7 @@ public:
         MemoryBuffer messageMb;
         fillRandomData(dataSz, messageMb);
 
-        Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
+        Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKey, nullptr);
 
         MemoryBuffer encryptedMessageMb;
@@ -673,7 +770,7 @@ public:
         CCycleTimer timer;
         for (unsigned i=0; i<numCycles; i++)
         {
-            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
+            Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
             Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKey, nullptr);
 
             MemoryBuffer pkeMb;
@@ -684,7 +781,7 @@ public:
         }
         printf("RSA %u cycles - reloading keys each iteration - %u ms\n", numCycles, timer.elapsedMs());
 
-        Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey, nullptr);
+        Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKey, nullptr);
 
         timer.reset();

@@ -255,7 +255,7 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
     {
         try
         {
-            pubKey.setown(loadPublicKeyFromFile(pubKeyFileName, passPhrase));
+            pubKey.setown(loadPublicKeyFromFile(pubKeyFileName));
         }
         catch (IException * e)
         {
@@ -310,7 +310,7 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
     {
         try
         {
-            pubKey.setown(loadPublicKeyFromMemory(pubKeyString, passPhrase));
+            pubKey.setown(loadPublicKeyFromMemory(pubKeyString));
         }
         catch (IException * e)
         {

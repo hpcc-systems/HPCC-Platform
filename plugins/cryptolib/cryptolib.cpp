@@ -657,7 +657,7 @@ public:
             {
                 //Create CLoadedKey from filespec
                 if (isPublic)
-                    ret = loadPublicKeyFromFile(keyFS, passphrase);
+                    ret = loadPublicKeyFromFile(keyFS);
                 else
                     ret = loadPrivateKeyFromFile(keyFS, passphrase);
             }
@@ -665,7 +665,7 @@ public:
             {
                 //Create CLoadedKey from key contents
                 if (isPublic)
-                    ret = loadPublicKeyFromMemory(keyBuff, passphrase);
+                    ret = loadPublicKeyFromMemory(keyBuff);
                 else
                     ret = loadPrivateKeyFromMemory(keyBuff, passphrase);
             }
@@ -716,12 +716,12 @@ public:
                     StringBuffer sb;
                     loadLFS(keyFS, user, sb);//read key file into StringBuffer
                     if (isPublic)
-                        newKey = loadPublicKeyFromMemory(sb.str(), passphrase);
+                        newKey = loadPublicKeyFromMemory(sb.str());
                     else
                         newKey = loadPrivateKeyFromMemory(sb.str(), passphrase);
                 }
                 else if (isPublic)
-                    newKey = loadPublicKeyFromFile(keyFS, passphrase);
+                    newKey = loadPublicKeyFromFile(keyFS);
                 else
                     newKey = loadPrivateKeyFromFile(keyFS, passphrase);
             }
@@ -729,7 +729,7 @@ public:
             {
                 //Create CLoadedKey from key contents
                 if (isPublic)
-                    newKey = loadPublicKeyFromMemory(keyBuff, passphrase);
+                    newKey = loadPublicKeyFromMemory(keyBuff);
                 else
                     newKey = loadPrivateKeyFromMemory(keyBuff, passphrase);
             }
