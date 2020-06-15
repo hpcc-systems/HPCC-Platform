@@ -2,7 +2,7 @@
  <Row><Result_1><Item>aes-256-cbc</Item><Item>aes-192-cbc</Item><Item>aes-128-cbc</Item></Result_1></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><Result_2>aes-256-cbc tests</Result_2></Row>
+ <Row><Result_2>Testing SymmetricEncryption aes-256-cbc</Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
  <Row><Result_3>The quick brown fox jumps over the lazy dog</Result_3></Row>
@@ -11,44 +11,35 @@
  <Row><Result_4>0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&amp;*()_-+=|}]{[&quot;:;?/&gt;.&lt;,</Result_4></Row>
 </Dataset>
 <Dataset name='Result 5'>
- <Row><Result_5>aes-192-cbc tests</Result_5></Row>
+ <Row><Result_5>Testing SymmetricEncryption aes-192-cbc</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
  <Row><Result_6>The quick brown fox jumps over the lazy dog</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>aes-128-cbc tests</Result_7></Row>
+ <Row><Result_7>Testing SymmetricEncryption aes-128-cbc</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
  <Row><Result_8>The quick brown fox jumps over the lazy dog</Result_8></Row>
 </Dataset>
 <Dataset name='Result 9'>
- <Row><Result_9>aes-xxx-cbc combined tests</Result_9></Row>
+ <Row><Result_9>Testing SymmEncryption aes-256-cbc</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>256The quick brown fox jumps over the lazy dog</Result_10></Row>
+ <Row><Result_10>The quick brown fox jumps over the lazy dog</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11>256The quick brown fox jumps over the lazy dog</Result_11></Row>
+ <Row><Result_11>0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&amp;*()_-+=|}]{[&quot;:;?/&gt;.&lt;,</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>256The quick brown fox jumps over the lazy dog</Result_12></Row>
+ <Row><Result_12>Testing SymmEncryption aes-192-cbc</Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
- <Row><Result_13>192The quick brown fox jumps over the lazy dog</Result_13></Row>
+ <Row><Result_13>The quick brown fox jumps over the lazy dog</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
- <Row><Result_14>192The quick brown fox jumps over the lazy dog</Result_14></Row>
+ <Row><Result_14>Testing SymmEncryption aes-128-cbc</Result_14></Row>
 </Dataset>
 <Dataset name='Result 15'>
- <Row><Result_15>192The quick brown fox jumps over the lazy dog</Result_15></Row>
-</Dataset>
-<Dataset name='Result 16'>
- <Row><Result_16>128The quick brown fox jumps over the lazy dog</Result_16></Row>
-</Dataset>
-<Dataset name='Result 17'>
- <Row><Result_17>128The quick brown fox jumps over the lazy dog</Result_17></Row>
-</Dataset>
-<Dataset name='Result 18'>
- <Row><Result_18>128The quick brown fox jumps over the lazy dog</Result_18></Row>
+ <Row><Result_15>The quick brown fox jumps over the lazy dog</Result_15></Row>
 </Dataset>

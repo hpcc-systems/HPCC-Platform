@@ -248,6 +248,11 @@ IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv()
 //Caller must release when no longer needed
 IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * pubKeyFileName, const char *privKeyFileName, const char * passPhrase)
 {
+    return createDigitalSignatureManagerInstanceFromFiles(pubKeyFileName, privKeyFileName, passPhrase ? strlen(passPhrase) : 0, (const void *)passPhrase);
+}
+
+IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char * pubKeyFileName, const char *privKeyFileName, size32_t lenPassphrase, const void * passPhrase)
+{
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
     Owned<CLoadedKey> pubKey, privKey;
     Owned<IMultiException> exceptions;
@@ -271,7 +276,7 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
     {
         try
         {
-            privKey.setown(loadPrivateKeyFromFile(privKeyFileName, passPhrase));
+            privKey.setown(loadPrivateKeyFromFile(privKeyFileName, lenPassphrase, passPhrase));
         }
         catch (IException * e)
         {
@@ -302,6 +307,11 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const 
 //Caller must release when no longer needed
 IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const char * pubKeyString, const char * privKeyString, const char * passPhrase)
 {
+    return createDigitalSignatureManagerInstanceFromKeys(pubKeyString, privKeyString, passPhrase ? strlen(passPhrase) : 0, (const void *)passPhrase);
+}
+
+IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const char * pubKeyString, const char * privKeyString, size32_t lenPassphrase, const void * passPhrase)
+{
 #if defined(_USE_OPENSSL) && !defined(_WIN32)
     Owned<CLoadedKey> pubKey, privKey;
 
@@ -317,7 +327,7 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
             if (!exceptions)
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
 
-            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load public key"));
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromKeys:Cannot load public key"));
             e->Release();
         }
     }
@@ -325,14 +335,14 @@ IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const c
     {
         try
         {
-            privKey.setown(loadPrivateKeyFromMemory(privKeyString, passPhrase));
+            privKey.setown(loadPrivateKeyFromMemory(privKeyString, lenPassphrase, passPhrase));
         }
         catch (IException * e)
         {
             if (!exceptions)
                 exceptions.setown(makeMultiException("createDigitalSignatureManagerInstanceFromKeys"));
 
-            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromFiles:Cannot load private key"));
+            exceptions->append(* makeWrappedExceptionV(e, -1, "createDigitalSignatureManagerInstanceFromKeys:Cannot load private key"));
             e->Release();
         }
     }
