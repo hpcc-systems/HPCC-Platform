@@ -138,7 +138,7 @@ private:
          const char* dirEntryName = iFile.queryFilename();
 
          // Process directories, but not the "." and ".." directories
-         if (iFile.isDirectory() && *dirEntryName != '.')
+         if (iFile.isDirectory()==fileBool::foundYes && *dirEntryName != '.')
          {  
             // Create prop tree, add to parent, and recurse
             StringBuffer newPath(path);

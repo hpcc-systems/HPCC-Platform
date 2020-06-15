@@ -409,7 +409,7 @@ public:
         rowsize = _rowsize;
         reccount = 0;
         keyFile.setown(createIFile(filename));
-        if(!overwrite && (keyFile->isFile() != notFound))
+        if(!overwrite && (keyFile->isFile() != fileBool::notFound))
             throw MakeStringException(0, "Found preexisting index file %s (overwrite not selected)", filename);
         keyFileIO.setown(keyFile->openShared(IFOcreate, IFSHfull)); // not sure if needs shared here
         if(!keyFileIO)
@@ -731,7 +731,7 @@ public:
         : CKeyDiff(oldIndex, newIndex, newTLK)
     {
         file.setown(createIFile(filename));
-        if(!overwrite && (file->isFile() != notFound))
+        if(!overwrite && (file->isFile() != fileBool::notFound))
             throw MakeStringException(0, "Found preexisting key patch file %s (overwrite not selected)", filename);
         fileIO.setown(file->open(IFOcreate));
         if(!fileIO)

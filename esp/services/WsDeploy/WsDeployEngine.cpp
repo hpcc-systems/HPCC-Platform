@@ -274,8 +274,7 @@ void CWsDeployEngine::deploy(CDeployOptions& pOptions)
           Owned<IDeployTask> task = createDeployTask(*this, "Create Directory", NULL, NULL, NULL, NULL, archiveLogPath, "", "", "", false);
           task->createDirectory();
         }
-        else
-          if (!pIFile->isDirectory())
+        else if (pIFile->isDirectory()!=fileBool::foundYes)
             throw MakeStringException(-1, "The specified log/archive path '%s' is invalid!", archiveLogPath);
       }
 
@@ -422,8 +421,7 @@ void CWsDeployEngine::deploy()
           Owned<IDeployTask> task = createDeployTask(*this, "Create Directory", NULL, NULL, NULL, NULL, archiveLogPath, "", "", "", false);
           task->createDirectory();
         }
-        else
-          if (!pIFile->isDirectory())
+        else if (pIFile->isDirectory()!=fileBool::foundYes)
             throw MakeStringException(-1, "The specified log/archive path '%s' is invalid!", archiveLogPath);
       }
 

@@ -1027,7 +1027,7 @@ int main(int argc, char **argv)
             sendFileAfterQuery = true;
             sendFileName.append(argv[arg+1]);
             OwnedIFile f = createIFile(sendFileName.str());
-            if (!f->exists() || !f->isFile())
+            if (!f->exists() || f->isFile()==fileBool::foundNo)
             {
                 printf("file %s does not exist\n", sendFileName.str());
                 exit (EXIT_FAILURE);

@@ -176,22 +176,22 @@ public:
     {
         ensureMetaData();
         if (!fileExists)
-            return notFound;
-        return isDir ? foundYes : foundNo;
+            return fileBool::notFound;
+        return isDir ? fileBool::foundYes : fileBool::foundNo;
     }
     virtual fileBool isFile() override
     {
         ensureMetaData();
         if (!fileExists)
-            return notFound;
-        return !isDir ? foundYes : foundNo;
+            return fileBool::notFound;
+        return !isDir ? fileBool::foundYes : fileBool::foundNo;
     }
     virtual fileBool isReadOnly() override
     {
         ensureMetaData();
         if (!fileExists)
-            return notFound;
-        return foundYes;
+            return fileBool::notFound;
+        return fileBool::foundYes;
     }
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone) override
     {

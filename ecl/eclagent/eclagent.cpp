@@ -2040,7 +2040,7 @@ void EclAgent::doProcess()
             unsigned errCode = 0;
             try
             {
-               if (dir->exists() && dir->isDirectory() && !dir->remove())
+               if (dir->exists() && dir->isDirectory()==fileBool::foundYes && !dir->remove())
                     rmMsg.append("Failed to remove temporary directory: ").append(jobTempDir.str());
             }
             catch (IException *e)

@@ -1325,7 +1325,7 @@ void CDeploymentEngine::ensurePath(const char* filespec) const
     if (flag)
     {
         Owned<IFile> pIFile = createIFile(dir.str());
-        if ((m_curInstance && m_curSSHUser.length() && m_curSSHKeyFile.length()) || !pIFile->exists() || !pIFile->isDirectory())
+        if ((m_curInstance && m_curSSHUser.length() && m_curSSHKeyFile.length()) || !pIFile->exists() || pIFile->isDirectory()!=fileBool::foundYes)
         {
             Owned<IDeployTask> task = createDeployTask(*m_pCallback, "Create Directory", m_process.queryName(), m_name.get(),
                 m_curInstance, NULL, dir.str(), m_curSSHUser.str(), m_curSSHKeyFile.str(), m_curSSHKeyPassphrase.str(),

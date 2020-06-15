@@ -111,7 +111,7 @@ void deleteRecursive(const char* path)
     Owned<IFile> pDir = createIFile(path);
     if (pDir->exists())
     {
-        if (pDir->isDirectory())
+        if (pDir->isDirectory()==fileBool::foundYes)
         {
             Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
             ForEach(*it)
@@ -139,7 +139,7 @@ void copyDirectoryRecursive(const char *source, const char *target)
   {
     IFile &sourceFile = dir->query();
 
-    if (sourceFile.isFile())
+    if (sourceFile.isFile()==fileBool::foundYes)
     {
       StringBuffer targetname(target);
       targetname.append(PATHSEPCHAR);
@@ -156,7 +156,7 @@ void copyDirectoryRecursive(const char *source, const char *target)
 
       copyFile(destFile, &sourceFile);
     }
-    else if (sourceFile.isDirectory())
+    else if (sourceFile.isDirectory()==fileBool::foundYes)
     {
       StringBuffer newSource(source);
       StringBuffer newTarget(target);

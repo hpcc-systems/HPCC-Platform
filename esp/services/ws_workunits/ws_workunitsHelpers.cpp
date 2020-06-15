@@ -3402,7 +3402,7 @@ void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
     ForEach(*iter)
     {
         OwnedIFile thisFile = createIFile(iter->query().queryFilename());
-        if (thisFile->isFile() == foundYes)
+        if (thisFile->isFile() == fileBool::foundYes)
             thisFile->remove();
     }
     if (removeFolder)
@@ -3801,7 +3801,7 @@ void CWsWuFileHelper::setZAPFile(const char* zipFileNameReq, const char* zipFile
 
     zipFileNameWithPath.append(PATHSEPCHAR).append(zipFileName);
     OwnedIFile thisFile = createIFile(zipFileNameWithPath.str());
-    if (thisFile->isFile() == foundYes)
+    if (thisFile->isFile() == fileBool::foundYes)
         thisFile->remove();
 }
 
@@ -3919,7 +3919,7 @@ IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const
     zipFileNameWithPath.set(zipFolder).append(fileName.str());
     {
         OwnedIFile oldFile = createIFile(zipFileNameWithPath.str());
-        if (oldFile->isFile() == foundYes)
+        if (oldFile->isFile() == fileBool::foundYes)
             oldFile->remove();
     }
     int zipRet = zipAFolder(workingFolder.str(), downloadOptions == CWUFileDownloadOption_GZIP, zipFileNameWithPath);

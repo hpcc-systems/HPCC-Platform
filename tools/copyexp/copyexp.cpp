@@ -155,7 +155,7 @@ int copyExpanded(const char *from, const char *to, bool stats)
         return ret;
     Owned<IFile> dstfile = createIFile(to);
     StringBuffer fulldst;
-    if (dstfile->isDirectory()==foundYes) {
+    if (dstfile->isDirectory()==fileBool::foundYes) {
         dstfile.clear();
         addPathSepChar(fulldst.append(to)).append(pathTail(from));
         to = fulldst.str();
@@ -274,7 +274,7 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
 
     Owned<IFile> dstfile = createIFile(to);
     StringBuffer fulldst;
-    if (dstfile->isDirectory()==foundYes) {
+    if (dstfile->isDirectory()==fileBool::foundYes) {
         dstfile.clear();
         addPathSepChar(fulldst.append(to)).append(pathTail(from));
         to = fulldst.str();

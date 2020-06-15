@@ -2035,11 +2035,11 @@ static void installFileHook(const char *hookFile)
     {
         addPathSepChar(absolutePath).append(dirTail);
         Owned<IFile> file = createIFile(absolutePath);
-        if (file->isDirectory() == foundYes)
+        if (file->isDirectory() == fileBool::foundYes)
         {
             installFileHooks(addPathSepChar(absolutePath).append('*'));
         }
-        else if (file->isFile() == foundYes)
+        else if (file->isFile() == fileBool::foundYes)
         {
             HookInstallFunction hookInstall;
             SharedObject *so = new SharedObject(); // MORE - this leaks! Kind-of deliberate right now...

@@ -321,7 +321,7 @@ protected:
         serviceDefFile.setown( createIFile(sourceFileName) );
         if( serviceDefFile->exists() )
         {
-            if( serviceDefFile->isFile() )
+            if( serviceDefFile->isFile()==fileBool::foundYes )
             {
                 if( serviceDefFile->size() > 0 )
                 {

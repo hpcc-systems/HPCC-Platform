@@ -263,7 +263,7 @@ struct mapErrs_t { int val; const char *str; } mapErrs[] =
 
 #define RFEnoerror      0U
 
-enum fileBool { foundNo = false, foundYes = true, notFound = 2 };
+enum class fileBool { foundNo = false, foundYes = true, notFound = 2 };
 
 #ifdef _WIN32
 class win_socket_library
@@ -1372,7 +1372,7 @@ static bool processCommand(RFS_ServerBase &base, RFS_context &context, RFS_Conne
                 const char * name = in.readFileName(tmp);
                 bool existsout = false;
                 base.existFile(name,existsout);
-                unsigned ret = (unsigned)notFound;
+                unsigned ret = (unsigned)fileBool::notFound;
                 if (existsout) {
                     if (cmd==RFCisfile)
                         base.isFile(name,existsout);
@@ -1381,9 +1381,9 @@ static bool processCommand(RFS_ServerBase &base, RFS_context &context, RFS_Conne
                     else
                         base.isReadOnly(name,existsout);
                     if (existsout)
-                        ret = (unsigned)foundYes;
+                        ret = (unsigned)fileBool::foundYes;
                     else
-                        ret = (unsigned)foundNo;
+                        ret = (unsigned)fileBool::foundNo;
                 }
                 out.append((unsigned)RFEnoerror).append(ret);
             }

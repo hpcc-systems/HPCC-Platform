@@ -97,17 +97,17 @@ bool CXmlDiff::compare()
         return false;
     }
 
-    if(lf->isDirectory() && !rf->isDirectory())
+    if(lf->isDirectory()==fileBool::foundYes && rf->isDirectory()!=fileBool::foundYes)
     {
         printDiff("%s is a directory, while %s is not\n", left, right);
         return false;
     }
-    else if(!lf->isDirectory() && rf->isDirectory())
+    else if(lf->isDirectory()!=fileBool::foundYes && rf->isDirectory()==fileBool::foundYes)
     {
         printDiff("%s is a directory, while %s is not\n", right, left);
         return false;
     }
-    else if(lf->isDirectory() && rf->isDirectory())
+    else if(lf->isDirectory()==fileBool::foundYes && rf->isDirectory()==fileBool::foundYes)
     {
         Owned<IDirectoryIterator> ldi = lf->directoryFiles(NULL, false, true);
         Owned<IDirectoryIterator> rdi = rf->directoryFiles(NULL, false, true);

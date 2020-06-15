@@ -208,14 +208,14 @@ int main(int argc, char* argv[])
         Owned<IFile> file = createIFile(location);
         switch (file->isDirectory())
         {
-        case notFound:
+        case fileBool::notFound:
             if (verbose && !useDefaultLocations)
                 DBGLOG("Specified library location %s not found", location);
             break;
-        case foundYes:
+        case fileBool::foundYes:
             loadDlls(objects, location);
             break;
-        case foundNo:
+        case fileBool::foundNo:
             LoadedObject *loaded = loadDll(location);
             if (loaded)
                 objects.append(*loaded);

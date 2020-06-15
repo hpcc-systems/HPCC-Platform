@@ -2807,7 +2807,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 #endif
         rfn.setPath(ep, sPath.str());
         Owned<IFile> f = createIFile(rfn);
-        if(!f->isDirectory())
+        if (f->isDirectory()!=fileBool::foundYes)
             throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path);
 
         IArrayOf<IEspPhysicalFileStruct> files;
@@ -2930,7 +2930,7 @@ void CFileSprayEx::searchDropZoneFiles(IEspContext& context, IpAddress& ip, cons
     ep.ipset(ip);
     rfn.setPath(ep, dir);
     Owned<IFile> f = createIFile(rfn);
-    if(!f->isDirectory())
+    if(f->isDirectory()!=fileBool::foundYes)
         throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", dir);
 
     const char pathSep = getPathSepChar(dir);
@@ -3148,7 +3148,7 @@ bool CFileSprayEx::getDropZoneFiles(IEspContext &context, const char* dropZone, 
 
     rfn.setPath(ep, path);
     Owned<IFile> f = createIFile(rfn);
-    if(!f->isDirectory())
+    if(f->isDirectory()!=fileBool::foundYes)
         throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", path);
 
     IArrayOf<IEspPhysicalFileStruct> files;
@@ -3322,7 +3322,7 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
 
         rfn.setPath(ep, path.str());
         Owned<IFile> f = createIFile(rfn);
-        if(!f->isDirectory())
+        if(f->isDirectory()!=fileBool::foundYes)
             throw MakeStringException(ECLWATCH_INVALID_DIRECTORY, "%s is not a directory.", directory);
 
         bool bAllSuccess = true;

@@ -165,20 +165,20 @@ public:
     virtual fileBool isDirectory()
     {
         if (!isExisting)
-            return notFound;
-        return isDir ? foundYes : foundNo;
+            return fileBool::notFound;
+        return isDir ? fileBool::foundYes : fileBool::foundNo;
     }
     virtual fileBool isFile()
     {
         if (!isExisting)
-            return notFound;
-        return !isDir ? foundYes : foundNo;
+            return fileBool::notFound;
+        return !isDir ? fileBool::foundYes : fileBool::foundNo;
     }
     virtual fileBool isReadOnly()
     {
         if (!isExisting)
-            return notFound;
-        return foundYes;
+            return fileBool::notFound;
+        return fileBool::foundYes;
     }
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
     {
@@ -298,7 +298,7 @@ public:
     virtual bool isDir()
     {
         assertex(curFile);
-        return curFile->isDirectory()==foundYes;
+        return curFile->isDirectory()==fileBool::foundYes;
     }
     virtual __int64 getFileSize()
     {

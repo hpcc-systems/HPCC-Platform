@@ -81,7 +81,7 @@ interface ICopyFileProgress
 
 class RemoteFilename;
 
-enum fileBool { foundNo = false, foundYes = true, notFound = 2 };
+enum class fileBool { foundNo = false, foundYes = true, notFound = 2 };
 interface IFile :extends IInterface
 {
     virtual bool exists() = 0; // NB this can raise exceptions if the machine doesn't exist or other fault

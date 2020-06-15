@@ -81,14 +81,14 @@ bool processArgvFilename(IFileArray & filenames, const char * filename)
         ForEach(*iter)
         {
             IFile & cur = iter->query();
-            if (cur.isFile() == foundYes)
+            if (cur.isFile() == fileBool::foundYes)
                 filenames.append(OLINK(cur));
         }
     }
     else
     {
         Owned<IFile> cur = createIFile(filename);
-        if (cur->isFile() != foundYes)
+        if (cur->isFile() != fileBool::foundYes)
         {
             UERRLOG("Error: File '%s' does not exist", filename);
             return false;

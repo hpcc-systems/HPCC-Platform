@@ -335,20 +335,20 @@ public:
     virtual fileBool isDirectory()
     {
         if (!entry)
-            return notFound;
-        return entry->isDir() ? foundYes : foundNo;
+            return fileBool::notFound;
+        return entry->isDir() ? fileBool::foundYes : fileBool::foundNo;
     }
     virtual fileBool isFile()
     {
         if (!entry)
-            return notFound;
-        return entry->isDir() ? foundNo : foundYes;
+            return fileBool::notFound;
+        return entry->isDir() ? fileBool::foundNo : fileBool::foundYes;
     }
     virtual fileBool isReadOnly()
     {
         if (!entry)
-            return notFound;
-        return foundYes;
+            return fileBool::notFound;
+        return fileBool::foundYes;
     }
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
     {
@@ -378,7 +378,7 @@ public:
 // Directory functions
     virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs)
     {
-        if (isDirectory() != foundYes || (mask && !*mask))   // Empty mask string means matches nothing - NULL means matches everything
+        if (isDirectory() != fileBool::foundYes || (mask && !*mask))   // Empty mask string means matches nothing - NULL means matches everything
             return createNullDirectoryIterator();
         else
         {
@@ -389,7 +389,7 @@ public:
     }
     virtual bool getInfo(bool &_isdir,offset_t &_size,CDateTime &_modtime)
     {
-        _isdir = isDirectory()==foundYes;
+        _isdir = isDirectory()==fileBool::foundYes;
         _size = size();
         _modtime.clear(); // MORE could probably do better
         return true; // MORE should this be false if not existing?
@@ -476,7 +476,7 @@ public:
     virtual bool isDir()
     {
         assertex(curFile);
-        return curFile->isDirectory();
+        return curFile->isDirectory()==fileBool::foundYes;
     }
     virtual __int64 getFileSize()
     {

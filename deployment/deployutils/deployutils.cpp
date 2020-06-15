@@ -150,7 +150,7 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
       return;
     }
 
-    if(inFiles.get() != NULL && inFiles->isDirectory())
+    if(inFiles.get() != NULL && inFiles->isDirectory()==fileBool::foundYes)
     {
       Owned<IDirectoryIterator> di = inFiles->directoryFiles(NULL, 0, true);
       bool bCompFound = false;
@@ -162,7 +162,7 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
         {
           IFile &file = di->query();
 
-          if (!file.isFile())
+          if (file.isFile()!=fileBool::foundYes)
           {
             dirName.clear();
             di->getName(dirName);
@@ -2557,7 +2557,7 @@ void deleteRecursive(const char* path)
         Owned<IFile> pDir = createIFile(path);
         if (pDir->exists())
         {
-            if (pDir->isDirectory())
+            if (pDir->isDirectory()==fileBool::foundYes)
             {
                 Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
                 ForEach(*it)

@@ -582,7 +582,7 @@ void HttpClient::start()
                 return;
             }
         }
-        else if(infile->isDirectory())
+        else if (infile->isDirectory()==fileBool::foundYes)
             di.setown(infile->directoryFiles());
     }
 
@@ -655,7 +655,7 @@ void HttpClient::start()
 
         MessageGenerator mg(schemapath.str(), no_sending, st, m_globals);
         StringBuffer templatemsg;
-        if(infile.get() && !infile->isDirectory())
+        if(infile.get() && infile->isDirectory()==fileBool::foundNo)
             templatemsg.loadFile(m_inname.str());
 
         const char* method = m_globals->queryProp("method");
@@ -736,7 +736,7 @@ void HttpClient::start()
         if (m_url.length() == 0)
             no_sending = true;
 
-        if (infile.get() && !infile->isDirectory())
+        if (infile.get() && infile->isDirectory()==fileBool::foundNo)
             loadEspLog(m_inname.str(), *this, *overall_stat.get());
     }
     else if(di.get())
@@ -747,7 +747,7 @@ void HttpClient::start()
         ForEach(*di)
         {
             IFile &file = di->query();
-            if (file.isFile() && file.size() > 0)
+            if (file.isFile()==fileBool::foundYes && file.size() > 0)
             {
                 const char* fname = file.queryFilename();
                 if(fname && *fname)
@@ -1926,7 +1926,7 @@ int SimpleServer::start()
                 return -1;
         }
         
-        if(!server_infile->isDirectory())
+        if(server_infile->isDirectory()==fileBool::foundNo)
         {
             try
             {
@@ -2038,7 +2038,7 @@ int SimpleServer::start()
         }
         else
         {
-            if(server_infile.get() != NULL && server_infile->isDirectory())
+            if(server_infile.get() != NULL && server_infile->isDirectory()==fileBool::foundYes)
             {
                 StringBuffer xmlBuf;
                 xmlBuf.append(strstr(requestbuf.str(), "<?xml"));
@@ -2067,7 +2067,7 @@ int SimpleServer::start()
                         }
                     }
 
-                    if(bfound && server_infile.get() != NULL && server_infile->isDirectory())
+                    if(bfound && server_infile.get() != NULL && server_infile->isDirectory()==fileBool::foundYes)
                     {
                         StringBuffer respFileName;
                         respFileName.append(m_inputpath).append(PATHSEPCHAR).append(reqFileName.str());
@@ -2206,7 +2206,7 @@ int SimpleServer::start()
                 resp_io->write(0, m_response.length(), m_response.str());
         }
 
-        if(server_infile.get() != NULL && server_infile->isDirectory())
+        if(server_infile.get() != NULL && server_infile->isDirectory()==fileBool::foundYes)
             m_response.clear();
 
         if(!m_isPersist)
