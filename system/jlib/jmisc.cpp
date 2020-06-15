@@ -35,6 +35,14 @@
 #include <pwd.h>
 #endif
 
+#ifdef _WIN32
+ #include <stdlib.h>
+#elif defined(__linux__) || defined(__FreeBSD__)
+ extern char **environ;
+#elif defined(__APPLE__)
+#include <crt_externs.h>
+#endif
+
 #ifdef LOGCLOCK
 #define MSGFIELD_PRINTLOG MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_milliTime
 #else
@@ -1002,3 +1010,14 @@ char *mkdtemp(char *_template)
     return nullptr;
 }
 #endif
+
+jlib_decl char **getSystemEnv()
+{
+#ifdef _WIN32
+    return _environ;
+#elif defined (__APPLE__)
+    return *_NSGetEnviron();
+#else
+    return environ;
+#endif
+}
