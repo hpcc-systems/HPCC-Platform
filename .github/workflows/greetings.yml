@@ -43,7 +43,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
-        uses: ../MyDockerfile
+        uses: ./MyDockerfile
         with:
            who-to-greet: 'Bela the Great'
         id: hello2
