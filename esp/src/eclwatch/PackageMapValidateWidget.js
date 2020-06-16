@@ -204,10 +204,10 @@ define([
             };
             request['content'] = content;
 
-            this.resultControl.setText("");
+            this.resultControl.setText(this.i18n.Validating);
             this.validateButton.set("disabled", true);
             WsPackageMaps.validatePackage(request).then(function (response) {
-                if (lang.exists("response.ValidatePackageResponse", response)) {
+                if (lang.exists("ValidatePackageResponse", response)) {
                     var responseText = context.validateResponseToText(response.ValidatePackageResponse);
                     if (responseText === '') {
                         context.resultControl.setText(context.i18n.Empty);

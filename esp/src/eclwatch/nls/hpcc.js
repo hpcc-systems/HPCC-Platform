@@ -895,6 +895,7 @@ define({
             Users: "Users",
             UseSingleConnection: "Use Single Connection",
             Validate: "Validate",
+            Validating: "Validating...",
             ValidateActivePackageMap: "Validate Active Package Map",
             ValidatePackageContent: "Validate Package Content",
             ValidatePackageMap: "Validate Package Map",
