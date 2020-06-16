@@ -1200,7 +1200,7 @@ bool PermissionProcessor::getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<
             account_name.append("everyone");
             act_type = GROUP_ACT;
         }
-        else if(EqualSid(cursid, administrators_psid))
+        else if (!m_ldap_client->queryConfig()->isAzureAD() && EqualSid(cursid, administrators_psid))
         {
             account_name.append("Administrators");
             act_type = GROUP_ACT;
@@ -1456,9 +1456,22 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
     InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION);
     InitializeAcl(pacl, 1024, ACL_REVISION);
 
+    if (m_ldap_client->getLdapConfig()->isAzureAD() && DEFAULT_ADMINISTRATORS_PERMISSION != SecAccess_None)
+    {
+        MemoryBuffer gmb;
+        lookupSid(AAD_ADMINISTRATORS_GROUP, gmb, GROUP_ACT);
+        psid = (PSID)(gmb.toByteArray());
+        if (psid != nullptr)
+        {
+            rc = AddAccessAllowedAce(pacl, ACL_REVISION, sec2ldap(DEFAULT_ADMINISTRATORS_PERMISSION), psid);
+            if (rc == 0)
+                throw MakeStringException(-1, "Error AddAccessAllowedAce - error code = %d", GetLastError());
+        }
+    }
+
     if(ptype != PT_ADMINISTRATORS_ONLY)
     {
-        MemoryBuffer umb, gmb;
+        MemoryBuffer umb;
         if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
         {
             //Add SD for given user
