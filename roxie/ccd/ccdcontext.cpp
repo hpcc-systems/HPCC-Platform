@@ -1316,7 +1316,8 @@ public:
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
     {
-        return logctx.getLogPrefix(ret);
+        logctx.getLogPrefix(ret);
+        return ret.append(':').append(factory->queryQueryName());
     }
 
     virtual bool isIntercepted() const

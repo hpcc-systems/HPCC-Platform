@@ -603,13 +603,13 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceInfo += debugLen + sizeof(unsigned short);
                 traceLength -= debugLen + sizeof(unsigned short);
             }
-            // Passing the wuid via the logging context prefix is a bit of a hack...
+            // Passing the wuid via the logging context prefix is a lot of a hack...
             if (loggingFlags & LOGGING_WUID)
             {
                 unsigned wuidLen = 0;
                 while (wuidLen < traceLength)
                 {
-                    if (traceInfo[wuidLen]=='@')
+                    if (traceInfo[wuidLen]=='@'||traceInfo[wuidLen]==':')
                         break;
                     wuidLen++;
                 }
