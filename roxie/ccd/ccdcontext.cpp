@@ -215,12 +215,14 @@ class CRoxieWorkflowMachine : public WorkflowMachine
     };
 
 public:
-    CRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, const IRoxieContextLogger &_logctx)
+    CRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, bool _parallelWorkflow, unsigned _numWorkflowThreads, const IRoxieContextLogger &_logctx)
     : WorkflowMachine(_logctx)
     {
         workunit = _wu;
         workflowInfo = _workflowInfo;
         doOnce = _doOnce;
+        parallelWorkflow = _parallelWorkflow;
+        numWorkflowThreads = _numWorkflowThreads;
     }
     void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
     {
@@ -250,6 +252,14 @@ protected:
                     workflow->queryWfid(item->queryWfid()).setState(WFStateDone);
             }
         }
+    }
+    virtual bool getParallelFlag() const override
+    {
+        return parallelWorkflow;
+    }
+    virtual unsigned getThreadNumFlag() const override
+    {
+        return numWorkflowThreads;
     }
     virtual void end()
     {
@@ -775,11 +785,13 @@ private:
     Owned<PersistVersion> persist;
     IArray persistReadLocks;
     bool doOnce;
+    bool parallelWorkflow;
+    unsigned numWorkflowThreads;
 };
 
-CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, const IRoxieContextLogger &_logctx)
+CRoxieWorkflowMachine *createRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, bool _parallelWorkflow, unsigned _numWorkflowThreads, const IRoxieContextLogger &_logctx)
 {
-    return new CRoxieWorkflowMachine(_workflowInfo, _wu, _doOnce, _logctx);
+    return new CRoxieWorkflowMachine(_workflowInfo, _wu, _doOnce, _parallelWorkflow, _numWorkflowThreads, _logctx);
 }
 
 //=======================================================================================================================
@@ -2644,7 +2656,7 @@ public:
     {
         init();
         rowManager->setMemoryLimit(options.memoryLimit);
-        workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx, options));
         context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
     }
 
@@ -2654,7 +2666,7 @@ public:
         init();
         workUnit.set(_workUnit);
         rowManager->setMemoryLimit(options.memoryLimit);
-        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx, options));
         context.setown(createPTree(ipt_caseInsensitive|ipt_fast));
 
         //MORE: Use various debug settings to override settings:
@@ -2706,7 +2718,7 @@ public:
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
         rowManager->setMemoryLimit(options.memoryLimit);
 
-        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
+        workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx, options));
     }
 
     virtual roxiemem::IRowManager &queryRowManager()

@@ -1587,7 +1587,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     {
         return package;
     }
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const override
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx, const QueryOptions & options) const override
     {
         throwUnexpected();  // only on server...
     }
@@ -1757,12 +1757,12 @@ public:
         return createWorkUnitServerContext(wu, this, _logctx);
     }
 
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const override
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx, const QueryOptions & options) const
     {
         IPropertyTree *workflow = queryWorkflowTree();
         if (workflow)
         {
-            return ::createRoxieWorkflowMachine(workflow, wu, isOnce, logctx);
+            return ::createRoxieWorkflowMachine(workflow, wu, isOnce, options.parallelWorkflow, options.numWorkflowThreads, logctx);
         }
         else
             return NULL;

@@ -571,8 +571,12 @@ enum WFMode
     WFModeBeginWait = 5,
     WFModeWait = 6,
     WFModeOnce = 7,
-    WFModeSize = 8,
-    WFModeCritical = 9
+    WFModeUnused = 8,
+    WFModeCritical = 9,
+    WFModeOrdered = 10,
+    WFModeConditionExpression = 11,
+    //Size needs to be the last mode
+    WFModeSize = 12
 };
 
 enum WFState

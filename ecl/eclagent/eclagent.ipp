@@ -283,6 +283,10 @@ public:
 
 protected:
     virtual void begin();
+
+    virtual bool getParallelFlag() const;
+    virtual unsigned getThreadNumFlag() const;
+
     virtual void end();
     virtual void schedulingStart();
     virtual bool schedulingPull();

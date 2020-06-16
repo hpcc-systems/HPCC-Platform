@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 //version parallel=false
-//version parallel=true
+//version parallel=true,nothor,noroxie
 
 import ^ as root;
 optParallel := #IFDEFINED(root.parallel, false);
@@ -23,7 +23,7 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-//graphs are going to run concurrently in eclagent/roxie
+//graphs are going to run concurrently in eclagent/roxie. Roxie can be enabled once multi threading issues are resolved
 MyRec := RECORD
     STRING1 Value1;
     STRING1 Value2;

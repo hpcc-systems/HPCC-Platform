@@ -15,8 +15,7 @@
     limitations under the License.
 ############################################################################## */
 //version parallel=false
-//version parallel=true
-
+//version parallel=true,nothor
 import ^ as root;
 optParallel := #IFDEFINED(root.parallel, false);
 
@@ -24,7 +23,8 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option('numWorkflowThreads', 5);
 #onwarning(5102, ignore);
 //#option('reportFailureToFirstDependant', false);
-//This tests the Failure flag i.e. reportFailureToFirstDependant in the workflow engine
+
+//This verifies that the parallel engine doesn't execute Failure clauses when the corresponding item is inactive
 display(String thisString) := FUNCTION
   ds := dataset([thisString], {String text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
@@ -42,4 +42,3 @@ e := SEQUENTIAL(b,c);
 
 e;
 //expect a, failure ... for b
-//Once the flag is actually read, expect a, failure ... for b, failure ... for c.
