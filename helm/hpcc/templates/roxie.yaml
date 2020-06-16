@@ -23,7 +23,7 @@ spec:
       containers:
       - name: {{ $toponame | quote }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "toposerver") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         workingDir: /var/lib/HPCCSystems
         command: [ toposerver ] 
         volumeMounts:
@@ -125,7 +125,7 @@ spec:
 {{- end }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
@@ -187,7 +187,7 @@ spec:
 {{- end }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" $roxie | indent 8 }}

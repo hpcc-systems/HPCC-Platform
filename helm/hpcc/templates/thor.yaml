@@ -39,7 +39,7 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
@@ -74,7 +74,7 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclagent") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
@@ -139,7 +139,7 @@ data:
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
-            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclagent") }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
               requests:
                 #request-memory
@@ -182,7 +182,7 @@ data:
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thormaster") | indent 12 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thormaster_lcr ] 
             args: [
@@ -216,7 +216,7 @@ data:
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "thorslave") | indent 12 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thorslave_lcr ] 
             args: [

@@ -28,7 +28,7 @@ spec:
                 {{ include "hpcc.daliArg" $ }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "eclccserver") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
@@ -68,7 +68,7 @@ data:
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
-            image: {{ include "hpcc.imageName" (dict "root" $ "me" . "imagename" "eclccserver") }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
               requests:
                 #request-memory
@@ -79,7 +79,6 @@ data:
             workingDir: /var/lib/HPCCSystems
             command: [ eclccserver ]
             args: [
-                        "eclccserver",
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
                         %args

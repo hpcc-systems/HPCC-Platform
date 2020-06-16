@@ -24,7 +24,7 @@ spec:
                 {{ include "hpcc.configArg" . }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "dali") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
         - name: {{ .name }}-configmap-volume
           mountPath: /etc/config
