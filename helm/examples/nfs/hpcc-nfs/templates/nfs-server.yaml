@@ -1,6 +1,6 @@
 {{- $serverName := (include "hpcc-nfs.fullname" $) }}
 {{- $pvcName := $.Values.sharedStorage.existingClaim | default (printf "%s-pvc" (include "hpcc-nfs.fullname" $)) }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $serverName }}
