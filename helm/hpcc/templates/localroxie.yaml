@@ -43,7 +43,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "roxie") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}

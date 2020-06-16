@@ -23,7 +23,7 @@ spec:
                 {{ include "hpcc.daliArg" $ }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" . "imagename" "esp") | indent 8 }}
+{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 8 }}
