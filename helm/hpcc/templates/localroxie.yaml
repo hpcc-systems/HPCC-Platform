@@ -19,7 +19,8 @@ spec:
         run: {{ $roxie.name | quote }}
         roxie-server: {{ $servername | quote }}
     spec:
-      {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      initContainers:
+        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
       - name: {{ $roxie.name | quote }}
         workingDir: /var/lib/HPCCSystems

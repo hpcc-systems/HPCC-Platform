@@ -20,6 +20,11 @@
       },
       "additionalProperties": false
     },
+    "bundles": {
+      "description": "bundles",
+      "type": "array",
+      "items": { "$ref": "#/definitions/bundle" }
+    },
     "dali": {
       "description": "dali process",
       "type": "array",
@@ -286,6 +291,17 @@
       },
       "required": [ "name", "port" ],
       "additionalProperties": false
+    },
+    "bundle": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the bundle process"
+        }
+      }
     },
     "thor": {
       "type": "object",
