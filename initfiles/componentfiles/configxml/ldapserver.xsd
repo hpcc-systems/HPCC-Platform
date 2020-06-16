@@ -281,6 +281,7 @@
                     <xs:simpleType>
                         <xs:restriction base="xs:string">
                             <xs:enumeration value="ActiveDirectory"/>
+                            <xs:enumeration value="AzureActiveDirectory"/>
                             <xs:enumeration value="OpenLDAP"/>
                             <xs:enumeration value="389DirectoryServer"/>
                             <xs:enumeration value="Fedora389"/>
