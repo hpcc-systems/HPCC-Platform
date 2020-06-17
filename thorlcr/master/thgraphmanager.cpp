@@ -187,7 +187,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
 
                         ssock.querySocket()->getPeerAddress(peer);
                         DBGLOG("Reading debug command from socket...");
-                        if (!ssock.readBlock(rawText, WAIT_FOREVER, NULL, continuationNeeded, isStatus, 1024*1024))
+                        if (!ssock.readBlocktms(rawText, WAIT_FOREVER, NULL, continuationNeeded, isStatus, 1024*1024))
                         {
                             DBGLOG("No data reading query from socket");
                             continue;

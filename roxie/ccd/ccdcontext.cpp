@@ -1054,7 +1054,7 @@ public:
 
             // Note: I am the only thread reading (we only support a single input dataset in roxiepipe mode)
             MemoryBuffer reply;
-            client.readBlock(reply, readTimeout);
+            client.readBlocktms(reply, readTimeout*1000, INFINITE);
             tlen = reply.length();
             // MORE - not very robust!
             // skip past block header

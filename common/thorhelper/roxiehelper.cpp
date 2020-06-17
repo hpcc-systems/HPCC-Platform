@@ -1373,7 +1373,7 @@ size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
     }
 }
 
-bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlockSize)
+bool CSafeSocket::readBlocktms(MemoryBuffer &ret, unsigned timeoutms, unsigned maxBlockSize)
 {
     // MORE - this is still not good enough as we could get someone else's block if there are multiple input datasets
     CriticalBlock c(crit);
@@ -1383,7 +1383,7 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
         unsigned len;
         try
         {
-            sock->read(&len, sizeof (len), sizeof (len), bytesRead, timeout);
+            sock->readtms(&len, sizeof (len), sizeof (len), bytesRead, timeoutms);
         }
         catch (IJSOCK_Exception *E)
         {
@@ -1403,7 +1403,7 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
         if (len)
         {
             unsigned bytesRead;
-            sock->read(ret.reserveTruncate(len), len, len, bytesRead, timeout);
+            sock->readtms(ret.reserveTruncate(len), len, len, bytesRead, timeoutms);
         }
         return len != 0;
     }
@@ -1454,7 +1454,7 @@ void parseHttpParameterString(IProperties *p, const char *str)
     }
 }
 
-bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
+bool CSafeSocket::readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper *pHttpHelper, bool &continuationNeeded, bool &isStatus, unsigned maxBlockSize)
 {
     continuationNeeded = false;
     isStatus = false;
@@ -1465,7 +1465,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         unsigned len = 0;
         try
         {
-            sock->read(&len, sizeof (len), sizeof (len), bytesRead, timeout);
+            sock->readtms(&len, sizeof (len), sizeof (len), bytesRead, timeoutms);
             if (bytesRead==0) //graceful timeout
                 return false;
         }
@@ -1494,7 +1494,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         {
 #define MAX_HTTP_HEADERSIZE 16000 //arbitrary per line limit, most web servers are lower, but REST queries can be complex..
             char header[MAX_HTTP_HEADERSIZE + 1]; // allow room for \0
-            sock->read(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeout);
+            sock->readtms(header, 1, MAX_HTTP_HEADERSIZE, bytesRead, timeoutms);
             header[bytesRead] = 0;
             char *payload = strstr(header, "\r\n\r\n");
             if (payload)
@@ -1558,7 +1558,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
         }
 
         if (left)
-            sock->read(buf + (len - left), left, left, bytesRead, timeout);
+            sock->readtms(buf + (len - left), left, left, bytesRead, timeoutms);
 
         if (len && pHttpHelper)
         {

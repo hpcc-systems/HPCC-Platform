@@ -351,8 +351,8 @@ interface SafeSocket : extends IInterface
 {
     virtual ISocket *querySocket()  = 0;
     virtual size32_t write(const void *buf, size32_t size, bool takeOwnership=false) = 0;
-    virtual bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER) = 0;
-    virtual bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize) = 0;
+    virtual bool readBlocktms(MemoryBuffer &ret, unsigned timeoutms, unsigned maxBlockSize) = 0;
+    virtual bool readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize) = 0;
     virtual void checkSendHttpException(HttpHelper &httphelper, IException *E, const char *queryName) = 0;
     virtual void sendSoapException(IException *E, const char *queryName) = 0;
     virtual void sendJsonException(IException *E, const char *queryName) = 0;
@@ -399,8 +399,8 @@ public:
     ISocket *querySocket() { return sock; }
     virtual CriticalSection &queryCrit() { return crit; };
     size32_t write(const void *buf, size32_t size, bool takeOwnership=false);
-    bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER);
-    bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
+    bool readBlocktms(MemoryBuffer &ret, unsigned timeoutms, unsigned maxBlockSize);
+    bool readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
     void setHttpMode(const char *queryName, bool arrayMode, HttpHelper &httphelper);
     void setHttpMode(bool mode) override {httpMode = mode;}
     virtual void setHttpKeepAlive(bool val) { httpKeepAlive = val; }

@@ -349,7 +349,7 @@ public:
         {
             client->querySocket()->getPeerAddress(peer);
             DBGLOG("Reading debug command from socket...");
-            if (!client->readBlock(rawText, WAIT_FOREVER, &httpHelper, continuationNeeded, isStatus, 1024*1024))
+            if (!client->readBlocktms(rawText, WAIT_FOREVER, &httpHelper, continuationNeeded, isStatus, 1024*1024))
             {
                 if (traceLevel > 8)
                 {
