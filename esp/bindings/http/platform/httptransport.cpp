@@ -43,7 +43,7 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
                 return false;
 
     Owned<IFile> file = createIFile(strfile.str());
-    if (file && file->isFile())
+    if (file && file->isFile()==fileBool::foundYes)
     {
         if (checkModifiedTime)
         {

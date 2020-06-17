@@ -94,7 +94,7 @@ void DirectoryBuilder::rootDirectory(const char * directory, INode * node, IProp
     OwnedIFile dir = createIFile(directory);
     StringBuffer path;
     const char * tag = "directory";
-    if (dir->isDirectory() == foundYes)
+    if (dir->isDirectory() == fileBool::foundYes)
     {
         implicitWildcard = true;
         includeEmptyDirectory = true;
@@ -301,10 +301,10 @@ bool DirectoryBuilder::walkDirectory(const char * path, IPropertyTree * director
                 continue;
 
             OwnedIFile file = createIFile(curfname);
-            const char * tag = (file->isDirectory()==foundYes) ? "directory" : "file";
+            const char * tag = (file->isDirectory()==fileBool::foundYes) ? "directory" : "file";
 
             IPropertyTree * entry = NULL;
-            if (file->isDirectory()==foundYes)
+            if (file->isDirectory()==fileBool::foundYes)
             {
                 if (implicitWildcard && !recurse)
                     entry = directory->addPropTree(tag, createPTree(ipt_caseInsensitive));
@@ -711,14 +711,14 @@ void DirectoryCopier::recursiveCopy(IPropertyTree * level, const char * sourcePa
         if (onlyCopyExisting || onlyCopyMissing)
         {
             fileBool exists = targetFile->isFile();
-            if (onlyCopyExisting && (exists != foundYes))
+            if (onlyCopyExisting && (exists != fileBool::foundYes))
                 doCopy = false;
-            if (onlyCopyMissing && (exists != notFound))
+            if (onlyCopyMissing && (exists != fileBool::notFound))
                 doCopy = false;
         }
         if (doCopy && preserveIfNewer)
         {
-            if (targetFile->isFile() == foundYes)
+            if (targetFile->isFile() == fileBool::foundYes)
             {
                 CDateTime modifiedSource, modifiedTarget;
                 sourceFile->getTime(NULL, &modifiedSource, NULL);

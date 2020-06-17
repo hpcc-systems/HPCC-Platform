@@ -831,7 +831,7 @@ void SafePluginMap::loadFromList(const char * pluginsList)
             continue;
 
         Owned<IFile> file = createIFile(thisPlugin.str());
-        if (file->isDirectory() == foundYes)
+        if (file->isDirectory() == fileBool::foundYes)
             loadFromDirectory(thisPlugin);
         else
         {

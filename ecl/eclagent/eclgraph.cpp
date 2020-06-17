@@ -408,7 +408,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         Owned<IPartDescriptor> part = fdesc->getPart(0);
         RemoteFilename rfn;
         OwnedIFile file = createIFile(part->getFilename(0, rfn));
-        if (file->isFile() != foundYes)
+        if (file->isFile() != fileBool::foundYes)
             return false;
         CDateTime modified;
         file->getTime(NULL, &modified, NULL);

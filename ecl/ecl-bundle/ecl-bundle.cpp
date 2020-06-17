@@ -195,7 +195,7 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
     ForEach(*files)
     {
         IFile *thisFile = &files->query();
-        if (thisFile->isDirectory()==foundYes)
+        if (thisFile->isDirectory()==fileBool::foundYes)
             recursiveRemoveDirectory(thisFile, isDryRun);
         else
         {
@@ -383,7 +383,7 @@ public:
                 splitFilename(cleanedParam, &path, &path, &bundleName, NULL, true);
                 if (!path.length())
                     path.append(".");
-                if (bundleFile->isDirectory() && !directoryContainsBundleFile(bundleFile))
+                if (bundleFile->isDirectory()==fileBool::foundYes && !directoryContainsBundleFile(bundleFile))
                     includeOpt.appendf(" -I%s", bundle);
                 else
                     includeOpt.appendf(" -I%s", path.str());
@@ -846,7 +846,7 @@ private:
             {
                 IFile &f = versions->query();
                 const char *vname = f.queryFilename();
-                if (f.isDirectory() && vname && vname[0] != '.')
+                if (f.isDirectory()==fileBool::foundYes && vname && vname[0] != '.')
                 {
                     if (!streq(activeBundlePath, vname))
                     {
@@ -882,7 +882,7 @@ public:
         Owned<IFile> bundleDir = createIFile(bundlePath);
         if (bundleDir->exists())
         {
-            if (!bundleDir->isDirectory())
+            if (bundleDir->isDirectory()!=fileBool::foundYes)
                 throw MakeStringException(0, "Bundle path %s does not specify a directory", bundlePath.get());
             StringBuffer versionsPath(bundlePath);
             addPathSepChar(versionsPath).append(VERSION_SUBDIR);
@@ -892,7 +892,7 @@ public:
             {
                 IFile &f = versions->query();
                 const char *name = f.queryFilename();
-                if (f.isDirectory() && name && name[0] != '.')
+                if (f.isDirectory()==fileBool::foundYes && name && name[0] != '.')
                 {
                     if (filter)
                     {
@@ -1427,7 +1427,7 @@ public:
             versionPath.append(PATHSEPCHAR).append(bundle->queryCleanVersion());
             if (!optDryRun && !recursiveCreateDirectory(versionPath))
                 throw MakeStringException(0, "Cannot create bundle version directory %s", versionPath.str());
-            if (bundleFile->isDirectory() == foundYes) // could also be an archive, acting as a directory
+            if (bundleFile->isDirectory() == fileBool::foundYes) // could also be an archive, acting as a directory
             {
                 if (directoryContainsBundleFile(bundleFile))
                 {
@@ -1495,7 +1495,7 @@ private:
             StringBuffer destname(destdir);
             destname.append(PATHSEPCHAR).append(tail);
             Owned<IFile> targetFile = createIFile(destname);
-            if (thisFile->isDirectory()==foundYes)
+            if (thisFile->isDirectory()==fileBool::foundYes)
             {
                 if (strcmp(tail, ".git")==0)
                     continue;

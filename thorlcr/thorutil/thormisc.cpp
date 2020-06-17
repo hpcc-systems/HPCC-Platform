@@ -676,7 +676,7 @@ public:
             ForEach (*iter)
             {
                 IFile &file = iter->query();
-                if (file.isFile())
+                if (file.isFile()==fileBool::foundYes)
                 {
                     if (log)
                         LOG(MCdebugInfo, thorJob, "Deleting %s", file.queryFilename());
@@ -1133,7 +1133,7 @@ void CFifoFileCache::init(const char *cacheDir, unsigned _limit, const char *pat
     ForEach (*iter)
     {
         IFile &file = iter->query();
-        if (file.isFile())
+        if (file.isFile()==fileBool::foundYes)
             deleteFile(file);
     }
 }

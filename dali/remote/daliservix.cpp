@@ -69,7 +69,7 @@ static const char *VERSTRINGLE= "DS V1.6 - Solaris X86";
 typedef unsigned char byte;
 typedef long long __int64;
 
-enum fileBool { foundNo = false, foundYes = true, notFound = 2 };
+enum class fileBool { foundNo = false, foundYes = true, notFound = 2 };
 
 const int endiancheck = 1;
 #define is_bigendian() ((*(const char*)&endiancheck) == 0)
@@ -1379,9 +1379,9 @@ public:
         struct stat s;
         unsigned ret;
         if (stat(filename, &s) != 0)
-            ret = (unsigned)notFound;
+            ret = (unsigned)fileBool::notFound;
         else
-            ret = (unsigned)(((s.st_mode&S_IFMT)==S_IFREG) ? foundYes : foundNo);
+            ret = (unsigned)(((s.st_mode&S_IFMT)==S_IFREG) ? fileBool::foundYes : fileBool::foundNo);
         reply.append((unsigned)RFEnoerror).append(ret);
         free(filename);
         return true;
@@ -1396,9 +1396,9 @@ public:
         struct stat s;
         unsigned ret;
         if (stat(filename, &s) != 0)
-            ret = (unsigned)notFound;
+            ret = (unsigned)fileBool::notFound;
         else
-            ret = (unsigned)(((s.st_mode&S_IFMT)==S_IFDIR) ? foundYes : foundNo);
+            ret = (unsigned)(((s.st_mode&S_IFMT)==S_IFDIR) ? fileBool::foundYes : fileBool::foundNo);
         reply.append((unsigned)RFEnoerror).append(ret);
         free(filename);
         return true;
@@ -1413,9 +1413,9 @@ public:
         struct stat s;
         unsigned ret;
         if (stat(filename, &s) != 0)
-            ret = (unsigned)notFound;
+            ret = (unsigned)fileBool::notFound;
         else
-            ret = (s.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? foundNo : foundYes;
+            ret = (s.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? fileBool::foundNo : fileBool::foundYes;
         // I don't think this is necessarily correct but consistant with linux implementation
         reply.append((unsigned)RFEnoerror).append(ret);
         free(filename);

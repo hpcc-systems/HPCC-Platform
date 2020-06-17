@@ -142,7 +142,6 @@ public:
 
 protected:
     Linked<IFileIO>     io;
-    offset_t            curOffset;
     offset_t            headerSize;
     offset_t            maxLength;
 };

@@ -392,7 +392,7 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
     if (tail && tail[0]!='.')
     {
         Owned<CEclSource> newSource;
-        if (file.isFile() == foundYes)
+        if (file.isFile() == fileBool::foundYes)
         {
             EclSourceType type = getEclSourceType(tail);
             if (type && ((type != ESTplugin) || allowPlugins))
@@ -404,7 +404,7 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
                     newSource.setown(newFile.getClear());
             }
         }
-        else if (file.isDirectory() == foundYes)
+        else if (file.isDirectory() == fileBool::foundYes)
         {
             newSource.setown(new FileSystemDirectory(deriveEclName(tail), &file));
         }
@@ -497,12 +497,12 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
         {
             addPathSepChar(absolutePath).append(dirTail);
             Owned<IFile> file = createIFile(absolutePath);
-            if (file->isDirectory() == foundYes)
+            if (file->isDirectory() == fileBool::foundYes)
             {
                 Owned<IDirectoryIterator> dir = file->directoryFiles(NULL, false, true);
                 root.expandDirectoryTree(dir, allowPlugins);
             }
-            else if (file->isFile() == foundYes)
+            else if (file->isFile() == fileBool::foundYes)
             {
                 root.addFile(*file, allowPlugins);
             }

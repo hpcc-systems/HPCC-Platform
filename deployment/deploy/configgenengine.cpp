@@ -390,7 +390,7 @@ void CConfigGenEngine::createFakePlugins(StringBuffer& destFilePath) const
     }
 
     Owned<IFile> pTargetFile = createIFile(destFilePath.str());
-    if (pTargetFile->exists() && pTargetFile->isReadOnly())
+    if (pTargetFile->exists() && pTargetFile->isReadOnly()==fileBool::foundYes)
         pTargetFile->setReadOnly(false);
     Owned<IFileIO> pTargetFileIO = pTargetFile->open(IFOcreate);
     pTargetFileIO->write( 0, tmpoutbuf.length(), tmpoutbuf.str());

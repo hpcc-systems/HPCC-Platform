@@ -3970,7 +3970,7 @@ public:
             {
                 byte b=1;
                 reply.append(b);
-                bool isDir = foundYes == iFile->isDirectory();
+                bool isDir = fileBool::foundYes == iFile->isDirectory();
                 reply.append(isDir);
                 reply.append(isDir ? 0 : iFile->size());
                 CDateTime dt;
@@ -5587,7 +5587,7 @@ protected:
         subDirIFile->createDirectory();
 
         // check isDirectory result
-        CPPUNIT_ASSERT(subDirIFile->isDirectory());
+        CPPUNIT_ASSERT(subDirIFile->isDirectory()==fileBool::foundYes);
 
         // move previous created and renamed file into new sub-directory
         // ensure not present before move
@@ -5625,12 +5625,12 @@ protected:
         CPPUNIT_ASSERT(1 == count);
 
         // check isFile result
-        CPPUNIT_ASSERT(iFile2->isFile());
+        CPPUNIT_ASSERT(iFile2->isFile()==fileBool::foundYes);
 
         // validate isReadOnly before after setting
-        CPPUNIT_ASSERT(!iFile2->isReadOnly());
+        CPPUNIT_ASSERT(iFile2->isReadOnly()==fileBool::foundNo);
         iFile2->setReadOnly(true);
-        CPPUNIT_ASSERT(iFile2->isReadOnly());
+        CPPUNIT_ASSERT(iFile2->isReadOnly()==fileBool::foundYes);
 
         // get/set Time and validate result
         CDateTime createTime, modifiedTime, accessedTime;

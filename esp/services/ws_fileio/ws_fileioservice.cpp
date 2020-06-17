@@ -159,14 +159,14 @@ bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req,
     Owned<IFile> file = createIFile(rfn);
 
     fileBool isDir = file->isDirectory();
-    if (isDir == foundYes)
+    if (isDir == fileBool::foundYes)
     {
         result.appendf("Failure: %s is a directory.", destRelativePath);
         resp.setResult(result.str());
         return true;
     }
 
-    if (!req.getOverwrite() && (isDir != notFound))
+    if (!req.getOverwrite() && (isDir != fileBool::notFound))
     {
         result.appendf("Failure: %s exists.", destRelativePath);
         resp.setResult(result.str());
@@ -233,7 +233,7 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
     rfn.setPath(ep, destAbsPath);
     Owned<IFile> file = createIFile(rfn);
     fileBool isFile = file->isFile();
-    if (isFile != foundYes)
+    if (isFile != fileBool::foundYes)
     {
         result.appendf("%s does not exist.", destRelativePath);
         resp.setResult(result.str());
@@ -328,7 +328,7 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
     rfn.setPath(ep, destAbsPath);
     Owned<IFile> file = createIFile(rfn);
     fileBool isFile = file->isFile();
-    if (isFile != foundYes)
+    if (isFile != fileBool::foundYes)
     {
         result.appendf("%s does not exist.", destRelativePath);
         resp.setResult(result.str());

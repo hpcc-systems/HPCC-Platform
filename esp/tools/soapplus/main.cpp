@@ -161,7 +161,7 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
         out.setown(createIFile(outdir));
         if(out->exists())
         {
-            if(!out->isDirectory())
+            if(out->isDirectory()==fileBool::foundNo)
                 throw MakeStringException(0, "Output destination %s already exists, and it's not a directory", outdir);
         }
         outpath.append(outdir);
@@ -186,7 +186,7 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
         out.setown( createIFile(outpath1.str()) );
         if(out->exists())
         {
-            if(!out->isDirectory())
+            if(out->isDirectory()==fileBool::foundNo)
                 throw MakeStringException(0, "Output destination %s already exists, and it's not a directory", outpath1.str());
         }
         else
@@ -200,7 +200,7 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
             out.setown( createIFile(outpath2.str()) );
             if(out->exists())
             {
-                if(!out->isDirectory())
+                if(out->isDirectory()==fileBool::foundNo)
                     throw MakeStringException(0, "Output destination %s already exists, and it's not a directory", outpath2.str());
             }
             else
@@ -213,7 +213,7 @@ void createDirectories(const char* outdir, const char* url, bool bClient, bool b
             out.setown( createIFile(outpath3.str()) );
             if(out->exists())
             {
-                if(!out->isDirectory())
+                if(out->isDirectory()==fileBool::foundNo)
                     throw MakeStringException(0, "Output destination %s already exists, and it's not a directory", outpath3.str());
             }
             else
@@ -301,7 +301,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
             }
         }
         
-        if(infile.get() != NULL && infile->isDirectory())
+        if (infile.get() != NULL && infile->isDirectory()==fileBool::foundYes)
         {
             Owned<IDirectoryIterator> di = infile->directoryFiles();
             if(di.get())
@@ -309,7 +309,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                 ForEach(*di)
                 {
                     IFile &file = di->query();
-                    if (file.isFile() && file.size() > 0)
+                    if (file.isFile()==fileBool::foundYes && file.size() > 0)
                     {
                         const char* fname = file.queryFilename();
                         const char* slash = strrchr(fname, PATHSEPCHAR);
@@ -318,7 +318,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
                         StringBuffer sfname;
                         if(server_infile.get())
                         {
-                            if(server_infile->isDirectory())
+                            if (server_infile->isDirectory()==fileBool::foundYes)
                             {
                                 sfname.append(server_in_fname);
                                 if(sfname.charAt(sfname.length() - 1) != PATHSEPCHAR)
@@ -353,7 +353,7 @@ int processRequest(IProperties* globals, SoapPlusAction action, const char* url,
         }   
         else
         {
-            if(server_infile.get() && server_infile->isDirectory())
+            if (server_infile.get() && server_infile->isDirectory()==fileBool::foundYes)
             {
                 if(http_tracelevel > 0)
                     fprintf(logfile, "When request input is not directory, the server input must be a file\n");

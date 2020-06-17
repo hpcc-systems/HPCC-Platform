@@ -545,7 +545,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           sbName.clear().append(req.getReqInfo().getUserId());
           context.getPeer(sbUserIp);
 
-          if (m_pFile.get() && m_pFile->isReadOnly())
+          if (m_pFile.get() && m_pFile->isReadOnly()==fileBool::foundYes)
           {
             xml.appendf("Write access to the Environment cannot be provided as %s is Read Only.", m_envFile.str());
             resp.setXmlArgs(xml.str());
@@ -3896,7 +3896,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
       return false;
     }
 
-    if(inFiles.get() != NULL && inFiles->isDirectory())
+    if(inFiles.get() != NULL && inFiles->isDirectory()==fileBool::foundYes)
     {
       Owned<IDirectoryIterator> di = inFiles->directoryFiles(NULL, 0, true);
       bool bCompFound = false;
@@ -3908,7 +3908,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
         {
           IFile &file = di->query();
 
-          if (!file.isFile())
+          if (file.isFile()!=fileBool::foundYes)
           {
             dirName.clear();
             di->getName(dirName);
@@ -6702,7 +6702,7 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
 
     if (pDir->exists())
     {
-      if (pDir->isDirectory())
+      if (pDir->isDirectory()==fileBool::foundYes)
       {
         Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
         ForEach(*it)

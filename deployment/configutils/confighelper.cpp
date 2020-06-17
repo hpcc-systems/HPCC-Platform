@@ -184,7 +184,7 @@ void CConfigHelper::appendBuildSetFromPlugins()
 
     ForEach(*pluginFiles)
     {
-        if (pluginFiles->query().isDirectory() == foundYes)
+        if (pluginFiles->query().isDirectory() == fileBool::foundYes)
         {
             StringBuffer strPluginBuildSetPath;
 
@@ -323,7 +323,7 @@ void CConfigHelper::addPluginsToConfigGenCompList(IPropertyTree *pCGenComplist, 
 
     ForEach(*pluginFiles)
     {
-        if (pluginFiles->query().isDirectory() == foundYes)
+        if (pluginFiles->query().isDirectory() == fileBool::foundYes)
         {
             StringBuffer strPluginCGenCompListPath;
 
@@ -423,7 +423,7 @@ void CConfigHelper::addPluginsToGenEnvRules(IProperties *pGenEnvRulesProps) cons
 
     ForEach(*pluginFiles)
     {
-        if (pluginFiles->query().isDirectory() == foundYes)
+        if (pluginFiles->query().isDirectory() == fileBool::foundYes)
         {
             StringBuffer strPluginGenEnvRulesPath;
 

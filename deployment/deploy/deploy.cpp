@@ -136,7 +136,7 @@ public:
         Owned<IFile> pDir = createIFile(path);
         if (pDir->exists())
         {
-            if (pDir->isDirectory())
+            if (pDir->isDirectory()==fileBool::foundYes)
             {
                 Owned<IDirectoryIterator> it = pDir->directoryFiles(NULL, false, true);
                 ForEach(*it)

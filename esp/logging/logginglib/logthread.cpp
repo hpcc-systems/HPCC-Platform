@@ -562,7 +562,7 @@ IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
 void CLogThread::checkAndCreateFile(const char* fileName)
 {
     Owned<IFile> file = createIFile(fileName);
-    if(file->isFile() != notFound)
+    if(file->isFile() != fileBool::notFound)
         return;
 
     StringBuffer dir;
@@ -817,7 +817,7 @@ bool CLogRequestReader::parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUI
 
     GUID.append(ptr - begin, begin);
 
-    if ((++ptr == end))
+    if (++ptr == end)
         return false;
 
     logLine.append(end - ptr, ptr);

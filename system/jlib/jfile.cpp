@@ -503,30 +503,30 @@ fileBool CFile::isDirectory()
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
-        return notFound;
-    return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? foundYes : foundNo;
+        return fileBool::notFound;
+    return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
     if (stat(filename, &info) != 0)
-        return notFound;
-    return S_ISDIR(info.st_mode) ? foundYes : foundNo;
+        return fileBool::notFound;
+    return S_ISDIR(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
 }
 
 fileBool CFile::isFile()
 {
     if (stdIoHandle(filename)>=0)
-        return foundYes;
+        return fileBool::foundYes;
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
-        return notFound;
-    return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? foundNo : foundYes;
+        return fileBool::notFound;
+    return ( attr & FILE_ATTRIBUTE_DIRECTORY) ? fileBool::foundNo : fileBool::foundYes;
 #else
     struct stat info;
     if (stat(filename, &info) != 0)
-        return notFound;
-    return S_ISREG(info.st_mode) ? foundYes : foundNo;
+        return fileBool::notFound;
+    return S_ISREG(info.st_mode) ? fileBool::foundYes : fileBool::foundNo;
 #endif
 }
 
@@ -535,14 +535,14 @@ fileBool CFile::isReadOnly()
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
-        return notFound;
-    return ( attr & FILE_ATTRIBUTE_READONLY) ? foundYes : foundNo;
+        return fileBool::notFound;
+    return ( attr & FILE_ATTRIBUTE_READONLY) ? fileBool::foundYes : fileBool::foundNo;
 #else
     struct stat info;
     if (stat(filename, &info) != 0)
-        return notFound;
+        return fileBool::notFound;
     //MORE: I think this is correct, but someone with better unix knowledge should check!
-    return (info.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? foundNo : foundYes;
+    return (info.st_mode & (S_IWUSR|S_IWGRP|S_IWOTH)) ? fileBool::foundNo : fileBool::foundYes;
 #endif
 }
 
@@ -707,7 +707,7 @@ bool CFile::remove()
 #ifdef _WIN32
     unsigned retry = 0;
     for (;;) {
-        if (isDirectory()==foundYes) {
+        if (isDirectory()==fileBool::foundYes) {
             if (RemoveDirectory(filename) != 0)
                 return true;
         }
@@ -727,7 +727,7 @@ bool CFile::remove()
     }
     return false;
 #else
-    if (isDirectory()==foundYes) {
+    if (isDirectory()==fileBool::foundYes) {
         if (rmdir(filename) == 0)
             return true;
     }
@@ -1339,7 +1339,7 @@ public:
     {
         connect();
         fileBool ok = ifile->isDirectory();
-        if (ok == notFound && !connected && connect())
+        if (ok == fileBool::notFound && !connected && connect())
             ok = ifile->isDirectory();
         return ok;
     }
@@ -1347,7 +1347,7 @@ public:
     {
         connect();
         fileBool ok = ifile->isFile();
-        if (ok == notFound && !connected && connect())
+        if (ok == fileBool::notFound && !connected && connect())
             ok = ifile->isFile();
         return ok;
     }
@@ -1355,7 +1355,7 @@ public:
     {
         connect();
         fileBool ok = ifile->isReadOnly();
-        if (ok == notFound && !connected && connect())
+        if (ok == fileBool::notFound && !connected && connect())
             ok = ifile->isFile();
         return ok;
     }
@@ -2928,9 +2928,9 @@ void renameFile(const char *target, const char *source, bool overwritetarget)
     OwnedIFile src = createIFile(source);
     if (!src)
         throw MakeStringException(-1, "renameFile: source '%s' not found", source);
-    if (!src->isFile())
+    if (src->isFile()!=fileBool::foundYes)
         throw MakeStringException(-1, "renameFile: source '%s' is not a valid file", source);
-    if (src->isReadOnly())
+    if (src->isReadOnly()!=fileBool::foundNo)
         throw MakeStringException(-1, "renameFile: source '%s' is readonly", source);
 
     OwnedIFile tgt = createIFile(target);
@@ -3562,7 +3562,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
     if (!path || !*path) // cur directory so no point in checking for remote etc.
         return new CWindowsDirectoryIterator(path, mask,sub,includedirs);
     OwnedIFile iFile = createIFile(path);
-    if (!iFile||(iFile->isDirectory()!=foundYes))
+    if (!iFile||(iFile->isDirectory()!=fileBool::foundYes))
         return new CNullDirectoryIterator;
     return iFile->directoryFiles(mask, sub, includedirs);
 }
@@ -3570,7 +3570,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
 IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool includedirs)
 {
     if ((mask&&!*mask)||    // only NULL is wild
-        (isDirectory()!=foundYes))
+        (isDirectory()!=fileBool::foundYes))
         return new CNullDirectoryIterator;
     return new CWindowsDirectoryIterator(filename, mask,sub,includedirs);
 }
@@ -3751,7 +3751,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
     if (!path || !*path) // no point in checking for remote etc.
         return new CLinuxDirectoryIterator(path, mask,sub,includedirs);
     OwnedIFile iFile = createIFile(path);
-    if (!iFile||(iFile->isDirectory()!=foundYes))
+    if (!iFile||(iFile->isDirectory()!=fileBool::foundYes))
         return new CNullDirectoryIterator;
     return iFile->directoryFiles(mask, sub, includedirs);
 }
@@ -3759,7 +3759,7 @@ IDirectoryIterator * createDirectoryIterator(const char * path, const char * mas
 IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool includedirs)
 {
     if ((mask&&!*mask)||    // only NULL is wild
-        (isDirectory()!=foundYes))
+        (isDirectory()!=fileBool::foundYes))
         return new CNullDirectoryIterator;
     return new CLinuxDirectoryIterator(filename, mask,sub,includedirs);
 }
@@ -4052,7 +4052,7 @@ void recursiveRemoveDirectory(IFile *dir)
     ForEach(*files)
     {
         IFile *thisFile = &files->query();
-        if (thisFile->isDirectory()==foundYes)
+        if (thisFile->isDirectory()==fileBool::foundYes)
             recursiveRemoveDirectory(thisFile);
         else
         {
@@ -4066,7 +4066,7 @@ void recursiveRemoveDirectory(IFile *dir)
 void recursiveRemoveDirectory(const char *dir)
 {
     Owned<IFile> f = createIFile(dir);
-    if (f->isDirectory())
+    if (f->isDirectory()==fileBool::foundYes)
         recursiveRemoveDirectory(f);
 }
 
@@ -6573,7 +6573,7 @@ extern jlib_decl bool containsFileWildcard(const char * path)
 extern jlib_decl bool isDirectory(const char * path)
 {
     Owned<IFile> file = createIFile(path);
-    return file->isDirectory() == foundYes;
+    return file->isDirectory()==fileBool::foundYes;
 }
 
 // IFileIOCache
@@ -6793,7 +6793,7 @@ extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
 #ifndef _CONTAINERIZED
     if (sentinelFile)
     {
-        if(sentinelFile->exists() && !sentinelFile->isDirectory())
+        if(sentinelFile->exists() && sentinelFile->isDirectory()!=fileBool::foundYes)
         {
             DBGLOG("Removing sentinel file %s", sentinelFile->queryFilename());
             try
@@ -6924,7 +6924,7 @@ public:
 
 IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode, bool rev, const char *mask, bool sub, bool includedirs)
 {
-    if (!directory || !directory->isDirectory())
+    if (!directory || directory->isDirectory()!=fileBool::foundYes)
         throw MakeStringException(-1, "Invalid IFile input in getSortedDirectoryIterator()");
 
     Owned<IDirectoryIterator> files = directory->directoryFiles(mask, sub, includedirs);

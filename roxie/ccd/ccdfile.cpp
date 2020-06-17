@@ -759,7 +759,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             ForEach(*iter)
             {
                 OwnedIFile thisFile = createIFile(iter->query().queryFilename());
-                if (thisFile->isFile() == foundYes)
+                if (thisFile->isFile() == fileBool::foundYes)
                     thisFile->remove();
             }
         }
@@ -1329,7 +1329,7 @@ public:
     virtual void flushUnusedDirectories(const char *origBaseDir, const char *directory, StringBuffer &xml)
     {
         Owned<IFile> dirf = createIFile(directory);
-        if (dirf->exists() && dirf->isDirectory())
+        if (dirf->exists() && dirf->isDirectory()==fileBool::foundYes)
         {
             try
             {

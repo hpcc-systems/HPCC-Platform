@@ -35,7 +35,7 @@ offset_t getDirSize(const char* path, bool subdirs = true)
 
   if (pFile->exists())
   {
-    if (pFile->isDirectory() == foundYes)
+    if (pFile->isDirectory() == fileBool::foundYes)
     {
       Owned<IDirectoryIterator> it = pFile->directoryFiles(NULL, false, true);
 
@@ -363,7 +363,7 @@ public:
            {
              transform.setResultTarget(target);
              Owned<IFile> pTargetFile = createIFile(target);
-             if (pTargetFile->exists() && pTargetFile->isReadOnly())
+             if (pTargetFile->exists() && pTargetFile->isReadOnly()==fileBool::foundYes)
                pTargetFile->setReadOnly(false);
              pTargetFile.clear();
 
@@ -400,7 +400,7 @@ public:
               if (!flag)
                 pTargetFile.setown(createIFile(target));
              
-              if (pTargetFile->exists() && pTargetFile->isReadOnly())
+              if (pTargetFile->exists() && pTargetFile->isReadOnly()==fileBool::foundYes)
                 pTargetFile->setReadOnly(false);
               Owned<IFileIO> pTargetFileIO = pTargetFile->openShared(IFOcreate, IFSHfull);
               pTargetFileIO->write( 0, tmpoutbuf.length(), tmpoutbuf.str());
@@ -713,7 +713,7 @@ public:
        //file's attributes to normal (reset read only flag, if set) and retry
        if (m_machineOS != MachineOsLinux && !m_useSsh && m_sshUser.isEmpty() && m_sshKeyFile.isEmpty())
        {
-         if (!bCopyRC && (pDstFile.get() != NULL) && pDstFile->exists() && pDstFile->isReadOnly()/*&& m_machineOS != MachineOsLinux*/)
+         if (!bCopyRC && (pDstFile.get() != NULL) && pDstFile->exists() && pDstFile->isReadOnly()==fileBool::foundYes/*&& m_machineOS != MachineOsLinux*/)
          {
            try
            {
@@ -1199,7 +1199,7 @@ public:
                         Owned<IFile> pFile = createIFile(path);
                         if (pFile->exists())
                         {
-                            if (!pFile->isDirectory())
+                            if (pFile->isDirectory()!=fileBool::foundYes)
                                 throw MakeStringException(-1, "%s exists and is not a directory!", path);
                         }
                         else
@@ -1270,7 +1270,7 @@ public:
             if (m_dummy) 
                break;
 
-            if (src.isDirectory())
+            if (src.isDirectory()==fileBool::foundYes)
             {
                if (!dest.exists() && !dest.createDirectory())
                   throw MakeStringException(-1, "Failed to create directory %s", dest.queryFilename());
