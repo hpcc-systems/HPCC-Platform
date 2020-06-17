@@ -16,11 +16,6 @@
 ############################################################################## */
 import Std;
 
-output('PKIEncryption Tests enumerating supported algorithms');
-
-output(Std.Crypto.SupportedPublicKeyAlgorithms());
-
-
 STRING pubKey := '-----BEGIN PUBLIC KEY-----' + '\n' +
 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr64RncTp5pV0KMnWRAof' + '\n' +
 'od+3AUS/IDngT39j3Iovv9aI2N8g4W5ipqhKftRESmzQ6I/TiUQcmi42soUXmCeE' + '\n' +
@@ -60,11 +55,13 @@ STRING privKey := '-----BEGIN RSA PRIVATE KEY-----' + '\n' +
 'iIhG5ueb6xoj/N0LuXa8loUT5aChKWxRHEYdegqU48f+qxUcJj9R' + '\n' +
 '-----END RSA PRIVATE KEY-----';
 
+output('PKIEncryption Tests enumerating supported algorithms');
+output(Std.Crypto.SupportedPublicKeyAlgorithms());
 
-encModule := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
+encModule := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, 'Passphrase');
 
 //Digital Signature tests
-
+output('Testing PKE PublicKeyEncryptionFromBuffer Digital Signatures');
 DATA signature := encModule.Sign((DATA)'The quick brown fox jumps over the lazy dog');
 output( TRUE = encModule.VerifySignature(signature, (DATA)'The quick brown fox jumps over the lazy dog'));
 output(FALSE = encModule.VerifySignature(signature, (DATA)'Your Name Here'));
@@ -72,36 +69,45 @@ output(FALSE = encModule.VerifySignature(signature, (DATA)'Your Name Here'));
 DATA bogus := (DATA)'Not a valid signaturexxx';
 output(FALSE = encModule.VerifySignature(bogus, (DATA)'Not a valid signaturexxx'));
 
-
 DATA sig256Ex := encModule.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
 output(TRUE = encModule.VerifySignature(sig256Ex, (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,'));
 
-//Encrypt/Decrypt tests
 
+//Encrypt/Decrypt tests
+output('Testing PKE PublicKeyEncryptionFromBuffer Encrypt/Decrypt');
 DATA encrypted := encModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)encModule.Decrypt(encrypted) );
-output( (STRING)encModule.Decrypt(encrypted) );
-output( (STRING)encModule.Decrypt(encrypted) );
-output( (STRING)encModule.Decrypt(encrypted) );
-output( (STRING)encModule.Decrypt(encrypted) );
+
+DATA sigBuff := encModule.Sign((DATA)'The quick brown fox jumps over the lazy dog');
+output(encModule.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
+
+DATA pkiDat := encModule.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)encModule.Decrypt(pkiDat) );
 
 
-encModuleBuff := Std.Crypto.PublicKeyEncryptionFromBuffer('RSA', pubKey, privKey, '');
 
-DATA sigBuff := encModuleBuff.Sign((DATA)'The quick brown fox jumps over the lazy dog');
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
-output(encModuleBuff.VerifySignature(sigBuff, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
+PKEncMod := Std.Crypto.PKEncryptionFromBuffer('RSA', pubKey, privKey, (DATA)'Passphrase');
 
-DATA pkiDat := encModuleBuff.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
-output( (STRING)encModuleBuff.Decrypt(pkiDat) );
+//Digital Signature tests
+output('Testing PKE PKEncryptionFromBuffer Digital Signatures');
+DATA signature2 := PKEncMod.Sign((DATA)'The quick brown fox jumps over the lazy dog');
+output( TRUE = PKEncMod.VerifySignature(signature2, (DATA)'The quick brown fox jumps over the lazy dog'));
+output(FALSE = PKEncMod.VerifySignature(signature2, (DATA)'Your Name Here'));
+
+DATA bogus2 := (DATA)'Not a valid signaturexxx';
+output(FALSE = PKEncMod.VerifySignature(bogus2, (DATA)'Not a valid signaturexxx'));
+
+DATA sig256Ex2 := PKEncMod.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+output(TRUE = PKEncMod.VerifySignature(sig256Ex2, (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,'));
 
 
+//Encrypt/Decrypt tests
+output('Testing PKE PKEncryptionFromBuffer Encrypt/Decrypt');
+DATA encrypted2 := PKEncMod.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)PKEncMod.Decrypt(encrypted2) );
+
+DATA sigBuff2 := PKEncMod.Sign((DATA)'The quick brown fox jumps over the lazy dog');
+output(PKEncMod.VerifySignature(sigBuff2, (DATA)'The quick brown fox jumps over the lazy dog'));//TRUE
+
+DATA pkiDat2 := PKEncMod.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)PKEncMod.Decrypt(pkiDat2) );

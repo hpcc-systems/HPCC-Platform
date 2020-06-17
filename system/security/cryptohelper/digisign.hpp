@@ -49,9 +49,11 @@ jlib_decl IDigitalSignatureManager * queryDigitalSignatureManagerInstanceFromEnv
 
 //Create using the given key files
 jlib_decl IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char *pubKeyFileName, const char *privKeyFileName, const char *passPhrase);
+jlib_decl IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromFiles(const char *pubKeyFileName, const char *privKeyFileName, size32_t lenPassphrase, const void *passPhrase);
 
 //Create using the given PEM formatted keys
 jlib_decl IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const char *pubKeyString, const char *privKeyString, const char *passPhrase);
+jlib_decl IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(const char *pubKeyString, const char *privKeyString, size32_t lenPassphrase, const void *passPhrase);
 
 //Create using preloaded keys.
 jlib_decl IDigitalSignatureManager * createDigitalSignatureManagerInstanceFromKeys(CLoadedKey *pubKey, CLoadedKey *privKey);

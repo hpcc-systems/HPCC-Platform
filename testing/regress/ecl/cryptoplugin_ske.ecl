@@ -18,7 +18,7 @@ import Std;
 
 output(Std.Crypto.SupportedSymmetricCipherAlgorithms());
 
-output('aes-256-cbc tests');
+output('Testing SymmetricEncryption aes-256-cbc');
 SymmModule256 := Std.Crypto.SymmetricEncryption( 'aes-256-cbc', '01234567890123456789012345678901' );
 DATA dat256 := SymmModule256.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)SymmModule256.Decrypt(dat256) );
@@ -26,30 +26,31 @@ output( (STRING)SymmModule256.Decrypt(dat256) );
 DATA dat256Ex := SymmModule256.Encrypt( (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
 output( (STRING)SymmModule256.Decrypt(dat256Ex) );
 
-output('aes-192-cbc tests');
+output('Testing SymmetricEncryption aes-192-cbc');
 SymmModule192 := Std.Crypto.SymmetricEncryption( 'aes-192-cbc', '012345678901234567890123' );
 DATA dat192 := SymmModule192.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)SymmModule192.Decrypt(dat192) );
 
-output('aes-128-cbc tests');
+output('Testing SymmetricEncryption aes-128-cbc');
 SymmModule128 := Std.Crypto.SymmetricEncryption( 'aes-128-cbc', '0123456789012345' );
 DATA dat128 := SymmModule128.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)SymmModule128.Decrypt(dat128) );
 
-//Try again on previously instantiated modules
 
-output('aes-xxx-cbc combined tests');
-DATA dat256ExEx := SymmModule256.Encrypt( (DATA)'256The quick brown fox jumps over the lazy dog');
-output ( (STRING)SymmModule256.Decrypt(dat256ExEx) );
-output ( (STRING)SymmModule256.Decrypt(dat256ExEx) );
-output ( (STRING)SymmModule256.Decrypt(dat256ExEx) );
+output('Testing SymmEncryption aes-256-cbc');
+SymmModule256p := Std.Crypto.SymmEncryption( 'aes-256-cbc', (DATA)'01234567890123456789012345678901' );
+DATA dat256p := SymmModule256p.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)SymmModule256p.Decrypt(dat256p) );
 
-DATA dat192Ex := SymmModule192.Encrypt( (DATA)'192The quick brown fox jumps over the lazy dog');
-output ( (STRING)SymmModule192.Decrypt(dat192Ex) );
-output ( (STRING)SymmModule192.Decrypt(dat192Ex) );
-output ( (STRING)SymmModule192.Decrypt(dat192Ex) );
+DATA dat256Exp := SymmModule256p.Encrypt( (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+output( (STRING)SymmModule256p.Decrypt(dat256Exp) );
 
-DATA dat128Ex := SymmModule128.Encrypt( (DATA)'128The quick brown fox jumps over the lazy dog');
-output( (STRING)SymmModule128.Decrypt(dat128Ex) );
-output( (STRING)SymmModule128.Decrypt(dat128Ex) );
-output( (STRING)SymmModule128.Decrypt(dat128Ex) );
+output('Testing SymmEncryption aes-192-cbc');
+SymmModule192p := Std.Crypto.SymmEncryption( 'aes-192-cbc', (DATA)'012345678901234567890123' );
+DATA dat192p := SymmModule192p.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)SymmModule192p.Decrypt(dat192p) );
+
+output('Testing SymmEncryption aes-128-cbc');
+SymmModule128p := Std.Crypto.SymmEncryption( 'aes-128-cbc', (DATA)'0123456789012345' );
+DATA dat128p := SymmModule128p.Encrypt( (DATA)'The quick brown fox jumps over the lazy dog');
+output( (STRING)SymmModule128p.Decrypt(dat128p) );

@@ -193,12 +193,12 @@ void verifySymmetricAlgorithm(const char * algorithm, size32_t len)
          throw makeStringExceptionV(-1, "Unsupported symmetric algorithm (%s) specified", algorithm);
 }
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricEncrypt(size32_t & __lenResult, void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clSymmEncrypt(size32_t & __lenResult, void * & __result,
                                                     const char * algorithm,
-                                                    const char * key,
+                                                    size32_t lenKey, const void * key,
                                                     size32_t lenInputdata,const void * inputdata)
 {
-    verifySymmetricAlgorithm(algorithm, strlen(key) );
+    verifySymmetricAlgorithm(algorithm, lenKey );
 
     //Create a unique Initialization Vector
     unsigned char iv[EVP_MAX_IV_LENGTH];
@@ -206,19 +206,19 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricEncrypt(size32_t & __lenResult, voi
 
     //temporary buffer for result
     MemoryBuffer out;
-    aesEncrypt(out, lenInputdata, inputdata, strlen(key), key, (const char *)iv);
+    aesEncrypt(out, lenInputdata, inputdata, lenKey, (const char *)key, (const char *)iv);
 
     //build result DATA buffer in the form:
     // (size32_t)EVP_MAX_IV_LENGTH, IV, (size32_t)LenPlainText excluding NULL, (size32_t)LenCipher, Cipher
     symmSerialize(__result, __lenResult, (const char *)iv, sizeof(iv), lenInputdata, out.length(), (const void *)out.bufferBase());
 }
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricDecrypt(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clSymmDecrypt(size32_t & __lenResult,void * & __result,
                                                 const char * algorithm,
-                                                const char * key,
+                                                size32_t lenKey,const void * key,
                                                 size32_t lenEncrypteddata,const void * encrypteddata)
 {
-    verifySymmetricAlgorithm(algorithm, strlen(key));
+    verifySymmetricAlgorithm(algorithm, lenKey);
 
     //Decompose DATA buffer
 
@@ -231,10 +231,25 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricDecrypt(size32_t & __lenResult,void
     __lenResult = lenPlainText;
 
     MemoryBuffer decrypted;
-    size32_t len = aesDecrypt(decrypted, sbCipher.length(), sbCipher.str(), strlen(key), key, sbIV.str());
+    size32_t len = aesDecrypt(decrypted, sbCipher.length(), sbCipher.str(), lenKey, (const char *)key, sbIV.str());
     memcpy(__result, decrypted.toByteArray(), __lenResult);
 }
 
+CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricEncrypt(size32_t & __lenResult, void * & __result,
+                                                    const char * algorithm,
+                                                    const char * key,
+                                                    size32_t lenInputdata,const void * inputdata)
+{
+    return clSymmEncrypt(__lenResult, __result, algorithm, strlen(key), (const void *)key, lenInputdata, inputdata);
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clSymmetricDecrypt(size32_t & __lenResult,void * & __result,
+                                                const char * algorithm,
+                                                const char * key,
+                                                size32_t lenEncrypteddata,const void * encrypteddata)
+{
+    return clSymmDecrypt(__lenResult, __result, algorithm, strlen(key), (const void *)key, lenEncrypteddata, encrypteddata);
+}
 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
@@ -468,10 +483,15 @@ private:
     DSMCache dsmCache;
 
 public:
-    IDigitalSignatureManager * getInstance(const char * algo, const char * pubKeyFS, const char * pubKeyBuff, const char * privKeyFS, const char * privKeyBuff, const char * passphrase, bool isLFN, IUserDescriptor * user)
+    IDigitalSignatureManager * getInstance(const char * algo, const char * pubKeyFS, const char * pubKeyBuff, const char * privKeyFS, const char * privKeyBuff, size32_t lenPassphrase, const void * passphrase, bool isLFN, IUserDescriptor * user)
     {
+        //Passphrase could be binary, so convert to string
+        StringBuffer hexPwd;
+        for (int i=0; i<lenPassphrase; i++)
+            hexPwd.appendf("%02x", *((const unsigned char *)passphrase + i)  );
+
         VStringBuffer searchKey("%s_%s_%s_%s_%s_%s", algo, isEmptyString(pubKeyFS) ? "" : pubKeyFS, isEmptyString(pubKeyBuff) ? "" : pubKeyBuff,
-                                isEmptyString(privKeyFS) ? "" : privKeyFS, isEmptyString(privKeyBuff) ? "" : privKeyBuff, passphrase);
+                                isEmptyString(privKeyFS) ? "" : privKeyFS, isEmptyString(privKeyBuff) ? "" : privKeyBuff, hexPwd.str());
         CriticalBlock block(csDSMCache);
         DSMCache::iterator it = dsmCache.find(searchKey.str());
         IDigitalSignatureManager * ret = nullptr;
@@ -490,13 +510,13 @@ public:
                 {
                     StringBuffer sb;
                     loadLFS(fs, user, sb);//read key file into StringBuffer
-                    ret = createDigitalSignatureManagerInstanceFromKeys(isPublic ? sb.str() : nullptr, isPublic ? nullptr : sb.str(), passphrase);
+                    ret = createDigitalSignatureManagerInstanceFromKeys(isPublic ? sb.str() : nullptr, isPublic ? nullptr : sb.str(), lenPassphrase, passphrase);
                 }
                 else
-                    ret = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, passphrase);
+                    ret = createDigitalSignatureManagerInstanceFromFiles(pubKeyFS, privKeyFS, lenPassphrase, passphrase);
             }
             else
-                ret = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, passphrase);
+                ret = createDigitalSignatureManagerInstanceFromKeys(pubKeyBuff, privKeyBuff, lenPassphrase, passphrase);
 
             dsmCache.emplace(searchKey.str(), ret);
         }
@@ -507,14 +527,14 @@ static CDSMCache g_DSMCache;
 
 //Sign given data using private key
 
-CRYPTOLIB_API void CRYPTOLIB_CALL clPKISign(size32_t & __lenResult,void * & __result,
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKISign2(size32_t & __lenResult,void * & __result,
                                         const char * pkalgorithm,
                                         const char * privatekeyfile,
-                                        const char * passphrase,
+                                        size32_t lenPassPhrase,const void * passphrase,
                                         size32_t lenInputdata,const void * inputdata)
 {
     verifyPKIAlgorithm(pkalgorithm);//TODO extend cryptohelper to support more algorithms
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, privatekeyfile, nullptr, passphrase, false, nullptr);
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, privatekeyfile, nullptr, lenPassPhrase, passphrase, false, nullptr);
     if (pDSM)
     {
         doPKISign(__lenResult, __result, pDSM, lenInputdata, inputdata);
@@ -523,6 +543,116 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKISign(size32_t & __lenResult,void * & __re
     {
         throw makeStringException(-1, "Unable to create Digital Signature Manager");
     }
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignLFN2(ICodeContext * ctx,
+                                        size32_t & __lenResult,void * & __result,
+                                        const char * pkalgorithm,
+                                        const char * privatekeyLFN,
+                                        size32_t lenPassPhrase,const void * passphrase,
+                                        size32_t lenInputdata,const void * inputdata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    IUserDescriptor * udesc = ctx->queryUserDescriptor();
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, privatekeyLFN, nullptr, lenPassPhrase, passphrase, true, udesc);
+    if (pDSM)
+    {
+        doPKISign(__lenResult, __result, pDSM, lenInputdata, inputdata);
+    }
+    else
+    {
+        throw makeStringException(-1, "Unable to create Digital Signature Manager");
+    }
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignBuff2(size32_t & __lenResult, void * & __result,
+                                            const char * pkalgorithm,
+                                            const char * privatekeybuff,
+                                            size32_t lenPassPhrase,const void * passphrase,
+                                            size32_t lenInputdata, const void * inputdata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, nullptr, privatekeybuff, lenPassPhrase, passphrase, false, nullptr);
+    if (pDSM)
+    {
+        doPKISign(__lenResult, __result, pDSM, lenInputdata, inputdata);
+    }
+    else
+    {
+        throw makeStringException(-1, "Unable to create Digital Signature Manager");
+    }
+}
+
+
+CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignature2(const char * pkalgorithm,
+                                                    const char * publickeyfile,
+                                                    size32_t lenPassPhrase,const void * passphrase,
+                                                    size32_t lenSignature,const void * signature,
+                                                    size32_t lenSigneddata,const void * signeddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, publickeyfile, nullptr, nullptr, nullptr, lenPassPhrase, passphrase, false, nullptr);
+    if (pDSM)
+    {
+        StringBuffer sbSig(lenSignature, (const char *)signature);
+        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
+        return rc;
+    }
+    else
+    {
+        throw makeStringException(-1, "Unable to create Digital Signature Manager");
+    }
+}
+
+CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureLFN2(ICodeContext * ctx,
+                                                    const char * pkalgorithm,
+                                                    const char * publickeyLFN,
+                                                    size32_t lenPassPhrase,const void * passphrase,
+                                                    size32_t lenSignature,const void * signature,
+                                                    size32_t lenSigneddata,const void * signeddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    IUserDescriptor * udesc = ctx->queryUserDescriptor();
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, publickeyLFN, nullptr, nullptr, nullptr, lenPassPhrase, passphrase, true, udesc);
+    if (pDSM)
+    {
+        StringBuffer sbSig(lenSignature, (const char *)signature);
+        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
+        return rc;
+    }
+    else
+    {
+        throw makeStringException(-1, "Unable to create Digital Signature Manager");
+    }
+}
+
+CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff2(const char * pkalgorithm,
+                                                       const char * publicKeyBuff,
+                                                       size32_t lenPassPhrase,const void * passphrase,
+                                                       size32_t lenSignature, const void * signature,
+                                                       size32_t lenSigneddata, const void * signeddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, publicKeyBuff, nullptr, nullptr, lenPassPhrase, passphrase, false, nullptr);
+    if (pDSM)
+    {
+        StringBuffer sbSig(lenSignature, (const char *)signature);
+        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
+        return rc;
+    }
+    else
+    {
+        throw makeStringException(-1, "Unable to create Digital Signature Manager");
+    }
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKISign(size32_t & __lenResult,void * & __result,
+                                        const char * pkalgorithm,
+                                        const char * privatekeyfile,
+                                        const char * passphrase,
+                                        size32_t lenInputdata,const void * inputdata)
+{
+    return clPKISign2(__lenResult,__result, pkalgorithm, privatekeyfile, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignLFN(ICodeContext * ctx,
@@ -532,17 +662,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignLFN(ICodeContext * ctx,
                                         const char * passphrase,
                                         size32_t lenInputdata,const void * inputdata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    IUserDescriptor * udesc = ctx->queryUserDescriptor();
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, privatekeyLFN, nullptr, passphrase, true, udesc);
-    if (pDSM)
-    {
-        doPKISign(__lenResult, __result, pDSM, lenInputdata, inputdata);
-    }
-    else
-    {
-        throw makeStringException(-1, "Unable to create Digital Signature Manager");
-    }
+    return clPKISignLFN2(ctx, __lenResult,__result, pkalgorithm, privatekeyLFN, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignBuff(size32_t & __lenResult, void * & __result,
@@ -551,16 +671,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKISignBuff(size32_t & __lenResult, void * &
                                             const char * passphrase,
                                             size32_t lenInputdata, const void * inputdata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, nullptr, nullptr, privatekeybuff, passphrase, false, nullptr);
-    if (pDSM)
-    {
-        doPKISign(__lenResult, __result, pDSM, lenInputdata, inputdata);
-    }
-    else
-    {
-        throw makeStringException(-1, "Unable to create Digital Signature Manager");
-    }
+    return clPKISignBuff2(__lenResult,__result, pkalgorithm, privatekeybuff, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 
@@ -570,18 +681,7 @@ CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignature(const char * pkalgorithm,
                                                     size32_t lenSignature,const void * signature,
                                                     size32_t lenSigneddata,const void * signeddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, publickeyfile, nullptr, nullptr, nullptr, passphrase, false, nullptr);
-    if (pDSM)
-    {
-        StringBuffer sbSig(lenSignature, (const char *)signature);
-        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
-        return rc;
-    }
-    else
-    {
-        throw makeStringException(-1, "Unable to create Digital Signature Manager");
-    }
+    return clPKIVerifySignature2(pkalgorithm, publickeyfile, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenSignature,signature, lenSigneddata, signeddata);
 }
 
 CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureLFN(ICodeContext * ctx,
@@ -591,19 +691,7 @@ CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureLFN(ICodeContext * ctx,
                                                     size32_t lenSignature,const void * signature,
                                                     size32_t lenSigneddata,const void * signeddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    IUserDescriptor * udesc = ctx->queryUserDescriptor();
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, publickeyLFN, nullptr, nullptr, nullptr, passphrase, true, udesc);
-    if (pDSM)
-    {
-        StringBuffer sbSig(lenSignature, (const char *)signature);
-        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
-        return rc;
-    }
-    else
-    {
-        throw makeStringException(-1, "Unable to create Digital Signature Manager");
-    }
+    return clPKIVerifySignatureLFN2(ctx, pkalgorithm, publickeyLFN, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenSignature,signature, lenSigneddata, signeddata);
 }
 
 CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff(const char * pkalgorithm,
@@ -612,18 +700,7 @@ CRYPTOLIB_API bool CRYPTOLIB_CALL clPKIVerifySignatureBuff(const char * pkalgori
                                                        size32_t lenSignature, const void * signature,
                                                        size32_t lenSigneddata, const void * signeddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<IDigitalSignatureManager> pDSM = g_DSMCache.getInstance(pkalgorithm, nullptr, publicKeyBuff, nullptr, nullptr, passphrase, false, nullptr);
-    if (pDSM)
-    {
-        StringBuffer sbSig(lenSignature, (const char *)signature);
-        bool rc = pDSM->digiVerify(sbSig.str(), lenSigneddata, signeddata);
-        return rc;
-    }
-    else
-    {
-        throw makeStringException(-1, "Unable to create Digital Signature Manager");
-    }
+    return clPKIVerifySignatureBuff2(pkalgorithm, publicKeyBuff, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenSignature,signature, lenSigneddata, signeddata);
 }
 
 
@@ -684,7 +761,7 @@ private:
     bool        m_isPublic = false;
     StringAttr  m_keyFS;
     StringAttr  m_keyBuff;
-    StringAttr  m_passphrase;
+    MemoryBuffer m_passphrase;
     Owned<CLoadedKey> m_loadedKey;
 
     //String compare that treats null ptr and ptr to empty string as matching
@@ -697,13 +774,21 @@ private:
         return strcmp(left, right) == 0;
     }
 
+    //compare buffers
+    inline bool sameBuff(size32_t lenLeft, const void * left, size32_t lenRight, const void * right)
+    {
+        if (lenLeft != lenRight)
+            return false;
+        return memcmp(left, right, lenLeft) == 0;
+    }
+
 public:
 
-    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase, bool isLFN, IUserDescriptor * user)
+    CLoadedKey * getInstance(bool isPublic, const char * keyFS, const char * keyBuff, size32_t lenPassphrase, const void * passphrase, bool isLFN, IUserDescriptor * user)
     {
         if (!m_loadedKey ||
             isPublic != m_isPublic ||
-            !sameString(passphrase, m_passphrase.str())  ||
+            !sameBuff(lenPassphrase, passphrase, m_passphrase.length(), m_passphrase.bufferBase())  ||
             !sameString(keyFS, m_keyFS.str()) ||
             !sameString(keyBuff, m_keyBuff.str()))
         {
@@ -718,12 +803,12 @@ public:
                     if (isPublic)
                         newKey = loadPublicKeyFromMemory(sb.str());
                     else
-                        newKey = loadPrivateKeyFromMemory(sb.str(), passphrase);
+                        newKey = loadPrivateKeyFromMemory(sb.str(), lenPassphrase, passphrase);
                 }
                 else if (isPublic)
                     newKey = loadPublicKeyFromFile(keyFS);
                 else
-                    newKey = loadPrivateKeyFromFile(keyFS, passphrase);
+                    newKey = loadPrivateKeyFromFile(keyFS, lenPassphrase, passphrase);
             }
             else if (!isEmptyString(keyBuff))
             {
@@ -731,7 +816,7 @@ public:
                 if (isPublic)
                     newKey = loadPublicKeyFromMemory(keyBuff);
                 else
-                    newKey = loadPrivateKeyFromMemory(keyBuff, passphrase);
+                    newKey = loadPrivateKeyFromMemory(keyBuff, lenPassphrase, passphrase);
             }
             else
                 throw makeStringException(-1, "Must specify a key filename or provide a key buffer");
@@ -740,7 +825,7 @@ public:
             m_isPublic = isPublic;
             m_keyFS.set(keyFS);
             m_keyBuff.set(keyBuff);
-            m_passphrase.set(passphrase);
+            m_passphrase.clear().append(lenPassphrase, passphrase);
         }
         return LINK(m_loadedKey);
     }
@@ -759,14 +844,14 @@ static bool clearupKeyCache(bool isPooled)
     return false;
 }
 
-static CLoadedKey * getCachedKey(bool isPublic, const char * keyFS, const char * keyBuff, const char * passphrase, bool isLFN, IUserDescriptor * udesc)
+static CLoadedKey * getCachedKey(bool isPublic, const char * keyFS, const char * keyBuff, size32_t lenPassphrase, const void * passphrase, bool isLFN, IUserDescriptor * udesc)
 {
     if (!pKC)
     {
         pKC = new CKeyCache();
         addThreadTermFunc(clearupKeyCache);
     }
-    return pKC->getInstance(isPublic, keyFS, keyBuff, passphrase, isLFN, udesc);
+    return pKC->getInstance(isPublic, keyFS, keyBuff, lenPassphrase, passphrase, isLFN, udesc);
 }
 
 //------------------------------------
@@ -805,15 +890,86 @@ static void doPKIDecrypt(size32_t & __lenResult,void * & __result,
 
 //encryption functions that take filespecs of key files
 
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt2(size32_t & __lenResult,void * & __result,
+                                            const char * pkalgorithm,
+                                            const char * publickeyfile,
+                                            size32_t lenPassPhrase,const void * passphrase,
+                                            size32_t lenInputdata,const void * inputdata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<CLoadedKey> publicKey = getCachedKey(true, publickeyfile, nullptr, lenPassPhrase, passphrase, false, nullptr);
+    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+}
+
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt2(size32_t & __lenResult,void * & __result,
+                                            const char * pkalgorithm,
+                                            const char * privatekeyfile,
+                                            size32_t lenPassPhrase,const void * passphrase,
+                                            size32_t lenEncrypteddata,const void * encrypteddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<CLoadedKey> privateKey = getCachedKey(false, privatekeyfile, nullptr, lenPassPhrase, passphrase, false, nullptr);
+    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptLFN2(ICodeContext * ctx,
+                                            size32_t & __lenResult,void * & __result,
+                                            const char * pkalgorithm,
+                                            const char * publickeyLFN,
+                                            size32_t lenPassPhrase,const void * passphrase,
+                                            size32_t lenInputdata,const void * inputdata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    IUserDescriptor * udesc = ctx->queryUserDescriptor();
+    Owned<CLoadedKey> publicKey = getCachedKey(true, publickeyLFN, nullptr, lenPassPhrase, passphrase, true, udesc);
+    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptLFN2(ICodeContext * ctx,
+                                            size32_t & __lenResult,void * & __result,
+                                            const char * pkalgorithm,
+                                            const char * privatekeyLFN,
+                                            size32_t lenPassPhrase,const void * passphrase,
+                                            size32_t lenEncrypteddata,const void * encrypteddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    IUserDescriptor * udesc = ctx->queryUserDescriptor();
+    Owned<CLoadedKey> privateKey = getCachedKey(false, privatekeyLFN, nullptr, lenPassPhrase, passphrase, true, udesc);
+    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+}
+
+//encryption functions that take keys in a buffer
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff2(size32_t & __lenResult,void * & __result,
+                                                const char * pkalgorithm,
+                                                const char * publickeybuff,
+                                                size32_t lenPassPhrase,const void * passphrase,
+                                                size32_t lenInputdata,const void * inputdata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<CLoadedKey> publicKey = getCachedKey(true, nullptr, publickeybuff, lenPassPhrase, passphrase, false, nullptr);
+    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+}
+
+CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff2(size32_t & __lenResult,void * & __result,
+                                                const char * pkalgorithm,
+                                                const char * privatekeybuff,
+                                                size32_t lenPassPhrase,const void * passphrase,
+                                                size32_t lenEncrypteddata,const void * encrypteddata)
+{
+    verifyPKIAlgorithm(pkalgorithm);
+    Owned<CLoadedKey> privateKey = getCachedKey(false, nullptr, privatekeybuff, lenPassPhrase, passphrase, false, nullptr);
+    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+}
+
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncrypt(size32_t & __lenResult,void * & __result,
                                             const char * pkalgorithm,
                                             const char * publickeyfile,
                                             const char * passphrase,
                                             size32_t lenInputdata,const void * inputdata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = getCachedKey(true, publickeyfile, nullptr, passphrase, false, nullptr);
-    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+    return clPKIEncrypt2(__lenResult, __result, pkalgorithm, publickeyfile, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 
@@ -823,9 +979,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecrypt(size32_t & __lenResult,void * & _
                                             const char * passphrase,
                                             size32_t lenEncrypteddata,const void * encrypteddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = getCachedKey(false, privatekeyfile, nullptr, passphrase, false, nullptr);
-    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+    return clPKIDecrypt2(__lenResult, __result, pkalgorithm, privatekeyfile, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenEncrypteddata, encrypteddata);
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptLFN(ICodeContext * ctx,
@@ -835,10 +989,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptLFN(ICodeContext * ctx,
                                             const char * passphrase,
                                             size32_t lenInputdata,const void * inputdata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    IUserDescriptor * udesc = ctx->queryUserDescriptor();
-    Owned<CLoadedKey> publicKey = getCachedKey(true, publickeyLFN, nullptr, passphrase, true, udesc);
-    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+    return clPKIEncryptLFN2(ctx, __lenResult, __result, pkalgorithm, publickeyLFN, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptLFN(ICodeContext * ctx,
@@ -848,10 +999,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptLFN(ICodeContext * ctx,
                                             const char * passphrase,
                                             size32_t lenEncrypteddata,const void * encrypteddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    IUserDescriptor * udesc = ctx->queryUserDescriptor();
-    Owned<CLoadedKey> privateKey = getCachedKey(false, privatekeyLFN, nullptr, passphrase, true, udesc);
-    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+    return clPKIDecryptLFN2(ctx, __lenResult, __result, pkalgorithm, privatekeyLFN, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenEncrypteddata, encrypteddata);
 }
 
 //encryption functions that take keys in a buffer
@@ -862,9 +1010,7 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIEncryptBuff(size32_t & __lenResult,void *
                                                 const char * passphrase,
                                                 size32_t lenInputdata,const void * inputdata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> publicKey = getCachedKey(true, nullptr, publickeybuff, passphrase, false, nullptr);
-    doPKIEncrypt(__lenResult, __result, publicKey, lenInputdata, inputdata);
+    return clPKIEncryptBuff2(__lenResult, __result, pkalgorithm, publickeybuff, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenInputdata, inputdata);
 }
 
 CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void * & __result,
@@ -873,7 +1019,5 @@ CRYPTOLIB_API void CRYPTOLIB_CALL clPKIDecryptBuff(size32_t & __lenResult,void *
                                                 const char * passphrase,
                                                 size32_t lenEncrypteddata,const void * encrypteddata)
 {
-    verifyPKIAlgorithm(pkalgorithm);
-    Owned<CLoadedKey> privateKey = getCachedKey(false, nullptr, privatekeybuff, passphrase, false, nullptr);
-    doPKIDecrypt(__lenResult, __result, privateKey, lenEncrypteddata, encrypteddata);
+    return clPKIDecryptBuff2(__lenResult, __result, pkalgorithm, privatekeybuff, passphrase ? strlen(passphrase) : 0, (const void *)passphrase, lenEncrypteddata, encrypteddata);
 }
