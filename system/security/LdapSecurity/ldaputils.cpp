@@ -178,9 +178,14 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
         if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
         {   //Fedora389 is happier without the domain component specified
             StringBuffer cn(userdn);
-            cn.replace(',',(char)NULL);
-            if (cn.length())//disallow call if no cn
-                rc = LdapSimpleBind(ld, ldapTimeout, (char*)cn.str(), (char*)password);
+            cn.toLowerCase();
+            const char * pDC = strstr(cn.str(), ",dc=");
+            if (pDC)
+            {
+                cn.setLength(pDC - cn.str());//chop off DC components
+                if (cn.length())//disallow call if no cn
+                    rc = LdapSimpleBind(ld, ldapTimeout, (char*)cn.str(), (char*)password);
+            }
         }
         if (rc != LDAP_SUCCESS )
         {
