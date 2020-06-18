@@ -39,10 +39,11 @@
  * Installs hooks into createIFile, spotting filenames of the form /my/directory/myfile.zip/{password}/path/within/archive
  */
 
+//Require a trailing / on zip files - use /. for the root - otherwise zip files always get expanded when they are read.
 #ifdef _WIN32
-#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{$|/|\\\\}"
+#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{/|\\\\}"
 #else
-#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{$|/}"
+#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}/"
 #endif
 
 static RegExpr *signature;
@@ -645,11 +646,11 @@ MODULE_EXIT()
     if (archiveFileHook)
     {
         removeContainedFileHook(archiveFileHook);
+        ::Release(archiveFileHook);
         archiveFileHook = NULL;
     }
     delete signature;
     delete lock;
     lock = NULL;
     signature = NULL;
-    ::Release(archiveFileHook);
 }

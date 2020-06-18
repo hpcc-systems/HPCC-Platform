@@ -524,6 +524,7 @@ int main( int argc, const char *argv[]  )
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
+            installDefaultFileHooks(globals);
             slaveMain(jobListenerStopped);
         }
 

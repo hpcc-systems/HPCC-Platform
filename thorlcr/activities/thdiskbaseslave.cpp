@@ -393,6 +393,8 @@ void CDiskWriteSlaveActivityBase::open()
             rwFlags |= rw_crc;
         out.setown(createRowWriter(stream, ::queryRowInterfaces(input), rwFlags));
     }
+
+    //If writing to an external file, each of the slaves appends to th file in turn.
     if (extend || (external && !query))
         stream->seek(0,IFSend);
     ActPrintLog("Created output stream for %s, calcFileCrc=%s", fName.get(), calcFileCrc?"true":"false");

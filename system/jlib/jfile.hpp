@@ -540,6 +540,7 @@ inline const char *splitDirTail(const char *path,StringBuffer &dir)
     return tail;        
 }
 
+extern jlib_decl bool isUrl(const char *path);
 extern jlib_decl bool isRemotePath(const char *path);
 extern jlib_decl bool isAbsolutePath(const char *path);
 

@@ -623,6 +623,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             // only check size if specified
             if ( (size != (offset_t) -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
                 return FileSizeMismatch;
+            // A temporary fix - files stored on azure don't have an accurate time stamp, so treat them as up to date.
+            if (isUrl(f->queryFilename()))
+                return FileIsValid;
             CDateTime mt;
             return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
         }

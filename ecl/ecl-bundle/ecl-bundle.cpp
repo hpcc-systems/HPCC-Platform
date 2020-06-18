@@ -214,11 +214,6 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
         dir->remove();
 }
 
-static bool isUrl(const char *str)
-{
-    return strstr(str, ":/") != NULL;
-}
-
 //--------------------------------------------------------------------------------------------------------------
 
 interface IBundleCollection;

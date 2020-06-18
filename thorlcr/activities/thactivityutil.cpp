@@ -712,6 +712,12 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     partDesc.getFilename(0, rfn);
     StringBuffer primaryName;
     rfn.getPath(primaryName);
+    if (isUrl(primaryName))
+    {
+        twFlags &= ~TW_RenameToPrimary;
+        twFlags |= TW_Direct;
+    }
+
     if (twFlags & TW_Direct)
     {
         if (0 == outLocationName.length())

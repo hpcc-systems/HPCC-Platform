@@ -4486,7 +4486,11 @@ StringBuffer & RemoteFilename::getLocalPath(StringBuffer & out) const
 
 StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
 {   // this creates a name that can be used by windows or linux
-    // note - no longer loses port
+
+    // Any filenames in the format protocol:// should not be converted to //ip:....
+    if (isUrl(tailpath))
+        return getLocalPath(out);
+
     char c=getPathSeparator();
     out.append(c).append(c);
     ep.getUrlStr(out);
@@ -5153,6 +5157,28 @@ StringBuffer &makePathUniversal(const char *path, StringBuffer &out)
         out.append(isPathSepChar(*path) ? '/' : *path);
     return out;
 }
+
+// A filename is a URL if it starts xxxx://
+bool isUrl(const char *path)
+{
+    if (!path||!*path)
+        return false;
+
+    const char * cur = path;
+    for (;;)
+    {
+        switch (*cur++)
+        {
+        case '/':
+        case '\\':
+        case '\0':
+            return false;
+        case ':':
+            return cur[0]=='/' && cur[1]=='/';
+        }
+    }
+}
+
 
 //Treat a filename as absolute if:
 //  a) The filename begins with a path separator character   e.g. /home/hpcc/blah    \Users\hpcc\blah

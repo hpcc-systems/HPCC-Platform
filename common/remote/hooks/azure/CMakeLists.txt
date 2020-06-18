@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,24 +15,39 @@
 ################################################################################
 
 
-# Component: remote/hooks
+# Component: azurefile
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for remote/hooks
+#    Cmake Input File for amazon azure direct reading hook
 #####################################################
 
-project( hooks )
+if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
+  set(EXTERNAL_AZURE_CXX_FLAGS "-fno-sanitize=all" )
+endif()
 
-IF (USE_GIT)
-  add_subdirectory(git)
-ENDIF()
-IF (USE_LIBARCHIVE)
-  add_subdirectory(libarchive)
-ENDIF()
-IF (USE_AWS)
-  add_subdirectory(s3)
-ENDIF()
-IF (USE_AZURE)
-  add_subdirectory(azure)
-ENDIF()
+project( azurefile )
+
+set (    SRCS
+         azurefile.cpp
+         azurefile.hpp
+    )
+
+include_directories (
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/azure/azure-storage-cpplite/include
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DAZURE_FILE_EXPORTS )
+
+HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
+install ( TARGETS azurefile DESTINATION filehooks )
+
+add_dependencies ( azurefile azure-storage-cpplite )
+
+target_link_libraries ( azurefile
+        jlib
+        azure-storage-lite
+        curl
+    )

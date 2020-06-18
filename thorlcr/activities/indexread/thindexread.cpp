@@ -159,7 +159,7 @@ protected:
                     if (ifile->exists())
                     {
                         StringBuffer remotePath;
-                        rfn.getRemotePath(remotePath);
+                        rfn.getPath(remotePath);
                         unsigned crc = 0;
                         part->getCrc(crc);
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, false));

@@ -626,6 +626,7 @@ int main( int argc, const char *argv[]  )
     unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
     unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
 
+    installDefaultFileHooks(globals);
     ILogMsgHandler *logHandler;
     try
     {

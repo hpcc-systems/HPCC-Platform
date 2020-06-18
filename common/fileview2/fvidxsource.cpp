@@ -45,7 +45,7 @@ static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
             if (thissize != -1)
             {
                 StringBuffer remotePath;
-                rfn.getRemotePath(remotePath);
+                rfn.getPath(remotePath);
                 unsigned crc = 0;
                 keyFile->getCrc(crc);
                 return createKeyIndex(remotePath.str(), crc, false, false);
