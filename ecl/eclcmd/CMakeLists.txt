@@ -35,6 +35,7 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_workunits_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_queryset_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_codesign_esp.cpp
          eclcmd.hpp
          ecl.cpp
          eclcmd_common.hpp
@@ -42,6 +43,7 @@ set (    SRCS
          eclcmd_common.cpp
          eclcmd_core.hpp
          eclcmd_core.cpp
+         eclcmd_sign.cpp
     )
 
 include_directories (

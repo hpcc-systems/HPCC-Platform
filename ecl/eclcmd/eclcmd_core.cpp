@@ -27,6 +27,7 @@
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
+#include "eclcmd_sign.hpp"
 
 size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
 {
@@ -2064,5 +2065,9 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdStatus();
     if (strieq(cmdname, "zapgen"))
         return new EclCmdZapGen();
+    if (strieq(cmdname, "sign"))
+        return createSignEclCommand();
+    if (strieq(cmdname, "listkeyuid"))
+        return createListKeyUidCommand();
     return NULL;
 }
