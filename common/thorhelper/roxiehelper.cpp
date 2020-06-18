@@ -2354,9 +2354,9 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence, 
     startBlock();
     if (!isBlocked)
     {
+        StringBuffer seqName;
         if (!simpleTag)
         {
-            StringBuffer seqName;
             if (!resultName || !*resultName)
                 resultName = seqName.appendf("Result_%d", sequence+1).str();
             appendJSONName(s, resultName).append('{');
