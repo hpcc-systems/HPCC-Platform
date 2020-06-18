@@ -27,6 +27,7 @@ typedef unsigned int DWORD;
 
 #define DEFAULT_OWNER_PERMISSION SecAccess_Full
 #define DEFAULT_AUTHENTICATED_USERS_PERMISSION SecAccess_Full
+#define DEFAULT_ADMINISTRATORS_PERMISSION SecAccess_Full
 
 class CSecurityDescriptor : public CInterface, implements IInterface
 {

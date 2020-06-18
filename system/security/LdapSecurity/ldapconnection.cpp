@@ -431,7 +431,10 @@ public:
         cfg->getProp(".//@adminGroupName", adminGrp);
         if(adminGrp.isEmpty())
         {
-            adminGrp.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
+            if (m_isAzureAD)
+                adminGrp.clear().appendf("cn=%s,ou=%s", AAD_ADMINISTRATORS_GROUP, AAD_USERS_GROUPS_OU);
+            else
+                adminGrp.set(m_serverType == ACTIVE_DIRECTORY ? "cn=Administrators,cn=Builtin" : "cn=Directory Administrators");
         }
         else if (0 == stricmp("Administrators", adminGrp.str()))
         {
@@ -528,7 +531,9 @@ public:
 
         if(sysuser_basedn.length() == 0)
         {
-            if(m_serverType == ACTIVE_DIRECTORY)
+            if (m_isAzureAD)
+                m_sysuser_basedn.appendf("ou=%s", AAD_USERS_GROUPS_OU);
+            else if(m_serverType == ACTIVE_DIRECTORY)
                 LdapUtils::normalizeDn( "cn=Users", m_basedn.str(), m_sysuser_basedn);
             else if(m_serverType == IPLANET)
                 m_sysuser_basedn.append("ou=administrators,ou=topologymanagement,o=netscaperoot");
@@ -755,7 +760,7 @@ public:
         return m_timeout;
     }
 
-    bool isAzureAD()
+    virtual bool isAzureAD()
     {
         return m_isAzureAD;
     }
@@ -2499,6 +2504,8 @@ public:
                 filter.append("uid=").append(act_name);
 
             basedn = m_ldapconfig->getUserBasedn();
+            if (m_ldapconfig->isAzureAD() && strieq(act_name, m_ldapconfig->getSysUser()))
+                basedn = m_ldapconfig->getSysUserBasedn();
             lookupSid(basedn, filter.str(), act_sid);
             if(act_sid.length() == 0)
             {
@@ -3828,9 +3835,12 @@ public:
             groups.append("Authenticated Users");
             managedBy.append("");
             descriptions.append("");
-            groups.append("Administrators");
-            managedBy.append("");
-            descriptions.append("");
+            if (!m_ldapconfig->isAzureAD())
+            {
+                groups.append("Administrators");
+                managedBy.append("");
+                descriptions.append("");
+            }
         }
         else
         {
