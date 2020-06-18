@@ -82,12 +82,13 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   if [[ "$HPCC_MAJOR" == "7" ]] && [[ "$HPCC_MINOR" == "8" ]] ; then
     doit "rm -rf ./helm"
     doit "cp -rf $HPCC_DIR/helm ./helm" 
+    doit "rm ./helm/hpcc/*.bak" 
     doit "git add -A ./helm"
   fi
   cd docs
   doit "helm package ${HPCC_DIR}/helm/hpcc/"
   doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
-  doit "git add docs/*.tgz"
+  doit "git add *.tgz"
   
   doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
   doit "git push $REMOTE master $FORCE"
