@@ -1629,7 +1629,8 @@ bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRe
     if (changeRestriction == CDFUChangeRestriction_NoChange)
         return true;
 
-    context.ensureFeatureAccess("DFURestrictedAccess", SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "DFURestrictedAccess: Permission denied.");
+    if (changeRestriction == CDFUChangeRestriction_NotRestricted)
+        context.ensureFeatureAccess("CodeSignAccess", SecAccess_Full, ECLWATCH_DFU_ACCESS_DENIED, "CodeSignAccess: Permission denied.");
 
     if (isDetachedFromDali())
         throw makeStringException(ECLWATCH_INVALID_INPUT, "ESP server is detached from Dali. Please try later.");
@@ -2198,7 +2199,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
     }
     if (changeRestriction != CDFUChangeRestriction_NoChange)
     {
-        context.ensureFeatureAccess("DFURestrictedAccess", SecAccess_Write, ECLWATCH_DFU_ACCESS_DENIED, "DFURestrictedAccess: Permission denied.");
+        if (changeRestriction == CDFUChangeRestriction_NotRestricted)
+            context.ensureFeatureAccess("CodeSignAccess", SecAccess_Full, ECLWATCH_DFU_ACCESS_DENIED, "CodeSignAccess: Permission denied.");
         df->setRestrictedAccess(changeRestriction==CDFUChangeRestriction_Restrict);
     }
 

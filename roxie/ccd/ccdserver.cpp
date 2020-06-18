@@ -239,7 +239,7 @@ public:
     {
         ctx->CTXLOGl(log);
     }
-    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
+    virtual StringBuffer &getLogPrefix(StringBuffer &ret) const override
     {
         return ctx->getLogPrefix(ret);
     }
@@ -27371,6 +27371,10 @@ protected:
         {
             loopCounter = _loopCounter;
         }
+        void setPrefix(const char *name)
+        {
+            prefix.set(name);
+        }
         virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph)
         {
             childGraphs.setValue(id, childGraph);
@@ -27386,7 +27390,9 @@ protected:
         // MORE should really redirect the other log context ones too (though mostly doesn't matter). Really should refactor to have a queryLogContext() method in IRoxieSlaveContext I think
         virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
         {
-            logctx.getLogPrefix(ret);
+            IndirectSlaveContext::getLogPrefix(ret);
+            if (prefix)
+                ret.appendf(":%s", prefix.str());
             if (loopCounter)
                 ret.appendf("{%u}", loopCounter);
             return ret;
@@ -27394,6 +27400,7 @@ protected:
     protected:
         const IRoxieContextLogger &logctx;
         unsigned loopCounter;
+        StringAttr prefix;
         ICodeContext * codeContext;
         MapXToMyClass<unsigned, unsigned, IActivityGraph> childGraphs;
     } graphSlaveContext;
@@ -27506,6 +27513,11 @@ public:
     virtual const char *queryName() const
     {
         return graphName.get();
+    }
+
+    virtual void setPrefix(const char *name) override
+    {
+        graphSlaveContext.setPrefix(name);
     }
 
     void createGraph(IRoxieSlaveContext *_ctx)
@@ -27971,7 +27983,9 @@ public:
         }
         return results.getClear();
     }
-
+    virtual void setPrefix(const char *) override
+    {
+    }
 protected:
     IRoxieSlaveContext *ctx;
     IRoxieServerActivity *parentActivity;
@@ -28144,6 +28158,7 @@ public:
 class CDelayedActivityGraph : implements IActivityGraph, public CInterface
 {
     StringAttr graphName;
+    StringAttr prefix;
     ActivityArray & graphDefinition;
     IProbeManager *probeManager;
     unsigned id;
@@ -28178,11 +28193,17 @@ public:
     { 
         colocalParent = _colocalParent;
     }
+    virtual void setPrefix(const char *pfx) override
+    {
+        prefix.set(pfx);
+    }
 
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override
     {
         Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, parentActivity, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);
         ret->createIterationGraph(ctx);
+        if (prefix)
+            ret->setPrefix(prefix);
         return ret.getClear();
     }
 };

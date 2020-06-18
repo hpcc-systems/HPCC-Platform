@@ -50,6 +50,7 @@ interface IActivityGraph : extends IInterface
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
+    virtual void setPrefix(const char *prefix) = 0;
 };
 
 interface IRoxiePackage;

@@ -1316,7 +1316,8 @@ public:
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
     {
-        return logctx.getLogPrefix(ret);
+        logctx.getLogPrefix(ret);
+        return ret.append(':').append(factory->queryQueryName());
     }
 
     virtual bool isIntercepted() const
@@ -1480,7 +1481,9 @@ public:
         {
             Owned<IQueryFactory> libraryQuery = factory->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
             assertex(libraryQuery);
-            return libraryQuery->lookupGraph(this, "graph1", probeManager, *this, parentActivity);
+            IActivityGraph *ret = libraryQuery->lookupGraph(this, "graph1", probeManager, *this, parentActivity);
+            ret->setPrefix(libraryQuery->queryQueryName());
+            return ret;
         }
     }
 

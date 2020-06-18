@@ -307,6 +307,22 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         query->getQueryText(eclQuery);
         query->getQueryMainDefinition(mainDefinition);
 
+        bool syntaxCheck = (workunit->getAction()==WUActionCheck);
+        if (syntaxCheck && (mainDefinition.length() == 0))
+        {
+            SCMStringBuffer syntaxCheckAttr;
+            workunit->getApplicationValue("SyntaxCheck", "AttributeName", syntaxCheckAttr);
+            syntaxCheckAttr.s.trim();
+            if (syntaxCheckAttr.length())
+            {
+                workunit->getApplicationValue("SyntaxCheck", "ModuleName", mainDefinition);
+                mainDefinition.s.trim();
+                if (mainDefinition.length())
+                    mainDefinition.s.append('.');
+                mainDefinition.s.append(syntaxCheckAttr.str());
+            }
+        }
+
         StringBuffer eclccProgName;
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
@@ -318,12 +334,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
-            eclccCmd.append(" -main ").append(mainDefinition);
+            eclccCmd.append(" -main \"").append(mainDefinition).append("\"");
         eclccCmd.append(" --timings --xml");
         eclccCmd.append(" --nostdinc");
         eclccCmd.append(" --metacache=");
         VStringBuffer logfile("%s.eclcc.log", workunit->queryWuid());
         eclccCmd.appendf(" --logfile=%s", logfile.str());
+        if (syntaxCheck)
+            eclccCmd.appendf(" -syntax");
+
         if (globals->getPropBool("@enableEclccDali", true))
         {
             const char *daliServers = globals->queryProp("@daliServers");
@@ -917,7 +936,7 @@ int main(int argc, const char *argv[])
                 throw MakeStringException(0, "No queues found to listen on");
 #ifdef _CONTAINERIZED
             bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
-            unsigned maxThreads = globals->getPropInt("@maxActive", useChildProcesses ? 100 : 4);
+            unsigned maxThreads = globals->getPropInt("@maxActive", 4);
 #else
             // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
             // still accept the old name if the new one is not present.
