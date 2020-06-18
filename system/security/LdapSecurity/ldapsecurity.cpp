@@ -66,6 +66,21 @@ MemoryBuffer& CLdapSecUser::getUserSid()
     return m_usersid;
 }
 //interface ISecUser
+SecFeatureSet CLdapSecUser::queryFeatures(SecFeatureSupportLevel level) const
+{
+    switch (level)
+    {
+    case SFSL_Safe:
+        return s_safeFeatures;
+    case SFSL_Implemented:
+        return s_implementedFeatures;
+    case SFSL_Unsafe:
+        return SUF_ALL_FEATURES & ~s_safeFeatures;
+    default:
+        return SUF_NO_FEATURES;
+    }
+}
+
 const char * CLdapSecUser::getName()
 {
     return m_name.get();
@@ -631,23 +646,38 @@ CLdapSecManager::~CLdapSecManager()
 }
 
 //interface ISecManager : extends IInterface
-ISecUser * CLdapSecManager::createUser(const char * user_name)
+SecFeatureSet CLdapSecManager::queryFeatures(SecFeatureSupportLevel level) const
+{
+    switch (level)
+    {
+    case SFSL_Implemented:
+        return s_implementedFeatures;
+    case SFSL_Safe:
+        return s_safeFeatures;
+    case SFSL_Unsafe:
+        return SMF_ALL_FEATURES & ~s_safeFeatures;
+    default:
+        return SMF_NO_FEATURES;
+    }
+}
+
+ISecUser * CLdapSecManager::createUser(const char * user_name, IEspSecureContext* secureContext)
 {
     return (new CLdapSecUser(user_name, NULL));
 }
 
-ISecResourceList * CLdapSecManager::createResourceList(const char * rlname)
+ISecResourceList * CLdapSecManager::createResourceList(const char * rlname, IEspSecureContext* secureContext)
 {
     return (new CLdapSecResourceList(rlname));
 }
 
-bool CLdapSecManager::subscribe(ISecAuthenticEvents & events)
+bool CLdapSecManager::subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext)
 {
     m_subscriber.set(&events);
     return true;
 }
 
-bool CLdapSecManager::unsubscribe(ISecAuthenticEvents & events)
+bool CLdapSecManager::unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext)
 {
     if (&events == m_subscriber.get())
     {
@@ -824,7 +854,7 @@ SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & us
         return SecAccess_Full;
 
     Owned<ISecResourceList> rlist;
-    rlist.setown(createResourceList("resources"));
+    rlist.setown(createResourceList("resources", secureContext));
     rlist->addResource(resourcename);
     
     bool ok = authorizeEx(rtype, user, rlist.get(), secureContext);
@@ -909,13 +939,13 @@ SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & us
         return SecAccess_Unavailable;
 }
 
-SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
 {
     if(!resourcename || !*resourcename)
         return SecAccess_Unavailable;
 
     Owned<ISecResourceList> rlist0;
-    rlist0.setown(createResourceList("resources"));
+    rlist0.setown(createResourceList("resources", secureContext));
     rlist0->addResource(resourcename);
     
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)rlist0.get();
@@ -981,7 +1011,7 @@ bool CLdapSecManager::authorize(ISecUser& sec_user, ISecResourceList * Resources
 }
 
 
-SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
+SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext)
 {
     if(filescope == 0 || filescope[0] == '\0')
         return SecAccess_Full;
@@ -1000,19 +1030,19 @@ SecAccessFlags CLdapSecManager::authorizeFileScope(ISecUser & user, const char *
     }
 
     Owned<ISecResourceList> rlist;
-    rlist.setown(createResourceList("FileScope"));
+    rlist.setown(createResourceList("FileScope", secureContext));
     rlist->addResource(managedFilescope.length() ? managedFilescope.str() : filescope );
     
-    bool ok = authorizeFileScope(user, rlist.get());
+    bool ok = authorizeFileScope(user, rlist.get(), secureContext);
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
         return SecAccess_Unavailable;
 }
 
-bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * resources)
+bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
 {
-    return authorizeEx(RT_FILE_SCOPE, user, resources);
+    return authorizeEx(RT_FILE_SCOPE, user, resources, secureContext);
 }
 
 bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames)
@@ -1061,29 +1091,29 @@ bool CLdapSecManager::authorizeViewScope(ISecUser & user, StringArray & filename
     return true;
 }
 
-SecAccessFlags CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
+SecAccessFlags CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope, IEspSecureContext* secureContext)
 {
     if(wuscope == 0 || wuscope[0] == '\0')
         return SecAccess_Full;
 
     Owned<ISecResourceList> rlist;
-    rlist.setown(createResourceList("WorkunitScope"));
+    rlist.setown(createResourceList("WorkunitScope", secureContext));
     rlist->addResource(wuscope);
     
-    bool ok = authorizeWorkunitScope(user, rlist.get());
+    bool ok = authorizeWorkunitScope(user, rlist.get(), secureContext);
     if(ok)
         return rlist->queryResource(0)->getAccessFlags();
     else
         return SecAccess_Unavailable;
 }
     
-bool CLdapSecManager::authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
+bool CLdapSecManager::authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
 {
-    return authorizeEx(RT_WORKUNIT_SCOPE, user, resources);
+    return authorizeEx(RT_WORKUNIT_SCOPE, user, resources, secureContext);
 }
 
 
-bool CLdapSecManager::addResourcesEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * resources, SecPermissionType ptype, const char* basedn)
+bool CLdapSecManager::addResourcesEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * resources, SecPermissionType ptype, const char* basedn, IEspSecureContext* secureContext)
 {
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)resources;
     if(!reslist)
@@ -1095,22 +1125,22 @@ bool CLdapSecManager::addResourcesEx(SecResourceType rtype, ISecUser& sec_user, 
     return m_ldap_client->addResources(rtype, sec_user, rlist, ptype, basedn);
 }
 
-bool CLdapSecManager::addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype, const char* basedn)
+bool CLdapSecManager::addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype, const char* basedn, IEspSecureContext* secureContext)
 {
     Owned<ISecResourceList> rlist;
-    rlist.setown(createResourceList("resources"));
+    rlist.setown(createResourceList("resources", secureContext));
     rlist->addResource(resourcename);
     
-    return addResourcesEx(rtype, user, rlist.get(), ptype, basedn);
+    return addResourcesEx(rtype, user, rlist.get(), ptype, basedn, secureContext);
 }
 
 
-bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resources)
+bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext)
 {
-    return addResourcesEx(RT_DEFAULT, sec_user, resources);
+    return addResourcesEx(RT_DEFAULT, sec_user, resources, PT_DEFAULT, nullptr, secureContext);
 }
 
-bool CLdapSecManager::addUser(ISecUser & user)
+bool CLdapSecManager::addUser(ISecUser & user, IEspSecureContext* secureContext)
 {
     bool ok = m_ldap_client->addUser(user);
     if(!ok)
@@ -1119,12 +1149,12 @@ bool CLdapSecManager::addUser(ISecUser & user)
     return m_pp->retrieveUserInfo(user);
 }
 
-ISecUser * CLdapSecManager::lookupUser(unsigned uid)
+ISecUser * CLdapSecManager::lookupUser(unsigned uid, IEspSecureContext* secureContext)
 {
     return m_ldap_client->lookupUser(uid);
 }
 
-ISecUser * CLdapSecManager::findUser(const char * username)
+ISecUser * CLdapSecManager::findUser(const char * username, IEspSecureContext* secureContext)
 {
     if(username == NULL || strlen(username) == 0)
     {
@@ -1133,7 +1163,7 @@ ISecUser * CLdapSecManager::findUser(const char * username)
     }
 
     Owned<ISecUser> user;
-    user.setown(createUser(username));
+    user.setown(createUser(username, secureContext));
 
     try
     {
@@ -1157,7 +1187,7 @@ ISecUser * CLdapSecManager::findUser(const char * username)
     }
 }
 
-ISecUserIterator * CLdapSecManager::getAllUsers()
+ISecUserIterator * CLdapSecManager::getAllUsers(IEspSecureContext* secureContext)
 {
     synchronized block(m_monitor);
     m_user_array.popAll(true);
@@ -1181,7 +1211,7 @@ void CLdapSecManager::getAllUsers(IUserArray& users)
     m_ldap_client->retrieveUsers(users);
 }
 
-bool CLdapSecManager::getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource> & resources)
+bool CLdapSecManager::getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource> & resources, IEspSecureContext* secureContext)
 {
     return m_ldap_client->getResources(rtype, basedn, "", "", resources);
 }
@@ -1203,7 +1233,7 @@ ISecItemIterator* CLdapSecManager::getResourcePermissionsSorted(const char* name
     return m_ldap_client->getResourcePermissionsSorted(name, accountType, baseDN, rtype, prefix, sortOrder, pageStartFrom, pageSize, total, cachehint);
 }
 
-void CLdapSecManager::setExtraParam(const char * name, const char * value)
+void CLdapSecManager::setExtraParam(const char * name, const char * value, IEspSecureContext* secureContext)
 {
     if(name == NULL || name[0] == '\0')
     {
@@ -1225,9 +1255,9 @@ void CLdapSecManager::setExtraParam(const char * name, const char * value)
 }
 
 
-IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
+IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext)
 {
-    CAuthMap* authmap = new CAuthMap(this);
+    CAuthMap* authmap = new CAuthMap();
 
     IPropertyTreeIterator *loc_iter = NULL;
     loc_iter = authconfig->getElements(".//Location");
@@ -1255,7 +1285,7 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
                 ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
                 if(rlist == NULL)
                 {
-                    rlist = createResourceList("ldapsecurity");                     
+                    rlist = createResourceList("ldapsecurity", secureContext);
                     authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
@@ -1269,15 +1299,15 @@ IAuthMap * CLdapSecManager::createAuthMap(IPropertyTree * authconfig)
         loc_iter = NULL;
     }
 
-    authmap->addToBackend();
+    authmap->shareWithManager(*this, secureContext);
 
     return authmap;
 }
 
 
-IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
+IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext)
 {
-    CAuthMap* feature_authmap = new CAuthMap(this);
+    CAuthMap* feature_authmap = new CAuthMap();
 
     IPropertyTreeIterator *feature_iter = NULL;
     feature_iter = authconfig->getElements(".//Feature");
@@ -1302,7 +1332,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
                         throw MakeStringException(-1, "resource empty in Feature Map");
                     if(pathstr.length() == 0)
                         throw MakeStringException(-1, "path empty in Feature Map for resource '%s'", rstr.str());
-                    rlist = createResourceList(pathstr.str());                      
+                    rlist = createResourceList(pathstr.str(), secureContext);
                     feature_authmap->add(pathstr.str(), rlist);
                 }
                 ISecResource* rs = rlist->addResource(rstr.str());
@@ -1316,12 +1346,12 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
         feature_iter = NULL;
     }
 
-    feature_authmap->addToBackend();
+    feature_authmap->shareWithManager(*this, secureContext);
     
     return feature_authmap;
 }
 
-bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
+bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword, IEspSecureContext* secureContext)
 {
     // Authenticate User first
     if(!authenticate(&user) && user.getAuthenticateStatus() != AS_PASSWORD_VALID_BUT_EXPIRED)
@@ -1347,7 +1377,7 @@ bool CLdapSecManager::updateUserPassword(const char* username, const char* newPa
     return m_ldap_client->updateUserPassword(username, newPassword);
 }
 
-void CLdapSecManager::getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions)
+void CLdapSecManager::getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, IEspSecureContext* secureContext)
 {
     m_ldap_client->getAllGroups(groups, managedBy, descriptions);
 }
@@ -1404,7 +1434,7 @@ void CLdapSecManager::getGroupMembers(const char* groupname, StringArray & users
     m_ldap_client->getGroupMembers(groupname, users);
 }
 
-void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, const char * basedn)
+void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext)
 {
     m_ldap_client->deleteResource(rtype, name, basedn);
 
@@ -1413,7 +1443,7 @@ void CLdapSecManager::deleteResource(SecResourceType rtype, const char * name, c
         m_permissionsCache->remove(rtype, name);
 }
 
-void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
+void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext)
 {
     m_ldap_client->renameResource(rtype, oldname, newname, basedn);
 
@@ -1422,7 +1452,7 @@ void CLdapSecManager::renameResource(SecResourceType rtype, const char * oldname
         m_permissionsCache->remove(rtype, oldname);
 }
 
-void CLdapSecManager::copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
+void CLdapSecManager::copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext)
 {
     m_ldap_client->copyResource(rtype, oldname, newname, basedn);
 }
@@ -1442,7 +1472,7 @@ ILdapConfig* CLdapSecManager::queryConfig()
     return m_ldap_client->queryConfig();
 }
 
-void CLdapSecManager::cacheSwitch(SecResourceType rtype, bool on)
+void CLdapSecManager::cacheSwitch(SecResourceType rtype, bool on, IEspSecureContext* secureContext)
 {
     m_cache_off[rtype] = !on;
 
@@ -1466,9 +1496,9 @@ bool CLdapSecManager::getUserInfo(ISecUser& user, const char* infotype)
     return m_ldap_client->getUserInfo(user, infotype);
 }
 
-bool CLdapSecManager::createUserScopes()
+bool CLdapSecManager::createUserScopes(IEspSecureContext* secureContext)
 {
-    Owned<ISecUserIterator> it = getAllUsers();
+    Owned<ISecUserIterator> it = getAllUsers(secureContext);
     it->first();
     bool rc = true;
     while(it->isValid())
@@ -1485,17 +1515,17 @@ bool CLdapSecManager::createUserScopes()
 }
 
 
-aindex_t CLdapSecManager::getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
+aindex_t CLdapSecManager::getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext)
 {
     return m_ldap_client->getManagedScopeTree(nullptr, rtype, basedn, scopes);
 }
 
-SecAccessFlags CLdapSecManager::queryDefaultPermission(ISecUser& user)
+SecAccessFlags CLdapSecManager::queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext)
 {
     return m_ldap_client->queryDefaultPermission(user);
 }
 
-bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
+bool CLdapSecManager::clearPermissionsCache(ISecUser& user, IEspSecureContext* secureContext)
 {
     if(m_permissionsCache->isCacheEnabled())
     {
@@ -1513,7 +1543,7 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
     }
     return true;
 }
-bool CLdapSecManager::authenticateUser(ISecUser & user, bool *superUser)
+bool CLdapSecManager::authenticateUser(ISecUser & user, bool *superUser, IEspSecureContext* secureContext)
 {
     if (!authenticate(&user))
         return false;
@@ -1521,13 +1551,17 @@ bool CLdapSecManager::authenticateUser(ISecUser & user, bool *superUser)
         *superUser = isSuperUser(&user);
     return true;
 }
-bool CLdapSecManager::logoutUser(ISecUser & user)
+bool CLdapSecManager::logoutUser(ISecUser & user, IEspSecureContext* secureContext)
 {
     //remove user from permissions cache
     m_permissionsCache->removeFromUserCache(user);
     user.setAuthenticateStatus(AS_UNKNOWN);
     user.credentials().setSessionToken(0);
     return true;
+}
+bool CLdapSecManager::retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser, IEspSecureContext* secureContext)
+{
+    return false;
 }
 
 //Data View related interfaces
@@ -1590,7 +1624,7 @@ LDAPSECURITY_API ISecManager * newLdapSecManager(const char *serviceName, IPrope
 
 LDAPSECURITY_API IAuthMap *newDefaultAuthMap(IPropertyTree* config)
 {
-    CAuthMap* authmap = new CAuthMap(NULL);
+    CAuthMap* authmap = new CAuthMap();
 
     IPropertyTreeIterator *loc_iter = NULL;
     loc_iter = config->getElements(".//Location");

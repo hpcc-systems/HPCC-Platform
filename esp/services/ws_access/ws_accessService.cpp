@@ -689,7 +689,7 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
         StringArray groupnames;
         StringArray managedBy;
         StringArray descriptions;
-        ldapsecmgr->getAllGroups(groupnames, managedBy, descriptions);
+        ldapsecmgr->getAllGroups(groupnames, managedBy, descriptions, context.querySecureContext());
         IArrayOf<IEspGroupInfo> groups;
         for(i = 0; i < groupnames.length(); i++)
         {
@@ -797,7 +797,7 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-        secmgr->getAllGroups(groupnames, groupManagedBy, groupDescriptions);
+        secmgr->getAllGroups(groupnames, groupManagedBy, groupDescriptions, context.querySecureContext());
         ///groupnames.append("Administrators");
         ///groupnames.append("Full_Access_TestingOnly");
         //groupnames.kill();
@@ -958,7 +958,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
         {
             employeeNumber = req.getEmployeeNumber();
         }
-        Owned<ISecUser> user = secmgr->createUser(username);
+        Owned<ISecUser> user = secmgr->createUser(username, context.querySecureContext());
         ISecCredentials& cred = user->credentials();
         const char* firstname = req.getFirstname();
         const char* lastname = req.getLastname();
@@ -975,7 +975,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
         try
         {
             if (user.get())
-                secmgr->addUser(*user.get());
+                secmgr->addUser(*user.get(), context.querySecureContext());
         }
         catch(IException* e)
         {
@@ -1018,7 +1018,7 @@ bool Cws_accessEx::onUserAction(IEspContext &context, IEspUserActionRequest &req
             for(unsigned i = 0; i < usernames.length(); i++)
             {
                 const char* username = usernames.item(i);
-                Owned<ISecUser> user = secmgr->createUser(username);
+                Owned<ISecUser> user = secmgr->createUser(username, context.querySecureContext());
                 secmgr->deleteUser(user.get());
             }
         }
@@ -1191,7 +1191,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                     }
 
                     IArrayOf<ISecResource> resources;
-                    if(secmgr->getResources(rtype, aBasedn, resources))
+                    if(secmgr->getResources(rtype, aBasedn, resources, context.querySecureContext()))
                     {
                         ForEachItemIn(y1, resources)
                         {
@@ -1996,7 +1996,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
         try
         {
             ISecUser* usr = NULL;
-            Owned<ISecResourceList> rlist = secmgr->createResourceList("ws_access");
+            Owned<ISecResourceList> rlist = secmgr->createResourceList("ws_access", context.querySecureContext());
             const char* name = req.getName();
             if(name == NULL || *name == '\0')
             {
@@ -2149,7 +2149,7 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
                 if(prefix && *prefix)
                     namebuf.insert(0, prefix);
 
-                secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn());
+                secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn(), context.querySecureContext());
             }
         }
         catch(IException* e)
@@ -2823,7 +2823,7 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
         StringArray grpnames;
         StringArray managedBy;
         StringArray descriptions;
-        secmgr->getAllGroups(grpnames, managedBy, descriptions);
+        secmgr->getAllGroups(grpnames, managedBy, descriptions, context.querySecureContext());
         for(unsigned i = 0; i < grpnames.length(); i++)
         {
             const char* grpname = grpnames.item(i);
@@ -2855,11 +2855,11 @@ bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermis
         throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
     //Clear local cache
-    Owned<ISecUser> user = secmgr->createUser(context.queryUserId());
+    Owned<ISecUser> user = secmgr->createUser(context.queryUserId(), context.querySecureContext());
     ISecCredentials& cred = user->credentials();
     cred.setPassword(context.queryPassword());
     cred.setSessionToken(context.querySessionToken());
-    bool ok = secmgr->clearPermissionsCache(*user);
+    bool ok = secmgr->clearPermissionsCache(*user, context.querySecureContext());
 
     //Request DALI to clear its cache
     if (ok)
@@ -3212,7 +3212,7 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
     StringArray grpnames;
     StringArray managedBy;
     StringArray descriptions;
-    secmgr->getAllGroups(grpnames, managedBy, descriptions);
+    secmgr->getAllGroups(grpnames, managedBy, descriptions, context.querySecureContext());
     for(unsigned i = 0; i < grpnames.length(); i++)
     {
         const char* grpname = grpnames.item(i);
@@ -3264,7 +3264,7 @@ bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, const char*
 
             IArrayOf<ISecResource> resources;
             SecResourceType rtype = str2type(rtypestr);
-            if(secmgr->getResources(rtype, basedn, resources))
+            if(secmgr->getResources(rtype, basedn, resources, context.querySecureContext()))
             {
                 StringArray resourcenames;
                 for(unsigned i = 0; i < resources.length(); i++)
@@ -3600,7 +3600,7 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
         }
 
         bool enable = req.getPosixenabled();
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
         if(enable)
         {
             const char* gidnumber = req.getGidnumber();
@@ -3675,7 +3675,7 @@ bool Cws_accessEx::onUserPosixInput(IEspContext &context, IEspUserPosixInputRequ
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -3726,7 +3726,7 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
             return false;
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
@@ -3781,7 +3781,7 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -3829,7 +3829,7 @@ bool Cws_accessEx::onUserSudoersInput(IEspContext &context, IEspUserSudoersInput
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
         secmgr->getUserInfo(*user.get(), "sudoers");
         resp.setUsername(username);
         resp.setInsudoers(user->getInSudoers());
@@ -3875,7 +3875,7 @@ bool Cws_accessEx::onUserSudoers(IEspContext &context, IEspUserSudoersRequest &r
 
         resp.setUsername(username);
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
         const char* action = req.getAction();
         if(!action || !*action)
         {
@@ -4059,7 +4059,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             }
 
             IArrayOf<ISecResource> resources;
-            if(ldapsecmgr->getResources(rtype, aBasedn, resources))
+            if(ldapsecmgr->getResources(rtype, aBasedn, resources, context.querySecureContext()))
             {
                 ForEachItemIn(y1, resources)
                 {
@@ -4325,7 +4325,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         StringArray groupnames;
         StringArray managedBy;
         StringArray descriptions;
-        secmgr->getAllGroups(groupnames, managedBy, descriptions);
+        secmgr->getAllGroups(groupnames, managedBy, descriptions, context.querySecureContext());
         ///groupnames.append("Authenticated Users");
         ///groupnames.append("Administrators");
         if (groupnames.length() > 0)
@@ -4361,7 +4361,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
             resp.setFileName(fileName);
             resp.setUserName(userName);
 
-            Owned<ISecUser> sec_user = secmgr->findUser(userName);
+            Owned<ISecUser> sec_user = secmgr->findUser(userName, context.querySecureContext());
             if (sec_user)
             {
                 StringBuffer accessStr;
@@ -4556,7 +4556,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                 if (!username || !*username)
                     continue;
 
-                Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username);
+                Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
                 secmgr->getUserInfo(*user.get());
                 const char* firstname = user->getFirstName();
                 const char* lastname = user->getLastName();
@@ -4622,7 +4622,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                     if(usrname == NULL || usrname[0] == '\0')
                         continue;
 
-                    Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(usrname);
+                    Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(usrname, context.querySecureContext());
                     secmgr->getUserInfo(*user.get());
                     const char* firstname = user->getFirstName();
                     const char* lastname = user->getLastName();

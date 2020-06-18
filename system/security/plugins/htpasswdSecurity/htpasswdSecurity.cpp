@@ -60,16 +60,36 @@ public:
 		userMap.kill();
 	}
 
-	secManagerType querySecMgrType()
+    SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override
+    {
+        SecFeatureSet mgrFeatures = CBaseSecurityManager::queryFeatures(level);
+        switch (level)
+        {
+        case SFSL_Safe:
+            mgrFeatures = mgrFeatures | s_safeFeatureMask;
+            break;
+        case SFSL_Implemented:
+            mgrFeatures = mgrFeatures | s_implementedFeatureMask;
+            break;
+        case SFSL_Unsafe:
+            mgrFeatures = mgrFeatures & ~s_safeFeatureMask;
+            break;
+        default:
+            break;
+        }
+        return mgrFeatures;
+    }
+
+	secManagerType querySecMgrType() override
 	{
 		return SMT_HTPasswd;
 	}
 
-	inline virtual const char* querySecMgrTypeName() { return "htpasswd"; }
+	inline virtual const char* querySecMgrTypeName() override { return "htpasswd"; }
 
-	IAuthMap * createAuthMap(IPropertyTree * authconfig)
+	IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
 	{
-		CAuthMap* authmap = new CAuthMap(this);
+		CAuthMap* authmap = new CAuthMap();
 
 		Owned<IPropertyTreeIterator> loc_iter;
 		loc_iter.setown(authconfig->getElements(".//Location"));
@@ -96,7 +116,7 @@ public:
 					ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
 					if(rlist == NULL)
 					{
-						rlist = createResourceList("htpasswdsecurity");
+						rlist = createResourceList("htpasswdsecurity", secureContext);
 						authmap->add(pathstr.str(), rlist);
 					}
 					ISecResource* rs = rlist->addResource(rstr.str());
@@ -112,9 +132,9 @@ public:
 		return authmap;
 	}
 
-    IAuthMap * createFeatureMap(IPropertyTree * authconfig)
+    IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
-        CAuthMap* feature_authmap = new CAuthMap(this);
+        CAuthMap* feature_authmap = new CAuthMap();
 
         Owned<IPropertyTreeIterator> feature_iter;
         feature_iter.setown(authconfig->getElements(".//Feature"));
@@ -132,7 +152,7 @@ public:
                 ISecResourceList* rlist = feature_authmap->queryResourceList(pathstr.str());
                 if(rlist == NULL)
                 {
-                    rlist = createResourceList(pathstr.str());
+                    rlist = createResourceList(pathstr.str(), secureContext);
                     feature_authmap->add(pathstr.str(), rlist);
                 }
                 if (!rstr.isEmpty())
@@ -149,7 +169,7 @@ public:
         return feature_authmap;
     }
 
-    IAuthMap * createSettingMap(IPropertyTree * authConfig) override
+    IAuthMap * createSettingMap(IPropertyTree * authConfig, IEspSecureContext* secureContext = nullptr) override
     {
         return nullptr;
     }
@@ -187,12 +207,12 @@ protected:
         return "HTPASSWD Security Manager";
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) override
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         return IsPasswordValid(user);
     }
 
-    unsigned getPasswordExpirationWarningDays() override
+    unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) override
     {
         return -2;//never expires
     }
@@ -202,12 +222,12 @@ protected:
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename) override
+    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = nullptr) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope) override
+    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
@@ -227,12 +247,12 @@ protected:
         return true;//success
     }
 
-    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope) override
+    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) override
     {
         return SecAccess_Full;//grant full access to authenticated users
     }
 
-    bool logoutUser(ISecUser & user) override
+    bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
     {
         return true;
     }
@@ -323,6 +343,11 @@ private:
 
 
 private:
+    static const SecFeatureSet s_implementedFeatureMask = SMF_QuerySecMgrType | SMF_QuerySecMgrTypeName | SMF_CreateAuthMap |
+                                                          SMF_CreateFeatureMap | SMF_LogoutUser | SMF_GetDescription | SMF_Authorize |
+                                                          SMF_GetPasswordExpirationDays | SMF_AuthorizeEx_Named | SMF_GetAccessFlagsEx |
+                                                          SMF_AuthorizeFileScope_Named | SMF_AuthorizeWorkUnitScope_Named;
+    static const SecFeatureSet s_safeFeatureMask = s_implementedFeatureMask | SMF_CreateSettingMap;
     mutable CriticalSection crit;
     StringBuffer    pwFile;
     CDateTime       pwFileLastMod;

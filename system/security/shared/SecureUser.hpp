@@ -43,6 +43,8 @@ private:
     Owned<IProperties> m_parameters;
     unsigned        m_sessionToken;
     StringBuffer    m_signature;
+    static const SecFeatureSet s_safeFeatures = SUF_ALL_FEATURES;
+    static const SecFeatureSet s_implementedFeatures = (s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements));
 
     CriticalSection crit;
 public:
@@ -58,6 +60,21 @@ public:
     }
 
 //interface ISecUser
+    SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override
+    {
+        switch (level)
+        {
+        case SFSL_Safe:
+            return s_safeFeatures;
+        case SFSL_Implemented:
+            return s_implementedFeatures;
+        case SFSL_Unsafe:
+            return (SUF_ALL_FEATURES & ~s_safeFeatures);
+        default:
+            return SUF_NO_FEATURES;
+        }
+    }
+
     const char * getName()
     {
         return m_name.str();
@@ -297,6 +314,15 @@ public:
         return newuser;
     }
 
+    IPropertyTree* getDataElement(const char* xpath = ".") const override
+    {
+        return nullptr;
+    }
+
+    IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override
+    {
+        return nullptr;
+    }
 };
 
 #endif // SECUREUSER_INCL

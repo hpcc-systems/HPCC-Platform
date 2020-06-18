@@ -74,7 +74,7 @@ int CSoapService::processHeader(CHeader* header, IEspContext* ctx)
                     ISecUser *user = ctx->queryUser();
                     if(user==NULL)
                     {
-                        user = secmgr->createUser(username.str());
+                        user = secmgr->createUser(username.str(), ctx->querySecureContext());
                         ctx->setUser(user);
                     }
                     if(user == NULL)

@@ -40,12 +40,11 @@ class CAuthMap : public CInterface, implements IAuthMap
 private:
     StringArray m_paths;
     IArrayOf<CSecResourceListHolder> m_resourcelists;
-    ISecManager* m_secmgr;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CAuthMap(ISecManager* secmgr) {m_secmgr = secmgr;};
+    CAuthMap() {}
     virtual ~CAuthMap()
     {
         ForEachItemIn(x, m_resourcelists)
@@ -59,7 +58,8 @@ public:
     bool shouldAuth(const char* path);
     ISecResourceList* queryResourceList(const char* path);
     ISecResourceList* getResourceList(const char* path);
-    bool addToBackend();
+    bool shareWithManager(ISecManager& manager, IEspSecureContext* secureContext = nullptr) override;
+    bool removeFromManager(ISecManager& manager, IEspSecureContext* secureContext = nullptr) override;
 };
 
 #endif
