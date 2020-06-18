@@ -1427,8 +1427,7 @@ class CWindowsPipeProcess: implements IPipeProcess, public CInterface
     CriticalSection sect;
     bool aborted;
     StringAttr allowedprogs;
-    StringArray envVars;
-    StringArray envValues;
+    StringArray env;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1507,7 +1506,7 @@ public:
         
         PROCESS_INFORMATION ProcessInformation;
 
-        // MORE - should create a new environment block that is copy of parent's, then set all the values in envVars/envValues, and pass it
+        // MORE - should create a new environment block that is copy of parent's, then set all the values in env array, and pass it
 
         if (!CreateProcess(NULL, (char *)prog, NULL,NULL,TRUE,0,NULL, dir&&*dir?dir:NULL, &StartupInfo,&ProcessInformation)) {
             if (_title) {
@@ -1533,8 +1532,29 @@ public:
         assertex(var);
         if (!value)
             value = "";
-        envVars.append(var);
-        envValues.append(value);
+        VStringBuffer s("%s=%s", var, value);
+        aindex_t found = lookupEnv(s);
+        if (found != NotFound)
+            env.replace(s, found);
+        else
+            env.append(s);
+    }
+
+    aindex_t lookupEnv(const char *_s)
+    {
+        ForEachItemIn(idx, env)
+        {
+            const char *v = env.item(idx);
+            const char *s = _s;
+            while (*s && *v && *s==*v)
+            {
+                if (*s=='=')
+                    return idx;
+                s++;
+                v++;
+            }
+        }
+        return NotFound;
     }
 
     size32_t read(size32_t sz, void *buf)
@@ -1942,8 +1962,7 @@ protected: friend class PipeWriterThread;
     MemoryBuffer stderrbuf;
     size32_t stderrbufsize;
     StringAttr allowedprogs;
-    StringArray envVars;
-    StringArray envValues;
+    StringArray env;
 
     void clearUtilityThreads(bool clearStderr)
     {
@@ -2031,6 +2050,24 @@ public:
             started.signal();
             throw makeOsException(errno);
         }
+        ConstPointerArrayOf<char> envp;
+        if (env.length())
+        {
+            ForEachItemIn(idx, env)
+            {
+                envp.append(env.item(idx));
+            }
+            // Now add any existing environment variables that were not overridden
+            char **e = getSystemEnv();
+            while (*e)
+            {
+                const char *entry = *e++;
+                if (lookupEnv(entry) != NotFound)
+                    continue;
+                envp.append(entry);
+            }
+            envp.append(nullptr);
+        }
 
         /* NB: Important to call splitargs (which calls malloc) before the fork()
          * and not in the child process. Because performing malloc in the child
@@ -2062,6 +2099,9 @@ public:
                 return;
             }
         }
+        // NOTE - from here to the execvp/_exit call, we must only call "signal-safe" functions, that do not do any memory allocation
+        // fork() only clones the one thread from parent process, meaning any mutexes/semaphores protecting multi-threaded access
+        // to (for example) malloc cannot be relied upon not to be locked, and will never be unlocked if they are.
         if (pipeProcess==0) { // child
             if (newProcessGroup)//Force the child process into its own process group, so we can terminate it and its children.
                 setpgid(0,0);
@@ -2085,11 +2125,10 @@ public:
                 if (chdir(dir) == -1)
                     throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
             }
-            ForEachItemIn(idx, envVars)
-            {
-                ::setenv(envVars.item(idx), envValues.item(idx), 1);
-            }
-            execvp(argv[0],argv);
+            if (envp.length())
+                execve(argv[0], argv, (char *const *) envp.detach());
+            else
+                execvp(argv[0], argv);
             if (haserror)
             {
                 Owned<IException> e = createPipeErrnoExceptionV(errno, "exec failed: %s", prog.get());
@@ -2175,10 +2214,31 @@ public:
         assertex(var);
         if (!value)
             value = "";
-        envVars.append(var);
-        envValues.append(value);
+        VStringBuffer s("%s=%s", var, value);
+        aindex_t found = lookupEnv(s);
+        if (found != NotFound)
+            env.replace(s, found);
+        else
+            env.append(s);
     }
-    
+
+    aindex_t lookupEnv(const char *_s)
+    {
+        ForEachItemIn(idx, env)
+        {
+            const char *v = env.item(idx);
+            const char *s = _s;
+            while (*s && *v && *s==*v)
+            {
+                if (*s=='=')
+                    return idx;
+                s++;
+                v++;
+            }
+        }
+        return NotFound;
+    }
+
     size32_t read(size32_t sz, void *buf)
     {
         CriticalBlock block(sect); 

@@ -831,4 +831,37 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ThreadedPersistStressTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ThreadedPersistStressTest, "ThreadedPersistStressTest" );
+
+
+#ifndef _WIN32
+class PipeRunTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( PipeRunTest  );
+        CPPUNIT_TEST(testRun);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testRun()
+    {
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        setenv("OLDVAR", "old", 1);
+        setenv("TESTVAR", "oldtest", 1);
+        pipe->setenv("TESTVAR", "well");
+        pipe->setenv("TESTVAR", "hello");
+        pipe->setenv("AX", "ax");
+        pipe->setenv("BCD", "bcd");
+        pipe->setenv("ABCD", "abcd");
+        ASSERT(pipe->run("/bin/bash", "/bin/bash -c 'echo $TESTVAR $OLDVAR $AX $BCD $ABCD'", ".", false, true, false));
+        byte buf[4096];
+        size32_t read = pipe->read(sizeof(buf),buf);
+        ASSERT(read==22);
+        ASSERT(memcmp(buf, "hello old ax bcd abcd\n", 22)==0);
+        ASSERT(pipe->wait()==0);
+
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( PipeRunTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PipeRunTest, "PipeRunTest" );
+#endif
+
 #endif // _USE_CPPUNIT

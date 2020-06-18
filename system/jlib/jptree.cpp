@@ -25,12 +25,8 @@
 #include "jregexp.hpp"
 #include "jstring.hpp"
 #include "jutil.hpp"
+#include "jmisc.hpp"
 #include "yaml.h"
-
-#ifdef __APPLE__
-#include <crt_externs.h>
-#define environ (*_NSGetEnviron())
-#endif
 
 #include <initializer_list>
 
@@ -8057,7 +8053,7 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     if (delta)
         mergeConfiguration(*config, *delta, altNameAttribute);
 
-    const char * * environment = const_cast<const char * *>(environ);
+    const char * * environment = const_cast<const char * *>(getSystemEnv());
     for (const char * * cur = environment; *cur; cur++)
     {
         applyEnvironmentConfig(*config, envPrefix, *cur);

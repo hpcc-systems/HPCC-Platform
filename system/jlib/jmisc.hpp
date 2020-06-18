@@ -332,4 +332,5 @@ public:
 extern jlib_decl char *mkdtemp(char *_template);
 #endif
 
+extern jlib_decl char **getSystemEnv();
 #endif
