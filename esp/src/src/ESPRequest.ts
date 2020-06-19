@@ -20,7 +20,7 @@ class RequestHelper {
 
     constructor() {
         this.serverIP = (typeof debugConfig !== "undefined") ? debugConfig.IP : this.getParamFromURL("ServerIP");
-        this.timeOutSeconds = 60;
+        this.timeOutSeconds = 120;
     }
 
     getParamFromURL(key) {

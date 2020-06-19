@@ -210,6 +210,9 @@ export function WUResult(params) {
 }
 
 export function WUQueryGetGraph(params) {
+    if (params.request) {
+        params.request.timeOutSeconds = 300;  // 5 minutes
+    }
     return ESPRequest.send("WsWorkunits", "WUQueryGetGraph", params);
 }
 
