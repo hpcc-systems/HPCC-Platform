@@ -8076,6 +8076,10 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     else
         loadArgsIntoConfiguration(config, argv);
 
+    //For legacy (and other weird cases) ensure there is a global section
+    if (!globalConfiguration)
+        globalConfiguration.setown(createPTree("global"));
+
 #ifdef _DEBUG
     // NB: don't re-hold, if CLI --hold already held.
     if (!held && config->getPropBool("@hold"))

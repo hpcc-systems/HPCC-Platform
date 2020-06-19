@@ -20,6 +20,25 @@
       },
       "additionalProperties": false
     },
+    "secrets": {
+      "description": "configuration for secrets accessed by the components",
+      "type": "object",
+      "properties": {
+        "timeout": {
+          "type": "integer"
+        },
+        "storage": {
+          "$ref": "#/definitions/secrets"
+        },
+        "ecl": {
+          "$ref": "#/definitions/secrets"
+        },
+        "all": {
+          "$ref": "#/definitions/secrets"
+        }
+      },
+      "additionalProperties": false
+    },
     "bundles": {
       "description": "bundles",
       "type": "array",
@@ -91,6 +110,12 @@
         },
         "defaultEsp": {
           "type": "string"
+        },
+        "defaultDataPath": {
+          "type": "string"
+        },
+        "defaultMirrorPath": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -130,6 +155,17 @@
       },
       "required": [ "storageSize" ],
       "additionalProperties": false
+    },
+    "secrets": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "logging": {
       "type": "object",

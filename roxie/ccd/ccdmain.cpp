@@ -798,6 +798,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
         setupContainerizedLogMsgHandler();
 #endif
+        setupContainerizedStorageLocations();
 
         roxieMetrics.setown(createRoxieMetricsManager());
 

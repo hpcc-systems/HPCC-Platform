@@ -62,6 +62,18 @@ singleNode: {{ .Values.global.singleNode | default false }}
  {{- end -}} 
 {{- end }} 
 defaultEsp: {{ $local.defaultEsp | quote }}
+secretTimeout: {{ .Values.secrets.timeout | default 300 }}
+storage:
+  ##The following is a temporary solution to allow blob storage to be tested
+  ##This will be completely rewritten and restructured to encompass the idea of multiple storage planes.
+  ##The source of the information is likely to be move to .Values.storage rather than .Values.global
+  default:
+{{- if .Values.global.defaultDataPath }}
+    data: {{ .Values.global.defaultDataPath }}
+{{- end }}
+{{- if .Values.global.defaultMirrorPath }}
+    mirror: {{ .Values.global.defaultMirrorPath }}
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -126,6 +138,39 @@ Add dll volume
 - name: dllstorage-pv
   persistentVolumeClaim:
     claimName: {{ .Values.storage.dllStorage.existingClaim | default (printf "%s-dllstorage-pvc" (include "hpcc.fullname" .)) }}
+{{- end -}}
+
+{{/*
+Add the secret volume mounts for a component
+*/}}
+{{- define "hpcc.addSecretVolumeMounts" -}}
+{{- $component := .component -}}
+{{- $categories := .categories -}}
+{{- range $category, $key := .root.Values.secrets -}}
+ {{- if (has $category $categories) -}}
+{{- range $secretid, $secretname := $key -}}
+- name: secret-{{ $secretid }}
+  mountPath: /opt/HPCCSystems/secrets/{{ $secretid }}
+{{ end -}}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add Secret volume for a component
+*/}}
+{{- define "hpcc.addSecretVolumes" -}}
+{{- $component := .component -}}
+{{- $categories := .categories -}}
+{{- range $category, $key := .root.Values.secrets -}}
+ {{- if (has $category $categories) -}}
+{{- range $secretid, $secretname := $key -}}
+- name: secret-{{ $secretid }}
+  secret:
+    secretName: {{ $secretname }}
+{{ end -}}
+ {{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

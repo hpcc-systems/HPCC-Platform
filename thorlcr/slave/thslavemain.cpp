@@ -289,6 +289,7 @@ void startSlaveLog()
 #else
     setupContainerizedLogMsgHandler();
 #endif
+    setupContainerizedStorageLocations();
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
 }
 

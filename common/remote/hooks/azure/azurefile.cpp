@@ -500,14 +500,39 @@ void checkError(const RESULT & result)
         throwStorageError(result.error());
 }
 
+static bool isBase64Char(char c)
+{
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '+') || (c == '/') || (c == '=');
+}
+
 static std::shared_ptr<azure::storage_lite::blob_client> getClient(const char * accountName, const char * key)
 {
     //MORE: The client should be cached and shared between different file access - implement when secret storage is added.
-    StringBuffer accountTemp;
+    StringBuffer keyTemp;
     if (!accountName)
         accountName = getenv("AZURE_ACCOUNT_NAME");
     if (!key)
+    {
         key = getenv("AZURE_ACCOUNT_KEY");
+        if (!key)
+        {
+            StringBuffer secretName;
+            secretName.append("azure-").append(accountName);
+            getSecret(keyTemp, secretName, "key");
+            //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
+            size32_t len = keyTemp.length();
+            for (;;)
+            {
+                if (!len)
+                    break;
+                if (isBase64Char(keyTemp.charAt(len-1)))
+                    break;
+                len--;
+            }
+            keyTemp.setLength(len);
+            key = keyTemp.str();
+        }
+    }
 
     std::shared_ptr<azure::storage_lite::storage_credential> cred = nullptr;
     try
@@ -563,10 +588,13 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
     if (accessExtra)
     {
         const char * colon = strchr(accessExtra, ':');
-        if (!colon)
-            throw makeStringException(99, "Expected access token of the form user:key");
-        accountName.set(accessExtra, colon-accessExtra);
-        accountKey.set(colon+1);
+        if (colon)
+        {
+            accountName.set(accessExtra, colon-accessExtra);
+            accountKey.set(colon+1);
+        }
+        else
+            accountName.set(accessExtra); // Key is retrieved from the secrets
     }
 
     containerName.assign(filename, slash-filename);

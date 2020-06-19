@@ -30,6 +30,7 @@ spec:
           mountPath: /etc/config
         - name: dalistorage-pv
           mountPath: "/var/lib/HPCCSystems/dalistorage"
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" ) ) | indent 8 }}
       volumes:
       - name: {{ .name }}-configmap-volume
         configMap:
@@ -37,6 +38,7 @@ spec:
       - name: dalistorage-pv
         persistentVolumeClaim:
           claimName: {{ $.Values.storage.daliStorage.existingClaim | default (printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name) }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
