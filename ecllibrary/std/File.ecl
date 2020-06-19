@@ -677,11 +677,16 @@ EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServer
  * @param wrap          Should the fileparts be wrapped when copying to a smaller sized cluster?  The default is FALSE.
  * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
+ * @param username      String containing a username to use for authenticated access to the ESP process; an empty string value
+ *                      indicates that no user authentication is required. OPTIONAL, defaults to an empty string
+ * @param userPW        String containing the password to be used with the user cited in the username argument; if username is
+ *                      empty then this will be ignored; OPTIONAL, defaults to an empty string
+ *
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.fRemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays);
+EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.fRemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw);
 
 /**
  * Same as fRemotePull, but does not return the DFU Workunit ID.
@@ -689,8 +694,8 @@ EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalNa
  * @see fRemotePull
  */
 
-EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1) :=
-    lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays);
+EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE, boolean noSplit=FALSE, integer4 expireDays=-1, const varstring username = '', const varstring userPw = '') :=
+    lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw);
 
 /*------------------------------------- File monitoring functions -------------------------------------------------------*/
 
