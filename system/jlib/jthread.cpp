@@ -37,6 +37,21 @@
 
 #define LINUX_STACKSIZE_CAP (0x200000)
 
+static thread_local unsigned _inEmbed = 1;
+extern jlib_decl bool inEmbed()
+{
+    return _inEmbed!=0;
+}
+
+EmbedCodeBlock::EmbedCodeBlock()
+{
+    _inEmbed++;
+}
+EmbedCodeBlock::~EmbedCodeBlock()
+{
+    _inEmbed--;
+}
+
 //#define NO_CATCHALL
 
 //static __thread ThreadTermFunc threadTerminationHook;
@@ -86,6 +101,7 @@ PointerArray *exceptionHandlers = NULL;
 MODULE_INIT(INIT_PRIORITY_JTHREAD)
 {
     exceptionHandlers = new PointerArray();
+    _inEmbed = 0;
     return true;
 }
 MODULE_EXIT()
@@ -280,6 +296,7 @@ void Thread::setDefaultStackSize(size32_t size)
 
 int Thread::begin()
 {
+    _inEmbed = 0;
     if(nicelevel)
         adjustNiceLevel();
 #ifndef _WIN32
@@ -372,6 +389,7 @@ void Thread::start()
 void Thread::startRelease()
 {
     assertex(!alive);
+    assertex(!_inEmbed);
     stopped.reinit(0); // just in case restarting
 #ifdef _WIN32
     hThread = (HANDLE)_beginthreadex(NULL, 0x1000*(unsigned)stacksize, Thread::_threadmain, this, CREATE_SUSPENDED, (unsigned *)&threadid);

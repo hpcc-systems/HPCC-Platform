@@ -87,6 +87,7 @@
 #define MAX_CSV_RECORD_SIZE     4096
 
 #define ECLRTL_LIB          "eclrtl"
+#define JLIB_LIB          "jlib"
 
 //===========================================================================
 
@@ -6072,6 +6073,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         }
 
         useLibrary(ECLRTL_LIB);
+        useLibrary(JLIB_LIB);
         useInclude("eclrtl.hpp");
 
         HqlExprArray internalLibraries;

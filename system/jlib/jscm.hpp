@@ -211,4 +211,10 @@ interface jlib_thrown_decl IException : public IInterface
     virtual MessageAudience errorAudience() const = 0;
 };
 
+class jlib_decl EmbedCodeBlock
+{
+public:
+    EmbedCodeBlock();
+    ~EmbedCodeBlock();
+};
 #endif

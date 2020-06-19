@@ -12016,6 +12016,10 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx & ctx, IHqlExpression
     }
 
     MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
+    userFunc.ctx.addQuoted("#undef EmbedCodeBlock");
+    VStringBuffer eblock("EmbedCodeBlock __b%d;", rand());
+    userFunc.ctx.addQuoted(eblock.str());
+
     if (location)
         userFunc.ctx.addLine(locationFilename, startLine);
     userFunc.ctx.addQuoted(body);

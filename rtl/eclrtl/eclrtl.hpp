@@ -853,7 +853,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void reenter(ICodeContext *ctx) = 0;
 };
 
-class EmbedContextBlock
+class EmbedContextBlock : public EmbedCodeBlock
 {
 public:
     EmbedContextBlock(IEmbedFunctionContext *_ctx) : ctx(_ctx)
