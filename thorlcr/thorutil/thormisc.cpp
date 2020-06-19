@@ -75,7 +75,7 @@ const StatisticsMapping spillStatistics({StTimeSpillElapsed, StTimeSortElapsed, 
 const StatisticsMapping basicActivityStatistics({StTimeLocalExecute, StTimeBlocked});
 const StatisticsMapping groupActivityStatistics({StNumGroups, StNumGroupMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, basicActivityStatistics);
-const StatisticsMapping indexReadActivityStatistics({StNumRowsProcessed, StNumIndexSeeks, StNumIndexScans}, basicActivityStatistics);
+const StatisticsMapping indexReadActivityStatistics({StNumRowsProcessed, StNumIndexSeeks, StNumIndexScans, StNumPostFiltered}, basicActivityStatistics);
 const StatisticsMapping indexWriteActivityStatistics({StPerReplicated}, basicActivityStatistics);
 const StatisticsMapping keyedJoinActivityStatistics({ StNumIndexSeeks, StNumIndexScans, StNumIndexAccepted, StNumPostFiltered, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected }, basicActivityStatistics);
 const StatisticsMapping loopActivityStatistics({StNumIterations}, basicActivityStatistics);
