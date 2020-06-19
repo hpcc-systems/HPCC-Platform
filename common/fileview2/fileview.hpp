@@ -139,6 +139,7 @@ interface IResultSetFactory : extends IInterface
 {
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid) = 0;
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster) = 0;
+    virtual INewResultSet * createNewFileResultSet(IDistributedFile * df, const char * cluster) = 0;
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name) = 0;
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile) = 0;
     virtual IResultSetMetaData * createResultSetMeta(IConstWUResult * wuResult) = 0;

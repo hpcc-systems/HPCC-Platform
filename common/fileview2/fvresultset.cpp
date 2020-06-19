@@ -2154,7 +2154,12 @@ INewResultSet * CResultSetFactory::createNewResultSet(IConstWUResult * wuResult,
 INewResultSet * CResultSetFactory::createNewFileResultSet(const char * logicalName, const char * cluster)
 {
     Owned<IDistributedFile> df = lookupLogicalName(logicalName);
-    Owned<IFvDataSource> ds = createFileDataSource(df, logicalName, cluster, username, password);
+    return createNewFileResultSet(df, cluster);
+}
+
+INewResultSet * CResultSetFactory::createNewFileResultSet(IDistributedFile * df, const char * cluster)
+{
+    Owned<IFvDataSource> ds = createFileDataSource(df, df->queryLogicalName(), cluster, username, password);
     if (ds)
     {
         Owned<CResultSet> result = createResultSet(ds, false);
