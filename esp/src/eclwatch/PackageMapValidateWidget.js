@@ -199,14 +199,15 @@ define([
                 alert(this.i18n.PackageContentNotSet);
                 return;
             }
-            var request = {
-                Target: this.targetSelectControl.getValue()
-            };
-            request['content'] = content;
 
             this.resultControl.setText(this.i18n.Validating);
             this.validateButton.set("disabled", true);
-            WsPackageMaps.validatePackage(request).then(function (response) {
+            WsPackageMaps.validatePackage({
+                request: {
+                    Target: context.targetSelectControl.getValue(),
+                    Info: content
+                }
+            }).then(function (response) {
                 if (lang.exists("ValidatePackageResponse", response)) {
                     var responseText = context.validateResponseToText(response.ValidatePackageResponse);
                     if (responseText === '') {

@@ -96,19 +96,24 @@ export function listProcessFilters(callback) {
 }
 
 export function validatePackage(params) {
-    const request = { Target: params.Target };
-    if (params.packageMap)
-        request["PMID"] = params.packageMap;
-    if (params.process)
-        request["Process"] = params.process;
-    if (params.content)
-        request["Info"] = params.content;
-    if (params.active)
-        request["Active"] = params.active;
+    const request = { Target: params.request.Target };
+    if (params.request) {
+        params.request.timeOutSeconds = 300;
+    }
+    if (params.request.packageMap) {
+        request["PMID"] = params.request.packageMap;
+    }
+    if (params.request.process) {
+        request["Process"] = params.request.process;
+    }
+    if (params.request.content) {
+        request["Info"] = params.request.content;
+    }
+    if (params.request.active) {
+        request["Active"] = params.request.active;
+    }
 
-    return ESPRequest.send("WsPackageProcess", "ValidatePackage", {
-        request
-    });
+    return ESPRequest.send("WsPackageProcess", "ValidatePackage", params);
 }
 
 export function activatePackageMap(params) {
