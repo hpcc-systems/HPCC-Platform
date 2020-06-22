@@ -263,7 +263,10 @@ public:
                     exec.appendf(" --graphName=%s", graphName.get());
                 Owned<IPipeProcess> pipe = createPipeProcess();
                 if (!pipe->run(apptype.str(), exec.str(), ".", false, true, false, 0, false))
-                    throw makeStringExceptionV(0, "Failed to run %s", exec.str());
+                    throw makeStringExceptionV(0, "Failed to run \"%s\"", exec.str());
+                unsigned retCode = pipe->wait();
+                if (retCode)
+                    throw makeStringExceptionV(0, "Failed to run \"%s\": process exited with error: %u", exec.str(), retCode);
             }
         }
         catch (IException *e)
