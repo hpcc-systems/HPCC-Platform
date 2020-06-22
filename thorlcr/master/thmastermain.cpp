@@ -73,6 +73,70 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
+class CThorEndHandler : implements IThreaded
+{
+    CThreaded threaded;
+    unsigned timeout = 30000;
+    std::atomic<bool> started{false};
+    std::atomic<bool> stopped{false};
+    Semaphore sem;
+public:
+    CThorEndHandler() : threaded("CThorEndHandler")
+    {
+        threaded.init(this); // starts thread
+    }
+    ~CThorEndHandler()
+    {
+        stop();
+        threaded.join(timeout);
+    }
+    void start(unsigned timeoutSecs)
+    {
+        bool expected = false;
+        if (started.compare_exchange_strong(expected, true))
+        {
+            timeout = timeoutSecs * 1000; // sem_post and sem_wait are mem_barriers
+            sem.signal();
+        }
+    }
+    void stop()
+    {
+        bool expected = false;
+        if (stopped.compare_exchange_strong(expected, true))
+            sem.signal();
+    }
+    virtual void threadmain() override
+    {
+        // wait to be signalled to start timer
+        sem.wait();
+        if (stopped)
+            return;
+        if (!sem.wait(timeout))
+        {
+            // if it wasn't set by now then it's -1 and Thor restarts ...
+            int eCode = queryExitCode();
+            _exit(eCode);
+        }
+    }
+};
+
+static CThorEndHandler *thorEndHandler = nullptr;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    /* NB: CThorEndHandler starts the thread now, although strictly it is not needed until later.
+     * This is to avoid requiring the thread to be started in a unsafe context, e.g. a signal handler
+     */
+    thorEndHandler = new CThorEndHandler();
+    return true;
+}
+MODULE_EXIT()
+{
+    if (thorEndHandler)
+        delete thorEndHandler;
+}
+
+
 class CRegistryServer : public CSimpleInterface
 {
     unsigned msgDelay, slavesRegistered;
@@ -452,62 +516,14 @@ bool checkClusterRelicateDAFS(IGroup &grp)
 
 static bool auditStartLogged = false;
 
-class CThorEndHandler : public CSimpleInterface, implements IThreaded
-{
-    CThreaded threaded;
-    unsigned timeout = 30000;
-    std::atomic<bool> started{false};
-    std::atomic<bool> stopped{false};
-    Semaphore sem;
-public:
-    CThorEndHandler() : threaded("CThorEndHandler")
-    {
-        threaded.init(this);
-    }
-    ~CThorEndHandler()
-    {
-        stop();
-        threaded.join(timeout);
-    }
-    void start(unsigned timeoutSecs)
-    {
-        bool expected = false;
-        if (started.compare_exchange_strong(expected, true))
-        {
-            timeout = timeoutSecs * 1000; // sem_post and sem_wait are mem_barriers
-            sem.signal();
-        }
-    }
-    void stop()
-    {
-        bool expected = false;
-        if (stopped.compare_exchange_strong(expected, true))
-            sem.signal();
-    }
-    virtual void threadmain() override
-    {
-        // wait to be signalled to start timer
-        sem.wait();
-        if (stopped)
-            return;
-        if (!sem.wait(timeout))
-        {
-            // if it wasn't set by now then it's -1 and Thor restarts ...
-            int eCode = queryExitCode();
-            _exit(eCode);
-        }
-    }
-};
-// start thread now
-static CThorEndHandler thorEndHandler;
-
 static bool firstCtrlC = true;
 bool ControlHandler(ahType type)
 {
     // MCK - NOTE: this routine may make calls to non-async-signal safe functions
     //             (such as malloc) that really should not be made if we are called
     //             from a signal handler - start end handler timer to always end
-    thorEndHandler.start(120);
+    if (thorEndHandler)
+        thorEndHandler->start(120);
 
     if (ahInterrupt == type)
     {
@@ -979,7 +995,7 @@ int main( int argc, const char *argv[]  )
     }
 
     // cleanup handler to be sure we end
-    thorEndHandler.start(30);
+    thorEndHandler->start(30);
 
     PROGLOG("Thor closing down 5");
     stopPerformanceMonitor();
