@@ -1,32 +1,41 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Cert_Prelight">
   <title>Preflight</title>
 
-  <para>A primeira etapa da certificação de que a plataforma está instalada e configurada adequadamente é executar uma verificação preflight dos componentes. Isso garante que todas as máquinas e executáveis adequados estão operacionais. Além disso, a verificação confirma que há espaço em disco suficiente, memória disponível e valores percentuais de CPU aceitáveis.</para>
+  <para>A primeira etapa da certificação de que a plataforma está instalada e
+  configurada adequadamente é executar uma verificação preflight dos
+  componentes. Isso garante que todas as máquinas e executáveis adequados
+  estão operacionais. Além disso, a verificação confirma que há espaço em
+  disco suficiente, memória disponível e valores percentuais de CPU
+  aceitáveis.</para>
 
   <itemizedlist mark="bullet">
     <listitem>
       <para>Abra o ECL Watch em seu navegador usando o seguinte URL:</para>
 
       <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-      </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP  do seu ESP Server e pppp é a porta.  A porta padrão é 8010)</emphasis></para>
+      </emphasis><emphasis role="bold">(onde nnn.nnn.nnn.nnn é o endereço IP
+      do seu ESP Server e pppp é a porta. A porta padrão é
+      8010)</emphasis></para>
 
       <informaltable colsep="1" frame="all" rowsep="1">
         <?dbfo keep-together="always"?>
 
         <tgroup cols="2">
-          <colspec colwidth="49.50pt" />
+          <colspec colwidth="49.50pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
               <entry><inlinegraphic
-              fileref="../../images/caution.png" /></entry>
+              fileref="../../images/caution.png"/></entry>
 
-              <entry><emphasis role="bold">Note:</emphasis> Seu endereço IP poderá ser diferente dos endereços fornecidos nestas imagens. Use o endereço IP fornecido pela sua instalação.</entry>
+              <entry><emphasis role="bold">Note:</emphasis> Seu endereço IP
+              poderá ser diferente dos endereços fornecidos nestas imagens.
+              Use o endereço IP fornecido pela sua instalação.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -41,8 +50,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Clique no ícone  <emphasis role="bold">Operations</emphasis>  e clique no link  <emphasis role="bold">System Server</emphasis>
-        .</para>
+        <para>Clique no ícone <emphasis role="bold">Operations</emphasis> e
+        clique no link <emphasis role="bold">System Server</emphasis> .</para>
 
         <para><figure>
             <title>Link Servidores do Sistema</title>
@@ -50,7 +59,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg01.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -63,7 +72,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg02.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -72,7 +81,30 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Pressione o botão  <emphasis role="bold">Submit</emphasis>  na parte inferior dessa página para iniciar o preflight.</para>
+        <para>Expand the folder for the System Server then check the box next
+        to the desired component(s).</para>
+
+        <para><figure>
+            <title>Selecione os Servidores do Systema</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/PF-SysSrv01.jpg"
+                           vendor="eclwatchSS"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Com os servidores selecionados e o botão de preflight ativado,
+        você pode pressioná-lo para exibir as opções de preflight.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Marque ou desmarque qualquer uma das opções, então pressione o
+        botão <emphasis role="bold">Submit</emphasis> para iniciar o
+        preflight.</para>
 
         <para><figure>
             <title>Submit</title>
@@ -80,7 +112,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg03.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -90,7 +122,8 @@
     <sect2 id="Systems_Expected_results">
       <title>RESULTADOS ESPERADOS:</title>
 
-      <para>Depois que o botão Submit é pressionado, será exibida uma tela semelhante à mostrada abaixo.</para>
+      <para>Depois que o botão Submit é pressionado, será exibida uma tela
+      semelhante à mostrada abaixo.</para>
 
       <para><figure>
           <title>Informações sobre componentes do sistema</title>
@@ -98,36 +131,47 @@
           <mediaobject>
             <imageobject>
               <imagedata fileref="../../images/CSimg04.jpg"
-                         vendor="eclwatchSS" />
+                         vendor="eclwatchSS"/>
             </imageobject>
           </mediaobject>
-        </figure>Essa tela exibe informações sobre vários componentes do sistema. Essas informações indicam se vários componentes estão realmente executando corretamente. A página resultante exibe informações úteis sobre cada componente. O nome, a condição e o estado do componente, há quanto tempo está em execução, uso de disco e memória e outras informações podem ser vistas rapidamente.</para>
+        </figure>Essa tela exibe informações sobre vários componentes do
+      sistema. Essas informações indicam se vários componentes estão realmente
+      executando corretamente. A página resultante exibe informações úteis
+      sobre cada componente. O nome, a condição e o estado do componente, há
+      quanto tempo está em execução, uso de disco e memória e outras
+      informações podem ser vistas rapidamente.</para>
 
       <?hard-pagebreak ?>
 
-      <para>Se houver algum componente com falha, ele será destacado em laranja, o que indica que não está disponível.</para>
+      <para>Se houver algum alerta, os componentes serão destacados, indicando
+      que requerem mais atenção.</para>
 
-      <figure>
-        <title>Falha no Componente</title>
+      <para>Por exemplo, a imagem a seguir indica que há um incidente com
+      servidor DFU.</para>
 
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-sysfail.jpg"
-                       vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
+      <para><figure>
+          <title>Alerta do Servidor do Sistema</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/PF-SysFail01.jpg"
+                         vendor="eclwatchSS"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
     </sect2>
   </sect1>
 
   <sect1 id="Preflight_Target_Clusters">
-    <title>Preflight Cluster de Destino</title>
+    <title>Preflight de Clusters de Destino</title>
 
-    <para>Use o link Target Clusters para executar o preflight de todos os clusters ao mesmo tempo. Para executar o preflight de clusters individuais, consulte as seguintes seções:  <emphasis>Preflight Thor</emphasis>  ou  <emphasis>Preflight Roxie</emphasis> .</para>
+    <para>Use o link do Target Clusters para realizar o preflight de todos os
+    clusters.</para>
 
     <orderedlist>
       <listitem>
-        <para>Clique no ícone  <emphasis role="bold">Operations</emphasis>  e clique no link  <emphasis role="bold">Target Clusters</emphasis>
+        <para>Clique no ícone <emphasis role="bold">Operations</emphasis> e
+        clique no link <emphasis role="bold">Target Clusters</emphasis>
         .</para>
 
         <para><figure>
@@ -136,18 +180,26 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg040.jpg"
-                           vendor="eclwatchSS, topology" />
+                           vendor="eclwatchSS, topology"/>
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>Todos os clusters do sistema são exibidos.</para>
+        <para>Isto exibe uma lista detalhada de todos os Clusters do
+        sistema.</para>
       </listitem>
 
       <listitem>
-        <para>Clique na caixa <emphasis role="bold"> Select All/None </emphasis> para marcá-la e selecionar todos os clusters.</para>
+        <para>Clique na caixa de seleção selecionar tudo, na linha superior à
+        esquerda, para selecionar todos os clusters de destino.</para>
 
-        <para>Opcionalmente, é possível marcar apenas as caixas ao lado dos clusters que você queira verificar.</para>
+        <para>Opcionalmente, você pode apenas marcar as caixas ao lado do(s)
+        cluster(s) que deseja realizar o preflight. Se você optar por fazer em
+        todos os Clusters de destino, não precisará realizar separadamente no
+        Thor e Roxie, conforme detalhado abaixo.</para>
+
+        <para>Com os clusters selecionados e o botão preflight ativo, você
+        pode pressioná-lo para exibir as opções de preflight.</para>
 
         <para><figure>
             <title>Selecionar Target Clusters</title>
@@ -155,53 +207,55 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg041.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Pressione o botão <emphasis role="bold">Submit</emphasis> na parte inferior da página para iniciar o preflight.</para>
+        <para>Marque ou desmarque qualquer uma das opções desejadas, então
+        pressione o botão <emphasis role="bold">Submit</emphasis> para iniciar
+        o preflight.</para>
 
         <para><figure>
             <title>Submit</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/CSimg03.jpg" />
+                <imagedata fileref="../../images/CSimg03.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>
+
+        <para><emphasis role="bold">ATENÇÃO</emphasis>: Dependendo do tamanho
+        do seu sistema, poderá haver um pequeno atraso na exibição dos
+        resultados.</para>
       </listitem>
     </orderedlist>
 
     <sect2 id="Expected_Results_TargetClusters">
       <title>RESULTADOS ESPERADOS:</title>
 
-      <para>Depois de pressionar <emphasis role="bold">Submit</emphasis>, será exibida uma tela semelhante à mostrada abaixo.<figure>
+      <para>Depois de pressionar <emphasis role="bold">Submit</emphasis>, será
+      exibida uma tela semelhante à mostrada abaixo.<figure>
           <title>Informação Target Cluster</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="../../images/CSimg042.jpg" />
+              <imagedata fileref="../../images/CSimg042.jpg"/>
             </imageobject>
           </mediaobject>
-        </figure>Essa tela exibe informações sobre os nós dos componentes do sistema. Essas informações podem ajudar a indicar se tudo está operando normalmente e destacar possíveis motivos de preocupação.</para>
+        </figure>Essa tela exibe informações sobre os nós dos componentes do
+      sistema. Essas informações podem ajudar a indicar se tudo está operando
+      normalmente e destacar possíveis motivos de preocupação.</para>
 
-      <para>Se houver componentes com falha ou alertas importantes, eles serão destacados em laranja. Normalmente, esses alertas exigem atenção.</para>
+      <para>Se houver algum alerta pertinente, ele será destacado. Esse
+      alertas exigem uma atenção adicional.</para>
 
-      <figure>
-        <title>Falha no Componente</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>Se houver campos laranja, você deverá examinar os componentes especificados mais detalhadamente. Isso indica algum tipo de problema ou anormalidade.</para>
+      <para>Se houver campos laranja, você deverá examinar os componentes
+      especificados mais detalhadamente. Isso indica algum tipo de problema ou
+      anormalidade.</para>
     </sect2>
   </sect1>
 
@@ -210,7 +264,8 @@
 
     <orderedlist>
       <listitem>
-        <para>Clique no ícone  <emphasis role="bold">Operations</emphasis>  e clique no link  <emphasis role="bold">Clusters Processes</emphasis>
+        <para>Clique no ícone <emphasis role="bold">Operations</emphasis> e
+        clique no link <emphasis role="bold">Clusters Processes</emphasis>
         .</para>
 
         <para><figure>
@@ -219,41 +274,50 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg05.jpg"
-                           vendor="eclwatchSS, topology" />
+                           vendor="eclwatchSS, topology"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Clique no link <emphasis role="bold">mythor</emphasis>
-        .</para>
+        <para>Expanda o cluster Thor clicando na seta ao lado do link
+        <emphasis role="bold">ThorCluster</emphasis>.</para>
 
         <para><figure>
-            <title>Link mythor</title>
+            <title>Link Thor Cluster</title>
 
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/CSimg06.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Marque a caixa de seleção  <emphasis role="bold">Select All</emphasis>  (se necessário).</para>
+        <para>Clique na caixa ao lado de cada nós para analisar, ou em
+        <emphasis role="bold">Select All</emphasis> na primeira linha.</para>
       </listitem>
 
       <listitem>
-        <para>Pressione o botão <emphasis role="bold">Submit</emphasis>  para iniciar o preflight</para>
+        <para>Pressione o botão <emphasis role="bold">Submit</emphasis> para
+        iniciar o preflight</para>
 
-        <para><figure>
+        <para>Com sistema selecionado e o botão de preflight ativo, você pode
+        exibir as opções de preflight.</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione ou desmarque qualquer uma das opções desejadas, então
+        pressione o botão <emphasis role="bold">Submit</emphasis> para iniciar
+        o preflight. <figure>
             <title>Submit</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/CSimg03.jpg" />
+                <imagedata fileref="../../images/CSimg03.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -263,50 +327,23 @@
     <sect2 id="Expected_Results_Data_Refinery">
       <title>RESULTADOS ESPERADOS:</title>
 
-      <para>Depois que o botão Submit é pressionado, será exibida uma tela semelhante à mostrada abaixo.</para>
+      <para>Depois que o botão Submit é pressionado, será exibida uma tela
+      semelhante à mostrada abaixo.</para>
 
       <para><figure>
-          <title>Informações sobre o componente de sistema ESP mythor</title>
+          <title>Resultado do Cluster Process</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="../../images/CSimg07.jpg" />
+              <imagedata fileref="../../images/CSimg07.jpg"/>
             </imageobject>
           </mediaobject>
-        </figure>Essa tela exibe informações sobre o cluster Thor. Essas informações podem ajudar a indicar se tudo está operando normalmente e destacar possíveis motivos de preocupação.</para>
+        </figure>Essa tela exibe informações sobre o cluster selecionado.
+      Essas informações podem ajudar a indicar se tudo está operando
+      normalmente e destacar possíveis motivos de preocupação.</para>
 
-      <para><informaltable colsep="1" frame="all" rowsep="1">
-          <?dbfo keep-together="always"?>
-
-          <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
-
-            <colspec />
-
-            <tbody>
-              <row>
-                <entry><inlinegraphic
-                fileref="../../images/tip.jpg" /></entry>
-
-                <entry>Se o sistema tiver mais de um cluster Thor, repita essas etapas para cada cluster.</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable></para>
-
-      <?hard-pagebreak ?>
-
-      <para>Se houver nós com falha ou alertas importantes, eles serão destacados em laranja. Normalmente, os alertas laranja exigem atenção adicional.</para>
-
-      <figure>
-        <title>Falha no Componente</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
-          </imageobject>
-        </mediaobject>
-      </figure>
+      <para>Se houver algum alerta pertinente, ele será destacado. Esse
+      alertas exigem uma atenção adicional.</para>
     </sect2>
   </sect1>
 
@@ -315,7 +352,8 @@
 
     <orderedlist>
       <listitem>
-        <para>Clique no ícone  <emphasis role="bold">Operations</emphasis>  e clique no link  <emphasis role="bold">Clusters Processes</emphasis>
+        <para>Clique no ícone <emphasis role="bold">Operations</emphasis> e
+        clique no link <emphasis role="bold">Clusters Processes</emphasis>
         .</para>
 
         <para><figure>
@@ -323,65 +361,72 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/CSimg05.jpg" />
+                <imagedata fileref="../../images/CSimg05.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Clique no link  <emphasis role="bold">myroxie</emphasis> .
-        <figure>
-            <title>Link myroxie</title>
+        <para>Expanda o cluster Roxie clicando na seta ao lado do link
+        <emphasis role="bold">RoxieCluster</emphasis>.<figure>
+            <title>Link RoxieCluster</title>
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/CSimg08.jpg" />
+                <imagedata fileref="../../images/CSimg08.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Pressione o botão <emphasis role="bold">Submit</emphasis>  para iniciar o preflight</para>
+        <para>Marque a caixa ao lado para selecionar os nós individualmente
+        para análise, ou marque <emphasis role="bold">Select All</emphasis> na
+        primeira linha.</para>
+      </listitem>
+
+      <listitem>
+        <para>Com sistema selecionado e o botão de preflight ativo, você pode
+        exibir as opções de preflight.</para>
+      </listitem>
+
+      <listitem>
+        <para>Selecione ou desmarque qualquer uma das opções desejadas, então
+        pressione o botão <emphasis role="bold">Submit</emphasis> para iniciar
+        o preflight. <figure>
+            <title>Submit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg03.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
       </listitem>
     </orderedlist>
 
     <sect2 id="Expected_results_roxie">
       <title>RESULTADOS ESPERADOS</title>
 
-      <para>Depois que o botão Submit é pressionado, será exibida uma tela semelhante à mostrada abaixo.</para>
+      <para>Depois que o botão Submit é pressionado, será exibida uma tela
+      semelhante à mostrada abaixo.</para>
 
       <para><figure>
           <title>Informações de sistema do Roxie</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="../../images/CSimg09.jpg" />
+              <imagedata fileref="../../images/CSimg09.jpg"/>
             </imageobject>
           </mediaobject>
         </figure></para>
 
-      <para>Indicam se os nós Roxie estão em execução e fornecem algumas informações adicionais sobre esses nós.</para>
+      <para>Indicam se os nós Roxie estão em execução e fornecem algumas
+      informações adicionais sobre esses nós.</para>
 
-      <informaltable colsep="1" frame="all" rowsep="1">
-        <?dbfo keep-together="always"?>
-
-        <tgroup cols="2">
-          <colspec colwidth="49.50pt" />
-
-          <colspec />
-
-          <tbody>
-            <row>
-              <entry><inlinegraphic
-              fileref="../../images/OSSgr3.png" /></entry>
-
-              <entry>Se o sistema tiver mais de um cluster Roxie, repita essas etapas para cada cluster.</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </informaltable>
+      <para>Se houver algum alerta pertinente, ele será destacado. Esse
+      alertas exigem uma atenção adicional.</para>
     </sect2>
   </sect1>
 </chapter>
