@@ -32,9 +32,10 @@ unsigned getNextSize(unsigned max, unsigned required)
 {
     if (required > DOUBLE_LIMIT)
     {
-        max = (required + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
-        if (required >= max)
-            throw MakeStringException(-1, "getNextSize: Request for %d bytes oldMax = %d", required, max);
+        unsigned nextMax = (required + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
+        if (required >= nextMax)
+            throw MakeStringException(-1, "Request to create an embedded dataset exceeded 4Gb.  [Old size = %u]", max);
+        max = nextMax;
     }
     else
     {
@@ -76,6 +77,10 @@ void RtlDatasetBuilder::ensure(size32_t required)
 
 byte * RtlDatasetBuilder::ensureCapacity(size32_t required, const char * fieldName)
 {
+    //Check if the required memory wraps within a size32_t type
+    if (totalSize + required < totalSize)
+        throw MakeStringException(-1, "Request to create an embedded dataset >= 4Gb.  [Old size = %u, extra = %u]", totalSize, required);
+
     ensure(totalSize + required);
     return self; // self is updated by ensure()
 }
