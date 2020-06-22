@@ -80,7 +80,7 @@
       </informaltable></para>
   </sect2>
 
-  <sect2 id="Sec_Adm_w_ECLWatch">
+  <sect2 id="Sec_Adm_w_ECLWatch" role="brk">
     <title>Administração de Segurança utilizando o ECL Watch</title>
 
     <para>É preciso ter direitos de administrador para administrar as

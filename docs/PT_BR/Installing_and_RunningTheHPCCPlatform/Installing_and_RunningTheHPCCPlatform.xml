@@ -325,7 +325,7 @@ gpgcheck=0</programlisting></para>
           <title>Ubuntu/Debian</title>
 
           <para>Um pacote Debian é disponibilizado para instalações Ubuntu.
-          Para instalar o pacote, use:</para>
+          Você deve instalar o pacote, usando o comando:</para>
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
@@ -1918,11 +1918,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
       <programlisting>sudo yum remove hpccsystems-platform </programlisting>
 
-      <para>Em contrapartida, ainda é possível usar</para>
-
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
-      <programlisting>sudo dpkg -r hpccsystems-platform</programlisting>
+      <programlisting>sudo apt-get remove hpccsystems-platform</programlisting>
     </sect1>
 
     <sect1 id="Helper-Applications">

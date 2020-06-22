@@ -1233,7 +1233,7 @@ useDropZoneRestriction=true
 #dafsMaxReceiveTimeSeconds=0
 
 # Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv 
-connection (default 10 seconds)
+#   (default 10 seconds)
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
