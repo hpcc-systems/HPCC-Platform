@@ -13918,6 +13918,7 @@ void waitK8sJob(const char *componentName, const char *job)
     jobname.toLowerCase();
     VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobname.str());
     VStringBuffer getScheduleStatus("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.conditions[?(@.type=='PodScheduled')].status}", jobname.str());
+    VStringBuffer checkJobExitCode("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.containerStatuses[?(@.name==\"%s\")].state.terminated.exitCode}", jobname.str(), jobname.str());
 
     unsigned delay = 100;
     unsigned start = msTick();
@@ -13932,6 +13933,11 @@ void waitK8sJob(const char *componentName, const char *job)
         {
             // Job is no longer active - we can terminate
             DBGLOG("kubectl jobs output: %s", output.str());
+            unsigned ret = runExternalCommand(nullptr, output.clear(), error.clear(), checkJobExitCode.str(), nullptr);
+            if (ret || error.length())
+                throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", checkJobExitCode.str(), ret, error.str());
+            if (!streq(output, "0"))  // state.terminated.exitCode
+                throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobname.str(), output.str());
             break;
         }
         ret = runExternalCommand(nullptr, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
