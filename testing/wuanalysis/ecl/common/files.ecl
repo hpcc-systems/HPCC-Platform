@@ -26,8 +26,19 @@ EXPORT files := Module
         STRING url;
         INTEGER timestamp;
     END;
+    EXPORT layout_user := RECORD
+        STRING20 FirstName;
+        String20 LastName;
+        INTEGER8 id;
+    END;
     EXPORT testfile1 := 'regress::wuanalysis::largedata1';
     EXPORT testfile2 := 'regress::wuanalysis::largedata2';
     EXPORT testfile3 := 'regress::wuanalysis::largedata3';
+    EXPORT testfile4 := 'regress::wuanalysis::userds';
+    EXPORT indxUser := 'regress::wuanalysis::userindx';
+    EXPORT joinresultds := 'regress::wuanalysis::joinresultds';
+    EXPORT dsfile1 := DATASET(testfile1, layout_visits, FLAT);
+    EXPORT dsfile4 := DATASET(testfile4, layout_user, FLAT);
+    EXPORT INDX1 := INDEX(dsfile4, , indxUser);
 END;
 

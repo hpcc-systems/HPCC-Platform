@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><severity>1</severity><code>30005</code><source>Workunit Analyse</source><message>Large number of rows from left dataset rejected in keyed join (w1:graph1:sg1:a3)</message></Row>
+ <Row><severity>1</severity><code>30004</code><source>Workunit Analyse</source><message>Significant skew in records causes uneven disk read time (w1:graph1:sg1:a2)</message></Row>
+</Dataset>

@@ -51,6 +51,19 @@ END;
 visits1 := DISTRIBUTE(NORMALIZE(v, 200000, addTime(LEFT, COUNTER)), HASH32(timestamp));
 visits2 := DISTRIBUTE(NORMALIZE(v, 200000, addTime(LEFT, COUNTER)), HASH32(url));
 
+sname := ['Abraham', 'Adamson', 'Hawkins', 'Morris', 'Triggs'];
+
+Files.layout_user genUser(Files.layout_visits l, integer c) := TRANSFORM
+   SELF.id := c;
+   SELF.FirstName := l.user;
+   SELF.LastName := sname[c % 5+1];
+END;
+user := PROJECT(visits1, genUser(LEFT, COUNTER));
+
 OUTPUT(visits1, , Files.testfile1, OVERWRITE);
 OUTPUT(visits2, , Files.testfile2, OVERWRITE);
+SEQUENTIAL(
+   OUTPUT(user, , Files.testfile4, OVERWRITE);
+   BUILDINDEX(Files.INDX1, OVERWRITE);
+);
 

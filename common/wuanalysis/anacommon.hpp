@@ -77,7 +77,7 @@ private:
     StringBuffer comment;
 };
 
-typedef enum { watOptFirst=0, watOptMinInterestingTime=0, watOptMinInterestingCost, watOptSkewThreshold, watOptMinRowsPerNode, watOptMax } WutOptionType ;
+typedef enum { watOptFirst=0, watOptMinInterestingTime=0, watOptMinInterestingCost, watOptSkewThreshold, watOptMinRowsPerNode, watPreFilteredKJThreshold, watOptMax } WutOptionType ;
 
 interface IAnalyserOptions
 {
