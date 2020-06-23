@@ -639,7 +639,7 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const numSlaves = parseInt(attrs["NumSlaves"]);
+            const numSlaves = edge.parent._.hasAttr("NumSlaves") ? parseInt(edge.parent._.attr("NumSlaves").RawValue) : Number.MAX_SAFE_INTEGER;
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);
             if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
@@ -785,7 +785,7 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
         return this.scopeSubgraphsMap[_.id()] || this.scopeVerticesMap[_.id()] || this.scopeEdgesMap[_.id()];
     }
 
-    items(_: string[]): Array<Subgraph | VertexType | Edge> {
+    items(_: string[]): (Subgraph | VertexType | Edge)[] {
         return [...this.subgraphs(_), ...this.vertices(_), ...this.edges(_)];
     }
 
@@ -1034,7 +1034,7 @@ export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const numSlaves = parseInt(attrs["NumSlaves"]);
+            const numSlaves = edge.parent._.hasAttr("NumSlaves") ? parseInt(edge.parent._.attr("NumSlaves").RawValue) : Number.MAX_SAFE_INTEGER;
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);
             if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
@@ -1108,7 +1108,7 @@ export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex
         return this.scopeSubgraphsMap[id] || this.scopeVerticesMap[id] || this.scopeEdgesMap[id];
     }
 
-    items(_: string[]): Array<ISubgraph | IVertex | IEdge> {
+    items(_: string[]): (ISubgraph | IVertex | IEdge)[] {
         return [...this.subgraphs(_), ...this.vertices(_), ...this.edges(_)];
     }
 
