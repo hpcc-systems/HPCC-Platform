@@ -2406,11 +2406,14 @@ static StringAttr unixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
-static SpinLock ldbSpin;
-static bool ldbDone = false;
-void loadDefaultBases()
+static CriticalSection ldbCs;
+static std::atomic<bool> ldbDone{false};
+static void loadDefaultBases()
 {
-    SpinBlock b(ldbSpin);
+    if (ldbDone)
+        return;
+
+    CriticalBlock b(ldbCs);
     if (ldbDone)
         return;
     ldbDone = true;
