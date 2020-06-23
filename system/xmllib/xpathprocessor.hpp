@@ -50,6 +50,7 @@ interface XMLLIB_API IXpathContext : public IInterface
 
     virtual void registerFunction(const char *xmlns, const char * name, void *f) = 0;
     virtual void registerNamespace(const char *prefix, const char *uri) = 0;
+    virtual const char *queryNamespace(const char *prefix) = 0;
     virtual void beginScope(const char *name) = 0;
     virtual void endScope() = 0;
 
@@ -66,19 +67,30 @@ class CXpathContextScope : CInterface
 {
 private:
     Linked<IXpathContext> context;
+    Linked<IProperties> namespaces;
 public:
     IMPLEMENT_IINTERFACE;
-    CXpathContextScope(IXpathContext *ctx, const char *name) : context(ctx)
+    CXpathContextScope(IXpathContext *ctx, const char *name, IProperties *ns=nullptr) : context(ctx), namespaces(ns)
     {
         context->beginScope(name);
     }
     virtual ~CXpathContextScope()
     {
+        if (namespaces)
+        {
+            Owned<IPropertyIterator> ns = namespaces->getIterator();
+            ForEach(*ns)
+            {
+                const char *prefix = ns->getPropKey();
+                const char *uri = namespaces->queryProp(prefix);
+                context->registerNamespace(prefix, isEmptyString(uri) ? nullptr : uri);
+            }
+        }
         context->endScope();
     }
 };
 
 extern "C" XMLLIB_API ICompiledXpath* compileXpath(const char * xpath);
-extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc, bool strictParameterDeclaration);
+extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc, bool strictParameterDeclaration, bool removeDocNamespaces);
 
 #endif /* XPATH_MANAGER_HPP_ */

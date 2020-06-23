@@ -655,7 +655,7 @@ static IPropertyTree *getOperationTargetPTree(MapStringToMyClass<IPropertyTree> 
         return opTree;
     opTree = getTargetPTree(tree, xpathContext, mergedTarget);
     if (opTree)
-        treeMap.setValue(mergedTarget, LINK(opTree));
+        treeMap.setValue(mergedTarget, opTree);
     return opTree;
 }
 
@@ -664,6 +664,7 @@ class CEsdlCustomTransform : public CInterfaceOf<IEsdlCustomTransform>
 private:
     IArrayOf<IEsdlTransformOperation> m_variables; //keep separate and only at top level for now
     IArrayOf<IEsdlTransformOperation> m_operations;
+    Owned<IProperties> namespaces = createProperties(false);
     StringAttr m_name;
     StringAttr m_target;
     StringBuffer m_prefix;
@@ -711,6 +712,14 @@ public:
 
         DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
 
+        Owned<IAttributeIterator> attributes = tree.getAttributes();
+        ForEach(*attributes)
+        {
+            const char *name = attributes->queryName();
+            if (strncmp(name, "@xmlns:", 7)==0)
+                namespaces->setProp(name+7, attributes->queryValue());
+        }
+
         StringBuffer xpath;
         Owned<IPropertyTreeIterator> parameters = tree.getElements(makeOperationTagName(xpath, m_prefix, "param"));
         ForEach(*parameters)
@@ -753,13 +762,21 @@ public:
 
     void processTransformImpl(IEspContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *target)
     {
-        CXpathContextScope scope(xpathContext, "transform");
-
+        Owned<IProperties> savedNamespaces = createProperties(false);
+        Owned<IPropertyIterator> ns = namespaces->getIterator();
+        ForEach(*ns)
+        {
+            const char *prefix = ns->getPropKey();
+            const char *existing = xpathContext->queryNamespace(prefix);
+            savedNamespaces->setProp(prefix, isEmptyString(existing) ? "" : existing);
+            xpathContext->registerNamespace(prefix, namespaces->queryProp(prefix));
+        }
+        CXpathContextScope scope(xpathContext, "transform", savedNamespaces);
         if (m_target.length())
             target = m_target.str();
         MapStringToMyClass<IPropertyTree> treeMap; //cache trees because when there are merged targets they are likely to repeat
         IPropertyTree *txTree = getTargetPTree(theroot, xpathContext, target);
-        treeMap.setValue(target, LINK(txTree));
+        treeMap.setValue(target, txTree);
         ForEachItemIn(v, m_variables)
             m_variables.item(v).process(context, txTree, xpathContext);
         ForEachItemIn(i, m_operations)
@@ -802,7 +819,7 @@ void processServiceAndMethodTransforms(std::initializer_list<IEsdlCustomTransfor
         }
 
         bool strictParams = bindingCfg ? bindingCfg->getPropBool("@strictParams", false) : false;
-        Owned<IXpathContext> xpathContext = getXpathContext(content.str(), strictParams);
+        Owned<IXpathContext> xpathContext = getXpathContext(content.str(), strictParams, false);
 
         StringArray prefixes;
         for ( IEsdlCustomTransform * const & item : transforms)
