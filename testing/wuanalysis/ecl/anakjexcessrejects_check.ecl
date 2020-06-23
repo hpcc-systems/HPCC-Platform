@@ -11,23 +11,18 @@
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
+    See the License for the specific language governing permissions and 
     limitations under the License.
 ############################################################################## */
 
-#ifndef ANAWU_HPP
-#define ANAWU_HPP
+// Analysis should show: Large number rows rejected from left ds in keyed join 
+//
+// NOTE: For faster nodes, it may be necessary to increase the size of testfile
 
-#include "anacommon.hpp"
+//noroxie
+//nohthor
 
-struct WuAnalyseOptions
-{
-    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
-    stat_type skewThreshold = statPercent(20);         // minimum interesting skew measurment
-    stat_type preFilteredKJThreshold = statPercent(50);
-};
+IMPORT $.common.Helper as Helper;
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu);
-#endif
+OUTPUT(Helper.getMessages('anakjexcessrejects'));
+

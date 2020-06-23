@@ -15,19 +15,18 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef ANAWU_HPP
-#define ANAWU_HPP
+// Analysis should show: large number of rows read and rejected for keyed join
+//
 
-#include "anacommon.hpp"
+//nokey
+//noroxie
+//nohthor
+//nooutput
 
-struct WuAnalyseOptions
-{
-    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
-    stat_type skewThreshold = statPercent(20);         // minimum interesting skew measurment
-    stat_type preFilteredKJThreshold = statPercent(50);
-};
+IMPORT $.common.Files as Files;
+IMPORT $.common.Helper as Helper;
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu);
-#endif
+j := JOIN(Files.dsfile1, Files.INDX1, KEYED(LEFT.user = 'Ned' and LEFT.user = RIGHT.firstname), ATMOST(1));
+
+O := Output(j,,Files.joinresultds, OVERWRITE);
+PARALLEL(O, Helper.saveWUID('anakjexcessrejects'));
