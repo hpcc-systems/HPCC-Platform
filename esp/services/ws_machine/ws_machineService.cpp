@@ -537,10 +537,14 @@ void Cws_machineEx::addProcessRequestToMachineInfoData(CGetMachineInfoData& mach
     else
         pathSep = '/';
 
+    if (!m_processFilters)
+        return;
+
     Owned<CMachineData> machineNew = new CMachineData(address1, address2, os, pathSep);
 
     //Read possible dependencies for all processes
     set<string>& dependenciesForAllProcesses = machineNew->getDependencies();
+
     StringBuffer xPath;
     xPath.appendf("Platform[@name='%s']/ProcessFilter[@name='any']/Process", machineNew->getOS() == MachineOsW2K ? "Windows" : "Linux");
     Owned<IPropertyTreeIterator> processes = m_processFilters->getElements(xPath.str());
@@ -557,7 +561,6 @@ void Cws_machineEx::addProcessRequestToMachineInfoData(CGetMachineInfoData& mach
         dependenciesForAllProcesses.insert("dafilesrv");
 
     addProcessData(machineNew, processType, compName, path, processNumber);
-
     machines.append(*machineNew.getClear());
 }
 
@@ -587,9 +590,12 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
         dependenciesForThisProcess.insert((*it).c_str());
 
     //now collect "process-specific" dependencies
-    StringBuffer xPath;
-    xPath.appendf("Platform[@name='%s']/ProcessFilter[@name='%s']", machine->getOS() == MachineOsW2K ? "Windows" : "Linux", processType);
-    IPropertyTree* processFilterNode = m_processFilters->queryPropTree( xPath.str() );
+    IPropertyTree* processFilterNode = nullptr;
+    if (m_processFilters)
+    {
+        VStringBuffer xPath("Platform[@name='%s']/ProcessFilter[@name='%s']", machine->getOS() == MachineOsW2K ? "Windows" : "Linux", processType);
+        processFilterNode = m_processFilters->queryPropTree( xPath.str() );
+    }
     if (!processFilterNode)
     {
         machine->getProcesses().append(*process.getClear());
@@ -620,7 +626,6 @@ void Cws_machineEx::addProcessData(CMachineData* machine, const char* processTyp
     }
 
     process->setMultipleInstances(machine->getOS() == MachineOsLinux && processFilterNode->getPropBool("@multipleInstances", false));
-
     machine->getProcesses().append(*process.getClear());
 }
 

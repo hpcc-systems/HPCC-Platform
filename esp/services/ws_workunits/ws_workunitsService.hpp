@@ -416,6 +416,11 @@ public:
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
+        if (queryComponentConfig().getPropBool("@api_only"))
+        {
+            CHttpSoapBinding::getNavigationData(context, data);
+            return;
+        }
         if (!batchWatchFeaturesOnly)
         {
             IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);

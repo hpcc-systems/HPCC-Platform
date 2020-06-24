@@ -1539,6 +1539,20 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     ISecUser* user = context.queryUser();
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
+        if (getESPContainer() && getESPContainer()->queryApplicationConfig())
+        {
+            ESPLOG(LogNormal, "Get config generated during application init");
+            StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            if (context.queryRequestParameters()->hasProp("display"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+            toXML(getESPContainer()->queryApplicationConfig(), content);
+            response->setContent(content.str());
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+        }
+
         ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
 
         StringBuffer content;

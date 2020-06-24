@@ -302,6 +302,7 @@ inline static bool isValidXPathChr(char c)
 jlib_decl void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute=nullptr);
 
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions = {});
+jlib_decl IPropertyTree * loadConfiguration(IPropertyTree * defaultConfig, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
 jlib_decl IPropertyTree * queryCostsConfiguration();
 

@@ -7959,21 +7959,10 @@ static void holdLoop()
 }
 #endif
 
-jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
+jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
 {
     if (componentConfiguration)
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
-
-    Owned<IPropertyTree> componentDefault;
-    if (defaultYaml)
-    {
-        Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
-        componentDefault.set(defaultConfig->queryPropTree(componentTag));
-        if (!componentDefault)
-            throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
-    }
-    else
-        componentDefault.setown(createPTree(componentTag));
 
     Linked<IPropertyTree> config(componentDefault);
     const char * optConfig = nullptr;
@@ -7998,7 +7987,9 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
         }
         else if (strsame(cur, "--init"))
         {
-            printf("%s\n", defaultYaml);
+            StringBuffer yamlText;
+            toYAML(componentDefault, yamlText, 0, YAML_SortTags);
+            printf("%s\n", yamlText.str());
             exit(0);
         }
         else if (strsame(cur, "--outputconfig"))
@@ -8091,6 +8082,25 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
 
     componentConfiguration.set(config);
     return config.getClear();
+}
+
+jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
+{
+    if (componentConfiguration)
+        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+
+    Owned<IPropertyTree> componentDefault;
+    if (defaultYaml)
+    {
+        Owned<IPropertyTree> defaultConfig = createPTreeFromYAML(defaultYaml);
+        componentDefault.set(defaultConfig->queryPropTree(componentTag));
+        if (!componentDefault)
+            throw makeStringExceptionV(99, "Default configuration does not contain the tag %s", componentTag);
+    }
+    else
+        componentDefault.setown(createPTree(componentTag));
+
+    return loadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
 }
 
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
@@ -8221,15 +8231,14 @@ public:
                         iEvent->endNode(elname, decoded.length(), (const void *) decoded.str(), true, parser.offset);
                     }
                 }
+                else if (streq(elname, "^")) //text content of parent node
+                {
+                    content.set((const char *) event.data.scalar.value);
+                }
                 else if (tag && (streq(tag, "!el") || streq(tag, "!element")))
                 {
-                    if (streq(elname, "^")) //text content of parent node
-                        content.set((const char *) event.data.scalar.value);
-                    else
-                    {
-                        iEvent->beginNode(elname, false, parser.offset);
-                        iEvent->endNode(elname, event.data.scalar.length, (const void *) event.data.scalar.value, false, parser.offset);
-                    }
+                    iEvent->beginNode(elname, false, parser.offset);
+                    iEvent->endNode(elname, event.data.scalar.length, (const void *) event.data.scalar.value, false, parser.offset);
                 }
                 else //by default all named scalars are ptree attributes
                 {

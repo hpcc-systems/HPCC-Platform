@@ -1,0 +1,10 @@
+directories:
+  run: "/var/lib/[NAME]/[INST]"
+  conf: "/etc/[NAME]/[INST]"
+  temp: "/var/lib/[NAME]/[INST]/temp"
+  data: "/var/lib/[NAME]/hpcc-data/[COMPONENT]"
+  data2: "/var/lib/[NAME]/hpcc-data2/[COMPONENT]"
+  data3: "/var/lib/[NAME]/hpcc-data3/[COMPONENT]"
+  mirror: "/var/lib/[NAME]/hpcc-mirror/[COMPONENT]"
+  query: "/var/lib/[NAME]/queries/[INST]"
+  lock: "/var/lock/[NAME]/[INST]"

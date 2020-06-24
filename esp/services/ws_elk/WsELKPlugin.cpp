@@ -37,7 +37,7 @@ extern "C"
 
 ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "ws_elk")==0)
+    if (strieq(type, "ws_elk"))
     {
         Cws_elkEx* service = new Cws_elkEx;
         service->init(cfg, process, name);
@@ -48,7 +48,10 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    if (strcmp(type, "ws_elkSoapBinding")==0)
+    //binding names ending in _http are being added so the names can be made more consistent and can therefore be automatically generated
+    //  the name also better reflects that these bindings are for all HTTP based protocols, not just SOAP
+    //  both "SoapBinding" and "_http" names instantiate the same objects.
+    if (strieq(type, "ws_elkSoapBinding")||strieq(type, "ws_elk_http"))
     {
 #ifdef _DEBUG
         http_soap_log_level log_level_ = hsl_all;

@@ -866,15 +866,29 @@ int CEspHttpServer::onGet()
 {   
     if (m_request && m_request->queryParameters()->hasProp("config_") && m_viewConfig)
     {
-        StringBuffer mimetype, etag, lastModified;
-        MemoryBuffer content;
-        bool modified = true;
-        m_request->getHeader("If-None-Match", etag);
-        m_request->getHeader("If-Modified-Since", lastModified);
-        httpContentFromFile("esp.xml", mimetype, content, modified, lastModified, etag);
-        m_response->setVersion(HTTP_VERSION);
-        m_response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), HTTP_TYPE_APPLICATION_XML_UTF8, content);
-        m_response->send();
+        if (getESPContainer() && getESPContainer()->queryApplicationConfig())
+        {
+            StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            if (m_request->queryParameters() && m_request->queryParameters()->hasProp("display"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+            toXML(getESPContainer()->queryApplicationConfig(), content);
+            m_response->setContentType("application/xml");
+            m_response->setContent(content);
+            m_response->setVersion(HTTP_VERSION);
+            m_response->send();
+        }
+        else
+        {
+            StringBuffer mimetype, etag, lastModified;
+            MemoryBuffer content;
+            bool modified = true;
+            m_request->getHeader("If-None-Match", etag);
+            m_request->getHeader("If-Modified-Since", lastModified);
+            httpContentFromFile("esp.xml", mimetype, content, modified, lastModified, etag);
+            m_response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), HTTP_TYPE_APPLICATION_XML_UTF8, content);
+            m_response->setVersion(HTTP_VERSION);
+            m_response->send();
+        }
     }
     else
     {

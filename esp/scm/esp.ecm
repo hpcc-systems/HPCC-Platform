@@ -253,6 +253,8 @@ interface IEspContainer : extends IInterface
     virtual bool hasCacheClient() = 0;
     virtual const void* queryCacheClient(const char* id) = 0;
     virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
+    virtual IPropertyTree *queryApplicationConfig() = 0;
+    virtual void setApplicationConfig(IPropertyTree *config) = 0;
 };
 
 interface IEspRpcBinding;

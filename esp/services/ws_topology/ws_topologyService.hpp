@@ -69,6 +69,11 @@ public:
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
+        if (queryComponentConfig().getPropBool("@api_only"))
+        {
+            CHttpSoapBinding::getNavigationData(context, data);
+            return;
+        }
         IPropertyTree *folder = ensureNavFolder(data, "Topology", NULL, NULL, false, 4);
         ensureNavLink(*folder, "Target Clusters", "/WsTopology/TpTargetClusterQuery?Type=ROOT", "View details about target clusters and optionally run preflight activities", NULL, NULL, 1);
         ensureNavLink(*folder, "Cluster Processes", "/WsTopology/TpClusterQuery?Type=ROOT", "View details about clusters and optionally run preflight activities", NULL, NULL, 2);

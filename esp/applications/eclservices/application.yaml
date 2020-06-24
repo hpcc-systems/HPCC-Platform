@@ -1,0 +1,17 @@
+application:
+  name: eclwatch
+  services:
+   - WsSMC
+   - WsWorkunits
+   - WsTopology
+   - WsDfu
+   - WsDfuXRef
+   - WsFileIO
+   - WsPackageProcess
+   - FileSpray
+   - ws_machine
+   - ws_elk
+   - ws_access
+   - ws_account
+   - ws_esdlconfig
+   - ws_store

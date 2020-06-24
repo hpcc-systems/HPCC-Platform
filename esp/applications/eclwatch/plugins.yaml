@@ -1,0 +1,40 @@
+protocol_plugins:
+  http_protocol: esphttp
+  secure_http_protocol: esphttp
+
+service_plugins:
+  FileSpray: ws_fs
+  ws_access: ws_access
+  ws_account: ws_account
+  WsDfu: ws_dfu
+  WsDfuXRef: ws_dfu
+  ws_ecl: ws_ecl
+  ws_elk: ws_elk
+  ws_esdlconfig: ws_esdlconfig
+  WsFileIO: ws_fileio
+  ws_machine: ws_machine
+  WsPackageProcess: ws_packageprocess
+  ws_store: ws_store
+  WSESPControl: wsespcontrol
+  WsSMC: ws_smc
+  WsTopology: ws_topology
+  WsWorkunits: ws_workunits
+
+binding_plugins:
+  FileSpray: ws_fs
+  ws_access: ws_access
+  ws_account: ws_account
+  WsDfu: ws_dfu
+  WsDfuXRef: ws_dfu
+  ws_ecl: ws_ecl
+  ws_elk: ws_elk
+  ws_esdlconfig: ws_esdlconfig
+  WsFileIO: ws_fileio
+  ws_machine: ws_machine
+  WsPackageProcess: ws_packageprocess
+  ws_store: ws_store
+  WsTopology: ws_topology
+  WsWorkunits: ws_workunits
+  WsSMC: ws_smc
+  WSESPControl: wsespcontrol
+

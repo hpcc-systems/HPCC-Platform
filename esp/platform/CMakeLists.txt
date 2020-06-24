@@ -25,6 +25,7 @@
 project( esp ) 
 
 set (    SRCS 
+         application_config.cpp
          espcfg.cpp 
          espp.cpp 
     )

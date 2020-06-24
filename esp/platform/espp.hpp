@@ -66,6 +66,7 @@ private:
     CriticalSection m_BindingCritSect;
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
+    Owned<IPropertyTree> applicationConfig;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -164,6 +165,14 @@ public:
     void setFrameTitle(const char* title)  { m_frameTitle.set(title); }
     const char* getFrameTitle()  { return m_frameTitle.get(); }
     unsigned getSlowProcessingTime() { return m_slowProcessingTime; }
+    void setApplicationConfig(IPropertyTree *config) override
+    {
+        applicationConfig.set(config);
+    }
+    virtual IPropertyTree *queryApplicationConfig() override
+    {
+        return applicationConfig.get();
+    }
 
     void log(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)))
     {
