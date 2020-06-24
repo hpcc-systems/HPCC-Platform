@@ -24,7 +24,7 @@
 #include "espcontext.hpp"
 #include "esdl_script.hpp"
 
-void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEspContext *context, const StringArray &prefixes)
+void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
 {
     //nothing to register.  xpath will error on use of function attempt
 
