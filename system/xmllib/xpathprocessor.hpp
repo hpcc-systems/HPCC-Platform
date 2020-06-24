@@ -93,4 +93,30 @@ public:
 extern "C" XMLLIB_API ICompiledXpath* compileXpath(const char * xpath);
 extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc, bool strictParameterDeclaration, bool removeDocNamespaces);
 
+#define ESDLScriptCtxSection_Store "store"
+#define ESDLScriptCtxSection_Logging "logging"
+#define ESDLScriptCtxSection_TargetConfig "target"
+#define ESDLScriptCtxSection_BindingConfig "config"
+#define ESDLScriptCtxSection_ESDLInfo "esdl"
+#define ESDLScriptCtxSection_ESDLRequest "ESDLRequest"
+#define ESDLScriptCtxSection_FinalRequest "FinalRequest"
+
+interface IEsdlScriptContext : extends IInterface
+{
+    virtual IXpathContext* createXpathContext(const char *section, bool strictParameterDeclaration) = 0;
+    virtual void *queryEspContext() = 0;
+    virtual void setContent(const char *section, const char *xml) = 0;
+    virtual void setContent(const char *section, IPropertyTree *tree) = 0;
+    virtual void setAttribute(const char *section, const char *name, const char *value) = 0;
+    virtual const char *queryAttribute(const char *section, const char *name) = 0;
+    virtual const char *getAttribute(const char *section, const char *name, StringBuffer &s) = 0;
+    virtual const char *getXPathString(const char *xpath, StringBuffer &s) const = 0;
+    virtual __int64 getXPathInt64(const char *xpath, __int64 dft=0) const = 0;
+    virtual bool getXPathBool(const char *xpath, bool dft=false) const = 0;
+    virtual void toXML(StringBuffer &xml, const char *section, bool includeParentNode=false) = 0;
+    virtual void toXML(StringBuffer &xml) = 0;
+};
+
+extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext);
+
 #endif /* XPATH_MANAGER_HPP_ */

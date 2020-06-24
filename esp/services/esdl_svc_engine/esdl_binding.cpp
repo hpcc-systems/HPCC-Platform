@@ -1447,7 +1447,21 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
     if (serviceCrt || methodCrt)
     {
         context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-        processServiceAndMethodTransforms({serviceCrt, methodCrt}, &context, tgtcfg, srvdef, mthdef, reqProcessed, m_oEspBindingCfg.get());
+
+        //as we add more entry points the script context will move to wider scope
+        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(&context);
+        scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, reqProcessed.str());
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", srvdef.queryName());
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", mthdef.queryMethodName());
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", mthdef.queryRequestType());
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", mthdef.queryRequestType());  //this could diverge from request_type in the future
+
+        scriptContext->setContent(ESDLScriptCtxSection_TargetConfig, tgtcfg);
+        scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, m_oEspBindingCfg.get());
+
+        processServiceAndMethodTransforms(scriptContext, {serviceCrt, methodCrt}, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest);
+        scriptContext->toXML(reqProcessed.clear(), ESDLScriptCtxSection_FinalRequest);
+
         context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
     }
 }
