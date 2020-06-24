@@ -57,7 +57,7 @@ public:
         trapTooManyActiveQueries = ctx.ctxGetPropBool("@trapTooManyActiveQueries", true);
         numRequestArrayThreads = ctx.ctxGetPropInt("@requestArrayThreads", 5);
         maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 10);
-        maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000);
+        maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000); // In milliseconds
     }
     IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
     {
@@ -1744,7 +1744,7 @@ readAnother:
             if (client)
             {
                 client->querySocket()->getPeerAddress(peer);
-                if (!client->readBlock(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
+                if (!client->readBlocktms(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
                     if (traceLevel > 8)
                     {
@@ -1940,6 +1940,7 @@ readAnother:
                             sendHttpServerTooBusy(*client, logctx);
                             logctx.CTXLOG("FAILED: %s", sanitizedText.str());
                             logctx.CTXLOG("EXCEPTION: Too many active queries");
+                            remainingHttpConnectionRequests = 1;
                         }
                         else
                         {

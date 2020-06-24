@@ -168,7 +168,7 @@ public:
         {
             ss.write(queryText, txtlen);
             bool dummy;
-            while (ss.readBlock(reply, WAIT_FOREVER, NULL, dummy, dummy, maxBlockSize)) {}
+            while (ss.readBlocktms(reply, WAIT_FOREVER, NULL, dummy, dummy, maxBlockSize)) {}
         }
     }
 
