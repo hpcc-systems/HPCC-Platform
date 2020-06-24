@@ -41,3 +41,13 @@
 <Dataset name='ConsumerLastMessageOffsets'>
  <Row><partitionnum>0</partitionnum><offset>1</offset></Row>
 </Dataset>
+<Dataset name='PublishMessageUnkeyedUTF8'>
+ <Row><PublishMessageUnkeyedUTF8>true</PublishMessageUnkeyedUTF8></Row>
+</Dataset>
+<Dataset name='PublishMessageKeyedUTF8'>
+ <Row><PublishMessageKeyedUTF8>true</PublishMessageKeyedUTF8></Row>
+</Dataset>
+<Dataset name='GetMessagesUTF8'>
+ <Row><partitionnum>0</partitionnum><offset>2</offset><message>UTF-8: Blah – Unkeyed</message></Row>
+ <Row><partitionnum>0</partitionnum><offset>3</offset><message>UTF-8: Blah – Keyed</message></Row>
+</Dataset>

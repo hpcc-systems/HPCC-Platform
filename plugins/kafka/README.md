@@ -103,7 +103,7 @@ Example instantiating a publishing module:
 
 The module contains an exported function for publishing a message, defined as:
 
-    BOOLEAN PublishMessage(CONST VARSTRING message, CONST VARSTRING key = '');
+    BOOLEAN PublishMessage(CONST UTF8 message, CONST UTF8 key = '');
 
 The module function requires a string message and allows you to specify a 'key'
 that affects how Apache Kafka stores the message.  Key values act a lot like the
@@ -167,7 +167,7 @@ defined in the module.  The layout for that dataset is:
     KafkaMessage := RECORD
         UNSIGNED4   partition;
         INTEGER8    offset;
-        STRING      message;
+        UTF8        message;
     END;
 
 Example retrieving up to 10,000 messages:
@@ -238,7 +238,7 @@ single-node HPCC cluster and have installed Kafka on the same node, you can use
     IMPORT kafka;
 
     MyDataLayout := RECORD
-        STRING  message;
+        UTF8    message;
     END;
 
     ds := DATASET
@@ -247,7 +247,7 @@ single-node HPCC cluster and have installed Kafka on the same node, you can use
             TRANSFORM
                 (
                     MyDataLayout,
-                    SELF.message := 'Test message ' + (STRING)COUNTER
+                    SELF.message := U8'Test message ' + (UTF8)COUNTER
                 ),
             DISTRIBUTED
         );

@@ -173,12 +173,12 @@ namespace KafkaPlugin
                                     //  EXPORT KafkaMessage := RECORD
                                     //      UNSIGNED4   partitionNum;
                                     //      UNSIGNED8   offset;
-                                    //      STRING      message;
+                                    //      UTF8        message;
                                     //  END;
 
                                     *(__int32*)(row) = messageObjPtr->partition();
                                     *(__int64*)(row + sizeof(__int32)) = messageObjPtr->offset();
-                                    *(size32_t*)(row + sizeof(__int32) + sizeof(__int64)) = messageObjPtr->len();
+                                    *(size32_t*)(row + sizeof(__int32) + sizeof(__int64)) = rtlUtf8Length(messageObjPtr->len(), messageObjPtr->payload());
                                     memcpy(row + sizeof(__int32) + sizeof(__int64) + sizeof(size32_t), messageObjPtr->payload(), messageObjPtr->len());
 
                                     result = rowBuilder.finalizeRowClear(len);
@@ -921,13 +921,15 @@ namespace KafkaPlugin
     // Advertised Entry Point Functions
     //--------------------------------------------------------------------------
 
-    ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(ICodeContext* ctx, const char* brokers, const char* topic, const char* message, const char* key)
+    ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(ICodeContext* ctx, const char* brokers, const char* topic, size32_t lenMessage, const char* message, size32_t lenKey, const char* key)
     {
         std::call_once(pubCacheInitFlag, setupPublisherCache, ctx->queryContextLogger().queryTraceLevel());
 
-        Publisher* pubObjPtr = publisherCache->getPublisher(brokers, topic, POLL_TIMEOUT);
+        Publisher*          pubObjPtr = publisherCache->getPublisher(brokers, topic, POLL_TIMEOUT);
+        std::string         messageStr(message, rtlUtf8Size(lenMessage, message));
+        std::string         keyStr(key, rtlUtf8Size(lenKey, key));
 
-        pubObjPtr->sendMessage(message, key);
+        pubObjPtr->sendMessage(messageStr, keyStr);
 
         return true;
     }
@@ -1031,9 +1033,10 @@ namespace KafkaPlugin
 // Plugin Initialization and Teardown
 //==============================================================================
 
-#define CURRENT_KAFKA_VERSION "kafka plugin 1.0.0"
+#define CURRENT_KAFKA_VERSION "kafka plugin 1.1.0"
 
 static const char* kafkaCompatibleVersions[] = {
+    "kafka plugin 1.0.0",
     CURRENT_KAFKA_VERSION,
     NULL };
 
