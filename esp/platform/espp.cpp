@@ -46,6 +46,7 @@
 #include "espcontext.hpp"
 #include "build-config.h"
 #include "rmtfile.hpp"
+#include "dafdesc.hpp"
 
 void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
 
@@ -294,6 +295,7 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 #else
     setupContainerizedLogMsgHandler();
 #endif
+    setupContainerizedStorageLocations();
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();

@@ -3442,6 +3442,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #else
         setupContainerizedLogMsgHandler();
 #endif
+        setupContainerizedStorageLocations();
     }
     else
     {

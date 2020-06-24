@@ -3112,3 +3112,30 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
     }
 }
 
+
+void setupContainerizedStorageLocations()
+{
+    try
+    {
+        IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
+        if (storage)
+        {
+            IPropertyTree * defaults = storage->queryPropTree("default");
+            if (defaults)
+            {
+                const char * dataPath = defaults->queryProp("@data");
+                if (dataPath)
+                    setBaseDirectory(dataPath, 0);
+                const char * mirrorPath = defaults->queryProp("@mirror");
+                if (mirrorPath)
+                    setBaseDirectory(mirrorPath, 1);
+            }
+        }
+    }
+    catch (IException * e)
+    {
+        //If the component has not called the configuration init (e.g. esp in bare metal) then ignore the failure
+        EXCLOG(e);
+        e->Release();
+    }
+}

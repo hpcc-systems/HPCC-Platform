@@ -24,6 +24,7 @@
 #include "daqueue.hpp"
 #include "workunit.hpp"
 #include "environment.hpp"
+#include "dafdesc.hpp"
 
 class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
 {
@@ -59,6 +60,7 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
 #else
     setupContainerizedLogMsgHandler();
 #endif
+    setupContainerizedStorageLocations();
 
     agentName = config->queryProp("@name");
     assertex(agentName);

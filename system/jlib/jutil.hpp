@@ -440,6 +440,8 @@ extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const 
 extern jlib_decl const char *queryCurrentProcessPath();
 
 extern jlib_decl StringBuffer &getFileAccessUrl(StringBuffer &out);
+extern jlib_decl void setSecretMount(const char * path);
+extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key);
 
 
 /**

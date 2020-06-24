@@ -661,6 +661,7 @@ int main( int argc, const char *argv[]  )
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
+        setupContainerizedStorageLocations();
         LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);

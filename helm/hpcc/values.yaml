@@ -18,7 +18,6 @@ global:
   # Can also be overridden locally in individual components
   ## defaultEsp: myesp
 
-
 ## storage:
 ##
 ## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
@@ -54,6 +53,27 @@ storage:
     storageClass: ""
     # existingClaim: ""
     # forcePermissions: false
+
+## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories deterime which
+## components have access to the secrets.
+## For each secret:
+##   name is the name that is is accessed by within the platform
+##   secret is the name of the secret that should be published
+secrets:
+  #timeout: 300 # timeout period for cached secrets.  Should be similar to the k8s refresh period.
+
+  #Secret categories follow, remove the {} if a secret is defined in a section
+  storage: {}
+    ## Secrets that are required for accessing storage.  Currently exposed in the engines, but in the future will
+    ## likely be restricted to esp (when it becomes the meta-data provider)
+    ## For example, to set the secret associated with the azure storage account "mystorageaccount" use
+    ##azure-mystorageaccount: storage-myazuresecret
+
+  ecl: {}
+    ## Category for secrets published to all components that run ecl
+
+  all: {}
+    ## Category for secrets published to all components
 
 bundles: []
 ## Specifying bundles here will cause the indicated bundles to be downloaded and installed automatically
