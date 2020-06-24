@@ -1,5 +1,6 @@
 {{ range $.Values.esp -}}
 {{- if not .disabled -}}
+{{- $application := .application | default "eclwatch" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,6 +20,7 @@ spec:
         workingDir: /var/lib/HPCCSystems
         command: [ esp ] 
         args: [
+                {{ printf "--application=%s" $application | quote }},
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
@@ -56,12 +58,12 @@ metadata:
   name: {{ .name | quote }}
 spec:
   ports:
-  - port: 8010
+  - port: {{ required "servicePort must be specified" .servicePort }}
     protocol: TCP
-    targetPort: 8010
+    targetPort: {{ .port | default 8880 }}
   selector:
     run: {{ .name | quote }}
-  type: LoadBalancer
+  type: {{ .public | ternary "LoadBalancer" "ClusterIP" }}
 ---
 {{- end }}
 {{- end }}

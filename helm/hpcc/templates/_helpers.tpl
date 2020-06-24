@@ -50,18 +50,11 @@ Pass in root as .
 {{- $local := dict "defaultEsp" "" -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
-{{- if .Values.global.defaultEsp -}}
- {{- $_ := set $local "defaultEsp" .Values.global.defaultEsp -}}
-{{- else if hasPrefix "[]" (typeOf .Values.esp) -}}
- {{- range $key, $value := .Values.esp -}}
-  {{- if (not $value.disabled) -}}
-   {{- if (not $local.defaultEsp) -}}
-    {{- $_ := set $local "defaultEsp" $value.name -}}
-   {{- end -}} 
-  {{- end -}} 
- {{- end -}} 
-{{- end }} 
-defaultEsp: {{ $local.defaultEsp | quote }}
+defaultEsp: {{ .Values.global.defaultEsp | default ""}}
+{{ if hasPrefix "[]" (typeOf .Values.esp) -}}
+esp:
+{{ toYaml .Values.esp }}
+{{ end -}}
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
   ##The following is a temporary solution to allow blob storage to be tested

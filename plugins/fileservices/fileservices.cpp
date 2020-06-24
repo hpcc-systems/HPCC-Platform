@@ -2860,6 +2860,24 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
     const char *defaultEsp = queryComponentConfig().queryProp("@defaultEsp");
     if (!defaultEsp)
         defaultEsp = queryGlobalConfig().queryProp("@defaultEsp");
+    if (!defaultEsp)
+    {
+        Owned<IPropertyTreeIterator> esps = queryGlobalConfig().getElements("esp");
+        ForEach(*esps)
+        {
+            const char *application = esps->query().queryProp("@application");
+            if (application)
+            {
+                if (streq(application, "eclservices"))
+                {
+                    defaultEsp = esps->query().queryProp("@name");
+                    break;
+                }
+                else if (!defaultEsp && streq(application, "eclwatch"))
+                    defaultEsp = esps->query().queryProp("@name");
+            }
+        }
+    }
     if (defaultEsp)
     {
         StringBuffer credentials;
@@ -2868,8 +2886,19 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
         else if (username && username[0])
             credentials.setf("%s@", username);
 
-        // MORE - do we want to make such things as port and protocol configurable?
-        VStringBuffer espURL("http://%s%s:8010", credentials.str(), defaultEsp);
+        VStringBuffer espInfo("esp[@name='%s']", defaultEsp);
+        const char *protocol = "https";
+        unsigned port = 8010;
+        const IPropertyTree *espconfig = queryGlobalConfig().queryPropTree(espInfo);
+        if (espconfig)
+        {
+            if (!espconfig->getPropBool("@tls", true))
+                protocol = "http";
+            port = espconfig->getPropInt("@servicePort", port);
+        }
+        // MORE - if not found, we could generate a warning - it implies something misconfigured!
+
+        VStringBuffer espURL("%s://%s%s:%u", protocol, credentials.str(), defaultEsp, port);
         return espURL.detach();
     }
 #else
