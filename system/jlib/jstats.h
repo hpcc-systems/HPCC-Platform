@@ -39,6 +39,7 @@ inline constexpr stat_type statUnits2msecs(stat_type stat) {return stat / 100000
 inline constexpr stat_type statPercent(int value) { return (stat_type)value * 100; }            // Since 1 = 0.01% skew
 inline constexpr stat_type statPercent(long double value) { return (stat_type)(value * 100); }
 inline constexpr stat_type statPercent(stat_type  value) { return (stat_type)(value * 100); }
+inline constexpr double statPercent2Percent(stat_type  value) { return (double)(value) / 100; }
 inline constexpr stat_type statPercentageOf(stat_type value, stat_type per) { return value * per / 10000; }
 
 inline StatisticKind queryStatsVariant(StatisticKind kind) { return (StatisticKind)(kind & ~StKindMask); }

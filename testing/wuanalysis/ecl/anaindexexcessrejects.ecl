@@ -15,20 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef ANAWU_HPP
-#define ANAWU_HPP
+// Analysis should show: large number of rows read and rejected for keyed join
+//
 
-#include "anacommon.hpp"
+//nokey
+//noroxie
+//nohthor
+//nooutput
 
-struct WuAnalyseOptions
-{
-    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
-    stat_type skewThreshold = statPercent(20);         // minimum interesting skew measurment
-    stat_type preFilteredKJThreshold = statPercent(50);
-    stat_type postFilteredIndexReadThreshold = statPercent(30);
-};
+IMPORT $.common.Files as Files;
+IMPORT $.common.Helper as Helper;
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu);
-#endif
+O := output(choosen(Files.indx1(id=222), 5));
+PARALLEL(O, Helper.saveWUID('anaindexexcessrejects'));
+

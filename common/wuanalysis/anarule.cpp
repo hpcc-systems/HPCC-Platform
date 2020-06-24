@@ -196,6 +196,42 @@ public:
     }
 };
 
+class IndexReadExcessRowsPostFilteredRule : public ActivityKindRule
+{
+public:
+    IndexReadExcessRowsPostFilteredRule() : ActivityKindRule(TAKindexread) {}
+
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
+    {
+        stat_type postFiltered = activity.getStatRaw(StNumPostFiltered);
+        if (postFiltered)
+        {
+            stat_type numIndexScans = activity.getStatRaw(StNumIndexScans);
+            if (numIndexScans)
+            {
+                stat_type postFilteredPer = statPercent( (long double) postFiltered * 100 / numIndexScans ); // postfiltered as percentage
+                if (postFilteredPer > options.postFilteredIndexReadThreshold)
+                {
+                    stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
+                    stat_type cost = statPercentageOf(timeAvgLocalExecute, postFilteredPer);
+                    double dpostFilteredPer = statPercent2Percent(postFilteredPer);
+                    if (postFiltered == numIndexScans)
+                        result.set(ANA_INDEX_EXCESS_ROWS_REJECTED_ID, cost, "All index rows rejected with post-filter");
+                    else if (dpostFilteredPer > 99.99)
+                        result.set(ANA_INDEX_EXCESS_ROWS_REJECTED_ID, cost, "Large proportion of index rows rejected with post-filter (99.99%% rejected)");
+                    else if (dpostFilteredPer > 99)
+                        result.set(ANA_INDEX_EXCESS_ROWS_REJECTED_ID, cost, "Large proportion of index rows rejected with post-filter (%.2f%% rejected)", dpostFilteredPer);
+                    else
+                        result.set(ANA_INDEX_EXCESS_ROWS_REJECTED_ID, cost, "Large proportion of index rows rejected with post-filter (%.0f%% rejected)", dpostFilteredPer);
+                    updateInformation(result, activity);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+};
+
 void gatherRules(CIArrayOf<AActivityRule> & rules)
 {
     rules.append(*new DistributeSkewRule);
@@ -203,4 +239,5 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeDiskWriteIO, "disk write"));
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
     rules.append(*new KeyedJoinExcessRejectedRowsRule);
+    rules.append(*new IndexReadExcessRowsPostFilteredRule);
 }
