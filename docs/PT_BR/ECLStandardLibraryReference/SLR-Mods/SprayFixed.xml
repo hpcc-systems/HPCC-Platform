@@ -74,8 +74,8 @@
         <row>
           <entry><emphasis>sourcepath</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o caminho e o nome
-          do arquivo.</entry>
+          <entry>Uma cadeia terminada por nulo contendo o endereço IP ou nome
+          do host da Dropzone em que o arquivo está localizado.</entry>
         </row>
 
         <row>

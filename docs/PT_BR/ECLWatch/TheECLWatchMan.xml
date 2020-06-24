@@ -374,9 +374,21 @@
 
           <para>O link <emphasis role="bold">Set Banner (Fixar
           Banner)</emphasis> permite que você configure uma mensagem de banner
-          personalizada no topo da janela do navegador ao abrir o ECL Watch. É
-          possível usar esse recurso para enviar mensagens para os
-          usuários.</para>
+          personalizada no topo da janela do navegador ao abrir o ECL Watch.
+          Marque a caixa <emphasis role="bold">Enable</emphasis> para ativar
+          um banner. Você pode usar o banner para enviar uma mensagem sobre o
+          ambiente aos usuários. Personalize a aparência do banner da mensagem
+          com os outros controles. As configurações de banner persistem até
+          que o servidor ESP seja reiniciado.</para>
+
+          <para>O link <emphasis role="bold">Set Toolbar</emphasis> permite
+          personalizar a barra de ferramentas na parte superior da página do
+          ECL Watch. Marque a caixa <emphasis role="bold">Enable Environment
+          Text </emphasis> para exibir o texto <emphasis role="bold"> Name of
+          Environment</emphasis> na parte superior da página e na guia do
+          navegador. Rotular as abas do navegador é útil ao trabalhar com
+          vários ambientes. As configurações da barra de ferramentas persistem
+          durante a reinicialização do servidor ESP.</para>
 
           <para>O link <emphasis role="bold">Error/Warning(s)
           (Erro/aviso(s))</emphasis> exibe uma aba que exibe mensagens de

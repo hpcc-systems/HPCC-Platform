@@ -23,9 +23,10 @@
 
   <para>Um valor decimal <indexterm>
       <primary>compactado</primary>
-    </indexterm> de <emphasis>n</emphasis> dígitos totais (até o máximo de
-  32). Se o valor _<emphasis>y</emphasis> estiver presente, o
-  <emphasis>y</emphasis> define o número das casas decimais no valor.</para>
+    </indexterm> de <emphasis>n</emphasis> dígitos totais. Se o valor de   
+  _<emphasis>y</emphasis> está presente, o <emphasis> y </emphasis> define   
+  o número de casas decimais no valor. Pode haver no máximo 32 dígitos
+  inteiros    e 32 dígitos fracionários.</para>
 
   <para>Se a palavra-chave UNSIGNED for omitida, o nibble mais à direita
   deterá o sinal. As declarações decimais não sinalizadas podem ser

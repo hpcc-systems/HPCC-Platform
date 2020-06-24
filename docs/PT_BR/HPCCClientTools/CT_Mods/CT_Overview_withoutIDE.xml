@@ -110,8 +110,7 @@
       <title>Instalação</title>
 
       <para>O programa de instalação instala todas as ferramentas do cliente,
-      incluindo ECLPlus, DFUPlus, e as ferramentas ECL de linha de
-      comando.</para>
+      incluindo DFUPlus, e as ferramentas ECL de linha de comando.</para>
 
       <orderedlist>
         <listitem>
@@ -131,7 +130,7 @@
           <para><emphasis role="bold">Windows: </emphasis></para>
 
           <para>Execute o arquivo executável, p.ex.:
-          hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe em sua
+          hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe em sua
           máquina. Siga os comandos para concluir a instalação.</para>
 
           <para><emphasis role="bold">Sistemas baseados em RPM
@@ -148,6 +147,11 @@
           Para instalar o pacote, use:</para>
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+          <para>Após instalar o pacote, execute o comando a seguir para
+          atualizar as dependências:</para>
+
+          <programlisting>sudo apt-get install -f </programlisting>
 
           <para><emphasis role="bold">Mac OSX:</emphasis></para>
 
@@ -211,7 +215,7 @@
       <para>Se você instalar uma versão diferente do software Ferramentas do
       cliente recebido, você terá uma pasta em /opt/HPCCSystems que
       corresponde ao conjunto de Ferramentas do cliente. Então você poderia
-      ter as versões 4.0.x, 4.2.x, 4.4.x, etc. do software.</para>
+      ter as versões 7.0.x, 7.2.x, 7.4.x, etc. do software.</para>
 
       <para>Para versões mais antigas, baixe o(s) pacote(s) e realize a
       instalação. Instale por último aquele que você deseja usar. Após
@@ -227,26 +231,26 @@
       forma pela qual você deseja salvar as versões antigas instaladas.</para>
 
       <para><emphasis role="bold">Por exemplo:</emphasis>se quisesse executar
-      o eclplus:</para>
+      o DFUplus:</para>
 
-      <programlisting>eclplus action=view wuid=W12345678</programlisting>
+      <programlisting>dfuplus action=list server=http://127.0.0.1:8010</programlisting>
 
-      <para>Para executar o eclplus em uma versão antiga ou outra versão das
-      Ferramentas do cliente, por exemplo a versão 4.0.x:</para>
+      <para>Para executar o DFUplus em uma versão antiga ou outra versão das
+      Ferramentas do cliente, por exemplo a versão 7.0.x:</para>
 
-      <para><programlisting>/opt/HPCCSystems/4.0.x/clienttools/bin/eclplus action=view wuid=W12345678</programlisting></para>
+      <para><programlisting>/opt/HPCCSystems/7.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
 
       <para><emphasis role="bold">Windows</emphasis></para>
 
       <para>O software Ferramentas do cliente para Windows é instalado em um
       diretório como esse: C:\Program Files
-      (x86)\HPCCSystems\6.2.0\clienttools\bin onde o número (6.2.0, por
+      (x86)\HPCCSystems\7.2.0\clienttools\bin onde o número (7.2.0, por
       exemplo) corresponde à versão do software Ferramentas do cliente.</para>
 
       <para>Se quiser acessar uma versão do software da linha de comando em
       qualquer pasta, adicione a pasta \bin ao caminho no Windows (por
       exemplo, <emphasis role="bold">C:\Program Files
-      (x86)\HPCCSystems\6.2.0\clienttools\bin</emphasis> )</para>
+      (x86)\HPCCSystems\7.2.0\clienttools\bin</emphasis> )</para>
 
       <para>O instalador do Windows perguntará se você deseja remover a versão
       anterior durante a instalação. Se quiser manter as duas, recuse a oferta

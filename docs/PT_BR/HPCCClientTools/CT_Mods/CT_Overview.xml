@@ -32,13 +32,6 @@
         </row>
 
         <row>
-          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
-
-          <entry>Ferramenta de execução ECL da linha de comando para facilitar
-          a automação da execução do código ECL.</entry>
-        </row>
-
-        <row>
           <entry><emphasis role="bold">ECL</emphasis></entry>
 
           <entry>Ferramenta ECL de linha de comando.</entry>
@@ -125,7 +118,7 @@
       <title>Instalação</title>
 
       <para>O programa de instalação instala todas as ferramentas do cliente,
-      incluindo ECLPlus, DFUPlus, e as ferramentas ECL de linha de
+      incluindo ECL IDE, DFUPlus, e as ferramentas ECL de linha de
       comando.</para>
 
       <orderedlist>
@@ -146,7 +139,7 @@
           <para><emphasis role="bold">Windows: </emphasis></para>
 
           <para>Execute o arquivo executável, p.ex.:
-          hpccsystems-clienttools_community-4.X.X-XWindows-i386.exe em sua
+          hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe em sua
           máquina. Siga os comandos para concluir a instalação.</para>
 
           <para><emphasis role="bold">Sistemas baseados em RPM
@@ -164,13 +157,44 @@
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
+          <para>Após a instalação do pacote, execute o seguinte comando para
+          atualizar as dependências:</para>
+
+          <programlisting>sudo apt-get install -f </programlisting>
+
           <para><emphasis role="bold">Mac OSX:</emphasis></para>
 
           <para>Execute o arquivo de instalação, p.ex.:
-          hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Siga os
+          hpccsystems-clienttools_community-7.X.X-XDarwin-x86_64.dmg. Siga os
           comandos para concluir a instalação.</para>
         </listitem>
       </orderedlist>
+    </sect2>
+
+    <sect2 id="WinPath" role="brk">
+      <title>Ferramentas do Cliente e Caminho do Windows</title>
+
+      <para>As ferramentas do Cliente HPCC Systems foram projetadas para
+      permitir que você tenha mais de uma versão instalada. Por esse motivo, a
+      opção de adicionar a pasta de arquivos executáveis no caminho do sistema
+      é opcional durante instalação.</para>
+
+      <para>Se você planeja usar apenas uma versão, pode ser mais fácil
+      adicionar o       pasta para o seu sistema ou caminho do usuário. Se
+      você quiser várias versões       instaladas, você provavelmente deseja
+      gerenciar o caminho sozinho.</para>
+
+      <para>Para facilitar, o instalador cria um atalho do menu Iniciar       
+      para um prompt de comando ECL. Este prompt de comando adiciona a pasta
+      executável ao caminho da sessão dessa prompt de comando.</para>
+
+      <para>Algumas funções da ferramenta de linha de comando podem exigir
+      permissões elevadas.       Você pode clicar com o <emphasis
+      role="bold">botão direito</emphasis> &gt; <emphasis role="bold">Run As
+      Administrator</emphasis> para o prompt de comando ECL.</para>
+
+      <para><graphic align="left"
+      fileref="../../images/ECLCmdPrompt.jpg"/></para>
     </sect2>
   </sect1>
 </chapter>

@@ -57,28 +57,56 @@ if(SPARK)
 
     set(CENTRAL_REPO "https://repo1.maven.org/maven2")
 
-    if(NOT SPARK_HPCC_JAR)
-        if(NOT SPARK_HPCC_VERSION)
-            set(SPARK_HPCC_VERSION "7.2.6")
-        endif()
-        file(DOWNLOAD
-            ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${SPARK_HPCC_VERSION}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
-            ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar
-            INACTIVITY_TIMEOUT 30
-            TIMEOUT 90)
-        set(SPARK_HPCC_JAR ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${SPARK_HPCC_VERSION}.jar)
+    set(JAR_VERSION "${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}-${HPCC_SEQUENCE}")
+    if(NOT HPCC_MATURITY STREQUAL "release")
+        set(JAR_VERSION "${JAR_VERSION}-SNAPSHOT")
     endif()
 
-    if(NOT DFSCLIENT_JAR)    
-        if(NOT DFSCLIENT_VERSION)
-            set(DFSCLIENT_VERSION "7.2.6")
-        endif()
-        file(DOWNLOAD
-            ${CENTRAL_REPO}/org/hpccsystems/dfsclient/${DFSCLIENT_VERSION}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
-            ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar
-            INACTIVITY_TIMEOUT 30
+
+    if(NOT SPARK_HPCC_JAR)
+        if(HPCC_MATURITY STREQUAL "release")
+            file(DOWNLOAD
+                ${CENTRAL_REPO}/org/hpccsystems/spark-hpcc/${JAR_VERSION}/spark-hpcc-${JAR_VERSION}.jar
+                ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${JAR_VERSION}.jar
+                INACTIVITY_TIMEOUT 30
             TIMEOUT 90)
-        set(DFSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${DFSCLIENT_VERSION}-jar-with-dependencies.jar)
+        else()
+            execute_process(
+                COMMAND wget "https://oss.sonatype.org/service/local/artifact/maven/content?r=snapshots&g=org.hpccsystems&a=spark-hpcc&v=${JAR_VERSION}" -O spark-hpcc-${JAR_VERSION}.jar -q
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                RESULT_VARIABLE dl_spark_hpcc
+                OUTPUT_QUIET
+                )
+            if(dl_spark_hpcc)
+                message(FATAL_ERROR "Download of spark-hpcc-${JAR_VERSION}.jar failed")
+            else()
+                message(STATUS "Successfully downloaded spark-hpcc-${JAR_VERSION}.jar")
+            endif()
+        endif()
+        set(SPARK_HPCC_JAR ${CMAKE_CURRENT_BINARY_DIR}/spark-hpcc-${JAR_VERSION}.jar)
+    endif()
+
+    if(NOT DFSCLIENT_JAR)
+        if(HPCC_MATURITY STREQUAL "release") 
+            file(DOWNLOAD
+                ${CENTRAL_REPO}/org/hpccsystems/dfsclient/${JAR_VERSION}/dfsclient-${JAR_VERSION}-jar-with-dependencies.jar
+                ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${JAR_VERSION}-jar-with-dependencies.jar
+                INACTIVITY_TIMEOUT 30
+                TIMEOUT 90)
+        else()
+            execute_process(
+                COMMAND wget "https://oss.sonatype.org/service/local/artifact/maven/content?r=snapshots&g=org.hpccsystems&a=dfsclient&v=${JAR_VERSION}&c=jar-with-dependencies" -O dfsclient-${JAR_VERSION}-jar-with-dependencies.jar -q
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                RESULT_VARIABLE dl_dfsclient
+                OUTPUT_QUIET
+                )
+            if(dl_dfsclient)
+                message(FATAL_ERROR "Download of dfsclient-${JAR_VERSION}-jar-with-dependencies.jar failed")
+            else()
+                message(STATUS "Successfully downloaded dfsclient-${JAR_VERSION}-jar-with-dependencies.jar")
+            endif()
+        endif()
+        set(DFSCLIENT_JAR ${CMAKE_CURRENT_BINARY_DIR}/dfsclient-${JAR_VERSION}-jar-with-dependencies.jar)
     endif(NOT DFSCLIENT_JAR)
 
 
