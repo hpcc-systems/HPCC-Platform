@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
+#include <unordered_set>
+
 #include "jlib.hpp"
 #include "workunit.hpp"
 #include "jprop.hpp"
@@ -5176,6 +5179,16 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
         void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
         {
             const char* querySetId = querySetTree->queryProp("@id");
+
+            std::unordered_set<std::string> aliasSet;
+            Owned<IPropertyTreeIterator> aliasIter = querySetTree->getElements("Alias");
+            ForEach(*aliasIter)
+            {
+                const char *id = aliasIter->query().queryProp("@id");
+                if (!isEmptyString(id))
+                    aliasSet.insert(id);
+            }
+
             VStringBuffer path("Query%s", xPath.get());
             Owned<IPropertyTreeIterator> iter = querySetTree->getElements(path.str());
             ForEach(*iter)
@@ -5192,9 +5205,7 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
                         if (!subset->getValue(match))
                             continue;
                     }
-                    VStringBuffer aliasXPath("Alias[@id='%s']", queryId);
-                    IPropertyTree *alias = querySetTree->queryPropTree(aliasXPath.str());
-                    if (alias)
+                    if (aliasSet.find(queryId) != aliasSet.end())
                         activated = true;
                 }
                 if (activated && (postFilters.activatedFilter == WUQFSNo))
@@ -5219,15 +5230,15 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
             Owned<IRemoteConnection> conn = querySDS().connect(querySetXPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             if (!conn)
                 return NULL;
-
+            IPropertyTree *root = conn->queryRoot()->queryBranch(nullptr);
             if (querySet.isEmpty())
             {
-                Owned<IPropertyTreeIterator> querySetIter = conn->queryRoot()->getElements("*");
+                Owned<IPropertyTreeIterator> querySetIter = root->getElements("*");
                 ForEach(*querySetIter)
                     populateQueryTree(&querySetIter->query(), queryTree);
             }
             else
-                populateQueryTree(conn->queryRoot(), queryTree);
+                populateQueryTree(root, queryTree);
             return conn.getClear();
         }
     public:
