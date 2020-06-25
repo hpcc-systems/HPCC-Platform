@@ -706,6 +706,13 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
 
     const void *getNextRow()
     {
+        unsigned __int64 postFiltered = 0;
+        auto onScopeExitFunc = [&]()
+        {
+            if (postFiltered > 0)
+                stats.mergeStatistic(StNumPostFiltered, postFiltered);
+        };
+        COnScopeExit scoped(onScopeExitFunc);
         RtlDynamicRowBuilder ret(allocator);
         for (;;)
         {
@@ -722,6 +729,8 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                         callback.finishedRow();
                         return ret.finalizeRowClear(sz);
                     }
+                    else
+                        ++postFiltered;
                 }
                 else
                 {
@@ -732,7 +741,10 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                 }
             }
             else
+            {
+                ++postFiltered;
                 callback.finishedRow(); // since filter might have accessed a blob
+            }
         }
         return nullptr;
     }
@@ -772,6 +784,13 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
     }
     const void *getNextRowGE(const void *seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
+        unsigned __int64 postFiltered = 0;
+        auto onScopeExitFunc = [&]()
+        {
+            if (postFiltered > 0)
+                stats.mergeStatistic(StNumPostFiltered, postFiltered);
+        };
+        COnScopeExit scoped(onScopeExitFunc);
         RtlDynamicRowBuilder ret(allocator);
         size32_t seekSize = seekSizes.item(numFields-1);
         for (;;)
@@ -806,8 +825,12 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                                     callback.finishedRow();
                                     return ret.finalizeRowClear(sz);
                                 }
+                                else
+                                    ++postFiltered;
                             }
                         }
+                        else
+                            ++postFiltered;
                     }
                 }
                 else
@@ -819,7 +842,10 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                 }
             }
             else
+            {
+                ++postFiltered;
                 callback.finishedRow(); // since filter might have accessed a blob
+            }
         }
         return nullptr;
     }
