@@ -1241,157 +1241,16 @@ void setDeleteFileResults(const char* fileName, const char* nodeGroup, bool fail
     actionResults.append(*resultObj.getClear());
 }
 
-typedef enum {
-    DeleteActionSuccess,
-    DeleteActionFailure,
-    DeleteActionSkip
-} DeleteActionResult;
-
-
-DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults, bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively);
-
-bool doRemoveFileFromSuperfiles(const char *lfn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles, bool deleteRecursively,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults)
+void cleanLogicalFileNames(StringArray &fileNames, StringArray &uniqueFileNames)
 {
-    StringArray emptySuperFiles;
-    IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
+    ForEachItemIn(i, fileNames)
     {
-        Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
-        if(!df)
-            return false;
-        Owned<IDistributedSuperFileIterator> supers = df->getOwningSuperFiles();
-        ForEach(*supers)
-        {
-            IDistributedSuperFile &super = supers->query();
-            try
-            {
-                super.removeSubFile(lfn, false, false, NULL);
-                VStringBuffer text("from superfile %s", super.queryLogicalName());
-                setDeleteFileResults(lfn, NULL, false, "Removed subfile", text, returnStr, actionResults);
-            }
-            catch(IException* e)
-            {
-                StringBuffer emsg;
-                VStringBuffer text("from superfile %s: %s", super.queryLogicalName(), e->errorMessage(emsg).str());
-                setDeleteFileResults(lfn, NULL, true, "Could not remove subfile ", text, returnStr, actionResults);
-                e->Release();
-                return false;
-            }
-            catch(...)
-            {
-                VStringBuffer text("from superfile %s", super.queryLogicalName());
-                setDeleteFileResults(lfn, NULL, true, "Could not remove subfile ", text, returnStr, actionResults);
-                return false;
-            }
-            if (deleteRecursively && super.numSubFiles(false)==0)
-                emptySuperFiles.appendUniq(super.queryLogicalName());
-        }
-    }
-    ForEachItemIn(i, emptySuperFiles)
-        doDeleteFile(emptySuperFiles.item(i), userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, true, deleteRecursively);
-
-    return true;
-}
-
-DeleteActionResult doDeleteFile(const char *fn, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer& returnStr, IArrayOf<IEspDFUActionInfo>& actionResults,
-    bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
-{
-    CDfsLogicalFileName dfsLFN;
-    dfsLFN.set(fn);
-
-    const char *lfn = dfsLFN.get();
-    StringBuffer group;
-    dfsLFN.getCluster(group);
-    if (!group.isEmpty() && strieq(group.str(), "null")) //null is used by new ECLWatch for a superfile
-        group.setLength(0);
-
-    bool isSuper = false;
-    if (superFiles.contains(fn) || failedFiles.contains(fn))
-        return DeleteActionSkip;
-    try
-    {
-        IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
-        {
-            Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
-            if(!df)
-            {
-                PROGLOG("CWsDfuEx::DFUDeleteFiles: %s not found", lfn);
-                setDeleteFileResults(lfn, group, true, "File not found", NULL, returnStr, actionResults);
-                return DeleteActionFailure;
-            }
-            isSuper = df->querySuperFile()!=NULL;
-            if (superFilesOnly) // skip non-super files on 1st pass
-            {
-                if(!isSuper)
-                    return DeleteActionSkip;
-                superFiles.append(fn);
-            }
-        }
-        fdir.removeEntry(fn, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
-        LOG(MCauditInfo, "%s,%s", auditStr, fn);
-        setDeleteFileResults(lfn, group, false, isSuper ? "Deleted Superfile" : "Deleted File", NULL, returnStr, actionResults);
-    }
-    catch(IException* e)
-    {
-        StringBuffer emsg;
-        e->errorMessage(emsg);
-        if (removeFromSuperfiles && strstr(emsg, "owned by"))
-        {
-            if (!doRemoveFileFromSuperfiles(lfn, userdesc, superFiles, failedFiles, deleteRecursively, auditStr, returnStr, actionResults))
-                return DeleteActionFailure;
-            return doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, false, false);
-        }
-        if (e->errorCode() == DFSERR_CreateAccessDenied)
-            emsg.replaceString("Create ", "Delete ");
-
-        setDeleteFileResults(lfn, group, true, "Could not delete", emsg.str(), returnStr, actionResults);
-        e->Release();
-        return DeleteActionFailure;
-    }
-    catch(...)
-    {
-        setDeleteFileResults(lfn, group, true, "Could not delete", "unknown exception", returnStr, actionResults);
-        return DeleteActionFailure;
-    }
-    return DeleteActionSuccess;
-}
-
-void doDeleteFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles, StringArray &failedFiles,
-    const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-    bool superFilesOnly, bool removeFromSuperfiles, bool deleteRecursively)
-{
-    ForEachItemIn(i, files)
-    {
-        const char* fn = files.item(i);
-        if(!fn || !*fn)
+        const char *fn = fileNames.item(i);
+        if (isEmptyString(fn))
             continue;
 
-        PROGLOG("Deleting %s", fn);
-        if (DeleteActionFailure==doDeleteFile(fn, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, superFilesOnly, removeFromSuperfiles, deleteRecursively))
-        {
-            failedFiles.appendUniq(fn);
-            PROGLOG("Delete %s failed", fn);
-        }
-        else
-            PROGLOG("Delete %s done", fn);
+        uniqueFileNames.appendUniq(fn);
     }
-
-}
-
-inline void doDeleteSuperFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
-    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-    bool removeFromSuperfiles, bool deleteRecursively)
-{
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, true, removeFromSuperfiles, deleteRecursively);
-}
-
-inline void doDeleteSubFiles(StringArray &files, IUserDescriptor *userdesc, StringArray &superFiles,
-    StringArray &failedFiles, const char *auditStr, StringBuffer &returnStr, IArrayOf<IEspDFUActionInfo> &actionResults,
-    bool removeFromSuperfiles, bool deleteRecursively)
-{
-    doDeleteFiles(files, userdesc, superFiles, failedFiles, auditStr, returnStr, actionResults, false, removeFromSuperfiles, deleteRecursively);
 }
 
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
@@ -1399,36 +1258,189 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     if (isDetachedFromDali())
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "ESP server is detached from Dali. Please try later.");
 
-    double version = context.getClientVersion();
-    Owned<IUserDescriptor> userdesc;
-    const char *username = context.queryUserId();
-    if(username && *username)
+    class CDFUDeleteFilesHelper
     {
-        userdesc.setown(createUserDescriptor());
-        userdesc->set(username, context.queryPassword(), context.querySignature());
-    }
+        IEspContext &context;
+        Owned<IUserDescriptor> userdesc;
+        IArrayOf<IEspDFUActionInfo> actionResults;
+        StringBuffer returnStr, auditStr;
+        StringAttr espProcess;
 
-    StringBuffer returnStr;
-    StringBuffer auditStr(",FileAccess,WsDfu,DELETED,");
-    IArrayOf<IEspDFUActionInfo> actionResults;
+        void deleteFile(const char *fn)
+        {
+            CDfsLogicalFileName dfsLFN;
+            dfsLFN.set(fn);
 
-    StringArray superFiles, failedFiles;
+            StringBuffer group;
+            dfsLFN.getCluster(group);
+            if (!group.isEmpty() && strieq(group.str(), "null")) //null is used by new ECLWatch for a superfile
+                group.clear();
 
-    auditStr.append(espProcess.get());
-    auditStr.append(',');
-    if (!isEmptyString(username))
-        auditStr.append(username).append('@');
-    context.getPeer(auditStr);
+            try
+            {
+                PROGLOG("Deleting %s", fn);
+                queryDistributedFileDirectory().removeEntry(fn, userdesc, nullptr, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
 
-    doDeleteSuperFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
-        returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
-    doDeleteSubFiles(req.getLogicalFiles(), userdesc, superFiles, failedFiles, auditStr.str(),
-        returnStr, actionResults, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
+                LOG(MCauditInfo, "%s,%s", auditStr.str(), fn);
+                VStringBuffer message("File %s deleted.", fn);
+                addResult(dfsLFN.get(), group, false, message);
+            }
+            catch(IException *e)
+            {
+                StringBuffer emsg;
+                e->errorMessage(emsg);
+                if (e->errorCode() == DFSERR_CreateAccessDenied)
+                    emsg.replaceString("Create ", "Delete ");
 
+                VStringBuffer message("Could not delete file %s: %s.", fn, emsg.str());
+                addResult(dfsLFN.get(), group, true, message);
+                e->Release();
+            }
+            catch(...)
+            {
+                VStringBuffer message("Could not delete file %s: unknown exception.", fn);
+                addResult(dfsLFN.get(), group, true, message);
+            }
+        }
+
+        void addResult(const char* fileName, const char* nodeGroup, bool failed, const char *message)
+        {
+            double version = context.getClientVersion();
+            if (version < 1.33)
+                returnStr.appendf("<Message><Value>%s</Value></Message>", message);
+
+            PROGLOG("%s", message);
+            if (version < 1.27)
+                return;
+
+            Owned<IEspDFUActionInfo> resultObj = createDFUActionInfo();
+            resultObj->setFileName(fileName);
+            resultObj->setFailed(failed);
+            if (!isEmptyString(nodeGroup))
+                resultObj->setNodeGroup(nodeGroup);
+            resultObj->setActionResult(message);
+            actionResults.append(*resultObj.getClear());
+        }
+    public:
+        CDFUDeleteFilesHelper(IEspContext &ctx, const char *process) : context(ctx), espProcess(process)
+        {
+            const char *user = context.queryUserId();
+            if (!isEmptyString(user))
+            {
+                userdesc.setown(createUserDescriptor());
+                userdesc->set(user, context.queryPassword(), context.querySignature());
+            }
+
+            auditStr.set(",FileAccess,WsDfu,DELETED,");
+            auditStr.append(espProcess.get());
+            auditStr.append(',');
+            if (!isEmptyString(user))
+                auditStr.append(user).append('@');
+            context.getPeer(auditStr);
+        }
+
+        const char *getReturnStr() const { return returnStr.str(); }
+        IArrayOf<IEspDFUActionInfo> &getActionResults() { return actionResults; }
+
+        void deleteFiles(StringArray &logicalFileNames, bool removeFromSuperFiles, bool removeEmptyOwningSuperFiles)
+        {
+            StringArray emptyOwningSuperFiles;
+            IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
+            ForEachItemIn(i, logicalFileNames)
+            {
+                CDfsLogicalFileName dfsLFN;
+                dfsLFN.set(logicalFileNames.item(i));
+
+                StringBuffer group;
+                dfsLFN.getCluster(group);
+                if (!group.isEmpty() && strieq(group.str(), "null")) //null is used by new ECLWatch for a superfile
+                    group.clear();
+
+                StringBuffer normalizeLFN;
+                normalizeLFN.append(dfsLFN.get());
+                if (group.length())
+                {
+                    normalizeLFN.append("@");
+                    dfsLFN.getCluster(normalizeLFN);
+                }
+                const char *lfn = normalizeLFN;
+                if (emptyOwningSuperFiles.contains(lfn))
+                    continue;
+
+                Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
+                if (!df)
+                {
+                    VStringBuffer message("Could not delete file %s: file not found.", lfn);
+                    addResult(dfsLFN.get(), group, true, message);
+                    continue;
+                }
+
+                Owned<IDistributedSuperFileIterator> superOwners = df->getOwningSuperFiles();
+                if (!removeFromSuperFiles && superOwners->first())
+                {
+                    VStringBuffer message("The file %s can not be deleted because it is owned by one or more superfiles.", lfn);
+                    addResult(dfsLFN.get(), group, true, message);
+                    continue;
+                }
+
+                bool fileCanBeDeleted = true;
+                ForEach(*superOwners)
+                {
+                    IDistributedSuperFile &superOwner = superOwners->query();
+                    try
+                    {
+                        superOwner.removeSubFile(lfn, false, false, nullptr);
+                        PROGLOG("File %s is removed from superfile %s", lfn, superOwner.queryLogicalName());
+                    }
+                    catch(IException *e)
+                    {
+                        VStringBuffer message("Could not delete file %s from superfile %s: ", lfn, superOwner.queryLogicalName());
+                        e->errorMessage(message);
+                        addResult(dfsLFN.get(), group, true, message);
+                        e->Release();
+                        fileCanBeDeleted = false;
+                        break;
+                    }
+                    catch(...)
+                    {
+                        VStringBuffer message("Could not delete file %s from superfile %s: unknown exception", lfn, superOwner.queryLogicalName());
+                        addResult(dfsLFN.get(), group, true, message);
+                        fileCanBeDeleted = false;
+                        break;
+                    }
+
+                    if (removeEmptyOwningSuperFiles && (superOwner.numSubFiles(false)==0))
+                        emptyOwningSuperFiles.appendUniq(superOwner.queryLogicalName());
+                }
+
+                if (fileCanBeDeleted)
+                {
+                    superOwners.clear();
+                    df.clear();
+                    deleteFile(lfn);
+                }
+            }
+
+            ForEachItemIn(j, emptyOwningSuperFiles)
+            {
+                deleteFile(emptyOwningSuperFiles.item(j));
+            }
+        }
+    };
+
+    StringArray logicalFileNames;
+    cleanLogicalFileNames(req.getLogicalFiles(), logicalFileNames);
+    if (!logicalFileNames.length())
+        return true;
+
+    CDFUDeleteFilesHelper helper(context, espProcess);
+    helper.deleteFiles(logicalFileNames, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
+
+    double version = context.getClientVersion();
     if (version >= 1.27)
-        resp.setActionResults(actionResults);
+        resp.setActionResults(helper.getActionResults());
     if (version < 1.33)
-        resp.setDFUArrayActionResult(returnStr.str());
+        resp.setDFUArrayActionResult(helper.getReturnStr());
     return true;
 }
 
