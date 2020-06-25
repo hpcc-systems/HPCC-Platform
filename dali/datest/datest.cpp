@@ -1914,6 +1914,26 @@ void TestSDS1()
     IRemoteConnection *conn;
     IPropertyTree *root;
 
+#if 1
+    {
+        const char *lfn = ".::akey3";
+        Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn, UNKNOWN_USER, false, false, false, nullptr, defaultNonPrivilegedUser);
+
+        Owned<IDistributedSuperFileIterator> superOwners = f1->getOwningSuperFiles();
+        ForEach(*superOwners)
+        {
+            IDistributedSuperFile &superOwner = superOwners->query();
+            superOwner.removeSubFile(lfn, false);
+        }
+        superOwners.clear();
+        f1.clear();
+
+        queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, nullptr, 2000);
+
+        return;
+    }
+#endif
+
 #ifdef TSUB
     Owned<TestSubscription> ts = new TestSubscription();
     SubscriptionId id = querySDS().subscribe("/subtest", *ts, false, true);

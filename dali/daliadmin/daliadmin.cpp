@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <unordered_map>
+#include <string>
+
 #include "platform.h"
 #include "portlist.h"
 #include "jlib.hpp"
@@ -28,6 +31,7 @@
 #include "jexcept.hpp"
 #include "jset.hpp"
 #include "jprop.hpp"
+#include "jregexp.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -326,8 +330,24 @@ static void import(const char *path,const char *src,bool add)
 //=============================================================================
 
 
-static void _delete_(const char *path,bool backup)
+static void _delete_(const char *path,bool backup,bool deleteRoot)
 {
+    if (deleteRoot)
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect(path,myProcessSession(),RTM_LOCK_WRITE|RTM_DELETE_ON_DISCONNECT, daliConnectTimeoutMs);
+        if (!conn) {
+            UERRLOG("Could not connect to %s",path);
+            return;
+        }
+        if (backup) {
+            StringBuffer bakname;
+            Owned<IFileIO> io = createUniqueFile(NULL,"daliadmin", "bak", bakname);
+            OUTLOG("Saving backup of %s to %s", path, bakname.str());
+            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
+            toXML(conn->queryRoot(), *fstream);         // formatted (default)
+        }
+        return;
+    }
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
@@ -3219,7 +3239,135 @@ void testThorRunningWUs()
 
 
 
+void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
+{
+    unsigned reportInterval = 100;
+    VStringBuffer wuRoot("/WorkUnits/global");
+    CCycleTimer timer;
+    Owned<IRemoteConnection> wuConn = querySDS().connect(wuRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!wuConn)
+    {
+        PROGLOG("Failed to connect to: %s", wuRoot.str());
+        return;
+    }
+    PROGLOG("Time to get connect to global workunit: %u ms", timer.elapsedMs());
+    
+    timer.reset();
+    IPropertyTree *variables = wuConn->queryRoot()->queryBranch("Variables");
+    if (!variables)
+    {
+        PROGLOG("Global workunit has no Variables: %s", wuRoot.str());
+        return;
+    }
+    PROGLOG("Time to get Variables branch: %u ms", timer.elapsedMs());
+    
+    Owned<IPropertyTree> newVariables = createPTree(); // only used if reconstruct=true
 
+    RegExpr RE("^{.*}{\\$[a-zA-Z]*}$");
+    std::unordered_map<std::string, std::vector<IPropertyTree *>> varMap;
+    Owned<IPropertyTreeIterator> varIter = variables->getElements("*");
+    StringBuffer nameBase;
+    ForEach(*varIter)
+    {
+        IPropertyTree &variable = varIter->query();
+        if (streq("Variable", variable.queryName()))
+        {
+            const char *name = variable.queryProp("@name");
+            const char *lfn = name;
+            if (RE.find(name))
+            {
+                RE.substitute(nameBase.clear(), "#1");
+                lfn = nameBase.str();
+            }
+            auto it = varMap.find(lfn);
+            if (it == varMap.end())
+                it = varMap.insert({ lfn, {} }).first;
+            auto &e = it->second;
+            e.push_back(&variable);
+        }
+        else if (reconstruct)
+            newVariables->addPropTree(variable.queryName(), LINK(&variable));
+    }
+    unsigned total = (unsigned)varMap.size();
+    PROGLOG("Found %u global workunit entries. Time taken: %u ms", total, timer.elapsedMs());
+
+    timer.reset();
+    unsigned checked = 0, deletes = 0, auxDeletes = 0, existingPersists = 0;
+    cycle_t connCycles = 0, removeCycles = 0;
+    CCycleTimer per100Timer;
+
+    bool removePTree = true;
+    std::vector<const IPropertyTree *> varsToKeep;
+    auto varMapIt = varMap.begin();
+    StringBuffer lfnXpath;
+    while (varMapIt != varMap.end())
+    {
+        const char *name = varMapIt->first.c_str();
+
+        try
+        {
+            CDfsLogicalFileName lfn;
+            lfn.set(name);
+            lfn.makeFullnameQuery(lfnXpath.clear(), DXB_File);
+
+            Owned<IRemoteConnection> fConn = querySDS().connect(lfnXpath, myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs);
+            if (!fConn) // doesn't exist, clear up Variable and associates
+            {
+                ++deletes;
+
+                if (reconstruct)
+                    varMapIt = varMap.erase(varMapIt);
+                else
+                {
+                    for (auto &t: varMapIt->second)
+                    {
+                        if (!dryrun)
+                            verifyex(variables->removeTree(t));
+                        ++auxDeletes;
+                    }
+                    varMapIt++;
+                }
+            }
+            else
+            {
+                ++existingPersists;
+                varMapIt++;
+            }
+        }
+        catch (IException *e)
+        {
+            VStringBuffer errMsg("Skpping: %s", name);
+            EXCLOG(e, errMsg.str());
+            e->Release();
+        }
+        ++checked;
+
+        if (0 == (checked % reportInterval))
+        {
+            cycle_t perVarCycles = per100Timer.elapsedCycles() / reportInterval;
+
+            per100Timer.reset();
+            PROGLOG("%sChecked: [%u / %u] - deletes: %u, auxDeletes: %u, persists: %u. [Avg ms: %2.2f]", dryrun?"DRYRUN:":"", checked, total, deletes, auxDeletes, existingPersists, static_cast<unsigned>(cycle_to_microsec(perVarCycles))/1000.0);
+        }
+    }
+    if (reconstruct)
+    {
+        for (auto &e: varMap)
+        {
+            auto &list = e.second;
+            for (auto &t: list)
+                newVariables->addPropTree("Variable", LINK(t));
+        }
+        if (!dryrun)
+            wuConn->queryRoot()->setPropTree("Variables", newVariables.getClear());
+    }
+
+    if (0 != (checked % reportInterval))
+    {
+        cycle_t avgCycles = timer.elapsedCycles() / total;
+        PROGLOG("%sChecked: [%u / %u] - deletes: %u, auxDeletes: %u, persists: %u. [Avg ms: %2.2f]", dryrun?"DRYRUN:":"", checked, total, deletes, auxDeletes, existingPersists, static_cast<unsigned>(cycle_to_microsec(avgCycles))/1000.0);
+    }
+}
 
 
 
@@ -3379,7 +3527,12 @@ int main(int argc, char* argv[])
                     else if (strieq(cmd,"delete")) {
                         CHECKPARAMS(1,2);
                         bool backup = np<2 || !strieq("nobackup", params.item(2));
-                        _delete_(params.item(1),backup);
+                        _delete_(params.item(1),backup,false);
+                    }
+                    else if (strieq(cmd,"deletepath")) {
+                        CHECKPARAMS(1,2 );
+                        bool backup = np<2 || !strieq("nobackup", params.item(2));
+                        _delete_(params.item(1),backup,true);
                     }
                     else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
@@ -3635,6 +3788,21 @@ int main(int argc, char* argv[])
                             dumpWorkunitAttr(params.item(1), params.item(2));
                         else
                             dumpWorkunitAttr(params.item(1), nullptr);
+                    }
+                    else if (strieq(cmd, "cleanglobalwuid"))
+                    {
+                        CHECKPARAMS(0, 2);
+                        bool dryrun = false;
+                        bool reconstruct = false;
+                        for (unsigned i=1; i<params.ordinality(); i++)
+                        {
+                            const char *param = params.item(i);
+                            if (strieq("dryrun", param))
+                                dryrun = true;
+                            else if (strieq("reconstruct", param))
+                                reconstruct = true;
+                        }
+                        removeOrphanedGlobalVariables(dryrun, reconstruct);
                     }
                     else
                         UERRLOG("Unknown command %s",cmd);
