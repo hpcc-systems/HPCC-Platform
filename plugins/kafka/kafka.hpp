@@ -350,6 +350,26 @@ extern "C++"
         /**
          * Queues the message for publishing to a topic on a Kafka cluster.
          *
+         * @param   ctx                 The execution context
+         * @param   brokers             One or more Kafka brokers, in the
+         *                              format 'name[:port]' where 'name'
+         *                              is either a host name or IP address;
+         *                              multiple brokers can be delimited
+         *                              with commas
+         * @param   topic               The name of the topic
+         * @param   message             The message to send
+         * @param   key                 The key to use for the message
+         *
+         * @return  true if the message was cached successfully
+         */
+        ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(ICodeContext* ctx, const char* brokers, const char* topic, const char* message, const char* key);
+
+        //----------------------------------------------------------------------
+
+        /**
+         * Queues the message for publishing to a topic on a Kafka cluster.
+         *
+         * @param   ctx                 The execution context
          * @param   brokers             One or more Kafka brokers, in the
          *                              format 'name[:port]' where 'name'
          *                              is either a host name or IP address;
