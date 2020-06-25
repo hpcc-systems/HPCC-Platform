@@ -47,12 +47,22 @@ public:
         StringBuffer libName, instFactory;
         secMgrCfg->getProp("@LibName", libName);
         if (libName.isEmpty())
-            throw MakeStringException(-1, "%s library name not specified for %s", lsm, bindingName);
+        {
+            // @libName is commonly used
+            secMgrCfg->getProp("@libName", libName);
+            if (libName.isEmpty())
+                throw MakeStringException(-1, "%s library name not specified for %s", lsm, bindingName);
+        }
         //TODO Search for LibName in plugins folder, or in specified location
 
         instFactory.set(secMgrCfg->queryProp("@InstanceFactoryName"));
         if (instFactory.isEmpty())
-            instFactory.set("createInstance");
+        {
+            // @instanceFactoryName is commonly used
+            instFactory.set(secMgrCfg->queryProp("@instanceFactoryName"));
+            if (instFactory.isEmpty())
+                instFactory.set("createInstance");
+        }
 
         //Load the DLL/SO
         HINSTANCE pluggableSecLib = LoadSharedObject(libName.str(), true, false);
