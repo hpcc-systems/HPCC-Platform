@@ -309,9 +309,14 @@ private:
 			io->close();
 			pwFileLastMod = whenChanged;//remember when last changed
 		}
-		catch(IException*)
+        catch(IException* e)
 		{
-			throw MakeStringException(-1, "htpasswd Exception accessing Password file");
+            StringBuffer msg;
+            if (strncmp(e->errorMessage(msg).str(), "htpasswd", 8) == 0)
+                throw;
+            int code = e->errorCode();
+            e->Release();
+            throw MakeStringException(code, "htpasswd Exception accessing Password file: %s", msg.str());
 		}
 		return true;
 	}
