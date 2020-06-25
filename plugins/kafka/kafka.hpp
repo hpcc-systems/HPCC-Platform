@@ -350,6 +350,7 @@ extern "C++"
         /**
          * Queues the message for publishing to a topic on a Kafka cluster.
          *
+         * @param   ctx                 The execution context
          * @param   brokers             One or more Kafka brokers, in the
          *                              format 'name[:port]' where 'name'
          *                              is either a host name or IP address;
@@ -361,7 +362,30 @@ extern "C++"
          *
          * @return  true if the message was cached successfully
          */
-        ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(const char* brokers, const char* topic, const char* message, const char* key);
+        ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(ICodeContext* ctx, const char* brokers, const char* topic, const char* message, const char* key);
+
+        //----------------------------------------------------------------------
+
+        /**
+         * Queues the message for publishing to a topic on a Kafka cluster.
+         *
+         * @param   ctx                 The execution context
+         * @param   brokers             One or more Kafka brokers, in the
+         *                              format 'name[:port]' where 'name'
+         *                              is either a host name or IP address;
+         *                              multiple brokers can be delimited
+         *                              with commas
+         * @param   topic               The name of the topic
+         * @param   lenMessage          Length (in characters, not bytes)
+         *                              of message
+         * @param   message             The UTF-8 message to send
+         * @param   lenKey              Length (in characters, not bytes)
+         *                              of key
+         * @param   key                 The UTF-8 key to use for the message
+         *
+         * @return  true if the message was cached successfully
+         */
+        ECL_KAFKA_API bool ECL_KAFKA_CALL publishMessage(ICodeContext* ctx, const char* brokers, const char* topic, size32_t lenMessage, const char* message, size32_t lenKey, const char* key);
 
         /**
          * Get the number of partitions currently set up for a topic on a cluster.

@@ -24,13 +24,13 @@ END;
 // Record structure that will be used to return Kafka messages to ECL
 EXPORT KafkaMessage := RECORD
     KafkaMessageOffset;
-    STRING      message;
+    UTF8        message;
 END;
 
 // Service definition
 SHARED kafka := SERVICE : plugin('kafka'), namespace('KafkaPlugin')
 
-    BOOLEAN PublishMessage(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING message, CONST VARSTRING key) : cpp,action,context,entrypoint='publishMessage';
+    BOOLEAN PublishMessage(CONST VARSTRING brokers, CONST VARSTRING topic, CONST UTF8 message, CONST UTF8 key) : cpp,action,context,entrypoint='publishMessage';
     INTEGER4 getTopicPartitionCount(CONST VARSTRING brokers, CONST VARSTRING topic) : cpp,action,context,entrypoint='getTopicPartitionCount';
     STREAMED DATASET(KafkaMessage) GetMessageDataset(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING consumerGroup, INTEGER4 partitionNum, INTEGER8 maxRecords) : cpp,action,context,entrypoint='getMessageDataset';
     INTEGER8 SetMessageOffset(CONST VARSTRING brokers, CONST VARSTRING topic, CONST VARSTRING consumerGroup, INTEGER4 partitionNum, INTEGER8 newOffset) : cpp,action,context,entrypoint='setMessageOffset';
@@ -73,7 +73,7 @@ EXPORT KafkaPublisher(VARSTRING topic, VARSTRING brokers = 'localhost') := MODUL
      *
      * @return  TRUE
      */
-    EXPORT BOOLEAN PublishMessage(CONST VARSTRING message, CONST VARSTRING key = '') := kafka.PublishMessage(brokers, topic, message, key);
+    EXPORT BOOLEAN PublishMessage(CONST UTF8 message, CONST UTF8 key = U8'') := kafka.PublishMessage(brokers, topic, message, key);
 
 END;
 

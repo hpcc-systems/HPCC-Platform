@@ -52,8 +52,8 @@ SEQUENTIAL
 
         OUTPUT(p.PublishMessage('Regular message'), NAMED('PublishMessageUnkeyed'));
 
-        OUTPUT(p.PublishMessage('Keyed message'), NAMED('PublishMessageKeyed'));
-        
+        OUTPUT(p.PublishMessage('Keyed message', 'mykey'), NAMED('PublishMessageKeyed'));
+
         // Idle while Kafka publishes
         Std.System.Debug.Sleep(1000);
 
@@ -72,4 +72,15 @@ SEQUENTIAL
         OUTPUT(c.ResetMessageOffsets(), NAMED('ConsumerResetMessageOffsets3'));
 
         OUTPUT(c.LastMessageOffsets(c.GetMessages(10)), NAMED('ConsumerLastMessageOffsets'));
+
+        // Test UTF-8 support
+
+        OUTPUT(p.PublishMessage(U8'UTF-8: Blah – Unkeyed'), NAMED('PublishMessageUnkeyedUTF8')); // contains en-dash
+
+        OUTPUT(p.PublishMessage(U8'UTF-8: Blah – Keyed', U8'My–Key'), NAMED('PublishMessageKeyedUTF8')); // contains en-dashes
+
+        // Idle while Kafka publishes
+        Std.System.Debug.Sleep(1000);
+
+        OUTPUT(c.GetMessages(10), NAMED('GetMessagesUTF8'));
     );
