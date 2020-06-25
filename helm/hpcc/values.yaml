@@ -13,10 +13,10 @@ global:
   logging:
     detail: 100
 
-  # Specify a defaultEsp to control which EclWatch service is returned from Std.File.GetEspURL, and other uses
-  # If not specified, the first esp component present is assumed.
+  # Specify a defaultEsp to control which eclservices service is returned from Std.File.GetEspURL, and other uses
+  # If not specified, the first esp component that exposes eclservices application is assumed.
   # Can also be overridden locally in individual components
-  ## defaultEsp: myesp
+  ## defaultEsp: eclservices
 
 ## storage:
 ##
@@ -115,8 +115,34 @@ eclccserver:
   listen: []
     
 esp:
-- name: myesp
+- name: eclwatch
+  ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
+  application: eclwatch
+  auth: none
+  tls: off
   replicas: 1
+  ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
+  port: 8888
+  ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
+  servicePort: 8010
+  ## Specify public: true if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
+  public: true
+
+- name: eclservices
+  application: eclservices
+  auth: none
+  tls: off
+  replicas: 1
+  servicePort: 8010
+  public: false
+
+- name: eclqueries
+  application: eclqueries
+  auth: none
+  tls: off
+  replicas: 1
+  public: true
+  servicePort: 8002
 
 roxie:
 - name: roxie-cluster
