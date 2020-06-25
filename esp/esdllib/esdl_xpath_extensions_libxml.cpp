@@ -63,6 +63,22 @@ void addFeaturesToAccessMap(MapStringTo<SecAccessFlags> &accessmap, const char *
     }
 }
 
+inline IEsdlScriptContext *getEsdlScriptContext(xmlXPathParserContextPtr ctxt)
+{
+    if (!ctxt || !ctxt->context || !ctxt->context->userData)
+        return nullptr;
+
+    return reinterpret_cast<IEsdlScriptContext *>(ctxt->context->userData);
+}
+
+inline IEspContext *getEspContext(xmlXPathParserContextPtr ctxt)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext || !scriptContext->queryEspContext())
+        return nullptr;
+    return reinterpret_cast<IEspContext *>(scriptContext->queryEspContext());
+}
+
 /**
  * validateFeaturesAccessFunction:
  * @ctxt:  an XPath parser context
@@ -72,13 +88,12 @@ void addFeaturesToAccessMap(MapStringTo<SecAccessFlags> &accessmap, const char *
  */
 static void validateFeaturesAccessFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    if (!ctxt || !ctxt->context || !ctxt->context->userData)
+    IEspContext *espContext = getEspContext(ctxt);
+    if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
         return;
     }
-
-    IEspContext *espContext = reinterpret_cast<IEspContext *>(ctxt->context->userData);
 
     if (nargs != 1)
     {
@@ -111,13 +126,12 @@ static void validateFeaturesAccessFunction (xmlXPathParserContextPtr ctxt, int n
  */
 static void secureAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    if (!ctxt || !ctxt->context || !ctxt->context->userData)
+    IEspContext *espContext = getEspContext(ctxt);
+    if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
         return;
     }
-
-    IEspContext *espContext = reinterpret_cast<IEspContext *>(ctxt->context->userData);
 
     if (nargs == 0)
     {
@@ -151,13 +165,12 @@ static void secureAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
  */
 static void getFeatureSecAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    if (!ctxt || !ctxt->context || !ctxt->context->userData)
+    IEspContext *espContext = getEspContext(ctxt);
+    if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
         return;
     }
-
-    IEspContext *espContext = reinterpret_cast<IEspContext *>(ctxt->context->userData);
 
     if (nargs != 1)
     {
@@ -176,7 +189,175 @@ static void getFeatureSecAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int
     xmlXPathReturnNumber(ctxt, access);
 }
 
-void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEspContext *context, const StringArray &prefixes)
+/**
+ * getStoredStringValueFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void getStoredStringValueFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *namestring = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    const char *value = scriptContext->queryAttribute(ESDLScriptCtxSection_Store, (const char *)namestring);
+    xmlFree(namestring);
+    if (!value)
+        xmlXPathReturnEmptyString(ctxt);
+    else
+        xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)value));
+}
+
+/**
+ * getLogOptionFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void getLogOptionFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *namestring = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    const char *value = scriptContext->queryAttribute(ESDLScriptCtxSection_Logging, (const char *)namestring);
+    xmlFree(namestring);
+    if (!value)
+        xmlXPathReturnEmptyString(ctxt);
+    else
+        xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)value));
+}
+
+/**
+ * getLogProfileFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void getLogProfileFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 0)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    const char *value = scriptContext->queryAttribute(ESDLScriptCtxSection_Logging, "profile");
+    if (!value)
+        xmlXPathReturnEmptyString(ctxt);
+    else
+        xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)value));
+}
+
+/**
+ * logOptionExistsFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void logOptionExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *namestring = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    const char *value = scriptContext->queryAttribute(ESDLScriptCtxSection_Logging, (const char *)namestring);
+    xmlFree(namestring);
+
+    xmlXPathReturnBoolean(ctxt, (!value) ? 0 : 1);
+}
+
+/**
+ * storedValueExistsFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void storedValueExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *namestring = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    const char *value = scriptContext->queryAttribute(ESDLScriptCtxSection_Store, (const char *)namestring);
+    xmlFree(namestring);
+
+    xmlXPathReturnBoolean(ctxt, (!value) ? 0 : 1);
+}
+
+void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
+{
+    xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
+    xpathContext->registerFunction(uri, "secureAccessFlags", (void *)secureAccessFlagsFunction);
+    xpathContext->registerFunction(uri, "getFeatureSecAccessFlags", (void *)getFeatureSecAccessFlagsFunction);
+    xpathContext->registerFunction(uri, "getStoredStringValue", (void *)getStoredStringValueFunction);
+    xpathContext->registerFunction(uri, "storedValueExists", (void *)storedValueExistsFunction);
+    xpathContext->registerFunction(uri, "getLogProfile", (void *)getLogProfileFunction);
+    xpathContext->registerFunction(uri, "getLogOption", (void *)getLogOptionFunction);
+    xpathContext->registerFunction(uri, "logOptionExists", (void *)logOptionExistsFunction);
+}
+
+void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
 {
     bool includeDefaultNS = false;
     xpathContext->setUserData(context);
@@ -194,13 +375,6 @@ void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEspContext *conte
     }
 
     if (includeDefaultNS)
-    {
-        xpathContext->registerFunction(nullptr, "validateFeaturesAccess", (void  *)validateFeaturesAccessFunction);
-        xpathContext->registerFunction(nullptr, "secureAccessFlags", (void  *)secureAccessFlagsFunction);
-        xpathContext->registerFunction(nullptr, "getFeatureSecAccessFlags", (void  *)getFeatureSecAccessFlagsFunction);
-    }
-
-    xpathContext->registerFunction("urn:hpcc:esdl:script", "validateFeaturesAccess", (void  *)validateFeaturesAccessFunction);
-    xpathContext->registerFunction("urn:hpcc:esdl:script", "secureAccessFlags", (void  *)secureAccessFlagsFunction);
-    xpathContext->registerFunction("urn:hpcc:esdl:script", "getFeatureSecAccessFlags", (void  *)getFeatureSecAccessFlagsFunction);
+        registerEsdlXPathExtensionsForURI(xpathContext, nullptr);
+    registerEsdlXPathExtensionsForURI(xpathContext, "urn:hpcc:esdl:script");
 }

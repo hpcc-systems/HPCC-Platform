@@ -18,6 +18,7 @@
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 #include "espcontext.hpp"
+#include "xpathprocessor.hpp"
 #include "esdl_script.hpp"
 #include "wsexcept.hpp"
 
@@ -211,41 +212,40 @@ static constexpr const char * esdlScriptSelectPath = R"!!(
 )!!";
 
 static constexpr const char* selectPathResult = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <Row>
-      <Addresses>
-       <Address>
-        <type>Home</type>
-        <Line2>Apt 202</Line2>
-        <Line1>101 Main street</Line1>
-        <City>Hometown</City>
-        <Zip>96703</Zip>
-        <State>HI</State>
-       </Address>
-      </Addresses>
-      <Name>
-       <Last>Doe</Last>
-       <First>Joe</First>
-      </Name>
-     </Row>
-     <_OUTPUT_>Joe</_OUTPUT_>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <Row>
+            <Addresses>
+              <Address>
+                <type>Home</type>
+                <Line2>Apt 202</Line2>
+                <Line1>101 Main street</Line1>
+                <City>Hometown</City>
+                <Zip>96703</Zip>
+                <State>HI</State>
+              </Address>
+            </Addresses>
+            <Name>
+              <Last>Doe</Last>
+              <First>Joe</First>
+            </Name>
+          </Row>
+          <_OUTPUT_>Joe</_OUTPUT_>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
 
 static const char *target_config = "<method queryname='EchoPersonInfo'/>";
@@ -274,6 +274,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testEsdlTransformSelectPath);
         CPPUNIT_TEST(testEsdlTransformImplicitPrefix);
         CPPUNIT_TEST(testEsdlTransformRequestNamespaces);
+        CPPUNIT_TEST(testScriptContext);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -286,25 +287,43 @@ public:
             return "unknown";
         return testname;
     }
-    void runTest(const char *runscript, const char *xml, const char *config, const char *result, int code)
-    {
-        StringBuffer request(xml);
-        Owned<IPropertyTree> cfg = createPTreeFromXMLString(config);
-        const char *testname = queryTestName(cfg);
 
+    IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config)
+    {
+        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx);
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
+
+        scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, config);
+        scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, xml);
+        return scriptContext.getClear();
+    }
+
+    void runTransform(IEsdlScriptContext *scriptContext, const char *scriptXml, const char *srcSection, const char *tgtSection, const char *testname, int code)
+    {
+        Owned<IPropertyTree> script = createPTreeFromXMLString(scriptXml);
+        Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(*script, nullptr);
+
+        tf->processTransform(scriptContext, srcSection, tgtSection);
+        if (code)
+            throw MakeStringException(99, "Test failed(%s): expected an explicit exception %d", testname, code);
+    }
+    void runTest(const char *testname, const char *scriptXml, const char *xml, const char *config, const char *result, int code)
+    {
         try
         {
-            Owned<IPropertyTree> target = createPTreeFromXMLString(target_config);
-            Owned<IPropertyTree> script = createPTreeFromXMLString(runscript);
-            Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(*script, nullptr);
+            Owned<IEspContext> ctx = createEspContext(nullptr);
+            Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, xml, config);
+            runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname, code);
 
-            Owned<IEspContext> ctx = createEspContext(nullptr);//createHttpSecureContext(m_request.get()));
-            tf->processTransform(ctx, target, "EsdlExample", "EchoPersonInfo", "EchoPersonInfoRequest", request, cfg);
-            if (code)
-                throw MakeStringException(99, "Test failed(%s): expected an explicit exception %d", testname, code);
-            if (result && !streq(result, request.str()))
+            StringBuffer output;
+            scriptContext->toXML(output.clear(), "FinalRequest");
+            if (result && !streq(result, output.str()))
             {
-                fputs(request.str(), stdout);
+                fputs(output.str(), stdout);
+                fflush(stdout);
                 throw MakeStringException(100, "Test failed(%s)", testname);
             }
         }
@@ -332,7 +351,7 @@ public:
         </config>
       )!!";
 
-      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+      runTest("select-path", esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
     }
 
     void testEsdlTransformAbsoluteSoapPath()
@@ -341,12 +360,12 @@ public:
         <config strictParams='true'>
           <Transform>
             <Param name='testcase' value="absolute-soap-path"/>
-            <Param name='selectPath' select="/soap:Envelope/soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
+            <Param name='selectPath' select="/esdl_script_context/ESDLRequest/soap:Envelope/soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
           </Transform>
         </config>
       )!!";
 
-      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+      runTest("absolute-soap-path", esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
     }
 
     void testEsdlTransformRelativePath()
@@ -360,7 +379,7 @@ public:
         </config>
       )!!";
 
-      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+      runTest("relative-path", esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
     }
 
     void testEsdlTransformAnyDescendentPath()
@@ -374,7 +393,7 @@ public:
         </config>
       )!!";
 
-      runTest(esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
+      runTest("any-descendent-path", esdlScriptSelectPath, soapRequest, config, selectPathResult, 0);
     }
 
     void testEsdlTransformImplicitPrefix()
@@ -415,42 +434,41 @@ public:
 </soap:Body>
 </soap:Envelope>
 )!!";
-      constexpr const char* implicitPrefixResult = R"!!(<soap:Envelope xmlns="http://webservices.example.com/WsFooBar" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <Row>
-      <Addresses>
-       <Address>
-        <type>Home</type>
-        <Line2>Apt 202</Line2>
-        <Line1>101 Main street</Line1>
-        <City>Hometown</City>
-        <Zip>96703</Zip>
-        <State>HI</State>
-       </Address>
-      </Addresses>
-      <Name>
-       <Last>Doe</Last>
-       <First>Joe</First>
-      </Name>
-     </Row>
-     <_OUTPUT_>Joe</_OUTPUT_>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+      constexpr const char* implicitPrefixResult = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http://webservices.example.com/WsFooBar">
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <Row>
+            <Addresses>
+              <Address>
+                <type>Home</type>
+                <Line2>Apt 202</Line2>
+                <Line1>101 Main street</Line1>
+                <City>Hometown</City>
+                <Zip>96703</Zip>
+                <State>HI</State>
+              </Address>
+            </Addresses>
+            <Name>
+              <Last>Doe</Last>
+              <First>Joe</First>
+            </Name>
+          </Row>
+          <_OUTPUT_>Joe</_OUTPUT_>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
       constexpr const char* config = R"!!(
         <config strictParams='true'>
@@ -470,11 +488,11 @@ public:
         </config>
       )!!";
 
-      runTest(esdlScriptSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
+      runTest("implicit-prefix", esdlScriptSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
 
       // The implicit 'n' prefix is required if the content has a namespace defined
       // with no prefix. This test is expected to throw an exception.
-      runTest(esdlScriptSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
+      runTest("implicit-prefix-not-used", esdlScriptSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
     }
 
     void testEsdlTransformRequestNamespaces()
@@ -587,59 +605,57 @@ public:
 </soap:Envelope>
 )!!";
 
-      constexpr const char* namespaceResultArbitrary1 = R"!!(<soap:Envelope xmlns="arbitary:urn:text.here?really" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <Row>
-      <Name>
-       <Last>Doe</Last>
-       <First>Joe</First>
-      </Name>
-     </Row>
-     <_OUTPUT_>Joe</_OUTPUT_>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+      constexpr const char* namespaceResultArbitrary1 = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="arbitary:urn:text.here?really">
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <Row>
+            <Name>
+              <Last>Doe</Last>
+              <First>Joe</First>
+            </Name>
+          </Row>
+          <_OUTPUT_>Joe</_OUTPUT_>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
-      constexpr const char* namespaceResultArbitrary2 = R"!!(<soap:Envelope xmlns="http:hullabaloo//nonsense:foo:bar#fragment" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <Row>
-      <Name>
-       <Last>Doe</Last>
-       <First>Joe</First>
-      </Name>
-     </Row>
-     <_OUTPUT_>Joe</_OUTPUT_>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+      constexpr const char* namespaceResultArbitrary2 = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns="http:hullabaloo//nonsense:foo:bar#fragment">
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <Row>
+            <Name>
+              <Last>Doe</Last>
+              <First>Joe</First>
+            </Name>
+          </Row>
+          <_OUTPUT_>Joe</_OUTPUT_>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
       constexpr const char* configInvalidURI = R"!!(
         <config strictParams='true'>
@@ -669,11 +685,11 @@ public:
       )!!";
 
       // An invalid namespace URI that is expected to throw an exception
-      runTest(esdlScriptSelectPath, soapRequestNsInvalid, configInvalidURI, namespaceResult, 99);
+      runTest("invalid-uri", esdlScriptSelectPath, soapRequestNsInvalid, configInvalidURI, namespaceResult, 99);
 
       // Weird but valid URIs for namespaces
-      runTest(esdlScriptSelectPath, soapRequestNsArbitrary1, configArbitraryURI1, namespaceResultArbitrary1, 0);
-      runTest(esdlScriptSelectPath, soapRequestNsArbitrary2, configArbitraryURI2, namespaceResultArbitrary2, 0);
+      runTest("arbitrary-uri-1", esdlScriptSelectPath, soapRequestNsArbitrary1, configArbitraryURI1, namespaceResultArbitrary1, 0);
+      runTest("arbitrary-uri-2", esdlScriptSelectPath, soapRequestNsArbitrary2, configArbitraryURI2, namespaceResultArbitrary2, 0);
 
     }
 
@@ -686,53 +702,52 @@ public:
 </config>)!!";
 
 constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <InnerTestCase>operations</InnerTestCase>
-     <TestCase>operations</TestCase>
-     <Var2>script</Var2>
-     <Row>
-      <Addresses>
-       <Address>
-        <type>Home</type>
-        <Line2>Apt 202</Line2>
-        <Line1>101 Main street</Line1>
-        <City>Hometown</City>
-        <Zip>96703</Zip>
-        <State>HI</State>
-       </Address>
-      </Addresses>
-      <Name>
-       <Last>POE</Last>
-       <Aliases>
-        <Alias>moe</Alias>
-        <Alias>poe</Alias>
-        <Alias>roe</Alias>
-       </Aliases>
-       <First>Joe</First>
-      </Name>
-      <AppendTo>ThisOneString</AppendTo>
-     </Row>
-     <test>auth success</test>
-     <Param2>script</Param2>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <InnerTestCase>operations</InnerTestCase>
+          <TestCase>operations</TestCase>
+          <Var2>script</Var2>
+          <Row>
+            <Addresses>
+              <Address>
+                <type>Home</type>
+                <Line2>Apt 202</Line2>
+                <Line1>101 Main street</Line1>
+                <City>Hometown</City>
+                <Zip>96703</Zip>
+                <State>HI</State>
+              </Address>
+            </Addresses>
+            <Name>
+              <Last>POE</Last>
+              <Aliases>
+                <Alias>moe</Alias>
+                <Alias>poe</Alias>
+                <Alias>roe</Alias>
+              </Aliases>
+              <First>Joe</First>
+            </Name>
+            <AppendTo>ThisOneString</AppendTo>
+          </Row>
+          <test>auth success</test>
+          <Param2>script</Param2>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
-        runTest(esdlScript, soapRequest, config, result, 0);
+        runTest("operations", esdlScript, soapRequest, config, result, 0);
     }
 
     void testEsdlTransformScriptNoPrefix()
@@ -744,53 +759,52 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 </config>)!!";
 
 constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <TestCase>noprefix</TestCase>
-     <InnerTestCase>noprefix</InnerTestCase>
-     <Var2>script</Var2>
-     <Row>
-      <Addresses>
-       <Address>
-        <type>Home</type>
-        <Line2>Apt 202</Line2>
-        <Line1>101 Main street</Line1>
-        <City>Hometown</City>
-        <Zip>96703</Zip>
-        <State>HI</State>
-       </Address>
-      </Addresses>
-      <Name>
-       <Last>POE</Last>
-       <Aliases>
-        <Alias>moe</Alias>
-        <Alias>poe</Alias>
-        <Alias>roe</Alias>
-       </Aliases>
-       <First>Joe</First>
-      </Name>
-      <AppendTo>ThisOneString</AppendTo>
-     </Row>
-     <Param2>script</Param2>
-     <test>auth success</test>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <TestCase>noprefix</TestCase>
+          <InnerTestCase>noprefix</InnerTestCase>
+          <Var2>script</Var2>
+          <Row>
+            <Addresses>
+              <Address>
+                <type>Home</type>
+                <Line2>Apt 202</Line2>
+                <Line1>101 Main street</Line1>
+                <City>Hometown</City>
+                <Zip>96703</Zip>
+                <State>HI</State>
+              </Address>
+            </Addresses>
+            <Name>
+              <Last>POE</Last>
+              <Aliases>
+                <Alias>moe</Alias>
+                <Alias>poe</Alias>
+                <Alias>roe</Alias>
+              </Aliases>
+              <First>Joe</First>
+            </Name>
+            <AppendTo>ThisOneString</AppendTo>
+          </Row>
+          <Param2>script</Param2>
+          <test>auth success</test>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
-        runTest(esdlScriptNoPrefix, soapRequest, config, result, 0);
+        runTest("noprefix", esdlScriptNoPrefix, soapRequest, config, result, 0);
     }
 
     void testEsdlTransformFailStrict()
@@ -803,7 +817,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 5682);
+        runTest("fail strict", esdlScript, soapRequest, config, nullptr, 5682);
 
         constexpr const char *config2 = R"!!(<config strictParams='false'>
   <Transform>
@@ -813,7 +827,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config2, nullptr, 1);
+        runTest("not strict", esdlScript, soapRequest, config2, nullptr, 1);
     }
 
     void testEsdlTransformScriptVarParam()
@@ -835,53 +849,52 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 </config>)!!";
 
 constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Body>
-  <extra>
-   <EchoPersonInfo>
-    <Context>
-     <Row>
-      <Common>
-       <TransactionId>1736623372_3126765312_1333296170</TransactionId>
-      </Common>
-     </Row>
-    </Context>
-    <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
-    <EchoPersonInfoRequest>
-     <InnerTestCase>varparam</InnerTestCase>
-     <TestCase>varparam</TestCase>
-     <Var2>script</Var2>
-     <Row>
-      <Addresses>
-       <Address>
-        <type>Home</type>
-        <Line2>Apt 202</Line2>
-        <Line1>101 Main street</Line1>
-        <City>Hometown</City>
-        <Zip>96703</Zip>
-        <State>HI</State>
-       </Address>
-      </Addresses>
-      <Name>
-       <Last>POE</Last>
-       <Aliases>
-        <Alias>moe</Alias>
-        <Alias>poe</Alias>
-        <Alias>roe</Alias>
-       </Aliases>
-       <First>Joe</First>
-      </Name>
-      <AppendTo>ThisOneString</AppendTo>
-     </Row>
-     <test>auth success</test>
-     <Param2>produced and provided</Param2>
-    </EchoPersonInfoRequest>
-   </EchoPersonInfo>
-  </extra>
- </soap:Body>
-</soap:Envelope>
-)!!";
+  <soap:Body>
+    <extra>
+      <EchoPersonInfo>
+        <Context>
+          <Row>
+            <Common>
+              <TransactionId>1736623372_3126765312_1333296170</TransactionId>
+            </Common>
+          </Row>
+        </Context>
+        <_TransactionId>1736623372_3126765312_1333296170</_TransactionId>
+        <EchoPersonInfoRequest>
+          <InnerTestCase>varparam</InnerTestCase>
+          <TestCase>varparam</TestCase>
+          <Var2>script</Var2>
+          <Row>
+            <Addresses>
+              <Address>
+                <type>Home</type>
+                <Line2>Apt 202</Line2>
+                <Line1>101 Main street</Line1>
+                <City>Hometown</City>
+                <Zip>96703</Zip>
+                <State>HI</State>
+              </Address>
+            </Addresses>
+            <Name>
+              <Last>POE</Last>
+              <Aliases>
+                <Alias>moe</Alias>
+                <Alias>poe</Alias>
+                <Alias>roe</Alias>
+              </Aliases>
+              <First>Joe</First>
+            </Name>
+            <AppendTo>ThisOneString</AppendTo>
+          </Row>
+          <test>auth success</test>
+          <Param2>produced and provided</Param2>
+        </EchoPersonInfoRequest>
+      </EchoPersonInfo>
+    </extra>
+  </soap:Body>
+</soap:Envelope>)!!";
 
-        runTest(esdlScript, soapRequest, config, result, 0);
+        runTest("fail strict", esdlScript, soapRequest, config, result, 0);
     }
 
     void testEsdlTransformForEach()
@@ -949,102 +962,100 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         )!!";
 
         constexpr const char * resultFriends = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
- <extra>
-  <Relatives>
-   <Name>
-    <First>Jonathon</First>
-    <xx1:Alias>John</xx1:Alias>
-    <xx1:Alias>Jon</xx1:Alias>
-    <xx1:Alias>Johnny</xx1:Alias>
-    <xx1:Alias>Johnnie</xx1:Alias>
-   </Name>
-   <Name>
-    <First>Jennifer</First>
-    <xx1:Alias>Jen</xx1:Alias>
-    <xx1:Alias>Jenny</xx1:Alias>
-    <xx1:Alias>Jenna</xx1:Alias>
-   </Name>
-  </Relatives>
-  <People>
-   <Ids>
-    <Id>Joe</Id>
-    <Id>Jane</Id>
-   </Ids>
-  </People>
-  <Friends>
-   <Name>
-    <Aliases>Moe,Poe,Doe</Aliases>
-    <First>Joe</First>
-    <xx1:Alias>Moe</xx1:Alias>
-    <xx1:Alias>Poe</xx1:Alias>
-    <xx1:Alias>Doe</xx1:Alias>
-   </Name>
-   <Name>
-    <Aliases>Jan,Janie,Janet</Aliases>
-    <First>Jane</First>
-    <xx1:Alias>Jan</xx1:Alias>
-    <xx1:Alias>Janie</xx1:Alias>
-    <xx1:Alias>Janet</xx1:Alias>
-   </Name>
-  </Friends>
- </extra>
-</root>
-)!!";
+  <extra>
+    <Relatives>
+      <Name>
+        <First>Jonathon</First>
+        <xx1:Alias>John</xx1:Alias>
+        <xx1:Alias>Jon</xx1:Alias>
+        <xx1:Alias>Johnny</xx1:Alias>
+        <xx1:Alias>Johnnie</xx1:Alias>
+      </Name>
+      <Name>
+        <First>Jennifer</First>
+        <xx1:Alias>Jen</xx1:Alias>
+        <xx1:Alias>Jenny</xx1:Alias>
+        <xx1:Alias>Jenna</xx1:Alias>
+      </Name>
+    </Relatives>
+    <People>
+      <Ids>
+        <Id>Joe</Id>
+        <Id>Jane</Id>
+      </Ids>
+    </People>
+    <Friends>
+      <Name>
+        <Aliases>Moe,Poe,Doe</Aliases>
+        <First>Joe</First>
+        <xx1:Alias>Moe</xx1:Alias>
+        <xx1:Alias>Poe</xx1:Alias>
+        <xx1:Alias>Doe</xx1:Alias>
+      </Name>
+      <Name>
+        <Aliases>Jan,Janie,Janet</Aliases>
+        <First>Jane</First>
+        <xx1:Alias>Jan</xx1:Alias>
+        <xx1:Alias>Janie</xx1:Alias>
+        <xx1:Alias>Janet</xx1:Alias>
+      </Name>
+    </Friends>
+  </extra>
+</root>)!!";
 
         constexpr const char *configFriends = R"!!(<config strictParams="true">
   <Transform>
     <Param name='testcase' value="for each friend"/>
     <Param name='section' select="'Friends'"/>
     <Param name='garbage' select="''"/>
-    <Param name='ForBuildListPath' select='/root/extra/Friends/Name'/>
+    <Param name='ForBuildListPath' select='/esdl_script_context/ESDLRequest/root/extra/Friends/Name'/><!--absolute path may change, highly frowned upon-->
     <Param name='ForIdPath' select='extra/Friends/Name/First'/>
   </Transform>
 </config>)!!";
 
-        runTest(forEachScript, input, configFriends, resultFriends, 0);
+        runTest("for each friend", forEachScript, input, configFriends, resultFriends, 0);
 
         constexpr const char * resultRelatives = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
- <extra>
-  <Relatives>
-   <Name>
-    <Aliases>John,Jon,Johnny,Johnnie</Aliases>
-    <First>Jonathon</First>
-    <xx1:Alias>John</xx1:Alias>
-    <xx1:Alias>Jon</xx1:Alias>
-    <xx1:Alias>Johnny</xx1:Alias>
-    <xx1:Alias>Johnnie</xx1:Alias>
-   </Name>
-   <Name>
-    <Aliases>Jen,Jenny,Jenna</Aliases>
-    <First>Jennifer</First>
-    <xx1:Alias>Jen</xx1:Alias>
-    <xx1:Alias>Jenny</xx1:Alias>
-    <xx1:Alias>Jenna</xx1:Alias>
-   </Name>
-  </Relatives>
-  <People>
-   <Ids>
-    <Id>Jonathon</Id>
-    <Id>Jennifer</Id>
-   </Ids>
-  </People>
-  <Friends>
-   <Name>
-    <First>Joe</First>
-    <xx1:Alias>Moe</xx1:Alias>
-    <xx1:Alias>Poe</xx1:Alias>
-    <xx1:Alias>Doe</xx1:Alias>
-   </Name>
-   <Name>
-    <First>Jane</First>
-    <xx1:Alias>Jan</xx1:Alias>
-    <xx1:Alias>Janie</xx1:Alias>
-    <xx1:Alias>Janet</xx1:Alias>
-   </Name>
-  </Friends>
- </extra>
-</root>
-)!!";
+  <extra>
+    <Relatives>
+      <Name>
+        <Aliases>John,Jon,Johnny,Johnnie</Aliases>
+        <First>Jonathon</First>
+        <xx1:Alias>John</xx1:Alias>
+        <xx1:Alias>Jon</xx1:Alias>
+        <xx1:Alias>Johnny</xx1:Alias>
+        <xx1:Alias>Johnnie</xx1:Alias>
+      </Name>
+      <Name>
+        <Aliases>Jen,Jenny,Jenna</Aliases>
+        <First>Jennifer</First>
+        <xx1:Alias>Jen</xx1:Alias>
+        <xx1:Alias>Jenny</xx1:Alias>
+        <xx1:Alias>Jenna</xx1:Alias>
+      </Name>
+    </Relatives>
+    <People>
+      <Ids>
+        <Id>Jonathon</Id>
+        <Id>Jennifer</Id>
+      </Ids>
+    </People>
+    <Friends>
+      <Name>
+        <First>Joe</First>
+        <xx1:Alias>Moe</xx1:Alias>
+        <xx1:Alias>Poe</xx1:Alias>
+        <xx1:Alias>Doe</xx1:Alias>
+      </Name>
+      <Name>
+        <First>Jane</First>
+        <xx1:Alias>Jan</xx1:Alias>
+        <xx1:Alias>Janie</xx1:Alias>
+        <xx1:Alias>Janet</xx1:Alias>
+      </Name>
+    </Friends>
+  </extra>
+</root>)!!";
 
         constexpr const char *configRelatives = R"!!(<config strictParams="true">
   <Transform>
@@ -1052,11 +1063,11 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     <Param name='section' select="'Relatives'"/>
     <Param name='garbage' select="''"/>
     <Param name='ForBuildListPath' select='extra/Relatives/Name'/>
-    <Param name='ForIdPath' select='/root/extra/Relatives/Name/First'/>
+    <Param name='ForIdPath' select='/esdl_script_context/ESDLRequest/root/extra/Relatives/Name/First'/> <!--absolute path may change, highly frowned upon-->
   </Transform>
 </config>)!!";
 
-        runTest(forEachScript, input, configRelatives, resultRelatives, 0);
+        runTest("for each relative", forEachScript, input, configRelatives, resultRelatives, 0);
 
         constexpr const char *configGarbagePathError = R"!!(<config strictParams="true">
   <Transform>
@@ -1068,42 +1079,41 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(forEachScript, input, configGarbagePathError, nullptr, -1);
+        runTest("for each garbage path error", forEachScript, input, configGarbagePathError, nullptr, -1);
 
         constexpr const char * resultNada = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
- <extra>
-  <Relatives>
-   <Name>
-    <First>Jonathon</First>
-    <xx1:Alias>John</xx1:Alias>
-    <xx1:Alias>Jon</xx1:Alias>
-    <xx1:Alias>Johnny</xx1:Alias>
-    <xx1:Alias>Johnnie</xx1:Alias>
-   </Name>
-   <Name>
-    <First>Jennifer</First>
-    <xx1:Alias>Jen</xx1:Alias>
-    <xx1:Alias>Jenny</xx1:Alias>
-    <xx1:Alias>Jenna</xx1:Alias>
-   </Name>
-  </Relatives>
-  <Friends>
-   <Name>
-    <First>Joe</First>
-    <xx1:Alias>Moe</xx1:Alias>
-    <xx1:Alias>Poe</xx1:Alias>
-    <xx1:Alias>Doe</xx1:Alias>
-   </Name>
-   <Name>
-    <First>Jane</First>
-    <xx1:Alias>Jan</xx1:Alias>
-    <xx1:Alias>Janie</xx1:Alias>
-    <xx1:Alias>Janet</xx1:Alias>
-   </Name>
-  </Friends>
- </extra>
-</root>
-)!!";
+  <extra>
+    <Relatives>
+      <Name>
+        <First>Jonathon</First>
+        <xx1:Alias>John</xx1:Alias>
+        <xx1:Alias>Jon</xx1:Alias>
+        <xx1:Alias>Johnny</xx1:Alias>
+        <xx1:Alias>Johnnie</xx1:Alias>
+      </Name>
+      <Name>
+        <First>Jennifer</First>
+        <xx1:Alias>Jen</xx1:Alias>
+        <xx1:Alias>Jenny</xx1:Alias>
+        <xx1:Alias>Jenna</xx1:Alias>
+      </Name>
+    </Relatives>
+    <Friends>
+      <Name>
+        <First>Joe</First>
+        <xx1:Alias>Moe</xx1:Alias>
+        <xx1:Alias>Poe</xx1:Alias>
+        <xx1:Alias>Doe</xx1:Alias>
+      </Name>
+      <Name>
+        <First>Jane</First>
+        <xx1:Alias>Jan</xx1:Alias>
+        <xx1:Alias>Janie</xx1:Alias>
+        <xx1:Alias>Janet</xx1:Alias>
+      </Name>
+    </Friends>
+  </extra>
+</root>)!!";
 
         constexpr const char *configNada = R"!!(<config strictParams="true">
   <Transform>
@@ -1115,7 +1125,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(forEachScript, input, configNada, resultNada, 0);
+        runTest("for each nada target", forEachScript, input, configNada, resultNada, 0);
     }
 
     void testEsdlTransformVarScope()
@@ -1154,7 +1164,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
              <append-to-value target="trace-halfway" select="$halfway"/>
              <append-to-value target="trace-global" select="$global"/>
            </if>
-           <for-each select="/root/extra/Friends/Name">
+           <for-each select="extra/Friends/Name">
                <variable name="local" select="'for1|'"/>
                <variable name="q" select="str:decode-uri('%27')"/>
                <variable name="path" select="concat('Friends/Name[First=', $q, First, $q, ']/Aliases')"/>
@@ -1190,29 +1200,28 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         )!!";
 
         constexpr const char * result = R"!!(<root>
- <extra>
-  <trace-global>root|root|root|root|root|root|root|root|root|root|root|root|root|root|root|root|</trace-global>
-  <Friends>
-   <Name>
-    <Alias>Moe</Alias>
-    <Alias>Poe</Alias>
-    <Alias>Doe</Alias>
-    <Aliases>Moe,Poe,Doe</Aliases>
-    <First>Joe</First>
-   </Name>
-   <Name>
-    <Alias>Jan</Alias>
-    <Alias>Janie</Alias>
-    <Alias>Janet</Alias>
-    <Aliases>Jan,Janie,Janet</Aliases>
-    <First>Jane</First>
-   </Name>
-  </Friends>
-  <trace-halfway>for2|for2|for2|for2|for2|for2|root|for2|for2|for2|for2|for2|for2|root|root|root|</trace-halfway>
-  <trace-local>for2|when|for2|otherwise|for2|otherwise|for1|for2|when|for2|otherwise|for2|otherwise|for1|if|root|</trace-local>
- </extra>
-</root>
-)!!";
+  <extra>
+    <trace-global>root|root|root|root|root|root|root|root|root|root|root|root|root|root|root|root|</trace-global>
+    <Friends>
+      <Name>
+        <Alias>Moe</Alias>
+        <Alias>Poe</Alias>
+        <Alias>Doe</Alias>
+        <Aliases>Moe,Poe,Doe</Aliases>
+        <First>Joe</First>
+      </Name>
+      <Name>
+        <Alias>Jan</Alias>
+        <Alias>Janie</Alias>
+        <Alias>Janet</Alias>
+        <Aliases>Jan,Janie,Janet</Aliases>
+        <First>Jane</First>
+      </Name>
+    </Friends>
+    <trace-halfway>for2|for2|for2|for2|for2|for2|root|for2|for2|for2|for2|for2|for2|root|root|root|</trace-halfway>
+    <trace-local>for2|when|for2|otherwise|for2|otherwise|for1|for2|when|for2|otherwise|for2|otherwise|for1|if|root|</trace-local>
+  </extra>
+</root>)!!";
 
         constexpr const char *config = R"!!(<config strictParams="true">
   <Transform>
@@ -1220,7 +1229,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(script, input, config, result, 0);
+        runTest("variable scope", script, input, config, result, 0);
     }
 
     void testEsdlTransformLegacy()
@@ -1236,7 +1245,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         )!!";
 
         static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
-            <es:SetValue target="ID" select="/root/Person/Name/First"/>
+            <es:SetValue target="ID" select="Person/Name/First"/>
             <es:AppendValue target="Append" select="Person/Name/First"/>
             <es:AppendValue target="Append" value="'++'"/>
         </es:CustomRequestTransform>
@@ -1245,17 +1254,16 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         constexpr const char *config = R"!!(<config><Transform><Param name='testcase' value="legacy"/></Transform></config>)!!";
 
         constexpr const char * result = R"!!(<root>
- <Person>
-  <Append>Joe++</Append>
-  <Name>
-   <First>Joe</First>
-  </Name>
-  <ID>Joe</ID>
- </Person>
-</root>
-)!!";
+  <Person>
+    <Append>Joe++</Append>
+    <Name>
+      <First>Joe</First>
+    </Name>
+    <ID>Joe</ID>
+  </Person>
+</root>)!!";
 
-        runTest(script, input, config, result, 0);
+        runTest("legacy", script, input, config, result, 0);
     }
     void testEsdlTransformIgnoreScriptErrors()
     {
@@ -1279,15 +1287,14 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         constexpr const char *config = R"!!(<config><Transform><Param name='testcase' value="ignore script errors"/></Transform></config>)!!";
 
         constexpr const char * result = R"!!(<root>
- <Person>
-  <Name>
-   <First>Joe</First>
-  </Name>
- </Person>
-</root>
-)!!";
+  <Person>
+    <Name>
+      <First>Joe</First>
+    </Name>
+  </Person>
+</root>)!!";
 
-        runTest(script, input, config, result, 0);
+        runTest("ignore script errors", script, input, config, result, 0);
     }
     void testEsdlTransformTargetXpathErrors()
     {
@@ -1310,7 +1317,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         constexpr const char *config = R"!!(<config><Transform><Param name='testcase' value="target xpath errors"/></Transform></config>)!!";
 
-        runTest(script, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
+        runTest("target xpath errors", script, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
 
         static constexpr const char * script2 = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
             <es:SetValue target="ID##" select="/root/Person/Name/First"/>
@@ -1319,7 +1326,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         </es:CustomRequestTransform>
         )!!";
 
-        runTest(script2, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
+        runTest("target xpath errors", script2, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
 }
     void testEsdlTransformFailLevel1A()
     {
@@ -1335,7 +1342,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 11);
+        runTest("fail Leve1A", esdlScript, soapRequest, config, nullptr, 11);
     }
 
     void testEsdlTransformFailLevel1B()
@@ -1352,7 +1359,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 12);
+        runTest("fail Level1B", esdlScript, soapRequest, config, nullptr, 12);
     }
 
     void testEsdlTransformFailLevel1C()
@@ -1369,7 +1376,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 13);
+        runTest("fail Level1C", esdlScript, soapRequest, config, nullptr, 13);
     }
 
     void testEsdlTransformFailLevel2A()
@@ -1386,7 +1393,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 21);
+        runTest("fail Level2A", esdlScript, soapRequest, config, nullptr, 21);
     }
 
     void testEsdlTransformFailLevel2B()
@@ -1403,7 +1410,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 22);
+        runTest("fail Level2B", esdlScript, soapRequest, config, nullptr, 22);
     }
 
     void testEsdlTransformFailLevel2C()
@@ -1420,7 +1427,108 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest(esdlScript, soapRequest, config, nullptr, 23);
+        runTest("fail Level2C", esdlScript, soapRequest, config, nullptr, 23);
+    }
+
+    void testScriptContext()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+         <root>
+            <Person>
+               <FullName>
+                  <First>Joe</First>
+                  <ID>GI101</ID>
+                  <ID>GI102</ID>
+               </FullName>
+            </Person>
+          </root>
+        )!!";
+
+        static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
+            <es:parameter name="testpass"/> 
+            <es:if test="es:storedValueExists('myvalue')">
+              <es:set-value xpath_target="concat('check-value1-pass-', $testpass)" select="concat('already set as of pass-', $testpass)"/>
+              <es:set-value target="myvalue" select="es:getStoredStringValue('myvalue')"/>
+              <es:remove-node target="Name/ID[1]"/> //removing first one changes the index count so each is 1
+              <es:remove-node target="Name/ID[1]"/> 
+            </es:if>
+            <es:if test="es:storedValueExists('myvalue2')">
+              <es:set-value xpath_target="concat('check-value2-pass-', $testpass)" select="concat('already set in pass-', $testpass)"/>
+              <es:set-value target="myvalue2" select="es:getStoredStringValue('myvalue2')"/>
+            </es:if>
+            <es:if test="es:logOptionExists('option1')">
+              <es:set-value xpath_target="concat('check-logging-option1-pass-', $testpass)" select="concat('already set in pass-', $testpass)"/>
+              <es:set-value target="logging-option1" select="es:getLogOption('option1')"/>
+              <es:set-value target="logging-option2" select="es:getLogOption('option2')"/>
+              <es:set-value target="profile" select="es:getLogProfile()"/>
+            </es:if>
+            <es:if test="not(es:storedValueExists('myvalue'))">
+              <es:set-value xpath_target="concat('check-set-pass-', $testpass)" select="concat('not already set in pass-', $testpass)"/>
+              <es:store-value xpath_name="'myvalue2'" select="'another stored value'"/>
+              <es:store-value name="myvalue" select="'this is a stored value'"/>
+              <es:set-log-option name="option1" select="'this is a logging option value'"/>
+              <es:set-log-option xpath_name="'option2'" select="'this is an xpath named logging option value'"/>
+              <es:set-log-profile select="'myprofile'"/>
+              <es:rename-node target="FullName" new_name="Name"/> 
+            </es:if>
+        </es:CustomRequestTransform>
+        )!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="script context 1"/>
+            <Param name='testpass' value="1"/>
+          </Transform>
+        </config>)!!";
+
+        constexpr const char *config2 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="script context 2"/>
+            <Param name='testpass' value="2"/>
+          </Transform>
+        </config>)!!";
+
+        try
+        {
+            Owned<IEspContext> ctx = createEspContext(nullptr);
+            Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "script context 1", 0);
+
+            scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, config2);
+            runTransform(scriptContext, script, "FirstPass", "SecondPass", "script context 2", 0);
+
+            constexpr const char * result = R"!!(<root>
+  <Person>
+    <Name>
+      <First>Joe</First>
+    </Name>
+    <myvalue>this is a stored value</myvalue>
+    <myvalue2>another stored value</myvalue2>
+    <logging-option1>this is a logging option value</logging-option1>
+    <check-set-pass-1>not already set in pass-1</check-set-pass-1>
+    <check-value2-pass-2>already set in pass-2</check-value2-pass-2>
+    <logging-option2>this is an xpath named logging option value</logging-option2>
+    <profile>myprofile</profile>
+    <check-logging-option1-pass-2>already set in pass-2</check-logging-option1-pass-2>
+    <check-value1-pass-2>already set as of pass-2</check-value1-pass-2>
+  </Person>
+</root>)!!";
+
+            StringBuffer output;
+            scriptContext->toXML(output, "SecondPass");
+            if (result && !streq(result, output.str()))
+            {
+                fputs(output.str(), stdout);
+                fflush(stdout);
+                throw MakeStringException(100, "Test failed(%s)", "script context");
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "script context", E->errorCode(), E->errorMessage(m).str());
+            throw E;
+        }
     }
 };
 
