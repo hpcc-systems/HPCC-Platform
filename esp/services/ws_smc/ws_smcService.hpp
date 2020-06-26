@@ -221,6 +221,7 @@ public:
         return true;
     }
 
+    virtual bool onGetBuildInfo(IEspContext &context, IEspGetBuildInfoRequest &req, IEspGetBuildInfoResponse &resp);
     virtual bool onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp);
     virtual bool onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp);
     virtual bool onGetStatusServerInfo(IEspContext &context, IEspGetStatusServerInfoRequest &req, IEspGetStatusServerInfoResponse &resp);

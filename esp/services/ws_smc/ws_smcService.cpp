@@ -2601,3 +2601,27 @@ bool CWsSMCEx::onLockQuery(IEspContext &context, IEspLockQueryRequest &req, IEsp
 
     return true;
 }
+
+bool CWsSMCEx::onGetBuildInfo(IEspContext &context, IEspGetBuildInfoRequest &req, IEspGetBuildInfoResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
+
+        IArrayOf<IEspNamedValue> buildInfo;
+        if (isContainerized())
+        {
+            Owned<IEspNamedValue> namedValue = createNamedValue();
+            namedValue->setName("CONTAINERIZED");
+            namedValue->setValue("ON");
+            buildInfo.append(*namedValue.getClear());
+        }
+        resp.setBuildInfo(buildInfo);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
