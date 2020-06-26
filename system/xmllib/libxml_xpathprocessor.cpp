@@ -105,6 +105,7 @@ public:
 
     virtual void extractReferences(StringArray &functions, StringArray &variables) override
     {
+#ifndef _WIN32
         char *buf = nullptr;
         size_t len = 0;
 
@@ -120,6 +121,9 @@ public:
         while (line)
             line = extractFromLineGetNext(functions, variables, line);
         free (buf);
+#else
+        UNIMPLEMENTED;
+#endif
     }
 };
 static xmlXPathObjectPtr variableLookupFunc(void *data, const xmlChar *name, const xmlChar *ns_uri);
