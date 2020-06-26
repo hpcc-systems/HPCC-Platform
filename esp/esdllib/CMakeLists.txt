@@ -73,7 +73,4 @@ IF (USE_LIBXSLT)
     include_directories (
          ${LIBXML2_INCLUDE_DIR}
     )
-    target_link_libraries ( esdl_svc_engine
-        ${LIBXML2_LIBRARIES}
-    )
 ENDIF()
