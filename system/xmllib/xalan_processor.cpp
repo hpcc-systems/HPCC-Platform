@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "xalan_processor.ipp"
+#include "xpathprocessor.hpp"
 #include "jencrypt.hpp"
 #include "jexcept.hpp"
 #include "xalanc/XPath/XObjectFactory.hpp"
@@ -691,4 +692,14 @@ void CXslTransform::message(StringBuffer& out, const char* in, IXslTransform* pT
 {
     CXslTransform* pTrans = dynamic_cast<CXslTransform*>(pTransform);
     pTrans->m_sMessages.append(in).append('\n');
+}
+
+extern ICompiledXpath* compileXpath(const char * xpath)
+{
+    UNIMPLEMENTED;
+}
+
+extern IXpathContext* getXpathContext(const char * xmldoc, bool strictParameterDeclaration, bool removeDocNamespaces)
+{
+    UNIMPLEMENTED;
 }
