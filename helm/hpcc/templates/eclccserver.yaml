@@ -31,14 +31,14 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" ) ) | indent 8 }}
         - name: "hpccbundles"
           mountPath: "/home/hpcc/.HPCCSystems"
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 6 }}
       - name: hpccbundles
@@ -87,12 +87,12 @@ data:
                      ]
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" ) ) | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 10 }}
-{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 10 }}
 {{ include "hpcc.addDllVolume" $ | indent 10 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 10 }}
           restartPolicy: Never

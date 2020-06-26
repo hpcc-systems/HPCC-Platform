@@ -1,5 +1,6 @@
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled -}}
+{{- include "hpcc.checkDefaultStoragePlane" (dict "root" $ "me" $roxie )}}
 {{- if not $roxie.localAgent -}}
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
@@ -128,12 +129,12 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 6 }}
 ---
@@ -192,12 +193,12 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $roxie | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" $roxie ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" $roxie ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 6 }}
 

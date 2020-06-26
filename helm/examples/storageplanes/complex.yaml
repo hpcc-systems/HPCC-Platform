@@ -1,3 +1,4 @@
+#An example of various different potential uses of storageplanes
 storage:
   planes:
   #Some examples of the different kinds of storage planes that are supported
@@ -5,6 +6,10 @@ storage:
   - name: azureBlobPlane
     prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
     secret: azure-ghallidaystorage
+
+  - name: azureDllPlane
+    prefix: azure://ghallidaydllstore      # Not sure if this should be different from the mount.
+    secret: azure-ghallidaydllstore
 
   #Store data on aws s3 buckets
   - name: s3BucketPlane
@@ -14,23 +19,23 @@ storage:
   - name: localDataPlane
     prefix: /var/lib/hpccsystems/hpcc-data
     replication: [ localMirrorPlane, localMirror2Plane ]
-    pvc: local-data-pvc
+    pvc: "local-data-pvc"
   - name: localMirrorPlane
     prefix: /var/lib/hpccsystems/hpcc-mirror
-    pvc: local-mirror-pvc
+    pvc: "local-mirror-pvc"
   - name: localMirror2Plane
     prefix: /var/lib/hpccsystems/hpcc-mirror2
-    pvc: local-mirror2-pvc
+    pvc: "local-mirror2-pvc"
 
   #Multiple nodes, data on a local mounts (all nodes mount the same logical file system).
   #Essentially identical to localDataPlane above
   - name: nasPlane
     prefix: /var/lib/hpccsystems/hpcc-data
     replication: [ nasMirrorPlane ]
-    pvc: nas-data-pvc
+    pvc: "nas-data-pvc"
   - name: nasMirrorPlane
     prefix: /var/lib/hpccsystems/hpcc-mirror
-    pvc: nas-mirror-pvc
+    pvc: "nas-mirror-pvc"
 
   #Multiple nodes, data on multiple local mounts (all nodes mount the same logical file system).
   #Allows an array of NFS servers to be used to store the data.  Would also potentially work for
@@ -38,6 +43,16 @@ storage:
   #Mount point is /var/lib/hpccsystems/hpcc-data/d<device-number>
   - name: nasArrayPlane
     prefix: /var/lib/hpccsystems/hpcc-data
-    pvc: nas-array-data-pvc
+    pvc: "nas-array-data-pvc"
     numDevices: 100
     includeDeviceInPath: true
+
+  # A locally mounted directory
+  - name: localNvmePlane
+    prefix: /tmp/hpcc/spill
+
+  #The following defines the default data plane (used if a component does not specify one)
+  dataStorage:
+    plane: localDataPlane
+  dllStorage:
+    plane: azureDllPlane

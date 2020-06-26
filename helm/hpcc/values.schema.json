@@ -5,6 +5,9 @@
     "global": {
       "$ref": "#/definitions/global"
     },
+    "hostgroups": {
+      "$ref": "#/definitions/hostgroups"
+    },
     "storage": {
       "type": "object",
       "properties": {
@@ -16,6 +19,19 @@
         },
         "daliStorage": {
           "$ref": "#/definitions/storageType"
+        },
+        "spillStorage": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/storageType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "planes": {
+          "$ref": "#/definitions/storagePlanes"
         }
       },
       "additionalProperties": false
@@ -73,6 +89,14 @@
             "prefix": {
               "type": "string",
               "description": "The (optional) file prefix to add to relative filenames"
+            },
+            "storagePlane": {
+              "description": "The default storage plane to write data files to",
+              "type": "string"
+            },
+            "spillPlane": {
+              "description": "The storage plane to write spill files to",
+              "type": "string"
             },
             "required": [ "name" ]
           }
@@ -146,6 +170,9 @@
         "storageClass": {
           "type": "string"
         },
+        "plane": {
+          "type": "string"
+        },
         "existingClaim": {
           "type": "string"
         },
@@ -153,7 +180,67 @@
           "type": "boolean"
         }
       },
-      "required": [ "storageSize" ],
+      "anyOf": [
+        {
+          "required": [ "storageSize" ]
+        },
+        {
+          "required": [ "plane" ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "storagePlanes": {
+      "description": "storage plane definitions",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/storagePlane" }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "storagePlane": {
+      "description": "information about an individual storage plane",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "the name of the storage plane",
+          "type": "string"
+        },
+        "prefix": {
+          "description": "either the path for a local mount, or the url prefix",
+          "type": "string"
+        },
+        "secret": {
+          "description": "optional name of any secret required to access this storage plane",
+          "type": "string"
+        },
+        "pvc": {
+          "description": "optional name of the persistent volume claim for this plane",
+          "type": "string"
+        },
+        "hosts": {
+          "description": "optional name of the host group (for bare metal storage)",
+          "type": "string"
+        },
+        "numDevices": {
+          "description": "optional number of devices in the storage plane (default 1)",
+          "type": "integer"
+        },
+        "includeDeviceInPath": {
+          "description": "is a directory based on the part number appended to the path.  May not be needed",
+          "type": "boolean"
+        },
+        "replication": {
+          "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": [ "name", "prefix" ],
       "additionalProperties": false
     },
     "secrets": {
@@ -164,6 +251,52 @@
         },
         {
           "type": "null"
+        }
+      ]
+    },
+    "hostgroups": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/hostgroup"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "hostgroup": {
+      "oneOf": [
+        {
+          "description": "a list of host names",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        {
+          "description": "a subset of an existing host group",
+          "type": "object",
+          "properties": {
+            "group": {
+              "description": "Name of the hostgroup to create a subset of",
+              "type": "string"
+            },
+            "count": {
+              "description": "Number of hosts in the subset",
+              "type": "integer"
+            },
+            "offset": {
+              "description": "Offset of the first host within the group",
+              "type": "integer"
+            },
+            "delta": {
+              "type": "integer",
+              "description": "Cycle offsset to apply to the hosts"
+            }
+          },
+          "required": [ "group" ],
+          "additionalProperties": false
         }
       ]
     },
@@ -277,6 +410,10 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "storagePlane": {
+          "description": "The default storage plane to write data files to",
+          "type": "string"
         }
       }
     },
@@ -303,6 +440,14 @@
           "description": "Roxie query services",
           "type": "array",
           "items": { "$ref": "#/definitions/roxieservice" }
+        },
+        "storagePlane": {
+          "description": "The default storage plane to write data files to",
+          "type": "string"
+        },
+        "spillPlane": {
+          "description": "The storage plane to write spill files to",
+          "type": "string"
         }
       }
     },
@@ -377,6 +522,14 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "storagePlane": {
+          "description": "The default storage plane to write data files to",
+          "type": "string"
+        },
+        "spillPlane": {
+          "description": "The storage plane to write spill files to",
+          "type": "string"
         }
       }
     }

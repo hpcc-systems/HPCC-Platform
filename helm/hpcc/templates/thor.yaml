@@ -1,5 +1,6 @@
 {{ range $thor := $.Values.thor -}}
 {{- if not $thor.disabled -}}
+{{- include "hpcc.checkDefaultStoragePlane" (dict "root" $ "me" $thor) }}
 {{- $hthorName := printf "%s-hthor" .name }}
 {{- $eclAgentName := printf "%s-agent" .name }}
 {{- $thorAgentName := printf "%s-thoragent" .name }}
@@ -42,12 +43,12 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 6 }}
 ---
@@ -79,12 +80,12 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 6 }}
 ---
@@ -160,12 +161,12 @@ data:
                      ]
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 10 }}
-{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 10 }}
 {{ include "hpcc.addDllVolume" $ | indent 10 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never
@@ -198,12 +199,12 @@ data:
                   ]
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 10 }}
-{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 10 }}
 {{ include "hpcc.addDllVolume" $ | indent 10 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never
@@ -234,12 +235,12 @@ data:
                   ]
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 10 }}
-{{ include "hpcc.addDataVolume" $ | indent 10 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 10 }}
 {{ include "hpcc.addDllVolume" $ | indent 10 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never

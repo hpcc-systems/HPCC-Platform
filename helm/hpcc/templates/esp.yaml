@@ -28,12 +28,12 @@ spec:
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "storage" ) ) | indent 6 }}
 ---

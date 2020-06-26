@@ -4,7 +4,7 @@ options="--set global.image.version=latest"
 hpccchart=$scriptdir/../../helm/hpcc
 failed=0
 
-helm --version
+helm version
 echo Testing unmodified values file
 helm lint $hpccchart ${options} > results.txt 2> errors.txt
 if [ $? -ne 0 ]
@@ -35,10 +35,10 @@ do
    if [ $? -eq 0 ]
    then
       echo $file should have failed
-   else
-      echo $file failed
-      cat results.txt
       failed=1
+   else
+      echo "$file failed - correctly"
+      cat results.txt
    fi
 done
 exit $failed

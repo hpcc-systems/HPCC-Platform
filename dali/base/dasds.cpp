@@ -6389,10 +6389,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     initializeInternals(conn->queryRoot());
     conn.clear();
     bool forceGroupUpdate = config.getPropBool("DFS/@forceGroupUpdate");
-    StringBuffer response;
-    initClusterGroups(forceGroupUpdate, response, oldEnvironment);
-    if (response.length())
-        PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
+    initClusterAndStoragePlaneGroups(forceGroupUpdate, oldEnvironment);
 }
 
 void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
