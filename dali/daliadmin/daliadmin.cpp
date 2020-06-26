@@ -135,6 +135,7 @@ void usage(const char *exe)
   printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
   printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
   printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
+  printf("  cleanglobalwuid [dryrun=true|false] [reconstruct=true|false]\n"); // NB: default dryrun=false, reconstruct=true
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -3244,7 +3245,7 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
     unsigned reportInterval = 100;
     VStringBuffer wuRoot("/WorkUnits/global");
     CCycleTimer timer;
-    Owned<IRemoteConnection> wuConn = querySDS().connect(wuRoot, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> wuConn = querySDS().connect(wuRoot, myProcessSession(), dryrun ? 0 : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!wuConn)
     {
         PROGLOG("Failed to connect to: %s", wuRoot.str());
@@ -3336,7 +3337,7 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
         }
         catch (IException *e)
         {
-            VStringBuffer errMsg("Skpping: %s", name);
+            VStringBuffer errMsg("Skipping: %s", name);
             EXCLOG(e, errMsg.str());
             e->Release();
         }
@@ -3793,7 +3794,7 @@ int main(int argc, char* argv[])
                     {
                         CHECKPARAMS(0, 2);
                         bool dryrun = false;
-                        bool reconstruct = false;
+                        bool reconstruct = true;
                         for (unsigned i=1; i<params.ordinality(); i++)
                         {
                             const char *param = params.item(i);
