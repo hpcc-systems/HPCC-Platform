@@ -695,7 +695,6 @@ const char * cppSystemText[]  = {
     "   setResultVarUnicode(const varstring stepname, unsigned4 sequence, const varunicode value) : ctxmethod,entrypoint='setResultVarUnicode';",
     "   setConditionCode(integer4 stepname) : ctxmethod,entrypoint='setConditionCode';",
     "   const varstring loadResource(unsigned4 id) : ctxmethod,entrypoint='loadResource';",
-    "   unsigned4 getWorkflowId() : gctxmethod,entrypoint='getWorkflowId';",
     "   doNotify(const varstring name, const varstring text) : gctxmethod,entrypoint='doNotify';",
     "   doNotifyTarget(const varstring name, const varstring text, const varstring _target) : gctxmethod,entrypoint='doNotify';",
     "   setWorkflowCondition(boolean value) : gctxmethod,entrypoint='setWorkflowCondition';",

@@ -27640,7 +27640,10 @@ public:
         if (exception)
             throw exception.getLink();
     }
-
+    unsigned queryWorkflowId() const
+    {
+        return graphDefinition.queryWorkflowId();
+    }
     virtual void execute()
     {
         results.setown(new CGraphResults);
@@ -27986,6 +27989,10 @@ public:
     virtual void setPrefix(const char *) override
     {
     }
+    virtual unsigned queryWorkflowId() const override
+    {
+        return graphDefinition.queryWorkflowId();
+    }
 protected:
     IRoxieSlaveContext *ctx;
     IRoxieServerActivity *parentActivity;
@@ -28197,7 +28204,10 @@ public:
     {
         prefix.set(pfx);
     }
-
+    virtual unsigned queryWorkflowId() const override
+    {
+        return graphDefinition.queryWorkflowId();
+    }
     virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) override
     {
         Owned<CIterationActivityGraph> ret = new CIterationActivityGraph(graphName, id, parentActivity, graphDefinition, probeManager, loopCounter, ctx, colocalParent, parentExtractSize, parentExtract, logctx);

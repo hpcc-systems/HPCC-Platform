@@ -69,7 +69,6 @@ public:
     WorkflowMachine();
     WorkflowMachine(const IContextLogger &logctx);
     void perform(IGlobalCodeContext *_ctx, IEclProcess *_process);
-    unsigned queryCurrentWfid() const { return currentWfid; }
     int queryLastFailCode() const;
     char const * queryLastFailMessage() const;
     const char * queryEventName() const;

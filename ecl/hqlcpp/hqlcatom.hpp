@@ -380,7 +380,6 @@ extern IIdAtom * getResultVarStringId;
 extern IIdAtom * getResultVarUnicodeId;
 extern IIdAtom * getRootResultId;
 extern IIdAtom * getStartCyclesId;
-extern IIdAtom * getWorkflowIdId;
 extern IIdAtom * getWuidId;
 extern IIdAtom * groupedDataset2RowsetXId;
 extern IIdAtom * groupedRowset2DatasetXId;

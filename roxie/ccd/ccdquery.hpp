@@ -51,6 +51,7 @@ interface IActivityGraph : extends IInterface
     virtual const char *queryName() const = 0;
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
     virtual void setPrefix(const char *prefix) = 0;
+    virtual unsigned queryWorkflowId() const = 0;
 };
 
 interface IRoxiePackage;
@@ -108,6 +109,8 @@ public:
     bool failOnLeaks;
     bool collectFactoryStatistics;
     bool noSeekBuildIndex;
+    bool parallelWorkflow;
+    unsigned numWorkflowThreads;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);
@@ -176,10 +179,11 @@ class ActivityArray : public CInterface
     bool library;
     bool sequential;
     unsigned libraryGraphId;
+    unsigned wfid;
 
 public:
-    ActivityArray(bool _multiInstance, bool _delayed, bool _library, bool _sequential)
-     : multiInstance(_multiInstance), delayed(_delayed), library(_library), sequential(_sequential)
+    ActivityArray(bool _multiInstance, bool _delayed, bool _library, bool _sequential, unsigned _wfid)
+     : multiInstance(_multiInstance), delayed(_delayed), library(_library), sequential(_sequential), wfid(_wfid)
     {
         libraryGraphId = 0;
     }
@@ -197,6 +201,7 @@ public:
     inline bool isLibrary() const { return library; }
     inline bool isSequential() const { return sequential; }
     inline unsigned getLibraryGraphId() const { return libraryGraphId; }
+    inline unsigned queryWorkflowId() const { return wfid; }
 };
 typedef CopyReferenceArrayOf<ActivityArray> ActivityArrayArray;
 

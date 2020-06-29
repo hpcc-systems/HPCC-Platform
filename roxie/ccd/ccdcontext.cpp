@@ -1502,7 +1502,7 @@ public:
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (collectingDetailedStatistics())
-            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), getWorkflowId(), 0));
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0));
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
@@ -1524,10 +1524,10 @@ public:
                     formatGraphTimerLabel(graphDesc, graphName);
                     WorkunitUpdate progressWorkUnit(&workUnit->lock());
                     StringBuffer graphScope;
-                    graphScope.append(WorkflowScopePrefix).append(getWorkflowId()).append(":").append(graphName);
+                    graphScope.append(WorkflowScopePrefix).append(graph->queryWorkflowId()).append(":").append(graphName);
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
                     updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
-                    addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, getWorkflowId());
+                    addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, graph->queryWorkflowId());
                 }
                 graph->reset();
             }
@@ -3718,7 +3718,11 @@ public:
         addWuExceptionEx(text, code, 2, MSGAUD_user, "user");
     }
 
-    virtual unsigned getWorkflowId() { return workflow->queryCurrentWfid(); }
+    virtual unsigned getWorkflowId()
+    {
+        logctx.CTXLOG("Trying to access WFID from workflow");
+        throwUnexpected();
+    }
 
     void doNotify(char const * name, char const * text)
     {
