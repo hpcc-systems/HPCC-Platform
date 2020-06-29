@@ -358,4 +358,7 @@ jlib_decl void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned i
 jlib_decl void printYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
 jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=YAML_HideRootArrayObject);
 
+// Defines the threshold where attribute value maps are created for sibling ptrees for fast lookups
+jlib_decl void setPTreeMappingThreshold(unsigned threshold);
+
 #endif

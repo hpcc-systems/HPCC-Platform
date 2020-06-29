@@ -9192,21 +9192,27 @@ void CLocalWorkUnit::releaseFile(const char *fileName)
     IPropertyTree *files = p->queryPropTree("Files");
     if (!files) return;
     Owned<IPropertyTreeIterator> fiter = files->getElements(path.str());
-    ForEach (*fiter)
+    if (fiter->first())
     {
-        IPropertyTree *file = &fiter->query();
-        unsigned usageCount = file->getPropInt("@usageCount");
-        if (usageCount > 1)
-            file->setPropInt("@usageCount", usageCount-1);
-        else
+        while (true)
         {
-            StringAttr name(file->queryProp("@name"));
-            files->removeTree(file);
-            if (!name.isEmpty()&&(1 == usageCount))
+            IPropertyTree *file = &fiter->query();
+            unsigned usageCount = file->getPropInt("@usageCount");
+            bool more = fiter->next();
+            if (usageCount > 1)
+                file->setPropInt("@usageCount", usageCount-1);
+            else
             {
-                if (queryDistributedFileDirectory().removeEntry(fileName, queryUserDescriptor()))
-                    LOG(MCdebugProgress, unknownJob, "Removed (released) file %s from DFS", name.get());
+                StringAttr name(file->queryProp("@name"));
+                files->removeTree(file);
+                if (!name.isEmpty()&&(1 == usageCount))
+                {
+                    if (queryDistributedFileDirectory().removeEntry(fileName, queryUserDescriptor()))
+                        LOG(MCdebugProgress, unknownJob, "Removed (released) file %s from DFS", name.get());
+                }
             }
+            if (!more)
+                break;
         }
     }
 }

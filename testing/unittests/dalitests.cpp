@@ -34,6 +34,7 @@
 
 #include <vector>
 #include <future>
+#include <math.h>
 
 #include "unittests.hpp"
 
@@ -806,6 +807,9 @@ class CDaliSDSStressTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSDSSubs2);
         CPPUNIT_TEST(testSDSNodeSubs);
         CPPUNIT_TEST(testEphemeralLocks);
+        CPPUNIT_TEST(testSiblingPerfLocal);
+        CPPUNIT_TEST(testSiblingPerfDali);
+        CPPUNIT_TEST(testSiblingPerfContention);
     CPPUNIT_TEST_SUITE_END();
 
     const IContextLogger &logctx;
@@ -1455,6 +1459,301 @@ public:
         unsigned timeout = 2000;
         for (unsigned t=0; t<numThreads; t++)
             results.push_back(std::async(std::launch::async, createEphemeralLock, xpath, timeout, t%2));
+        for (auto &f: results)
+            f.get();
+    }
+    void createLevel(IPropertyTree *parent, unsigned nodeSiblings, unsigned leafSiblings, unsigned attributes, unsigned depth, unsigned level)
+    {
+        StringBuffer aname;
+        StringBuffer avalue;
+        if (2 == level) // 1st level down
+        {
+            printf(".");
+            fflush(stdout);
+        }
+        unsigned levelSiblings = depth==level ? leafSiblings : nodeSiblings;
+        for (unsigned s=0; s<levelSiblings; s++)
+        {
+            IPropertyTree *child = parent->addPropTree("Child");
+            if (level<depth)
+                createLevel(child, nodeSiblings, leafSiblings, attributes, depth, level+1);
+            for (unsigned a=0; a<attributes; a++)
+            {
+                avalue.clear().appendf("%u_%u", level, s+1);
+                child->setProp(aname.clear().appendf("@aname%u", a+1), avalue.str());
+            }
+        }
+        if (1 == level) // back at top
+            printf("\n");
+    }
+    static StringBuffer &constructXPath(StringBuffer &xpath, unsigned depth, unsigned nodeSibling, unsigned leafSibling, unsigned attr, unsigned level, const char *extra=nullptr)
+    {
+        while (true)
+        {
+            unsigned sibling = depth == level ? leafSibling : nodeSibling;
+            xpath.appendf("Child[@aname%u=\"%u_%u", attr, level, sibling);
+            if (extra && (depth == level))
+                xpath.append(extra);
+            xpath.append("\"]");
+            if (level == depth)
+                break;
+            xpath.append('/');
+            level++;
+        }
+        return xpath;
+    }
+
+    void createSiblings(IPropertyTree *root, unsigned depth, unsigned attributes, unsigned nodeSiblings, unsigned leafSiblings)
+    {
+        unsigned nodes = 0;
+        for (unsigned d=1; d<=depth; d++)
+        {
+            if (d==depth)
+                nodes += pow(nodeSiblings, d-1) * leafSiblings;
+            else
+                nodes += pow(nodeSiblings, d);
+        }
+        printf("Creating %u nodes\n", nodes);
+
+        CCycleTimer timer;
+        createLevel(root, nodeSiblings, leafSiblings, attributes, depth, 1);
+        printf("%6u ms : create time\n", timer.elapsedMs());
+    }
+
+    void testSiblingPerf(std::function<IPropertyTree *(StringBuffer &, unsigned, unsigned, unsigned, unsigned, const char *)> searchFunc, unsigned depth, unsigned attributes, unsigned nodeSiblings, unsigned leafSiblings, unsigned secondaryTests)
+    {
+        try
+        {
+            StringBuffer xpath;
+            StringBuffer v;
+            xpath.ensureCapacity(1024);
+            v.ensureCapacity(1024);
+
+            auto firstSearchFunc = [&](unsigned attr)
+            {
+                CCycleTimer timer;
+                Owned<IPropertyTree> search = searchFunc(xpath.clear(), attr, depth, nodeSiblings, leafSiblings, nullptr);
+                assertex(search);
+                printf("%6u ms : 1st search (xpath=%s) time\n", timer.elapsedMs(), xpath.str());
+                xpath.clear().appendf("@aname%u", attributes);
+                v.clear().appendf("%u_%u", depth, leafSiblings);
+                assertex(streq(v, search->queryProp(xpath)));
+            };
+
+            auto secondarySearchFunc = [&](unsigned attr, const char *extra=nullptr, unsigned siblingOffset=0)->unsigned
+            {
+                unsigned leafSibling = siblingOffset+leafSiblings-1;
+                unsigned foundCount = 0;
+                CCycleTimer timer;
+                for (unsigned t=0; t<secondaryTests; t++)
+                {
+                    Owned<IPropertyTree> search = searchFunc(xpath.clear(), attr, depth, nodeSiblings, leafSibling, extra);
+                    if (search)
+                        foundCount++;
+                    leafSibling--;
+                    if (siblingOffset == leafSibling)
+                        leafSibling = siblingOffset+leafSiblings;
+                }
+                VStringBuffer msg("%6u ms : Next ", timer.elapsedMs());
+                msg.append(secondaryTests).append(" searches for aname").append(attr);
+                if (extra)
+                    msg.append(" [extra=\"").append(extra).append("\"]");
+                msg.append(" time");
+                printf("%s\n", msg.str());
+                return foundCount;
+            };
+
+            firstSearchFunc(1); // first attribute
+
+            verifyex(secondaryTests == secondarySearchFunc(1)); // first attribute
+
+            firstSearchFunc(attributes); // 1st attribute
+            verifyex(secondaryTests == secondarySearchFunc(attributes)); // last attribute
+            verifyex(secondaryTests == secondarySearchFunc(1)); // first attribute
+
+            Owned<IPropertyTree> parent = searchFunc(xpath.clear(), 1, depth-1, nodeSiblings, nodeSiblings, nullptr);
+            verifyex(parent);
+            CCycleTimer timer;
+            unsigned max = leafSiblings;
+            if (max > 1000)
+                max = 1000;
+            unsigned removedEntries = 0, newEntries = 0, changedEntries = 0;
+            unsigned step = leafSiblings / max;
+            unsigned s = 1;
+            unsigned which = 0;
+            while (true)
+            {
+                constructXPath(xpath.clear(), depth, nodeSiblings, s, 1, depth);
+                IPropertyTree *search = parent->queryPropTree(xpath);
+                assertex(search);
+                switch (which)
+                {
+                    case 0:
+                    {
+                        verifyex(parent->removeTree(search));
+                        removedEntries++;
+                        break;
+                    }
+                    case 1:
+                    {
+                        IPropertyTree *newChild = parent->addPropTree("Child");
+                        newChild->setProp("@aname1", "NEW");
+                        newEntries++;
+                        break;
+                    }
+                    case 2:
+                    {
+                        search->setProp("@aname1", v.clear().appendf("%u_%u - CHANGED", depth, s));
+                        changedEntries++;
+                        break;
+                    }
+                }
+                s += step;
+                if (s >= leafSiblings)
+                    break;
+                ++which;
+                if (which>2)
+                    which = 0;
+            }
+            printf("%6u ms : Modify, delete and create elements time\n", timer.elapsedMs());
+
+            parent.clear(); // if Dali test, then this will commit the above changes
+            parent.setown(searchFunc(xpath.clear(), 1, depth-1, nodeSiblings, nodeSiblings, nullptr));
+
+            timer.reset();
+            Owned<IPropertyTreeIterator> iter = parent->getElements(xpath.clear().append("Child[@aname1=\"NEW\"]"));
+            unsigned count = 0;
+            ForEach (*iter)
+                ++count;
+            assertex(count == newEntries);
+            printf("%6u ms : Scan of new entries time\n", timer.elapsedMs());
+
+            s = 1;
+            which = 0;
+            timer.reset();
+            while (true)
+            {
+                if (which==2)
+                {
+                    Owned<IPropertyTree> search = searchFunc(xpath.clear(), 1, depth, nodeSiblings, s, " - CHANGED");
+                    assertex(search);
+                }
+                s += step;
+                if (s >= leafSiblings)
+                    break;
+                which++;
+                if (which>2)
+                    which = 0;
+            }
+            printf("%6u ms : scans for %u changed entries time\n", timer.elapsedMs(), changedEntries);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, nullptr);
+            e->Release();
+        }
+    }
+    void testSiblingPerfLocal()
+    {
+        unsigned depth = 3;
+        unsigned attributes = 3;
+        unsigned nodeSiblings = 10;
+        unsigned leafSiblings = 100000;
+        unsigned secondaryTests = 1000;
+        unsigned mappingThreshold = 10;
+
+        printf("Performing testSiblingPerfLocal\n\n");
+
+        Owned<IPropertyTree> root = createPTree();
+        auto searchFunc = [&root](StringBuffer &xpath, unsigned attr, unsigned depth, unsigned nodeSiblings, unsigned leafSibling, const char *extra=nullptr)->IPropertyTree *
+        {
+            constructXPath(xpath.clear(), depth, nodeSiblings, leafSibling, attr, 1, extra);
+            return root->getPropTree(xpath.str());
+        };
+
+        createSiblings(root, depth, attributes, nodeSiblings, leafSiblings);
+
+        printf("cloning tree for 2nd test\n");
+        Owned<IPropertyTree> copyRoot = createPTreeFromIPT(root);
+
+        setPTreeMappingThreshold(0); // disable
+        printf("Performing tests with mapping disabled\n");
+        testSiblingPerf(searchFunc, depth, attributes, nodeSiblings, leafSiblings, secondaryTests);
+
+        root.setown(copyRoot.getClear());
+
+        setPTreeMappingThreshold(mappingThreshold);
+        printf("Performing tests with mapping enabled (mappingThreshold=%u)\n", mappingThreshold);
+        testSiblingPerf(searchFunc, depth, attributes, nodeSiblings, leafSiblings, secondaryTests);
+    }
+
+    void testSiblingPerfDali()
+    {
+        unsigned depth = 3;
+        unsigned attributes = 3;
+        unsigned nodeSiblings = 2;
+        unsigned leafSiblings = 100000;
+        unsigned secondaryTests = 100;
+        unsigned mappingThreshold = 10;
+
+        printf("Performing testSiblingPerfDali\n\n");
+
+        setPTreeMappingThreshold(mappingThreshold);
+
+        Owned<IRemoteConnection> conn = querySDS().connect("/testmaps", myProcessSession(), RTM_CREATE, 10000);
+        createSiblings(conn->queryRoot(), depth, attributes, nodeSiblings, leafSiblings);
+        conn.clear(); // commit
+
+        auto searchFunc = [](StringBuffer &xpath, unsigned attr, unsigned depth, unsigned nodeSiblings, unsigned leafSibling, const char *extra=nullptr)->IPropertyTree *
+        {
+            constructXPath(xpath.clear().append("/testmaps/"), depth, nodeSiblings, leafSibling, attr, 1, extra);
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 10000);
+            assertex(conn);
+            return conn->getRoot();
+        };
+
+        printf("Performing tests with both client and server side mapping enabled (mappingThreshold=%u)\n", mappingThreshold);
+        testSiblingPerf(searchFunc, depth, attributes, nodeSiblings, leafSiblings, secondaryTests);
+    }
+
+    void testSiblingPerfContention()
+    {
+        unsigned depth = 1;
+        unsigned attributes = 10;
+        unsigned nodeSiblings = 1;
+        unsigned leafSiblings = 1000;
+        unsigned mappingThreshold = 10;
+        unsigned threads = 20;
+
+        printf("Performing testSiblingPerfContention\n\n");
+
+        Owned<IPropertyTree> root = createPTree();
+        createSiblings(root, depth, attributes, nodeSiblings, leafSiblings);
+
+        setPTreeMappingThreshold(mappingThreshold);
+
+        std::vector<std::future<void>> results;
+
+        auto searchFunc = [&root](unsigned a)
+        {
+            /*
+             * NB: initially the 1st lookups are likely to clash and only 1 will create the initial map.
+             * i.e. the other threads will not use the map.
+             */
+            StringBuffer xpath;
+            for (unsigned s=1; s<=1000; s++)
+            {
+                constructXPath(xpath.clear(), 1, 1, s, a, 1, nullptr);
+                IPropertyTree *search = root->queryPropTree(xpath);
+                assertex(search);
+            }
+        };
+
+        for (unsigned t=0; t<threads; t++)
+        {
+            unsigned a = (t % (threads/2))+1;
+            results.push_back(std::async(std::launch::async, searchFunc, a));
+        }
         for (auto &f: results)
             f.get();
     }
