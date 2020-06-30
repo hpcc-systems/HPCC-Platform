@@ -18328,6 +18328,8 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
     bool isUnicode = isUnicodeType(search->queryType());
     IHqlExpression * compiled = doBuildRegexCompileInstance(ctx, pattern, isUnicode, !expr->hasAttribute(noCaseAtom));
 
+    // Because the search instance is created locally, the search parameter is always going to be valid
+    // as long as the find instance.  Only exception could be if call created a temporary class instance.
     if (expr->getOperator() == no_regex_replace)
     {
         HqlExprArray args;
@@ -18338,51 +18340,29 @@ void HqlCppTranslator::doBuildNewRegexFindReplace(BuildCtx & ctx, const CHqlBoun
         OwnedHqlExpr call = bindFunctionCall(func, args);
         //Need to associate???
         buildExprOrAssign(ctx, target, call, bound);
-        return;
-    }
-
-    // Because the search instance is created locally, the search parameter is always going to be valid
-    // as long as the find instance.  Only exception could be if call created a temporary class instance.
-    bool cloneSearch = false;
-    CHqlBoundExpr boundTimer, boundStart;
-    if (options.timeRegex)
-    {
-        StringBuffer regexName;
-        regexName.append(getOpString(expr->getOperator()));
-
-        if (pattern->queryId())
-            regexName.append("(").append(str(pattern->queryId())).append(")");
-        else if (pattern->isConstant())
-        {
-            StringBuffer patternText;
-            getUTF8Value(patternText, pattern);
-            // Replace colons in the pattern to avoid issues with scopes, and single quotes to avoid xpath quoting issues
-            patternText.replace(':', '_').replace('\'', '_');
-            regexName.append("(").append(patternText).append(")");
-        }
-
-        buildStartTimer(ctx, boundTimer, boundStart, regexName);
-    }
-    IHqlExpression * findInstance = doBuildRegexFindInstance(ctx, compiled, search, cloneSearch);
-    if(expr->queryType() == queryBoolType())
-    {
-        HqlExprArray args;
-        args.append(*LINK(findInstance));
-        IIdAtom * func= isUnicode ? regexNewUStrFoundId : regexNewStrFoundId;
-        OwnedHqlExpr call = bindFunctionCall(func, args);
-        buildExprOrAssign(ctx, target, call, bound);
     }
     else
     {
-        HqlExprArray args;
-        args.append(*LINK(findInstance));
-        args.append(*LINK(expr->queryChild(2)));
-        IIdAtom * func= isUnicode ? regexNewUStrFoundXId : regexNewStrFoundXId;
-        OwnedHqlExpr call = bindFunctionCall(func, args);
-        buildExprOrAssign(ctx, target, call, bound);
+        bool cloneSearch = false;
+        IHqlExpression * findInstance = doBuildRegexFindInstance(ctx, compiled, search, cloneSearch);
+        if(expr->queryType() == queryBoolType())
+        {
+            HqlExprArray args;
+            args.append(*LINK(findInstance));
+            IIdAtom * func= isUnicode ? regexNewUStrFoundId : regexNewStrFoundId;
+            OwnedHqlExpr call = bindFunctionCall(func, args);
+            buildExprOrAssign(ctx, target, call, bound);
+        }
+        else
+        {
+            HqlExprArray args;
+            args.append(*LINK(findInstance));
+            args.append(*LINK(expr->queryChild(2)));
+            IIdAtom * func= isUnicode ? regexNewUStrFoundXId : regexNewStrFoundXId;
+            OwnedHqlExpr call = bindFunctionCall(func, args);
+            buildExprOrAssign(ctx, target, call, bound);
+        }
     }
-    if (options.timeRegex)
-        buildStopTimer(ctx, boundTimer, boundStart);
 }
 
 void HqlCppTranslator::doBuildExprRegexFindReplace(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound)

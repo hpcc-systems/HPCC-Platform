@@ -553,19 +553,19 @@ const char * cppSystemText[]  = {
     "   unicode wregexReplaceX(unsigned8 compiled, const unicode text, const unicode replace)   :   eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlWRegExprReplace';",
     "   unicode wregexGetFindStr(unsigned8 compiled, unsigned4 idx):    eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlWRegExprGetFindStr';",
 
-    "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
-    "   regexNewStrFind(boolean _compiled, const string _search, boolean _cloneSearch) : omethod,entrypoint='find';"
+    "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern',time('CompileStringRegex');"
+    "   regexNewStrFind(boolean _compiled, const string _search, boolean _cloneSearch) : omethod,entrypoint='find',time('REGEXFIND');"
     "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
     "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
-    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace';"
-    "   set of string regexMatchSet(const string _search) : method,pure,entrypoint='getMatchSet';"
+    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   set of string regexMatchSet(const string _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
-    "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
-    "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='find';"
+    "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern',time('CompileUnicodeRegex');"
+    "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='find',time('REGEXFIND');"
     "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
     "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
-    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace';"
-    "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSet';"
+    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace',time('REGEXREPLACE');"
+    "   set of unicode regexUStrMatchSet(const unicode _search) : method,pure,entrypoint='getMatchSet',time('REGEXFINDSET');"
 
     //clibrary functions that are called from the code generation
     "   free(noconst data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
