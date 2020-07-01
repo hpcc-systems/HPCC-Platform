@@ -2197,7 +2197,7 @@ void EclAgent::runProcess(IEclProcess *process)
 
 unsigned EclAgent::getWorkflowId()
 {
-    return workflow->queryCurrentWfid();
+    throwUnexpected();
 }
 
 //----------------------------------------------------------------
@@ -3153,7 +3153,7 @@ void EclAgent::reportProgress(const char *progress, unsigned flags)
         CriticalBlock block(wusect);
         WorkunitUpdate w = updateWorkUnit();
         w->setState(WUStateAborting);
-        throw new WorkflowException(0, "Workunit abort request received", (workflow ? workflow->queryCurrentWfid() : 0), WorkflowException::ABORT, MSGAUD_user);
+        throw new WorkflowException(0, "Workunit abort request received", 0, WorkflowException::ABORT, MSGAUD_user);
     }
     if (progress)
     {

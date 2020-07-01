@@ -382,7 +382,6 @@ IIdAtom * getResultVarStringId;
 IIdAtom * getResultVarUnicodeId;
 IIdAtom * getRootResultId;
 IIdAtom * getStartCyclesId;
-IIdAtom * getWorkflowIdId;
 IIdAtom * getWuidId;
 IIdAtom * groupedDataset2RowsetXId;
 IIdAtom * groupedRowset2DatasetXId;
@@ -1048,7 +1047,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(getResultVarUnicode);
     MAKEID(getRootResult);
     MAKEID(getStartCycles);
-    MAKEID(getWorkflowId);
     MAKEID(getWuid);
     MAKEID(groupedDataset2RowsetX);
     MAKEID(groupedRowset2DatasetX);
