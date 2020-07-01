@@ -27,6 +27,9 @@
 
 #include "thorplugin.hpp"
 
+#include <thread>
+#include <mutex>
+
 void ActivityArray::append(IActivityFactory &cur)
 {
     hash.setValue(cur.queryId(), activities.ordinality());
@@ -78,23 +81,42 @@ class CQueryDll : implements IQueryDll, public CInterface
     StringAttr dllName;
     Owned <ILoadedDllEntry> dll;
     Owned <IConstWorkUnit> wu;
+    std::once_flag started;
+    Owned<IException> e;
     static CriticalSection dllCacheLock;
     static CopyMapStringToMyClass<CQueryDll> dllCache;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CQueryDll(const char *_dllName, ILoadedDllEntry *_dll) : dllName(_dllName), dll(_dll)
+    CQueryDll(const char *_dllName) : dllName(_dllName)
     {
-        StringBuffer wuXML;
-        if (!selfTestMode && getEmbeddedWorkUnitXML(dll, wuXML))
-        {
-            Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
-            wu.setown(localWU->unlock());
-        }
-        CriticalBlock b(dllCacheLock);
-        dllCache.setValue(dllName, this);
     }
+private:
+    void init(bool isExe)
+    {
+        std::call_once(started, [this, isExe]()
+        {
+            try
+            {
+                dll.setown(isExe ? createExeDllEntry(dllName) : queryRoxieDllServer().loadDll(dllName, DllLocationDirectory));
+                StringBuffer wuXML;
+                if (!selfTestMode && getEmbeddedWorkUnitXML(dll, wuXML))
+                {
+                    Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
+                    wu.setown(localWU->unlock());
+                }
+            }
+            catch (IException *E)
+            {
+                EXCLOG(E);
+                e.setown(E);
+            }
+        });
+        if (e)
+            throw e.getLink();
+    }
+public:
     virtual void beforeDispose()
     {
         CriticalBlock b(dllCacheLock);
@@ -106,16 +128,19 @@ public:
     }
     static const CQueryDll *getQueryDll(const char *dllName, bool isExe)
     {
-        CriticalBlock b(dllCacheLock);
-        CQueryDll *dll = dllCache.getValue(dllName);
-        if (dll && dll->isAliveAndLink())
-            return dll;
-        else
+        CQueryDll *cached = nullptr;
         {
-            Owned<ILoadedDllEntry> dll = isExe ? createExeDllEntry(dllName) : queryRoxieDllServer().loadDll(dllName, DllLocationDirectory);
-            assertex(dll != NULL);
-            return new CQueryDll(dllName, dll.getClear());
+            CriticalBlock b(dllCacheLock);
+            cached = dllCache.getValue(dllName);
+            if (!cached || !cached->isAliveAndLink())
+            {
+                cached = new CQueryDll(dllName);
+                dllCache.setValue(dllName, cached);
+            }
         }
+        Owned<CQueryDll> dll(cached);  // Make sure it's released if init() throws an exception
+        dll->init(isExe);
+        return dll.getClear();
     }
     static const IQueryDll *getWorkUnitDll(IConstWorkUnit *wu)
     {
@@ -517,13 +542,14 @@ protected:
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
 
-    static SpinLock queriesCrit;
-    static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryMap;
+    static CriticalSection activeQueriesCrit;
+    static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> activeQueries;    // Active queries
+    static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryCache;       // Active and loading queries
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
     mutable CriticalSection callbacksCrit;
 public:
-    static CriticalSection queryCreateLock;
+    static CriticalSection queryCacheCrit;
 
 protected:
     IRoxieServerActivityFactory *createActivityFactory(ThorActivityKind kind, unsigned subgraphId, IPropertyTree &node)
@@ -1088,6 +1114,7 @@ public:
         libraryInterfaceHash = 0;
         options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
         options.allSortsMaySpill = dynamic;
+        addToCache();
     }
 
     ~CQueryFactory()
@@ -1101,6 +1128,34 @@ public:
         package.Release();
     }
 
+private:
+    std::once_flag started;
+    Owned<IException> e;
+public:
+    void init(const IPropertyTree *stateInfo)
+    {
+        std::call_once(started, [this, stateInfo]()
+        {
+            try
+            {
+                load(stateInfo);
+                if (sharedOnceContext && preloadOnceData)
+                {
+                    Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
+                    sharedOnceContext->checkOnceDone(this, *logctx);
+                }
+                addToMap();  // Publishes for slaves to see
+            }
+            catch (IException *E)
+            {
+                EXCLOG(E);
+                e.setown(E);
+            }
+        });
+        if (e)
+            throw e.getLink();
+    }
+
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         return globalPackageSetManager->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
@@ -1111,24 +1166,64 @@ public:
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
         // So only remove from hash table if what we find there matches the item that is being deleted.
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
-        SpinBlock b(queriesCrit);
-        CQueryFactory *goer = queryMap.getValue(hv);
-        if (goer == this)
-            queryMap.remove(hv);
+        {
+            CriticalBlock b(queryCacheCrit);
+            CQueryFactory *goer = queryCache.getValue(hv);
+            if (goer == this)
+                queryCache.remove(hv);
+        }
+        {
+            CriticalBlock b(activeQueriesCrit);
+            CQueryFactory *goer = activeQueries.getValue(hv);
+            if (goer == this)
+                activeQueries.remove(hv);
+        }
     }
 
-    static IQueryFactory *getQueryFactory(hash64_t hashValue, unsigned channelNo)
+    // There are two very similar-looking maps of queries - they have slightly different lifetimes and characteristics
+    // One has fully-constructed queries suitable for use responding to a slave request.
+    // The other has potentially partially-constructed queries, and is used for ensuring we only build them once
+    // while allowing for parallelizing package loads.
+
+    static CQueryFactory *getQueryFactory(hash64_t hashValue, unsigned channelNo)
     {
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
-        SpinBlock b(queriesCrit);
-        CQueryFactory *factory = queryMap.getValue(hv);
+        CriticalBlock b(activeQueriesCrit);
+        CQueryFactory *factory = activeQueries.getValue(hv);
         if (factory && factory->isAliveAndLink())
             return factory;
         else
             return NULL;
     }
 
-    static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
+    void addToMap()
+    {
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
+        CriticalBlock b(activeQueriesCrit);
+        activeQueries.setValue(hv, this);
+    }
+
+    static CQueryFactory *getCachedQuery(hash64_t hashValue, unsigned channelNo)
+    {
+        // NOTE - this must be called within an allQueriesCrit block
+        queryCacheCrit.assertLocked();
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
+        CQueryFactory *factory = queryCache.getValue(hv);
+        if (factory && factory->isAliveAndLink())
+            return factory;
+        else
+            return nullptr;
+    }
+
+    void addToCache()
+    {
+        // NOTE - this must be called within an allQueriesCrit block
+        queryCacheCrit.assertLocked();
+        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
+        queryCache.setValue(hv, this);
+    }
+
+static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
     {
         hash64_t hashValue = package.queryHash();
         if (traceLevel > 8)
@@ -1217,8 +1312,10 @@ public:
     
     virtual void load(const IPropertyTree *stateInfo)
     {
+        if (!dll)
+            return;
         IConstWorkUnit *wu = dll->queryWorkUnit();
-        if (wu) // wu may be null in some unit test cases
+        if (wu) // wu and dll may be null in some unit test cases
         {
             libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
 
@@ -1258,9 +1355,6 @@ public:
                 }
             }
         }
-        hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
-        SpinBlock b(queriesCrit);
-        queryMap.setValue(hv, this);
     }
 
     virtual unsigned queryChannel() const
@@ -1575,9 +1669,11 @@ protected:
     }
 };
 
-CriticalSection CQueryFactory::queryCreateLock;
-SpinLock CQueryFactory::queriesCrit;
-CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> CQueryFactory::queryMap;
+CriticalSection CQueryFactory::activeQueriesCrit;
+CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> CQueryFactory::activeQueries;     // Used to map hashes in packets to query factories
+
+CriticalSection CQueryFactory::queryCacheCrit;
+CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> CQueryFactory::queryCache;   // Used to ensure a given query is only created once
 
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel)
 {
@@ -1590,14 +1686,12 @@ class CRoxieServerQueryFactory : public CQueryFactory
 
 protected:
     Owned<IQueryStatsAggregator> queryStats;
-
 public:
     CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
         : CQueryFactory(_id, _dll, _package, _hashValue, 0, _sharedOnceContext, _dynamic)
     {
         queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
     }
-
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut)
     {
         queryStats->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
@@ -1696,33 +1790,35 @@ static void checkWorkunitVersionConsistency(const IQueryDll *dll)
 
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
-    CriticalBlock b(CQueryFactory::queryCreateLock);
     IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
-    IQueryFactory *cached = getQueryFactory(hashValue, 0);
-    if (cached && !(cached->loadFailed() && (reloadRetriesFailed || forceRetry)))
+    Owned<CQueryFactory> ret;
     {
-        ::Release(dll);
-        return cached;
-    }
-    if (dll && !selfTestMode)
-    {
-        checkWorkunitVersionConsistency(dll);
-        Owned<ISharedOnceContext> sharedOnceContext;
-        IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
-        if (workflow && workflow->hasProp("Item[@mode='once']"))
-            sharedOnceContext.setown(new CSharedOnceContext);
-        Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, sharedOnceContext, isDynamic);
-        newFactory->load(stateInfo);
-        if (sharedOnceContext && preloadOnceData)
+        CriticalBlock b(CQueryFactory::queryCacheCrit);
+        ret.setown(CQueryFactory::getCachedQuery(hashValue, 0));
+        if (ret && ret->loadFailed() && (reloadRetriesFailed || forceRetry))  // MORE - is there a race on loadFailed?
         {
-            Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
-            sharedOnceContext->checkOnceDone(newFactory, *logctx);
+            ret.clear();
         }
-        return newFactory.getClear();
+		if (ret)
+		    ::Release(dll);
+        else
+        {
+            if (dll && !selfTestMode)
+            {
+                checkWorkunitVersionConsistency(dll);
+                Owned<ISharedOnceContext> sharedOnceContext;
+                IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
+                if (workflow && workflow->hasProp("Item[@mode='once']"))
+                    sharedOnceContext.setown(new CSharedOnceContext);
+                ret.setown(new CRoxieServerQueryFactory(id, dll, package, hashValue, sharedOnceContext, isDynamic));
+            }
+            else
+                ret.setown(new CRoxieServerQueryFactory(id, NULL, package, hashValue, NULL, isDynamic));
+        }
     }
-    else
-        return new CRoxieServerQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, NULL, isDynamic);
+    ret->init(stateInfo);
+    return ret.getClear();
 }
 
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const IQueryDll *_dll)
@@ -1968,25 +2064,28 @@ public:
 
 IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
-    CriticalBlock b(CQueryFactory::queryCreateLock);
     IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
+    Owned<CQueryFactory> ret;
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
-    IQueryFactory *cached = getQueryFactory(hashValue, channel);
-    if (cached)
     {
-        ::Release(dll);
-        return cached;
+        CriticalBlock b(CQueryFactory::queryCacheCrit);
+        ret.setown(CQueryFactory::getCachedQuery(hashValue, channel));
+        if (ret)
+        {
+            ::Release(dll);
+        }
+        else if (dll)
+        {
+            checkWorkunitVersionConsistency(dll);
+            Owned<IQueryFactory> serverFactory = CQueryFactory::getCachedQuery(hashValue, 0);
+            assertex(serverFactory);
+            ret.setown(new CSlaveQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
+        }
+        else
+            ret.setown(new CSlaveQueryFactory(id, NULL, package, hashValue, channel, NULL, isDynamic));
     }
-    if (dll)
-    {
-        checkWorkunitVersionConsistency(dll);
-        Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, false, forceRetry); // Should always find a cached one
-        Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic);
-        newFactory->load(stateInfo);
-        return newFactory.getClear();
-    }
-    else
-        return new CSlaveQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, NULL, isDynamic);
+    ret->init(stateInfo);
+    return ret.getClear();
 }
 
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo)
