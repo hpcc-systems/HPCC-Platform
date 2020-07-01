@@ -7017,7 +7017,9 @@ public:
 
         if (responseText)
         {
-            responseText->append("Access denied! [client ip=");
+            responseText->append("Access denied! [server ip=");
+            queryHostIP().getIpText(*responseText);
+            responseText->append(", client ip=");
             responseText->append(ip);
             if (role)
             {
