@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "efs": {
+      "$ref": "#/definitions/efs"
+    },
+    "dllStorage": {
+      "$ref": "#/definitions/storage"
+    },
+    "dataStorage": {
+      "$ref": "#/definitions/storage"
+    },
+    "daliStorage": {
+      "$ref": "#/definitions/storage"
+    }
+  },
+  "definitions": {
+    "efs": {
+      "type": "object",
+      "required": [ "id", "region", "image" ],
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "serviceaccount": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+	},
+        "id": {
+          "type": "string"
+	},
+        "image": {
+          "type": "string"
+	}
+      },
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "required": [ "size" ],
+      "properties": {
+        "size": {
+          "type": "string"
+        },
+        "sku": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

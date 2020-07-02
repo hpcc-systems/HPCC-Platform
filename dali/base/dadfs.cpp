@@ -5792,15 +5792,23 @@ public:
     __int64 getRecordCount()
     {
         __int64 ret = queryAttributes().getPropInt64("@recordCount",-1);
-        if (ret==-1) {
+        if (ret==-1)
+        {
             ret = 0;
-            ForEachItemIn(i,subfiles) {
-                __int64 rc = subfiles.item(i).queryAttributes().getPropInt64("@recordCount",-1);
-                if (rc == -1) {
-                    ret = rc;
-                    break;
+            ForEachItemIn(i,subfiles)
+            {
+                IDistributedFile &subFile = subfiles.item(i);
+                __int64 rc = subFile.queryAttributes().getPropInt64("@recordCount", -1);
+                if (rc == -1)
+                {
+                    IDistributedSuperFile *super = subFile.querySuperFile();
+
+                    // if regular file or non-empty super, must have a @recordCount to aggregate a total
+                    if ((nullptr == super) || (super->numSubFiles()>0))
+                        return -1;
                 }
-                ret += rc;
+                else
+                    ret += rc;
             }
         }
         return ret;

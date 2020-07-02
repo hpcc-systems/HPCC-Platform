@@ -384,6 +384,11 @@ public:
         stats.reset();
     }
 
+    virtual unsigned queryWildSeeks() const
+    {
+        return stats.wildseeks;
+    }
+
     void setKey(IKeyIndexBase * _key)
     {
         ::Release(keyCursor);
@@ -3026,6 +3031,7 @@ extern jhtree_decl IIndexLookup *createIndexLookup(IKeyManager *keyManager)
         virtual unsigned querySeeks() const override { return keyManager->querySeeks(); }
         virtual unsigned queryScans() const override { return keyManager->queryScans(); }
         virtual unsigned querySkips() const override { return keyManager->querySkips(); }
+        virtual unsigned queryWildSeeks() const override { return keyManager->queryWildSeeks(); }
     };
     return new CIndexLookup(keyManager);
 }

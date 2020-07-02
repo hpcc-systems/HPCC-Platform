@@ -241,6 +241,7 @@ interface IIndexLookup : extends IInterface // similar to a small subset of IKey
     virtual unsigned querySeeks() const = 0;
     virtual unsigned queryScans() const = 0;
     virtual unsigned querySkips() const = 0;
+    virtual unsigned queryWildSeeks() const = 0;
 };
 
 interface IKeyManager : public IInterface, extends IIndexReadContext
@@ -264,6 +265,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned querySeeks() const = 0;
     virtual unsigned queryScans() const = 0;
     virtual unsigned querySkips() const = 0;
+    virtual unsigned queryWildSeeks() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;
     virtual void resetCounts() = 0;

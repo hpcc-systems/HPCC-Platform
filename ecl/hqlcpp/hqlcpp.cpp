@@ -1860,7 +1860,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateDiskFormats, "generateDiskFormats", false),
         DebugOption(options.maxOptimizeSize, "maxOptimizeSize", 5),             // Remove the overhead from very small functions e.g. function prolog
         DebugOption(options.minNoOptimizeSize, "minNoOptimizeSize", 10000),     // functions larger than this will take a long time to optimize, better to not try
-        DebugOption(options.timeRegex, "timeRegex", false),
     };
 
     //get options values from workunit
@@ -6361,7 +6360,13 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     CHqlBoundExpr boundTimer, boundStart;
     if (external->hasAttribute(timeAtom))
-        buildStartTimer(ctx, boundTimer, boundStart, str(external->queryId()));
+    {
+        StringBuffer nameTemp;
+        const char * name = str(external->queryId());
+        if (getStringValue(nameTemp, queryAttributeChild(external, timeAtom, 0)).length())
+            name = nameTemp;
+        buildStartTimer(ctx, boundTimer, boundStart, name);
+    }
 
     //either copy the integral value across, or a var string to fixed string
     if (returnMustAssign)

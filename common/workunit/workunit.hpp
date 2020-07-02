@@ -1415,6 +1415,16 @@ enum WUQueryFilterBoolean
     WUQFSAll = 2
 };
 
+enum WUQueryFilterSuspended
+{
+    WUQFAllQueries = 0,//all queries including Suspended and not suspended
+    WUQFSUSPDNo = 1,
+    WUQFSUSPDYes = 2,
+    WUQFSUSPDByUser = 3,
+    WUQFSUSPDByFirstNode = 4,
+    WUQFSUSPDByAnyNode = 5
+};
+
 enum WUQuerySortField
 {
     WUQSFId = 1,
@@ -1434,6 +1444,7 @@ enum WUQuerySortField
     WUQSFSuspendedByUser = 15,
     WUQSFLibrary = 16,
     WUQSFPublishedBy = 17,
+    WUQSFSuspendedFilter = 18,
     WUQSFterm = 0,
     WUQSFreverse = 256,
     WUQSFnocase = 512,
@@ -1464,7 +1475,8 @@ interface IWorkUnitFactory : extends IPluggableFactory
     virtual unsigned numWorkUnits() = 0;
     virtual IConstWorkUnitIterator *getScheduledWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual void descheduleAllWorkUnits(ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
-    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset) = 0;
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf,
+        unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total, const MapStringTo<bool> *subset, const MapStringTo<bool> *suspendedByCluster) = 0;
     virtual bool isAborting(const char *wuid) const = 0;
     virtual void clearAborting(const char *wuid) = 0;
     virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, std::list<WUState> expectedStates) = 0;

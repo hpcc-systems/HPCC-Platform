@@ -404,7 +404,16 @@ ESPresponse [exceptions_inline] LockQueryResponse
     int NumLocks;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.22"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPrequest GetBuildInfoRequest
+{
+};
+
+ESPresponse [exceptions_inline] GetBuildInfoResponse
+{
+    ESParray<ESPstruct NamedValue> BuildInfo;
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.23"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
@@ -428,6 +437,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.22"), exceptions_inlin
 //this one ensures superuser, but no feature check is done, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
+    ESPmethod [min_ver("1.23")] GetBuildInfo(GetBuildInfoRequest, GetBuildInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 
     ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
