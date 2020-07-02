@@ -2366,18 +2366,20 @@ public:
         return true;
     }
 
-#define KERN_EMERG   "<0>"   // system is unusable
-#define KERN_ALERT   "<1>"   // action must be taken immediately
-#define KERN_CRIT    "<2>"   // critical conditions
-#define KERN_ERR     "<3>"   // error conditions
-#define KERN_WARNING "<4>"   // warning conditions
-#define KERN_NOTICE  "<5>"   // normal but significant condition
-#define KERN_INFO    "<6>"   // informational
-#define KERN_DEBUG   "<7>"   // debug-level messages
-#define KMSGTEST(S) if (memcmp(p,S,3)==0) { ln.append(#S); level = p[1]-'0'; }
-
     void printKLog(IPerfMonHook *hook)
     {
+        constexpr const char *kernLevelMsgs[] = {
+            "KERN_EMERG",   // 0: system is unusable
+            "KERN_ALERT",   // 1: action must be taken immediately
+            "KERN_CRIT",    // 2: critical conditions
+            "KERN_ERR",     // 3: error conditions
+            "KERN_WARNING", // 4: warning conditions
+            "KERN_NOTICE",  // 5: normal but significant condition
+            "KERN_INFO",    // 6: informational
+            "KERN_DEBUG",   // 7: debug-level messages
+        };
+        constexpr unsigned unknownLevel = 8;
+
         const char *p = nullptr;
         size32_t sz = getKLog(p);
 #if 0
@@ -2385,23 +2387,36 @@ public:
 #endif
         StringBuffer ln;
         const char *e = p+sz;
-        while (p && (p!=e)) {
-            if (*p=='<') {
+        while (p && (p!=e))
+        {
+            if (*p=='<')
+            {
                 ln.clear();
-                int level = -1;
-                KMSGTEST(KERN_EMERG)
-                else KMSGTEST(KERN_ALERT)
-                else KMSGTEST(KERN_CRIT)
-                else KMSGTEST(KERN_ERR)
-                else KMSGTEST(KERN_WARNING)
-                else KMSGTEST(KERN_NOTICE)
-                else KMSGTEST(KERN_INFO)
-                else KMSGTEST(KERN_DEBUG)
-                else {
-                    ln.append("KERN_UNKNOWN");
-                    p -= 3;
+                unsigned level = 0;
+                const char *pstart = p;
+                ++p;
+                while (true)
+                {
+                    if (!isdigit(*p))
+                    {
+                        if ((p != (pstart+1)) && (*p == '>'))
+                        {
+                            ++p;
+                            if (level>=unknownLevel)
+                                ln.appendf("KERN_UNKNOWN[%u]", level);
+                            else
+                                ln.append(kernLevelMsgs[level]);
+                        }
+                        else
+                        {
+                            ln.append("KERN_UNKNOWN");
+                            p = pstart;
+                        }
+                        break;
+                    }
+                    level = 10 * level + ((*p) - '0');
+                    p++;
                 }
-                p += 3;
                 ln.append(": ");
                 while ((p && p!=e)&&(*p!='\n'))
                     ln.append(*(p++));
