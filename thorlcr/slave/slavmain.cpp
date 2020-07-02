@@ -763,6 +763,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 unsigned rowStart = 0;
                 unsigned __int64 startSeeks = kmc->queryKeyManager()->querySeeks();
                 unsigned __int64 startScans = kmc->queryKeyManager()->queryScans();
+                unsigned __int64 startWildSeeks = kmc->queryKeyManager()->queryWildSeeks();
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = getRowClear(rowNum++);
@@ -774,6 +775,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                         countMarker.write(rowNum-rowStart);
                         replyMb.append(kmc->queryKeyManager()->querySeeks()-startSeeks);
                         replyMb.append(kmc->queryKeyManager()->queryScans()-startScans);
+                        replyMb.append(kmc->queryKeyManager()->queryWildSeeks()-startWildSeeks);
                         if (activityCtx->useMessageCompression())
                         {
                             fastLZCompressToBuffer(replyMsg, tmpMB.length(), tmpMB.toByteArray());

@@ -81,17 +81,19 @@ protected:
     {
         CRuntimeStatisticCollection &stats;
         StatProvider &statProvider;
-        unsigned __int64 startSeeks = 0, startScans = 0;
+        unsigned __int64 startSeeks = 0, startScans = 0, startWildSeeks = 0;
     public:
         inline CCaptureIndexStats(CRuntimeStatisticCollection &_stats, StatProvider &_statProvider) : stats(_stats), statProvider(_statProvider)
         {
             startSeeks = statProvider.querySeeks();
             startScans = statProvider.queryScans();
+            startWildSeeks = statProvider.queryWildSeeks();
         }
         inline ~CCaptureIndexStats()
         {
             stats.mergeStatistic(StNumIndexSeeks, statProvider.querySeeks() - startSeeks);
             stats.mergeStatistic(StNumIndexScans, statProvider.queryScans() - startScans);
+            stats.mergeStatistic(StNumIndexWildSeeks, statProvider.queryWildSeeks() - startWildSeeks);
         }
     };
 
