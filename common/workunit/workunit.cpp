@@ -5330,16 +5330,17 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
                                             unsigned maxnum,
                                             __int64 *cachehint,
                                             unsigned *total,
-                                            const MapStringTo<bool> *_subset)
+                                            const MapStringTo<bool> *_subset,
+                                            const MapStringTo<bool> *_suspendedQueriesByCluster)
 {
     struct PostFilters
     {
         WUQueryFilterBoolean activatedFilter;
-        WUQueryFilterBoolean suspendedByUserFilter;
+        WUQueryFilterSuspended suspendedFilter;
         PostFilters()
         {
             activatedFilter = WUQFSAll;
-            suspendedByUserFilter = WUQFSAll;
+            suspendedFilter = WUQFAllQueries;
         };
     } postFilters;
 
@@ -5351,6 +5352,7 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
         PostFilters postFilters;
         StringArray unknownAttributes;
         const MapStringTo<bool> *subset;
+        const MapStringTo<bool> *suspendedQueriesByCluster;
 
         void populateQueryTree(const IPropertyTree* querySetTree, IPropertyTree* queryTree)
         {
@@ -5388,9 +5390,30 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
                     continue;
                 if (!activated && (postFilters.activatedFilter == WUQFSYes))
                     continue;
-                if ((postFilters.suspendedByUserFilter == WUQFSNo) && query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
-                    continue;
-                if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
+
+                bool isSuspendedByUser = query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields));
+                bool skip = false;
+                switch(postFilters.suspendedFilter)
+                {
+                case WUQFSUSPDNo:
+                    if (isSuspendedByUser || checkSuspendedByCluster(querySetId, queryId))
+                        skip = true;
+                    break;
+                case WUQFSUSPDYes:
+                    if (!isSuspendedByUser && !checkSuspendedByCluster(querySetId, queryId))
+                        skip = true;
+                    break;
+                case WUQFSUSPDByUser:
+                    if (!isSuspendedByUser)
+                        skip = true;
+                    break;
+                case WUQFSUSPDByFirstNode:
+                case WUQFSUSPDByAnyNode:
+                    if (!checkSuspendedByCluster(querySetId, queryId))
+                        skip = true;
+                    break;
+                }
+                if (skip)
                     continue;
 
                 IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", createPTreeFromIPT(&query));
@@ -5417,14 +5440,24 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
                 populateQueryTree(root, queryTree);
             return conn.getClear();
         }
+        bool checkSuspendedByCluster(const char *querySetId, const char *queryId)
+        {
+            if (!suspendedQueriesByCluster)
+                return false;
+
+            VStringBuffer match("%s/%s", querySetId, queryId);
+            bool *found = suspendedQueriesByCluster->getValue(match);
+            return (found && *found);
+        }
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes, const MapStringTo<bool> *_subset)
-            : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset)
+        CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters,
+            StringArray& _unknownAttributes, const MapStringTo<bool> *_subset, const MapStringTo<bool> *_suspendedQueriesByCluster)
+            : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset), suspendedQueriesByCluster(_suspendedQueriesByCluster)
         {
             postFilters.activatedFilter = _postFilters.activatedFilter;
-            postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
+            postFilters.suspendedFilter = _postFilters.suspendedFilter;
             ForEachItemIn(x, _unknownAttributes)
                 unknownAttributes.append(_unknownAttributes.item(x));
         }
@@ -5460,8 +5493,8 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
                 xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
             else if (subfmt==WUQSFActivited)
                 postFilters.activatedFilter = (WUQueryFilterBoolean) atoi(fv);
-            else if (subfmt==WUQSFSuspendedByUser)
-                postFilters.suspendedByUserFilter = (WUQueryFilterBoolean) atoi(fv);
+            else if (subfmt==WUQSFSuspendedFilter)
+                postFilters.suspendedFilter = (WUQueryFilterSuspended) atoi(fv);
             else if (!fv || !*fv)
                 unknownAttributes.append(getEnumText(subfmt,querySortFields));
             else {
@@ -5492,7 +5525,8 @@ IConstQuerySetQueryIterator* CWorkUnitFactory::getQuerySetQueriesSorted( WUQuery
         }
     }
     IArrayOf<IPropertyTree> results;
-    Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
+    Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL,
+        postFilters, unknownAttributes, _subset, _suspendedQueriesByCluster);
     Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total,NULL);
     return new CConstQuerySetQueryIterator(results);
 }
@@ -6367,10 +6401,11 @@ public:
                                                 unsigned maxnum,
                                                 __int64 *cachehint,
                                                 unsigned *total,
-                                                const MapStringTo<bool> *subset)
+                                                const MapStringTo<bool> *subset,
+                                                const MapStringTo<bool> *suspendedByCluster)
     {
         // MORE - why no security?
-        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total,subset);
+        return baseFactory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total,subset,suspendedByCluster);
     }
 
     virtual unsigned numWorkUnits()
