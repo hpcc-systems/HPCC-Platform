@@ -23,7 +23,7 @@
 struct WuAnalyseOptions
 {
     stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(1);          // only interested in costs of > 1s
+    stat_type minCost = seconds2StatUnits(30);          // only interested in costs of > 30s
     stat_type skewThreshold = statSkewPercent(20);     // minimum interesting skew measurment
 };
 
