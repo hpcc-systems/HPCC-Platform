@@ -1049,9 +1049,9 @@ void Decimal::clip(int & newLsb, int & newMsb) const
 {
     int lo = lsb;
     int hi = msb;
-    while (digits[lo] == 0 && lo < hi)
+    while (lo < hi && digits[lo] == 0)
         lo++;
-    while (digits[hi] == 0 && hi >= lo)
+    while (hi >= lo && digits[hi] == 0)
         hi--;
     newLsb = lo;
     newMsb = hi;
