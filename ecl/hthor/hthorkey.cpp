@@ -254,6 +254,7 @@ public:
         progress.addStatistic(StNumPostFiltered, queryPostFiltered());
         progress.addStatistic(StNumIndexSeeks, querySeeks());
         progress.addStatistic(StNumIndexScans, queryScans());
+        progress.addStatistic(StNumIndexWildSeeks, queryWildSeeks());
     }
 
     virtual unsigned querySeeks() const
@@ -263,6 +264,10 @@ public:
     virtual unsigned queryScans() const
     {
         return scans + (klManager ? klManager->queryScans() : 0);
+    }
+    virtual unsigned queryWildSeeks() const
+    {
+        return wildseeks + (klManager ? klManager->queryWildSeeks() : 0);
     }
     virtual unsigned queryPostFiltered() const
     {
@@ -330,6 +335,7 @@ protected:
     unsigned seeks;
     unsigned scans;
     unsigned postFiltered;
+    unsigned wildseeks;
     bool singlePart = false;                // a single part index, not part of a super file - optimize so never reload the part.
     bool localSortKey = false;
     bool initializedFileInfo = false;
@@ -360,6 +366,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     postFiltered = 0;
     seeks = 0;
     scans = 0;
+    wildseeks = 0;
     helper.setCallback(&callback);
     limitTransformExtra = nullptr;
     if (_node)
@@ -631,6 +638,7 @@ void CHThorIndexReadActivityBase::killPart()
     {
         seeks += klManager->querySeeks();
         scans += klManager->queryScans();
+        wildseeks += klManager->queryWildSeeks();
         klManager.clear();
     }
 }
@@ -3450,6 +3458,7 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     atomic_t skips;
     unsigned seeks;
     unsigned scans;
+    unsigned wildseeks;
     OwnedRowArray extractedRows;
     Owned <ILocalOrDistributedFile> ldFile;
     IDistributedFile * dFile;
@@ -4053,6 +4062,7 @@ public:
         CriticalBlock b(statsCrit);
         seeks += manager->querySeeks();
         scans += manager->queryScans();
+        wildseeks += manager->queryWildSeeks();
     }
 
     virtual bool addMatch(MatchSet * ms, IKeyManager * manager)
@@ -4124,6 +4134,7 @@ public:
         progress.addStatistic(StNumIndexSkips, atomic_read(&skips));
         progress.addStatistic(StNumIndexSeeks, seeks);
         progress.addStatistic(StNumIndexScans, scans);
+        progress.addStatistic(StNumIndexWildSeeks, wildseeks);
     }
 
 protected:
