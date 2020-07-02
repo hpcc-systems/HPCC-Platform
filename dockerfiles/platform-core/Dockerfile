@@ -16,49 +16,43 @@
 ##############################################################################
 
 # Create base container image to be used by all HPCC processes 
-# MORE - some of these dependencies are probably not needed by all derived containers - perhaps we should move them
-# Others may not be wanted at all in container mode - xterm,sshserver for example??
 
 ARG BUILD_LABEL
 ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL} as build
 FROM ubuntu:20.04
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt clean -y && \
-    apt autoclean -y && \
-    apt install -y -f && \
-    apt autoremove -y && \
+RUN apt-get clean -y && \
+    apt-get autoclean -y && \
+    apt-get install -y -f && \
+    apt-get autoremove -y && \
     apt-get update -y
 
 RUN apt-get install -y \
-  xterm \
+  default-jdk \
   g++ \
   openssh-client \
-  openssh-server \
-  expect \
-  rsync \
   libapr1 \
-  python \ 
-  psmisc \
-  zip \
-  curl
-  
-RUN apt-get install -y \
   libnuma1 \
   libboost-regex1.71.0 \
   libpython3.8 \
   libmemcached11 \
-  libmemcachedutil2
+  libmemcachedutil2 \
+  libxslt1.1 \
+  locales \
+  python \ 
+  psmisc \
+  r-base-core \
+  zip \
+  curl
 
-RUN apt-get install -y \
-  libxslt1.1
+# these are developer tools - we may want to move them elsewhere so that they are only in the incremental builds?
 
 RUN apt-get install -y \
     dnsutils \
     nano 
 
 # Set the locale
-RUN apt-get install -y locales
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8  
 ENV LANGUAGE en_US:en  
