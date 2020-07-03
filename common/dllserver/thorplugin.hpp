@@ -45,6 +45,7 @@ extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll);
 extern DLLSERVER_API bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id);
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml);
 extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuffer &xml);
+extern DLLSERVER_API bool getArchiveXMLFromFile(const char *filename, StringBuffer &xml);
 extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml);
 
 extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, StringBuffer &result);

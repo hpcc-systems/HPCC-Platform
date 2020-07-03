@@ -852,6 +852,20 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
+                if (optSaveQueryArchive && instance.wu && instance.archive)
+                {
+                    StringBuffer buf;
+                    toXML(instance.archive, buf);
+                    if (optWorkUnit)
+                    {
+                        Owned<IWUQuery> q = instance.wu->updateQuery();
+                        q->setQueryText(buf);
+                    }
+                    else
+                    {
+                        generator->addArchiveAsResource(buf);
+                    }
+                }
                 bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
@@ -1432,14 +1446,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
-
-    if (optSaveQueryArchive && instance.wu && instance.archive)
-    {
-        Owned<IWUQuery> q = instance.wu->updateQuery();
-        StringBuffer buf;
-        toXML(instance.archive, buf);
-        q->setQueryText(buf);
-    }
 
     StringBuffer targetFilename;
     const char * outputFilename = instance.outputFilename;
