@@ -1,0 +1,45 @@
+hostgroups:
+  thor400: [ node1, node2, node3, node4, node5, node6, node400 ]
+  thor400m:
+    group: thor400
+    delta: 1
+  thor20_1:
+    group: thor400
+    count: 20
+    offset: 0 }
+  thor20_2:
+    group: thor400
+    count: 20
+    offset: 20
+  thor100_4:
+    group: thor400
+    count: 100
+    offset: 300
+
+storage:
+  planes:
+  #Bare metal system with attached storage
+  - name: thor400
+    prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
+    hosts: thor400
+    replication: attachedThor400MirrorPlane
+    speed: 2000
+    remoteSpeed: 1000
+    #numDevices: count(hosts)
+  - name: thor400mirror
+    prefix: /var/lib/hpccsystems/hpcc-mirror       # only used if the local host matches the host for the device
+    hosts: thor400mirror
+    #Does any other information about the replication policy need to be included?  I don't think it does....
+    speed: 2000
+    remoteSpeed: 1000
+
+  - name: thor100_4
+    prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
+    hosts: thor100_4
+    replication: azureBlobPlane
+    remoteSpeed: 2000
+
+  - name: azureBlobPlane
+    prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
+    secret: azure-ghallidaystorage
+    speed: 500
